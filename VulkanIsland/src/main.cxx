@@ -11,25 +11,40 @@ using namespace std::string_literals;
 #pragma comment(lib, "vulkan-1.lib")
 #pragma comment(lib, "glfw3.lib")
 
-namespace detail {
-template <class T, std::size_t N, std::size_t... I>
-constexpr std::array<std::remove_cv_t<T>, N>
-to_array_impl(T(&a)[N], std::index_sequence<I...>)
-{
-    return {{a[I]...}};
-}
-}
+template<class C, class = void>
+struct is_iterable : std::false_type {};
 
-template <class T, std::size_t N>
-constexpr std::array<std::remove_cv_t<T>, N> to_array(T(&a)[N])
-{
-    return detail::to_array_impl(a, std::make_index_sequence<N>{});
-}
+template<class C>
+struct is_iterable<C, std::void_t<decltype(std::cbegin(std::declval<C>()), std::cend(std::declval<C>()))>> : std::true_type {};
+
+template<class T>
+constexpr bool is_iterable_v = is_iterable<T>::value;
+
 
 VkInstance vkInstance;
 
-auto GetRequiredExtensions()
+template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
+auto CheckRequiredExtensions(T _requiredExtensions)
 {
+    std::vector<VkExtensionProperties> requiredExtensions;
+
+    std::transform(_requiredExtensions.begin(), _requiredExtensions.end(), std::back_inserter(requiredExtensions), [] (auto &&name)
+    {
+        VkExtensionProperties prop{'\0', 1};
+        std::string_view temp{name};
+
+        std::uninitialized_copy(temp.cbegin(), temp.cend(), prop.extensionName);
+
+        return prop;
+    });
+
+    auto extensionsComp = [] (auto &&lhs, auto &&rhs)
+    {
+        return std::lexicographical_compare(std::cbegin(lhs.extensionName), std::cend(lhs.extensionName), std::cbegin(rhs.extensionName), std::cend(rhs.extensionName));
+    };
+
+    std::sort(requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
+
     std::uint32_t extensionsCount = 0;
     if (auto result = vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount, nullptr); result != VK_SUCCESS)
         throw std::runtime_error("failed to retrieve extensions count: "s + std::to_string(result));
@@ -38,32 +53,9 @@ auto GetRequiredExtensions()
     if (auto result = vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount, supportedExtensions.data()); result != VK_SUCCESS)
         throw std::runtime_error("failed to retrieve extensions: "s + std::to_string(result));
 
-    auto extensionsComp = [] (auto &&lhs, auto &&rhs)
-    {
-        return std::string(lhs.extensionName) < std::string(rhs.extensionName);
-    };
-
     std::sort(supportedExtensions.begin(), supportedExtensions.end(), extensionsComp);
 
-    std::vector<VkExtensionProperties> requiredExtensions = {{
-        {"VK_KHR_surface"}, {"VK_KHR_win32_surface"}
-    }};
-
-    std::sort(requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
-
-    auto supported = std::includes(supportedExtensions.begin(), supportedExtensions.end(), requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
-
-    if (!supported)
-        throw std::runtime_error("not all required extensions are supported");
-
-    std::vector<decltype(VkExtensionProperties::extensionName)> extensions(requiredExtensions.size());
-
-    std::for_each(requiredExtensions.begin(), requiredExtensions.end(), [&extensions, i = 0u] (auto &&prop) mutable
-    {
-        std::uninitialized_move_n(std::begin(prop.extensionName), std::size(prop.extensionName), extensions.at(i++));
-    });
-
-    return extensions;
+    return std::includes(supportedExtensions.begin(), supportedExtensions.end(), requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
 }
 
 void InitVulkan()
@@ -76,18 +68,19 @@ void InitVulkan()
         VK_API_VERSION_1_0
     };
 
-    auto const extensions = GetRequiredExtensions();
-    std::vector<const char *> exs;
+    std::array<const char *, 2> extensions = {
+        "VK_KHR_surface", "VK_KHR_win32_surface"
+    };
 
-    for (auto &&extension : extensions)
-        exs.emplace_back(extension);
+    if (auto supported = CheckRequiredExtensions(extensions); !supported)
+        throw std::runtime_error("not all required extensions are supported");
 
     VkInstanceCreateInfo const createInfo = {
         VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         nullptr, 0,
         &appInfo,
         0, nullptr,
-        static_cast<std::uint32_t>(exs.size()), exs.data()
+        static_cast<std::uint32_t>(std::size(extensions)), std::data(extensions)
     };
 
     if (auto result = vkCreateInstance(&createInfo, nullptr, &vkInstance); result != VK_SUCCESS)
@@ -100,13 +93,6 @@ int main()
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     auto window = glfwCreateWindow(800, 600, "VulkanIsland", nullptr, nullptr);
-
-    std::uint32_t extensionsCount = 0;
-    auto const extensions = glfwGetRequiredInstanceExtensions(&extensionsCount);
-
-    for (auto i = 0u; i < extensionsCount; ++i)
-        std::cout << extensions[i] << '\n';
-    std::cout << '\n';
 
     InitVulkan();
 
