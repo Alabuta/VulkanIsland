@@ -8,20 +8,18 @@ using namespace std::string_literals;
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 
+#ifndef VK_USE_PLATFORM_WIN32_KHR
+#define VK_USE_PLATFORM_WIN32_KHR 1
+#endif
+
 #pragma comment(lib, "vulkan-1.lib")
 #pragma comment(lib, "glfw3.lib")
 
-template<class C, class = void>
-struct is_iterable : std::false_type {};
-
-template<class C>
-struct is_iterable<C, std::void_t<decltype(std::cbegin(std::declval<C>()), std::cend(std::declval<C>()))>> : std::true_type {};
-
-template<class T>
-constexpr bool is_iterable_v = is_iterable<T>::value;
-
+#include <helpers.h>
 
 VkInstance vkInstance;
+VkDebugReportCallbackEXT vkDebugReportCallback;
+
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 auto CheckRequiredExtensions(T &&_requiredExtensions)
@@ -89,6 +87,52 @@ auto CheckRequiredLayers(T &&_requiredLayers)
     return std::includes(supportedLayers.begin(), supportedLayers.end(), requiredLayers.begin(), requiredLayers.end(), layersComp);
 }
 
+VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
+    VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType,
+    std::uint64_t object, std::size_t location, std::int32_t messageCode,
+    const char *pLayerPrefix, const char *pMessage, void *pUserData)
+{
+    std::cerr << messageCode << std::endl;
+
+    return VK_FALSE;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugReportCallbackEXT(
+    VkInstance instance, VkDebugReportCallbackCreateInfoEXT const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkDebugReportCallbackEXT *pCallback)
+{
+    auto func = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(vkGetInstanceProcAddr(vkInstance, "vkCreateDebugReportCallbackEXT"));
+
+    if (func)
+        return func(instance, pCreateInfo, pAllocator, pCallback);
+
+    return VK_ERROR_EXTENSION_NOT_PRESENT;
+}
+
+VKAPI_ATTR void VKAPI_CALL vkDestroyDebugReportCallbackEXT(
+    VkInstance instance, VkDebugReportCallbackEXT callback, VkAllocationCallbacks const *pAllocator)
+{
+    auto func = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(vkGetInstanceProcAddr(vkInstance, "vkDestroyDebugReportCallbackEXT"));
+
+    if (func)
+        func(instance, callback, pAllocator);
+}
+
+bool CreateDebugReportCallback()
+{
+    VkDebugReportCallbackCreateInfoEXT constexpr createInfo = {
+        VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
+        nullptr,
+        VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT,
+        DebugCallback,
+        nullptr
+    };
+
+    if (auto result = vkCreateDebugReportCallbackEXT(vkInstance, &createInfo, nullptr, &vkDebugReportCallback); result != VK_SUCCESS)
+        throw std::runtime_error("failed to set up debug callback: "s + std::to_string(result));
+
+    return true;
+}
+
 void InitVulkan()
 {
     VkApplicationInfo constexpr appInfo = {
@@ -99,8 +143,10 @@ void InitVulkan()
         VK_API_VERSION_1_0
     };
 
-    std::array<const char *const, 2> extensions = {
-        "VK_KHR_surface", "VK_KHR_win32_surface"
+    std::array<const char *const, 3> extensions = {
+        VK_KHR_SURFACE_EXTENSION_NAME,
+        "VK_KHR_win32_surface",
+        VK_EXT_DEBUG_REPORT_EXTENSION_NAME
     };
 
     if (auto supported = CheckRequiredExtensions(extensions); !supported)
@@ -136,6 +182,8 @@ void InitVulkan()
 
     if (auto result = vkCreateInstance(&createInfo, nullptr, &vkInstance); result != VK_SUCCESS)
         throw std::runtime_error("failed to create instance"s);
+
+    CreateDebugReportCallback();
 }
 
 int main()
@@ -149,6 +197,9 @@ int main()
 
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();
+
+    if (vkDebugReportCallback)
+        vkDestroyDebugReportCallbackEXT(vkInstance, vkDebugReportCallback, nullptr);
 
     if (vkInstance)
         vkDestroyInstance(vkInstance, nullptr);
