@@ -22,7 +22,7 @@ using namespace std::string_literals;
 
 VkInstance vkInstance;
 VkDebugReportCallbackEXT vkDebugReportCallback;
-
+VkPhysicalDevice vkPhysicalDevice = VK_NULL_HANDLE;
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 auto CheckRequiredExtensions(T &&_requiredExtensions)
@@ -90,6 +90,50 @@ auto CheckRequiredLayers(T &&_requiredLayers)
     return std::includes(supportedLayers.begin(), supportedLayers.end(), requiredLayers.begin(), requiredLayers.end(), layersComp);
 }
 
+//template<typename>
+
+void PickPhysicalDevice(VkInstance instance)
+{
+    std::uint32_t devicesCount = 0;
+    
+    if (auto result = vkEnumeratePhysicalDevices(instance, &devicesCount, nullptr); result != VK_SUCCESS || devicesCount == 0)
+        throw std::runtime_error("failed to find physical device with Vulkan API support: "s + std::to_string(result));
+
+    std::vector<VkPhysicalDevice> devices(devicesCount);
+    if (auto result = vkEnumeratePhysicalDevices(instance, &devicesCount, std::data(devices)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve physical devices: "s + std::to_string(result));
+
+    auto it_end = std::remove_if(devices.begin(), devices.end(), [] (auto &&device)
+    {
+        VkPhysicalDeviceProperties properties;
+        VkPhysicalDeviceFeatures features;
+
+        vkGetPhysicalDeviceProperties(device, &properties);
+        vkGetPhysicalDeviceFeatures(device, &features);
+
+        /*auto constexpr requiredDeviceFeatures = std::tie(
+            VkPhysicalDeviceFeatures::geometryShader,
+            VkPhysicalDeviceFeatures::tessellationShader,
+            VkPhysicalDeviceFeatures::shaderUniformBufferArrayDynamicIndexing,
+            VkPhysicalDeviceFeatures::shaderSampledImageArrayDynamicIndexing,
+            VkPhysicalDeviceFeatures::shaderStorageBufferArrayDynamicIndexing,
+            VkPhysicalDeviceFeatures::shaderStorageImageArrayDynamicIndexing
+        );*/
+
+        auto const deviceFeatures = std::tie(
+            features.geometryShader,
+            features.tessellationShader,
+            features.shaderUniformBufferArrayDynamicIndexing,
+            features.shaderSampledImageArrayDynamicIndexing,
+            features.shaderStorageBufferArrayDynamicIndexing,
+            features.shaderStorageImageArrayDynamicIndexing
+        );
+
+        auto const requiredDeviceFeatures = deviceFeatures;
+
+        return requiredDeviceFeatures != deviceFeatures;
+    });
+}
 
 void InitVulkan()
 {
