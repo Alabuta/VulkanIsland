@@ -5,17 +5,20 @@
 #include <string>
 using namespace std::string_literals;
 
+#ifndef GLFW_INCLUDE_VULKAN
 #define GLFW_INCLUDE_VULKAN
+#endif
 #include <GLFW/glfw3.h>
 
 #ifndef VK_USE_PLATFORM_WIN32_KHR
-#define VK_USE_PLATFORM_WIN32_KHR 1
+#define VK_USE_PLATFORM_WIN32_KHR
 #endif
 
 #pragma comment(lib, "vulkan-1.lib")
 #pragma comment(lib, "glfw3.lib")
 
 #include <helpers.h>
+#include <debug.h>
 
 VkInstance vkInstance;
 VkDebugReportCallbackEXT vkDebugReportCallback;
@@ -87,51 +90,6 @@ auto CheckRequiredLayers(T &&_requiredLayers)
     return std::includes(supportedLayers.begin(), supportedLayers.end(), requiredLayers.begin(), requiredLayers.end(), layersComp);
 }
 
-VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
-    VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType,
-    std::uint64_t object, std::size_t location, std::int32_t messageCode,
-    const char *pLayerPrefix, const char *pMessage, void *pUserData)
-{
-    std::cerr << messageCode << std::endl;
-
-    return VK_FALSE;
-}
-
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugReportCallbackEXT(
-    VkInstance instance, VkDebugReportCallbackCreateInfoEXT const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkDebugReportCallbackEXT *pCallback)
-{
-    auto func = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(vkGetInstanceProcAddr(vkInstance, "vkCreateDebugReportCallbackEXT"));
-
-    if (func)
-        return func(instance, pCreateInfo, pAllocator, pCallback);
-
-    return VK_ERROR_EXTENSION_NOT_PRESENT;
-}
-
-VKAPI_ATTR void VKAPI_CALL vkDestroyDebugReportCallbackEXT(
-    VkInstance instance, VkDebugReportCallbackEXT callback, VkAllocationCallbacks const *pAllocator)
-{
-    auto func = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(vkGetInstanceProcAddr(vkInstance, "vkDestroyDebugReportCallbackEXT"));
-
-    if (func)
-        func(instance, callback, pAllocator);
-}
-
-bool CreateDebugReportCallback()
-{
-    VkDebugReportCallbackCreateInfoEXT constexpr createInfo = {
-        VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
-        nullptr,
-        VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT,
-        DebugCallback,
-        nullptr
-    };
-
-    if (auto result = vkCreateDebugReportCallbackEXT(vkInstance, &createInfo, nullptr, &vkDebugReportCallback); result != VK_SUCCESS)
-        throw std::runtime_error("failed to set up debug callback: "s + std::to_string(result));
-
-    return true;
-}
 
 void InitVulkan()
 {
@@ -183,7 +141,7 @@ void InitVulkan()
     if (auto result = vkCreateInstance(&createInfo, nullptr, &vkInstance); result != VK_SUCCESS)
         throw std::runtime_error("failed to create instance"s);
 
-    CreateDebugReportCallback();
+    CreateDebugReportCallback(vkInstance, vkDebugReportCallback);
 }
 
 int main()
