@@ -90,7 +90,14 @@ auto CheckRequiredLayers(T &&_requiredLayers)
     return std::includes(supportedLayers.begin(), supportedLayers.end(), requiredLayers.begin(), requiredLayers.end(), layersComp);
 }
 
-//template<typename>
+template<std::size_t i = 0, typename T, typename V>
+void set_tuple(T &&tuple, V value)
+{
+    std::get<i>(tuple) = value;
+
+    if constexpr (i + 1 < std::tuple_size_v<std::decay_t<T>>)
+        set_tuple<i + 1>(std::forward<T>(tuple), value);
+}
 
 void PickPhysicalDevice(VkInstance instance)
 {
@@ -103,7 +110,35 @@ void PickPhysicalDevice(VkInstance instance)
     if (auto result = vkEnumeratePhysicalDevices(instance, &devicesCount, std::data(devices)); result != VK_SUCCESS)
         throw std::runtime_error("failed to retrieve physical devices: "s + std::to_string(result));
 
-    auto it_end = std::remove_if(devices.begin(), devices.end(), [] (auto &&device)
+    VkPhysicalDeviceLimits _requiredLimits{};
+    _requiredLimits.maxImageDimension1D = 16384;
+    _requiredLimits.maxImageDimension2D = 16384;
+    _requiredLimits.maxImageDimension3D = 2048;
+    _requiredLimits.maxImageDimensionCube = 16384;
+    _requiredLimits.maxColorAttachments = 8;
+
+    auto requiredLimits = std::tie(
+        _requiredLimits.maxImageDimension1D,
+        _requiredLimits.maxImageDimension2D,
+        _requiredLimits.maxImageDimension3D,
+        _requiredLimits.maxImageDimensionCube,
+        _requiredLimits.maxColorAttachments
+    );
+
+    VkPhysicalDeviceFeatures _requiredFeatures{};
+
+    auto requiredFeatures = std::tie(
+        _requiredFeatures.geometryShader,
+        _requiredFeatures.tessellationShader,
+        _requiredFeatures.shaderUniformBufferArrayDynamicIndexing,
+        _requiredFeatures.shaderSampledImageArrayDynamicIndexing,
+        _requiredFeatures.shaderStorageBufferArrayDynamicIndexing,
+        _requiredFeatures.shaderStorageImageArrayDynamicIndexing
+    );
+
+    set_tuple(requiredFeatures, static_cast<VkBool32>(1));
+
+    auto it_end = std::remove_if(devices.begin(), devices.end(), [&requiredLimits, &requiredFeatures] (auto &&device)
     {
         VkPhysicalDeviceProperties properties;
         VkPhysicalDeviceFeatures features;
@@ -111,14 +146,13 @@ void PickPhysicalDevice(VkInstance instance)
         vkGetPhysicalDeviceProperties(device, &properties);
         vkGetPhysicalDeviceFeatures(device, &features);
 
-        /*auto constexpr requiredDeviceFeatures = std::tie(
-            VkPhysicalDeviceFeatures::geometryShader,
-            VkPhysicalDeviceFeatures::tessellationShader,
-            VkPhysicalDeviceFeatures::shaderUniformBufferArrayDynamicIndexing,
-            VkPhysicalDeviceFeatures::shaderSampledImageArrayDynamicIndexing,
-            VkPhysicalDeviceFeatures::shaderStorageBufferArrayDynamicIndexing,
-            VkPhysicalDeviceFeatures::shaderStorageImageArrayDynamicIndexing
-        );*/
+        auto const deviceLimits = std::tie(
+            properties.limits.maxImageDimension1D,
+            properties.limits.maxImageDimension2D,
+            properties.limits.maxImageDimension3D,
+            properties.limits.maxImageDimensionCube,
+            properties.limits.maxColorAttachments
+        );
 
         auto const deviceFeatures = std::tie(
             features.geometryShader,
@@ -129,9 +163,18 @@ void PickPhysicalDevice(VkInstance instance)
             features.shaderStorageImageArrayDynamicIndexing
         );
 
-        auto const requiredDeviceFeatures = deviceFeatures;
+        return deviceFeatures != requiredFeatures || deviceLimits < requiredLimits || properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+    });
 
-        return requiredDeviceFeatures != deviceFeatures;
+    devices.erase(it_end, devices.end());
+
+    std::sort(devices.begin(), devices.end(), [] (auto &&lhs_device, auto &&rhs_device)
+    {
+        VkPhysicalDeviceProperties rhs_properties, lhs_properties;
+        vkGetPhysicalDeviceProperties(rhs_device, &rhs_properties);
+        vkGetPhysicalDeviceProperties(lhs_device, &lhs_properties);
+
+        return rhs_properties.apiVersion < lhs_properties.apiVersion;
     });
 }
 
@@ -145,7 +188,7 @@ void InitVulkan()
         VK_API_VERSION_1_0
     };
 
-    std::array<const char *const, 3> extensions = {
+    std::array<const char *const, 3> constexpr extensions = {
         VK_KHR_SURFACE_EXTENSION_NAME,
         "VK_KHR_win32_surface",
         VK_EXT_DEBUG_REPORT_EXTENSION_NAME
@@ -155,8 +198,8 @@ void InitVulkan()
         throw std::runtime_error("not all required extensions are supported"s);
 
 #if _DEBUG
-    std::array<const char *const, 7> layers = {
-        "VK_LAYER_LUNARG_api_dump",
+    std::array<const char *const, 6> constexpr layers = {
+        //"VK_LAYER_LUNARG_api_dump",
         "VK_LAYER_LUNARG_core_validation",
         "VK_LAYER_LUNARG_object_tracker",
         "VK_LAYER_LUNARG_parameter_validation",
@@ -196,6 +239,8 @@ int main()
     auto window = glfwCreateWindow(800, 600, "VulkanIsland", nullptr, nullptr);
 
     InitVulkan();
+
+    PickPhysicalDevice(vkInstance);
 
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();
