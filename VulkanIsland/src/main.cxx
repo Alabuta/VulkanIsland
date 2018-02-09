@@ -23,6 +23,7 @@ using namespace std::string_literals;
 VkInstance vkInstance;
 VkDebugReportCallbackEXT vkDebugReportCallback;
 VkPhysicalDevice vkPhysicalDevice = VK_NULL_HANDLE;
+VkDevice vkDevice = VK_NULL_HANDLE;
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 auto CheckRequiredExtensions(T &&_requiredExtensions)
@@ -90,16 +91,9 @@ auto CheckRequiredLayers(T &&_requiredLayers)
     return std::includes(supportedLayers.begin(), supportedLayers.end(), requiredLayers.begin(), requiredLayers.end(), layersComp);
 }
 
-template<std::size_t i = 0, typename T, typename V>
-void set_tuple(T &&tuple, V value)
-{
-    std::get<i>(tuple) = value;
 
-    if constexpr (i + 1 < std::tuple_size_v<std::decay_t<T>>)
-        set_tuple<i + 1>(std::forward<T>(tuple), value);
-}
 
-void PickPhysicalDevice(VkInstance instance)
+VkPhysicalDevice PickPhysicalDevice(VkInstance instance)
 {
     std::uint32_t devicesCount = 0;
     
@@ -176,6 +170,37 @@ void PickPhysicalDevice(VkInstance instance)
 
         return rhs_properties.apiVersion < lhs_properties.apiVersion;
     });
+
+    it_end = std::remove_if(devices.begin(), devices.end(), [] (auto &&device)
+    {
+        std::uint32_t queueFamilyPropertyCount = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, nullptr);
+
+        std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyPropertyCount);
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, std::data(queueFamilies));
+
+        if (queueFamilies.empty())
+            return true;
+
+        auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [] (auto &&queueFamily)
+        {
+            return queueFamily.queueCount > 0 && (queueFamily.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT));
+        });
+
+        return it_family == queueFamilies.cend();
+    });
+
+    devices.erase(it_end, devices.end());
+
+    if (devices.empty())
+        throw std::runtime_error("failed to pick physical device"s);
+
+    return devices.front();
+}
+
+VkDevice CreateDevice(VkInstance instance)
+{
+    return;
 }
 
 void InitVulkan()
@@ -229,6 +254,8 @@ void InitVulkan()
         throw std::runtime_error("failed to create instance"s);
 
     CreateDebugReportCallback(vkInstance, vkDebugReportCallback);
+
+    vkPhysicalDevice = PickPhysicalDevice(vkInstance);
 }
 
 int main()
@@ -240,10 +267,11 @@ int main()
 
     InitVulkan();
 
-    PickPhysicalDevice(vkInstance);
-
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();
+
+    /*if (vkDevice)
+        vkDestroyDevice(vkDevice, nullptr);*/
 
     if (vkDebugReportCallback)
         vkDestroyDebugReportCallbackEXT(vkInstance, vkDebugReportCallback, nullptr);
