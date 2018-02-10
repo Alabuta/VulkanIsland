@@ -1,6 +1,7 @@
 #pragma once
 
 #include <utility>
+#include <numeric>
 
 template<class C, class = void>
 struct is_iterable : std::false_type {};

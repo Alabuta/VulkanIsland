@@ -2,19 +2,22 @@
 #include <memory>
 #include <vector>
 #include <array>
+#include <tuple>
+#include <set>
 #include <string>
 using namespace std::string_literals;
 
 #ifndef GLFW_INCLUDE_VULKAN
 #define GLFW_INCLUDE_VULKAN
 #endif
+#define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
-
-auto constexpr kVULKAN_VERSION = VK_API_VERSION_1_0;
 
 #ifndef VK_USE_PLATFORM_WIN32_KHR
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
+
+auto constexpr kVULKAN_VERSION = VK_API_VERSION_1_0;
 
 #pragma comment(lib, "vulkan-1.lib")
 #pragma comment(lib, "glfw3.lib")
@@ -22,11 +25,17 @@ auto constexpr kVULKAN_VERSION = VK_API_VERSION_1_0;
 #include <helpers.h>
 #include <debug.h>
 
+std::array<VkQueueFamilyProperties, 2> constexpr requiredQueues{{
+    {VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT},
+    {VK_QUEUE_TRANSFER_BIT}
+}};
+
 VkInstance vkInstance;
 VkDebugReportCallbackEXT vkDebugReportCallback;
 VkPhysicalDevice vkPhysicalDevice;
 VkDevice vkDevice;
-VkQueue vkQueue;
+VkQueue vkGraphicsQueue, vkTransferQueue, vkPresentationQueue;
+VkSurfaceKHR vkSurface;
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 auto CheckRequiredExtensions(T &&_requiredExtensions)
@@ -95,8 +104,20 @@ auto CheckRequiredLayers(T &&_requiredLayers)
 }
 
 
+#ifdef USE_WIN32
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
+    VkInstance instance, VkWin32SurfaceCreateInfoKHR const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkSurfaceKHR *pSurface)
+{
+    auto func = reinterpret_cast<PFN_vkCreateWin32SurfaceKHR>(vkGetInstanceProcAddr(instance, "vkCreateWin32SurfaceKHR"));
 
-VkPhysicalDevice PickPhysicalDevice(VkInstance instance)
+    if (func)
+        return func(instance, pCreateInfo, pAllocator, pSurface);
+
+    return VK_ERROR_EXTENSION_NOT_PRESENT;
+}
+#endif
+
+VkPhysicalDevice PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
 {
     std::uint32_t devicesCount = 0;
     
@@ -142,7 +163,7 @@ VkPhysicalDevice PickPhysicalDevice(VkInstance instance)
 
     devices.erase(it_end, devices.end());
 
-    it_end = std::remove_if(devices.begin(), devices.end(), [] (auto &&device)
+    it_end = std::remove_if(devices.begin(), devices.end(), [surface] (auto &&device)
     {
         std::uint32_t queueFamilyPropertyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, nullptr);
@@ -153,12 +174,48 @@ VkPhysicalDevice PickPhysicalDevice(VkInstance instance)
         if (queueFamilies.empty())
             return true;
 
-        auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [] (auto &&queueFamily)
+        std::vector<std::uint32_t> supportedQueuesIndices;
+
+        for (auto &&queueProp : requiredQueues) {
+            auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&queueProp] (auto &&queueFamily)
+            {
+                return queueFamily.queueCount > 0 && queueFamily.queueFlags == queueProp.queueFlags;
+            });
+
+            if (it_family != queueFamilies.cend())
+                supportedQueuesIndices.emplace_back(static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family)));
+
+            else {
+                it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&queueProp] (auto &&queueFamily)
+                {
+                    return queueFamily.queueCount > 0 && (queueFamily.queueFlags & queueProp.queueFlags) != 0;
+                });
+
+                if (it_family != queueFamilies.cend())
+                    supportedQueuesIndices.emplace_back(static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family)));
+            }
+        }
+
+        if (supportedQueuesIndices.empty())
+            return true;
+
+        auto it_presentationQueue = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [device, surface, size = queueFamilies.size()] (auto queueFamily)
         {
-            return queueFamily.queueCount > 0 && (queueFamily.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT));
+            std::vector<std::uint32_t> queueFamiliesIndices(size);
+            std::iota(queueFamiliesIndices.begin(), queueFamiliesIndices.end(), 0);
+
+            return std::find_if(queueFamiliesIndices.crbegin(), queueFamiliesIndices.crend(), [device, surface] (auto queueIndex)
+            {
+                VkBool32 surfaceSupported = 0;
+                if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(device, queueIndex, surface, &surfaceSupported); result != VK_SUCCESS)
+                    throw std::runtime_error("failed to retrieve surface support: "s + std::to_string(result));
+
+                return surfaceSupported != VK_TRUE;
+
+            }) != queueFamiliesIndices.crend();
         });
 
-        return it_family == queueFamilies.cend();
+        return it_presentationQueue == queueFamilies.cend();
     });
 
     devices.erase(it_end, devices.end());
@@ -169,7 +226,7 @@ VkPhysicalDevice PickPhysicalDevice(VkInstance instance)
     return devices.front();
 }
 
-VkDevice CreateDevice(VkInstance instance, VkPhysicalDevice physicalDevice)
+VkDevice CreateDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
 {
     std::uint32_t queueFamilyPropertyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
@@ -180,31 +237,63 @@ VkDevice CreateDevice(VkInstance instance, VkPhysicalDevice physicalDevice)
     if (queueFamilies.empty())
         throw std::runtime_error("there's no queue families on device"s);
 
-    auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [] (auto &&queueFamily)
-    {
-        return queueFamily.queueCount > 0 && (queueFamily.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT));
-    });
+    std::vector<std::uint32_t> supportedQueuesIndices;
 
-    if (it_family == queueFamilies.cend())
-        throw std::runtime_error("there's no queue familiy with required properties"s);
+    for (auto &&queueProp : requiredQueues) {
+        auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&queueProp] (auto &&queueFamily)
+        {
+            return queueFamily.queueCount > 0 && queueFamily.queueFlags == queueProp.queueFlags;
+        });
 
-    auto const familyIndex = static_cast<decltype(VkDeviceQueueCreateInfo::queueFamilyIndex)>(std::distance(queueFamilies.cbegin(), it_family));
+        if (it_family != queueFamilies.cend())
+            supportedQueuesIndices.emplace_back(static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family)));
+
+        else {
+            it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&queueProp] (auto &&queueFamily)
+            {
+                return queueFamily.queueCount > 0 && (queueFamily.queueFlags & queueProp.queueFlags) != 0;
+            });
+
+            if (it_family != queueFamilies.cend())
+                supportedQueuesIndices.emplace_back(static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family)));
+        }
+    }
+
+    if (supportedQueuesIndices.empty())
+        throw std::runtime_error("device does not support required queues"s);
+
+    auto const vkGraphicsQueueIndex = supportedQueuesIndices.front();
+
+    VkBool32 surfaceSupported = 0;
+    if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, vkGraphicsQueueIndex, surface, &surfaceSupported); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve surface support: "s + std::to_string(result));
+
+    if (surfaceSupported != VK_TRUE)
+        throw std::runtime_error("picked queue does not support presentation surface"s);
+
+    std::set<std::uint32_t> uniqueFamilyQueueIndices{supportedQueuesIndices.cbegin(), supportedQueuesIndices.cend()};
+
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 
     auto constexpr queuePriority = 1.f;
 
-    VkDeviceQueueCreateInfo const queueCreateInfo = {
-        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-        nullptr, 0,
-        familyIndex, 1,
-        &queuePriority
-    };
+    for (auto &&queueFamilyIndex : uniqueFamilyQueueIndices) {
+        VkDeviceQueueCreateInfo queueCreateInfo = {
+            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            nullptr, 0,
+            queueFamilyIndex, 1,
+            &queuePriority
+        };
+
+        queueCreateInfos.push_back(std::move(queueCreateInfo));
+    }
 
     VkPhysicalDeviceFeatures deviceFeatures{};
 
     VkDeviceCreateInfo const createInfo = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         nullptr, 0,
-        1, &queueCreateInfo,
+        static_cast<std::uint32_t>(std::size(queueCreateInfos)), std::data(queueCreateInfos),
         0, nullptr,
         0, nullptr,
         &deviceFeatures
@@ -214,12 +303,12 @@ VkDevice CreateDevice(VkInstance instance, VkPhysicalDevice physicalDevice)
     if (auto result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &device); result != VK_SUCCESS)
         throw std::runtime_error("failed to create logical device: "s + std::to_string(result));
 
-    vkGetDeviceQueue(device, familyIndex, 0, &vkQueue);
+    vkGetDeviceQueue(device, supportedQueuesIndices.front(), 0, &vkGraphicsQueue);
 
     return device;
 }
 
-void InitVulkan()
+void InitVulkan(GLFWwindow *window)
 {
     VkApplicationInfo constexpr appInfo = {
         VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -231,7 +320,11 @@ void InitVulkan()
 
     std::array<const char *const, 3> constexpr extensions = {
         VK_KHR_SURFACE_EXTENSION_NAME,
+#if USE_WIN32
+        VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#else
         "VK_KHR_win32_surface",
+#endif
         VK_EXT_DEBUG_REPORT_EXTENSION_NAME
     };
 
@@ -271,8 +364,21 @@ void InitVulkan()
 
     CreateDebugReportCallback(vkInstance, vkDebugReportCallback);
 
-    vkPhysicalDevice = PickPhysicalDevice(vkInstance);
-    vkDevice = CreateDevice(vkInstance, vkPhysicalDevice);
+#if USE_WIN32
+    VkWin32SurfaceCreateInfoKHR const win32CreateInfo = {
+        VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+        nullptr, 0,
+        GetModuleHandle(nullptr),
+        glfwGetWin32Window(window)
+    };
+
+    vkCreateWin32SurfaceKHR(vkInstance, &win32CreateInfo, nullptr, &vkSurface);
+#else
+    glfwCreateWindowSurface(vkInstance, window, nullptr, &vkSurface);
+#endif
+
+    vkPhysicalDevice = PickPhysicalDevice(vkInstance, vkSurface);
+    vkDevice = CreateDevice(vkInstance, vkPhysicalDevice, vkSurface);
 }
 
 int main()
@@ -282,15 +388,18 @@ int main()
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     auto window = glfwCreateWindow(800, 600, "VulkanIsland", nullptr, nullptr);
 
-    InitVulkan();
+    InitVulkan(window);
 
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();
 
-    vkDeviceWaitIdle(vkDevice);
-
-    if (vkDevice)
+    if (vkSurface)
+        vkDestroySurfaceKHR(vkInstance, vkSurface, nullptr);
+    
+    if (vkDevice) {
+        vkDeviceWaitIdle(vkDevice);
         vkDestroyDevice(vkDevice, nullptr);
+    }
 
     if (vkDebugReportCallback)
         vkDestroyDebugReportCallbackEXT(vkInstance, vkDebugReportCallback, nullptr);
