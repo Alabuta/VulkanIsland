@@ -10,6 +10,8 @@ using namespace std::string_literals;
 #endif
 #include <GLFW/glfw3.h>
 
+auto constexpr kVULKAN_VERSION = VK_API_VERSION_1_0;
+
 #ifndef VK_USE_PLATFORM_WIN32_KHR
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
@@ -22,8 +24,9 @@ using namespace std::string_literals;
 
 VkInstance vkInstance;
 VkDebugReportCallbackEXT vkDebugReportCallback;
-VkPhysicalDevice vkPhysicalDevice = VK_NULL_HANDLE;
-VkDevice vkDevice = VK_NULL_HANDLE;
+VkPhysicalDevice vkPhysicalDevice;
+VkDevice vkDevice;
+VkQueue vkQueue;
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 auto CheckRequiredExtensions(T &&_requiredExtensions)
@@ -104,49 +107,26 @@ VkPhysicalDevice PickPhysicalDevice(VkInstance instance)
     if (auto result = vkEnumeratePhysicalDevices(instance, &devicesCount, std::data(devices)); result != VK_SUCCESS)
         throw std::runtime_error("failed to retrieve physical devices: "s + std::to_string(result));
 
-    VkPhysicalDeviceLimits _requiredLimits{};
-    _requiredLimits.maxImageDimension1D = 16384;
-    _requiredLimits.maxImageDimension2D = 16384;
-    _requiredLimits.maxImageDimension3D = 2048;
-    _requiredLimits.maxImageDimensionCube = 16384;
-    _requiredLimits.maxColorAttachments = 8;
-
-    auto requiredLimits = std::tie(
-        _requiredLimits.maxImageDimension1D,
-        _requiredLimits.maxImageDimension2D,
-        _requiredLimits.maxImageDimension3D,
-        _requiredLimits.maxImageDimensionCube,
-        _requiredLimits.maxColorAttachments
-    );
-
-    VkPhysicalDeviceFeatures _requiredFeatures{};
+    VkPhysicalDeviceFeatures features{};
 
     auto requiredFeatures = std::tie(
-        _requiredFeatures.geometryShader,
-        _requiredFeatures.tessellationShader,
-        _requiredFeatures.shaderUniformBufferArrayDynamicIndexing,
-        _requiredFeatures.shaderSampledImageArrayDynamicIndexing,
-        _requiredFeatures.shaderStorageBufferArrayDynamicIndexing,
-        _requiredFeatures.shaderStorageImageArrayDynamicIndexing
+        features.geometryShader,
+        features.tessellationShader,
+        features.shaderUniformBufferArrayDynamicIndexing,
+        features.shaderSampledImageArrayDynamicIndexing,
+        features.shaderStorageBufferArrayDynamicIndexing,
+        features.shaderStorageImageArrayDynamicIndexing
     );
 
     set_tuple(requiredFeatures, static_cast<VkBool32>(1));
 
-    auto it_end = std::remove_if(devices.begin(), devices.end(), [&requiredLimits, &requiredFeatures] (auto &&device)
+    auto it_end = std::remove_if(devices.begin(), devices.end(), [&requiredFeatures] (auto &&device)
     {
         VkPhysicalDeviceProperties properties;
         VkPhysicalDeviceFeatures features;
 
         vkGetPhysicalDeviceProperties(device, &properties);
         vkGetPhysicalDeviceFeatures(device, &features);
-
-        auto const deviceLimits = std::tie(
-            properties.limits.maxImageDimension1D,
-            properties.limits.maxImageDimension2D,
-            properties.limits.maxImageDimension3D,
-            properties.limits.maxImageDimensionCube,
-            properties.limits.maxColorAttachments
-        );
 
         auto const deviceFeatures = std::tie(
             features.geometryShader,
@@ -157,19 +137,10 @@ VkPhysicalDevice PickPhysicalDevice(VkInstance instance)
             features.shaderStorageImageArrayDynamicIndexing
         );
 
-        return deviceFeatures != requiredFeatures || deviceLimits < requiredLimits || properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU;
+        return deviceFeatures != requiredFeatures || properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU || properties.apiVersion < kVULKAN_VERSION;
     });
 
     devices.erase(it_end, devices.end());
-
-    std::sort(devices.begin(), devices.end(), [] (auto &&lhs_device, auto &&rhs_device)
-    {
-        VkPhysicalDeviceProperties rhs_properties, lhs_properties;
-        vkGetPhysicalDeviceProperties(rhs_device, &rhs_properties);
-        vkGetPhysicalDeviceProperties(lhs_device, &lhs_properties);
-
-        return rhs_properties.apiVersion < lhs_properties.apiVersion;
-    });
 
     it_end = std::remove_if(devices.begin(), devices.end(), [] (auto &&device)
     {
@@ -198,9 +169,54 @@ VkPhysicalDevice PickPhysicalDevice(VkInstance instance)
     return devices.front();
 }
 
-VkDevice CreateDevice(VkInstance instance)
+VkDevice CreateDevice(VkInstance instance, VkPhysicalDevice physicalDevice)
 {
-    return;
+    std::uint32_t queueFamilyPropertyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyPropertyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, std::data(queueFamilies));
+
+    if (queueFamilies.empty())
+        throw std::runtime_error("there's no queue families on device"s);
+
+    auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [] (auto &&queueFamily)
+    {
+        return queueFamily.queueCount > 0 && (queueFamily.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT));
+    });
+
+    if (it_family == queueFamilies.cend())
+        throw std::runtime_error("there's no queue familiy with required properties"s);
+
+    auto const familyIndex = static_cast<decltype(VkDeviceQueueCreateInfo::queueFamilyIndex)>(std::distance(queueFamilies.cbegin(), it_family));
+
+    auto constexpr queuePriority = 1.f;
+
+    VkDeviceQueueCreateInfo const queueCreateInfo = {
+        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+        nullptr, 0,
+        familyIndex, 1,
+        &queuePriority
+    };
+
+    VkPhysicalDeviceFeatures deviceFeatures{};
+
+    VkDeviceCreateInfo const createInfo = {
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        nullptr, 0,
+        1, &queueCreateInfo,
+        0, nullptr,
+        0, nullptr,
+        &deviceFeatures
+    };
+
+    VkDevice device;
+    if (auto result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &device); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create logical device: "s + std::to_string(result));
+
+    vkGetDeviceQueue(device, familyIndex, 0, &vkQueue);
+
+    return device;
 }
 
 void InitVulkan()
@@ -210,7 +226,7 @@ void InitVulkan()
         nullptr,
         "VulkanIsland", VK_MAKE_VERSION(1, 0, 0),
         "VulkanIsland", VK_MAKE_VERSION(1, 0, 0),
-        VK_API_VERSION_1_0
+        kVULKAN_VERSION
     };
 
     std::array<const char *const, 3> constexpr extensions = {
@@ -256,6 +272,7 @@ void InitVulkan()
     CreateDebugReportCallback(vkInstance, vkDebugReportCallback);
 
     vkPhysicalDevice = PickPhysicalDevice(vkInstance);
+    vkDevice = CreateDevice(vkInstance, vkPhysicalDevice);
 }
 
 int main()
@@ -270,8 +287,10 @@ int main()
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();
 
-    /*if (vkDevice)
-        vkDestroyDevice(vkDevice, nullptr);*/
+    vkDeviceWaitIdle(vkDevice);
+
+    if (vkDevice)
+        vkDestroyDevice(vkDevice, nullptr);
 
     if (vkDebugReportCallback)
         vkDestroyDebugReportCallbackEXT(vkInstance, vkDebugReportCallback, nullptr);
