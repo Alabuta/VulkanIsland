@@ -34,6 +34,10 @@ std::array<VkQueueFamilyProperties, 2> constexpr requiredQueues{{
     {VK_QUEUE_TRANSFER_BIT}
 }};
 
+std::array<const char *const, 1> constexpr deviceExtensions = {
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME
+};
+
 VkInstance vkInstance;
 VkDebugReportCallbackEXT vkDebugReportCallback;
 VkPhysicalDevice vkPhysicalDevice;
@@ -41,9 +45,25 @@ VkDevice vkDevice;
 VkQueue vkGraphicsQueue, vkTransferQueue, vkPresentationQueue;
 VkSurfaceKHR vkSurface;
 
+
+#ifdef USE_WIN32
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
+    VkInstance instance, VkWin32SurfaceCreateInfoKHR const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkSurfaceKHR *pSurface)
+{
+    auto func = reinterpret_cast<PFN_vkCreateWin32SurfaceKHR>(vkGetInstanceProcAddr(instance, "vkCreateWin32SurfaceKHR"));
+
+    if (func)
+        return func(instance, pCreateInfo, pAllocator, pSurface);
+
+    return VK_ERROR_EXTENSION_NOT_PRESENT;
+}
+#endif
+
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 [[nodiscard]] auto CheckRequiredExtensions(T &&_requiredExtensions)
 {
+    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *const>, "iterable object does not contain null-terminated strings");
+
     std::vector<VkExtensionProperties> requiredExtensions;
 
     std::transform(_requiredExtensions.begin(), _requiredExtensions.end(), std::back_inserter(requiredExtensions), [] (auto &&name)
@@ -107,19 +127,50 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     return std::includes(supportedLayers.begin(), supportedLayers.end(), requiredLayers.begin(), requiredLayers.end(), layersComp);
 }
 
-
-#ifdef USE_WIN32
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
-    VkInstance instance, VkWin32SurfaceCreateInfoKHR const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkSurfaceKHR *pSurface)
+template<bool check_on_duplicates = false, class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
+[[nodiscard]] auto CheckRequiredDeviceExtensions(VkPhysicalDevice physicalDevice, T &&_requiredExtensions)
 {
-    auto func = reinterpret_cast<PFN_vkCreateWin32SurfaceKHR>(vkGetInstanceProcAddr(instance, "vkCreateWin32SurfaceKHR"));
+    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *const>, "iterable object does not contain null-terminated strings");
 
-    if (func)
-        return func(instance, pCreateInfo, pAllocator, pSurface);
+    std::vector<VkExtensionProperties> requiredExtensions;
 
-    return VK_ERROR_EXTENSION_NOT_PRESENT;
+    auto constexpr extensionsComp = [] (auto &&lhs, auto &&rhs)
+    {
+        return std::lexicographical_compare(std::cbegin(lhs.extensionName), std::cend(lhs.extensionName), std::cbegin(rhs.extensionName), std::cend(rhs.extensionName));
+    };
+
+    std::transform(_requiredExtensions.begin(), _requiredExtensions.end(), std::back_inserter(requiredExtensions), [] (auto &&name)
+    {
+        VkExtensionProperties prop{};
+        std::uninitialized_copy_n(name, std::strlen(name), prop.extensionName);
+
+        return prop;
+    });
+
+    std::sort(requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
+
+    if constexpr (check_on_duplicates)
+    {
+        auto it = std::unique(requiredExtensions.begin(), requiredExtensions.end(), [] (auto &&lhs, auto &&rhs)
+        {
+            return std::equal(std::cbegin(lhs.extensionName), std::cend(lhs.extensionName), std::cbegin(rhs.extensionName), std::cend(rhs.extensionName));
+        });
+
+        requiredExtensions.erase(it, requiredExtensions.end());
+    }
+
+    std::uint32_t extensionsCount = 0;
+    if (auto result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionsCount, nullptr); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device extensions count: "s + std::to_string(result));
+
+    std::vector<VkExtensionProperties> supportedExtensions(extensionsCount);
+    if (auto result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionsCount, std::data(supportedExtensions)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device extensions: "s + std::to_string(result));
+
+    std::sort(supportedExtensions.begin(), supportedExtensions.end(), extensionsComp);
+
+    return std::includes(supportedExtensions.begin(), supportedExtensions.end(), requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
 }
-#endif
 
 
 struct SwapChainSupportDetails {
@@ -184,13 +235,16 @@ struct SwapChainSupportDetails {
 
     set_tuple(requiredFeatures, static_cast<VkBool32>(1));
 
-    // Matching by supported features, device type and supported Vulkan API version.
+    // Matching by supported features, extensions, device type and supported Vulkan API version.
     auto it_end = std::remove_if(devices.begin(), devices.end(), [&requiredFeatures] (auto &&device)
     {
         VkPhysicalDeviceProperties properties;
-        VkPhysicalDeviceFeatures features;
-
         vkGetPhysicalDeviceProperties(device, &properties);
+
+        if (properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU || properties.apiVersion < kVULKAN_VERSION)
+            return true;
+
+        VkPhysicalDeviceFeatures features;
         vkGetPhysicalDeviceFeatures(device, &features);
 
         auto const deviceFeatures = std::tie(
@@ -202,11 +256,15 @@ struct SwapChainSupportDetails {
             features.shaderStorageImageArrayDynamicIndexing
         );
 
-        return deviceFeatures != requiredFeatures || properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU || properties.apiVersion < kVULKAN_VERSION;
+        if (deviceFeatures != requiredFeatures)
+            return true;
+
+        return !CheckRequiredDeviceExtensions(device, deviceExtensions);
     });
 
     devices.erase(it_end, devices.end());
 
+    // Matching by required graphics, transfer and presentation queues. Also by presentation capabilities.
     it_end = std::remove_if(devices.begin(), devices.end(), [surface] (auto &&device)
     {
         std::uint32_t queueFamilyPropertyCount = 0;
@@ -294,7 +352,7 @@ struct SwapChainSupportDetails {
         nullptr, 0,
         static_cast<std::uint32_t>(std::size(queueCreateInfos)), std::data(queueCreateInfos),
         0, nullptr,
-        0, nullptr,
+        static_cast<std::uint32_t>(std::size(deviceExtensions)), std::data(deviceExtensions),
         &deviceFeatures
     };
 
