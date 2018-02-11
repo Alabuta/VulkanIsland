@@ -1,5 +1,7 @@
 #define USE_LAYERS 1
 
+auto constexpr kWIDTH = 800u;
+auto constexpr kHEIGHT = 600u;
 
 #include <iostream>
 #include <memory>
@@ -97,6 +99,8 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 [[nodiscard]] auto CheckRequiredLayers(T &&_requiredLayers)
 {
+    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *const>, "iterable object does not contain null-terminated strings");
+
     std::vector<VkLayerProperties> requiredLayers;
 
     std::transform(_requiredLayers.begin(), _requiredLayers.end(), std::back_inserter(requiredLayers), [] (auto &&name)
@@ -442,14 +446,88 @@ void InitVulkan(GLFWwindow *window)
     vkDevice = CreateDevice(vkInstance, vkPhysicalDevice, vkSurface);
 }
 
+
+template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
+[[nodiscard]] VkSurfaceFormatKHR ChooseSwapSurfaceFormat(T &&surfaceFormats)
+{
+    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkSurfaceFormatKHR>, "iterable object does not contain VkSurfaceFormatKHR elements");
+
+    if (surfaceFormats.size() == 1 && surfaceFormats.at(0).format == VK_FORMAT_UNDEFINED)
+        return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+
+    auto supported = std::any_of(surfaceFormats.cbegin(), surfaceFormats.cend(), [] (auto &&surfaceFormat)
+    {
+        return surfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM && surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+    });
+
+    if (supported)
+        return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+
+    return surfaceFormats.at(0);
+}
+
+template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
+[[nodiscard]] VkPresentModeKHR ChooseSwapPresentMode(T &&presentModes)
+{
+    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkPresentModeKHR>, "iterable object does not contain VkPresentModeKHR elements");
+
+    auto mailbox = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
+    {
+        return mode == VK_PRESENT_MODE_MAILBOX_KHR;
+    });
+
+    if (mailbox)
+        return VK_PRESENT_MODE_MAILBOX_KHR;
+
+    auto relaxed = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
+    {
+        return mode == VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+    });
+
+    if (relaxed)
+        return VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+
+    auto fifo = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
+    {
+        return mode == VK_PRESENT_MODE_FIFO_KHR;
+    });
+
+    if (fifo)
+        return VK_PRESENT_MODE_FIFO_KHR;
+
+    return VK_PRESENT_MODE_IMMEDIATE_KHR;
+}
+
+[[nodiscard]] VkExtent2D ChooseSwapExtent(VkSurfaceCapabilitiesKHR &surfaceCapabilities)
+{
+    if (surfaceCapabilities.currentExtent.width != std::numeric_limits<std::uint32_t>::max())
+        return surfaceCapabilities.currentExtent;
+
+    return {
+        std::clamp(kWIDTH, surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width),
+        std::clamp(kHEIGHT, surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height)
+    };
+}
+
+void CreateSwapChain(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+{
+    auto swapChainSupportDetails = QuerySwapChainSupportDetails(physicalDevice, surface);
+
+    auto surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupportDetails.formats);
+    auto presentMode = ChooseSwapPresentMode(swapChainSupportDetails.presentModes);
+    auto extent = ChooseSwapExtent(swapChainSupportDetails.capabilities);
+}
+
 int main()
 {
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    auto window = glfwCreateWindow(800, 600, "VulkanIsland", nullptr, nullptr);
+    auto window = glfwCreateWindow(kWIDTH, kHEIGHT, "VulkanIsland", nullptr, nullptr);
 
     InitVulkan(window);
+
+    CreateSwapChain(vkPhysicalDevice, vkSurface);
 
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();
