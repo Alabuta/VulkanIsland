@@ -181,32 +181,16 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
         if (queueFamilies.empty())
             return true;
 
-        std::vector<std::uint32_t> supportedQueuesIndices;
+        std::vector<std::uint32_t> supportedQueuesFamilyIndices;
 
         for (auto &&queueProp : requiredQueues)
-            if (auto const queueIndex = GetRequiredQueue(queueFamilies, queueProp); queueIndex)
-                supportedQueuesIndices.emplace_back(queueIndex.value());
+            if (auto const queueIndex = GetRequiredQueueFamilyIndex(queueFamilies, queueProp); queueIndex)
+                supportedQueuesFamilyIndices.emplace_back(queueIndex.value());
 
-        if (supportedQueuesIndices.empty())
+        if (supportedQueuesFamilyIndices.empty())
             return true;
 
-        auto it_presentationQueue = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [device, surface, size = queueFamilies.size()] (auto queueFamily)
-        {
-            std::vector<std::uint32_t> queueFamiliesIndices(size);
-            std::iota(queueFamiliesIndices.begin(), queueFamiliesIndices.end(), 0);
-
-            return std::find_if(queueFamiliesIndices.crbegin(), queueFamiliesIndices.crend(), [device, surface] (auto queueIndex)
-            {
-                VkBool32 surfaceSupported = 0;
-                if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(device, queueIndex, surface, &surfaceSupported); result != VK_SUCCESS)
-                    throw std::runtime_error("failed to retrieve surface support: "s + std::to_string(result));
-
-                return surfaceSupported != VK_TRUE;
-
-            }) != queueFamiliesIndices.crend();
-        });
-
-        return it_presentationQueue == queueFamilies.cend();
+        return !GetPresentationQueueFamilyIndex(queueFamilies, device, surface).has_value();
     });
 
     devices.erase(it_end, devices.end());
@@ -231,23 +215,18 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
     std::vector<std::uint32_t> supportedQueuesIndices;
 
     for (auto &&queueProp : requiredQueues)
-        if (auto const queueIndex = GetRequiredQueue(queueFamilies, queueProp); queueIndex)
+        if (auto const queueIndex = GetRequiredQueueFamilyIndex(queueFamilies, queueProp); queueIndex)
             supportedQueuesIndices.emplace_back(queueIndex.value());
 
     if (supportedQueuesIndices.empty())
         throw std::runtime_error("device does not support required queues"s);
 
-    auto const vkGraphicsQueueIndex = supportedQueuesIndices.front();
+    if (auto const presentationFamilyQueueIndex = GetPresentationQueueFamilyIndex(queueFamilies, physicalDevice, surface); presentationFamilyQueueIndex)
+        supportedQueuesIndices.emplace_back(presentationFamilyQueueIndex.value());
 
-    VkBool32 surfaceSupported = 0;
-    if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, vkGraphicsQueueIndex, surface, &surfaceSupported); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve surface support: "s + std::to_string(result));
-
-    if (surfaceSupported != VK_TRUE)
-        throw std::runtime_error("picked queue does not support presentation surface"s);
+    else throw std::runtime_error("picked queue does not support presentation surface"s);
 
     std::set<std::uint32_t> uniqueFamilyQueueIndices{supportedQueuesIndices.cbegin(), supportedQueuesIndices.cend()};
-
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 
     auto constexpr queuePriority = 1.f;
@@ -278,7 +257,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
     if (auto result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &device); result != VK_SUCCESS)
         throw std::runtime_error("failed to create logical device: "s + std::to_string(result));
 
-    vkGetDeviceQueue(device, supportedQueuesIndices.front(), 0, &vkGraphicsQueue);
+    vkGetDeviceQueue(device, supportedQueuesIndices.at(0), 0, &vkGraphicsQueue);
+    vkGetDeviceQueue(device, supportedQueuesIndices.at(1), 0, &vkTransferQueue);
+    vkGetDeviceQueue(device, supportedQueuesIndices.at(2), 0, &vkPresentationQueue);
 
     return device;
 }
