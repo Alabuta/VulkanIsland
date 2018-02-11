@@ -4,6 +4,7 @@
 #include <array>
 #include <tuple>
 #include <set>
+#include <optional>
 #include <string>
 using namespace std::string_literals;
 
@@ -143,6 +144,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
 
     set_tuple(requiredFeatures, static_cast<VkBool32>(1));
 
+    // Matching by supported features, device type and supported Vulkan API version.
     auto it_end = std::remove_if(devices.begin(), devices.end(), [&requiredFeatures] (auto &&device)
     {
         VkPhysicalDeviceProperties properties;
@@ -178,25 +180,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
 
         std::vector<std::uint32_t> supportedQueuesIndices;
 
-        for (auto &&queueProp : requiredQueues) {
-            auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&queueProp] (auto &&queueFamily)
-            {
-                return queueFamily.queueCount > 0 && queueFamily.queueFlags == queueProp.queueFlags;
-            });
-
-            if (it_family != queueFamilies.cend())
-                supportedQueuesIndices.emplace_back(static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family)));
-
-            else {
-                it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&queueProp] (auto &&queueFamily)
-                {
-                    return queueFamily.queueCount > 0 && (queueFamily.queueFlags & queueProp.queueFlags) != 0;
-                });
-
-                if (it_family != queueFamilies.cend())
-                    supportedQueuesIndices.emplace_back(static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family)));
-            }
-        }
+        for (auto &&queueProp : requiredQueues)
+            if (auto const queueIndex = GetRequiredQueue(queueFamilies, queueProp); queueIndex)
+                supportedQueuesIndices.emplace_back(queueIndex.value());
 
         if (supportedQueuesIndices.empty())
             return true;
@@ -241,25 +227,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
 
     std::vector<std::uint32_t> supportedQueuesIndices;
 
-    for (auto &&queueProp : requiredQueues) {
-        auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&queueProp] (auto &&queueFamily)
-        {
-            return queueFamily.queueCount > 0 && queueFamily.queueFlags == queueProp.queueFlags;
-        });
-
-        if (it_family != queueFamilies.cend())
-            supportedQueuesIndices.emplace_back(static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family)));
-
-        else {
-            it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&queueProp] (auto &&queueFamily)
-            {
-                return queueFamily.queueCount > 0 && (queueFamily.queueFlags & queueProp.queueFlags) != 0;
-            });
-
-            if (it_family != queueFamilies.cend())
-                supportedQueuesIndices.emplace_back(static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family)));
-        }
-    }
+    for (auto &&queueProp : requiredQueues)
+        if (auto const queueIndex = GetRequiredQueue(queueFamilies, queueProp); queueIndex)
+            supportedQueuesIndices.emplace_back(queueIndex.value());
 
     if (supportedQueuesIndices.empty())
         throw std::runtime_error("device does not support required queues"s);
