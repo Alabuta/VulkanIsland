@@ -38,7 +38,7 @@ VkQueue vkGraphicsQueue, vkTransferQueue, vkPresentationQueue;
 VkSurfaceKHR vkSurface;
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
-auto CheckRequiredExtensions(T &&_requiredExtensions)
+[[nodiscard]] auto CheckRequiredExtensions(T &&_requiredExtensions)
 {
     std::vector<VkExtensionProperties> requiredExtensions;
 
@@ -71,7 +71,7 @@ auto CheckRequiredExtensions(T &&_requiredExtensions)
 }
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
-auto CheckRequiredLayers(T &&_requiredLayers)
+[[nodiscard]] auto CheckRequiredLayers(T &&_requiredLayers)
 {
     std::vector<VkLayerProperties> requiredLayers;
 
@@ -117,7 +117,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
 }
 #endif
 
-VkPhysicalDevice PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
+
+
+[[nodiscard]] VkPhysicalDevice PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
 {
     std::uint32_t devicesCount = 0;
     
@@ -226,7 +228,7 @@ VkPhysicalDevice PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
     return devices.front();
 }
 
-VkDevice CreateDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+[[nodiscard]] VkDevice CreateDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
 {
     std::uint32_t queueFamilyPropertyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
@@ -308,7 +310,7 @@ VkDevice CreateDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkSu
     return device;
 }
 
-void InitVulkan(GLFWwindow *window)
+[[noreturn]] void InitVulkan(GLFWwindow *window)
 {
     VkApplicationInfo constexpr appInfo = {
         VK_STRUCTURE_TYPE_APPLICATION_INFO,

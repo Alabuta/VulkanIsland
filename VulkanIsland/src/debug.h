@@ -5,7 +5,7 @@
 #endif
 #include <GLFW/glfw3.h>
 
-VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
+[[nodiscard]] VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType,
     std::uint64_t object, std::size_t location, std::int32_t messageCode,
     const char *pLayerPrefix, const char *pMessage, void *pUserData)
@@ -15,7 +15,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL DebugCallback(
     return VK_FALSE;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugReportCallbackEXT(
+[[nodiscard]] VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugReportCallbackEXT(
     VkInstance instance, VkDebugReportCallbackCreateInfoEXT const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkDebugReportCallbackEXT *pCallback)
 {
     auto func = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT"));
@@ -26,7 +26,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugReportCallbackEXT(
     return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroyDebugReportCallbackEXT(
+[[noreturn]] VKAPI_ATTR void VKAPI_CALL vkDestroyDebugReportCallbackEXT(
     VkInstance instance, VkDebugReportCallbackEXT callback, VkAllocationCallbacks const *pAllocator)
 {
     auto func = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT"));
@@ -35,7 +35,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugReportCallbackEXT(
         func(instance, callback, pAllocator);
 }
 
-bool CreateDebugReportCallback(VkInstance instance, VkDebugReportCallbackEXT &callback)
+[[noreturn]] void CreateDebugReportCallback(VkInstance instance, VkDebugReportCallbackEXT &callback)
 {
     VkDebugReportCallbackCreateInfoEXT constexpr createInfo = {
         VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
@@ -47,6 +47,4 @@ bool CreateDebugReportCallback(VkInstance instance, VkDebugReportCallbackEXT &ca
 
     if (auto result = vkCreateDebugReportCallbackEXT(instance, &createInfo, nullptr, &callback); result != VK_SUCCESS)
         throw std::runtime_error("failed to set up debug callback: "s + std::to_string(result));
-
-    return true;
 }
