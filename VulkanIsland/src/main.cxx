@@ -122,6 +122,43 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
 #endif
 
 
+struct SwapChainSupportDetails {
+    VkSurfaceCapabilitiesKHR capabilities;
+    std::vector<VkSurfaceFormatKHR> formats;
+    std::vector<VkPresentModeKHR> presentModes;
+};
+
+[[nodiscard]] SwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+{
+    SwapChainSupportDetails details;
+
+    if (auto result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface capabilities: "s + std::to_string(result));
+
+    std::uint32_t formatsCount = 0;
+    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, nullptr); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface formats count: "s + std::to_string(result));
+
+    details.formats.resize(formatsCount);
+    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, std::data(details.formats)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface formats: "s + std::to_string(result));
+
+    if (details.formats.empty())
+        return {};
+
+    std::uint32_t presentModeCount = 0;
+    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface presentation modes count: "s + std::to_string(result));
+
+    details.presentModes.resize(presentModeCount);
+    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, std::data(details.presentModes)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface presentation modes: "s + std::to_string(result));
+
+    if (details.presentModes.empty())
+        return {};
+
+    return details;
+}
 
 [[nodiscard]] VkPhysicalDevice PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
 {
@@ -191,6 +228,14 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
             return true;
 
         return !GetPresentationQueueFamilyIndex(queueFamilies, device, surface).has_value();
+    });
+
+    devices.erase(it_end, devices.end());
+
+    it_end = std::remove_if(devices.begin(), devices.end(), [surface] (auto &&device)
+    {
+        auto const details = QuerySwapChainSupportDetails(device, surface);
+        return details.formats.empty() || details.presentModes.empty();
     });
 
     devices.erase(it_end, devices.end());
