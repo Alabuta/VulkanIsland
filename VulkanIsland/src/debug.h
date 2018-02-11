@@ -26,7 +26,7 @@
     return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 
-[[noreturn]] VKAPI_ATTR void VKAPI_CALL vkDestroyDebugReportCallbackEXT(
+VKAPI_ATTR void VKAPI_CALL vkDestroyDebugReportCallbackEXT(
     VkInstance instance, VkDebugReportCallbackEXT callback, VkAllocationCallbacks const *pAllocator)
 {
     auto func = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT"));
@@ -35,7 +35,7 @@
         func(instance, callback, pAllocator);
 }
 
-[[noreturn]] void CreateDebugReportCallback(VkInstance instance, VkDebugReportCallbackEXT &callback)
+void CreateDebugReportCallback(VkInstance instance, VkDebugReportCallbackEXT &callback)
 {
     VkDebugReportCallbackCreateInfoEXT constexpr createInfo = {
         VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,

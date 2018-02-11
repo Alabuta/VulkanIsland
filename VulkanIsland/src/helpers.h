@@ -13,7 +13,7 @@ template<class T>
 constexpr bool is_iterable_v = is_iterable<T>::value;
 
 template<std::size_t i = 0, typename T, typename V>
-[[noreturn]] void set_tuple(T &&tuple, V value)
+constexpr void set_tuple(T &&tuple, V value)
 {
     std::get<i>(tuple) = value;
 

@@ -1,3 +1,6 @@
+#define USE_LAYERS 1
+
+
 #include <iostream>
 #include <memory>
 #include <vector>
@@ -280,7 +283,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
     return device;
 }
 
-[[noreturn]] void InitVulkan(GLFWwindow *window)
+void InitVulkan(GLFWwindow *window)
 {
     VkApplicationInfo constexpr appInfo = {
         VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -303,7 +306,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
     if (auto supported = CheckRequiredExtensions(extensions); !supported)
         throw std::runtime_error("not all required extensions are supported"s);
 
-#if _DEBUG
+#if USE_LAYERS
     std::array<const char *const, 6> constexpr layers = {
         //"VK_LAYER_LUNARG_api_dump",
         "VK_LAYER_LUNARG_core_validation",
@@ -323,7 +326,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
         VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         nullptr, 0,
         &appInfo,
-#if _DEBUG
+#if USE_LAYERS
         static_cast<std::uint32_t>(std::size(layers)), std::data(layers),
 #else
         0, nullptr,
@@ -334,7 +337,9 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
     if (auto result = vkCreateInstance(&createInfo, nullptr, &vkInstance); result != VK_SUCCESS)
         throw std::runtime_error("failed to create instance"s);
 
+#if USE_LAYERS
     CreateDebugReportCallback(vkInstance, vkDebugReportCallback);
+#endif
 
 #if USE_WIN32
     VkWin32SurfaceCreateInfoKHR const win32CreateInfo = {
