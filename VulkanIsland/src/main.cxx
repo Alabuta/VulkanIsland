@@ -2,6 +2,7 @@
 
 #include "main.h"
 using namespace std::string_literals;
+using namespace std::string_view_literals;
 
 #include <helpers.h>
 #include <debug.h>
@@ -576,6 +577,41 @@ void CreateSwapChainImageViews(VkDevice device, T &&swapChainImages)
     }
 }
 
+[[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view path)
+{
+    std::ifstream file(std::data(path), std::ios::binary);
+
+    if (!file.is_open())
+        return {};
+
+    auto const start_pos = file.tellg();
+    file.ignore(std::numeric_limits<std::streamsize>::max());
+
+    std::vector<std::byte> shaderByteCode(file.gcount());
+
+    file.seekg(start_pos);
+
+    if (!shaderByteCode.empty())
+        file.read(reinterpret_cast<char *>(std::data(shaderByteCode)), shaderByteCode.size());
+
+    std::cout << shaderByteCode.size() << '\n';
+
+    return shaderByteCode;
+}
+
+void CreateGraphicsPipeline()
+{
+    auto const vertShaderByteCode = ReadShaderFile(R"(shaders\vert.spv)"sv);
+
+    if (vertShaderByteCode.empty())
+        throw std::runtime_error("failed to open vertex shader file");
+
+    auto const fragShaderByteCode = ReadShaderFile(R"(shaders\frag.spv)"sv);
+
+    if (fragShaderByteCode.empty())
+        throw std::runtime_error("failed to open fragment shader file");
+}
+
 int main()
 {
     glfwInit();
@@ -587,6 +623,8 @@ int main()
 
     CreateSwapChain(vkPhysicalDevice, vkDevice, vkSurface);
     CreateSwapChainImageViews(vkDevice, vkSwapChainImages);
+
+    CreateGraphicsPipeline();
 
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();

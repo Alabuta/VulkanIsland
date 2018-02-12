@@ -9,6 +9,7 @@
 #include <set>
 #include <optional>
 #include <string>
+#include <string_view>
 #include <fstream>
 
 #ifndef GLFW_INCLUDE_VULKAN
