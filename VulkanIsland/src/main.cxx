@@ -594,22 +594,73 @@ void CreateSwapChainImageViews(VkDevice device, T &&swapChainImages)
     if (!shaderByteCode.empty())
         file.read(reinterpret_cast<char *>(std::data(shaderByteCode)), shaderByteCode.size());
 
-    std::cout << shaderByteCode.size() << '\n';
-
     return shaderByteCode;
 }
 
-void CreateGraphicsPipeline()
+template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
+[[nodiscard]] VkShaderModule CreateShaderModule(VkDevice device, T &&shaderByteCode)
+{
+    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, std::byte>, "iterable object does not contain std::byte elements");
+
+    if (shaderByteCode.size() % sizeof(std::uint32_t) != 0)
+        throw std::runtime_error("invalid byte code buffer size");
+    
+    VkShaderModuleCreateInfo const createInfo{
+        VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        nullptr, 0,
+        shaderByteCode.size(),
+        reinterpret_cast<std::uint32_t const *>(std::data(shaderByteCode))
+    };
+
+    VkShaderModule shaderModule;
+
+    if (auto result = vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create shader module: "s + std::to_string(result));
+
+    return shaderModule;
+
+}
+
+void CreateGraphicsPipeline(VkDevice device)
 {
     auto const vertShaderByteCode = ReadShaderFile(R"(shaders\vert.spv)"sv);
 
     if (vertShaderByteCode.empty())
         throw std::runtime_error("failed to open vertex shader file");
 
+    auto const vertShaderModule = CreateShaderModule(device, vertShaderByteCode);
+
     auto const fragShaderByteCode = ReadShaderFile(R"(shaders\frag.spv)"sv);
 
     if (fragShaderByteCode.empty())
         throw std::runtime_error("failed to open fragment shader file");
+
+    auto const fragShaderModule = CreateShaderModule(device, fragShaderByteCode);
+
+    VkPipelineShaderStageCreateInfo const vertShaderCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        nullptr, 0,
+        VK_SHADER_STAGE_VERTEX_BIT,
+        vertShaderModule,
+        "main",
+        nullptr
+    };
+
+    VkPipelineShaderStageCreateInfo const fragShaderCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        nullptr, 0,
+        VK_SHADER_STAGE_FRAGMENT_BIT,
+        fragShaderModule,
+        "main",
+        nullptr
+    };
+
+    std::array<VkPipelineShaderStageCreateInfo, 2> const shaderStages{
+        vertShaderCreateInfo, fragShaderCreateInfo
+    };
+
+    vkDestroyShaderModule(device, vertShaderModule, nullptr);
+    vkDestroyShaderModule(device, fragShaderModule, nullptr);
 }
 
 int main()
@@ -624,7 +675,7 @@ int main()
     CreateSwapChain(vkPhysicalDevice, vkDevice, vkSurface);
     CreateSwapChainImageViews(vkDevice, vkSwapChainImages);
 
-    CreateGraphicsPipeline();
+    CreateGraphicsPipeline(vkDevice);
 
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();
