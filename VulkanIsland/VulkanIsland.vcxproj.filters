@@ -22,5 +22,8 @@
     <ClInclude Include="src\debug.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\main.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

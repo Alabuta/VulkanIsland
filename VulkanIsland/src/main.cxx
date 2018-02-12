@@ -1,35 +1,13 @@
-#define USE_LAYERS 1
 
-auto constexpr kWIDTH = 800u;
-auto constexpr kHEIGHT = 600u;
 
-#include <iostream>
-#include <memory>
-#include <vector>
-#include <array>
-#include <tuple>
-#include <set>
-#include <optional>
-#include <string>
+#include "main.h"
 using namespace std::string_literals;
-
-#ifndef GLFW_INCLUDE_VULKAN
-#define GLFW_INCLUDE_VULKAN
-#endif
-#define GLFW_EXPOSE_NATIVE_WIN32
-#include <GLFW/glfw3.h>
-
-#ifndef VK_USE_PLATFORM_WIN32_KHR
-#define VK_USE_PLATFORM_WIN32_KHR
-#endif
-
-auto constexpr kVULKAN_VERSION = VK_API_VERSION_1_0;
-
-#pragma comment(lib, "vulkan-1.lib")
-#pragma comment(lib, "glfw3.lib")
 
 #include <helpers.h>
 #include <debug.h>
+
+auto constexpr kWIDTH = 800u;
+auto constexpr kHEIGHT = 600u;
 
 std::array<VkQueueFamilyProperties, 2> constexpr requiredQueues{{
     {VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT},
