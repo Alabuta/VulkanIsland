@@ -137,6 +137,11 @@
     <ClInclude Include="src\debug.h" />
     <ClInclude Include="src\helpers.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="shader.glsl" />
+    <None Include="shaders\shader.frag" />
+    <None Include="shaders\shader.vert" />
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
