@@ -52,7 +52,8 @@ VkFormat vkSwapChainImageFormat;
 VkExtent2D vkSwapChainExtent;
 
 std::vector<std::uint32_t> supportedQueuesIndices;
-std::vector<VkImage> swapChainImages;
+std::vector<VkImage> vkSwapChainImages;
+std::vector<VkImageView> vkSwapChainImageViews;
 
 #ifdef USE_WIN32
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
@@ -567,9 +568,34 @@ void CreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurface
     if (auto result = vkGetSwapchainImagesKHR(device, vkSwapChain, &imagesCount, nullptr); result != VK_SUCCESS)
         throw std::runtime_error("failed to retrieve swap chain images count: "s + std::to_string(result));
 
-    swapChainImages.resize(imagesCount);
-    if (auto result = vkGetSwapchainImagesKHR(device, vkSwapChain, &imagesCount, std::data(swapChainImages)); result != VK_SUCCESS)
+    vkSwapChainImages.resize(imagesCount);
+    if (auto result = vkGetSwapchainImagesKHR(device, vkSwapChain, &imagesCount, std::data(vkSwapChainImages)); result != VK_SUCCESS)
         throw std::runtime_error("failed to retrieve swap chain iamges: "s + std::to_string(result));
+}
+
+template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
+void CreateSwapChainImageViews(VkDevice device, T &&swapChainImages)
+{
+    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkImage>, "iterable object does not contain VkImage elements");
+
+    for (auto &&swapChainImage : swapChainImages) {
+        VkImageViewCreateInfo const createInfo{
+            VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+            nullptr, 0,
+            swapChainImage,
+            VK_IMAGE_VIEW_TYPE_2D,
+            vkSwapChainImageFormat,
+            {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+            {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}
+        };
+
+        VkImageView imageView;
+
+        if (auto result = vkCreateImageView(device, &createInfo, nullptr, &imageView); result != VK_SUCCESS)
+            throw std::runtime_error("failed to create swap chain image view: "s + std::to_string(result));
+
+        vkSwapChainImageViews.push_back(std::move(imageView));
+    }
 }
 
 int main()
@@ -582,9 +608,13 @@ int main()
     InitVulkan(window);
 
     CreateSwapChain(vkPhysicalDevice, vkDevice, vkSurface);
+    CreateSwapChainImageViews(vkDevice, vkSwapChainImages);
 
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();
+
+    for (auto &&swapChainImageView : vkSwapChainImageViews)
+        vkDestroyImageView(vkDevice, swapChainImageView, nullptr);
 
     if (vkSwapChain)
         vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
