@@ -46,7 +46,13 @@ VkPhysicalDevice vkPhysicalDevice;
 VkDevice vkDevice;
 VkQueue vkGraphicsQueue, vkTransferQueue, vkPresentationQueue;
 VkSurfaceKHR vkSurface;
+VkSwapchainKHR vkSwapChain;
 
+VkFormat vkSwapChainImageFormat;
+VkExtent2D vkSwapChainExtent;
+
+std::vector<std::uint32_t> supportedQueuesIndices;
+std::vector<VkImage> swapChainImages;
 
 #ifdef USE_WIN32
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
@@ -319,7 +325,7 @@ struct SwapChainSupportDetails {
     if (queueFamilies.empty())
         throw std::runtime_error("there's no queue families on device"s);
 
-    std::vector<std::uint32_t> supportedQueuesIndices;
+    supportedQueuesIndices.clear();
 
     for (auto &&queueProp : requiredQueues)
         if (auto const queueIndex = GetRequiredQueueFamilyIndex(queueFamilies, queueProp); queueIndex)
@@ -509,13 +515,61 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     };
 }
 
-void CreateSwapChain(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+
+void CreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface)
 {
     auto swapChainSupportDetails = QuerySwapChainSupportDetails(physicalDevice, surface);
 
     auto surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupportDetails.formats);
     auto presentMode = ChooseSwapPresentMode(swapChainSupportDetails.presentModes);
     auto extent = ChooseSwapExtent(swapChainSupportDetails.capabilities);
+
+    vkSwapChainImageFormat = surfaceFormat.format;
+    vkSwapChainExtent = extent;
+
+    auto imageCount = swapChainSupportDetails.capabilities.minImageCount + 1;
+
+    if (swapChainSupportDetails.capabilities.maxImageCount > 0)
+        imageCount = std::min(imageCount, swapChainSupportDetails.capabilities.maxImageCount);
+
+    VkSwapchainCreateInfoKHR swapchainCreateInfo{
+        VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+        nullptr, 0,
+        surface,
+        imageCount,
+        surfaceFormat.format, surfaceFormat.colorSpace,
+        extent,
+        1,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0, nullptr,
+        swapChainSupportDetails.capabilities.currentTransform,
+        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+        presentMode,
+        VK_FALSE,
+        nullptr
+    };
+
+    std::array<decltype(supportedQueuesIndices)::value_type, 2> const queueFamilyIndices{
+        supportedQueuesIndices.at(0), supportedQueuesIndices.at(2)
+    };
+
+    if (supportedQueuesIndices.at(0) != supportedQueuesIndices.at(2)) {
+        swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+        swapchainCreateInfo.queueFamilyIndexCount = 2;
+        swapchainCreateInfo.pQueueFamilyIndices = std::data(queueFamilyIndices);
+    }
+
+    if (auto result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &vkSwapChain); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create required swap chain: "s + std::to_string(result));
+
+    std::uint32_t imagesCount = 0;
+    if (auto result = vkGetSwapchainImagesKHR(device, vkSwapChain, &imagesCount, nullptr); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve swap chain images count: "s + std::to_string(result));
+
+    swapChainImages.resize(imagesCount);
+    if (auto result = vkGetSwapchainImagesKHR(device, vkSwapChain, &imagesCount, std::data(swapChainImages)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve swap chain iamges: "s + std::to_string(result));
 }
 
 int main()
@@ -527,10 +581,13 @@ int main()
 
     InitVulkan(window);
 
-    CreateSwapChain(vkPhysicalDevice, vkSurface);
+    CreateSwapChain(vkPhysicalDevice, vkDevice, vkSurface);
 
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();
+
+    if (vkSwapChain)
+        vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
 
     if (vkSurface)
         vkDestroySurfaceKHR(vkInstance, vkSurface, nullptr);
