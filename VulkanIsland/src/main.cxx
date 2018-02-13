@@ -26,6 +26,7 @@ VkDevice vkDevice;
 VkQueue vkGraphicsQueue, vkTransferQueue, vkPresentationQueue;
 VkSurfaceKHR vkSurface;
 VkSwapchainKHR vkSwapChain;
+VkPipelineLayout vkPipelineLayout;
 
 VkFormat vkSwapChainImageFormat;
 VkExtent2D vkSwapChainExtent;
@@ -217,6 +218,7 @@ struct SwapChainSupportDetails {
     auto requiredFeatures = std::tie(
         features.geometryShader,
         features.tessellationShader,
+        features.depthClamp,
         features.shaderUniformBufferArrayDynamicIndexing,
         features.shaderSampledImageArrayDynamicIndexing,
         features.shaderStorageBufferArrayDynamicIndexing,
@@ -240,6 +242,7 @@ struct SwapChainSupportDetails {
         auto const deviceFeatures = std::tie(
             features.geometryShader,
             features.tessellationShader,
+            features.depthClamp,
             features.shaderUniformBufferArrayDynamicIndexing,
             features.shaderSampledImageArrayDynamicIndexing,
             features.shaderStorageBufferArrayDynamicIndexing,
@@ -659,6 +662,91 @@ void CreateGraphicsPipeline(VkDevice device)
         vertShaderCreateInfo, fragShaderCreateInfo
     };
 
+    VkPipelineVertexInputStateCreateInfo constexpr vertexInputCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        nullptr, 0,
+        0, nullptr,
+        0, nullptr
+    };
+
+    VkPipelineInputAssemblyStateCreateInfo constexpr vertexAssemblyStateCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        nullptr, 0,
+        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        VK_FALSE
+    };
+
+    VkViewport const viewport{
+        0, 0,
+        static_cast<float>(vkSwapChainExtent.width), static_cast<float>(vkSwapChainExtent.height),
+        1, 0
+    };
+
+    VkRect2D const scissor{
+        {0, 0}, vkSwapChainExtent
+    };
+
+    VkPipelineViewportStateCreateInfo const viewportStateCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        nullptr, 0,
+        1, &viewport,
+        1, &scissor
+    };
+
+    VkPipelineRasterizationStateCreateInfo constexpr rasterizer{
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        nullptr, 0,
+        VK_TRUE,
+        VK_FALSE,
+        VK_POLYGON_MODE_FILL,
+        VK_CULL_MODE_BACK_BIT,
+        VK_FRONT_FACE_CLOCKWISE,
+        VK_FALSE, 0, VK_FALSE, 0,
+        1
+    };
+
+    VkPipelineMultisampleStateCreateInfo constexpr multisampleCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        nullptr, 0,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_FALSE,
+        1,
+        nullptr,
+        VK_FALSE,
+        VK_FALSE
+    };
+
+    VkPipelineColorBlendAttachmentState constexpr colorBlendAttachement{
+        VK_FALSE,
+        VK_BLEND_FACTOR_ONE,
+        VK_BLEND_FACTOR_ZERO,
+        VK_BLEND_OP_ADD,
+        VK_BLEND_FACTOR_ONE,
+        VK_BLEND_FACTOR_ZERO,
+        VK_BLEND_OP_ADD,
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+    };
+
+    VkPipelineColorBlendStateCreateInfo constexpr colorBlendStateCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        nullptr, 0,
+        VK_FALSE,
+        VK_LOGIC_OP_COPY,
+        1,
+        &colorBlendAttachement,
+        {0, 0, 0, 0}
+    };
+
+    VkPipelineLayoutCreateInfo constexpr layoutCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        nullptr, 0, 
+        0, nullptr,
+        0, nullptr
+    };
+
+    if (auto result = vkCreatePipelineLayout(device, &layoutCreateInfo, nullptr, &vkPipelineLayout); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create pipeline layout: "s + std::to_string(result));
+
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
 }
@@ -679,6 +767,9 @@ int main()
 
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();
+
+    if (vkPipelineLayout)
+        vkDestroyPipelineLayout(vkDevice, vkPipelineLayout, nullptr);
 
     for (auto &&swapChainImageView : vkSwapChainImageViews)
         vkDestroyImageView(vkDevice, swapChainImageView, nullptr);
