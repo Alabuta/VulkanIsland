@@ -27,6 +27,7 @@ VkQueue vkGraphicsQueue, vkTransferQueue, vkPresentationQueue;
 VkSurfaceKHR vkSurface;
 VkSwapchainKHR vkSwapChain;
 VkPipelineLayout vkPipelineLayout;
+VkRenderPass vkRenderPass;
 
 VkFormat vkSwapChainImageFormat;
 VkExtent2D vkSwapChainExtent;
@@ -727,7 +728,7 @@ void CreateGraphicsPipeline(VkDevice device)
         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
     };
 
-    VkPipelineColorBlendStateCreateInfo constexpr colorBlendStateCreateInfo{
+    VkPipelineColorBlendStateCreateInfo const colorBlendStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
         nullptr, 0,
         VK_FALSE,
@@ -751,6 +752,42 @@ void CreateGraphicsPipeline(VkDevice device)
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
 }
 
+void CreateRenderPass(VkDevice device)
+{
+    VkAttachmentDescription const colorAttachment{
+        VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
+        vkSwapChainImageFormat,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+    };
+
+    VkAttachmentReference constexpr attachementReference{
+        0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+    };
+
+    VkSubpassDescription const subpassDescription{
+        0,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        0, nullptr,
+        1, &attachementReference,
+        nullptr, nullptr,
+        0, nullptr
+    };
+
+    VkRenderPassCreateInfo const renderPassCreateInfo{
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        nullptr, 0,
+        1, &colorAttachment,
+        1, &subpassDescription,
+        0, nullptr
+    };
+
+    if (auto result = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &vkRenderPass); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create render pass: "s + std::to_string(result));
+}
+
 int main()
 {
     glfwInit();
@@ -764,12 +801,16 @@ int main()
     CreateSwapChainImageViews(vkDevice, vkSwapChainImages);
 
     CreateGraphicsPipeline(vkDevice);
+    CreateRenderPass(vkDevice);
 
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();
 
     if (vkPipelineLayout)
         vkDestroyPipelineLayout(vkDevice, vkPipelineLayout, nullptr);
+
+    if (vkRenderPass)
+        vkDestroyRenderPass(vkDevice, vkRenderPass, nullptr);
 
     for (auto &&swapChainImageView : vkSwapChainImageViews)
         vkDestroyImageView(vkDevice, swapChainImageView, nullptr);
