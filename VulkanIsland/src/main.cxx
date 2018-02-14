@@ -28,6 +28,7 @@ VkSurfaceKHR vkSurface;
 VkSwapchainKHR vkSwapChain;
 VkPipelineLayout vkPipelineLayout;
 VkRenderPass vkRenderPass;
+VkPipeline vkGraphicsPipeline;
 
 VkFormat vkSwapChainImageFormat;
 VkExtent2D vkSwapChainExtent;
@@ -748,6 +749,28 @@ void CreateGraphicsPipeline(VkDevice device)
     if (auto result = vkCreatePipelineLayout(device, &layoutCreateInfo, nullptr, &vkPipelineLayout); result != VK_SUCCESS)
         throw std::runtime_error("failed to create pipeline layout: "s + std::to_string(result));
 
+    VkGraphicsPipelineCreateInfo const graphicsPipelineCreateInfo{
+        VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        nullptr,
+        VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,
+        static_cast<std::uint32_t>(std::size(shaderStages)), std::data(shaderStages),
+        &vertexInputCreateInfo, &vertexAssemblyStateCreateInfo,
+        nullptr,
+        &viewportStateCreateInfo,
+        &rasterizer,
+        &multisampleCreateInfo,
+        nullptr,
+        &colorBlendStateCreateInfo,
+        nullptr,
+        vkPipelineLayout,
+        vkRenderPass,
+        0,
+        VK_NULL_HANDLE, -1
+    };
+
+    if (auto result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &vkGraphicsPipeline); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create graphics pipeline: "s + std::to_string(result));
+
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
 }
@@ -800,11 +823,14 @@ int main()
     CreateSwapChain(vkPhysicalDevice, vkDevice, vkSurface);
     CreateSwapChainImageViews(vkDevice, vkSwapChainImages);
 
-    CreateGraphicsPipeline(vkDevice);
     CreateRenderPass(vkDevice);
+    CreateGraphicsPipeline(vkDevice);
 
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();
+
+    if (vkGraphicsPipeline)
+        vkDestroyPipeline(vkDevice, vkGraphicsPipeline, nullptr);
 
     if (vkPipelineLayout)
         vkDestroyPipelineLayout(vkDevice, vkPipelineLayout, nullptr);
