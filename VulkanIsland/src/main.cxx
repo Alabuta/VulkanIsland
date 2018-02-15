@@ -812,7 +812,31 @@ void CreateRenderPass(VkDevice device)
         throw std::runtime_error("failed to create render pass: "s + std::to_string(result));
 }
 
+template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
+void CreateFramebuffers(VkRenderPass renderPass, T &&swapChainImageViews)
+{
+    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkImageView>, "iterable object does not contain VkImageView elements");
 
+    for (auto &&imageView : swapChainImageViews) {
+        std::array<VkImageView, 1> const attachement{ imageView };
+
+        VkFramebufferCreateInfo const createInfo{
+            VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            nullptr, 0,
+            renderPass,
+            static_cast<std::uint32_t>(std::size(attachement)), std::data(attachement),
+            swapChainExtent.width, swapChainExtent.height,
+            1
+        };
+
+        VkFramebuffer framebuffer;
+
+        if (auto result = vkCreateFramebuffer(device, &createInfo, nullptr, &framebuffer); result != VK_SUCCESS)
+            throw std::runtime_error("failed to create a framebuffer: "s + std::to_string(result));
+
+        swapChainFramebuffers.push_back(std::move(framebuffer));
+    }
+}
 
 
 int main()
@@ -830,8 +854,13 @@ int main()
     CreateRenderPass(device);
     CreateGraphicsPipeline(device);
 
+    CreateFramebuffers(renderPass, swapChainImageViews);
+
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();
+
+    for (auto &&swapChainFramebuffer : swapChainFramebuffers)
+        vkDestroyFramebuffer(device, swapChainFramebuffer, nullptr);
 
     if (graphicsPipeline)
         vkDestroyPipeline(device, graphicsPipeline, nullptr);
