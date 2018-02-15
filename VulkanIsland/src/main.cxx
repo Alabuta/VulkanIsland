@@ -19,23 +19,24 @@ std::array<const char *const, 1> constexpr deviceExtensions = {
     VK_KHR_SWAPCHAIN_EXTENSION_NAME
 };
 
-VkInstance vkInstance;
-VkDebugReportCallbackEXT vkDebugReportCallback;
-VkPhysicalDevice vkPhysicalDevice;
-VkDevice vkDevice;
-VkQueue vkGraphicsQueue, vkTransferQueue, vkPresentationQueue;
-VkSurfaceKHR vkSurface;
-VkSwapchainKHR vkSwapChain;
-VkPipelineLayout vkPipelineLayout;
-VkRenderPass vkRenderPass;
-VkPipeline vkGraphicsPipeline;
+VkInstance instance;
+VkDebugReportCallbackEXT debugReportCallback;
+VkPhysicalDevice physicalDevice;
+VkDevice device;
+VkQueue graphicsQueue, transferQueue, presentationQueue;
+VkSurfaceKHR surface;
+VkSwapchainKHR swapChain;
+VkPipelineLayout pipelineLayout;
+VkRenderPass renderPass;
+VkPipeline graphicsPipeline;
 
-VkFormat vkSwapChainImageFormat;
-VkExtent2D vkSwapChainExtent;
+VkFormat swapChainImageFormat;
+VkExtent2D swapChainExtent;
 
 std::vector<std::uint32_t> supportedQueuesIndices;
-std::vector<VkImage> vkSwapChainImages;
-std::vector<VkImageView> vkSwapChainImageViews;
+std::vector<VkImage> swapChainImages;
+std::vector<VkImageView> swapChainImageViews;
+std::vector<VkFramebuffer> swapChainFramebuffers;
 
 #ifdef USE_WIN32
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
@@ -355,9 +356,9 @@ struct SwapChainSupportDetails {
     if (auto result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &device); result != VK_SUCCESS)
         throw std::runtime_error("failed to create logical device: "s + std::to_string(result));
 
-    vkGetDeviceQueue(device, supportedQueuesIndices.at(0), 0, &vkGraphicsQueue);
-    vkGetDeviceQueue(device, supportedQueuesIndices.at(1), 0, &vkTransferQueue);
-    vkGetDeviceQueue(device, supportedQueuesIndices.at(2), 0, &vkPresentationQueue);
+    vkGetDeviceQueue(device, supportedQueuesIndices.at(0), 0, &graphicsQueue);
+    vkGetDeviceQueue(device, supportedQueuesIndices.at(1), 0, &transferQueue);
+    vkGetDeviceQueue(device, supportedQueuesIndices.at(2), 0, &presentationQueue);
 
     return device;
 }
@@ -413,11 +414,11 @@ void InitVulkan(GLFWwindow *window)
         static_cast<std::uint32_t>(std::size(extensions)), std::data(extensions)
     };
 
-    if (auto result = vkCreateInstance(&createInfo, nullptr, &vkInstance); result != VK_SUCCESS)
+    if (auto result = vkCreateInstance(&createInfo, nullptr, &instance); result != VK_SUCCESS)
         throw std::runtime_error("failed to create instance"s);
 
 #if USE_LAYERS
-    CreateDebugReportCallback(vkInstance, vkDebugReportCallback);
+    CreateDebugReportCallback(instance, debugReportCallback);
 #endif
 
 #if USE_WIN32
@@ -430,11 +431,11 @@ void InitVulkan(GLFWwindow *window)
 
     vkCreateWin32SurfaceKHR(vkInstance, &win32CreateInfo, nullptr, &vkSurface);
 #else
-    glfwCreateWindowSurface(vkInstance, window, nullptr, &vkSurface);
+    glfwCreateWindowSurface(instance, window, nullptr, &surface);
 #endif
 
-    vkPhysicalDevice = PickPhysicalDevice(vkInstance, vkSurface);
-    vkDevice = CreateDevice(vkInstance, vkPhysicalDevice, vkSurface);
+    physicalDevice = PickPhysicalDevice(instance, surface);
+    device = CreateDevice(instance, physicalDevice, surface);
 }
 
 
@@ -509,8 +510,8 @@ void CreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurface
     auto presentMode = ChooseSwapPresentMode(swapChainSupportDetails.presentModes);
     auto extent = ChooseSwapExtent(swapChainSupportDetails.capabilities);
 
-    vkSwapChainImageFormat = surfaceFormat.format;
-    vkSwapChainExtent = extent;
+    swapChainImageFormat = surfaceFormat.format;
+    swapChainExtent = extent;
 
     auto imageCount = swapChainSupportDetails.capabilities.minImageCount + 1;
 
@@ -545,15 +546,15 @@ void CreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurface
         swapchainCreateInfo.pQueueFamilyIndices = std::data(queueFamilyIndices);
     }
 
-    if (auto result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &vkSwapChain); result != VK_SUCCESS)
+    if (auto result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapChain); result != VK_SUCCESS)
         throw std::runtime_error("failed to create required swap chain: "s + std::to_string(result));
 
     std::uint32_t imagesCount = 0;
-    if (auto result = vkGetSwapchainImagesKHR(device, vkSwapChain, &imagesCount, nullptr); result != VK_SUCCESS)
+    if (auto result = vkGetSwapchainImagesKHR(device, swapChain, &imagesCount, nullptr); result != VK_SUCCESS)
         throw std::runtime_error("failed to retrieve swap chain images count: "s + std::to_string(result));
 
-    vkSwapChainImages.resize(imagesCount);
-    if (auto result = vkGetSwapchainImagesKHR(device, vkSwapChain, &imagesCount, std::data(vkSwapChainImages)); result != VK_SUCCESS)
+    swapChainImages.resize(imagesCount);
+    if (auto result = vkGetSwapchainImagesKHR(device, swapChain, &imagesCount, std::data(swapChainImages)); result != VK_SUCCESS)
         throw std::runtime_error("failed to retrieve swap chain iamges: "s + std::to_string(result));
 }
 
@@ -568,7 +569,7 @@ void CreateSwapChainImageViews(VkDevice device, T &&swapChainImages)
             nullptr, 0,
             swapChainImage,
             VK_IMAGE_VIEW_TYPE_2D,
-            vkSwapChainImageFormat,
+            swapChainImageFormat,
             {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
             {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}
         };
@@ -578,7 +579,7 @@ void CreateSwapChainImageViews(VkDevice device, T &&swapChainImages)
         if (auto result = vkCreateImageView(device, &createInfo, nullptr, &imageView); result != VK_SUCCESS)
             throw std::runtime_error("failed to create swap chain image view: "s + std::to_string(result));
 
-        vkSwapChainImageViews.push_back(std::move(imageView));
+        swapChainImageViews.push_back(std::move(imageView));
     }
 }
 
@@ -680,12 +681,12 @@ void CreateGraphicsPipeline(VkDevice device)
 
     VkViewport const viewport{
         0, 0,
-        static_cast<float>(vkSwapChainExtent.width), static_cast<float>(vkSwapChainExtent.height),
+        static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height),
         1, 0
     };
 
     VkRect2D const scissor{
-        {0, 0}, vkSwapChainExtent
+        {0, 0}, swapChainExtent
     };
 
     VkPipelineViewportStateCreateInfo const viewportStateCreateInfo{
@@ -746,7 +747,7 @@ void CreateGraphicsPipeline(VkDevice device)
         0, nullptr
     };
 
-    if (auto result = vkCreatePipelineLayout(device, &layoutCreateInfo, nullptr, &vkPipelineLayout); result != VK_SUCCESS)
+    if (auto result = vkCreatePipelineLayout(device, &layoutCreateInfo, nullptr, &pipelineLayout); result != VK_SUCCESS)
         throw std::runtime_error("failed to create pipeline layout: "s + std::to_string(result));
 
     VkGraphicsPipelineCreateInfo const graphicsPipelineCreateInfo{
@@ -762,13 +763,13 @@ void CreateGraphicsPipeline(VkDevice device)
         nullptr,
         &colorBlendStateCreateInfo,
         nullptr,
-        vkPipelineLayout,
-        vkRenderPass,
+        pipelineLayout,
+        renderPass,
         0,
         VK_NULL_HANDLE, -1
     };
 
-    if (auto result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &vkGraphicsPipeline); result != VK_SUCCESS)
+    if (auto result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &graphicsPipeline); result != VK_SUCCESS)
         throw std::runtime_error("failed to create graphics pipeline: "s + std::to_string(result));
 
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
@@ -779,7 +780,7 @@ void CreateRenderPass(VkDevice device)
 {
     VkAttachmentDescription const colorAttachment{
         VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
-        vkSwapChainImageFormat,
+        swapChainImageFormat,
         VK_SAMPLE_COUNT_1_BIT,
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -807,9 +808,12 @@ void CreateRenderPass(VkDevice device)
         0, nullptr
     };
 
-    if (auto result = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &vkRenderPass); result != VK_SUCCESS)
+    if (auto result = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &renderPass); result != VK_SUCCESS)
         throw std::runtime_error("failed to create render pass: "s + std::to_string(result));
 }
+
+
+
 
 int main()
 {
@@ -820,43 +824,43 @@ int main()
 
     InitVulkan(window);
 
-    CreateSwapChain(vkPhysicalDevice, vkDevice, vkSurface);
-    CreateSwapChainImageViews(vkDevice, vkSwapChainImages);
+    CreateSwapChain(physicalDevice, device, surface);
+    CreateSwapChainImageViews(device, swapChainImages);
 
-    CreateRenderPass(vkDevice);
-    CreateGraphicsPipeline(vkDevice);
+    CreateRenderPass(device);
+    CreateGraphicsPipeline(device);
 
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();
 
-    if (vkGraphicsPipeline)
-        vkDestroyPipeline(vkDevice, vkGraphicsPipeline, nullptr);
+    if (graphicsPipeline)
+        vkDestroyPipeline(device, graphicsPipeline, nullptr);
 
-    if (vkPipelineLayout)
-        vkDestroyPipelineLayout(vkDevice, vkPipelineLayout, nullptr);
+    if (pipelineLayout)
+        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
 
-    if (vkRenderPass)
-        vkDestroyRenderPass(vkDevice, vkRenderPass, nullptr);
+    if (renderPass)
+        vkDestroyRenderPass(device, renderPass, nullptr);
 
-    for (auto &&swapChainImageView : vkSwapChainImageViews)
-        vkDestroyImageView(vkDevice, swapChainImageView, nullptr);
+    for (auto &&swapChainImageView : swapChainImageViews)
+        vkDestroyImageView(device, swapChainImageView, nullptr);
 
-    if (vkSwapChain)
-        vkDestroySwapchainKHR(vkDevice, vkSwapChain, nullptr);
+    if (swapChain)
+        vkDestroySwapchainKHR(device, swapChain, nullptr);
 
-    if (vkSurface)
-        vkDestroySurfaceKHR(vkInstance, vkSurface, nullptr);
+    if (surface)
+        vkDestroySurfaceKHR(instance, surface, nullptr);
     
-    if (vkDevice) {
-        vkDeviceWaitIdle(vkDevice);
-        vkDestroyDevice(vkDevice, nullptr);
+    if (device) {
+        vkDeviceWaitIdle(device);
+        vkDestroyDevice(device, nullptr);
     }
 
-    if (vkDebugReportCallback)
-        vkDestroyDebugReportCallbackEXT(vkInstance, vkDebugReportCallback, nullptr);
+    if (debugReportCallback)
+        vkDestroyDebugReportCallbackEXT(instance, debugReportCallback, nullptr);
 
-    if (vkInstance)
-        vkDestroyInstance(vkInstance, nullptr);
+    if (instance)
+        vkDestroyInstance(instance, nullptr);
 
     glfwDestroyWindow(window);
 
