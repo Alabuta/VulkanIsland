@@ -33,10 +33,13 @@ VkPipeline graphicsPipeline;
 VkFormat swapChainImageFormat;
 VkExtent2D swapChainExtent;
 
+VkCommandPool commandPool;
+
 std::vector<std::uint32_t> supportedQueuesIndices;
 std::vector<VkImage> swapChainImages;
 std::vector<VkImageView> swapChainImageViews;
 std::vector<VkFramebuffer> swapChainFramebuffers;
+std::vector<VkCommandBuffer> commandBuffers;
 
 #ifdef USE_WIN32
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
@@ -838,6 +841,71 @@ void CreateFramebuffers(VkRenderPass renderPass, T &&swapChainImageViews)
     }
 }
 
+void CreateCommandPool(VkDevice device)
+{
+    VkCommandPoolCreateInfo const createInfo{
+        VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        nullptr,
+        0,
+        supportedQueuesIndices.at(0)
+    };
+
+    if (auto result = vkCreateCommandPool(device, &createInfo, nullptr, &commandPool); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create a command buffer: "s + std::to_string(result));
+}
+
+void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPool commandPool)
+{
+    commandBuffers.resize(swapChainFramebuffers.size());
+
+    VkCommandBufferAllocateInfo const allocateInfo{
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        nullptr,
+        commandPool,
+        VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        static_cast<std::uint32_t>(std::size(commandBuffers))
+    };
+
+    if (auto result = vkAllocateCommandBuffers(device, &allocateInfo, std::data(commandBuffers)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create allocate command buffers: "s + std::to_string(result));
+
+    std::size_t i = 0;
+
+    for (auto &commandBuffer : commandBuffers) {
+        VkCommandBufferBeginInfo const beginInfo{
+            VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            nullptr,
+            VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
+            nullptr
+        };
+
+        if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
+            throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
+
+        VkClearValue constexpr clearColor{0.f, 0.f, 0.f, 1.f};
+
+        VkRenderPassBeginInfo const renderPassInfo{
+            VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+            nullptr,
+            renderPass,
+            swapChainFramebuffers.at(i++),
+            {{0, 0}, swapChainExtent},
+            1, &clearColor
+        };
+
+        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
+        vkCmdDraw(commandBuffer, 3, 1, 0, 0);
+
+        vkCmdEndRenderPass(commandBuffer);
+
+        if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS)
+            throw std::runtime_error("failed to end command buffer: "s + std::to_string(result));
+    }
+}
+
 
 int main()
 {
@@ -856,8 +924,14 @@ int main()
 
     CreateFramebuffers(renderPass, swapChainImageViews);
 
+    CreateCommandPool(device);
+    CreateCommandBuffers(device, renderPass, commandPool);
+
     while (!glfwWindowShouldClose(window))
         glfwPollEvents();
+
+    if (commandPool)
+        vkDestroyCommandPool(device, commandPool, nullptr);
 
     for (auto &&swapChainFramebuffer : swapChainFramebuffers)
         vkDestroyFramebuffer(device, swapChainFramebuffer, nullptr);
