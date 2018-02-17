@@ -21,6 +21,14 @@ constexpr void set_tuple(T &&tuple, V value)
         set_tuple<i + 1>(std::forward<T>(tuple), value);
 }
 
+
+template<class... Ts>
+constexpr std::array<std::decay_t<std::tuple_element_t<0, std::tuple<Ts...>>>, sizeof...(Ts)> make_array(Ts &&...t)
+{
+    return {std::forward<Ts>(t)...};
+}
+
+
 template<class T, class U, typename std::enable_if_t<is_iterable_v<std::decay_t<T>> && std::is_same_v<std::decay_t<U>, VkQueueFamilyProperties>>...>
 [[nodiscard]] std::optional<std::uint32_t> GetRequiredQueueFamilyIndex(T &&queueFamilies, U &&requiredQueue)
 {

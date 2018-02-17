@@ -10,14 +10,12 @@ using namespace std::string_view_literals;
 auto constexpr kWIDTH = 800u;
 auto constexpr kHEIGHT = 600u;
 
-std::array<VkQueueFamilyProperties, 2> constexpr requiredQueues{{
-    {VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT},
-    {VK_QUEUE_TRANSFER_BIT}
-}};
+auto constexpr requiredQueues = make_array(
+    VkQueueFamilyProperties{VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT},
+    VkQueueFamilyProperties{VK_QUEUE_TRANSFER_BIT}
+);
 
-std::array<const char *const, 1> constexpr deviceExtensions = {
-    VK_KHR_SWAPCHAIN_EXTENSION_NAME
-};
+auto constexpr deviceExtensions = make_array(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
 VkInstance instance;
 VkDebugReportCallbackEXT debugReportCallback;
@@ -59,7 +57,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 [[nodiscard]] auto CheckRequiredExtensions(T &&_requiredExtensions)
 {
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *const>, "iterable object does not contain null-terminated strings");
+    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *>, "iterable object does not contain null-terminated strings");
 
     std::vector<VkExtensionProperties> requiredExtensions;
 
@@ -94,7 +92,7 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 [[nodiscard]] auto CheckRequiredLayers(T &&_requiredLayers)
 {
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *const>, "iterable object does not contain null-terminated strings");
+    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *>, "iterable object does not contain null-terminated strings");
 
     std::vector<VkLayerProperties> requiredLayers;
 
@@ -129,7 +127,7 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 template<bool check_on_duplicates = false, class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 [[nodiscard]] auto CheckRequiredDeviceExtensions(VkPhysicalDevice physicalDevice, T &&_requiredExtensions)
 {
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *const>, "iterable object does not contain null-terminated strings");
+    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *>, "iterable object does not contain null-terminated strings");
 
     std::vector<VkExtensionProperties> requiredExtensions;
 
@@ -368,6 +366,9 @@ struct SwapChainSupportDetails {
     return device;
 }
 
+
+
+
 void InitVulkan(GLFWwindow *window)
 {
     VkApplicationInfo constexpr appInfo = {
@@ -378,7 +379,7 @@ void InitVulkan(GLFWwindow *window)
         kVULKAN_VERSION
     };
 
-    std::array<const char *const, 3> constexpr extensions = {
+    auto constexpr extensions = make_array(
         VK_KHR_SURFACE_EXTENSION_NAME,
 #if USE_WIN32
         VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
@@ -386,13 +387,13 @@ void InitVulkan(GLFWwindow *window)
         "VK_KHR_win32_surface",
 #endif
         VK_EXT_DEBUG_REPORT_EXTENSION_NAME
-    };
+    );
 
     if (auto supported = CheckRequiredExtensions(extensions); !supported)
         throw std::runtime_error("not all required extensions are supported"s);
 
 #if USE_LAYERS
-    std::array<const char *const, 6> constexpr layers = {
+    auto constexpr layers = make_array(
         //"VK_LAYER_LUNARG_api_dump",
         "VK_LAYER_LUNARG_core_validation",
         "VK_LAYER_LUNARG_object_tracker",
@@ -401,7 +402,7 @@ void InitVulkan(GLFWwindow *window)
         "VK_LAYER_GOOGLE_unique_objects",
 
         "VK_LAYER_NV_nsight"
-    };
+    );
 
     if (auto supported = CheckRequiredLayers(layers); !supported)
         throw std::runtime_error("not all required layers are supported"s);
@@ -541,9 +542,9 @@ void CreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurface
         nullptr
     };
 
-    std::array<decltype(supportedQueuesIndices)::value_type, 2> const queueFamilyIndices{
+    auto const queueFamilyIndices = make_array(
         supportedQueuesIndices.at(0), supportedQueuesIndices.at(2)
-    };
+    );
 
     if (supportedQueuesIndices.at(0) != supportedQueuesIndices.at(2)) {
         swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
@@ -666,9 +667,9 @@ void CreateGraphicsPipeline(VkDevice device)
         nullptr
     };
 
-    std::array<VkPipelineShaderStageCreateInfo, 2> const shaderStages{
+    auto const shaderStages = make_array(
         vertShaderCreateInfo, fragShaderCreateInfo
-    };
+    );
 
     VkPipelineVertexInputStateCreateInfo constexpr vertexInputCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -830,7 +831,7 @@ void CreateFramebuffers(VkRenderPass renderPass, T &&swapChainImageViews)
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkImageView>, "iterable object does not contain VkImageView elements");
 
     for (auto &&imageView : swapChainImageViews) {
-        std::array<VkImageView, 1> const attachement{ imageView };
+        auto const attachement = make_array(imageView);
 
         VkFramebufferCreateInfo const createInfo{
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -929,6 +930,7 @@ void CreateSemaphores(VkDevice device)
         throw std::runtime_error("failed to create render semaphore: "s + std::to_string(result));
 }
 
+
 void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
 {
     std::uint32_t imageIndex;
@@ -940,13 +942,8 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
     };
 
-    std::array<VkSemaphore, 1> const waitSemaphores{
-        imageAvailable
-    };
-
-    std::array<VkSemaphore, 1> const signalSemaphores{
-        renderFinsihed
-    };
+    auto const waitSemaphores = make_array(imageAvailable);
+    auto const signalSemaphores = make_array(renderFinsihed);
 
     VkSubmitInfo const info{
         VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -960,7 +957,7 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
     if (auto result = vkQueueSubmit(graphicsQueue, 1, &info, VK_NULL_HANDLE); result != VK_SUCCESS)
         throw std::runtime_error("failed to submit draw command buffer: "s + std::to_string(result));
 
-    std::array<VkSwapchainKHR, 1> const swapchains{swapChain};
+    auto const swapchains = make_array(swapChain);
 
     VkPresentInfoKHR const presentInfo{
         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
