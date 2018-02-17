@@ -12,6 +12,15 @@ struct is_iterable<C, std::void_t<decltype(std::cbegin(std::declval<C>()), std::
 template<class T>
 constexpr bool is_iterable_v = is_iterable<T>::value;
 
+template<class C, class = void>
+struct is_container : std::false_type {};
+
+template<class C>
+struct is_container<C, std::void_t<decltype(std::size(std::declval<C>()), std::data(std::declval<C>()))>> : std::true_type {};
+
+template<class T>
+constexpr bool is_container_v = is_iterable<T>::value;
+
 template<std::size_t i = 0, typename T, typename V>
 constexpr void set_tuple(T &&tuple, V value)
 {
