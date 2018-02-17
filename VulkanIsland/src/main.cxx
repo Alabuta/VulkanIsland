@@ -805,12 +805,19 @@ void CreateRenderPass(VkDevice device)
         0, nullptr
     };
 
+    VkSubpassDependency constexpr subpassDeps{
+        VK_SUBPASS_EXTERNAL, 0,
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        0, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        0
+    };
+
     VkRenderPassCreateInfo const renderPassCreateInfo{
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         nullptr, 0,
         1, &colorAttachment,
         1, &subpassDescription,
-        0, nullptr
+        1, &subpassDeps
     };
 
     if (auto result = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &renderPass); result != VK_SUCCESS)
@@ -920,6 +927,53 @@ void CreateSemaphores(VkDevice device)
 
     if (auto result = vkCreateSemaphore(device, &createInfo, nullptr, &renderFinsihed); result != VK_SUCCESS)
         throw std::runtime_error("failed to create render semaphore: "s + std::to_string(result));
+}
+
+void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
+{
+    std::uint32_t imageIndex;
+
+    if (auto result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<std::uint64_t>::max(), imageAvailable, VK_NULL_HANDLE, &imageIndex); result != VK_SUCCESS)
+        throw std::runtime_error("failed to acquire next image index: "s + std::to_string(result));
+
+    std::array<VkPipelineStageFlags, 1> constexpr waitStages{
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+    };
+
+    std::array<VkSemaphore, 1> const waitSemaphores{
+        imageAvailable
+    };
+
+    std::array<VkSemaphore, 1> const signalSemaphores{
+        renderFinsihed
+    };
+
+    VkSubmitInfo const info{
+        VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        nullptr,
+        static_cast<std::uint32_t>(std::size(waitSemaphores)), std::data(waitSemaphores),
+        std::data(waitStages),
+        1, &commandBuffers.at(imageIndex),
+        static_cast<std::uint32_t>(std::size(signalSemaphores)), std::data(signalSemaphores),
+    };
+
+    if (auto result = vkQueueSubmit(graphicsQueue, 1, &info, VK_NULL_HANDLE); result != VK_SUCCESS)
+        throw std::runtime_error("failed to submit draw command buffer: "s + std::to_string(result));
+
+    std::array<VkSwapchainKHR, 1> const swapchains{swapChain};
+
+    VkPresentInfoKHR const presentInfo{
+        VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        nullptr,
+        static_cast<std::uint32_t>(std::size(signalSemaphores)), std::data(signalSemaphores),
+        static_cast<std::uint32_t>(std::size(swapchains)), std::data(swapchains),
+        &imageIndex, nullptr
+    };
+
+    if (auto result = vkQueuePresentKHR(presentationQueue, &presentInfo); result != VK_SUCCESS)
+        throw std::runtime_error("failed to submit request to present framebuffer: "s + std::to_string(result));
+
+    vkQueueWaitIdle(presentationQueue);
 }
 
 
