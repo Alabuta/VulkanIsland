@@ -41,6 +41,8 @@ std::vector<VkImageView> swapChainImageViews;
 std::vector<VkFramebuffer> swapChainFramebuffers;
 std::vector<VkCommandBuffer> commandBuffers;
 
+VkSemaphore imageAvailable, renderFinsihed;
+
 #ifdef USE_WIN32
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
     VkInstance instance, VkWin32SurfaceCreateInfoKHR const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkSurfaceKHR *pSurface)
@@ -906,6 +908,20 @@ void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPoo
     }
 }
 
+void CreateSemaphores(VkDevice device)
+{
+    VkSemaphoreCreateInfo constexpr createInfo{
+        VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        nullptr, 0
+    };
+
+    if (auto result = vkCreateSemaphore(device, &createInfo, nullptr, &imageAvailable); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create image semaphore: "s + std::to_string(result));
+
+    if (auto result = vkCreateSemaphore(device, &createInfo, nullptr, &renderFinsihed); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create render semaphore: "s + std::to_string(result));
+}
+
 
 int main()
 {
@@ -927,8 +943,20 @@ int main()
     CreateCommandPool(device);
     CreateCommandBuffers(device, renderPass, commandPool);
 
-    while (!glfwWindowShouldClose(window))
+    CreateSemaphores(device);
+
+    while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+        DrawFrame(device, swapChain);
+    }
+
+    vkDeviceWaitIdle(device);
+
+    if (renderFinsihed)
+        vkDestroySemaphore(device, renderFinsihed, nullptr);
+
+    if (imageAvailable)
+        vkDestroySemaphore(device, imageAvailable, nullptr);
 
     if (commandPool)
         vkDestroyCommandPool(device, commandPool, nullptr);
@@ -954,10 +982,8 @@ int main()
     if (surface)
         vkDestroySurfaceKHR(instance, surface, nullptr);
     
-    if (device) {
-        vkDeviceWaitIdle(device);
+    if (device)
         vkDestroyDevice(device, nullptr);
-    }
 
     if (debugReportCallback)
         vkDestroyDebugReportCallbackEXT(instance, debugReportCallback, nullptr);
