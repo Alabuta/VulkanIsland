@@ -1005,9 +1005,6 @@ void InitVulkan(GLFWwindow *window)
 #else
     glfwCreateWindowSurface(instance, window, nullptr, &surface);
 #endif
-
-    physicalDevice = PickPhysicalDevice(instance, surface);
-    device = CreateDevice(instance, physicalDevice, surface);
 }
 
 
@@ -1026,6 +1023,10 @@ int main()
 #endif
 
     InitVulkan(window);
+
+    physicalDevice = PickPhysicalDevice(instance, surface);
+    //device1.physical_device_ = physicalDevice;
+    device = CreateDevice(instance, physicalDevice, surface);
 
     CreateSwapChain(physicalDevice, device, surface);
     CreateSwapChainImageViews(device, swapChainImages);

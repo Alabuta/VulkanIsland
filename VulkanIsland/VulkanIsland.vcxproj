@@ -131,10 +131,12 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\device.cxx" />
     <ClCompile Include="src\main.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\debug.h" />
+    <ClInclude Include="src\device.h" />
     <ClInclude Include="src\helpers.h" />
     <ClInclude Include="src\instance.h" />
     <ClInclude Include="src\main.h" />

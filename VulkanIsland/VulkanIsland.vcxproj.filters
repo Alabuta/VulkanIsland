@@ -14,6 +14,9 @@
     <ClCompile Include="src\main.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\device.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\helpers.h">
@@ -26,6 +29,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\instance.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\device.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
