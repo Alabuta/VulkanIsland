@@ -45,6 +45,7 @@ VkApplicationInfo constexpr app_info{
     "VulkanIsland", VK_MAKE_VERSION(1, 0, 0),
     kVULKAN_VERSION
 };
+
 auto constexpr extensions = make_array(
     VK_KHR_SURFACE_EXTENSION_NAME,
 #if USE_WIN32
@@ -68,4 +69,7 @@ auto constexpr layers = make_array(
 );
 #endif
 
+VkSurfaceKHR surface;
+
 #include "instance.h"
+#include "device.h"
