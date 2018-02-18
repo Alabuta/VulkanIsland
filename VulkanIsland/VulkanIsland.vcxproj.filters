@@ -25,6 +25,9 @@
     <ClInclude Include="src\main.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\instance.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

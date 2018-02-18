@@ -1,16 +1,11 @@
 
 
 #include "main.h"
-using namespace std::string_literals;
-using namespace std::string_view_literals;
-
-#include <helpers.h>
-#include <debug.h>
 
 auto constexpr kWIDTH = 800u;
 auto constexpr kHEIGHT = 600u;
 
-#define USE_PLAIN 1
+#define USE_PLAIN 0
 
 auto constexpr requiredQueues = make_array(
     VkQueueFamilyProperties{VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT},
@@ -902,106 +897,16 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
 }
 
 
-template<bool USE_DEBUG_LAYERS>
-class VulkanInstance final {
-public:
-
-    template<class E, class L>
-    VulkanInstance(E &&extensions, L &&layers)
-    {
-        static_assert(is_container_v<std::decay_t<E>>, "'extensions' variables must be a containers");
-        static_assert(std::is_same_v<typename std::decay_t<E>::value_type, char const *>, "'extensions' must contain null-terminated strings");
-
-        if constexpr (USE_DEBUG_LAYERS)
-        {
-            static_assert(is_container_v<std::decay_t<L>>, "'layers' variables must be a containers");
-            static_assert(std::is_same_v<typename std::decay_t<L>::value_type, char const *>, "'layers' must contain null-terminated strings");
-        }
-
-        VkApplicationInfo constexpr appInfo{
-            VK_STRUCTURE_TYPE_APPLICATION_INFO,
-            nullptr,
-            "VulkanIsland", VK_MAKE_VERSION(1, 0, 0),
-            "VulkanIsland", VK_MAKE_VERSION(1, 0, 0),
-            kVULKAN_VERSION
-        };
-
-        if constexpr (USE_DEBUG_LAYERS)
-            if (auto supported = CheckRequiredLayers(layers); !supported)
-                throw std::runtime_error("not all required layers are supported"s);
-
-        if (auto supported = CheckRequiredExtensions(extensions); !supported)
-            throw std::runtime_error("not all required extensions are supported"s);
-
-        VkInstanceCreateInfo const createInfo{
-            VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-            nullptr, 0,
-            &appInfo,
-            USE_DEBUG_LAYERS ? static_cast<std::uint32_t>(std::size(layers)) : 0, std::data(layers),
-            static_cast<std::uint32_t>(std::size(extensions)), std::data(extensions)
-        };
-
-        if (auto result = vkCreateInstance(&createInfo, nullptr, &instance_); result != VK_SUCCESS)
-            throw std::runtime_error("failed to create instance"s);
-    }
-
-    ~VulkanInstance()
-    {
-        vkDestroyInstance(instance, nullptr);
-    }
-
-    VkInstance instance_;
-
-private:
-
-    VulkanInstance() = delete;
-
-    VulkanInstance(VulkanInstance const &) = delete;
-    VulkanInstance(VulkanInstance &&) = default;
-};
-
 
 void InitVulkan(GLFWwindow *window)
 {
-
-    VkApplicationInfo constexpr appInfo{
-        VK_STRUCTURE_TYPE_APPLICATION_INFO,
-        nullptr,
-        "VulkanIsland", VK_MAKE_VERSION(1, 0, 0),
-        "VulkanIsland", VK_MAKE_VERSION(1, 0, 0),
-        kVULKAN_VERSION
-    };
-
-    auto constexpr extensions = make_array(
-        VK_KHR_SURFACE_EXTENSION_NAME,
-#if USE_WIN32
-        VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
-#else
-        "VK_KHR_win32_surface",
-#endif
-        VK_EXT_DEBUG_REPORT_EXTENSION_NAME
-    );
-
+#if USE_PLAIN
     if (auto supported = CheckRequiredExtensions(extensions); !supported)
         throw std::runtime_error("not all required extensions are supported"s);
 
-#if USE_LAYERS
-    auto constexpr layers = make_array(
-        //"VK_LAYER_LUNARG_api_dump",
-        "VK_LAYER_LUNARG_core_validation",
-        "VK_LAYER_LUNARG_object_tracker",
-        "VK_LAYER_LUNARG_parameter_validation",
-        "VK_LAYER_GOOGLE_threading",
-        "VK_LAYER_GOOGLE_unique_objects",
-
-        "VK_LAYER_NV_nsight"
-    );
-
     if (auto supported = CheckRequiredLayers(layers); !supported)
         throw std::runtime_error("not all required layers are supported"s);
-#endif
 
-#if USE_PLAIN
     VkInstanceCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         nullptr, 0,
@@ -1016,13 +921,10 @@ void InitVulkan(GLFWwindow *window)
 
     if (auto result = vkCreateInstance(&createInfo, nullptr, &instance); result != VK_SUCCESS)
         throw std::runtime_error("failed to create instance"s);
-#else
-    VulkanInstance<true> vulkan_instance(extensions, layers);
-    instance = vulkan_instance.instance_;
-#endif
 
 #if USE_LAYERS
     CreateDebugReportCallback(instance, debugReportCallback);
+#endif
 #endif
 
 #if USE_WIN32
@@ -1049,6 +951,11 @@ int main()
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
     auto window = glfwCreateWindow(kWIDTH, kHEIGHT, "VulkanIsland", nullptr, nullptr);
+
+#if !USE_PLAIN
+    VulkanInstance<true> vulkan_instance(extensions, layers);
+    instance = vulkan_instance.instance_;
+#endif
 
     InitVulkan(window);
 
@@ -1105,10 +1012,10 @@ int main()
     if (device)
         vkDestroyDevice(device, nullptr);
 
+#if USE_PLAIN
     if (debugReportCallback)
         vkDestroyDebugReportCallbackEXT(instance, debugReportCallback, nullptr);
 
-#if USE_PLAIN
     if (instance)
         vkDestroyInstance(instance, nullptr);
 #endif

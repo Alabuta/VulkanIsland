@@ -37,7 +37,7 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugReportCallbackEXT(
 
 void CreateDebugReportCallback(VkInstance instance, VkDebugReportCallbackEXT &callback)
 {
-    VkDebugReportCallbackCreateInfoEXT constexpr createInfo = {
+    VkDebugReportCallbackCreateInfoEXT constexpr createInfo{
         VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
         nullptr,
         VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT,
