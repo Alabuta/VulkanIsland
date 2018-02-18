@@ -230,15 +230,9 @@ struct SwapChainSupportDetails {
 
     set_tuple(requiredFeatures, static_cast<VkBool32>(1));
 
-    // Matching by supported features, extensions, device type and supported Vulkan API version.
+    // Matching by supported features and extensions.
     auto it_end = std::remove_if(devices.begin(), devices.end(), [&requiredFeatures] (auto &&device)
     {
-        VkPhysicalDeviceProperties properties;
-        vkGetPhysicalDeviceProperties(device, &properties);
-
-        if (properties.deviceType != VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU || properties.apiVersion < kVULKAN_VERSION)
-            return true;
-
         VkPhysicalDeviceFeatures features;
         vkGetPhysicalDeviceFeatures(device, &features);
 
@@ -286,6 +280,7 @@ struct SwapChainSupportDetails {
 
     devices.erase(it_end, devices.end());
 
+    // Matchin by the swap chain properties support.
     it_end = std::remove_if(devices.begin(), devices.end(), [surface] (auto &&device)
     {
         auto const details = QuerySwapChainSupportDetails(device, surface);
@@ -296,6 +291,24 @@ struct SwapChainSupportDetails {
 
     if (devices.empty())
         throw std::runtime_error("failed to pick physical device"s);
+
+    auto constexpr deviceTypesPriority = make_array(
+        VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU, VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU, VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU, VK_PHYSICAL_DEVICE_TYPE_CPU
+    );
+
+    // Sorting by device type.
+    for (auto deviceType : deviceTypesPriority) {
+        auto id_next_type = std::stable_partition(devices.begin(), devices.end(), [deviceType] (auto &&device)
+        {
+            VkPhysicalDeviceProperties properties;
+            vkGetPhysicalDeviceProperties(device, &properties);
+
+            return properties.deviceType == deviceType;
+        });
+
+        if (id_next_type != devices.begin())
+            break;
+    }
 
     return devices.front();
 }
@@ -345,7 +358,7 @@ struct SwapChainSupportDetails {
 
     VkPhysicalDeviceFeatures deviceFeatures{};
 
-    VkDeviceCreateInfo const createInfo = {
+    VkDeviceCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
         nullptr, 0,
         static_cast<std::uint32_t>(std::size(queueCreateInfos)), std::data(queueCreateInfos),
