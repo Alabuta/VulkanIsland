@@ -51,9 +51,9 @@ auto constexpr extensions = make_array(
 #if USE_WIN32
     VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 #else
-    "VK_KHR_win32_surface",
+    "VK_KHR_win32_surface"//,
 #endif
-    VK_EXT_DEBUG_REPORT_EXTENSION_NAME
+    //VK_EXT_DEBUG_REPORT_EXTENSION_NAME
 );
 
 #if USE_LAYERS
