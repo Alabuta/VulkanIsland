@@ -1,6 +1,12 @@
 
+#define _CRTDBG_MAP_ALLOC
+#include <crtdbg.h>
+
+
 
 #include "main.h"
+
+
 
 auto constexpr kWIDTH = 800u;
 auto constexpr kHEIGHT = 600u;
@@ -1010,6 +1016,9 @@ void InitVulkan(GLFWwindow *window)
 
 int main()
 {
+    _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    //_CrtSetBreakAlloc(84);
+
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
