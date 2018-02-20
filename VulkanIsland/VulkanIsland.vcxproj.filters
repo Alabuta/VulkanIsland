@@ -37,6 +37,9 @@
     <ClInclude Include="src\device.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\device_defaults.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

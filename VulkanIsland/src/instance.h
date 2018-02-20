@@ -21,8 +21,8 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
 
-/*template<bool USE_DEBUG_LAYERS>
-class VulkanInstance<USE_DEBUG_LAYERS>::VulkanDevice;*/
+
+class VulkanDevice;
 
 
 class VulkanInstance final {
@@ -36,14 +36,15 @@ public:
 
     VkInstance handle() noexcept;
 
-    /*class VulkanDevice;
-    VulkanInstance<USE_DEBUG_LAYERS>::VulkanDevice &device();*/
+    VulkanDevice *const PickDevice();
 
+    VulkanDevice *const device() noexcept;
+         
 private:
     VkDebugReportCallbackEXT debugReportCallback_{VK_NULL_HANDLE};
 
-    /*std::once_flag device_setup_;
-    VulkanDevice device_;*/
+    //std::once_flag device_setup_;
+    std::unique_ptr<VulkanDevice> device_;
 
     VulkanInstance() = delete;
     VulkanInstance(VulkanInstance const &) = delete;
@@ -113,14 +114,7 @@ inline VkInstance VulkanInstance::handle() noexcept
     return instance_;
 }
 
-
-/*template<bool USE_DEBUG_LAYERS>
-typename VulkanInstance<USE_DEBUG_LAYERS>::VulkanDevice &VulkanInstance<USE_DEBUG_LAYERS>::device()
+inline VulkanDevice *const VulkanInstance::device() noexcept
 {
-    std::call_once(device_setup_, [&device_] ()
-    {
-        device_ = std::move(VulkanDevice());
-    });
-
-    return device_;
-}*/
+    return device_.get();
+}

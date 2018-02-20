@@ -1034,7 +1034,6 @@ int main()
     InitVulkan(window);
 
     physicalDevice = PickPhysicalDevice(instance, surface);
-    //device1.physical_device_ = physicalDevice;
     device = CreateDevice(instance, physicalDevice, surface);
 
     CreateSwapChain(physicalDevice, device, surface);
