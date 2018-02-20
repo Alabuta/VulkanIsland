@@ -132,6 +132,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\device.cxx" />
+    <ClCompile Include="src\instance.cxx" />
     <ClCompile Include="src\main.cxx" />
   </ItemGroup>
   <ItemGroup>

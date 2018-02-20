@@ -17,6 +17,9 @@
     <ClCompile Include="src\device.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\instance.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\helpers.h">

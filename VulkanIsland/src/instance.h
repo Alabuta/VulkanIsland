@@ -27,13 +27,12 @@ class VulkanInstance final {
 public:
 
     VkInstance instance_{VK_NULL_HANDLE};
-    VkPhysicalDevice physicalDevice_{VK_NULL_HANDLE};
 
     template<class E, class L>
     VulkanInstance(E &&extensions, L &&layers);
-
     ~VulkanInstance();
 
+    VkInstance handle() noexcept;
 
     /*class VulkanDevice;
     VulkanInstance<USE_DEBUG_LAYERS>::VulkanDevice &device();*/
@@ -50,7 +49,7 @@ private:
 };
 
 template<class E, class L>
-VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
+inline VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
 {
     auto constexpr use_extensions = !std::is_same_v<std::false_type, E>;
     auto constexpr use_layers = !std::is_same_v<std::false_type, L>;
@@ -58,7 +57,9 @@ VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
     VkInstanceCreateInfo createInfo{
         VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         nullptr, 0,
-        &app_info
+        &app_info,
+        0, nullptr,
+        0, nullptr
     };
 
     if constexpr (use_extensions)
@@ -105,13 +106,9 @@ VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
         CreateDebugReportCallback(instance_, debugReportCallback_);
 }
 
-
-inline VulkanInstance::~VulkanInstance()
+inline VkInstance VulkanInstance::handle() noexcept
 {
-    if (debugReportCallback_ != VK_NULL_HANDLE)
-        vkDestroyDebugReportCallbackEXT(instance_, debugReportCallback_, nullptr);
-
-    vkDestroyInstance(instance_, nullptr);
+    return instance_;
 }
 
 
