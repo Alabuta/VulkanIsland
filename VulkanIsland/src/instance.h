@@ -7,6 +7,8 @@
 #include <mutex>
 #include <optional>
 
+#include <gsl\gsl>
+
 #include "helpers.h"
 
 #ifndef GLFW_INCLUDE_VULKAN

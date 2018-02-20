@@ -12,6 +12,8 @@
 #include <string_view>
 #include <fstream>
 
+#include <gsl\gsl>
+
 #ifndef GLFW_INCLUDE_VULKAN
 #define GLFW_INCLUDE_VULKAN
 #endif
