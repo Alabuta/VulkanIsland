@@ -1,6 +1,7 @@
 #pragma once
 
 #include "instance.h"
+#include "device_defaults.h"
 
 
 class VulkanDevice final {
