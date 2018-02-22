@@ -7,6 +7,7 @@
 #include "main.h"
 
 
+VkSurfaceKHR surface;
 
 auto constexpr kWIDTH = 800u;
 auto constexpr kHEIGHT = 600u;
@@ -56,59 +57,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
 }
 #endif
 
-
-template<class T, class U, typename std::enable_if_t<is_iterable_v<std::decay_t<T>> && std::is_same_v<std::decay_t<U>, VkQueueFamilyProperties>>...>
-[[nodiscard]] std::optional<std::uint32_t> GetRequiredQueueFamilyIndex(T &&queueFamilies, U &&requiredQueue)
-{
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkQueueFamilyProperties>, "iterable object does not contain VkQueueFamilyProperties elements");
-
-    // Strict matching.
-    auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&requiredQueue] (auto &&queueFamily)
-    {
-        return queueFamily.queueCount > 0 && queueFamily.queueFlags == requiredQueue.queueFlags;
-    });
-
-    if (it_family != queueFamilies.cend())
-        return static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family));
-
-    // Tolerant matching.
-    it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&requiredQueue] (auto &&queueFamily)
-    {
-        return queueFamily.queueCount > 0 && (queueFamily.queueFlags & requiredQueue.queueFlags) == requiredQueue.queueFlags;
-    });
-
-    if (it_family != queueFamilies.cend())
-        return static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family));
-
-    return {};
-}
-
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
-[[nodiscard]] std::optional<std::uint32_t> GetPresentationQueueFamilyIndex(T &&queueFamilies, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
-{
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkQueueFamilyProperties>, "iterable object does not contain VkQueueFamilyProperties elements");
-
-    auto it_presentationQueue = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [physicalDevice, surface, size = queueFamilies.size()](auto queueFamily)
-    {
-        std::vector<std::uint32_t> queueFamiliesIndices(size);
-        std::iota(queueFamiliesIndices.begin(), queueFamiliesIndices.end(), 0);
-
-        return std::find_if(queueFamiliesIndices.crbegin(), queueFamiliesIndices.crend(), [physicalDevice, surface] (auto queueIndex)
-        {
-            VkBool32 surfaceSupported = 0;
-            if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueIndex, surface, &surfaceSupported); result != VK_SUCCESS)
-                throw std::runtime_error("failed to retrieve surface support: "s + std::to_string(result));
-
-            return surfaceSupported != VK_TRUE;
-
-        }) != queueFamiliesIndices.crend();
-    });
-
-    if (it_presentationQueue != queueFamilies.cend())
-        return static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_presentationQueue));
-
-    return {};
-}
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 [[nodiscard]] auto CheckRequiredExtensions(T &&_requiredExtensions)
@@ -1001,19 +949,6 @@ void InitVulkan(GLFWwindow *window)
     CreateDebugReportCallback(instance, debugReportCallback);
 #endif
 #endif
-
-#if USE_WIN32
-    VkWin32SurfaceCreateInfoKHR const win32CreateInfo = {
-        VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
-        nullptr, 0,
-        GetModuleHandle(nullptr),
-        glfwGetWin32Window(window)
-    };
-
-    vkCreateWin32SurfaceKHR(vkInstance, &win32CreateInfo, nullptr, &vkSurface);
-#else
-    glfwCreateWindowSurface(instance, window, nullptr, &surface);
-#endif
 }
 
 
@@ -1030,12 +965,22 @@ int main()
 #if !USE_PLAIN
     VulkanInstance vulkan_instance(extensions, layers);
     instance = vulkan_instance.instance_;
-    //auto device1 = vulkan_instance.device();
-
 #endif
 
     InitVulkan(window);
 
+#if USE_WIN32
+    VkWin32SurfaceCreateInfoKHR const win32CreateInfo = {
+        VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
+        nullptr, 0,
+        GetModuleHandle(nullptr),
+        glfwGetWin32Window(window)
+    };
+
+    vkCreateWin32SurfaceKHR(vkInstance, &win32CreateInfo, nullptr, &vkSurface);
+#else
+    glfwCreateWindowSurface(instance, window, nullptr, &surface);
+#endif
     physicalDevice = PickPhysicalDevice(instance, surface);
     device = CreateDevice(instance, physicalDevice, surface);
 
