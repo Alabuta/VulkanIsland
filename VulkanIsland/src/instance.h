@@ -4,18 +4,17 @@
 #include <array>
 #include <string>
 #include <string_view>
-#include <mutex>
-#include <optional>
 
 #include <gsl\gsl>
 
 #include "helpers.h"
 
+#define GLFW_EXPOSE_NATIVE_WIN32
+
 #ifndef GLFW_INCLUDE_VULKAN
 #define GLFW_INCLUDE_VULKAN
-#endif
-#define GLFW_EXPOSE_NATIVE_WIN32
 #include <GLFW/glfw3.h>
+#endif
 
 #ifndef VK_USE_PLATFORM_WIN32_KHR
 #define VK_USE_PLATFORM_WIN32_KHR
@@ -38,14 +37,13 @@ public:
 
     VkInstance handle() noexcept;
 
-    VulkanDevice *const PickDevice();
+    //VulkanDevice *const PickDevice();
 
     VulkanDevice *const device() noexcept;
          
 private:
     VkDebugReportCallbackEXT debugReportCallback_{VK_NULL_HANDLE};
 
-    //std::once_flag device_setup_;
     std::unique_ptr<VulkanDevice> device_;
 
     VulkanInstance() = delete;

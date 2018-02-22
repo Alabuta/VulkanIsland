@@ -223,38 +223,11 @@ struct SwapChainSupportDetails {
     if (auto result = vkEnumeratePhysicalDevices(instance, &devicesCount, std::data(devices)); result != VK_SUCCESS)
         throw std::runtime_error("failed to retrieve physical devices: "s + std::to_string(result));
 
-    /*VkPhysicalDeviceFeatures features{};
-
-    auto requiredFeatures = std::tie(
-        features.geometryShader,
-        features.tessellationShader,
-        features.depthClamp,
-        features.shaderUniformBufferArrayDynamicIndexing,
-        features.shaderSampledImageArrayDynamicIndexing,
-        features.shaderStorageBufferArrayDynamicIndexing,
-        features.shaderStorageImageArrayDynamicIndexing
-    );
-
-    set_tuple(requiredFeatures, static_cast<VkBool32>(1));*/
-
     // Matching by supported features and extensions.
     auto it_end = std::remove_if(devices.begin(), devices.end(), [] (auto &&device)
     {
         VkPhysicalDeviceFeatures features;
         vkGetPhysicalDeviceFeatures(device, &features);
-
-        /*auto const deviceFeatures = std::tie(
-            features.geometryShader,
-            features.tessellationShader,
-            features.depthClamp,
-            features.shaderUniformBufferArrayDynamicIndexing,
-            features.shaderSampledImageArrayDynamicIndexing,
-            features.shaderStorageBufferArrayDynamicIndexing,
-            features.shaderStorageImageArrayDynamicIndexing
-        );
-
-        if (deviceFeatures != requiredFeatures)
-            return true;*/
 
         if (!ComparePhysicalDeviceFeatures(features))
             return true;
