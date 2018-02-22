@@ -20,6 +20,9 @@
     <ClCompile Include="src\instance.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\debug.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\helpers.h">

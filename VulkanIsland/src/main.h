@@ -36,8 +36,6 @@ auto constexpr kVULKAN_VERSION = VK_API_VERSION_1_0;
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 
-#include "debug.h"
-
 
 
 VkApplicationInfo constexpr app_info{
