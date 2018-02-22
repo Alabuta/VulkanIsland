@@ -14,11 +14,6 @@ auto constexpr kHEIGHT = 600u;
 
 #define USE_PLAIN 0
 
-auto constexpr requiredQueues = make_array(
-    VkQueueFamilyProperties{VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT},
-    VkQueueFamilyProperties{VK_QUEUE_TRANSFER_BIT}
-);
-
 auto constexpr deviceExtensions = make_array(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
 VkInstance instance;
@@ -174,11 +169,6 @@ template<bool check_on_duplicates = false, class T, typename std::enable_if_t<is
 }
 
 
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
 
 [[nodiscard]] SwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
 {
@@ -954,7 +944,14 @@ int main()
 #else
     glfwCreateWindowSurface(instance, window, nullptr, &surface);
 #endif
+
+#if USE_PLAIN
     physicalDevice = PickPhysicalDevice(instance, surface);
+#else
+    auto d = VulkanDevice(vulkan_instance, surface, deviceExtensions);
+    physicalDevice = d.physical_handle();
+#endif
+
     device = CreateDevice(instance, physicalDevice, surface);
 
     CreateSwapChain(physicalDevice, device, surface);

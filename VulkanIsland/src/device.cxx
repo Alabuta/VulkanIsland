@@ -1,24 +1,16 @@
+
+#include "main.h"
 #include "device.h"
 #include "device_defaults.h"
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 
-VulkanDevice::VulkanDevice(VulkanInstance const &instance, VkSurfaceKHR surface)
-{
-    ;
-}
+namespace {
 
-VulkanDevice::~VulkanDevice()
+template<bool check_on_duplicates = false>
+[[nodiscard]] bool CheckRequiredDeviceExtensions(VkPhysicalDevice physicalDevice, std::vector<std::string_view> &&extensions)
 {
-    //vkDestroyDevice(device_, nullptr);
-}
-
-template<bool check_on_duplicates = false, class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
-[[nodiscard]] auto CheckRequiredDeviceExtensions(VkPhysicalDevice physicalDevice, T &&_requiredExtensions)
-{
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *>, "iterable object does not contain null-terminated strings");
-
     std::vector<VkExtensionProperties> requiredExtensions;
 
     auto constexpr extensionsComp = [] (auto &&lhs, auto &&rhs)
@@ -26,10 +18,10 @@ template<bool check_on_duplicates = false, class T, typename std::enable_if_t<is
         return std::lexicographical_compare(std::cbegin(lhs.extensionName), std::cend(lhs.extensionName), std::cbegin(rhs.extensionName), std::cend(rhs.extensionName));
     };
 
-    std::transform(_requiredExtensions.begin(), _requiredExtensions.end(), std::back_inserter(requiredExtensions), [] (auto &&name)
+    std::transform(extensions.begin(), extensions.end(), std::back_inserter(requiredExtensions), [] (auto &&name)
     {
         VkExtensionProperties prop{};
-        std::uninitialized_copy_n(name, std::strlen(name), prop.extensionName);
+        std::uninitialized_copy_n(std::begin(name), std::size(name), prop.extensionName);
 
         return prop;
     });
@@ -59,12 +51,10 @@ template<bool check_on_duplicates = false, class T, typename std::enable_if_t<is
     return std::includes(supportedExtensions.begin(), supportedExtensions.end(), requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
 }
 
+}
 
-template<bool check_on_duplicates = false, class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
-[[nodiscard]] VkPhysicalDevice PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, T &&requiredExtension)
+void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions)
 {
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *>, "iterable object does not contain null-terminated strings");
-
     std::uint32_t devicesCount = 0;
 
     if (auto result = vkEnumeratePhysicalDevices(instance, &devicesCount, nullptr); result != VK_SUCCESS || devicesCount == 0)
@@ -75,7 +65,7 @@ template<bool check_on_duplicates = false, class T, typename std::enable_if_t<is
         throw std::runtime_error("failed to retrieve physical devices: "s + std::to_string(result));
 
     // Matching by supported features and extensions.
-    auto it_end = std::remove_if(devices.begin(), devices.end(), [] (auto &&device)
+    auto it_end = std::remove_if(devices.begin(), devices.end(), [&extensions] (auto &&device)
     {
         VkPhysicalDeviceFeatures features;
         vkGetPhysicalDeviceFeatures(device, &features);
@@ -83,7 +73,7 @@ template<bool check_on_duplicates = false, class T, typename std::enable_if_t<is
         if (!ComparePhysicalDeviceFeatures(features))
             return true;
 
-        return !CheckRequiredDeviceExtensions(device, requiredExtension);
+        return !CheckRequiredDeviceExtensions(device, std::move(extensions));
     });
 
     devices.erase(it_end, devices.end());
@@ -144,5 +134,10 @@ template<bool check_on_duplicates = false, class T, typename std::enable_if_t<is
             break;
     }
 
-    return devices.front();
+    physicalDevice_ = devices.front();
+}
+
+VulkanDevice::~VulkanDevice()
+{
+    //vkDestroyDevice(device_, nullptr);
 }
