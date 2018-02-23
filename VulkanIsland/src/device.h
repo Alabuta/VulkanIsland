@@ -16,15 +16,15 @@ public:
     VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface, E &&extensions);
     ~VulkanDevice();
 
-    VkDevice handle();
-    VkPhysicalDevice physical_handle();
+    VkDevice handle() noexcept;
+    VkPhysicalDevice physical_handle() noexcept;
 
-    std::vector<std::uint32_t> const &supported_queues_indices() const;
+    std::vector<std::uint32_t> const &supported_queues_indices() const noexcept;
 
-public:
+private:
 
-    VkDevice device_;
-    VkPhysicalDevice physicalDevice_;
+    VkPhysicalDevice physicalDevice_{VK_NULL_HANDLE};
+    VkDevice device_{VK_NULL_HANDLE};
 
     std::vector<std::uint32_t> supportedQueuesIndices_;
 
@@ -60,17 +60,17 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
     CreateDevice(instance.handle(), surface, std::move(extensions_));
 }
 
-inline VkDevice VulkanDevice::handle()
+inline VkDevice VulkanDevice::handle() noexcept
 {
     return device_;
 }
 
-inline VkPhysicalDevice VulkanDevice::physical_handle()
+inline VkPhysicalDevice VulkanDevice::physical_handle() noexcept
 {
     return physicalDevice_;
 }
 
-inline std::vector<std::uint32_t> const &VulkanDevice::supported_queues_indices() const
+inline std::vector<std::uint32_t> const &VulkanDevice::supported_queues_indices() const noexcept
 {
     return supportedQueuesIndices_;
 }
