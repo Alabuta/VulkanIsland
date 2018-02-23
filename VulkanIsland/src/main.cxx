@@ -926,8 +926,8 @@ int main()
     auto window = glfwCreateWindow(kWIDTH, kHEIGHT, "VulkanIsland", nullptr, nullptr);
 
 #if !USE_PLAIN
-    VulkanInstance vulkan_instance(extensions, layers);
-    instance = vulkan_instance.instance_;
+    VulkanInstance vulkanInstance(extensions, layers);
+    instance = vulkanInstance.handle();
 #endif
 
     InitVulkan(window);

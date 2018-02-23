@@ -23,32 +23,26 @@
 #include "debug.h"
 
 
-class VulkanDevice;
-
 
 class VulkanInstance final {
 public:
-
-    VkInstance instance_{VK_NULL_HANDLE};
 
     template<class E, class L>
     VulkanInstance(E &&extensions, L &&layers);
     ~VulkanInstance();
 
     VkInstance handle() noexcept;
-
-    //VulkanDevice *const PickDevice();
-
-    VulkanDevice *const device() noexcept;
          
 private:
-    VkDebugReportCallbackEXT debugReportCallback_{VK_NULL_HANDLE};
 
-    std::unique_ptr<VulkanDevice> device_;
+    VkInstance instance_{VK_NULL_HANDLE};
+    VkDebugReportCallbackEXT debugReportCallback_{VK_NULL_HANDLE};
 
     VulkanInstance() = delete;
     VulkanInstance(VulkanInstance const &) = delete;
     VulkanInstance(VulkanInstance &&) = delete;
+
+    void CreateInstance(std::vector<char const *> &&extensions, std::vector<char const *> &&layers);
 };
 
 template<class E, class L>
@@ -57,13 +51,8 @@ inline VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
     auto constexpr use_extensions = !std::is_same_v<std::false_type, E>;
     auto constexpr use_layers = !std::is_same_v<std::false_type, L>;
 
-    VkInstanceCreateInfo createInfo{
-        VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-        nullptr, 0,
-        &app_info,
-        0, nullptr,
-        0, nullptr
-    };
+    std::vector<char const *> extensions_;
+    std::vector<char const *> layers_;
 
     if constexpr (use_extensions)
     {
@@ -82,11 +71,11 @@ inline VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
                 throw std::runtime_error("enabled validation layers require enabled 'VK_EXT_debug_report' extension"s);
         }
 
-        if (auto supported = CheckRequiredExtensions(extensions); !supported)
-            throw std::runtime_error("not all required extensions are supported"s);
+        if constexpr (std::is_rvalue_reference_v<T>)
+            std::move(extensions.begin(), extensions.end(), std::back_inserter(extensions_));
 
-        createInfo.enabledExtensionCount = static_cast<std::uint32_t>(std::size(extensions));
-        createInfo.ppEnabledExtensionNames = std::data(extensions);
+        else std::copy(extensions.begin(), extensions.end(), std::back_inserter(extensions_));
+
     }
 
     if constexpr (use_layers)
@@ -95,26 +84,16 @@ inline VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
         static_assert(is_container_v<T>, "'layers' must be a container");
         static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *>, "'layers' must contain null-terminated strings");
 
-        if (auto supported = CheckRequiredLayers(layers); !supported)
-            throw std::runtime_error("not all required layers are supported"s);
+        if constexpr (std::is_rvalue_reference_v<T>)
+            std::move(layers.begin(), layers.end(), std::back_inserter(layers_));
 
-        createInfo.enabledLayerCount = static_cast<std::uint32_t>(std::size(layers));
-        createInfo.ppEnabledLayerNames = std::data(layers);
+        else std::copy(layers.begin(), layers.end(), std::back_inserter(layers_));
     }
 
-    if (auto result = vkCreateInstance(&createInfo, nullptr, &instance_); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create instance"s);
-
-    if constexpr (use_layers)
-        CreateDebugReportCallback(instance_, debugReportCallback_);
+    CreateInstance(std::move(extensions_), std::move(layers_));
 }
 
 inline VkInstance VulkanInstance::handle() noexcept
 {
     return instance_;
-}
-
-inline VulkanDevice *const VulkanInstance::device() noexcept
-{
-    return device_.get();
 }
