@@ -53,303 +53,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
 #endif
 
 
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
-[[nodiscard]] auto CheckRequiredExtensions(T &&_requiredExtensions)
-{
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *>, "iterable object does not contain null-terminated strings");
-
-    std::vector<VkExtensionProperties> requiredExtensions;
-
-    std::transform(_requiredExtensions.begin(), _requiredExtensions.end(), std::back_inserter(requiredExtensions), [] (auto &&name)
-    {
-        VkExtensionProperties prop{};
-        std::uninitialized_copy_n(name, std::strlen(name), prop.extensionName);
-
-        return prop;
-    });
-
-    auto constexpr extensionsComp = [] (auto &&lhs, auto &&rhs)
-    {
-        return std::lexicographical_compare(std::cbegin(lhs.extensionName), std::cend(lhs.extensionName), std::cbegin(rhs.extensionName), std::cend(rhs.extensionName));
-    };
-
-    std::sort(requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
-
-    std::uint32_t extensionsCount = 0;
-    if (auto result = vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount, nullptr); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve extensions count: "s + std::to_string(result));
-
-    std::vector<VkExtensionProperties> supportedExtensions(extensionsCount);
-    if (auto result = vkEnumerateInstanceExtensionProperties(nullptr, &extensionsCount, std::data(supportedExtensions)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve extensions: "s + std::to_string(result));
-
-    std::sort(supportedExtensions.begin(), supportedExtensions.end(), extensionsComp);
-
-    return std::includes(supportedExtensions.begin(), supportedExtensions.end(), requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
-}
-
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
-[[nodiscard]] auto CheckRequiredLayers(T &&_requiredLayers)
-{
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *>, "iterable object does not contain null-terminated strings");
-
-    std::vector<VkLayerProperties> requiredLayers;
-
-    std::transform(_requiredLayers.begin(), _requiredLayers.end(), std::back_inserter(requiredLayers), [] (auto &&name)
-    {
-        VkLayerProperties prop{};
-        std::uninitialized_copy_n(name, std::strlen(name), prop.layerName);
-
-        return prop;
-    });
-
-    auto constexpr layersComp = [] (auto &&lhs, auto &&rhs)
-    {
-        return std::lexicographical_compare(std::cbegin(lhs.layerName), std::cend(lhs.layerName), std::cbegin(rhs.layerName), std::cend(rhs.layerName));
-    };
-
-    std::sort(requiredLayers.begin(), requiredLayers.end(), layersComp);
-
-    std::uint32_t layersCount = 0;
-    if (auto result = vkEnumerateInstanceLayerProperties(&layersCount, nullptr); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve layers count: "s + std::to_string(result));
-
-    std::vector<VkLayerProperties> supportedLayers(layersCount);
-    if (auto result = vkEnumerateInstanceLayerProperties(&layersCount, std::data(supportedLayers)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve layers: "s + std::to_string(result));
-
-    std::sort(supportedLayers.begin(), supportedLayers.end(), layersComp);
-
-    return std::includes(supportedLayers.begin(), supportedLayers.end(), requiredLayers.begin(), requiredLayers.end(), layersComp);
-}
-
-template<bool check_on_duplicates = false, class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
-[[nodiscard]] auto CheckRequiredDeviceExtensions(VkPhysicalDevice physicalDevice, T &&_requiredExtensions)
-{
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *>, "iterable object does not contain null-terminated strings");
-
-    std::vector<VkExtensionProperties> requiredExtensions;
-
-    auto constexpr extensionsComp = [] (auto &&lhs, auto &&rhs)
-    {
-        return std::lexicographical_compare(std::cbegin(lhs.extensionName), std::cend(lhs.extensionName), std::cbegin(rhs.extensionName), std::cend(rhs.extensionName));
-    };
-
-    std::transform(_requiredExtensions.begin(), _requiredExtensions.end(), std::back_inserter(requiredExtensions), [] (auto &&name)
-    {
-        VkExtensionProperties prop{};
-        std::uninitialized_copy_n(name, std::strlen(name), prop.extensionName);
-
-        return prop;
-    });
-
-    std::sort(requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
-
-    if constexpr (check_on_duplicates)
-    {
-        auto it = std::unique(requiredExtensions.begin(), requiredExtensions.end(), [] (auto &&lhs, auto &&rhs)
-        {
-            return std::equal(std::cbegin(lhs.extensionName), std::cend(lhs.extensionName), std::cbegin(rhs.extensionName), std::cend(rhs.extensionName));
-        });
-
-        requiredExtensions.erase(it, requiredExtensions.end());
-    }
-
-    std::uint32_t extensionsCount = 0;
-    if (auto result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionsCount, nullptr); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device extensions count: "s + std::to_string(result));
-
-    std::vector<VkExtensionProperties> supportedExtensions(extensionsCount);
-    if (auto result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionsCount, std::data(supportedExtensions)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device extensions: "s + std::to_string(result));
-
-    std::sort(supportedExtensions.begin(), supportedExtensions.end(), extensionsComp);
-
-    return std::includes(supportedExtensions.begin(), supportedExtensions.end(), requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
-}
-
-
-
-[[nodiscard]] SwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
-{
-    SwapChainSupportDetails details;
-
-    if (auto result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface capabilities: "s + std::to_string(result));
-
-    std::uint32_t formatsCount = 0;
-    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, nullptr); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface formats count: "s + std::to_string(result));
-
-    details.formats.resize(formatsCount);
-    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, std::data(details.formats)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface formats: "s + std::to_string(result));
-
-    if (details.formats.empty())
-        return {};
-
-    std::uint32_t presentModeCount = 0;
-    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface presentation modes count: "s + std::to_string(result));
-
-    details.presentModes.resize(presentModeCount);
-    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, std::data(details.presentModes)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface presentation modes: "s + std::to_string(result));
-
-    if (details.presentModes.empty())
-        return {};
-
-    return details;
-}
-
-[[nodiscard]] VkPhysicalDevice PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface)
-{
-    std::uint32_t devicesCount = 0;
-    
-    if (auto result = vkEnumeratePhysicalDevices(instance, &devicesCount, nullptr); result != VK_SUCCESS || devicesCount == 0)
-        throw std::runtime_error("failed to find physical device with Vulkan API support: "s + std::to_string(result));
-
-    std::vector<VkPhysicalDevice> devices(devicesCount);
-    if (auto result = vkEnumeratePhysicalDevices(instance, &devicesCount, std::data(devices)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve physical devices: "s + std::to_string(result));
-
-    // Matching by supported features and extensions.
-    auto it_end = std::remove_if(devices.begin(), devices.end(), [] (auto &&device)
-    {
-        VkPhysicalDeviceFeatures features;
-        vkGetPhysicalDeviceFeatures(device, &features);
-
-        if (!ComparePhysicalDeviceFeatures(features))
-            return true;
-
-        return !CheckRequiredDeviceExtensions(device, deviceExtensions);
-    });
-
-    devices.erase(it_end, devices.end());
-
-    // Matching by required graphics, transfer and presentation queues. Also by presentation capabilities.
-    it_end = std::remove_if(devices.begin(), devices.end(), [surface] (auto &&device)
-    {
-        std::uint32_t queueFamilyPropertyCount = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, nullptr);
-
-        std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyPropertyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, std::data(queueFamilies));
-
-        if (queueFamilies.empty())
-            return true;
-
-        std::vector<std::uint32_t> supportedQueuesFamilyIndices;
-
-        for (auto &&queueProp : requiredQueues)
-            if (auto const queueIndex = GetRequiredQueueFamilyIndex(queueFamilies, queueProp); queueIndex)
-                supportedQueuesFamilyIndices.emplace_back(queueIndex.value());
-
-        if (supportedQueuesFamilyIndices.empty())
-            return true;
-
-        return !GetPresentationQueueFamilyIndex(queueFamilies, device, surface).has_value();
-    });
-
-    devices.erase(it_end, devices.end());
-
-    // Matchin by the swap chain properties support.
-    it_end = std::remove_if(devices.begin(), devices.end(), [surface] (auto &&device)
-    {
-        auto const details = QuerySwapChainSupportDetails(device, surface);
-        return details.formats.empty() || details.presentModes.empty();
-    });
-
-    devices.erase(it_end, devices.end());
-
-    if (devices.empty())
-        throw std::runtime_error("failed to pick physical device"s);
-
-    auto constexpr deviceTypesPriority = make_array(
-        VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU, VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU, VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU, VK_PHYSICAL_DEVICE_TYPE_CPU
-    );
-
-    // Sorting by device type.
-    for (auto deviceType : deviceTypesPriority) {
-        auto id_next_type = std::stable_partition(devices.begin(), devices.end(), [deviceType] (auto &&device)
-        {
-            VkPhysicalDeviceProperties properties;
-            vkGetPhysicalDeviceProperties(device, &properties);
-
-            return properties.deviceType == deviceType;
-        });
-
-        if (id_next_type != devices.begin())
-            break;
-    }
-
-    return devices.front();
-}
-
-
-
-[[nodiscard]] VkDevice CreateDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
-{
-    std::uint32_t queueFamilyPropertyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
-
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyPropertyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, std::data(queueFamilies));
-
-    if (queueFamilies.empty())
-        throw std::runtime_error("there's no queue families on device"s);
-
-    supportedQueuesIndices.clear();
-
-    for (auto &&queueProp : requiredQueues)
-        if (auto const queueIndex = GetRequiredQueueFamilyIndex(queueFamilies, queueProp); queueIndex)
-            supportedQueuesIndices.emplace_back(queueIndex.value());
-
-    if (supportedQueuesIndices.empty())
-        throw std::runtime_error("device does not support required queues"s);
-
-    if (auto const presentationFamilyQueueIndex = GetPresentationQueueFamilyIndex(queueFamilies, physicalDevice, surface); presentationFamilyQueueIndex)
-        supportedQueuesIndices.emplace_back(presentationFamilyQueueIndex.value());
-
-    else throw std::runtime_error("picked queue does not support presentation surface"s);
-
-    std::set<std::uint32_t> uniqueFamilyQueueIndices{supportedQueuesIndices.cbegin(), supportedQueuesIndices.cend()};
-    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
-
-    auto constexpr queuePriority = 1.f;
-
-    for (auto &&queueFamilyIndex : uniqueFamilyQueueIndices) {
-        VkDeviceQueueCreateInfo queueCreateInfo{
-            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
-            nullptr, 0,
-            queueFamilyIndex, 1,
-            &queuePriority
-        };
-
-        queueCreateInfos.push_back(std::move(queueCreateInfo));
-    }
-
-    VkPhysicalDeviceFeatures deviceFeatures{};
-
-    VkDeviceCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-        nullptr, 0,
-        static_cast<std::uint32_t>(std::size(queueCreateInfos)), std::data(queueCreateInfos),
-        0, nullptr,
-        static_cast<std::uint32_t>(std::size(deviceExtensions)), std::data(deviceExtensions),
-        &deviceFeatures
-    };
-
-    VkDevice device;
-    if (auto result = vkCreateDevice(physicalDevice, &createInfo, nullptr, &device); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create logical device: "s + std::to_string(result));
-
-    vkGetDeviceQueue(device, supportedQueuesIndices.at(0), 0, &graphicsQueue);
-    vkGetDeviceQueue(device, supportedQueuesIndices.at(1), 0, &transferQueue);
-    vkGetDeviceQueue(device, supportedQueuesIndices.at(2), 0, &presentationQueue);
-
-    return device;
-}
 
 
 
@@ -416,6 +119,38 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     };
 }
 
+
+[[nodiscard]] SwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+{
+    SwapChainSupportDetails details;
+
+    if (auto result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface capabilities: "s + std::to_string(result));
+
+    std::uint32_t formatsCount = 0;
+    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, nullptr); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface formats count: "s + std::to_string(result));
+
+    details.formats.resize(formatsCount);
+    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, std::data(details.formats)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface formats: "s + std::to_string(result));
+
+    if (details.formats.empty())
+        return {};
+
+    std::uint32_t presentModeCount = 0;
+    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface presentation modes count: "s + std::to_string(result));
+
+    details.presentModes.resize(presentModeCount);
+    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, std::data(details.presentModes)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface presentation modes: "s + std::to_string(result));
+
+    if (details.presentModes.empty())
+        return {};
+
+    return details;
+}
 
 void CreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface)
 {
@@ -498,6 +233,8 @@ void CreateSwapChainImageViews(VkDevice device, T &&swapChainImages)
     }
 }
 
+
+
 [[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view path)
 {
     std::ifstream file(std::data(path), std::ios::binary);
@@ -541,6 +278,8 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     return shaderModule;
 
 }
+
+
 
 void CreateGraphicsPipeline(VkDevice device)
 {
@@ -884,37 +623,6 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
 
 
 
-void InitVulkan(GLFWwindow *window)
-{
-#if USE_PLAIN
-    if (auto supported = CheckRequiredExtensions(extensions); !supported)
-        throw std::runtime_error("not all required extensions are supported"s);
-
-    if (auto supported = CheckRequiredLayers(layers); !supported)
-        throw std::runtime_error("not all required layers are supported"s);
-
-    VkInstanceCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-        nullptr, 0,
-        &appInfo,
-#if USE_LAYERS
-        static_cast<std::uint32_t>(std::size(layers)), std::data(layers),
-#else
-        0, nullptr,
-#endif
-        static_cast<std::uint32_t>(std::size(extensions)), std::data(extensions)
-    };
-
-    if (auto result = vkCreateInstance(&createInfo, nullptr, &instance); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create instance"s);
-
-#if USE_LAYERS
-    CreateDebugReportCallback(instance, debugReportCallback);
-#endif
-#endif
-}
-
-
 int main()
 {
     _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -929,8 +637,6 @@ int main()
     VulkanInstance vulkanInstance(extensions, layers);
     instance = vulkanInstance.handle();
 #endif
-
-    InitVulkan(window);
 
 #if USE_WIN32
     VkWin32SurfaceCreateInfoKHR const win32CreateInfo = {
