@@ -12,25 +12,26 @@ auto constexpr requiredQueues = make_array(
 class VulkanDevice final {
 public:
 
-    //VulkanDevice() = default;
-    VulkanDevice(VulkanDevice const &) = default;
-    VulkanDevice(VulkanDevice &&) = default;
-
     template<class E>
     VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface, E &&extensions);
     ~VulkanDevice();
 
-    VkPhysicalDevice &physical_handle()
-    {
-        return physicalDevice_;
-    }
+    VkDevice handle();
+    VkPhysicalDevice physical_handle();
+
+    std::vector<std::uint32_t> const &supported_queues_indices() const;
 
 public:
 
-    VkPhysicalDevice physicalDevice_;
     VkDevice device_;
+    VkPhysicalDevice physicalDevice_;
 
-    void PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extension);
+    std::vector<std::uint32_t> supportedQueuesIndices_;
+
+    VulkanDevice() = delete;
+
+    void PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions);
+    void CreateDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<char const *> &&extensions);
 };
 
 template<class E>
@@ -38,7 +39,8 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
 {
     auto constexpr use_extensions = !std::is_same_v<std::false_type, E>;
 
-    std::vector<std::string_view> exts;
+    std::vector<std::string_view> extensions_view;
+    std::vector<char const *> extensions_;
 
     if constexpr (use_extensions)
     {
@@ -46,8 +48,29 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
         static_assert(is_container_v<T>, "'extensions' must be a container");
         static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *>, "'extensions' must contain null-terminated strings");
 
-        std::copy(extensions.begin(), extensions.end(), std::back_inserter(exts));
+        if constexpr (std::is_rvalue_reference_v<T>)
+            std::move(extensions.begin(), extensions.end(), std::back_inserter(extensions_));
+
+        else std::copy(extensions.begin(), extensions.end(), std::back_inserter(extensions_));
+
+        std::copy(extensions_.begin(), extensions_.end(), std::back_inserter(extensions_view));
     }
 
-    PickPhysicalDevice(instance.handle(), surface, std::move(exts));
+    PickPhysicalDevice(instance.handle(), surface, std::move(extensions_view));
+    CreateDevice(instance.handle(), surface, std::move(extensions_));
+}
+
+inline VkDevice VulkanDevice::handle()
+{
+    return device_;
+}
+
+inline VkPhysicalDevice VulkanDevice::physical_handle()
+{
+    return physicalDevice_;
+}
+
+inline std::vector<std::uint32_t> const &VulkanDevice::supported_queues_indices() const
+{
+    return supportedQueuesIndices_;
 }

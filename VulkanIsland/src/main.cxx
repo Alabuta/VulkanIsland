@@ -947,12 +947,19 @@ int main()
 
 #if USE_PLAIN
     physicalDevice = PickPhysicalDevice(instance, surface);
+    device = CreateDevice(instance, physicalDevice, surface);
 #else
-    auto d = VulkanDevice(vulkan_instance, surface, deviceExtensions);
+    auto d = VulkanDevice(vulkanInstance, surface, deviceExtensions);
     physicalDevice = d.physical_handle();
+    device = d.handle();
+
+    supportedQueuesIndices = d.supported_queues_indices();
+
+    vkGetDeviceQueue(device, d.supported_queues_indices().at(0), 0, &graphicsQueue);
+    vkGetDeviceQueue(device, d.supported_queues_indices().at(1), 0, &transferQueue);
+    vkGetDeviceQueue(device, d.supported_queues_indices().at(2), 0, &presentationQueue);
 #endif
 
-    device = CreateDevice(instance, physicalDevice, surface);
 
     CreateSwapChain(physicalDevice, device, surface);
     CreateSwapChainImageViews(device, swapChainImages);
@@ -1003,11 +1010,11 @@ int main()
 
     if (surface)
         vkDestroySurfaceKHR(instance, surface, nullptr);
-    
+
+#if USE_PLAIN
     if (device)
         vkDestroyDevice(device, nullptr);
 
-#if USE_PLAIN
     if (debugReportCallback)
         vkDestroyDebugReportCallbackEXT(instance, debugReportCallback, nullptr);
 

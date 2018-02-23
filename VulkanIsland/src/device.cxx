@@ -53,6 +53,18 @@ template<bool check_on_duplicates = false>
 
 }
 
+VulkanDevice::~VulkanDevice()
+{
+    if (device_ != VK_NULL_HANDLE)
+        vkDeviceWaitIdle(device_);
+
+    if (device_ != VK_NULL_HANDLE)
+        vkDestroyDevice(device_, nullptr);
+
+    device_ = VK_NULL_HANDLE;
+    physicalDevice_ = VK_NULL_HANDLE;
+}
+
 void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions)
 {
     std::uint32_t devicesCount = 0;
@@ -137,7 +149,59 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
     physicalDevice_ = devices.front();
 }
 
-VulkanDevice::~VulkanDevice()
+void VulkanDevice::CreateDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<char const *> &&extensions)
 {
-    //vkDestroyDevice(device_, nullptr);
+    std::uint32_t queueFamilyPropertyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice_, &queueFamilyPropertyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyPropertyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice_, &queueFamilyPropertyCount, std::data(queueFamilies));
+
+    if (queueFamilies.empty())
+        throw std::runtime_error("there's no queue families on device"s);
+
+    supportedQueuesIndices_.clear();
+
+    for (auto &&queueProp : requiredQueues)
+        if (auto const queueIndex = GetRequiredQueueFamilyIndex(queueFamilies, queueProp); queueIndex)
+            supportedQueuesIndices_.emplace_back(queueIndex.value());
+
+    if (supportedQueuesIndices_.empty())
+        throw std::runtime_error("device does not support required queues"s);
+
+    if (auto const presentationFamilyQueueIndex = GetPresentationQueueFamilyIndex(queueFamilies, physicalDevice_, surface); presentationFamilyQueueIndex)
+        supportedQueuesIndices_.emplace_back(presentationFamilyQueueIndex.value());
+
+    else throw std::runtime_error("picked queue does not support presentation surface"s);
+
+    std::set<std::uint32_t> const uniqueFamilyQueueIndices{supportedQueuesIndices_.cbegin(), supportedQueuesIndices_.cend()};
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+
+    for (auto &&queueFamilyIndex : uniqueFamilyQueueIndices) {
+        auto constexpr queuePriority = 1.f;
+
+        VkDeviceQueueCreateInfo queueCreateInfo{
+            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            nullptr, 0,
+            queueFamilyIndex, 1,
+            &queuePriority
+        };
+
+        queueCreateInfos.push_back(std::move(queueCreateInfo));
+    }
+
+    VkPhysicalDeviceFeatures constexpr deviceFeatures{};
+
+    VkDeviceCreateInfo const createInfo{
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+        nullptr, 0,
+        static_cast<std::uint32_t>(std::size(queueCreateInfos)), std::data(queueCreateInfos),
+        0, nullptr,
+        static_cast<std::uint32_t>(std::size(extensions)), std::data(extensions),
+        &deviceFeatures
+    };
+
+    if (auto result = vkCreateDevice(physicalDevice_, &createInfo, nullptr, &device_); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create logical device: "s + std::to_string(result));
 }
+
