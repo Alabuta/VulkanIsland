@@ -55,7 +55,7 @@ template<class T, class U, typename std::enable_if_t<is_iterable_v<std::decay_t<
 [[nodiscard]] std::optional<std::uint32_t> GetRequiredQueueFamilyIndex(T &&queueFamilies, U &&requiredQueue)
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkQueueFamilyProperties>, "iterable object does not contain VkQueueFamilyProperties elements");
-
+    
     // Strict matching.
     auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&requiredQueue] (auto &&queueFamily)
     {
@@ -82,7 +82,7 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkQueueFamilyProperties>, "iterable object does not contain VkQueueFamilyProperties elements");
 
-    auto it_presentationQueue = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [physicalDevice, surface, size = queueFamilies.size()](auto queueFamily)
+    auto it_presentationQueue = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [physicalDevice, surface, size = queueFamilies.size()] (auto queueFamily)
     {
         std::vector<std::uint32_t> queueFamiliesIndices(size);
         std::iota(queueFamiliesIndices.begin(), queueFamiliesIndices.end(), 0);

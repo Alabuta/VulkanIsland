@@ -19,7 +19,7 @@ template<class C>
 struct is_container<C, std::void_t<decltype(std::size(std::declval<C>()), std::data(std::declval<C>()))>> : std::true_type {};
 
 template<class T>
-constexpr bool is_container_v = is_iterable<T>::value;
+constexpr bool is_container_v = is_container<T>::value;
 
 template<std::size_t i = 0, typename T, typename V>
 constexpr void set_tuple(T &&tuple, V value)
