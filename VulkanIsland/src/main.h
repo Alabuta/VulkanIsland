@@ -80,5 +80,78 @@ struct SwapChainSupportDetails {
 [[nodiscard]] SwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 
 
+template<class T>
+class VulkanQueue {
+public:
+
+    VkQueue handle() { return handle_; }
+    VkQueue &handle() const { return handle_; }
+
+    template<class... Args>
+    constexpr bool StrictMatching(Args &&... args)
+    {
+        return static_cast<T *>(this)->StrictMatching(std::forward<Args>(args)...);
+    }
+
+    template<class... Args>
+    constexpr bool TolerantMatching(Args &&... args)
+    {
+        return static_cast<T *>(this)->TolerantMatching(std::forward<Args>(args)...);
+    }
+
+private:
+    VkQueue handle_{VK_NULL_HANDLE};
+
+};
+
+
+
 #include "instance.h"
 #include "device.h"
+
+
+class GraphicsQueue final : VulkanQueue<GraphicsQueue> {
+public:
+
+    template<class P, std::enable_if_t<std::is_same_v<std::decay_t<P>, VkQueueFamilyProperties>>...>
+    constexpr bool StrictMatching(P &&properties)
+    {
+        return properties.queueCount > 0 && properties.queueFlags == (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+    }
+
+    template<class P, std::enable_if_t<std::is_same_v<std::decay_t<P>, VkQueueFamilyProperties>>...>
+    constexpr bool TolerantMatching(P &&properties)
+    {
+        return properties.queueCount > 0 && (properties.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) == (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+    }
+};
+
+class TransferQueue final : VulkanQueue<TransferQueue> {
+public:
+
+    template<class P, std::enable_if_t<std::is_same_v<std::decay_t<P>, VkQueueFamilyProperties>>...>
+    constexpr bool StrictMatching(P &&properties)
+    {
+        return properties.queueCount > 0 && properties.queueFlags == VK_QUEUE_TRANSFER_BIT;
+    }
+
+    template<class P, std::enable_if_t<std::is_same_v<std::decay_t<P>, VkQueueFamilyProperties>>...>
+    constexpr bool TolerantMatching(P &&properties)
+    {
+        return properties.queueCount > 0 && (properties.queueFlags & VK_QUEUE_TRANSFER_BIT) == VK_QUEUE_TRANSFER_BIT;
+    }
+};
+
+class PresentationQueue final : VulkanQueue<PresentationQueue> {
+public:
+
+    template<class... Args>
+    constexpr bool StrictMatching(/*VulkanDevice const &device,*/VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::uint32_t queueIndex)
+    {
+        VkBool32 surfaceSupported = 0;
+        if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(/*device.physical_handle()*/physicalDevice, queueIndex, surface, &surfaceSupported); result != VK_SUCCESS)
+            throw std::runtime_error("failed to retrieve surface support: "s + std::to_string(result));
+
+        return surfaceSupported == VK_TRUE;
+    }
+};

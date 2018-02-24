@@ -3,11 +3,6 @@
 #include "instance.h"
 #include "device_defaults.h"
 
-auto constexpr requiredQueues = make_array(
-    VkQueueFamilyProperties{VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT},
-    VkQueueFamilyProperties{VK_QUEUE_TRANSFER_BIT}
-);
-
 
 class VulkanDevice final {
 public:
