@@ -109,6 +109,20 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     return {};
 }
 
+
+template<class Q, std::enable_if_t<std::is_base_of_v<VulkanQueue<std::decay_t<Q>>, std::decay_t<Q>>>...>
+std::optional<Q> GetQueue()
+{
+    using T = std::decay_t<Q>;
+
+    if constexpr (std::is_same_v<T, GraphicsQueue>)
+    {
+        ;
+    }
+
+    return {};
+}
+
 }
 
 VulkanDevice::~VulkanDevice()
@@ -148,7 +162,7 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
 
     devices.erase(it_end, devices.end());
 
-    // Matching by required graphics, transfer and presentation queues. Also by presentation capabilities.
+    // Matching by required graphics, transfer and presentation queues.
     it_end = std::remove_if(devices.begin(), devices.end(), [surface] (auto &&device)
     {
         std::uint32_t queueFamilyPropertyCount = 0;

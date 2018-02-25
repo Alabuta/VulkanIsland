@@ -16,6 +16,12 @@ public:
 
     std::vector<std::uint32_t> const &supported_queues_indices() const noexcept;
 
+    template<class Q, std::enable_if_t<std::is_base_of_v<VulkanQueue<std::decay_t<Q>>, std::decay_t<Q>>>...>
+    Q GetQueue()
+    {
+        return Q();
+    }
+
 private:
 
     VkPhysicalDevice physicalDevice_{VK_NULL_HANDLE};

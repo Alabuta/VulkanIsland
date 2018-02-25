@@ -99,8 +99,21 @@ public:
         return static_cast<T *>(this)->TolerantMatching(std::forward<Args>(args)...);
     }
 
+    /*template<class... Args>
+    VulkanQueue(Args &&... args)
+    {
+        *static_cast<T *>(this) = std::move(T(std::forward<Args>(args)...));
+    }*/
+
+    template<class... Args>
+    static bool constexpr has(Args &&... args)
+    {
+        return T::has(std::forward<Args>(args)...);
+    }
+
 private:
     VkQueue handle_{VK_NULL_HANDLE};
+    std::uint32_t family_, index_;
 
 };
 
@@ -124,6 +137,18 @@ public:
     {
         return properties.queueCount > 0 && (properties.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) == (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
     }
+
+    /*template<class T, class...>
+    GraphicsQueue(T &&queueFamilies)
+    {
+        static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkQueueFamilyProperties>, "iterable object does not contain VkQueueFamilyProperties elements");
+    }*/
+
+    template<class... Args>
+    static bool constexpr has(Args &&... args)
+    {
+        return true;
+    }
 };
 
 class TransferQueue final : VulkanQueue<TransferQueue> {
@@ -145,7 +170,7 @@ public:
 class PresentationQueue final : VulkanQueue<PresentationQueue> {
 public:
 
-    template<class... Args>
+    template<class...>
     constexpr bool StrictMatching(/*VulkanDevice const &device,*/VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, std::uint32_t queueIndex)
     {
         VkBool32 surfaceSupported = 0;
