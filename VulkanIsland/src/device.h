@@ -1,7 +1,10 @@
 #pragma once
 
+#include <variant>
+
 #include "instance.h"
 #include "device_defaults.h"
+#include "queues.h"
 
 
 class VulkanDevice final {
@@ -17,9 +20,18 @@ public:
     std::vector<std::uint32_t> const &supported_queues_indices() const noexcept;
 
     template<class Q, std::enable_if_t<std::is_base_of_v<VulkanQueue<std::decay_t<Q>>, std::decay_t<Q>>>...>
-    Q GetQueue()
+    Q &GetQueue()
     {
-        return Q();
+        if constexpr (std::is_same_v<Q, GraphicsQueue>)
+            return graphicsQueue_;
+
+        else if constexpr (std::is_same_v<Q, TransferQueue>)
+            return transferQueue_;
+
+        else if constexpr (std::is_same_v<Q, PresentationQueue>)
+            return presentationQueue_;
+
+        else static_assert(std::false_type, "not implemented queue type");
     }
 
 private:
@@ -28,6 +40,10 @@ private:
     VkDevice device_{VK_NULL_HANDLE};
 
     std::vector<std::uint32_t> supportedQueuesIndices_;
+
+    GraphicsQueue graphicsQueue_;
+    TransferQueue transferQueue_;
+    PresentationQueue presentationQueue_;
 
     VulkanDevice() = delete;
 

@@ -165,6 +165,9 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
     // Matching by required graphics, transfer and presentation queues.
     it_end = std::remove_if(devices.begin(), devices.end(), [surface] (auto &&device)
     {
+        if (!GraphicsQueue::supported_by_device(device))
+            return true;
+
         std::uint32_t queueFamilyPropertyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, nullptr);
 
