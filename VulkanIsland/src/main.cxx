@@ -9,8 +9,8 @@
 
 VkSurfaceKHR surface;
 
-auto constexpr kWIDTH = 800u;
-auto constexpr kHEIGHT = 600u;
+auto WIDTH = 800u;
+auto HEIGHT = 600u;
 
 #define USE_PLAIN 0
 
@@ -114,8 +114,8 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
         return surfaceCapabilities.currentExtent;
 
     return {
-        std::clamp(kWIDTH, surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width),
-        std::clamp(kHEIGHT, surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height)
+        std::clamp(WIDTH, surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width),
+        std::clamp(HEIGHT, surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height)
     };
 }
 
@@ -152,7 +152,7 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     return details;
 }
 
-void CreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface)
+void CreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkSwapchainKHR &swapChain)
 {
     auto swapChainSupportDetails = QuerySwapChainSupportDetails(physicalDevice, surface);
 
@@ -213,6 +213,8 @@ void CreateSwapChainImageViews(VkDevice device, T &&swapChainImages)
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkImage>, "iterable object does not contain VkImage elements");
 
+    swapChainImageViews.clear();
+
     for (auto &&swapChainImage : swapChainImages) {
         VkImageViewCreateInfo const createInfo{
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -233,6 +235,36 @@ void CreateSwapChainImageViews(VkDevice device, T &&swapChainImages)
     }
 }
 
+void CleanupSwapChain(VkDevice device, VkSwapchainKHR swapChain, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
+{
+    for (auto &&swapChainFramebuffer : swapChainFramebuffers)
+        vkDestroyFramebuffer(device, swapChainFramebuffer, nullptr);
+
+    swapChainFramebuffers.clear();
+
+    if (commandPool)
+        vkFreeCommandBuffers(device, commandPool, static_cast<std::uint32_t>(std::size(commandBuffers)), std::data(commandBuffers));
+
+    commandBuffers.clear();
+
+    if (graphicsPipeline)
+        vkDestroyPipeline(device, graphicsPipeline, nullptr);
+
+    if (pipelineLayout)
+        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+
+    if (renderPass)
+        vkDestroyRenderPass(device, renderPass, nullptr);
+
+    for (auto &&swapChainImageView : swapChainImageViews)
+        vkDestroyImageView(device, swapChainImageView, nullptr);
+
+    swapChainImageViews.clear();
+
+    if (swapChain)
+        vkDestroySwapchainKHR(device, swapChain, nullptr);
+
+}
 
 
 [[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view path)
@@ -579,6 +611,31 @@ void CreateSemaphores(VkDevice device)
 }
 
 
+void RecreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkSwapchainKHR swapChain, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
+{
+    vkDeviceWaitIdle(device);
+
+    CleanupSwapChain(device, swapChain, graphicsPipeline, pipelineLayout, renderPass);
+
+    CreateSwapChain(physicalDevice, device, surface, swapChain);
+    CreateSwapChainImageViews(device, swapChainImages);
+
+    CreateRenderPass(device);
+    CreateGraphicsPipeline(device);
+
+    CreateFramebuffers(renderPass, swapChainImageViews);
+
+    CreateCommandBuffers(device, renderPass, commandPool);
+}
+
+void OnWindowResize(GLFWwindow *window, int width, int height)
+{
+    WIDTH = width;
+    HEIGHT = height;
+
+    RecreateSwapChain(physicalDevice, device, surface, swapChain, graphicsPipeline, pipelineLayout, renderPass);
+}
+
 void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
 {
     std::uint32_t imageIndex;
@@ -633,7 +690,9 @@ int main()
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    auto window = glfwCreateWindow(kWIDTH, kHEIGHT, "VulkanIsland", nullptr, nullptr);
+    auto window = glfwCreateWindow(WIDTH, HEIGHT, "VulkanIsland", nullptr, nullptr);
+
+    glfwSetWindowSizeCallback(window, OnWindowResize);
 
 #if !USE_PLAIN
     VulkanInstance vulkanInstance(extensions, layers);
@@ -669,7 +728,7 @@ int main()
 #endif
 
 
-    CreateSwapChain(physicalDevice, device, surface);
+    CreateSwapChain(physicalDevice, device, surface, swapChain);
     CreateSwapChainImageViews(device, swapChainImages);
 
     CreateRenderPass(device);
@@ -695,26 +754,10 @@ int main()
     if (imageAvailable)
         vkDestroySemaphore(device, imageAvailable, nullptr);
 
+    CleanupSwapChain(device, swapChain, graphicsPipeline, pipelineLayout, renderPass);
+
     if (commandPool)
         vkDestroyCommandPool(device, commandPool, nullptr);
-
-    for (auto &&swapChainFramebuffer : swapChainFramebuffers)
-        vkDestroyFramebuffer(device, swapChainFramebuffer, nullptr);
-
-    if (graphicsPipeline)
-        vkDestroyPipeline(device, graphicsPipeline, nullptr);
-
-    if (pipelineLayout)
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-
-    if (renderPass)
-        vkDestroyRenderPass(device, renderPass, nullptr);
-
-    for (auto &&swapChainImageView : swapChainImageViews)
-        vkDestroyImageView(device, swapChainImageView, nullptr);
-
-    if (swapChain)
-        vkDestroySwapchainKHR(device, swapChain, nullptr);
 
     if (surface)
         vkDestroySurfaceKHR(instance, surface, nullptr);
