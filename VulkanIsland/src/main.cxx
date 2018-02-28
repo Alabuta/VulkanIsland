@@ -681,7 +681,7 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
 
 
 int main()
-{
+try {
     //GraphicsQueue q(6);
 
     _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
@@ -778,4 +778,7 @@ int main()
     glfwTerminate();
 
     return 0;
+
+} catch (std::exception const &ex) {
+    std::cout << ex.what() << "\n";
 }
