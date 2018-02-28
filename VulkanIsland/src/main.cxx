@@ -3,6 +3,7 @@
 #include <crtdbg.h>
 
 
+#include <filesystem>
 
 #include "main.h"
 
@@ -267,9 +268,17 @@ void CleanupSwapChain(VkDevice device, VkSwapchainKHR swapChain, VkPipeline grap
 }
 
 
-[[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view path)
+[[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view _name)
 {
-    std::ifstream file(std::data(path), std::ios::binary);
+    auto current_path = std::experimental::filesystem::current_path();
+
+    std::experimental::filesystem::path directory{"shaders"s};
+    std::experimental::filesystem::path name{std::data(_name)};
+
+    if (!std::experimental::filesystem::exists(current_path / directory))
+        directory = current_path / "../../VulkanIsland"s / directory;
+
+    std::ifstream file(directory / name, std::ios::binary);
 
     if (!file.is_open())
         return {};
@@ -315,17 +324,17 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 
 void CreateGraphicsPipeline(VkDevice device)
 {
-    auto const vertShaderByteCode = ReadShaderFile(R"(shaders\vert.spv)"sv);
+    auto const vertShaderByteCode = ReadShaderFile(R"(vert.spv)"sv);
 
     if (vertShaderByteCode.empty())
-        throw std::runtime_error("failed to open vertex shader file");
+        throw std::runtime_error("failed to open vertex shader file"s);
 
     auto const vertShaderModule = CreateShaderModule(device, vertShaderByteCode);
 
-    auto const fragShaderByteCode = ReadShaderFile(R"(shaders\frag.spv)"sv);
+    auto const fragShaderByteCode = ReadShaderFile(R"(frag.spv)"sv);
 
     if (fragShaderByteCode.empty())
-        throw std::runtime_error("failed to open fragment shader file");
+        throw std::runtime_error("failed to open fragment shader file"s);
 
     auto const fragShaderModule = CreateShaderModule(device, fragShaderByteCode);
 
