@@ -36,6 +36,10 @@ public:
 
 private:
 
+    VulkanDevice() = delete;
+    VulkanDevice(VulkanDevice const &) = delete;
+    VulkanDevice(VulkanDevice &&) = delete;
+
     VkPhysicalDevice physicalDevice_{VK_NULL_HANDLE};
     VkDevice device_{VK_NULL_HANDLE};
 
@@ -44,8 +48,6 @@ private:
     GraphicsQueue graphicsQueue_;
     TransferQueue transferQueue_;
     PresentationQueue presentationQueue_;
-
-    VulkanDevice() = delete;
 
     void PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions);
     void CreateDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<char const *> &&extensions);

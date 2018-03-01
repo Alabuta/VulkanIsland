@@ -13,10 +13,6 @@ VkSurfaceKHR surface;
 auto WIDTH = 800u;
 auto HEIGHT = 600u;
 
-#define USE_PLAIN 0
-
-auto constexpr deviceExtensions = make_array(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
-
 VkInstance instance;
 VkDebugReportCallbackEXT debugReportCallback;
 VkPhysicalDevice physicalDevice;
@@ -52,10 +48,6 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
     return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 #endif
-
-
-
-
 
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
@@ -264,7 +256,6 @@ void CleanupSwapChain(VkDevice device, VkSwapchainKHR swapChain, VkPipeline grap
 
     if (swapChain)
         vkDestroySwapchainKHR(device, swapChain, nullptr);
-
 }
 
 
@@ -317,7 +308,6 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
         throw std::runtime_error("failed to create shader module: "s + std::to_string(result));
 
     return shaderModule;
-
 }
 
 
@@ -414,7 +404,7 @@ void CreateGraphicsPipeline(VkDevice device)
         VK_FALSE
     };
 
-    VkPipelineColorBlendAttachmentState constexpr colorBlendAttachement{
+    VkPipelineColorBlendAttachmentState constexpr colorBlendAttachment{
         VK_FALSE,
         VK_BLEND_FACTOR_ONE,
         VK_BLEND_FACTOR_ZERO,
@@ -431,7 +421,7 @@ void CreateGraphicsPipeline(VkDevice device)
         VK_FALSE,
         VK_LOGIC_OP_COPY,
         1,
-        &colorBlendAttachement,
+        &colorBlendAttachment,
         {0, 0, 0, 0}
     };
 
@@ -467,8 +457,8 @@ void CreateGraphicsPipeline(VkDevice device)
     if (auto result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &graphicsPipeline); result != VK_SUCCESS)
         throw std::runtime_error("failed to create graphics pipeline: "s + std::to_string(result));
 
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
+    vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
 void CreateRenderPass(VkDevice device)
@@ -495,7 +485,7 @@ void CreateRenderPass(VkDevice device)
         0, nullptr
     };
 
-    VkSubpassDependency constexpr subpassDeps{
+    VkSubpassDependency constexpr subpassDependency{
         VK_SUBPASS_EXTERNAL, 0,
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         0, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
@@ -507,7 +497,7 @@ void CreateRenderPass(VkDevice device)
         nullptr, 0,
         1, &colorAttachment,
         1, &subpassDescription,
-        1, &subpassDeps
+        1, &subpassDependency
     };
 
     if (auto result = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &renderPass); result != VK_SUCCESS)
@@ -519,14 +509,16 @@ void CreateFramebuffers(VkRenderPass renderPass, T &&swapChainImageViews)
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkImageView>, "iterable object does not contain VkImageView elements");
 
+    swapChainFramebuffers.clear();
+
     for (auto &&imageView : swapChainImageViews) {
-        auto const attachement = make_array(imageView);
+        auto const attachements = make_array(imageView);
 
         VkFramebufferCreateInfo const createInfo{
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
             nullptr, 0,
             renderPass,
-            static_cast<std::uint32_t>(std::size(attachement)), std::data(attachement),
+            static_cast<std::uint32_t>(std::size(attachements)), std::data(attachements),
             swapChainExtent.width, swapChainExtent.height,
             1
         };
@@ -703,10 +695,8 @@ try {
 
     glfwSetWindowSizeCallback(window, OnWindowResize);
 
-#if !USE_PLAIN
     VulkanInstance vulkanInstance(extensions, layers);
     instance = vulkanInstance.handle();
-#endif
 
 #if USE_WIN32
     VkWin32SurfaceCreateInfoKHR const win32CreateInfo = {
@@ -721,21 +711,16 @@ try {
     glfwCreateWindowSurface(instance, window, nullptr, &surface);
 #endif
 
-#if USE_PLAIN
-    physicalDevice = PickPhysicalDevice(instance, surface);
-    device = CreateDevice(instance, physicalDevice, surface);
-#else
-    auto d = VulkanDevice(vulkanInstance, surface, deviceExtensions);
-    physicalDevice = d.physical_handle();
-    device = d.handle();
+    VulkanDevice vulkanDevice(vulkanInstance, surface, deviceExtensions);
+    physicalDevice = vulkanDevice.physical_handle();
+    device = vulkanDevice.handle();
 
-    supportedQueuesIndices = d.supported_queues_indices();
+    supportedQueuesIndices = vulkanDevice.supported_queues_indices();
 
-    vkGetDeviceQueue(device, d.supported_queues_indices().at(0), 0, &graphicsQueue);
-    vkGetDeviceQueue(device, d.supported_queues_indices().at(1), 0, &transferQueue);
-    vkGetDeviceQueue(device, d.supported_queues_indices().at(2), 0, &presentationQueue);
-#endif
-
+    vkGetDeviceQueue(device, vulkanDevice.supported_queues_indices().at(0), 0, &graphicsQueue);
+    vkGetDeviceQueue(device, vulkanDevice.supported_queues_indices().at(1), 0, &transferQueue);
+    vkGetDeviceQueue(device, vulkanDevice.supported_queues_indices().at(2), 0, &presentationQueue);
+    //presentationQueue = graphicsQueue;
 
     CreateSwapChain(physicalDevice, device, surface, swapChain);
     CreateSwapChainImageViews(device, swapChainImages);
@@ -770,17 +755,6 @@ try {
 
     if (surface)
         vkDestroySurfaceKHR(instance, surface, nullptr);
-
-#if USE_PLAIN
-    if (device)
-        vkDestroyDevice(device, nullptr);
-
-    if (debugReportCallback)
-        vkDestroyDebugReportCallbackEXT(instance, debugReportCallback, nullptr);
-
-    if (instance)
-        vkDestroyInstance(instance, nullptr);
-#endif
 
     glfwDestroyWindow(window);
 

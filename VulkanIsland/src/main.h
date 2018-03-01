@@ -1,5 +1,8 @@
 #pragma once
 
+#pragma comment(lib, "vulkan-1.lib")
+#pragma comment(lib, "glfw3.lib")
+
 
 #include <iostream>
 #include <memory>
@@ -11,6 +14,12 @@
 #include <string>
 #include <string_view>
 #include <fstream>
+#include <filesystem>
+
+#include "helpers.h"
+
+using namespace std::string_literals;
+using namespace std::string_view_literals;
 
 #include <gsl\gsl>
 
@@ -25,20 +34,12 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
 
-#pragma comment(lib, "vulkan-1.lib")
-#pragma comment(lib, "glfw3.lib")
+
+
+
+
 
 auto constexpr kVULKAN_VERSION = VK_API_VERSION_1_0;
-
-#define USE_LAYERS 1
-
-#include "helpers.h"
-
-using namespace std::string_literals;
-using namespace std::string_view_literals;
-
-
-extern VkSurfaceKHR surface;
 
 VkApplicationInfo constexpr app_info{
     VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -58,7 +59,6 @@ auto constexpr extensions = make_array(
     VK_EXT_DEBUG_REPORT_EXTENSION_NAME
 );
 
-#if USE_LAYERS
 auto constexpr layers = make_array(
     //"VK_LAYER_LUNARG_api_dump",
     "VK_LAYER_LUNARG_core_validation",
@@ -69,7 +69,10 @@ auto constexpr layers = make_array(
 
     "VK_LAYER_NV_nsight"
 );
-#endif
+
+auto constexpr deviceExtensions = make_array(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+
+extern VkSurfaceKHR surface;
 
 struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
@@ -79,8 +82,7 @@ struct SwapChainSupportDetails {
 
 [[nodiscard]] SwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 
-
-
-
 #include "instance.h"
+
+
 #include "device.h"
