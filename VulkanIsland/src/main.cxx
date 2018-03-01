@@ -7,6 +7,7 @@
 
 #include "main.h"
 
+#if X
 
 VkSurfaceKHR surface;
 
@@ -384,7 +385,7 @@ void CreateGraphicsPipeline(VkDevice device)
     VkPipelineRasterizationStateCreateInfo constexpr rasterizer{
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         nullptr, 0,
-        VK_TRUE,
+        VK_FALSE,
         VK_FALSE,
         VK_POLYGON_MODE_FILL,
         VK_CULL_MODE_BACK_BIT,
@@ -673,7 +674,8 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
         &imageIndex, nullptr
     };
 
-    if (auto result = vkQueuePresentKHR(presentationQueue, &presentInfo); result != VK_SUCCESS)
+    auto result = VK_SUCCESS;
+    if (result = vkQueuePresentKHR(presentationQueue, &presentInfo); result != VK_SUCCESS)
         throw std::runtime_error("failed to submit request to present framebuffer: "s + std::to_string(result));
 
     vkQueueWaitIdle(presentationQueue);
@@ -765,3 +767,4 @@ try {
 } catch (std::exception const &ex) {
     std::cout << ex.what() << "\n";
 }
+#endif
