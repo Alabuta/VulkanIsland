@@ -990,8 +990,8 @@ private:
                 nullptr,
                 renderPass,
                 swapChainFramebuffers.at(i++),
-                {{0, 0}, swapChainExtent},
-                1, &clearColor
+            {{0, 0}, swapChainExtent},
+            1, &clearColor
             };
 
             vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -1057,7 +1057,8 @@ private:
             &imageIndex, nullptr
         };
 
-        if (auto result = vkQueuePresentKHR(presentationQueue, &presentInfo); result != VK_SUCCESS)
+        auto result = VK_SUCCESS;
+        if (result = vkQueuePresentKHR(presentationQueue, &presentInfo); result != VK_SUCCESS)
             throw std::runtime_error("failed to submit request to present framebuffer: "s + std::to_string(result));
 
         vkQueueWaitIdle(presentationQueue);

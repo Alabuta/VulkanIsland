@@ -7,9 +7,85 @@
 
 #include "main.h"
 
+
+[[nodiscard]] SwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+{
+    SwapChainSupportDetails details;
+
+    if (auto result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface capabilities: "s + std::to_string(result));
+
+    std::uint32_t formatsCount = 0;
+    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, nullptr); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface formats count: "s + std::to_string(result));
+
+    details.formats.resize(formatsCount);
+    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, std::data(details.formats)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface formats: "s + std::to_string(result));
+
+    if (details.formats.empty())
+        return {};
+
+    std::uint32_t presentModeCount = 0;
+    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface presentation modes count: "s + std::to_string(result));
+
+    details.presentModes.resize(presentModeCount);
+    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, std::data(details.presentModes)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface presentation modes: "s + std::to_string(result));
+
+    if (details.presentModes.empty())
+        return {};
+
+    return details;
+}
+
 #if X
 
 VkSurfaceKHR surface;
+
+struct QueueFamilyIndices {
+    int graphicsFamily = -1;
+    int presentFamily = -1;
+
+    bool isComplete()
+    {
+        return graphicsFamily >= 0 && presentFamily >= 0;
+    }
+};
+
+QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device)
+{
+    QueueFamilyIndices indices;
+
+    std::uint32_t queueFamilyPropertyCount = 0;
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, nullptr);
+
+    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyPropertyCount);
+    vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, std::data(queueFamilies));
+
+    auto i = 0;
+    for (const auto& queueFamily : queueFamilies) {
+        if (queueFamily.queueCount > 0 && queueFamily.queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+            indices.graphicsFamily = i;
+        }
+
+        VkBool32 presentSupport = false;
+        vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+
+        if (queueFamily.queueCount > 0 && presentSupport) {
+            indices.presentFamily = i;
+        }
+
+        if (indices.isComplete()) {
+            break;
+        }
+
+        i++;
+    }
+
+    return indices;
+}
 
 auto WIDTH = 800u;
 auto HEIGHT = 600u;
@@ -35,7 +111,7 @@ std::vector<VkImageView> swapChainImageViews;
 std::vector<VkFramebuffer> swapChainFramebuffers;
 std::vector<VkCommandBuffer> commandBuffers;
 
-VkSemaphore imageAvailable, renderFinsihed;
+VkSemaphore imageAvailableSemaphore, renderFinishedSemaphore;
 
 #ifdef USE_WIN32
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
@@ -113,38 +189,6 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     };
 }
 
-
-[[nodiscard]] SwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
-{
-    SwapChainSupportDetails details;
-
-    if (auto result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface capabilities: "s + std::to_string(result));
-
-    std::uint32_t formatsCount = 0;
-    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, nullptr); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface formats count: "s + std::to_string(result));
-
-    details.formats.resize(formatsCount);
-    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, std::data(details.formats)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface formats: "s + std::to_string(result));
-
-    if (details.formats.empty())
-        return {};
-
-    std::uint32_t presentModeCount = 0;
-    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface presentation modes count: "s + std::to_string(result));
-
-    details.presentModes.resize(presentModeCount);
-    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, std::data(details.presentModes)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface presentation modes: "s + std::to_string(result));
-
-    if (details.presentModes.empty())
-        return {};
-
-    return details;
-}
 
 void CreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkSwapchainKHR &swapChain)
 {
@@ -605,10 +649,10 @@ void CreateSemaphores(VkDevice device)
         nullptr, 0
     };
 
-    if (auto result = vkCreateSemaphore(device, &createInfo, nullptr, &imageAvailable); result != VK_SUCCESS)
+    if (auto result = vkCreateSemaphore(device, &createInfo, nullptr, &imageAvailableSemaphore); result != VK_SUCCESS)
         throw std::runtime_error("failed to create image semaphore: "s + std::to_string(result));
 
-    if (auto result = vkCreateSemaphore(device, &createInfo, nullptr, &renderFinsihed); result != VK_SUCCESS)
+    if (auto result = vkCreateSemaphore(device, &createInfo, nullptr, &renderFinishedSemaphore); result != VK_SUCCESS)
         throw std::runtime_error("failed to create render semaphore: "s + std::to_string(result));
 }
 
@@ -642,15 +686,15 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
 {
     std::uint32_t imageIndex;
 
-    if (auto result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<std::uint64_t>::max(), imageAvailable, VK_NULL_HANDLE, &imageIndex); result != VK_SUCCESS)
+    if (auto result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<std::uint64_t>::max(), imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex); result != VK_SUCCESS)
         throw std::runtime_error("failed to acquire next image index: "s + std::to_string(result));
 
     std::array<VkPipelineStageFlags, 1> constexpr waitStages{
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
     };
 
-    auto const waitSemaphores = make_array(imageAvailable);
-    auto const signalSemaphores = make_array(renderFinsihed);
+    auto const waitSemaphores = make_array(imageAvailableSemaphore);
+    auto const signalSemaphores = make_array(renderFinishedSemaphore);
 
     VkSubmitInfo const info{
         VK_STRUCTURE_TYPE_SUBMIT_INFO,
@@ -744,11 +788,11 @@ try {
 
     vkDeviceWaitIdle(device);
 
-    if (renderFinsihed)
-        vkDestroySemaphore(device, renderFinsihed, nullptr);
+    if (renderFinishedSemaphore)
+        vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
 
-    if (imageAvailable)
-        vkDestroySemaphore(device, imageAvailable, nullptr);
+    if (imageAvailableSemaphore)
+        vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
 
     CleanupSwapChain(device, swapChain, graphicsPipeline, pipelineLayout, renderPass);
 
