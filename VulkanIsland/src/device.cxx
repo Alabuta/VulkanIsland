@@ -420,6 +420,7 @@ private:
 
     VkQueue graphicsQueue;
     VkQueue presentationQueue;
+    VkQueue transferQueue;
 
     VkSwapchainKHR swapChain;
     std::vector<VkImage> swapChainImages;
@@ -440,6 +441,8 @@ private:
 
     std::unique_ptr<VulkanInstance> vulkanInstance;
     std::unique_ptr<VulkanDevice> vulkanDevice;
+
+    std::vector<std::uint32_t> supportedQueuesIndices;
 
 
     template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
@@ -504,10 +507,10 @@ private:
         };
     }
 
+    //
     void initWindow()
     {
         glfwInit();
-
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
         window = glfwCreateWindow(WIDTH, HEIGHT, "Vulkan", nullptr, nullptr);
@@ -532,6 +535,7 @@ private:
         createSemaphores();
     }
 
+    //
     void mainLoop()
     {
         while (!glfwWindowShouldClose(window)) {
@@ -542,6 +546,7 @@ private:
         vkDeviceWaitIdle(device);
     }
 
+    //
     void cleanupSwapChain()
     {
         for (auto &&swapChainFramebuffer : swapChainFramebuffers)
@@ -572,19 +577,24 @@ private:
             vkDestroySwapchainKHR(device, swapChain, nullptr);
     }
 
+    //
     void cleanup()
     {
+        vkDeviceWaitIdle(device);
+
+        if (renderFinishedSemaphore)
+            vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
+
+        if (imageAvailableSemaphore)
+            vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
+
         cleanupSwapChain();
 
-        vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
-        vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
+        if (commandPool)
+            vkDestroyCommandPool(device, commandPool, nullptr);
 
-        vkDestroyCommandPool(device, commandPool, nullptr);
-
-        //vkDestroyDevice(device, nullptr);
-        //DestroyDebugReportCallbackEXT(instance, callback, nullptr);
-        vkDestroySurfaceKHR(instance, surface, nullptr);
-        //vkDestroyInstance(instance, nullptr);
+        if (surface)
+            vkDestroySurfaceKHR(instance, surface, nullptr);
 
         glfwDestroyWindow(window);
 
@@ -597,11 +607,12 @@ private:
         app->recreateSwapChain();
     }
 
+    //
     void recreateSwapChain()
     {
-        int width, height;
+        /*int width, height;
         glfwGetWindowSize(window, &width, &height);
-        if (width == 0 || height == 0) return;
+        if (width == 0 || height == 0) return;*/
 
         vkDeviceWaitIdle(device);
 
@@ -615,33 +626,40 @@ private:
         createCommandBuffers();
     }
 
-
+    //
     void createInstance()
     {
         vulkanInstance = std::move(std::make_unique<VulkanInstance>(extensions, layers));
         instance = vulkanInstance->handle();
     }
-
+    //
     void createSurface()
     {
         glfwCreateWindowSurface(instance, window, nullptr, &surface);
     }
-
+    //
     void pickPhysicalDevice()
     {
         vulkanDevice = std::move(std::make_unique<VulkanDevice>(*vulkanInstance, surface, deviceExtensions));
         physicalDevice = vulkanDevice->physical_handle();
     }
-
+    //
     void createLogicalDevice()
     {
         device = vulkanDevice->handle();
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
+
+        /*QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
 
         vkGetDeviceQueue(device, indices.graphicsFamily, 0, &graphicsQueue);
-        vkGetDeviceQueue(device, indices.presentFamily, 0, &presentationQueue);
-    }
+        vkGetDeviceQueue(device, indices.presentFamily, 0, &presentationQueue);*/
 
+        supportedQueuesIndices = vulkanDevice->supported_queues_indices();
+
+        vkGetDeviceQueue(device, vulkanDevice->supported_queues_indices().at(0), 0, &graphicsQueue);
+        vkGetDeviceQueue(device, vulkanDevice->supported_queues_indices().at(1), 0, &transferQueue);
+        vkGetDeviceQueue(device, vulkanDevice->supported_queues_indices().at(2), 0, &presentationQueue);
+    }
+    //
     void createSwapChain()
     {
         auto swapChainSupportDetails = QuerySwapChainSupportDetails(physicalDevice, surface);
@@ -676,12 +694,11 @@ private:
             nullptr
         };
 
-        QueueFamilyIndices indices = findQueueFamilies(physicalDevice);
         auto const queueFamilyIndices = make_array(
-            (uint32_t)indices.graphicsFamily, (uint32_t)indices.presentFamily
+            supportedQueuesIndices.at(0), supportedQueuesIndices.at(2)
         );
 
-        if (indices.graphicsFamily != indices.presentFamily) {
+        if (supportedQueuesIndices.at(0) != supportedQueuesIndices.at(2)) {
             swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
             swapchainCreateInfo.queueFamilyIndexCount = 2;
             swapchainCreateInfo.pQueueFamilyIndices = std::data(queueFamilyIndices);
@@ -698,7 +715,7 @@ private:
         if (auto result = vkGetSwapchainImagesKHR(device, swapChain, &imagesCount, std::data(swapChainImages)); result != VK_SUCCESS)
             throw std::runtime_error("failed to retrieve swap chain iamges: "s + std::to_string(result));
     }
-
+    //
     void createImageViews()
     {
         swapChainImageViews.clear();
@@ -722,7 +739,7 @@ private:
             swapChainImageViews.push_back(std::move(imageView));
         }
     }
-
+    //
     void createRenderPass()
     {
         VkAttachmentDescription const colorAttachment{
@@ -765,7 +782,7 @@ private:
         if (auto result = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &renderPass); result != VK_SUCCESS)
             throw std::runtime_error("failed to create render pass: "s + std::to_string(result));
     }
-
+    //
     void createGraphicsPipeline()
     {
         auto const vertShaderByteCode = ReadShaderFile(R"(vert.spv)"sv);
@@ -914,7 +931,7 @@ private:
         vkDestroyShaderModule(device, fragShaderModule, nullptr);
         vkDestroyShaderModule(device, vertShaderModule, nullptr);
     }
-
+    //
     void createFramebuffers()
     {
         swapChainFramebuffers.clear();
@@ -939,22 +956,23 @@ private:
             swapChainFramebuffers.push_back(std::move(framebuffer));
         }
     }
-
+    //
     void createCommandPool()
     {
-        QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
+        //QueueFamilyIndices queueFamilyIndices = findQueueFamilies(physicalDevice);
 
         VkCommandPoolCreateInfo const createInfo{
             VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
             nullptr,
             0,
-            static_cast<std::uint32_t>(queueFamilyIndices.graphicsFamily)
+            supportedQueuesIndices.at(0)
+            //static_cast<std::uint32_t>(queueFamilyIndices.graphicsFamily)
         };
 
         if (auto result = vkCreateCommandPool(device, &createInfo, nullptr, &commandPool); result != VK_SUCCESS)
             throw std::runtime_error("failed to create a command buffer: "s + std::to_string(result));
     }
-
+    //
     void createCommandBuffers()
     {
         commandBuffers.resize(swapChainFramebuffers.size());
@@ -1006,7 +1024,7 @@ private:
                 throw std::runtime_error("failed to end command buffer: "s + std::to_string(result));
         }
     }
-
+    //
     void createSemaphores()
     {
         VkSemaphoreCreateInfo constexpr createInfo{
@@ -1021,6 +1039,7 @@ private:
             throw std::runtime_error("failed to create render semaphore: "s + std::to_string(result));
     }
 
+    //
     void drawFrame()
     {
         std::uint32_t imageIndex;
@@ -1064,7 +1083,7 @@ private:
         vkQueueWaitIdle(presentationQueue);
     }
 
-
+#if 0
     QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device)
     {
         QueueFamilyIndices indices;
@@ -1097,7 +1116,7 @@ private:
 
         return indices;
     }
-
+#endif
 };
 
 int main()

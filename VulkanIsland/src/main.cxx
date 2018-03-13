@@ -42,6 +42,9 @@
 
 #if X
 
+std::unique_ptr<VulkanInstance> vulkanInstance;
+std::unique_ptr<VulkanDevice> vulkanDevice;
+
 VkSurfaceKHR surface;
 
 struct QueueFamilyIndices {
@@ -725,24 +728,10 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
     vkQueueWaitIdle(presentationQueue);
 }
 
-
-
-int main()
-try {
-    //GraphicsQueue q(6);
-
-    _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    //_CrtSetBreakAlloc(84);
-
-    glfwInit();
-
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    auto window = glfwCreateWindow(WIDTH, HEIGHT, "VulkanIsland", nullptr, nullptr);
-
-    glfwSetWindowSizeCallback(window, OnWindowResize);
-
-    VulkanInstance vulkanInstance(extensions, layers);
-    instance = vulkanInstance.handle();
+void InitVulkan(GLFWwindow *window)
+{
+    vulkanInstance = std::move(std::make_unique<VulkanInstance>(extensions, layers));
+    instance = vulkanInstance->handle();
 
 #if USE_WIN32
     VkWin32SurfaceCreateInfoKHR const win32CreateInfo = {
@@ -757,16 +746,15 @@ try {
     glfwCreateWindowSurface(instance, window, nullptr, &surface);
 #endif
 
-    VulkanDevice vulkanDevice(vulkanInstance, surface, deviceExtensions);
-    physicalDevice = vulkanDevice.physical_handle();
-    device = vulkanDevice.handle();
+    vulkanDevice = std::move(std::make_unique<VulkanDevice>(*vulkanInstance, surface, deviceExtensions));
+    physicalDevice = vulkanDevice->physical_handle();
+    device = vulkanDevice->handle();
 
-    supportedQueuesIndices = vulkanDevice.supported_queues_indices();
+    supportedQueuesIndices = vulkanDevice->supported_queues_indices();
 
-    vkGetDeviceQueue(device, vulkanDevice.supported_queues_indices().at(0), 0, &graphicsQueue);
-    vkGetDeviceQueue(device, vulkanDevice.supported_queues_indices().at(1), 0, &transferQueue);
-    vkGetDeviceQueue(device, vulkanDevice.supported_queues_indices().at(2), 0, &presentationQueue);
-    //presentationQueue = graphicsQueue;
+    vkGetDeviceQueue(device, vulkanDevice->supported_queues_indices().at(0), 0, &graphicsQueue);
+    vkGetDeviceQueue(device, vulkanDevice->supported_queues_indices().at(1), 0, &transferQueue);
+    vkGetDeviceQueue(device, vulkanDevice->supported_queues_indices().at(2), 0, &presentationQueue);
 
     CreateSwapChain(physicalDevice, device, surface, swapChain);
     CreateSwapChainImageViews(device, swapChainImages);
@@ -780,12 +768,10 @@ try {
     CreateCommandBuffers(device, renderPass, commandPool);
 
     CreateSemaphores(device);
+}
 
-    while (!glfwWindowShouldClose(window)) {
-        glfwPollEvents();
-        DrawFrame(device, swapChain);
-    }
-
+void CleanUp()
+{
     vkDeviceWaitIdle(device);
 
     if (renderFinishedSemaphore)
@@ -801,6 +787,29 @@ try {
 
     if (surface)
         vkDestroySurfaceKHR(instance, surface, nullptr);
+
+}
+
+int main()
+try {
+    _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    //_CrtSetBreakAlloc(84);
+
+    glfwInit();
+
+    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+    auto window = glfwCreateWindow(WIDTH, HEIGHT, "VulkanIsland", nullptr, nullptr);
+
+    glfwSetWindowSizeCallback(window, OnWindowResize);
+
+    InitVulkan(window);
+
+    while (!glfwWindowShouldClose(window)) {
+        glfwPollEvents();
+        DrawFrame(device, swapChain);
+    }
+
+    CleanUp();
 
     glfwDestroyWindow(window);
 
