@@ -40,7 +40,6 @@
     return details;
 }
 
-#if X
 
 std::unique_ptr<VulkanInstance> vulkanInstance;
 std::unique_ptr<VulkanDevice> vulkanDevice;
@@ -820,4 +819,3 @@ try {
 } catch (std::exception const &ex) {
     std::cout << ex.what() << "\n";
 }
-#endif
