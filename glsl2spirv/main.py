@@ -7,10 +7,24 @@ vulkanSDKPath = os.environ.get('VULKAN_SDK')
 if vulkanSDKPath is None:
     print("Failed to find 'VULKAN_SDK' enviroment variable.")
     sys.exit()
-    
-glslangValidatorPath = "{}\\Bin\\{}".format(vulkanSDKPath, 'glslangValidator.exe')
 
-shadersDirectory = "{}\\..\\{}".format(os.getcwd(), "VulkanIsland\\shaders\\");
+glslangValidatorPath = 'glslangValidator'
 
-call([glslangValidatorPath, "-V", "-o", "{}vert.spv".format(shadersDirectory), "{}shader.vert".format(shadersDirectory)], shell=True)
-call([glslangValidatorPath, "-V", "-o", "{}frag.spv".format(shadersDirectory), "{}shader.frag".format(shadersDirectory)], shell=True)
+shadersDirectory = "{}/../{}".format(os.path.dirname(os.path.realpath(__file__)), "VulkanIsland/shaders/")
+
+print(shadersDirectory)
+
+vertPath = "{}shader.vert".format(shadersDirectory)
+fragPath = "{}shader.frag".format(shadersDirectory)
+
+vertSpvPath = "{}vert.spv".format(shadersDirectory)
+fragSpvPath = "{}frag.spv".format(shadersDirectory)
+
+if not os.path.exists(vertSpvPath):
+    open(vertSpvPath, 'x').close()
+
+if not os.path.exists(fragSpvPath):
+    open(fragSpvPath, 'x').close()
+
+call([glslangValidatorPath, vertPath], shell=True)
+#call([glslangValidatorPath, "-V", "-o", "{}frag.spv".format(shadersDirectory), "{}shader.frag".format(shadersDirectory)], shell=True)
