@@ -2,6 +2,7 @@
 
 #include <utility>
 #include <numeric>
+#include <type_traits>
 
 template<class C, class = void>
 struct is_iterable : std::false_type {};

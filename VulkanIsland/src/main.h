@@ -1,7 +1,9 @@
 #pragma once
 
+#ifdef WIN32
 #pragma comment(lib, "vulkan-1.lib")
 #pragma comment(lib, "glfw3.lib")
+#endif
 
 #define X 1
 
@@ -15,7 +17,14 @@
 #include <string>
 #include <string_view>
 #include <fstream>
+
+#ifdef WIN32
 #include <filesystem>
+namespace fs = std::experimental::filesystem;
+#else
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
+#endif
 
 #include "helpers.h"
 
@@ -52,23 +61,30 @@ VkApplicationInfo constexpr app_info{
 
 auto constexpr extensions = make_array(
     VK_KHR_SURFACE_EXTENSION_NAME,
+#ifdef WIN32
 #if USE_WIN32
     VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 #else
     "VK_KHR_win32_surface",
+#endif
+#else
+    "VK_KHR_xlib_surface",
 #endif
     VK_EXT_DEBUG_REPORT_EXTENSION_NAME
 );
 
 auto constexpr layers = make_array(
     //"VK_LAYER_LUNARG_api_dump",
+    "VK_LAYER_LUNARG_assistant_layer",
     "VK_LAYER_LUNARG_core_validation",
     "VK_LAYER_LUNARG_object_tracker",
     "VK_LAYER_LUNARG_parameter_validation",
     "VK_LAYER_GOOGLE_threading",
-    "VK_LAYER_GOOGLE_unique_objects",
+    "VK_LAYER_GOOGLE_unique_objects"
 
+#ifdef WIN32
     "VK_LAYER_NV_nsight"
+#endif
 );
 
 auto constexpr deviceExtensions = make_array(VK_KHR_SWAPCHAIN_EXTENSION_NAME);

@@ -1,9 +1,8 @@
 
+#ifdef WIN32
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
-
-
-#include <filesystem>
+#endif
 
 #include "main.h"
 
@@ -309,15 +308,15 @@ void CleanupSwapChain(VkDevice device, VkSwapchainKHR swapChain, VkPipeline grap
 
 [[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view _name)
 {
-    auto current_path = std::experimental::filesystem::current_path();
+    auto current_path = fs::current_path();
 
-    std::experimental::filesystem::path directory{"shaders"s};
-    std::experimental::filesystem::path name{std::data(_name)};
+    fs::path directory{"shaders"s};
+    fs::path name{std::data(_name)};
 
-    if (!std::experimental::filesystem::exists(current_path / directory))
+    if (!fs::exists(current_path / directory))
         directory = current_path / "../../VulkanIsland"s / directory;
 
-    std::ifstream file(directory / name, std::ios::binary);
+    std::ifstream file((directory / name).native(), std::ios::binary);
 
     if (!file.is_open())
         return {};
@@ -677,7 +676,7 @@ void RecreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfa
     CreateCommandBuffers(device, renderPass, commandPool);
 }
 
-void OnWindowResize(GLFWwindow *window, int width, int height)
+void OnWindowResize([[maybe_unused]] GLFWwindow *window, int width, int height)
 {
     WIDTH = width;
     HEIGHT = height;
@@ -792,8 +791,10 @@ void CleanUp()
 
 int main()
 try {
+#ifdef WIN32
     _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     //_CrtSetBreakAlloc(84);
+#endif
 
     glfwInit();
 
