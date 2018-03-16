@@ -30,8 +30,6 @@ namespace fs = boost::filesystem;
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 
-#include <gsl\gsl>
-
 #define GLFW_EXPOSE_NATIVE_WIN32
 
 #ifndef GLFW_INCLUDE_VULKAN
@@ -67,7 +65,7 @@ auto constexpr extensions = make_array(
     "VK_KHR_win32_surface",
 #endif
 #else
-    "VK_KHR_xlib_surface",
+    "VK_KHR_xcb_surface",
 #endif
     VK_EXT_DEBUG_REPORT_EXTENSION_NAME
 );

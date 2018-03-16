@@ -5,8 +5,6 @@
 #include <string>
 #include <string_view>
 
-#include <gsl\gsl>
-
 #include "helpers.h"
 
 #define GLFW_EXPOSE_NATIVE_WIN32
