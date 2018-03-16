@@ -12,8 +12,6 @@ glslangValidatorPath = 'glslangValidator'
 
 shadersDirectory = "{}/../{}".format(os.path.dirname(os.path.realpath(__file__)), "VulkanIsland/shaders/")
 
-print(shadersDirectory)
-
 vertPath = "{}shader.vert".format(shadersDirectory)
 fragPath = "{}shader.frag".format(shadersDirectory)
 
@@ -26,5 +24,5 @@ if not os.path.exists(vertSpvPath):
 if not os.path.exists(fragSpvPath):
     open(fragSpvPath, 'x').close()
 
-call([glslangValidatorPath, vertPath], shell=True)
-#call([glslangValidatorPath, "-V", "-o", "{}frag.spv".format(shadersDirectory), "{}shader.frag".format(shadersDirectory)], shell=True)
+call([glslangValidatorPath, "-V", vertPath, "-o", vertSpvPath], shell=True)
+call([glslangValidatorPath, "-V", fragPath, "-o", fragSpvPath], shell=True)

@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef WIN32
+#ifdef _MSC_VER
 #pragma comment(lib, "vulkan-1.lib")
 #pragma comment(lib, "glfw3.lib")
 #endif
@@ -17,7 +17,7 @@
 #include <string_view>
 #include <fstream>
 
-#ifdef WIN32
+#ifdef _MSC_VER
 #include <filesystem>
 namespace fs = std::experimental::filesystem;
 #else
@@ -30,7 +30,9 @@ namespace fs = boost::filesystem;
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 
+#ifdef _MSC_VER
 #define GLFW_EXPOSE_NATIVE_WIN32
+#endif
 
 #ifndef GLFW_INCLUDE_VULKAN
 #define GLFW_INCLUDE_VULKAN
