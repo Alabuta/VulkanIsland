@@ -39,7 +39,6 @@
     return details;
 }
 
-#if X
 
 std::unique_ptr<VulkanInstance> vulkanInstance;
 std::unique_ptr<VulkanDevice> vulkanDevice;
@@ -659,7 +658,7 @@ void CreateSemaphores(VkDevice device)
 }
 
 
-void RecreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkSwapchainKHR swapChain, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
+void RecreateSwapChain()
 {
     vkDeviceWaitIdle(device);
 
@@ -681,7 +680,7 @@ void OnWindowResize([[maybe_unused]] GLFWwindow *window, int width, int height)
     WIDTH = width;
     HEIGHT = height;
 
-    RecreateSwapChain(physicalDevice, device, surface, swapChain, graphicsPipeline, pipelineLayout, renderPass);
+    RecreateSwapChain();
 }
 
 void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
@@ -720,8 +719,7 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
         &imageIndex, nullptr
     };
 
-    auto result = VK_SUCCESS;
-    if (result = vkQueuePresentKHR(presentationQueue, &presentInfo); result != VK_SUCCESS)
+    if (auto result = vkQueuePresentKHR(presentationQueue, &presentInfo); result != VK_SUCCESS)
         throw std::runtime_error("failed to submit request to present framebuffer: "s + std::to_string(result));
 
     vkQueueWaitIdle(presentationQueue);
@@ -821,4 +819,3 @@ try {
 } catch (std::exception const &ex) {
     std::cout << ex.what() << "\n";
 }
-#endif

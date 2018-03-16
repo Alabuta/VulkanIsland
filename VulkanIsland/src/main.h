@@ -5,7 +5,6 @@
 #pragma comment(lib, "glfw3.lib")
 #endif
 
-#define X 1
 
 #include <iostream>
 #include <memory>
