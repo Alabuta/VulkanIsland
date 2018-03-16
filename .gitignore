@@ -24,3 +24,7 @@ Win32/
 .vscode/
 *.spv
 GSL/
+.idea
+cmake
+cmake-build-debug
+cmake-build-release
