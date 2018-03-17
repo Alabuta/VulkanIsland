@@ -12,8 +12,8 @@ namespace {
 
 
 auto constexpr requiredQueues = make_array(
-    VkQueueFamilyProperties{VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT},
-    VkQueueFamilyProperties{VK_QUEUE_TRANSFER_BIT}
+    VkQueueFamilyProperties{VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 0, 0, {0, 0, 0}},
+    VkQueueFamilyProperties{VK_QUEUE_TRANSFER_BIT, 0, 0, {0, 0, 0}}
 );
 
 template<bool check_on_duplicates = false>
@@ -90,7 +90,7 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkQueueFamilyProperties>, "iterable object does not contain VkQueueFamilyProperties elements");
 
-    auto it_presentationQueue = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [physicalDevice, surface, size = queueFamilies.size()] (auto queueFamily)
+    auto it_presentationQueue = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [physicalDevice, surface, size = queueFamilies.size()] (auto /*queueFamily*/)
     {
         std::vector<std::uint32_t> queueFamiliesIndices(size);
         std::iota(queueFamiliesIndices.begin(), queueFamiliesIndices.end(), 0);
@@ -227,7 +227,7 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
     physicalDevice_ = devices.front();
 }
 
-void VulkanDevice::CreateDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<char const *> &&extensions)
+void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<char const *> &&extensions)
 {
     std::uint32_t queueFamilyPropertyCount = 0;
     vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice_, &queueFamilyPropertyCount, nullptr);

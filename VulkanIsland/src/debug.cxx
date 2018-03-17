@@ -15,8 +15,10 @@ using namespace std::string_view_literals;
 
 
 [[nodiscard]] inline VKAPI_ATTR VkBool32 VKAPI_CALL
-DebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, std::uint64_t object, std::size_t location, std::int32_t messageCode,
-              const char *pLayerPrefix, const char *pMessage, void *pUserData)
+DebugCallback([[maybe_unused]] VkDebugReportFlagsEXT flags, [[maybe_unused]] VkDebugReportObjectTypeEXT objectType,
+              [[maybe_unused]] std::uint64_t object, [[maybe_unused]] std::size_t location,
+              std::int32_t messageCode,
+              [[maybe_unused]] const char *pLayerPrefix, [[maybe_unused]] const char *pMessage, [[maybe_unused]] void *pUserData)
 {
     std::cout << messageCode << std::endl;
 

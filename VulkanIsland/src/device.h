@@ -52,7 +52,7 @@ private:
     PresentationQueue presentationQueue_;
 
     void PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions);
-    void CreateDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<char const *> &&extensions);
+    void CreateDevice(VkSurfaceKHR surface, std::vector<char const *> &&extensions);
 };
 
 template<class E>
@@ -78,7 +78,7 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
     }
 
     PickPhysicalDevice(instance.handle(), surface, std::move(extensions_view));
-    CreateDevice(instance.handle(), surface, std::move(extensions_));
+    CreateDevice(surface, std::move(extensions_));
 }
 
 inline VkDevice VulkanDevice::handle() noexcept
