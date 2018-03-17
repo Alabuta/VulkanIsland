@@ -641,8 +641,18 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
 {
     std::uint32_t imageIndex;
 
-    if (auto result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<std::uint64_t>::max(), imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex); result != VK_SUCCESS)
-        throw std::runtime_error("failed to acquire next image index: "s + std::to_string(result));
+    switch (auto result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<std::uint64_t>::max(), imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex); result) {
+        case VK_ERROR_OUT_OF_DATE_KHR:
+            RecreateSwapChain();
+            return;
+
+        case VK_SUBOPTIMAL_KHR:
+        case VK_SUCCESS:
+            break;
+
+        default:
+            throw std::runtime_error("failed to acquire next image index: "s + std::to_string(result));
+    }
 
     std::array<VkPipelineStageFlags, 1> constexpr waitStages{
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
@@ -673,8 +683,18 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
         &imageIndex, nullptr
     };
 
-    if (auto result = vkQueuePresentKHR(presentationQueue, &presentInfo); result != VK_SUCCESS)
-        throw std::runtime_error("failed to submit request to present framebuffer: "s + std::to_string(result));
+    switch (auto result = vkQueuePresentKHR(presentationQueue, &presentInfo); result) {
+        case VK_ERROR_OUT_OF_DATE_KHR:
+        case VK_SUBOPTIMAL_KHR:
+            RecreateSwapChain();
+            return;
+
+        case VK_SUCCESS:
+            break;
+
+        default:
+            throw std::runtime_error("failed to submit request to present framebuffer: "s + std::to_string(result));
+    }
 
     vkQueueWaitIdle(presentationQueue);
 }
