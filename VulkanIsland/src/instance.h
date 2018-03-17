@@ -33,8 +33,8 @@ public:
          
 private:
 
-    VkInstance instance_{VK_NULL_HANDLE};
-    VkDebugReportCallbackEXT debugReportCallback_{VK_NULL_HANDLE};
+    VkInstance instance_{nullptr};
+    VkDebugReportCallbackEXT debugReportCallback_{nullptr};
 
     VulkanInstance() = delete;
     VulkanInstance(VulkanInstance const &) = delete;

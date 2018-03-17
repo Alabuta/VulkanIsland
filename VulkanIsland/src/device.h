@@ -42,8 +42,8 @@ private:
     VulkanDevice(VulkanDevice const &) = delete;
     VulkanDevice(VulkanDevice &&) = delete;
 
-    VkPhysicalDevice physicalDevice_{VK_NULL_HANDLE};
-    VkDevice device_{VK_NULL_HANDLE};
+    VkPhysicalDevice physicalDevice_{nullptr};
+    VkDevice device_{nullptr};
 
     std::vector<std::uint32_t> supportedQueuesIndices_;
 

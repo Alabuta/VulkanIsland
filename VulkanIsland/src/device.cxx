@@ -130,14 +130,13 @@ std::optional<Q> GetQueue()
 
 VulkanDevice::~VulkanDevice()
 {
-    if (device_ != VK_NULL_HANDLE)
+    if (device_ != nullptr) {
         vkDeviceWaitIdle(device_);
-
-    if (device_ != VK_NULL_HANDLE)
         vkDestroyDevice(device_, nullptr);
+    }
 
-    device_ = VK_NULL_HANDLE;
-    physicalDevice_ = VK_NULL_HANDLE;
+    device_ = nullptr;
+    physicalDevice_ = nullptr;
 }
 
 void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions)

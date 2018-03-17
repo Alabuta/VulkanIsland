@@ -48,10 +48,7 @@ VkSurfaceKHR surface;
 auto WIDTH = 800u;
 auto HEIGHT = 600u;
 
-VkInstance instance;
 VkDebugReportCallbackEXT debugReportCallback;
-VkPhysicalDevice physicalDevice;
-VkDevice device;
 VkQueue graphicsQueue, transferQueue, presentationQueue;
 VkSwapchainKHR swapChain;
 VkPipelineLayout pipelineLayout;
@@ -73,12 +70,12 @@ VkSemaphore imageAvailableSemaphore, renderFinishedSemaphore;
 
 #ifdef USE_WIN32
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
-    VkInstance instance, VkWin32SurfaceCreateInfoKHR const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkSurfaceKHR *pSurface)
+    VkInstance vulkanInstance->handle(), VkWin32SurfaceCreateInfoKHR const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkSurfaceKHR *pSurface)
 {
-    auto func = reinterpret_cast<PFN_vkCreateWin32SurfaceKHR>(vkGetInstanceProcAddr(instance, "vkCreateWin32SurfaceKHR"));
+    auto func = reinterpret_cast<PFN_vkCreateWin32SurfaceKHR>(vkGetInstanceProcAddr(vulkanInstance->handle(), "vkCreateWin32SurfaceKHR"));
 
     if (func)
-        return func(instance, pCreateInfo, pAllocator, pSurface);
+        return func(vulkanInstance->handle(), pCreateInfo, pAllocator, pSurface);
 
     return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
@@ -508,7 +505,7 @@ void CreateRenderPass(VkDevice device)
 }
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
-void CreateFramebuffers(VkRenderPass renderPass, T &&swapChainImageViews)
+void CreateFramebuffers(VkRenderPass renderPass, T &&swapChainImageViews, VkDevice device)
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkImageView>, "iterable object does not contain VkImageView elements");
 
@@ -617,19 +614,19 @@ void CreateSemaphores(VkDevice device)
 
 void RecreateSwapChain()
 {
-    vkDeviceWaitIdle(device);
+    vkDeviceWaitIdle(vulkanDevice->handle());
 
-    CleanupSwapChain(device, swapChain, graphicsPipeline, pipelineLayout, renderPass);
+    CleanupSwapChain(vulkanDevice->handle(), swapChain, graphicsPipeline, pipelineLayout, renderPass);
 
-    CreateSwapChain(physicalDevice, device, surface, swapChain);
-    CreateSwapChainImageViews(device, swapChainImages);
+    CreateSwapChain(vulkanDevice->physical_handle(), vulkanDevice->handle(), surface, swapChain);
+    CreateSwapChainImageViews(vulkanDevice->handle(), swapChainImages);
 
-    CreateRenderPass(device);
-    CreateGraphicsPipeline(device);
+    CreateRenderPass(vulkanDevice->handle());
+    CreateGraphicsPipeline(vulkanDevice->handle());
 
-    CreateFramebuffers(renderPass, swapChainImageViews);
+    CreateFramebuffers(renderPass, swapChainImageViews, vulkanDevice->handle());
 
-    CreateCommandBuffers(device, renderPass, commandPool);
+    CreateCommandBuffers(vulkanDevice->handle(), renderPass, commandPool);
 }
 
 void OnWindowResize([[maybe_unused]] GLFWwindow *window, int width, int height)
@@ -685,7 +682,6 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
 void InitVulkan(GLFWwindow *window)
 {
     vulkanInstance = std::move(std::make_unique<VulkanInstance>(extensions, layers));
-    instance = vulkanInstance->handle();
 
 #if USE_WIN32
     VkWin32SurfaceCreateInfoKHR const win32CreateInfo = {
@@ -697,50 +693,48 @@ void InitVulkan(GLFWwindow *window)
 
     vkCreateWin32SurfaceKHR(vkInstance, &win32CreateInfo, nullptr, &vkSurface);
 #else
-    glfwCreateWindowSurface(instance, window, nullptr, &surface);
+    glfwCreateWindowSurface(vulkanInstance->handle(), window, nullptr, &surface);
 #endif
 
     vulkanDevice = std::move(std::make_unique<VulkanDevice>(*vulkanInstance, surface, deviceExtensions));
-    physicalDevice = vulkanDevice->physical_handle();
-    device = vulkanDevice->handle();
 
     supportedQueuesIndices = vulkanDevice->supported_queues_indices();
 
-    vkGetDeviceQueue(device, vulkanDevice->supported_queues_indices().at(0), 0, &graphicsQueue);
-    vkGetDeviceQueue(device, vulkanDevice->supported_queues_indices().at(1), 0, &transferQueue);
-    vkGetDeviceQueue(device, vulkanDevice->supported_queues_indices().at(2), 0, &presentationQueue);
+    vkGetDeviceQueue(vulkanDevice->handle(), vulkanDevice->supported_queues_indices().at(0), 0, &graphicsQueue);
+    vkGetDeviceQueue(vulkanDevice->handle(), vulkanDevice->supported_queues_indices().at(1), 0, &transferQueue);
+    vkGetDeviceQueue(vulkanDevice->handle(), vulkanDevice->supported_queues_indices().at(2), 0, &presentationQueue);
 
-    CreateSwapChain(physicalDevice, device, surface, swapChain);
-    CreateSwapChainImageViews(device, swapChainImages);
+    CreateSwapChain(vulkanDevice->physical_handle(), vulkanDevice->handle(), surface, swapChain);
+    CreateSwapChainImageViews(vulkanDevice->handle(), swapChainImages);
 
-    CreateRenderPass(device);
-    CreateGraphicsPipeline(device);
+    CreateRenderPass(vulkanDevice->handle());
+    CreateGraphicsPipeline(vulkanDevice->handle());
 
-    CreateFramebuffers(renderPass, swapChainImageViews);
+    CreateFramebuffers(renderPass, swapChainImageViews, vulkanDevice->handle());
 
-    CreateCommandPool(device);
-    CreateCommandBuffers(device, renderPass, commandPool);
+    CreateCommandPool(vulkanDevice->handle());
+    CreateCommandBuffers(vulkanDevice->handle(), renderPass, commandPool);
 
-    CreateSemaphores(device);
+    CreateSemaphores(vulkanDevice->handle());
 }
 
 void CleanUp()
 {
-    vkDeviceWaitIdle(device);
+    vkDeviceWaitIdle(vulkanDevice->handle());
 
     if (renderFinishedSemaphore)
-        vkDestroySemaphore(device, renderFinishedSemaphore, nullptr);
+        vkDestroySemaphore(vulkanDevice->handle(), renderFinishedSemaphore, nullptr);
 
     if (imageAvailableSemaphore)
-        vkDestroySemaphore(device, imageAvailableSemaphore, nullptr);
+        vkDestroySemaphore(vulkanDevice->handle(), imageAvailableSemaphore, nullptr);
 
-    CleanupSwapChain(device, swapChain, graphicsPipeline, pipelineLayout, renderPass);
+    CleanupSwapChain(vulkanDevice->handle(), swapChain, graphicsPipeline, pipelineLayout, renderPass);
 
     if (commandPool)
-        vkDestroyCommandPool(device, commandPool, nullptr);
+        vkDestroyCommandPool(vulkanDevice->handle(), commandPool, nullptr);
 
     if (surface)
-        vkDestroySurfaceKHR(instance, surface, nullptr);
+        vkDestroySurfaceKHR(vulkanInstance->handle(), surface, nullptr);
 
 }
 
@@ -762,7 +756,7 @@ try {
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
-        DrawFrame(device, swapChain);
+        DrawFrame(vulkanDevice->handle(), swapChain);
     }
 
     CleanUp();
