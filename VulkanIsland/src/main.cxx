@@ -1,5 +1,5 @@
 
-#ifdef WIN32
+#ifdef _MSC_VER
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
 #endif
@@ -746,7 +746,7 @@ void CleanUp()
 
 int main()
 try {
-#ifdef WIN32
+#ifdef _MSC_VER
     _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     //_CrtSetBreakAlloc(84);
 #endif

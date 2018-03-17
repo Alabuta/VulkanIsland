@@ -48,7 +48,7 @@ using namespace std::string_view_literals;
 
 
 
-auto constexpr kVULKAN_VERSION = VK_API_VERSION_1_0;
+auto constexpr kVULKAN_VERSION = VK_API_VERSION_1_1;
 
 VkApplicationInfo constexpr app_info{
     VK_STRUCTURE_TYPE_APPLICATION_INFO,
@@ -60,7 +60,7 @@ VkApplicationInfo constexpr app_info{
 
 auto constexpr extensions = make_array(
     VK_KHR_SURFACE_EXTENSION_NAME,
-#ifdef WIN32
+#ifdef _MSC_VER
 #if USE_WIN32
     VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
 #else
@@ -73,6 +73,10 @@ auto constexpr extensions = make_array(
 );
 
 auto constexpr layers = make_array(
+#ifdef _MSC_VER
+    "VK_LAYER_NV_nsight",
+#endif
+
     //"VK_LAYER_LUNARG_api_dump",
     "VK_LAYER_LUNARG_assistant_layer",
     "VK_LAYER_LUNARG_core_validation",
@@ -80,10 +84,6 @@ auto constexpr layers = make_array(
     "VK_LAYER_LUNARG_parameter_validation",
     "VK_LAYER_GOOGLE_threading",
     "VK_LAYER_GOOGLE_unique_objects"
-
-#ifdef WIN32
-    "VK_LAYER_NV_nsight"
-#endif
 );
 
 auto constexpr deviceExtensions = make_array(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
