@@ -24,5 +24,5 @@ if not os.path.exists(vertSpvPath):
 if not os.path.exists(fragSpvPath):
     open(fragSpvPath, 'x').close()
 
-call([glslangValidatorPath, "-V", vertPath, "-o", vertSpvPath], shell=True)
-call([glslangValidatorPath, "-V", fragPath, "-o", fragSpvPath], shell=True)
+call([glslangValidatorPath, "-V", vertPath, "-o", vertSpvPath])
+call([glslangValidatorPath, "-V", fragPath, "-o", fragSpvPath])
