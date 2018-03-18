@@ -7,6 +7,13 @@
 #include "main.h"
 
 
+auto constexpr vertices = make_array(
+    Vertex{{+1, +1, 0}, {1, 0, 0}},
+    Vertex{{+0, -1, 0}, {0, 1, 0}},
+    Vertex{{-1, +1, 0}, {0, 0, 1}}
+);
+
+
 [[nodiscard]] SwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
 {
     SwapChainSupportDetails details;
@@ -67,6 +74,8 @@ std::vector<VkFramebuffer> swapChainFramebuffers;
 std::vector<VkCommandBuffer> commandBuffers;
 
 VkSemaphore imageAvailableSemaphore, renderFinishedSemaphore;
+
+VkBuffer vertexBuffer;
 
 #ifdef USE_WIN32
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
@@ -350,11 +359,20 @@ void CreateGraphicsPipeline(VkDevice device)
         vertShaderCreateInfo, fragShaderCreateInfo
     );
 
-    VkPipelineVertexInputStateCreateInfo constexpr vertexInputCreateInfo{
+    auto constexpr vertexInputBindingDescriptions = make_array(
+        VkVertexInputBindingDescription{0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
+    );
+
+    auto constexpr attributeDescriptions = make_array(
+        VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, pos)},
+        VkVertexInputAttributeDescription{0, 1, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, color)}
+    );
+
+    VkPipelineVertexInputStateCreateInfo const vertexInputCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         nullptr, 0,
-        0, nullptr,
-        0, nullptr
+        static_cast<std::uint32_t>(std::size(vertexInputBindingDescriptions)), std::data(vertexInputBindingDescriptions),
+        static_cast<std::uint32_t>(std::size(attributeDescriptions)), std::data(attributeDescriptions),
     };
 
     VkPipelineInputAssemblyStateCreateInfo constexpr vertexAssemblyStateCreateInfo{
@@ -556,6 +574,30 @@ void CreateCommandPool(VkDevice device)
         throw std::runtime_error("failed to create a command buffer: "s + std::to_string(result));
 }
 
+[[nodiscard]] std::uint32_t FindMemoryType(VkPhysicalDevice physicalDevice, std::uint32_t filter, VkMemoryPropertyFlags properties)
+{
+    VkPhysicalDeviceMemoryProperties memoryProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+}
+
+void CreateVertexBuffer(VkDevice device)
+{
+    VkBufferCreateInfo const bufferCreateInfo{
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        nullptr, 0,
+        sizeof(decltype(vertices)::value_type) * vertices.size(),
+        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0, nullptr
+    };
+
+    if (auto result = vkCreateBuffer(device, &bufferCreateInfo, nullptr, &vertexBuffer); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create vertex buffer: "s + std::to_string(result));
+
+    VkMemoryRequirements memoryReqirements;
+    vkGetBufferMemoryRequirements(device, vertexBuffer, &memoryReqirements);
+}
+
 void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPool commandPool)
 {
     commandBuffers.resize(swapChainFramebuffers.size());
@@ -744,6 +786,7 @@ void InitVulkan(GLFWwindow *window)
     CreateFramebuffers(renderPass, swapChainImageViews, vulkanDevice->handle());
 
     CreateCommandPool(vulkanDevice->handle());
+    CreateVertexBuffer(vulkanDevice->handle());
     CreateCommandBuffers(vulkanDevice->handle(), renderPass, commandPool);
 
     CreateSemaphores(vulkanDevice->handle());
@@ -763,6 +806,9 @@ void CleanUp()
 
     if (commandPool)
         vkDestroyCommandPool(vulkanDevice->handle(), commandPool, nullptr);
+
+    if (vertexBuffer)
+        vkDestroyBuffer(vulkanDevice->handle(), vertexBuffer, nullptr);
 
     if (surface)
         vkDestroySurfaceKHR(vulkanInstance->handle(), surface, nullptr);
