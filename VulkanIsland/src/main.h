@@ -45,9 +45,6 @@ using namespace std::string_view_literals;
 
 
 
-
-
-
 auto constexpr kVULKAN_VERSION = VK_API_VERSION_1_1;
 
 VkApplicationInfo constexpr app_info{

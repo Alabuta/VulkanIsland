@@ -384,7 +384,7 @@ void CreateGraphicsPipeline(VkDevice device)
     VkPipelineRasterizationStateCreateInfo constexpr rasterizer{
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         nullptr, 0,
-        VK_FALSE,
+        VK_TRUE,
         VK_FALSE,
         VK_POLYGON_MODE_FILL,
         VK_CULL_MODE_BACK_BIT,
@@ -402,6 +402,17 @@ void CreateGraphicsPipeline(VkDevice device)
         nullptr,
         VK_FALSE,
         VK_FALSE
+    };
+
+    VkPipelineDepthStencilStateCreateInfo constexpr depthStencilStateCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        nullptr, 0,
+        VK_TRUE, VK_TRUE,
+        VK_COMPARE_OP_GREATER,
+        VK_FALSE,
+        VK_FALSE,
+        VkStencilOpState{}, VkStencilOpState{},
+        0, 0
     };
 
     VkPipelineColorBlendAttachmentState constexpr colorBlendAttachment{
@@ -445,7 +456,7 @@ void CreateGraphicsPipeline(VkDevice device)
         &viewportStateCreateInfo,
         &rasterizer,
         &multisampleCreateInfo,
-        nullptr,
+        &depthStencilStateCreateInfo,
         &colorBlendStateCreateInfo,
         nullptr,
         pipelineLayout,
@@ -639,6 +650,8 @@ void OnWindowResize([[maybe_unused]] GLFWwindow *window, int width, int height)
 
 void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
 {
+    vkQueueWaitIdle(presentationQueue);
+
     std::uint32_t imageIndex;
 
     switch (auto result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<std::uint64_t>::max(), imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex); result) {
@@ -654,14 +667,14 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
             throw std::runtime_error("failed to acquire next image index: "s + std::to_string(result));
     }
 
+    auto const waitSemaphores = make_array(imageAvailableSemaphore);
+    auto const signalSemaphores = make_array(renderFinishedSemaphore);
+
     std::array<VkPipelineStageFlags, 1> constexpr waitStages{
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
     };
 
-    auto const waitSemaphores = make_array(imageAvailableSemaphore);
-    auto const signalSemaphores = make_array(renderFinishedSemaphore);
-
-    VkSubmitInfo const info{
+    VkSubmitInfo const submitInfo{
         VK_STRUCTURE_TYPE_SUBMIT_INFO,
         nullptr,
         static_cast<std::uint32_t>(std::size(waitSemaphores)), std::data(waitSemaphores),
@@ -670,7 +683,7 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
         static_cast<std::uint32_t>(std::size(signalSemaphores)), std::data(signalSemaphores),
     };
 
-    if (auto result = vkQueueSubmit(graphicsQueue, 1, &info, VK_NULL_HANDLE); result != VK_SUCCESS)
+    if (auto result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS)
         throw std::runtime_error("failed to submit draw command buffer: "s + std::to_string(result));
 
     auto const swapchains = make_array(swapChain);
@@ -695,8 +708,6 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
         default:
             throw std::runtime_error("failed to submit request to present framebuffer: "s + std::to_string(result));
     }
-
-    vkQueueWaitIdle(presentationQueue);
 }
 
 void InitVulkan(GLFWwindow *window)

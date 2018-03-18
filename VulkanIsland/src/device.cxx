@@ -130,7 +130,7 @@ std::optional<Q> GetQueue()
 
 VulkanDevice::~VulkanDevice()
 {
-    if (device_ != nullptr) {
+    if (device_) {
         vkDeviceWaitIdle(device_);
         vkDestroyDevice(device_, nullptr);
     }
