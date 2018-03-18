@@ -388,7 +388,7 @@ void CreateGraphicsPipeline(VkDevice device)
         VK_FALSE,
         VK_POLYGON_MODE_FILL,
         VK_CULL_MODE_BACK_BIT,
-        VK_FRONT_FACE_CLOCKWISE,
+        VK_FRONT_FACE_COUNTER_CLOCKWISE,
         VK_FALSE, 0, VK_FALSE, 0,
         1
     };
@@ -701,7 +701,7 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
 
 void InitVulkan(GLFWwindow *window)
 {
-    vulkanInstance = std::move(std::make_unique<VulkanInstance>(extensions, layers));
+    vulkanInstance = std::make_unique<VulkanInstance>(extensions, layers);
 
 #if USE_WIN32
     VkWin32SurfaceCreateInfoKHR const win32CreateInfo = {
@@ -716,7 +716,7 @@ void InitVulkan(GLFWwindow *window)
     glfwCreateWindowSurface(vulkanInstance->handle(), window, nullptr, &surface);
 #endif
 
-    vulkanDevice = std::move(std::make_unique<VulkanDevice>(*vulkanInstance, surface, deviceExtensions));
+    vulkanDevice = std::make_unique<VulkanDevice>(*vulkanInstance, surface, deviceExtensions);
 
     supportedQueuesIndices = vulkanDevice->supported_queues_indices();
 
@@ -788,5 +788,5 @@ try {
     return 0;
 
 } catch (std::exception const &ex) {
-    std::cout << ex.what() << "\n";
+    std::cout << ex.what() << std::endl;
 }
