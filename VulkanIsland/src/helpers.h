@@ -40,12 +40,16 @@ constexpr std::array<std::decay_t<std::tuple_element_t<0, std::tuple<Ts...>>>, s
 
 
 struct vec3 {
-    std::array<float, 3> xyz;
+    float xyz[3];
 
-    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 3>>>...>
-    constexpr vec3(T &&xyz) : xyz(std::forward<T>(xyz)) {}
+    /*template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 3>>>...>
+    constexpr vec3(T &&xyz) : xyz(std::forward<T>(xyz)) {}*/
 
-    constexpr vec3(float x, float y, float z) : xyz({x, y, z}) {}
+    vec3(float x, float y, float z) {
+        xyz[0] = x;
+        xyz[1] = y;
+        xyz[2] = z;
+    }
 };
 
 struct Vertex {
