@@ -38,6 +38,33 @@ constexpr std::array<std::decay_t<std::tuple_element_t<0, std::tuple<Ts...>>>, s
     return {std::forward<Ts>(t)...};
 }
 
+namespace detail {
+template <class T, std::size_t N, std::size_t... I>
+constexpr std::array<std::remove_cv_t<T>, N> to_array_impl(T (&a)[N], std::index_sequence<I...>)
+{
+    return {{ a[I]... }};
+}
+}
+
+template <class T, std::size_t N>
+constexpr std::array<std::remove_cv_t<T>, N> to_array(T (&a)[N])
+{
+    return detail::to_array_impl(a, std::make_index_sequence<N>{});
+}
+
+
+struct vec2 {
+    float xyz[2];
+
+    /*template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 3>>>...>
+    constexpr vec3(T &&xyz) : xyz(std::forward<T>(xyz)) {}*/
+
+    vec2(float x, float y)
+    {
+        xyz[0] = x;
+        xyz[1] = y;
+    }
+};
 
 struct vec3 {
     float xyz[3];
