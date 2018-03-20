@@ -580,16 +580,30 @@ void CreateCommandPool(VkDevice device)
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
 
-    std::vector<std::uint32_t> memoryTypes(memoryProperties.memoryTypeCount);
+    /*std::vector<std::uint32_t> memoryTypes(memoryProperties.memoryTypeCount);
     std::iota(memoryTypes.begin(), memoryTypes.end(), 0);
 
     auto it_type = std::find_if(memoryTypes.begin(), memoryTypes.end(), [filter, properties, &memoryProperties] (auto i)
     {
         return (filter & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties;
+    });*/
+
+    /*auto const memoryTypes = to_array(memoryProperties.memoryTypes);
+
+    auto it_type = std::find_if(memoryTypes.begin(), memoryTypes.end(), [filter, properties, i = 0](auto type) mutable
+    {
+        return (filter & (1 << i++)) && (type.propertyFlags & properties) == properties;
     });
 
     if (it_type != memoryTypes.end())
-        return *it_type;
+        return static_cast<std::uint32_t>(std::distance(memoryTypes.begin(), it_type));*/
+
+
+    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
+        if ((filter & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
+            return i;
+        }
+    }
 
     return {};
 }
@@ -599,7 +613,7 @@ void CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
     VkBufferCreateInfo const bufferCreateInfo{
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         nullptr, 0,
-        sizeof(decltype(vertices)::value_type) * vertices.size(),
+        sizeof(decltype(vertices)::value_type) * std::size(vertices),
         VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
         VK_SHARING_MODE_EXCLUSIVE,
         0, nullptr
@@ -635,7 +649,7 @@ void CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
     if (auto result = vkMapMemory(device, vertexBufferMemory, 0, bufferCreateInfo.size, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
         throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
 
-    memcpy(data, std::data(vertices), static_cast<std::uint32_t>(bufferCreateInfo.size));
+    memcpy(data, std::data(vertices), static_cast<std::size_t>(bufferCreateInfo.size));
 
     vkUnmapMemory(device, vertexBufferMemory);
 }
