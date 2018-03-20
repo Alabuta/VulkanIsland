@@ -14,39 +14,6 @@ auto vertices = make_array(
 );
 
 
-[[nodiscard]] SwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
-{
-    SwapChainSupportDetails details;
-
-    if (auto result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface capabilities: "s + std::to_string(result));
-
-    std::uint32_t formatsCount = 0;
-    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, nullptr); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface formats count: "s + std::to_string(result));
-
-    details.formats.resize(formatsCount);
-    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, std::data(details.formats)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface formats: "s + std::to_string(result));
-
-    if (details.formats.empty())
-        return {};
-
-    std::uint32_t presentModeCount = 0;
-    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface presentation modes count: "s + std::to_string(result));
-
-    details.presentModes.resize(presentModeCount);
-    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, std::data(details.presentModes)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface presentation modes: "s + std::to_string(result));
-
-    if (details.presentModes.empty())
-        return {};
-
-    return details;
-}
-
-
 std::unique_ptr<VulkanInstance> vulkanInstance;
 std::unique_ptr<VulkanDevice> vulkanDevice;
 
@@ -91,6 +58,90 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
 }
 #endif
 
+
+[[nodiscard]] SwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+{
+    SwapChainSupportDetails details;
+
+    if (auto result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface capabilities: "s + std::to_string(result));
+
+    std::uint32_t formatsCount = 0;
+    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, nullptr); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface formats count: "s + std::to_string(result));
+
+    details.formats.resize(formatsCount);
+    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, std::data(details.formats)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface formats: "s + std::to_string(result));
+
+    if (details.formats.empty())
+        return {};
+
+    std::uint32_t presentModeCount = 0;
+    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface presentation modes count: "s + std::to_string(result));
+
+    details.presentModes.resize(presentModeCount);
+    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, std::data(details.presentModes)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve device surface presentation modes: "s + std::to_string(result));
+
+    if (details.presentModes.empty())
+        return {};
+
+    return details;
+}
+
+
+[[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view _name)
+{
+    auto current_path = fs::current_path();
+
+    fs::path directory{"shaders"s};
+    fs::path name{std::data(_name)};
+
+    if (!fs::exists(current_path / directory))
+        directory = current_path / "../../VulkanIsland"s / directory;
+
+    std::ifstream file((directory / name).native(), std::ios::binary);
+
+    if (!file.is_open())
+        return {};
+
+    auto const start_pos = file.tellg();
+    file.ignore(std::numeric_limits<std::streamsize>::max());
+
+    std::vector<std::byte> shaderByteCode(file.gcount());
+
+    file.seekg(start_pos);
+
+    if (!shaderByteCode.empty())
+        file.read(reinterpret_cast<char *>(std::data(shaderByteCode)), shaderByteCode.size());
+
+    return shaderByteCode;
+}
+
+template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
+[[nodiscard]] VkShaderModule CreateShaderModule(VkDevice device, T &&shaderByteCode)
+{
+    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, std::byte>, "iterable object does not contain std::byte elements");
+
+    if (shaderByteCode.size() % sizeof(std::uint32_t) != 0)
+        throw std::runtime_error("invalid byte code buffer size");
+
+    VkShaderModuleCreateInfo const createInfo{
+        VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
+        nullptr, 0,
+        shaderByteCode.size(),
+        reinterpret_cast<std::uint32_t const *>(std::data(shaderByteCode))
+    };
+
+    VkShaderModule shaderModule;
+
+    if (auto result = vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create shader module: "s + std::to_string(result));
+
+    return shaderModule;
+}
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 [[nodiscard]] VkSurfaceFormatKHR ChooseSwapSurfaceFormat(T &&surfaceFormats)
@@ -269,58 +320,6 @@ void CleanupSwapChain(VkDevice device, VkSwapchainKHR swapChain, VkPipeline grap
 }
 
 
-[[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view _name)
-{
-    auto current_path = fs::current_path();
-
-    fs::path directory{"shaders"s};
-    fs::path name{std::data(_name)};
-
-    if (!fs::exists(current_path / directory))
-        directory = current_path / "../../VulkanIsland"s / directory;
-
-    std::ifstream file((directory / name).native(), std::ios::binary);
-
-    if (!file.is_open())
-        return {};
-
-    auto const start_pos = file.tellg();
-    file.ignore(std::numeric_limits<std::streamsize>::max());
-
-    std::vector<std::byte> shaderByteCode(file.gcount());
-
-    file.seekg(start_pos);
-
-    if (!shaderByteCode.empty())
-        file.read(reinterpret_cast<char *>(std::data(shaderByteCode)), shaderByteCode.size());
-
-    return shaderByteCode;
-}
-
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
-[[nodiscard]] VkShaderModule CreateShaderModule(VkDevice device, T &&shaderByteCode)
-{
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, std::byte>, "iterable object does not contain std::byte elements");
-
-    if (shaderByteCode.size() % sizeof(std::uint32_t) != 0)
-        throw std::runtime_error("invalid byte code buffer size");
-    
-    VkShaderModuleCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-        nullptr, 0,
-        shaderByteCode.size(),
-        reinterpret_cast<std::uint32_t const *>(std::data(shaderByteCode))
-    };
-
-    VkShaderModule shaderModule;
-
-    if (auto result = vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create shader module: "s + std::to_string(result));
-
-    return shaderModule;
-}
-
-
 
 void CreateGraphicsPipeline(VkDevice device)
 {
@@ -365,8 +364,8 @@ void CreateGraphicsPipeline(VkDevice device)
     );
 
     auto constexpr attributeDescriptions = make_array(
-        VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, pos)},
-        VkVertexInputAttributeDescription{0, 1, VK_FORMAT_R32G32B32A32_SFLOAT, offsetof(Vertex, color)}
+        VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)},
+        VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)}
     );
 
     VkPipelineVertexInputStateCreateInfo const vertexInputCreateInfo{
