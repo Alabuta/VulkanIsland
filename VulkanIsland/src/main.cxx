@@ -727,6 +727,8 @@ void CreateSemaphores(VkDevice device)
 
 void RecreateSwapChain()
 {
+    if (WIDTH < 1 || HEIGHT < 1) return;
+
     vkDeviceWaitIdle(vulkanDevice->handle());
 
     CleanupSwapChain(vulkanDevice->handle(), swapChain, graphicsPipeline, pipelineLayout, renderPass);
@@ -826,7 +828,8 @@ void InitVulkan(GLFWwindow *window)
 
     vkCreateWin32SurfaceKHR(vkInstance, &win32CreateInfo, nullptr, &vkSurface);
 #else
-    glfwCreateWindowSurface(vulkanInstance->handle(), window, nullptr, &surface);
+    if (auto result = glfwCreateWindowSurface(vulkanInstance->handle(), window, nullptr, &surface); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create window surface: "s + std::to_string(result));
 #endif
 
     vulkanDevice = std::make_unique<VulkanDevice>(*vulkanInstance, surface, deviceExtensions);

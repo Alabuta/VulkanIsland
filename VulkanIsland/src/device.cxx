@@ -97,11 +97,11 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 
         return std::find_if(queueFamiliesIndices.crbegin(), queueFamiliesIndices.crend(), [physicalDevice, surface] (auto queueIndex)
         {
-            VkBool32 surfaceSupported = 0;
+            VkBool32 surfaceSupported = VK_FALSE;
             if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueIndex, surface, &surfaceSupported); result != VK_SUCCESS)
                 throw std::runtime_error("failed to retrieve surface support: "s + std::to_string(result));
 
-            return surfaceSupported != VK_TRUE;
+            return surfaceSupported == VK_TRUE;
 
         }) != queueFamiliesIndices.crend();
     });
