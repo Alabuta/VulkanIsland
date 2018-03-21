@@ -69,7 +69,6 @@ auto constexpr extensions = make_array(
     VK_EXT_DEBUG_REPORT_EXTENSION_NAME
 );
 
-#if 0
 auto constexpr layers = make_array(
 #ifdef _MSC_VER
     "VK_LAYER_NV_nsight",
@@ -83,9 +82,6 @@ auto constexpr layers = make_array(
     "VK_LAYER_GOOGLE_threading",
     "VK_LAYER_GOOGLE_unique_objects"
 );
-#else
-auto constexpr layers = make_array("VK_LAYER_LUNARG_standard_validation");
-#endif
 
 auto constexpr deviceExtensions = make_array(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
 
