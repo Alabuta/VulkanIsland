@@ -267,7 +267,7 @@ void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<char const *> 
         queueCreateInfos.push_back(std::move(queueCreateInfo));
     }
 
-    VkPhysicalDeviceFeatures constexpr deviceFeatures{};
+    VkPhysicalDeviceFeatures constexpr deviceFeatures{kDEVICE_FEATURES};
 
     VkDeviceCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
