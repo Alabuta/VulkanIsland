@@ -246,7 +246,7 @@ void CreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurface
 
     if (supportedQueuesIndices.at(0) != supportedQueuesIndices.at(2)) {
         swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        swapchainCreateInfo.queueFamilyIndexCount = 2;
+        swapchainCreateInfo.queueFamilyIndexCount = static_cast<std::uint32_t>(std::size(queueFamilyIndices));
         swapchainCreateInfo.pQueueFamilyIndices = std::data(queueFamilyIndices);
     }
 
@@ -259,7 +259,7 @@ void CreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurface
 
     swapChainImages.resize(imagesCount);
     if (auto result = vkGetSwapchainImagesKHR(device, swapChain, &imagesCount, std::data(swapChainImages)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve swap chain iamges: "s + std::to_string(result));
+        throw std::runtime_error("failed to retrieve swap chain images: "s + std::to_string(result));
 }
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
@@ -579,15 +579,7 @@ void CreateCommandPool(VkDevice device)
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
 
-    /*std::vector<std::uint32_t> memoryTypes(memoryProperties.memoryTypeCount);
-    std::iota(memoryTypes.begin(), memoryTypes.end(), 0);
-
-    auto it_type = std::find_if(memoryTypes.begin(), memoryTypes.end(), [filter, properties, &memoryProperties] (auto i)
-    {
-        return (filter & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties;
-    });*/
-
-    /*auto const memoryTypes = to_array(memoryProperties.memoryTypes);
+    auto const memoryTypes = to_array(memoryProperties.memoryTypes);
 
     auto it_type = std::find_if(memoryTypes.begin(), memoryTypes.end(), [filter, properties, i = 0](auto type) mutable
     {
@@ -595,14 +587,7 @@ void CreateCommandPool(VkDevice device)
     });
 
     if (it_type != memoryTypes.end())
-        return static_cast<std::uint32_t>(std::distance(memoryTypes.begin(), it_type));*/
-
-
-    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; i++) {
-        if ((filter & (1 << i)) && (memoryProperties.memoryTypes[i].propertyFlags & properties) == properties) {
-            return i;
-        }
-    }
+        return static_cast<std::uint32_t>(std::distance(memoryTypes.begin(), it_type));
 
     return {};
 }
