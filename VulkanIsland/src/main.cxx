@@ -882,6 +882,8 @@ try {
 
     InitVulkan(window);
 
+    GraphicsQueue g;
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
         DrawFrame(vulkanDevice->handle(), swapChain);

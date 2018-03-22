@@ -6,26 +6,37 @@ template<class T>
 class VulkanQueue {
 public:
 
-    VkQueue handle() { return handle_; }
-    VkQueue &handle() const { return handle_; }
+    VkQueue handle() const noexcept { return handle_; }
+    VkQueue &handle() noexcept { return handle_; }
 
     template<class... Args>
-    [[nodiscard]] static bool constexpr supported_by_device(Args &&... args)
+    [[nodiscard]] static bool constexpr is_supported_by_device(Args &&... args)
     {
-        return T::supported_by_device(std::forward<Args>(args)...);
+        return T::is_supported_by_device(std::forward<Args>(args)...);
     }
 
 private:
-    VkQueue handle_{VK_NULL_HANDLE};
+    VkQueue handle_{nullptr};
     std::uint32_t family_, index_;
 
 };
 
 class GraphicsQueue final : VulkanQueue<GraphicsQueue> {
 public:
+    static auto constexpr kFLAGS{VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT};
 
     template<class...>
-    [[nodiscard]] static std::optional<std::uint32_t> supported_by_device(VkPhysicalDevice physicalDevice)
+    GraphicsQueue()
+    {
+        ;
+    }
+
+    [[nodiscard]] static bool is_supported_by_device(VkPhysicalDevice physicalDevice)
+    {
+        return get_family_index(physicalDevice).has_value();
+    }
+    
+    [[nodiscard]] static std::optional<std::uint32_t> get_family_index(VkPhysicalDevice physicalDevice)
     {
         std::uint32_t queueFamilyPropertyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
@@ -39,7 +50,7 @@ public:
         // Strict matching.
         auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [] (auto &&queueFamily)
         {
-            return queueFamily.queueCount > 0 && queueFamily.queueFlags == (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+            return queueFamily.queueCount > 0 && queueFamily.queueFlags == kFLAGS;
         });
 
         if (it_family != queueFamilies.cend())
@@ -48,7 +59,7 @@ public:
         // Tolerant matching.
         it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [] (auto &&queueFamily)
         {
-            return queueFamily.queueCount > 0 && (queueFamily.queueFlags & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT)) == (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT);
+            return queueFamily.queueCount > 0 && (queueFamily.queueFlags & kFLAGS) == kFLAGS;
         });
 
         if (it_family != queueFamilies.cend())
