@@ -63,7 +63,8 @@ template<class T, class U, typename std::enable_if_t<is_iterable_v<std::decay_t<
 [[nodiscard]] std::optional<std::uint32_t> GetRequiredQueueFamilyIndex(T &&queueFamilies, U &&requiredQueue)
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkQueueFamilyProperties>, "iterable object does not contain VkQueueFamilyProperties elements");
-    
+
+#if TEMPORARY_DISABLED
     // Strict matching.
     auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&requiredQueue] (auto &&queueFamily)
     {
@@ -72,9 +73,10 @@ template<class T, class U, typename std::enable_if_t<is_iterable_v<std::decay_t<
 
     if (it_family != queueFamilies.cend())
         return static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family));
+#endif
 
     // Tolerant matching.
-    it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&requiredQueue] (auto &&queueFamily)
+    auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&requiredQueue] (auto &&queueFamily)
     {
         return queueFamily.queueCount > 0 && (queueFamily.queueFlags & requiredQueue.queueFlags) == requiredQueue.queueFlags;
     });
@@ -95,7 +97,7 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
         std::vector<std::uint32_t> queueFamiliesIndices(size);
         std::iota(queueFamiliesIndices.begin(), queueFamiliesIndices.end(), 0);
 
-        return std::find_if(queueFamiliesIndices.crbegin(), queueFamiliesIndices.crend(), [physicalDevice, surface] (auto queueIndex)
+        return std::find_if(queueFamiliesIndices.cbegin(), queueFamiliesIndices.cend(), [physicalDevice, surface] (auto queueIndex)
         {
             VkBool32 surfaceSupported = VK_FALSE;
             if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueIndex, surface, &surfaceSupported); result != VK_SUCCESS)
@@ -103,7 +105,7 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 
             return surfaceSupported == VK_TRUE;
 
-        }) != queueFamiliesIndices.crend();
+        }) != queueFamiliesIndices.cend();
     });
 
     if (it_presentationQueue != queueFamilies.cend())
