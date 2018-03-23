@@ -20,7 +20,7 @@ public:
     std::vector<std::uint32_t> const &supported_queues_indices() const noexcept;
 
 #if NOT_YET_IMPLEMENTED
-    template<class Q, std::enable_if_t<std::is_base_of_v<VulkanQueue<std::decay_t<Q>>, std::decay_t<Q>>>...>
+    template<class Q, std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
     Q &GetQueue()
     {
         if constexpr (std::is_same_v<Q, GraphicsQueue>)
