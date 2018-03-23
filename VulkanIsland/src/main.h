@@ -70,7 +70,7 @@ auto constexpr extensions = make_array(
 );
 
 auto constexpr layers = make_array(
-#if TEMPORARY_DISABLED
+#if TEMPORARILY_DISABLED
     "VK_LAYER_NV_nsight",
 #endif
 

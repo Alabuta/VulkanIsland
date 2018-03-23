@@ -7,7 +7,6 @@ using namespace std::string_literals;
 using namespace std::string_view_literals;
 
 
-
 namespace {
 
 
@@ -64,7 +63,7 @@ template<class T, class U, typename std::enable_if_t<is_iterable_v<std::decay_t<
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkQueueFamilyProperties>, "iterable object does not contain VkQueueFamilyProperties elements");
 
-#if TEMPORARY_DISABLED
+#if TEMPORARILY_DISABLED
     // Strict matching.
     auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&requiredQueue] (auto &&queueFamily)
     {
