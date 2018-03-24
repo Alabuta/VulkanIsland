@@ -187,6 +187,7 @@
     <ClInclude Include="src\instance.h" />
     <ClInclude Include="src\main.h" />
     <ClInclude Include="src\queues.h" />
+    <ClInclude Include="src\queue_builder.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shader.glsl" />

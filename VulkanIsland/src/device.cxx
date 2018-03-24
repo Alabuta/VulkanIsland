@@ -166,8 +166,21 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
     // Removing unsuitable devices. Matching by required graphics, transfer and presentation queues.
     it_end = std::remove_if(devices.begin(), devices.end(), [surface] (auto &&device)
     {
+        if (!QueueBuilder<GraphicsQueue>::IsSupportedByDevice(device, surface))
             return true;
 
+        if (!QueueBuilder<ComputeQueue>::IsSupportedByDevice(device, surface))
+            return true;
+
+        if (!QueueBuilder<TransferQueue>::IsSupportedByDevice(device, surface))
+            return true;
+
+        if (!QueueBuilder<PresentationQueue>::IsSupportedByDevice(device, surface))
+            return true;
+
+        return false;
+
+#if OBSOLETE
         std::uint32_t queueFamilyPropertyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, nullptr);
 
@@ -187,6 +200,7 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
             return true;
 
         return !GetPresentationQueueFamilyIndex(queueFamilies, device, surface).has_value();
+#endif
     });
 
     devices.erase(it_end, devices.end());

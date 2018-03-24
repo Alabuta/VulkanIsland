@@ -45,9 +45,11 @@ private:
 
     std::vector<std::uint32_t> supportedQueuesIndices_;
 
+#if NOT_YET_IMPLEMENTED
     GraphicsQueue graphicsQueue_;
     TransferQueue transferQueue_;
     PresentationQueue presentationQueue_;
+#endif
 
     void PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions);
     void CreateDevice(VkSurfaceKHR surface, std::vector<char const *> &&extensions);

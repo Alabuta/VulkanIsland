@@ -96,6 +96,5 @@ struct SwapChainSupportDetails {
 [[nodiscard]] SwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 
 #include "instance.h"
-
-
 #include "device.h"
+#include "queue_builder.h"

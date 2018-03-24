@@ -1,11 +1,12 @@
 #pragma once
+#include "main.h"
 #include "device.h"
 
 template<class T>
 class VulkanQueue;
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
-class QueueCreator;
+class QueueBuilder;
 
 template<class T>
 class VulkanQueue {
@@ -29,7 +30,7 @@ private:
     VkQueue handle_{nullptr};
     std::uint32_t family_, index_;
 
-    friend QueueCreator;
+    friend QueueBuilder;
 
 };
 
