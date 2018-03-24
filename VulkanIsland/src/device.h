@@ -1,7 +1,5 @@
 #pragma once
 
-#include <variant>
-
 #include "instance.h"
 #include "device_defaults.h"
 #include "queues.h"
@@ -14,8 +12,8 @@ public:
     VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface, E &&extensions);
     ~VulkanDevice();
 
-    VkDevice handle() noexcept;
-    VkPhysicalDevice physical_handle() noexcept;
+    VkDevice handle() const noexcept { return device_; };
+    VkPhysicalDevice physical_handle() const noexcept { return physicalDevice_; };
 
     std::vector<std::uint32_t> const &supported_queues_indices() const noexcept;
 
@@ -79,16 +77,6 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
 
     PickPhysicalDevice(instance.handle(), surface, std::move(extensions_view));
     CreateDevice(surface, std::move(extensions_));
-}
-
-inline VkDevice VulkanDevice::handle() noexcept
-{
-    return device_;
-}
-
-inline VkPhysicalDevice VulkanDevice::physical_handle() noexcept
-{
-    return physicalDevice_;
 }
 
 inline std::vector<std::uint32_t> const &VulkanDevice::supported_queues_indices() const noexcept

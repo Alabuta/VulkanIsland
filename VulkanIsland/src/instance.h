@@ -29,7 +29,7 @@ public:
     VulkanInstance(E &&extensions, L &&layers);
     ~VulkanInstance();
 
-    VkInstance handle() noexcept;
+    VkInstance handle() const noexcept { return instance_; }
          
 private:
 
@@ -89,9 +89,4 @@ inline VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
     }
 
     CreateInstance(std::move(extensions_), std::move(layers_));
-}
-
-inline VkInstance VulkanInstance::handle() noexcept
-{
-    return instance_;
 }

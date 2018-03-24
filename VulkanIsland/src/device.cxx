@@ -8,8 +8,6 @@ using namespace std::string_view_literals;
 
 
 namespace {
-
-
 auto constexpr requiredQueues = make_array(
     VkQueueFamilyProperties{VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 0, 0, {0, 0, 0}},
     VkQueueFamilyProperties{VK_QUEUE_TRANSFER_BIT, 0, 0, {0, 0, 0}}
@@ -165,7 +163,7 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
 
     devices.erase(it_end, devices.end());
 
-    // Matching by required graphics, transfer and presentation queues.
+    // Removing unsuitable devices. Matching by required graphics, transfer and presentation queues.
     it_end = std::remove_if(devices.begin(), devices.end(), [surface] (auto &&device)
     {
         if (!GraphicsQueue::is_supported_by_device(device))
@@ -268,7 +266,7 @@ void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<char const *> 
         queueCreateInfos.push_back(std::move(queueCreateInfo));
     }
 
-    VkPhysicalDeviceFeatures constexpr deviceFeatures{kDEVICE_FEATURES};
+    VkPhysicalDeviceFeatures const deviceFeatures{kDEVICE_FEATURES};
 
     VkDeviceCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
