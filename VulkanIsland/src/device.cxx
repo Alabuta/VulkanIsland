@@ -1,3 +1,5 @@
+#include <type_traits>
+#include <functional>
 
 #include "main.h"
 #include "device.h"
@@ -111,20 +113,6 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     return {};
 }
 
-
-template<class Q, std::enable_if_t<std::is_base_of_v<VulkanQueue<std::decay_t<Q>>, std::decay_t<Q>>>...>
-std::optional<Q> GetQueue()
-{
-    using T = std::decay_t<Q>;
-
-    if constexpr (std::is_same_v<T, GraphicsQueue>)
-    {
-        ;
-    }
-
-    return {};
-}
-
 }
 
 VulkanDevice::~VulkanDevice()
@@ -138,7 +126,8 @@ VulkanDevice::~VulkanDevice()
     physicalDevice_ = nullptr;
 }
 
-void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions)
+
+void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<Queues> const &queues, std::vector<std::string_view> &&extensions)
 {
     std::uint32_t devicesCount = 0;
 
@@ -164,43 +153,19 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
     devices.erase(it_end, devices.end());
 
     // Removing unsuitable devices. Matching by required graphics, transfer and presentation queues.
-    it_end = std::remove_if(devices.begin(), devices.end(), [surface] (auto &&device)
+    it_end = std::remove_if(devices.begin(), devices.end(), [surface, &queues] (auto &&device)
     {
-        if (!QueueBuilder<GraphicsQueue>::IsSupportedByDevice(device, surface))
-            return true;
+        for (auto &&queue : queues) {
+            auto supported = std::visit([=] (auto &&q)
+            {
+                return QueueBuilder<std::decay_t<decltype(q)>>::IsSupportedByDevice(device, surface);
+            }, queue);
 
-        if (!QueueBuilder<ComputeQueue>::IsSupportedByDevice(device, surface))
-            return true;
-
-        if (!QueueBuilder<TransferQueue>::IsSupportedByDevice(device, surface))
-            return true;
-
-        if (!QueueBuilder<PresentationQueue>::IsSupportedByDevice(device, surface))
-            return true;
+            if (!supported)
+                return true;
+        }
 
         return false;
-
-#if OBSOLETE
-        std::uint32_t queueFamilyPropertyCount = 0;
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, nullptr);
-
-        std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyPropertyCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyPropertyCount, std::data(queueFamilies));
-
-        if (queueFamilies.empty())
-            return true;
-
-        std::vector<std::uint32_t> supportedQueuesFamilyIndices;
-
-        for (auto &&queueProp : requiredQueues)
-            if (auto const queueIndex = GetRequiredQueueFamilyIndex(queueFamilies, queueProp); queueIndex)
-                supportedQueuesFamilyIndices.emplace_back(queueIndex.value());
-
-        if (supportedQueuesFamilyIndices.empty())
-            return true;
-
-        return !GetPresentationQueueFamilyIndex(queueFamilies, device, surface).has_value();
-#endif
     });
 
     devices.erase(it_end, devices.end());
@@ -238,35 +203,16 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
     physicalDevice_ = devices.front();
 }
 
-void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<char const *> &&extensions)
+void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<Queues> &queues, std::vector<char const *> &&extensions)
 {
-    std::uint32_t queueFamilyPropertyCount = 0;
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice_, &queueFamilyPropertyCount, nullptr);
+    std::set<std::uint32_t> uniqueQueueFamilyIndices;
 
-    std::vector<VkQueueFamilyProperties> queueFamilies(queueFamilyPropertyCount);
-    vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice_, &queueFamilyPropertyCount, std::data(queueFamilies));
+    for (auto &&queue : queues)
+        uniqueQueueFamilyIndices.emplace(std::visit([] (auto &&q) { return q.family(); }, queue));
 
-    if (queueFamilies.empty())
-        throw std::runtime_error("there's no queue families on device"s);
-
-    supportedQueuesIndices_.clear();
-
-    for (auto &&queueProp : requiredQueues)
-        if (auto const queueIndex = GetRequiredQueueFamilyIndex(queueFamilies, queueProp); queueIndex)
-            supportedQueuesIndices_.emplace_back(queueIndex.value());
-
-    if (supportedQueuesIndices_.empty())
-        throw std::runtime_error("device does not support required queues"s);
-
-    if (auto const presentationFamilyQueueIndex = GetPresentationQueueFamilyIndex(queueFamilies, physicalDevice_, surface); presentationFamilyQueueIndex)
-        supportedQueuesIndices_.emplace_back(presentationFamilyQueueIndex.value());
-
-    else throw std::runtime_error("picked queue does not support presentation surface"s);
-
-    std::set<std::uint32_t> const uniqueFamilyQueueIndices{supportedQueuesIndices_.cbegin(), supportedQueuesIndices_.cend()};
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 
-    for (auto &&queueFamilyIndex : uniqueFamilyQueueIndices) {
+    for (auto &&queueFamilyIndex : uniqueQueueFamilyIndices) {
         auto constexpr queuePriority = 1.f;
 
         VkDeviceQueueCreateInfo queueCreateInfo{
@@ -292,4 +238,12 @@ void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<char const *> 
 
     if (auto result = vkCreateDevice(physicalDevice_, &createInfo, nullptr, &device_); result != VK_SUCCESS)
         throw std::runtime_error("failed to create logical device: "s + std::to_string(result));
+
+    for (auto &&queue : queues) {
+        std::visit([=] (auto &&q)
+        {
+            q = std::move(QueueBuilder<std::decay_t<decltype(q)>>::Build(physicalDevice_, device_, surface));
+
+        }, queue);
+    }
 }

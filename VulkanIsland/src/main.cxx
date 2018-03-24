@@ -22,8 +22,10 @@ VkSurfaceKHR surface;
 auto WIDTH = 800u;
 auto HEIGHT = 600u;
 
-VkDebugReportCallbackEXT debugReportCallback;
-VkQueue graphicsQueue, transferQueue, presentationQueue;
+GraphicsQueue graphicsQueue;
+TransferQueue transferQueue;
+PresentationQueue presentationQueue;
+
 VkSwapchainKHR swapChain;
 VkPipelineLayout pipelineLayout;
 VkRenderPass renderPass;
@@ -34,7 +36,6 @@ VkExtent2D swapChainExtent;
 
 VkCommandPool commandPool;
 
-std::vector<std::uint32_t> supportedQueuesIndices;
 std::vector<VkImage> swapChainImages;
 std::vector<VkImageView> swapChainImageViews;
 std::vector<VkFramebuffer> swapChainFramebuffers;
@@ -49,10 +50,10 @@ VkDeviceMemory vertexBufferMemory;
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
     VkInstance vulkanInstance->handle(), VkWin32SurfaceCreateInfoKHR const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkSurfaceKHR *pSurface)
 {
-    auto func = reinterpret_cast<PFN_vkCreateWin32SurfaceKHR>(vkGetInstanceProcAddr(vulkanInstance->handle(), "vkCreateWin32SurfaceKHR"));
+    auto traverse = reinterpret_cast<PFN_vkCreateWin32SurfaceKHR>(vkGetInstanceProcAddr(vulkanInstance->handle(), "vkCreateWin32SurfaceKHR"));
 
-    if (func)
-        return func(vulkanInstance->handle(), pCreateInfo, pAllocator, pSurface);
+    if (traverse)
+        return traverse(vulkanInstance->handle(), pCreateInfo, pAllocator, pSurface);
 
     return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
@@ -241,10 +242,10 @@ void CreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurface
     };
 
     auto const queueFamilyIndices = make_array(
-        supportedQueuesIndices.at(0), supportedQueuesIndices.at(2)
+        graphicsQueue.family(), presentationQueue.family()
     );
 
-    if (supportedQueuesIndices.at(0) != supportedQueuesIndices.at(2)) {
+    if (graphicsQueue.family() != presentationQueue.family()) {
         swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         swapchainCreateInfo.queueFamilyIndexCount = static_cast<std::uint32_t>(std::size(queueFamilyIndices));
         swapchainCreateInfo.pQueueFamilyIndices = std::data(queueFamilyIndices);
@@ -567,7 +568,7 @@ void CreateCommandPool(VkDevice device)
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         nullptr,
         0,
-        supportedQueuesIndices.at(0)
+        graphicsQueue.family()
     };
 
     if (auto result = vkCreateCommandPool(device, &createInfo, nullptr, &commandPool); result != VK_SUCCESS)
@@ -739,7 +740,7 @@ void OnWindowResize([[maybe_unused]] GLFWwindow *window, int width, int height)
 
 void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
 {
-    vkQueueWaitIdle(presentationQueue);
+    vkQueueWaitIdle(presentationQueue.handle());
 
     std::uint32_t imageIndex;
 
@@ -772,7 +773,7 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
         static_cast<std::uint32_t>(std::size(signalSemaphores)), std::data(signalSemaphores),
     };
 
-    if (auto result = vkQueueSubmit(graphicsQueue, 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS)
+    if (auto result = vkQueueSubmit(graphicsQueue.handle(), 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS)
         throw std::runtime_error("failed to submit draw command buffer: "s + std::to_string(result));
 
     auto const swapchains = make_array(swapChain);
@@ -785,7 +786,7 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
         &imageIndex, nullptr
     };
 
-    switch (auto result = vkQueuePresentKHR(presentationQueue, &presentInfo); result) {
+    switch (auto result = vkQueuePresentKHR(presentationQueue.handle(), &presentInfo); result) {
         case VK_ERROR_OUT_OF_DATE_KHR:
         case VK_SUBOPTIMAL_KHR:
             RecreateSwapChain();
@@ -817,13 +818,15 @@ void InitVulkan(GLFWwindow *window)
         throw std::runtime_error("failed to create window surface: "s + std::to_string(result));
 #endif
 
-    vulkanDevice = std::make_unique<VulkanDevice>(*vulkanInstance, surface, deviceExtensions);
+    std::array<Queues, 3> queues = {
+        GraphicsQueue{}, TransferQueue{}, PresentationQueue{}
+    };
 
-    supportedQueuesIndices = vulkanDevice->supported_queues_indices();
+    vulkanDevice = std::make_unique<VulkanDevice>(*vulkanInstance, surface, queues, deviceExtensions);
 
-    vkGetDeviceQueue(vulkanDevice->handle(), vulkanDevice->supported_queues_indices().at(0), 0, &graphicsQueue);
-    vkGetDeviceQueue(vulkanDevice->handle(), vulkanDevice->supported_queues_indices().at(1), 0, &transferQueue);
-    vkGetDeviceQueue(vulkanDevice->handle(), vulkanDevice->supported_queues_indices().at(2), 0, &presentationQueue);
+    graphicsQueue = std::move(std::get<GraphicsQueue>(queues.at(0)));
+    transferQueue = std::move(std::get<TransferQueue>(queues.at(1)));
+    presentationQueue = std::move(std::get<PresentationQueue>(queues.at(2)));
 
     CreateSwapChain(vulkanDevice->physical_handle(), vulkanDevice->handle(), surface, swapChain);
     CreateSwapChainImageViews(vulkanDevice->handle(), swapChainImages);
@@ -881,8 +884,6 @@ try {
     glfwSetWindowSizeCallback(window, OnWindowResize);
 
     InitVulkan(window);
-
-    GraphicsQueue g;
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();

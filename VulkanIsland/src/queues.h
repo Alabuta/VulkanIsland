@@ -1,4 +1,6 @@
 #pragma once
+#include <variant>
+
 #include "main.h"
 #include "device.h"
 
@@ -12,8 +14,6 @@ template<class T>
 class VulkanQueue {
 public:
 
-    VkQueue handle() const noexcept { return handle_; }
-
     template<class Q, typename std::enable_if_t<std::is_same_v<T, std::decay_t<Q>>>...>
     [[nodiscard]] constexpr bool operator== (Q &&queue) const noexcept
     {
@@ -25,6 +25,13 @@ public:
     {
         return !(*this == queue);
     }
+
+    VkQueue handle() const noexcept { return handle_; }
+    std::uint32_t family() const noexcept { return family_; }
+
+protected:
+
+    //VulkanQueue() = default;
 
 private:
     VkQueue handle_{nullptr};
@@ -50,3 +57,5 @@ public:
 };
 
 class PresentationQueue final : public VulkanQueue<PresentationQueue> {};
+
+using Queues = std::variant<GraphicsQueue, ComputeQueue, TransferQueue, PresentationQueue>;

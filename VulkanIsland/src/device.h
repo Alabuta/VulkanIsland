@@ -8,14 +8,12 @@
 class VulkanDevice final {
 public:
 
-    template<class E>
-    VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface, E &&extensions);
+    template<class Qs, class E>
+    VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface, Qs &queues, E &&extensions);
     ~VulkanDevice();
 
     VkDevice handle() const noexcept { return device_; };
     VkPhysicalDevice physical_handle() const noexcept { return physicalDevice_; };
-
-    std::vector<std::uint32_t> const &supported_queues_indices() const noexcept;
 
 #if NOT_YET_IMPLEMENTED
     template<class Q, std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
@@ -43,20 +41,18 @@ private:
     VkPhysicalDevice physicalDevice_{nullptr};
     VkDevice device_{nullptr};
 
-    std::vector<std::uint32_t> supportedQueuesIndices_;
-
 #if NOT_YET_IMPLEMENTED
     GraphicsQueue graphicsQueue_;
     TransferQueue transferQueue_;
     PresentationQueue presentationQueue_;
 #endif
 
-    void PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions);
-    void CreateDevice(VkSurfaceKHR surface, std::vector<char const *> &&extensions);
+    void PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<Queues> const &queues, std::vector<std::string_view> &&extensions);
+    void CreateDevice(VkSurfaceKHR surface, std::vector<Queues> &queues, std::vector<char const *> &&extensions);
 };
 
-template<class E>
-inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface, E &&extensions)
+template<class Qs, class E>
+inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface, Qs &queues, E &&extensions)
 {
     auto constexpr use_extensions = !std::is_same_v<std::false_type, E>;
 
@@ -77,11 +73,14 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
         std::copy(extensions_.begin(), extensions_.end(), std::back_inserter(extensions_view));
     }
 
-    PickPhysicalDevice(instance.handle(), surface, std::move(extensions_view));
-    CreateDevice(surface, std::move(extensions_));
-}
+    using Q = std::decay_t<Qs>;
+    static_assert(is_iterable_v<Q>, "'queues' must be an iterable container");
+    static_assert(std::is_same_v<typename std::decay_t<Q>::value_type, Queues>, "'queues' must contain 'Queues' instances");
 
-inline std::vector<std::uint32_t> const &VulkanDevice::supported_queues_indices() const noexcept
-{
-    return supportedQueuesIndices_;
+    std::vector<Queues> queues_{std::cbegin(queues), std::cend(queues)};
+
+    PickPhysicalDevice(instance.handle(), surface, queues_, std::move(extensions_view));
+    CreateDevice(surface, queues_, std::move(extensions_));
+
+    std::move(std::cbegin(queues_), std::cend(queues_), std::begin(queues));
 }
