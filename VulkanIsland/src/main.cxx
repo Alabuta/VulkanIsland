@@ -101,7 +101,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
     fs::path name{std::data(_name)};
 
     if (!fs::exists(current_path / directory))
-        directory = current_path / "../../VulkanIsland"s / directory;
+        directory = current_path / fs::path{"../../VulkanIsland"s} / directory;
 
     std::ifstream file((directory / name).native(), std::ios::binary);
 
@@ -364,7 +364,7 @@ void CreateGraphicsPipeline(VkDevice device)
         VkVertexInputBindingDescription{0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
     );
 
-    auto constexpr attributeDescriptions = make_array(
+    auto const attributeDescriptions = make_array(
         VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)},
         VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)}
     );
@@ -667,7 +667,7 @@ void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPoo
         if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
             throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
 
-        VkClearValue constexpr clearColor{0.f, 0.f, 0.f, 1.f};
+        VkClearValue constexpr clearColor{{{0.f, 0.f, 0.f, 1.f}}};
 
         VkRenderPassBeginInfo const renderPassInfo{
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -761,7 +761,7 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
     auto const signalSemaphores = make_array(renderFinishedSemaphore);
 
     std::array<VkPipelineStageFlags, 1> constexpr waitStages{
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT
+        {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT}
     };
 
     VkSubmitInfo const submitInfo{
