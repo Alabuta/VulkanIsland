@@ -5,7 +5,7 @@
 
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
-class QueueBuilder {
+class QueueBuilder final {
 public:
 
     [[nodiscard]] static Q Build(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface)
@@ -106,4 +106,28 @@ private:
 
         return {};
     }
+};
+
+template<class Q, class Tuple, std::size_t I = 0>
+constexpr std::size_t get_queue_number()
+{
+    using T = std::tuple_element_t<I, Tuple>;
+
+    if constexpr (std::is_same_v<Q, typename T::type>)
+        return T::number;
+
+    else if constexpr (I + 1 < std::tuple_size_v<Tuple>)
+        return get_queue_number<Q, Tuple, I + 1>();
+
+    return 0;
+}
+
+template<class... Qs>
+class QueuePool final {
+    using Tuple = std::tuple<Qs...>;
+
+    std::array<GraphicsQueue, get_queue_number<GraphicsQueue, Tuple>()> graphicsQueues_;
+    std::array<ComputeQueue, get_queue_number<ComputeQueue, Tuple>()> computeQueues_;
+    std::array<TransferQueue, get_queue_number<TransferQueue, Tuple>()> transferQueue_;
+    std::array<PresentationQueue, get_queue_number<PresentationQueue, Tuple>()> presentationQueue_;
 };

@@ -821,6 +821,11 @@ void InitVulkan(GLFWwindow *window)
     std::array<Queues, 3> queues = {
         GraphicsQueue{}, TransferQueue{}, PresentationQueue{}
     };
+    QueuePool<
+        type_instances_number<GraphicsQueue>,
+        type_instances_number<TransferQueue>,
+        type_instances_number<PresentationQueue>
+    > qpool;
 
     vulkanDevice = std::make_unique<VulkanDevice>(*vulkanInstance, surface, queues, deviceExtensions);
 
