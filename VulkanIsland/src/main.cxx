@@ -824,9 +824,9 @@ void InitVulkan(GLFWwindow *window)
 
     vulkanDevice = std::make_unique<VulkanDevice>(*vulkanInstance, surface, queues, deviceExtensions);
 
-    graphicsQueue = std::move(std::get<GraphicsQueue>(queues.at(0)));
-    transferQueue = std::move(std::get<TransferQueue>(queues.at(1)));
-    presentationQueue = std::move(std::get<PresentationQueue>(queues.at(2)));
+    graphicsQueue = vulkanDevice->Get<GraphicsQueue>();
+    transferQueue = vulkanDevice->Get<TransferQueue>();
+    presentationQueue = vulkanDevice->Get<PresentationQueue>();
 
     CreateSwapChain(vulkanDevice->physical_handle(), vulkanDevice->handle(), surface, swapChain);
     CreateSwapChainImageViews(vulkanDevice->handle(), swapChainImages);

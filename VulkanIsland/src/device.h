@@ -15,22 +15,8 @@ public:
     VkDevice handle() const noexcept { return device_; };
     VkPhysicalDevice physical_handle() const noexcept { return physicalDevice_; };
 
-#if NOT_YET_IMPLEMENTED
-    template<class Q, std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
-    Q &GetQueue()
-    {
-        if constexpr (std::is_same_v<Q, GraphicsQueue>)
-            return graphicsQueue_;
-
-        else if constexpr (std::is_same_v<Q, TransferQueue>)
-            return transferQueue_;
-
-        else if constexpr (std::is_same_v<Q, PresentationQueue>)
-            return presentationQueue_;
-
-        else static_assert(std::false_type, "not implemented queue type");
-    }
-#endif
+    template<class Q, std::size_t I = 0, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
+    Q const &Get() const;
 
 private:
 
@@ -77,10 +63,25 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
     static_assert(is_iterable_v<Q>, "'queues' must be an iterable container");
     static_assert(std::is_same_v<typename std::decay_t<Q>::value_type, Queues>, "'queues' must contain 'Queues' instances");
 
+
+template<class Q, std::size_t I, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
+inline Q const &VulkanDevice::Get() const
+{
+    if constexpr (std::is_same_v<Q, GraphicsQueue>)
+        return graphicsQueues_.at(I);
+
+    else if constexpr (std::is_same_v<Q, ComputeQueue>)
+        return computeQueues_.at(I);
+
     std::vector<Queues> queues_{std::cbegin(queues), std::cend(queues)};
+    else if constexpr (std::is_same_v<Q, TransferQueue>)
+        return transferQueue_.at(I);
 
     PickPhysicalDevice(instance.handle(), surface, queues_, std::move(extensions_view));
     CreateDevice(surface, queues_, std::move(extensions_));
+    else if constexpr (std::is_same_v<Q, PresentationQueue>)
+        return presentationQueue_.at(I);
 
     std::move(std::cbegin(queues_), std::cend(queues_), std::begin(queues));
+    else static_assert(std::false_type::type, "unsupported queue type");
 }

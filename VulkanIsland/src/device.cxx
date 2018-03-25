@@ -242,7 +242,22 @@ void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<Queues> &queue
     for (auto &&queue : queues) {
         std::visit([=] (auto &&q)
         {
-            q = std::move(QueueBuilder<std::decay_t<decltype(q)>>::Build(physicalDevice_, device_, surface));
+            using Q = std::decay_t<decltype(q)>;
+            q = std::move(QueueBuilder<Q>::Build(physicalDevice_, device_, surface));
+
+            if constexpr (std::is_same_v<Q, GraphicsQueue>)
+                graphicsQueues_.push_back(std::move(q));
+
+            else if constexpr (std::is_same_v<Q, ComputeQueue>)
+                computeQueues_.push_back(std::move(q));
+
+            else if constexpr (std::is_same_v<Q, TransferQueue>)
+                transferQueue_.push_back(std::move(q));
+
+            else if constexpr (std::is_same_v<Q, PresentationQueue>)
+                presentationQueue_.push_back(std::move(q));
+
+            else static_assert(std::false_type::type, "unsupported queue type");
 
         }, queue);
     }

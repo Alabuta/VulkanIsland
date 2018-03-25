@@ -4,6 +4,8 @@
 #include "main.h"
 #include "device.h"
 
+class VulkanDevice;
+
 template<class T>
 class VulkanQueue;
 
@@ -13,6 +15,10 @@ class QueueBuilder;
 template<class T>
 class VulkanQueue {
 public:
+    VulkanQueue(VulkanQueue const &) = default;
+    ~VulkanQueue() = default;
+
+    VulkanQueue &operator= (VulkanQueue const &) = default;
 
     template<class Q, typename std::enable_if_t<std::is_same_v<T, std::decay_t<Q>>>...>
     [[nodiscard]] constexpr bool operator== (Q &&queue) const noexcept
@@ -29,16 +35,16 @@ public:
     VkQueue handle() const noexcept { return handle_; }
     std::uint32_t family() const noexcept { return family_; }
 
+    VulkanQueue() = default;
 protected:
-
-    //VulkanQueue() = default;
+    VulkanQueue(VulkanQueue &&) = default;
 
 private:
     VkQueue handle_{nullptr};
     std::uint32_t family_, index_;
 
+    friend VulkanDevice;
     friend QueueBuilder;
-
 };
 
 class GraphicsQueue final : public VulkanQueue<GraphicsQueue> {
