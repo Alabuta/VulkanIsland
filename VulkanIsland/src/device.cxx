@@ -11,6 +11,20 @@ using namespace std::string_view_literals;
 
 namespace {
 
+template<class T, std::size_t I = 0>
+constexpr bool check_all_queues_support(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+{
+    using Q = std::variant_alternative_t<I, T>;
+
+    if (!QueueBuilder<Q>::IsSupportedByDevice(physicalDevice, surface))
+        return false;
+
+    if constexpr (I + 1 < std::variant_size_v<T>)
+        return check_all_queues_support<T, I + 1>(physicalDevice, surface);
+
+    return false;
+}
+
 template<bool check_on_duplicates = false>
 [[nodiscard]] bool CheckRequiredDeviceExtensions(VkPhysicalDevice physicalDevice, std::vector<std::string_view> &&extensions)
 {
@@ -148,9 +162,34 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
 
     devices.erase(it_end, devices.end());
 
-    // Removing unsuitable devices. Matching by required graphics, transfer and presentation queues.
-    it_end = std::remove_if(devices.begin(), devices.end(), [surface, &queues] (auto &&device)
+    // Removing unsuitable devices. Matching by required compute, graphics, transfer and presentation queues.
+    it_end = std::remove_if(devices.begin(), devices.end(), [surface] (auto &&device)
     {
+#if NOT_YET_IMPLEMENTED
+        auto check_queue_pool_support = [device, surface] (auto &&queuePool)
+        {
+            if (queuePool.empty())
+                return true;
+            
+            return QueueBuilder<std::decay_t<decltype(queuePool)>::value_type>::IsSupportedByDevice(device, surface);
+        };
+
+        if (!check_queue_pool_support(queuePool.computeQueues_))
+            return true;
+
+        if (!check_queue_pool_support(queuePool.graphicsQueues_))
+            return true;
+
+        if (!check_queue_pool_support(queuePool.presentationQueues_))
+            return true;
+
+        if (!check_queue_pool_support(queuePool.transferQueues_))
+            return true;
+#endif
+
+        return !check_all_queues_support<Queues>(device, surface);
+
+#if TEMPORARILY_DISABLED
         for (auto &&queue : queues) {
             auto supported = std::visit([=] (auto &&q)
             {
@@ -162,6 +201,7 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
         }
 
         return false;
+#endif
     });
 
     devices.erase(it_end, devices.end());
@@ -199,7 +239,7 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
     physicalDevice_ = devices.front();
 }
 
-void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<Queues> &queues, std::vector<char const *> &&extensions)
+void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<Queues> &&queues, std::vector<char const *> &&extensions)
 {
     std::set<std::uint32_t> uniqueQueueFamilyIndices;
 
@@ -248,10 +288,10 @@ void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<Queues> &queue
                 computeQueues_.push_back(std::move(q));
 
             else if constexpr (std::is_same_v<Q, TransferQueue>)
-                transferQueue_.push_back(std::move(q));
+                transferQueues_.push_back(std::move(q));
 
             else if constexpr (std::is_same_v<Q, PresentationQueue>)
-                presentationQueue_.push_back(std::move(q));
+                presentationQueues_.push_back(std::move(q));
 
             else static_assert(std::false_type::type, "unsupported queue type");
 

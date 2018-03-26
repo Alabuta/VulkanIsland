@@ -9,8 +9,8 @@
 class VulkanDevice final {
 public:
 
-    template<class Qs, class E>
-    VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface, Qs &queues, E &&extensions);
+    template<class E, class... Qs>
+    VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface, E &&extensions, QueuePool<Qs...> &&qpool);
     ~VulkanDevice();
 
     VkDevice handle() const noexcept { return device_; };
@@ -28,18 +28,19 @@ private:
     VkPhysicalDevice physicalDevice_{nullptr};
     VkDevice device_{nullptr};
 
-#if NOT_YET_IMPLEMENTED
-    GraphicsQueue graphicsQueue_;
-    TransferQueue transferQueue_;
-    PresentationQueue presentationQueue_;
-#endif
+    QueuePoolImpl queuePool_;
+
+    std::vector<GraphicsQueue> graphicsQueues_;
+    std::vector<ComputeQueue> computeQueues_;
+    std::vector<TransferQueue> transferQueues_;
+    std::vector<PresentationQueue> presentationQueues_;
 
     void PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<Queues> const &queues, std::vector<std::string_view> &&extensions);
-    void CreateDevice(VkSurfaceKHR surface, std::vector<Queues> &queues, std::vector<char const *> &&extensions);
+    void CreateDevice(VkSurfaceKHR surface, std::vector<Queues> &&queues, std::vector<char const *> &&extensions);
 };
 
-template<class Qs, class E>
-inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface, Qs &queues, E &&extensions)
+template<class E, class... Qs>
+inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface, E &&extensions, QueuePool<Qs...> &&qpool)
 {
     auto constexpr use_extensions = !std::is_same_v<std::false_type, E>;
 
@@ -60,9 +61,21 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
         std::copy(extensions_.begin(), extensions_.end(), std::back_inserter(extensions_view));
     }
 
-    using Q = std::decay_t<Qs>;
+    using Tuple = typename std::decay_t<decltype(qpool)>::Tuple;
+    queuePool_.graphicsQueues_.resize(get_type_instances_number<GraphicsQueue, Tuple>());
+    queuePool_.computeQueues_.resize(get_type_instances_number<ComputeQueue, Tuple>());
+    queuePool_.transferQueues_.resize(get_type_instances_number<TransferQueue, Tuple>());
+    queuePool_.presentationQueues_.resize(get_type_instances_number<PresentationQueue, Tuple>());
+
+    /*using Q = std::decay_t<Qs>;
     static_assert(is_iterable_v<Q>, "'queues' must be an iterable container");
-    static_assert(std::is_same_v<typename std::decay_t<Q>::value_type, Queues>, "'queues' must contain 'Queues' instances");
+    static_assert(std::is_same_v<typename std::decay_t<Q>::value_type, Queues>, "'queues' must contain 'Queues' instances");*/
+
+    std::vector<Queues> queues;// { std::cbegin(queues), std::cend(queues) };
+
+    PickPhysicalDevice(instance.handle(), surface, queues, std::move(extensions_view));
+    CreateDevice(surface, std::move(queues), std::move(extensions_));
+}
 
 
 template<class Q, std::size_t I, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
@@ -74,15 +87,11 @@ inline Q const &VulkanDevice::Get() const
     else if constexpr (std::is_same_v<Q, ComputeQueue>)
         return computeQueues_.at(I);
 
-    std::vector<Queues> queues_{std::cbegin(queues), std::cend(queues)};
     else if constexpr (std::is_same_v<Q, TransferQueue>)
-        return transferQueue_.at(I);
+        return transferQueues_.at(I);
 
-    PickPhysicalDevice(instance.handle(), surface, queues_, std::move(extensions_view));
-    CreateDevice(surface, queues_, std::move(extensions_));
     else if constexpr (std::is_same_v<Q, PresentationQueue>)
-        return presentationQueue_.at(I);
+        return presentationQueues_.at(I);
 
-    std::move(std::cbegin(queues_), std::cend(queues_), std::begin(queues));
     else static_assert(std::false_type::type, "unsupported queue type");
 }

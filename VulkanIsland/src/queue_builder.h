@@ -119,4 +119,9 @@ struct QueuePool final {
     std::array<PresentationQueue, get_type_instances_number<PresentationQueue, Tuple>()> presentationQueues_;
 };
 
+struct QueuePoolImpl final {
+    std::vector<GraphicsQueue> graphicsQueues_;
+    std::vector<ComputeQueue> computeQueues_;
+    std::vector<TransferQueue> transferQueues_;
+    std::vector<PresentationQueue> presentationQueues_;
 };
