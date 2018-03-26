@@ -58,6 +58,19 @@ struct type_instances_number {
     static auto constexpr number = N;
 };
 
+template<class T, class Tuple, std::size_t I = 0>
+constexpr std::size_t get_type_instances_number()
+{
+    using E = std::tuple_element_t<I, Tuple>;
+
+    if constexpr (std::is_same_v<T, typename E::type>)
+        return E::number;
+
+    else if constexpr (I + 1 < std::tuple_size_v<Tuple>)
+        return get_type_instances_number<T, Tuple, I + 1>();
+
+    return 0;
+}
 
 struct vec2 {
     float xyz[2];

@@ -818,16 +818,17 @@ void InitVulkan(GLFWwindow *window)
         throw std::runtime_error("failed to create window surface: "s + std::to_string(result));
 #endif
 
-    std::array<Queues, 3> queues = {
+    /*std::array<Queues, 3> queues{{
         GraphicsQueue{}, TransferQueue{}, PresentationQueue{}
-    };
+    }};*/
+
     QueuePool<
         type_instances_number<GraphicsQueue>,
         type_instances_number<TransferQueue>,
         type_instances_number<PresentationQueue>
     > qpool;
 
-    vulkanDevice = std::make_unique<VulkanDevice>(*vulkanInstance, surface, queues, deviceExtensions);
+    vulkanDevice = std::make_unique<VulkanDevice>(*vulkanInstance, surface, deviceExtensions, std::move(qpool));
 
     graphicsQueue = vulkanDevice->Get<GraphicsQueue>();
     transferQueue = vulkanDevice->Get<TransferQueue>();

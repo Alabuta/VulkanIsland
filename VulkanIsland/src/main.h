@@ -97,4 +97,3 @@ struct SwapChainSupportDetails {
 
 #include "instance.h"
 #include "device.h"
-#include "queue_builder.h"

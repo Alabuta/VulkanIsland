@@ -3,6 +3,7 @@
 #include "instance.h"
 #include "device_defaults.h"
 #include "queues.h"
+#include "queue_builder.h"
 
 
 class VulkanDevice final {

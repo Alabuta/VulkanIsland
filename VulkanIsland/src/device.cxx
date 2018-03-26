@@ -10,10 +10,6 @@ using namespace std::string_view_literals;
 
 
 namespace {
-auto constexpr requiredQueues = make_array(
-    VkQueueFamilyProperties{VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 0, 0, {0, 0, 0}},
-    VkQueueFamilyProperties{VK_QUEUE_TRANSFER_BIT, 0, 0, {0, 0, 0}}
-);
 
 template<bool check_on_duplicates = false>
 [[nodiscard]] bool CheckRequiredDeviceExtensions(VkPhysicalDevice physicalDevice, std::vector<std::string_view> &&extensions)

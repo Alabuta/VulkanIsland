@@ -35,8 +35,8 @@ public:
     VkQueue handle() const noexcept { return handle_; }
     std::uint32_t family() const noexcept { return family_; }
 
-    VulkanQueue() = default;
 protected:
+    VulkanQueue() = default;
     VulkanQueue(VulkanQueue &&) = default;
 
 private:
