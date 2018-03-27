@@ -16,7 +16,7 @@ constexpr bool check_all_queues_support(VkPhysicalDevice physicalDevice, VkSurfa
 {
     using Q = std::variant_alternative_t<I, T>;
 
-    if (!QueueBuilder<Q>::IsSupportedByDevice(physicalDevice, surface))
+    if (!QueueHelper::IsSupportedByDevice<Q>(physicalDevice, surface))
         return false;
 
     if constexpr (I + 1 < std::variant_size_v<T>)
@@ -171,7 +171,7 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
             if (queuePool.empty())
                 return true;
             
-            return QueueBuilder<std::decay_t<decltype(queuePool)>::value_type>::IsSupportedByDevice(device, surface);
+            return QueueHelper::IsSupportedByDevice<std::decay_t<decltype(queuePool)>::value_type>(device, surface);
         };
 
         if (!check_queue_pool_support(queuePool.computeQueues_))
@@ -193,7 +193,7 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
         for (auto &&queue : queues) {
             auto supported = std::visit([=] (auto &&q)
             {
-                return QueueBuilder<std::decay_t<decltype(q)>>::IsSupportedByDevice(device, surface);
+                return QueueHelper<std::decay_t<decltype(q)>>::IsSupportedByDevice(device, surface);
             }, queue);
 
             if (!supported)
@@ -279,7 +279,7 @@ void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<Queues> &&queu
         std::visit([=] (auto &&q)
         {
             using Q = std::decay_t<decltype(q)>;
-            q = std::move(QueueBuilder<Q>::Build(physicalDevice_, device_, surface));
+            q = std::move(QueueHelper::Find<Q>(physicalDevice_, device_, surface));
 
             if constexpr (std::is_same_v<Q, GraphicsQueue>)
                 graphicsQueues_.push_back(std::move(q));

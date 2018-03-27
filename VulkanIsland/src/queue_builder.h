@@ -1,47 +1,66 @@
 #pragma once
+#include <map>
+
 #include "main.h"
 #include "device.h"
 #include "queues.h"
 
 
-template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
-class QueueBuilder final {
+class QueueHelper final {
 public:
 
-    [[nodiscard]] static Q Build(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface)
+    template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
+    [[nodiscard]] Q Find(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface)
     {
         Q queue;
-        queue.index_ = index_;
 
-        std::optional<std::uint32_t> family;
+        std::optional<std::pair<VkQueueFamilyProperties, std::uint32_t>> pair;
 
         if constexpr (std::is_same_v<Q, PresentationQueue>)
-            family = GetPresentationQueueFamilyIndex(physicalDevice, surface);
+            pair = GetPresentationQueueFamily<Q>(physicalDevice, surface);
 
-        else family = GetQueueFamilyIndex(physicalDevice);
+        else pair = GetQueueFamily<Q>(physicalDevice);
 
-        if (!family)
+        if (!pair)
             throw std::runtime_error("failed to create queue"s);
 
-        queue.family_ = family.value();
+        auto &&[properties, family] = pair.value();
 
-        vkGetDeviceQueue(device, queue.family_, queue.index_, &queue.handle_);
+        family_and_index.try_emplace(family, 0);
+
+        if (family_and_index[family] >= properties.queueCount)
+            throw std::runtime_error("the number of suitable queues is exceeded"s);
+
+        queue.family_ = family;
+        queue.index_ = std::clamp(0u, family_and_index.at(family), properties.queueCount - 1);
+
+        ++family_and_index[family];
 
         return queue;
     }
 
+    [[nodiscard]] std::vector<std::pair<std::uint32_t, std::uint32_t>> GetRequestedFamilies() const
+    {
+        std::vector<std::pair<std::uint32_t, std::uint32_t>> families{family_and_index.cbegin(), family_and_index.cend()};
+
+        return families;
+    }
+
+    template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
     [[nodiscard]] static bool IsSupportedByDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
     {
         if constexpr (std::is_same_v<Q, PresentationQueue>)
-            return GetPresentationQueueFamilyIndex(physicalDevice, surface).has_value();
+            return GetPresentationQueueFamily<Q>(physicalDevice, surface).has_value();
 
-        else return GetQueueFamilyIndex(physicalDevice).has_value();
+        else return GetQueueFamily<Q>(physicalDevice).has_value();
     }
 
 private:
-    static constexpr auto index_{0};
+    std::map<std::uint32_t, std::uint32_t> family_and_index;
 
-    [[nodiscard]] static std::optional<std::uint32_t> GetQueueFamilyIndex(VkPhysicalDevice physicalDevice)
+    template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
+    [[nodiscard]] static std::optional<std::pair<VkQueueFamilyProperties, std::uint32_t>>
+    GetQueueFamily(VkPhysicalDevice physicalDevice)
     {
         std::uint32_t queueFamilyPropertyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
@@ -70,12 +89,14 @@ private:
         });
 
         if (it_family != queueFamilies.cend())
-            return static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family));
+            return std::pair{*it_family, static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family))};
 
         return {};
     }
 
-    [[nodiscard]] static std::optional<std::uint32_t> GetPresentationQueueFamilyIndex(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+    template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
+    [[nodiscard]] static std::optional<std::pair<VkQueueFamilyProperties, std::uint32_t>>
+    GetPresentationQueueFamily(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
     {
         std::uint32_t queueFamilyPropertyCount = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
@@ -86,7 +107,7 @@ private:
         if (queueFamilies.empty())
             return {};
 
-        auto it_presentationQueue = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [physicalDevice, surface, size = queueFamilies.size()](auto)
+        auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [physicalDevice, surface, size = queueFamilies.size()](auto)
         {
             std::vector<std::uint32_t> queueFamiliesIndices(size);
             std::iota(queueFamiliesIndices.begin(), queueFamiliesIndices.end(), 0);
@@ -102,8 +123,8 @@ private:
             }) != queueFamiliesIndices.cend();
         });
 
-        if (it_presentationQueue != queueFamilies.cend())
-            return static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_presentationQueue));
+        if (it_family != queueFamilies.cend())
+            return std::pair{*it_family, static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family))};
 
         return {};
     }
