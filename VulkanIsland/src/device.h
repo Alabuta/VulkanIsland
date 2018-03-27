@@ -19,6 +19,31 @@ public:
     template<class Q, std::size_t I = 0, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
     Q const &Get() const;
 
+    template<VkCommandBufferLevel L>
+    struct VulkanCmdBuffer {
+        static auto constexpr level{L};
+    };
+
+    template<class Q, std::size_t I = 0, VkCommandBufferLevel L, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
+    std::vector<VulkanCmdBuffer<L>> AllocateCmdBuffers(std::size_t count)
+    {
+        std::vector<VulkanCmdBuffer<L>> commandBuffers(count);
+
+        VkCommandBufferAllocateInfo const allocateInfo{
+            VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+            nullptr,
+            VkCommandPool{}, //commandPool,
+            L,
+            static_cast<std::uint32_t>(std::size(commandBuffers))
+        };
+
+        if (auto result = vkAllocateCommandBuffers(device, &allocateInfo, std::data(commandBuffers)); result != VK_SUCCESS)
+            throw std::runtime_error("failed to create allocate command buffers: "s + std::to_string(result));
+
+        return commandBuffers;
+    }
+
+
 private:
 
     VulkanDevice() = delete;
