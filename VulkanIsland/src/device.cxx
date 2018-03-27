@@ -137,7 +137,7 @@ VulkanDevice::~VulkanDevice()
 }
 
 
-void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<Queues> const &queues, std::vector<std::string_view> &&extensions)
+void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions)
 {
     std::uint32_t devicesCount = 0;
 
@@ -162,10 +162,11 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
 
     devices.erase(it_end, devices.end());
 
+    auto const &queuePool = queuePool_;
+
     // Removing unsuitable devices. Matching by required compute, graphics, transfer and presentation queues.
-    it_end = std::remove_if(devices.begin(), devices.end(), [surface] (auto &&device)
+    it_end = std::remove_if(devices.begin(), devices.end(), [surface, queuePool] (auto &&device)
     {
-#if NOT_YET_IMPLEMENTED
         auto check_queue_pool_support = [device, surface] (auto &&queuePool)
         {
             if (queuePool.empty())
@@ -185,9 +186,12 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
 
         if (!check_queue_pool_support(queuePool.transferQueues_))
             return true;
-#endif
 
+        return false;
+
+#if NOT_YET_IMPLEMENTED
         return !check_all_queues_support<Queues>(device, surface);
+#endif
 
 #if TEMPORARILY_DISABLED
         for (auto &&queue : queues) {
@@ -239,14 +243,43 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
     physicalDevice_ = devices.front();
 }
 
-void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<Queues> &&queues, std::vector<char const *> &&extensions)
+void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<char const *> &&extensions)
 {
+    QueueHelper queueHelper;
+
+    for (auto &&queue : queuePool_.computeQueues_)
+        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, device_, surface));
+
+    for (auto &&queue : queuePool_.graphicsQueues_)
+        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, device_, surface));
+
+    for (auto &&queue : queuePool_.transferQueues_)
+        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, device_, surface));
+
+    for (auto &&queue : queuePool_.presentationQueues_)
+        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, device_, surface));
+
+    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+    std::vector<std::vector<float>> priorities;
+
+    for (auto [family, count] : queueHelper.GetRequestedFamilies()) {
+        priorities.emplace_back(std::vector<float>(count, 1.f));
+
+        VkDeviceQueueCreateInfo queueCreateInfo{
+            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
+            nullptr, 0,
+            family, count,
+            std::data(priorities.back())
+        };
+
+        queueCreateInfos.push_back(std::move(queueCreateInfo));
+    }
+
+#if TEMPORARILY_DISABLED
     std::set<std::uint32_t> uniqueQueueFamilyIndices;
 
     for (auto &&queue : queues)
         uniqueQueueFamilyIndices.emplace(std::visit([] (auto &&q) { return q.family(); }, queue));
-
-    std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 
     for (auto &&queueFamilyIndex : uniqueQueueFamilyIndices) {
         auto constexpr queuePriority = 1.f;
@@ -260,6 +293,7 @@ void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<Queues> &&queu
 
         queueCreateInfos.push_back(std::move(queueCreateInfo));
     }
+#endif
 
     VkPhysicalDeviceFeatures const deviceFeatures{kDEVICE_FEATURES};
 
@@ -275,6 +309,19 @@ void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<Queues> &&queu
     if (auto result = vkCreateDevice(physicalDevice_, &createInfo, nullptr, &device_); result != VK_SUCCESS)
         throw std::runtime_error("failed to create logical device: "s + std::to_string(result));
 
+    for (auto &&queue : queuePool_.computeQueues_)
+        vkGetDeviceQueue(device_, queue.family_, queue.index_, &queue.handle_);
+
+    for (auto &&queue : queuePool_.graphicsQueues_)
+        vkGetDeviceQueue(device_, queue.family_, queue.index_, &queue.handle_);
+
+    for (auto &&queue : queuePool_.transferQueues_)
+        vkGetDeviceQueue(device_, queue.family_, queue.index_, &queue.handle_);
+
+    for (auto &&queue : queuePool_.presentationQueues_)
+        vkGetDeviceQueue(device_, queue.family_, queue.index_, &queue.handle_);
+
+#if TEMPORARILY_DISABLED
     for (auto &&queue : queues) {
         std::visit([=] (auto &&q)
         {
@@ -297,4 +344,5 @@ void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<Queues> &&queu
 
         }, queue);
     }
+#endif
 }

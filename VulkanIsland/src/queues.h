@@ -9,8 +9,7 @@ class VulkanDevice;
 template<class T>
 class VulkanQueue;
 
-template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
-class QueueBuilder;
+class QueueHelper;
 
 template<class T>
 class VulkanQueue {
@@ -44,7 +43,7 @@ private:
     std::uint32_t family_, index_;
 
     friend VulkanDevice;
-    friend QueueBuilder;
+    friend QueueHelper;
 };
 
 class GraphicsQueue final : public VulkanQueue<GraphicsQueue> {

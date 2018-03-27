@@ -823,7 +823,7 @@ void InitVulkan(GLFWwindow *window)
     }};*/
 
     QueuePool<
-        type_instances_number<GraphicsQueue>,
+        type_instances_number<GraphicsQueue, 2>,
         type_instances_number<TransferQueue>,
         type_instances_number<PresentationQueue>
     > qpool;

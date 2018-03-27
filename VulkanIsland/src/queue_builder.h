@@ -133,11 +133,6 @@ private:
 template<class... Qs>
 struct QueuePool final {
     using Tuple = std::tuple<Qs...>;
-
-    std::array<GraphicsQueue, get_type_instances_number<GraphicsQueue, Tuple>()> graphicsQueues_;
-    std::array<ComputeQueue, get_type_instances_number<ComputeQueue, Tuple>()> computeQueues_;
-    std::array<TransferQueue, get_type_instances_number<TransferQueue, Tuple>()> transferQueues_;
-    std::array<PresentationQueue, get_type_instances_number<PresentationQueue, Tuple>()> presentationQueues_;
 };
 
 struct QueuePoolImpl final {
