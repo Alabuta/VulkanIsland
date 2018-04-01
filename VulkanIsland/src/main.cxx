@@ -818,12 +818,8 @@ void InitVulkan(GLFWwindow *window)
         throw std::runtime_error("failed to create window surface: "s + std::to_string(result));
 #endif
 
-    /*std::array<Queues, 3> queues{{
-        GraphicsQueue{}, TransferQueue{}, PresentationQueue{}
-    }};*/
-
     QueuePool<
-        type_instances_number<GraphicsQueue, 2>,
+        type_instances_number<GraphicsQueue>,
         type_instances_number<TransferQueue>,
         type_instances_number<PresentationQueue>
     > qpool;

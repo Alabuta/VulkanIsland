@@ -53,7 +53,12 @@ private:
     VkPhysicalDevice physicalDevice_{nullptr};
     VkDevice device_{nullptr};
 
-    QueuePoolImpl queuePool_;
+    struct QueuePoolImpl final {
+        std::vector<GraphicsQueue> graphicsQueues_;
+        std::vector<ComputeQueue> computeQueues_;
+        std::vector<TransferQueue> transferQueues_;
+        std::vector<PresentationQueue> presentationQueues_;
+    } queuePool_;
 
     void PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions);
     void CreateDevice(VkSurfaceKHR surface, std::vector<char const *> &&extensions);
@@ -81,12 +86,12 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
         std::copy(extensions_.begin(), extensions_.end(), std::back_inserter(extensions_view));
     }
 
-    using Tuple = typename std::decay_t<decltype(qpool)>::Tuple;
+    using Queues = typename std::decay_t<decltype(qpool)>::Tuple;
 
-    queuePool_.computeQueues_.resize(get_type_instances_number<ComputeQueue, Tuple>());
-    queuePool_.graphicsQueues_.resize(get_type_instances_number<GraphicsQueue, Tuple>());
-    queuePool_.transferQueues_.resize(get_type_instances_number<TransferQueue, Tuple>());
-    queuePool_.presentationQueues_.resize(get_type_instances_number<PresentationQueue, Tuple>());
+    queuePool_.computeQueues_.resize(get_type_instances_number<ComputeQueue, Queues>());
+    queuePool_.graphicsQueues_.resize(get_type_instances_number<GraphicsQueue, Queues>());
+    queuePool_.transferQueues_.resize(get_type_instances_number<TransferQueue, Queues>());
+    queuePool_.presentationQueues_.resize(get_type_instances_number<PresentationQueue, Queues>());
 
     PickPhysicalDevice(instance.handle(), surface, std::move(extensions_view));
     CreateDevice(surface, std::move(extensions_));

@@ -134,10 +134,3 @@ template<class... Qs>
 struct QueuePool final {
     using Tuple = std::tuple<Qs...>;
 };
-
-struct QueuePoolImpl final {
-    std::vector<GraphicsQueue> graphicsQueues_;
-    std::vector<ComputeQueue> computeQueues_;
-    std::vector<TransferQueue> transferQueues_;
-    std::vector<PresentationQueue> presentationQueues_;
-};
