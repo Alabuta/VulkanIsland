@@ -32,7 +32,7 @@ public:
         VkCommandBufferAllocateInfo const allocateInfo{
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
             nullptr,
-            VkCommandPool{}, //commandPool,
+            VkCommandPool{}, //graphicsCommandPool,
             L,
             static_cast<std::uint32_t>(std::size(commandBuffers))
         };

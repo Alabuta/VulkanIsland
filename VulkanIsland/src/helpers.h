@@ -91,7 +91,8 @@ struct vec3 {
     /*template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 3>>>...>
     constexpr vec3(T &&xyz) : xyz(std::forward<T>(xyz)) {}*/
 
-    vec3(float x, float y, float z) {
+    vec3(float x, float y, float z)
+    {
         xyz[0] = x;
         xyz[1] = y;
         xyz[2] = z;
