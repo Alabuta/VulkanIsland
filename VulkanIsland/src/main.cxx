@@ -37,7 +37,7 @@ VkPipeline graphicsPipeline;
 VkFormat swapChainImageFormat;
 VkExtent2D swapChainExtent;
 
-VkCommandPool commandPool;
+VkCommandPool graphicsCommandPool, transferCommandPool;
 
 std::vector<VkImage> swapChainImages;
 std::vector<VkImageView> swapChainImageViews;
@@ -300,8 +300,8 @@ void CleanupSwapChain(VkDevice device, VkSwapchainKHR swapChain, VkPipeline grap
 
     swapChainFramebuffers.clear();
 
-    if (commandPool)
-        vkFreeCommandBuffers(device, commandPool, static_cast<std::uint32_t>(std::size(commandBuffers)), std::data(commandBuffers));
+    if (graphicsCommandPool)
+        vkFreeCommandBuffers(device, graphicsCommandPool, static_cast<std::uint32_t>(std::size(commandBuffers)), std::data(commandBuffers));
 
     commandBuffers.clear();
 
@@ -565,13 +565,14 @@ void CreateFramebuffers(VkRenderPass renderPass, T &&swapChainImageViews, VkDevi
     }
 }
 
-void CreateCommandPool(VkDevice device)
+template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
+void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, VkCommandPoolCreateFlags flags)
 {
     VkCommandPoolCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
         nullptr,
-        0,
-        graphicsQueue.family()
+        flags,
+        queue.family()
     };
 
     if (auto result = vkCreateCommandPool(device, &createInfo, nullptr, &commandPool); result != VK_SUCCESS)
@@ -596,26 +597,27 @@ void CreateCommandPool(VkDevice device)
     return {};
 }
 
-void CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
+
+void CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkBuffer &buffer, VkDeviceMemory &deviceMemory, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
 {
     VkBufferCreateInfo const bufferCreateInfo{
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         nullptr, 0,
-        sizeof(decltype(vertices)::value_type) * std::size(vertices),
-        VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+        size,
+        usage,
         VK_SHARING_MODE_EXCLUSIVE,
         0, nullptr
     };
 
-    if (auto result = vkCreateBuffer(device, &bufferCreateInfo, nullptr, &vertexBuffer); result != VK_SUCCESS)
+    if (auto result = vkCreateBuffer(device, &bufferCreateInfo, nullptr, &buffer); result != VK_SUCCESS)
         throw std::runtime_error("failed to create vertex buffer: "s + std::to_string(result));
 
     VkMemoryRequirements memoryReqirements;
-    vkGetBufferMemoryRequirements(device, vertexBuffer, &memoryReqirements);
+    vkGetBufferMemoryRequirements(device, buffer, &memoryReqirements);
 
     std::uint32_t memTypeIndex = 0;
 
-    if (auto index = FindMemoryType(physicalDevice, memoryReqirements.memoryTypeBits, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT); !index)
+    if (auto index = FindMemoryType(physicalDevice, memoryReqirements.memoryTypeBits, properties); !index)
         throw std::runtime_error("failed to find suitable memory type"s);
 
     else memTypeIndex = index.value();
@@ -627,19 +629,86 @@ void CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
         memTypeIndex
     };
 
-    if (auto result = vkAllocateMemory(device, &memAllocInfo, nullptr, &vertexBufferMemory); result != VK_SUCCESS)
+    if (auto result = vkAllocateMemory(device, &memAllocInfo, nullptr, &deviceMemory); result != VK_SUCCESS)
         throw std::runtime_error("failed to allocate vertex buffer memory: "s + std::to_string(result));
 
-    if (auto result = vkBindBufferMemory(device, vertexBuffer, vertexBufferMemory, 0); result != VK_SUCCESS)
+    if (auto result = vkBindBufferMemory(device, buffer, deviceMemory, 0); result != VK_SUCCESS)
         throw std::runtime_error("failed to bind vertex buffer memory: "s + std::to_string(result));
+}
 
-    float *data;
-    if (auto result = vkMapMemory(device, vertexBufferMemory, 0, bufferCreateInfo.size, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
+template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
+void CopyBuffer(VkDevice device, Q &queue, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+{
+    VkCommandBuffer commandBuffer;
+
+    VkCommandBufferAllocateInfo const allocateInfo{
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        nullptr,
+        transferCommandPool,
+        VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        1
+    };
+
+    if (auto result = vkAllocateCommandBuffers(device, &allocateInfo, &commandBuffer); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create allocate command buffers: "s + std::to_string(result));
+
+    VkCommandBufferBeginInfo const beginInfo{
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        nullptr,
+        VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        nullptr
+    };
+
+    if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
+        throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
+
+    VkBufferCopy const copyRegion{ 0, 0, size };
+
+    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+
+    if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS)
+        throw std::runtime_error("failed to end command buffer: "s + std::to_string(result));
+
+    VkSubmitInfo const submitInfo{
+        VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        nullptr,
+        0, nullptr,
+        nullptr,
+        1, &commandBuffer,
+        0, nullptr,
+    };
+
+    if (auto result = vkQueueSubmit(queue.handle(), 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS)
+        throw std::runtime_error("failed to submit draw command buffer: "s + std::to_string(result));
+
+    vkQueueWaitIdle(queue.handle());
+
+    vkFreeCommandBuffers(device, transferCommandPool, 1, &commandBuffer);
+}
+
+void CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
+{
+    VkDeviceSize bufferSize = sizeof(decltype(vertices)::value_type) * std::size(vertices);
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+
+    CreateBuffer(physicalDevice, device, stagingBuffer, stagingBufferMemory, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    Vertex *data;
+    if (auto result = vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
         throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
 
-    memcpy(data, std::data(vertices), static_cast<std::size_t>(bufferCreateInfo.size));
+    std::uninitialized_copy(std::begin(vertices), std::end(vertices), data);
 
-    vkUnmapMemory(device, vertexBufferMemory);
+    vkUnmapMemory(device, stagingBufferMemory);
+
+    CreateBuffer(physicalDevice, device, vertexBuffer, vertexBufferMemory, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    CopyBuffer(device, transferQueue, stagingBuffer, vertexBuffer, bufferSize);
+
+    vkFreeMemory(device, stagingBufferMemory, nullptr);
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
 }
 
 void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPool commandPool)
@@ -730,7 +799,7 @@ void RecreateSwapChain()
 
     CreateFramebuffers(renderPass, swapChainImageViews, vulkanDevice->handle());
 
-    CreateCommandBuffers(vulkanDevice->handle(), renderPass, commandPool);
+    CreateCommandBuffers(vulkanDevice->handle(), renderPass, graphicsCommandPool);
 }
 
 void OnWindowResize([[maybe_unused]] GLFWwindow *window, int width, int height)
@@ -841,9 +910,11 @@ void InitVulkan(GLFWwindow *window)
 
     CreateFramebuffers(renderPass, swapChainImageViews, vulkanDevice->handle());
 
-    CreateCommandPool(vulkanDevice->handle());
+    CreateCommandPool(vulkanDevice->handle(), transferQueue, transferCommandPool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+
+    CreateCommandPool(vulkanDevice->handle(), graphicsQueue, graphicsCommandPool, 0);
     CreateVertexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
-    CreateCommandBuffers(vulkanDevice->handle(), renderPass, commandPool);
+    CreateCommandBuffers(vulkanDevice->handle(), renderPass, graphicsCommandPool);
 
     CreateSemaphores(vulkanDevice->handle());
 }
@@ -860,8 +931,11 @@ void CleanUp()
 
     CleanupSwapChain(vulkanDevice->handle(), swapChain, graphicsPipeline, pipelineLayout, renderPass);
 
-    if (commandPool)
-        vkDestroyCommandPool(vulkanDevice->handle(), commandPool, nullptr);
+    if (transferCommandPool)
+        vkDestroyCommandPool(vulkanDevice->handle(), transferCommandPool, nullptr);
+
+    if (graphicsCommandPool)
+        vkDestroyCommandPool(vulkanDevice->handle(), graphicsCommandPool, nullptr);
 
     if (vertexBufferMemory)
         vkFreeMemory(vulkanDevice->handle(), vertexBufferMemory, nullptr);
