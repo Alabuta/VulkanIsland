@@ -12,8 +12,13 @@
 
 auto vertices = make_array(
     Vertex{{+1, +1, 0}, {1, 0, 0}},
-    Vertex{{+0, -1, 0}, {0, 1, 0}},
-    Vertex{{-1, +1, 0}, {0, 0, 1}}
+    Vertex{{+1, -1, 0}, {0, 1, 0}},
+    Vertex{{-1, +1, 0}, {0, 0, 1}},
+    Vertex{{-1, -1, 0}, {0, 1, 1}}
+);
+
+auto indices = make_array(
+    0ui16, 1ui16, 2ui16, 2ui16, 1ui16, 3ui16
 );
 
 
@@ -46,8 +51,8 @@ std::vector<VkCommandBuffer> commandBuffers;
 
 VkSemaphore imageAvailableSemaphore, renderFinishedSemaphore;
 
-VkBuffer vertexBuffer;
-VkDeviceMemory vertexBufferMemory;
+VkBuffer vertexBuffer, indexBuffer;
+VkDeviceMemory vertexBufferMemory, indexBufferMemory;
 
 #ifdef USE_WIN32
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
@@ -695,7 +700,7 @@ void CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
 
     CreateBuffer(physicalDevice, device, stagingBuffer, stagingBufferMemory, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-    Vertex *data;
+    decltype(vertices)::value_type *data;
     if (auto result = vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
         throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
 
@@ -706,6 +711,31 @@ void CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
     CreateBuffer(physicalDevice, device, vertexBuffer, vertexBufferMemory, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     CopyBuffer(device, transferQueue, stagingBuffer, vertexBuffer, bufferSize);
+
+    vkFreeMemory(device, stagingBufferMemory, nullptr);
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+}
+
+void CreateIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
+{
+    VkDeviceSize bufferSize = sizeof(decltype(indices)::value_type) * std::size(indices);
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+
+    CreateBuffer(physicalDevice, device, stagingBuffer, stagingBufferMemory, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    decltype(indices)::value_type *data;
+    if (auto result = vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
+
+    std::uninitialized_copy(std::begin(indices), std::end(indices), data);
+
+    vkUnmapMemory(device, stagingBufferMemory);
+
+    CreateBuffer(physicalDevice, device, indexBuffer, indexBufferMemory, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    CopyBuffer(device, transferQueue, stagingBuffer, indexBuffer, bufferSize);
 
     vkFreeMemory(device, stagingBufferMemory, nullptr);
     vkDestroyBuffer(device, stagingBuffer, nullptr);
@@ -758,8 +788,9 @@ void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPoo
         auto const offsets = make_array(VkDeviceSize{0});
 
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, std::data(vertexBuffers), std::data(offsets));
+        vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
 
-        vkCmdDraw(commandBuffer, static_cast<std::uint32_t>(std::size(vertices)), 1, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, static_cast<std::uint32_t>(std::size(indices)), 1, 0, 0, 0);
 
         vkCmdEndRenderPass(commandBuffer);
 
@@ -914,6 +945,7 @@ void InitVulkan(GLFWwindow *window)
 
     CreateCommandPool(vulkanDevice->handle(), graphicsQueue, graphicsCommandPool, 0);
     CreateVertexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
+    CreateIndexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
     CreateCommandBuffers(vulkanDevice->handle(), renderPass, graphicsCommandPool);
 
     CreateSemaphores(vulkanDevice->handle());
@@ -940,7 +972,13 @@ void CleanUp()
     if (vertexBufferMemory)
         vkFreeMemory(vulkanDevice->handle(), vertexBufferMemory, nullptr);
 
-    if (vertexBuffer)
+    if (indexBuffer)
+        vkDestroyBuffer(vulkanDevice->handle(), indexBuffer, nullptr);
+
+    if (indexBufferMemory)
+        vkFreeMemory(vulkanDevice->handle(), indexBufferMemory, nullptr);
+
+    if (indexBuffer)
         vkDestroyBuffer(vulkanDevice->handle(), vertexBuffer, nullptr);
 
     if (surface)
