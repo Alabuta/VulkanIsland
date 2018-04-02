@@ -21,6 +21,13 @@ auto indices = make_array(
     0ui16, 1ui16, 2ui16, 2ui16, 1ui16, 3ui16
 );
 
+mat4 matrix(
+    1.f, 0.f, 0.f, 0.f,
+    0.f, 1.f, 0.f, 0.f,
+    0.f, 0.f, 1.f, 0.f,
+    0.f, 0.f, 0.f, 1.f
+);
+
 
 std::unique_ptr<VulkanInstance> vulkanInstance;
 std::unique_ptr<VulkanDevice> vulkanDevice;

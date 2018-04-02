@@ -73,30 +73,35 @@ constexpr std::size_t get_type_instances_number()
 }
 
 struct vec2 {
-    float xyz[2];
+    std::array<float, 2> xy;
 
-    /*template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 3>>>...>
-    constexpr vec3(T &&xyz) : xyz(std::forward<T>(xyz)) {}*/
+    vec2() = default;
 
-    vec2(float x, float y)
-    {
-        xyz[0] = x;
-        xyz[1] = y;
-    }
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 2>>>...>
+    constexpr vec2(T &&xy) : xy(std::forward<T>(xy)) {}
+    constexpr vec2(float x, float y) : xy({x, y}) {};
 };
 
 struct vec3 {
-    float xyz[3];
+    std::array<float, 3> xyz;
 
-    /*template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 3>>>...>
-    constexpr vec3(T &&xyz) : xyz(std::forward<T>(xyz)) {}*/
+    vec3() = default;
 
-    vec3(float x, float y, float z)
-    {
-        xyz[0] = x;
-        xyz[1] = y;
-        xyz[2] = z;
-    }
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 3>>>...>
+    constexpr vec3(T &&xyz) : xyz(std::forward(xyz)) {};
+    constexpr vec3(float x, float y, float z = 0) : xyz({x, y, z}) {};
+};
+
+struct mat4 {
+    std::array<float, 16> m;
+
+    mat4() = default;
+
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 16>>>...>
+    constexpr mat4(T &&m) : m(std::forward(m)) {};
+
+    template<class... T>
+    constexpr mat4(T... values) : m({{values...}}) {};
 };
 
 struct Vertex {
