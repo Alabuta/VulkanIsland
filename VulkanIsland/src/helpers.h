@@ -79,7 +79,7 @@ struct vec2 {
 
     template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 2>>>...>
     constexpr vec2(T &&xy) : xy(std::forward<T>(xy)) {}
-    constexpr vec2(float x, float y) : xy({x, y}) {};
+    constexpr vec2(float x, float y) : xy({ x, y }) {};
 };
 
 struct vec3 {
@@ -89,7 +89,7 @@ struct vec3 {
 
     template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 3>>>...>
     constexpr vec3(T &&xyz) : xyz(std::forward(xyz)) {};
-    constexpr vec3(float x, float y, float z = 0) : xyz({x, y, z}) {};
+    constexpr vec3(float x, float y, float z = 0) : xyz({ x, y, z }) {};
 };
 
 struct mat4 {
@@ -101,7 +101,7 @@ struct mat4 {
     constexpr mat4(T &&m) : m(std::forward(m)) {};
 
     template<class... T>
-    constexpr mat4(T... values) : m({{values...}}) {};
+    constexpr mat4(T... values) : m({{ static_cast<std::decay_t<decltype(m)>::value_type>(values)... }}) {};
 };
 
 struct Vertex {
