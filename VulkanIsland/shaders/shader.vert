@@ -4,6 +4,13 @@
 layout(location = 0) in vec3 inVertex;
 layout(location = 1) in vec3 inColor;
 
+layout(binding = 0) uniform TRANSFORMS
+{
+    layout(row_major) mat4 model;
+    layout(row_major) mat4 view;
+    layout(row_major) mat4 proj;
+} transforms;
+
 layout(location = 0) out vec3 perVertexColor;
 
 out gl_PerVertex{
@@ -12,6 +19,6 @@ out gl_PerVertex{
 
 void main()
 {
-    gl_Position = vec4(inVertex, 1.0);
+    gl_Position = transforms.proj * transforms.view * transforms.model * vec4(inVertex, 1.0);
     perVertexColor = inColor;
 }

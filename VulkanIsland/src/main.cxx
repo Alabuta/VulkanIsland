@@ -7,6 +7,7 @@
 #include <crtdbg.h>
 #endif
 
+#include <cmath>
 #include "main.h"
 
 
@@ -21,12 +22,11 @@ auto indices = make_array(
     0ui16, 1ui16, 2ui16, 2ui16, 1ui16, 3ui16
 );
 
-mat4 matrix(
-    1.f, 0.f, 0.f, 0.f,
-    0.f, 1.f, 0.f, 0.f,
-    0.f, 0.f, 1.f, 0.f,
-    0.f, 0.f, 0.f, 1.f
-);
+struct TRANSFORMS {
+    mat4 model;
+    mat4 view;
+    mat4 proj;
+} transforms;
 
 
 std::unique_ptr<VulkanInstance> vulkanInstance;
@@ -42,6 +42,7 @@ TransferQueue transferQueue;
 PresentationQueue presentationQueue;
 
 VkSwapchainKHR swapChain;
+VkDescriptorSetLayout descriptorSetLayout;
 VkPipelineLayout pipelineLayout;
 VkRenderPass renderPass;
 VkPipeline graphicsPipeline;
@@ -58,8 +59,8 @@ std::vector<VkCommandBuffer> commandBuffers;
 
 VkSemaphore imageAvailableSemaphore, renderFinishedSemaphore;
 
-VkBuffer vertexBuffer, indexBuffer;
-VkDeviceMemory vertexBufferMemory, indexBufferMemory;
+VkBuffer vertexBuffer, indexBuffer, uboBuffer;
+VkDeviceMemory vertexBufferMemory, indexBufferMemory, uboBufferMemory;
 
 #ifdef USE_WIN32
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
@@ -336,6 +337,24 @@ void CleanupSwapChain(VkDevice device, VkSwapchainKHR swapChain, VkPipeline grap
 }
 
 
+void CreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout &descriptorSetLayout)
+{
+    VkDescriptorSetLayoutBinding const layoutBinding{
+        0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        1, VK_SHADER_STAGE_VERTEX_BIT,
+        nullptr
+    };
+
+    VkDescriptorSetLayoutCreateInfo const createInfo{
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        nullptr, 0,
+        1, &layoutBinding
+    };
+
+    if (auto result = vkCreateDescriptorSetLayout(device, &createInfo, nullptr, &descriptorSetLayout); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create descriptor set layout: "s + std::to_string(result));
+}
+
 
 void CreateGraphicsPipeline(VkDevice device)
 {
@@ -473,7 +492,7 @@ void CreateGraphicsPipeline(VkDevice device)
     VkPipelineLayoutCreateInfo constexpr layoutCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         nullptr, 0, 
-        0, nullptr,
+        1, &descriptorSetLayout,
         0, nullptr
     };
 
@@ -748,6 +767,11 @@ void CreateIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
     vkDestroyBuffer(device, stagingBuffer, nullptr);
 }
 
+void CreateUniformBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
+{
+    CreateBuffer(physicalDevice, device, uboBuffer, uboBufferMemory, sizeof(TRANSFORMS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+}
+
 void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPool commandPool)
 {
     commandBuffers.resize(swapChainFramebuffers.size());
@@ -943,6 +967,8 @@ void InitVulkan(GLFWwindow *window)
     CreateSwapChain(vulkanDevice->physical_handle(), vulkanDevice->handle(), surface, swapChain);
     CreateSwapChainImageViews(vulkanDevice->handle(), swapChainImages);
 
+    CreateDescriptorSetLayout(vulkanDevice->handle(), descriptorSetLayout);
+
     CreateRenderPass(vulkanDevice->handle());
     CreateGraphicsPipeline(vulkanDevice->handle());
 
@@ -951,8 +977,11 @@ void InitVulkan(GLFWwindow *window)
     CreateCommandPool(vulkanDevice->handle(), transferQueue, transferCommandPool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
 
     CreateCommandPool(vulkanDevice->handle(), graphicsQueue, graphicsCommandPool, 0);
+
     CreateVertexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
     CreateIndexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
+    CreateUniformBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
+
     CreateCommandBuffers(vulkanDevice->handle(), renderPass, graphicsCommandPool);
 
     CreateSemaphores(vulkanDevice->handle());
@@ -970,28 +999,89 @@ void CleanUp()
 
     CleanupSwapChain(vulkanDevice->handle(), swapChain, graphicsPipeline, pipelineLayout, renderPass);
 
+    vkDestroyDescriptorSetLayout(vulkanDevice->handle(), descriptorSetLayout, nullptr);
+
     if (transferCommandPool)
         vkDestroyCommandPool(vulkanDevice->handle(), transferCommandPool, nullptr);
 
     if (graphicsCommandPool)
         vkDestroyCommandPool(vulkanDevice->handle(), graphicsCommandPool, nullptr);
 
-    if (vertexBufferMemory)
-        vkFreeMemory(vulkanDevice->handle(), vertexBufferMemory, nullptr);
+    if (uboBufferMemory)
+        vkFreeMemory(vulkanDevice->handle(), uboBufferMemory, nullptr);
 
-    if (indexBuffer)
-        vkDestroyBuffer(vulkanDevice->handle(), indexBuffer, nullptr);
+    if (uboBuffer)
+        vkDestroyBuffer(vulkanDevice->handle(), uboBuffer, nullptr);
 
     if (indexBufferMemory)
         vkFreeMemory(vulkanDevice->handle(), indexBufferMemory, nullptr);
 
     if (indexBuffer)
+        vkDestroyBuffer(vulkanDevice->handle(), indexBuffer, nullptr);
+
+    if (vertexBufferMemory)
+        vkFreeMemory(vulkanDevice->handle(), vertexBufferMemory, nullptr);
+
+    if (vertexBuffer)
         vkDestroyBuffer(vulkanDevice->handle(), vertexBuffer, nullptr);
 
     if (surface)
         vkDestroySurfaceKHR(vulkanInstance->handle(), surface, nullptr);
 
 }
+
+void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t height)
+{
+    transforms.model = mat4(
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    );
+
+    transforms.view = mat4(
+        1, 0, 0, 0,
+        0, 1, 0, 0,
+        0, 0, 1, 0,
+        0, 0, 0, 1
+    );
+
+    auto constexpr kPI = 3.14159265358979323846f;
+    auto constexpr kPI_DIV_180 = 0.01745329251994329576f;
+    auto constexpr kPI_DIV_180_INV = 57.2957795130823208767f;
+
+    // Default OpenGL perspective projection matrix.
+    auto const kFOV = 72.f, zNear = .01f, zFar = 100.f;
+    auto const f = 1.f / std::tan(kFOV * kPI_DIV_180 * 0.5f);
+
+    auto const aspect = static_cast<float>(width) / static_cast<float>(height);
+
+    // Default OpenGL perspective projection matrix.
+    auto kA = -(zFar + zNear) / (zFar - zNear);
+    auto kB = -2.f * zFar * zNear / (zFar - zNear);
+
+    kA = 0;
+    kB = zNear;
+
+    transforms.proj = mat4(
+        f / aspect, 0, 0, 0,
+        0, f, 0, 0,
+        0, 0, kA, kB,
+        0, 0, -1, 0
+    );
+
+    VkDeviceSize bufferSize = sizeof(transforms);
+
+    decltype(transforms) *data;
+    if (auto result = vkMapMemory(device, uboBufferMemory, 0, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
+
+    auto const array = make_array(transforms);
+    std::uninitialized_copy(std::begin(array), std::end(array), data);
+
+    vkUnmapMemory(device, uboBufferMemory);
+}
+
 
 int main()
 try {
@@ -1011,6 +1101,7 @@ try {
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
+        UpdateUniformBuffer(vulkanDevice->handle(), WIDTH, HEIGHT);
         DrawFrame(vulkanDevice->handle(), swapChain);
     }
 
