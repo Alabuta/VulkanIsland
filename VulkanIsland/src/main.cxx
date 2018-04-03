@@ -7,8 +7,10 @@
 #include <crtdbg.h>
 #endif
 
+#include <chrono>
 #include <cmath>
 #include "main.h"
+
 
 
 auto vertices = make_array(
@@ -23,8 +25,8 @@ auto indices = make_array(
 );
 
 struct TRANSFORMS {
-    mat4 model;
-    mat4 view;
+    glm::mat4 model;
+    glm::mat4 view;
     mat4 proj;
 } transforms;
 
@@ -51,6 +53,9 @@ VkFormat swapChainImageFormat;
 VkExtent2D swapChainExtent;
 
 VkCommandPool graphicsCommandPool, transferCommandPool;
+
+VkDescriptorPool descriptorPool;
+VkDescriptorSet descriptorSet;
 
 std::vector<VkImage> swapChainImages;
 std::vector<VkImageView> swapChainImageViews;
@@ -441,7 +446,7 @@ void CreateGraphicsPipeline(VkDevice device)
         VK_FALSE,
         VK_POLYGON_MODE_FILL,
         VK_CULL_MODE_BACK_BIT,
-        VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        VK_FRONT_FACE_CLOCKWISE,
         VK_FALSE, 0, VK_FALSE, 0,
         1
     };
@@ -772,6 +777,54 @@ void CreateUniformBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
     CreateBuffer(physicalDevice, device, uboBuffer, uboBufferMemory, sizeof(TRANSFORMS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 }
 
+void CreateDescriptorPool(VkDevice device, VkDescriptorPool &descriptorPool)
+{
+    VkDescriptorPoolSize constexpr poolSize{
+        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1
+    };
+
+    VkDescriptorPoolCreateInfo constexpr createInfo{
+        VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        nullptr, 0,
+        1, 1, &poolSize
+    };
+
+    if (auto result = vkCreateDescriptorPool(device, &createInfo, nullptr, &descriptorPool); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create descriptor pool: "s + std::to_string(result));
+}
+
+void CreateDescriptorSet(VkDevice device, VkDescriptorSet &descriptorSet)
+{
+    auto layouts = make_array(descriptorSetLayout);
+
+    VkDescriptorSetAllocateInfo const allocateInfo{
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        nullptr,
+        descriptorPool,
+        static_cast<std::uint32_t>(std::size(layouts)), std::data(layouts)
+    };
+
+    if (auto result = vkAllocateDescriptorSets(device, &allocateInfo, &descriptorSet); result != VK_SUCCESS)
+        throw std::runtime_error("failed to allocate descriptor sets: "s + std::to_string(result));
+
+    VkDescriptorBufferInfo const bufferInfo{
+        uboBuffer, 0, sizeof(TRANSFORMS)
+    };
+
+    VkWriteDescriptorSet const writeSet{
+        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+        nullptr,
+        descriptorSet,
+        0, 0,
+        1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+        nullptr,
+        &bufferInfo,
+        nullptr
+    };
+
+    vkUpdateDescriptorSets(device, 1, &writeSet, 0, nullptr);
+}
+
 void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPool commandPool)
 {
     commandBuffers.resize(swapChainFramebuffers.size());
@@ -814,6 +867,8 @@ void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPoo
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline);
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, nullptr);
 
         auto const vertexBuffers = make_array(vertexBuffer);
         auto const offsets = make_array(VkDeviceSize{0});
@@ -980,7 +1035,11 @@ void InitVulkan(GLFWwindow *window)
 
     CreateVertexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
     CreateIndexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
+
     CreateUniformBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
+
+    CreateDescriptorPool(vulkanDevice->handle(), descriptorPool);
+    CreateDescriptorSet(vulkanDevice->handle(), descriptorSet);
 
     CreateCommandBuffers(vulkanDevice->handle(), renderPass, graphicsCommandPool);
 
@@ -1000,6 +1059,7 @@ void CleanUp()
     CleanupSwapChain(vulkanDevice->handle(), swapChain, graphicsPipeline, pipelineLayout, renderPass);
 
     vkDestroyDescriptorSetLayout(vulkanDevice->handle(), descriptorSetLayout, nullptr);
+    vkDestroyDescriptorPool(vulkanDevice->handle(), descriptorPool, nullptr);
 
     if (transferCommandPool)
         vkDestroyCommandPool(vulkanDevice->handle(), transferCommandPool, nullptr);
@@ -1032,6 +1092,7 @@ void CleanUp()
 
 void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t height)
 {
+#if 0
     transforms.model = mat4(
         1, 0, 0, 0,
         0, 1, 0, 0,
@@ -1042,9 +1103,22 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     transforms.view = mat4(
         1, 0, 0, 0,
         0, 1, 0, 0,
-        0, 0, 1, 0,
+        0, 0, 1, 1,
         0, 0, 0, 1
     );
+#endif
+    static auto startTime = std::chrono::high_resolution_clock::now();
+
+    auto currentTime = std::chrono::high_resolution_clock::now();
+    auto time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+
+    transforms.model = glm::rotate(glm::mat4(1.f), time * glm::radians(90.f), glm::vec3{0, 0, 1});
+    transforms.view = glm::lookAt(glm::vec3{2, 2, 2}, glm::vec3{0, 0, 0}, glm::vec3{0, 0, 1});
+
+    auto const aspect = static_cast<float>(width) / static_cast<float>(height);
+
+    /*transforms.proj = glm::perspective(glm::radians(72.f), aspect, .01f, 100.f);
+    transforms.proj[1][1] *= -1;*/
 
     auto constexpr kPI = 3.14159265358979323846f;
     auto constexpr kPI_DIV_180 = 0.01745329251994329576f;
@@ -1053,8 +1127,6 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     // Default OpenGL perspective projection matrix.
     auto const kFOV = 72.f, zNear = .01f, zFar = 100.f;
     auto const f = 1.f / std::tan(kFOV * kPI_DIV_180 * 0.5f);
-
-    auto const aspect = static_cast<float>(width) / static_cast<float>(height);
 
     // Default OpenGL perspective projection matrix.
     auto kA = -(zFar + zNear) / (zFar - zNear);
@@ -1065,9 +1137,9 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
 
     transforms.proj = mat4(
         f / aspect, 0, 0, 0,
-        0, f, 0, 0,
-        0, 0, kA, kB,
-        0, 0, -1, 0
+        0, -f, 0, 0,
+        0, 0, kA, -1,
+        0, 0, kB, 0
     );
 
     VkDeviceSize bufferSize = sizeof(transforms);

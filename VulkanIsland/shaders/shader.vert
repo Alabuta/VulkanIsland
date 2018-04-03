@@ -4,16 +4,15 @@
 layout(location = 0) in vec3 inVertex;
 layout(location = 1) in vec3 inColor;
 
-layout(binding = 0) uniform TRANSFORMS
-{
-    layout(row_major) mat4 model;
-    layout(row_major) mat4 view;
-    layout(row_major) mat4 proj;
+layout(binding = 0) uniform TRANSFORMS {
+    mat4 model;
+    mat4 view;
+    mat4 proj;
 } transforms;
 
 layout(location = 0) out vec3 perVertexColor;
 
-out gl_PerVertex{
+out gl_PerVertex {
     vec4 gl_Position;
 };
 
