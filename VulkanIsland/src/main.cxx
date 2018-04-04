@@ -21,7 +21,7 @@ auto vertices = make_array(
 );
 
 auto indices = make_array(
-    0ui16, 1ui16, 2ui16, 2ui16, 1ui16, 3ui16
+    0_ui16, 1_ui16, 2_ui16, 2_ui16, 1_ui16, 3_ui16
 );
 
 struct TRANSFORMS {

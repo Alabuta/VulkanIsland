@@ -22,6 +22,14 @@ struct is_container<C, std::void_t<decltype(std::size(std::declval<C>()), std::d
 template<class T>
 constexpr bool is_container_v = is_container<T>::value;
 
+template<class T> struct always_false : std::false_type {};
+
+//template<class T, typename std::enable_if_t<std::is_integral_v<std::decay_t<T>>>...>
+constexpr std::uint16_t operator"" _ui16(unsigned long long value)
+{
+    return static_cast<std::uint16_t>(value);
+}
+
 template<std::size_t i = 0, typename T, typename V>
 constexpr void set_tuple(T &&tuple, V value)
 {
@@ -79,7 +87,7 @@ struct vec2 {
 
     template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 2>>>...>
     constexpr vec2(T &&xy) : xy(std::forward<T>(xy)) {}
-    constexpr vec2(float x, float y) : xy({ x, y }) {};
+    constexpr vec2(float x, float y) : xy({ x, y }) {}
 };
 
 struct vec3 {
@@ -88,8 +96,8 @@ struct vec3 {
     vec3() = default;
 
     template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 3>>>...>
-    constexpr vec3(T &&xyz) : xyz(std::forward(xyz)) {};
-    constexpr vec3(float x, float y, float z = 0) : xyz({ x, y, z }) {};
+    constexpr vec3(T &&xyz) : xyz(std::forward(xyz)) {}
+    constexpr vec3(float x, float y, float z = 0) : xyz({ x, y, z }) {}
 };
 
 struct mat4 {
@@ -98,10 +106,10 @@ struct mat4 {
     mat4() = default;
 
     template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 16>>>...>
-    constexpr mat4(T &&m) : m(std::forward(m)) {};
+    constexpr mat4(T &&m) : m(std::forward(m)) {}
 
     template<class... T>
-    constexpr mat4(T... values) : m({{ static_cast<std::decay_t<decltype(m)>::value_type>(values)... }}) {};
+    constexpr mat4(T... values) : m({{ static_cast<std::decay_t<decltype(m)>::value_type>(values)... }}) {}
 };
 
 struct Vertex {

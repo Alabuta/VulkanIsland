@@ -113,5 +113,5 @@ inline Q const &VulkanDevice::Get() const
     else if constexpr (std::is_same_v<Q, PresentationQueue>)
         return queuePool_.presentationQueues_.at(I);
 
-    else static_assert(std::false_type::type, "unsupported queue type");
+    else static_assert(always_false<Q>::value, "unsupported queue type");
 }
