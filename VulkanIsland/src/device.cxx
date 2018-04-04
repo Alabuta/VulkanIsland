@@ -172,7 +172,7 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
             if (queuePool.empty())
                 return true;
             
-            return QueueHelper::IsSupportedByDevice<std::decay_t<decltype(queuePool)>::value_type>(device, surface);
+            return QueueHelper::IsSupportedByDevice<typename std::decay_t<decltype(queuePool)>::value_type>(device, surface);
         };
 
         if (!check_queue_pool_support(queuePool.computeQueues_))
@@ -248,16 +248,16 @@ void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<char const *> 
     QueueHelper queueHelper;
 
     for (auto &&queue : queuePool_.computeQueues_)
-        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, device_, surface));
+        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface));
 
     for (auto &&queue : queuePool_.graphicsQueues_)
-        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, device_, surface));
+        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface));
 
     for (auto &&queue : queuePool_.transferQueues_)
-        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, device_, surface));
+        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface));
 
     for (auto &&queue : queuePool_.presentationQueues_)
-        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, device_, surface));
+        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface));
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::vector<std::vector<float>> priorities;

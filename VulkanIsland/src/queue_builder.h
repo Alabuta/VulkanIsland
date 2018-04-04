@@ -10,7 +10,7 @@ class QueueHelper final {
 public:
 
     template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
-    [[nodiscard]] Q Find(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface)
+    [[nodiscard]] Q Find(VkPhysicalDevice physicalDevice, [[maybe_unused]] VkSurfaceKHR surface)
     {
         Q queue;
 
@@ -47,7 +47,7 @@ public:
     }
 
     template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
-    [[nodiscard]] static bool IsSupportedByDevice(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+    [[nodiscard]] static bool IsSupportedByDevice(VkPhysicalDevice physicalDevice, [[maybe_unused]] VkSurfaceKHR surface)
     {
         if constexpr (std::is_same_v<Q, PresentationQueue>)
             return GetPresentationQueueFamily<Q>(physicalDevice, surface).has_value();

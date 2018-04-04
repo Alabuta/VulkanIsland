@@ -24,6 +24,7 @@ public:
         static auto constexpr level{L};
     };
 
+#if NOT_YET_IMPLEMENTED
     template<class Q, std::size_t I = 0, VkCommandBufferLevel L, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
     std::vector<VulkanCmdBuffer<L>> AllocateCmdBuffers(std::size_t count)
     {
@@ -42,6 +43,7 @@ public:
 
         return commandBuffers;
     }
+#endif
 
 
 private:
@@ -96,7 +98,6 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
     PickPhysicalDevice(instance.handle(), surface, std::move(extensions_view));
     CreateDevice(surface, std::move(extensions_));
 }
-
 
 template<class Q, std::size_t I, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
 inline Q const &VulkanDevice::Get() const

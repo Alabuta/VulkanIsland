@@ -783,7 +783,7 @@ void CreateDescriptorPool(VkDevice device, VkDescriptorPool &descriptorPool)
         VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1
     };
 
-    VkDescriptorPoolCreateInfo constexpr createInfo{
+    VkDescriptorPoolCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         nullptr, 0,
         1, 1, &poolSize
@@ -1120,9 +1120,9 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     /*transforms.proj = glm::perspective(glm::radians(72.f), aspect, .01f, 100.f);
     transforms.proj[1][1] *= -1;*/
 
-    auto constexpr kPI = 3.14159265358979323846f;
-    auto constexpr kPI_DIV_180 = 0.01745329251994329576f;
-    auto constexpr kPI_DIV_180_INV = 57.2957795130823208767f;
+    [[maybe_unused]] auto constexpr kPI = 3.14159265358979323846f;
+    [[maybe_unused]] auto constexpr kPI_DIV_180 = 0.01745329251994329576f;
+    [[maybe_unused]] auto constexpr kPI_DIV_180_INV = 57.2957795130823208767f;
 
     // Default OpenGL perspective projection matrix.
     auto const kFOV = 72.f, zNear = .01f, zFar = 100.f;
