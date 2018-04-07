@@ -11,23 +11,69 @@
 #include <cmath>
 #include "main.h"
 
+template<class... Ts>
+struct type_list { };
+
+struct mat4 {
+    std::array<float, 16> m;
+
+    mat4() = default;
+
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 16>>>...>
+    constexpr mat4(T &&m) : m(std::forward(m)) { }
+
+    template<class T0, class T1, class T2, class T3, typename std::enable_if_t<std::is_same_v<std::decay_t<T0>, vec3>>... >
+    constexpr mat4(T0 &&xAxis, T1 &&yAxis, T2 &&zAxis, T3 &&translation)
+    {
+        std::uninitialized_copy_n(std::begin(xAxis.xyz), 3, std::begin(m));
+    }
+
+    template<class... Ts, typename = std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...>>>
+    constexpr mat4(Ts... values) : m({{ static_cast<std::decay_t<decltype(m)>::value_type>(values)... }}) { }
+};
+
+template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, vec3>>...>
+mat4 lookAt(T &&eye, T &&center, T &&up)
+{
+    auto zAxis = eye - center;
+
+    if (std::abs(zAxis.xyz.at(0)) < std::numeric_limits<float>::min() && std::abs(zAxis.xyz.at(2)) < std::numeric_limits<float>::min())
+        zAxis.xyz.at(2) += std::numeric_limits<float>::min();
+
+    zAxis.normalize();
+
+    auto const xAxis = up.cross(zAxis).normalize();
+    auto const yAxis = zAxis.cross(xAxis).normalize();
+
+    auto const position = vec3{xAxis.dot(eye), yAxis.dot(eye), zAxis.dot(eye)};
+
+    return mat4(xAxis, yAxis, zAxis, position);
+}
 
 
 auto vertices = make_array(
-    Vertex{{+1, +1, 0}, {1, 0, 0}},
-    Vertex{{+1, -1, 0}, {0, 1, 0}},
-    Vertex{{-1, +1, 0}, {0, 0, 1}},
-    Vertex{{-1, -1, 0}, {0, 1, 1}}
+    Vertex{{+1, +1, -1}, {1, 0, 0}},
+    Vertex{{+1, -1, -1}, {0, 1, 0}},
+    Vertex{{-1, +1, -1}, {0, 0, 1}},
+    Vertex{{-1, -1, -1}, {0, 1, 1}}
 );
 
 auto indices = make_array(
     0_ui16, 1_ui16, 2_ui16, 2_ui16, 1_ui16, 3_ui16
 );
 
+#define USE_GLM 0
+
 struct TRANSFORMS {
+#if !USE_GLM
+    mat4 model;
+    mat4 view;
+    mat4 proj;
+#else
     glm::mat4 model;
     glm::mat4 view;
-    mat4 proj;
+    glm::mat4 proj;
+#endif
 } transforms;
 
 
@@ -1092,33 +1138,32 @@ void CleanUp()
 
 void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t height)
 {
-#if 0
-    transforms.model = mat4(
+#if !USE_GLM
+    transforms.model = mat4{
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
         0, 0, 0, 1
-    );
+    };
 
     transforms.view = mat4(
         1, 0, 0, 0,
         0, 1, 0, 0,
-        0, 0, 1, 1,
-        0, 0, 0, 1
+        0, 0, 1, 0,
+        0, 0, -1, 1
     );
-#endif
+
+    transforms.view = lookAt(vec3{0, 0, 1}, vec3{0, 0, 0}, vec3{0, 1, 0});
+#else
     static auto startTime = std::chrono::high_resolution_clock::now();
 
     auto currentTime = std::chrono::high_resolution_clock::now();
     auto time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-    transforms.model = glm::rotate(glm::mat4(1.f), time * glm::radians(90.f), glm::vec3{0, 0, 1});
-    transforms.view = glm::lookAt(glm::vec3{2, 2, 2}, glm::vec3{0, 0, 0}, glm::vec3{0, 0, 1});
-
+    transforms.model = glm::mat4(1.f);// glm::rotate(glm::mat4(1.f), time * glm::radians(90.f), glm::vec3{0, 0, 1});
+    transforms.view = glm::lookAt(glm::vec3{0, 0, 1}, glm::vec3{0, 0, 0}, glm::vec3{0, 1, 0});
+#endif
     auto const aspect = static_cast<float>(width) / static_cast<float>(height);
-
-    /*transforms.proj = glm::perspective(glm::radians(72.f), aspect, .01f, 100.f);
-    transforms.proj[1][1] *= -1;*/
 
     [[maybe_unused]] auto constexpr kPI = 3.14159265358979323846f;
     [[maybe_unused]] auto constexpr kPI_DIV_180 = 0.01745329251994329576f;
@@ -1128,6 +1173,7 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     auto const kFOV = 72.f, zNear = .01f, zFar = 100.f;
     auto const f = 1.f / std::tan(kFOV * kPI_DIV_180 * 0.5f);
 
+#if !USE_GLM
     // Default OpenGL perspective projection matrix.
     auto kA = -(zFar + zNear) / (zFar - zNear);
     auto kB = -2.f * zFar * zNear / (zFar - zNear);
@@ -1141,6 +1187,10 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
         0, 0, kA, -1,
         0, 0, kB, 0
     );
+#else
+    transforms.proj = glm::perspective(glm::radians(72.f), aspect, .01f, 100.f);
+    transforms.proj[1][1] *= -1;
+#endif
 
     VkDeviceSize bufferSize = sizeof(transforms);
 

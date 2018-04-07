@@ -98,18 +98,47 @@ struct vec3 {
     template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 3>>>...>
     constexpr vec3(T &&xyz) : xyz(std::forward(xyz)) {}
     constexpr vec3(float x, float y, float z = 0) : xyz({ x, y, z }) {}
-};
 
-struct mat4 {
-    std::array<float, 16> m;
+    float length() const
+    {
+        return std::sqrt(xyz[0] * xyz[0] + xyz[1] * xyz[1] + xyz[2] * xyz[2]);
+    }
 
-    mat4() = default;
+    vec3 const &normalize()
+    {
+        if (auto const length = this->length(); std::abs(length) > std::numeric_limits<float>::min())
+            for (auto &v : xyz) v /= length;
 
-    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 16>>>...>
-    constexpr mat4(T &&m) : m(std::forward(m)) {}
+        return *this;
+    }
 
-    template<class... T>
-    constexpr mat4(T... values) : m({{ static_cast<std::decay_t<decltype(m)>::value_type>(values)... }}) {}
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, vec3>>...>
+    vec3 operator+ (T &&rhs) const
+    {
+        return { xyz[0] + rhs.xyz[0], xyz[1] + rhs.xyz[1], xyz[2] + rhs.xyz[2] };
+    }
+
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, vec3>>...>
+    vec3 operator- (T &&rhs) const
+    {
+        return {xyz[0] - rhs.xyz[0], xyz[1] - rhs.xyz[1], xyz[2] - rhs.xyz[2]};
+    }
+
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, vec3>>...>
+    vec3 cross(T &&rhs) const
+    {
+        return {
+            xyz[1] * rhs.xyz[2] - xyz[2] * rhs.xyz[1],
+            xyz[2] * rhs.xyz[0] - xyz[0] * rhs.xyz[2],
+            xyz[0] * rhs.xyz[1] - xyz[1] * rhs.xyz[0]
+        };
+    }
+
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, vec3>>...>
+    float dot(T &&rhs) const
+    {
+        return xyz[0] * rhs.xyz[0] + xyz[1] * rhs.xyz[1] + xyz[2] * rhs.xyz[2];
+    }
 };
 
 struct Vertex {
