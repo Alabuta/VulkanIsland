@@ -11,6 +11,9 @@
 #include <cmath>
 #include "main.h"
 
+#define STB_IMAGE_IMPLEMENTATION
+#include <stb_image.h>
+
 
 
 auto vertices = make_array(
@@ -75,6 +78,9 @@ VkSemaphore imageAvailableSemaphore, renderFinishedSemaphore;
 VkBuffer vertexBuffer, indexBuffer, uboBuffer;
 VkDeviceMemory vertexBufferMemory, indexBufferMemory, uboBufferMemory;
 
+VkImage textureImage;
+VkDeviceMemory textureImageMemory;
+
 #ifdef USE_WIN32
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
     VkInstance vulkanInstance->handle(), VkWin32SurfaceCreateInfoKHR const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkSurfaceKHR *pSurface)
@@ -132,7 +138,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
     if (!fs::exists(current_path / directory))
         directory = current_path / fs::path{"../../VulkanIsland"s} / directory;
 
-    std::ifstream file((directory / name).native(), std::ios::binary);
+    std::ifstream file(directory / name, std::ios::binary);
 
     if (!file.is_open())
         return {};
@@ -642,7 +648,9 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
 }
 
 
-void CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkBuffer &buffer, VkDeviceMemory &deviceMemory, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+void CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device,
+                  VkBuffer &buffer, VkDeviceMemory &deviceMemory, VkDeviceSize size,
+                  VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
 {
     VkBufferCreateInfo const bufferCreateInfo{
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -737,7 +745,8 @@ void CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
 
-    CreateBuffer(physicalDevice, device, stagingBuffer, stagingBufferMemory, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    CreateBuffer(physicalDevice, device, stagingBuffer, stagingBufferMemory, bufferSize,
+                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     decltype(vertices)::value_type *data;
     if (auto result = vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
@@ -747,7 +756,8 @@ void CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
 
     vkUnmapMemory(device, stagingBufferMemory);
 
-    CreateBuffer(physicalDevice, device, vertexBuffer, vertexBufferMemory, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    CreateBuffer(physicalDevice, device, vertexBuffer, vertexBufferMemory, bufferSize,
+                 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     CopyBuffer(device, transferQueue, stagingBuffer, vertexBuffer, bufferSize);
 
@@ -908,6 +918,94 @@ void CreateSemaphores(VkDevice device)
 }
 
 
+void CreateImage(VkPhysicalDevice physicalDevice, VkDevice device,
+                 VkImage &textureImage, VkDeviceMemory &deviceMemory, std::uint32_t width, std::uint32_t height,
+                 VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+{
+    VkImageCreateInfo const createInfo{
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        nullptr, 0,
+        VK_IMAGE_TYPE_2D,
+        VK_FORMAT_R8G8B8A8_UNORM,
+        {width, height, 1},
+        1, 1,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_IMAGE_TILING_OPTIMAL,
+        usage,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0, nullptr,
+        VK_IMAGE_LAYOUT_UNDEFINED
+    };
+
+    if (auto result = vkCreateImage(device, &createInfo, nullptr, &textureImage); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create image: "s + std::to_string(result));
+
+    VkMemoryRequirements memoryReqirements;
+    vkGetImageMemoryRequirements(device, textureImage, &memoryReqirements);
+
+    std::uint32_t memTypeIndex = 0;
+
+    if (auto index = FindMemoryType(physicalDevice, memoryReqirements.memoryTypeBits, properties); !index)
+        throw std::runtime_error("failed to find suitable memory type"s);
+
+    else memTypeIndex = index.value();
+
+    VkMemoryAllocateInfo const memAllocInfo{
+        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        nullptr,
+        memoryReqirements.size,
+        memTypeIndex
+    };
+
+    if (auto result = vkAllocateMemory(device, &memAllocInfo, nullptr, &deviceMemory); result != VK_SUCCESS)
+        throw std::runtime_error("failed to allocate image buffer memory: "s + std::to_string(result));
+
+    if (auto result = vkBindImageMemory(device, textureImage, deviceMemory, 0); result != VK_SUCCESS)
+        throw std::runtime_error("failed to bind image buffer memory: "s + std::to_string(result));
+}
+
+void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImage &textureImage, VkDeviceMemory &textureImageMemory)
+{
+    auto current_path = fs::current_path();
+
+    fs::path directory{"textures"s};
+    fs::path name{"texture.jpg"s};
+
+    if (!fs::exists(current_path / directory))
+        directory = current_path / fs::path{"../../VulkanIsland"s} / directory;
+
+    int width, height, channels;
+    auto pixels = stbi_load("./textures/texture.jpg", &width, &height, &channels, STBI_rgb_alpha);
+
+    if (!pixels)
+        throw std::runtime_error("failed to load an image"s);
+
+    VkDeviceSize bufferSize = width * height * 4;
+
+    VkBuffer stagingBuffer;
+    VkDeviceMemory stagingBufferMemory;
+
+    CreateBuffer(physicalDevice, device, stagingBuffer, stagingBufferMemory, bufferSize,
+                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    stbi_uc *data;
+    if (auto result = vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to map image buffer memory: "s + std::to_string(result));
+
+    std::uninitialized_copy_n(pixels, static_cast<std::size_t>(bufferSize), data);
+
+    vkUnmapMemory(device, stagingBufferMemory);
+
+    stbi_image_free(pixels);
+
+    CreateImage(vulkanDevice->physical_handle(), vulkanDevice->handle(), textureImage, textureImageMemory,
+                static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height),
+                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    vkFreeMemory(device, stagingBufferMemory, nullptr);
+    vkDestroyBuffer(device, stagingBuffer, nullptr);
+}
+
 void RecreateSwapChain()
 {
     if (WIDTH < 1 || HEIGHT < 1) return;
@@ -1038,8 +1136,9 @@ void InitVulkan(GLFWwindow *window)
     CreateFramebuffers(renderPass, swapChainImageViews, vulkanDevice->handle());
 
     CreateCommandPool(vulkanDevice->handle(), transferQueue, transferCommandPool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
-
     CreateCommandPool(vulkanDevice->handle(), graphicsQueue, graphicsCommandPool, 0);
+
+    CreateTextureImage(vulkanDevice->physical_handle(), vulkanDevice->handle(), textureImage, textureImageMemory);
 
     CreateVertexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
     CreateIndexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
@@ -1074,6 +1173,12 @@ void CleanUp()
 
     if (graphicsCommandPool)
         vkDestroyCommandPool(vulkanDevice->handle(), graphicsCommandPool, nullptr);
+
+    if (textureImageMemory)
+        vkFreeMemory(vulkanDevice->handle(), textureImageMemory, nullptr);
+
+    if (textureImage)
+        vkDestroyImage(vulkanDevice->handle(), textureImage, nullptr);
 
     if (uboBufferMemory)
         vkFreeMemory(vulkanDevice->handle(), uboBufferMemory, nullptr);
