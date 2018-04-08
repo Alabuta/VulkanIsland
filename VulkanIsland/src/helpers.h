@@ -24,6 +24,14 @@ constexpr bool is_container_v = is_container<T>::value;
 
 template<class T> struct always_false : std::false_type {};
 
+template<class T, class... Ts>
+struct are_same_types {
+    static auto constexpr value_type = std::conjunction_v<std::is_same<T, std::decay_t<Ts>>...>;
+};
+
+template<class T, class... Ts>
+inline auto constexpr are_same_types_v = are_same_types<T, Ts...>::value_type;
+
 //template<class T, typename std::enable_if_t<std::is_integral_v<std::decay_t<T>>>...>
 constexpr std::uint16_t operator"" _ui16(unsigned long long value)
 {
@@ -121,7 +129,22 @@ struct vec3 {
     template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, vec3>>...>
     vec3 operator- (T &&rhs) const
     {
-        return {xyz[0] - rhs.xyz[0], xyz[1] - rhs.xyz[1], xyz[2] - rhs.xyz[2]};
+        return { xyz[0] - rhs.xyz[0], xyz[1] - rhs.xyz[1], xyz[2] - rhs.xyz[2] };
+    }
+
+    vec3 &operator+ () { return *this; };
+    vec3 operator- () const { return { -xyz[0], -xyz[1], -xyz[2] }; };
+
+    template<class T, typename std::enable_if_t<std::is_arithmetic_v<std::decay_t<T>>>...>
+    vec3 operator* (T scalar) const
+    {
+        return { xyz[0] * scalar, xyz[1] * scalar, xyz[2] * scalar };
+    }
+
+    template<class T, typename std::enable_if_t<std::is_arithmetic_v<std::decay_t<T>>>...>
+    vec3 operator/ (T scalar) const
+    {
+        return { xyz[0] / scalar, xyz[1] / scalar, xyz[2] / scalar };
     }
 
     template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, vec3>>...>
@@ -140,6 +163,49 @@ struct vec3 {
         return xyz[0] * rhs.xyz[0] + xyz[1] * rhs.xyz[1] + xyz[2] * rhs.xyz[2];
     }
 };
+struct mat4 {
+    std::array<float, 16> m;
+
+    mat4() = default;
+
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 16>>>...>
+    constexpr mat4(T &&array) : m(std::forward(array)) { }
+
+    template<class T0, class T1, class T2, class T3, typename std::enable_if_t<are_same_types_v<vec3, T0, T1, T2, T3>>...>
+    constexpr mat4(T0 &&xAxis, T1 &&yAxis, T2 &&zAxis, T3 &&translation)
+    {
+        std::fill(std::begin(m), std::end(m), 0.f);
+        m.back() = 1.f;
+
+        auto tr = -std::forward<T3>(translation);
+
+        std::uninitialized_copy_n(std::begin(xAxis.xyz), std::size(xAxis.xyz), std::begin(m));
+        std::uninitialized_copy_n(std::begin(yAxis.xyz), std::size(yAxis.xyz), std::begin(m)+4);
+        std::uninitialized_copy_n(std::begin(zAxis.xyz), std::size(zAxis.xyz), std::begin(m)+4*2);
+        std::uninitialized_copy_n(std::begin(tr.xyz), std::size(tr.xyz), std::begin(m)+4*3);
+    }
+
+    template<class... Ts, typename std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...>&&sizeof...(Ts)==16>* = 0>
+    constexpr mat4(Ts... values) : m({{static_cast<std::decay_t<decltype(m)>::value_type>(values)...}}) { }
+};
+
+template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, vec3>>...>
+mat4 lookAt(T &&eye, T &&center, T &&up)
+{
+    auto zAxis = -(center-eye);
+
+    if (std::abs(zAxis.xyz.at(0)) < std::numeric_limits<float>::min()&&std::abs(zAxis.xyz.at(2)) < std::numeric_limits<float>::min())
+        zAxis.xyz.at(2) += std::numeric_limits<float>::min();
+
+    zAxis.normalize();
+
+    auto const xAxis = up.cross(zAxis).normalize();
+    auto const yAxis = zAxis.cross(xAxis).normalize();
+
+    auto const position = vec3{xAxis.dot(eye), yAxis.dot(eye), zAxis.dot(eye)};
+
+    return mat4(xAxis, yAxis, zAxis, position);
+}
 
 struct Vertex {
     vec3 pos;
