@@ -647,6 +647,57 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
     return {};
 }
 
+template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
+[[nodiscard]] VkCommandBuffer BeginSingleTimeCommad(VkDevice device, [[maybe_unused]] Q &queue)
+{
+    VkCommandBuffer commandBuffer;
+
+    VkCommandBufferAllocateInfo const allocateInfo{
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        nullptr,
+        transferCommandPool,
+        VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        1
+    };
+
+    if (auto result = vkAllocateCommandBuffers(device, &allocateInfo, &commandBuffer); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create allocate command buffers: "s + std::to_string(result));
+
+    VkCommandBufferBeginInfo const beginInfo{
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+        nullptr,
+        VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
+        nullptr
+    };
+
+    if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
+        throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
+
+    return commandBuffer;
+}
+
+template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
+void EndSingleTimeCommad(VkDevice device, Q &queue, VkCommandBuffer commandBuffer)
+{
+    if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS)
+        throw std::runtime_error("failed to end command buffer: "s + std::to_string(result));
+
+    VkSubmitInfo const submitInfo{
+        VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        nullptr,
+        0, nullptr,
+        nullptr,
+        1, &commandBuffer,
+        0, nullptr,
+    };
+
+    if (auto result = vkQueueSubmit(queue.handle(), 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS)
+        throw std::runtime_error("failed to submit command buffer: "s + std::to_string(result));
+
+    vkQueueWaitIdle(queue.handle());
+
+    vkFreeCommandBuffers(device, transferCommandPool, 1, &commandBuffer);
+}
 
 void CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device,
                   VkBuffer &buffer, VkDeviceMemory &deviceMemory, VkDeviceSize size,
@@ -691,51 +742,27 @@ void CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device,
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
 void CopyBuffer(VkDevice device, Q &queue, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
-    VkCommandBuffer commandBuffer;
-
-    VkCommandBufferAllocateInfo const allocateInfo{
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        nullptr,
-        transferCommandPool,
-        VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        1
-    };
-
-    if (auto result = vkAllocateCommandBuffers(device, &allocateInfo, &commandBuffer); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create allocate command buffers: "s + std::to_string(result));
-
-    VkCommandBufferBeginInfo const beginInfo{
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        nullptr,
-        VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        nullptr
-    };
-
-    if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
-        throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
+    auto commandBuffer = BeginSingleTimeCommad(device, queue);
 
     VkBufferCopy const copyRegion{ 0, 0, size };
 
     vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-    if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS)
-        throw std::runtime_error("failed to end command buffer: "s + std::to_string(result));
+    EndSingleTimeCommad(device, queue, commandBuffer);
+}
 
-    VkSubmitInfo const submitInfo{
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,
+template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
+void TransitionImageLayout(VkDevice device, Q &queue, VkFormat format, VkImageLayout srdLayout, VkImageLayout dstLayout)
+{
+    auto commandBuffer = BeginSingleTimeCommad(device, queue);
+
+    VkImageMemoryBarrier barrier{
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
         nullptr,
-        0, nullptr,
-        nullptr,
-        1, &commandBuffer,
-        0, nullptr,
+
     };
 
-    if (auto result = vkQueueSubmit(queue.handle(), 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS)
-        throw std::runtime_error("failed to submit draw command buffer: "s + std::to_string(result));
-
-    vkQueueWaitIdle(queue.handle());
-
-    vkFreeCommandBuffers(device, transferCommandPool, 1, &commandBuffer);
+    EndSingleTimeCommad(device, queue, commandBuffer);
 }
 
 void CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
