@@ -648,7 +648,7 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
 }
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-[[nodiscard]] VkCommandBuffer BeginSingleTimeCommad(VkDevice device, [[maybe_unused]] Q &queue)
+[[nodiscard]] VkCommandBuffer BeginSingleTimeCommand(VkDevice device, [[maybe_unused]] Q &queue)
 {
     VkCommandBuffer commandBuffer;
 
@@ -742,7 +742,7 @@ void CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device,
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
 void CopyBuffer(VkDevice device, Q &queue, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
-    auto commandBuffer = BeginSingleTimeCommad(device, queue);
+    auto commandBuffer = BeginSingleTimeCommand(device, queue);
 
     VkBufferCopy const copyRegion{ 0, 0, size };
 
@@ -752,15 +752,59 @@ void CopyBuffer(VkDevice device, Q &queue, VkBuffer srcBuffer, VkBuffer dstBuffe
 }
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-void TransitionImageLayout(VkDevice device, Q &queue, VkFormat format, VkImageLayout srdLayout, VkImageLayout dstLayout)
+void CopyBufferToImage(VkDevice device, Q &queue, VkBuffer srcBuffer, VkImage dstImage, std::uint32_t width, std::uint32_t height)
 {
-    auto commandBuffer = BeginSingleTimeCommad(device, queue);
+    auto commandBuffer = BeginSingleTimeCommand(device, queue);
+
+    VkBufferImageCopy const copyRegion{
+        0,
+        0, 0,
+        { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
+        { 0, 0, 0 },
+        { width, height, 1 }
+    };
+
+    vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
+
+    EndSingleTimeCommad(device, queue, commandBuffer);
+}
+
+template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
+void TransitionImageLayout(VkDevice device, Q &queue, VkImage image, VkFormat format, VkImageLayout srcLayout, VkImageLayout dstLayout)
+{
+    auto commandBuffer = BeginSingleTimeCommand(device, queue);
 
     VkImageMemoryBarrier barrier{
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
         nullptr,
-
+        0, 0,
+        srcLayout, dstLayout,
+        VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
+        image,
+        { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
     };
+
+    VkPipelineStageFlags srcStageFlags, dstStageFlags;
+
+    if (srcLayout == VK_IMAGE_LAYOUT_UNDEFINED && dstLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+        srcStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        dstStageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
+    }
+
+    else if (srcLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && dstLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+        srcStageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        dstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    }
+
+    else throw std::logic_error("unsupported layout transition"s);
+
+    vkCmdPipelineBarrier(commandBuffer, srcStageFlags, dstStageFlags, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
     EndSingleTimeCommad(device, queue, commandBuffer);
 }
@@ -991,7 +1035,7 @@ void CreateImage(VkPhysicalDevice physicalDevice, VkDevice device,
         throw std::runtime_error("failed to bind image buffer memory: "s + std::to_string(result));
 }
 
-void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImage &textureImage, VkDeviceMemory &textureImageMemory)
+void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImage &image, VkDeviceMemory &textureImageMemory)
 {
     auto current_path = fs::current_path();
 
@@ -1025,9 +1069,15 @@ void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImag
 
     stbi_image_free(pixels);
 
-    CreateImage(vulkanDevice->physical_handle(), vulkanDevice->handle(), textureImage, textureImageMemory,
+    CreateImage(vulkanDevice->physical_handle(), vulkanDevice->handle(), image, textureImageMemory,
                 static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height),
                 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    TransitionImageLayout(device, transferQueue, image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+
+    CopyBufferToImage(device, transferQueue, stagingBuffer, image, static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
+
+    TransitionImageLayout(device, transferQueue, image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     vkFreeMemory(device, stagingBufferMemory, nullptr);
     vkDestroyBuffer(device, stagingBuffer, nullptr);
