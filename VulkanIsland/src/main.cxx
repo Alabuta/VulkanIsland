@@ -80,6 +80,9 @@ VkDeviceMemory vertexBufferMemory, indexBufferMemory, uboBufferMemory;
 
 VkImage textureImage;
 VkDeviceMemory textureImageMemory;
+VkImageView textureImageView;
+VkSampler textureSampler;
+
 
 #ifdef USE_WIN32
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
@@ -241,6 +244,26 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     };
 }
 
+[[nodiscard]] VkImageView CreateImageView(VkDevice device, VkImage &image, VkFormat format)
+{
+    VkImageViewCreateInfo const createInfo{
+        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        nullptr, 0,
+        image,
+        VK_IMAGE_VIEW_TYPE_2D,
+        format,
+        {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
+        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}
+    };
+
+    VkImageView imageView;
+
+    if (auto result = vkCreateImageView(device, &createInfo, nullptr, &imageView); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create image view: "s + std::to_string(result));
+
+    return imageView;
+}
+
 
 void CreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkSwapchainKHR &swapChain)
 {
@@ -306,22 +329,8 @@ void CreateSwapChainImageViews(VkDevice device, T &&swapChainImages)
     swapChainImageViews.clear();
 
     for (auto &&swapChainImage : swapChainImages) {
-        VkImageViewCreateInfo const createInfo{
-            VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-            nullptr, 0,
-            swapChainImage,
-            VK_IMAGE_VIEW_TYPE_2D,
-            swapChainImageFormat,
-            {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
-            {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}
-        };
-
-        VkImageView imageView;
-
-        if (auto result = vkCreateImageView(device, &createInfo, nullptr, &imageView); result != VK_SUCCESS)
-            throw std::runtime_error("failed to create swap chain image view: "s + std::to_string(result));
-
-        swapChainImageViews.push_back(std::move(imageView));
+        auto imageView = CreateImageView(device, swapChainImage, swapChainImageFormat);
+        swapChainImageViews.emplace_back(std::move(imageView));
     }
 }
 
@@ -1083,6 +1092,33 @@ void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImag
     vkDestroyBuffer(device, stagingBuffer, nullptr);
 }
 
+void CreateTextureImageView(VkPhysicalDevice physicalDevice, VkDevice device, VkImageView &imageView, VkImage &image)
+{
+    imageView = CreateImageView(device, image, VK_FORMAT_R8G8B8A8_UNORM);
+}
+
+void CreateTextureSampler(VkDevice device, VkSampler &sampler)
+{
+    VkSamplerCreateInfo constexpr createInfo{
+        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        nullptr, 0,
+        VK_FILTER_LINEAR, VK_FILTER_LINEAR,
+        VK_SAMPLER_MIPMAP_MODE_LINEAR,
+        VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        0,
+        VK_TRUE, 16,
+        VK_FALSE, VK_COMPARE_OP_ALWAYS,
+        0, 0,
+        VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+        VK_FALSE
+    };
+
+    if (auto result = vkCreateSampler(device, &createInfo, nullptr, &sampler); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create sampler: "s + std::to_string(result));
+}
+
 void RecreateSwapChain()
 {
     if (WIDTH < 1 || HEIGHT < 1) return;
@@ -1216,6 +1252,8 @@ void InitVulkan(GLFWwindow *window)
     CreateCommandPool(vulkanDevice->handle(), graphicsQueue, graphicsCommandPool, 0);
 
     CreateTextureImage(vulkanDevice->physical_handle(), vulkanDevice->handle(), textureImage, textureImageMemory);
+    CreateTextureImageView(vulkanDevice->physical_handle(), vulkanDevice->handle(), textureImageView, textureImage);
+    CreateTextureSampler(vulkanDevice->handle(), textureSampler);
 
     CreateVertexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
     CreateIndexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
@@ -1245,11 +1283,11 @@ void CleanUp()
     vkDestroyDescriptorSetLayout(vulkanDevice->handle(), descriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(vulkanDevice->handle(), descriptorPool, nullptr);
 
-    if (transferCommandPool)
-        vkDestroyCommandPool(vulkanDevice->handle(), transferCommandPool, nullptr);
+    if (textureSampler)
+        vkDestroySampler(vulkanDevice->handle(), textureSampler, nullptr);
 
-    if (graphicsCommandPool)
-        vkDestroyCommandPool(vulkanDevice->handle(), graphicsCommandPool, nullptr);
+    if (textureImageView)
+        vkDestroyImageView(vulkanDevice->handle(), textureImageView, nullptr);
 
     if (textureImageMemory)
         vkFreeMemory(vulkanDevice->handle(), textureImageMemory, nullptr);
@@ -1274,6 +1312,12 @@ void CleanUp()
 
     if (vertexBuffer)
         vkDestroyBuffer(vulkanDevice->handle(), vertexBuffer, nullptr);
+
+    if (transferCommandPool)
+        vkDestroyCommandPool(vulkanDevice->handle(), transferCommandPool, nullptr);
+
+    if (graphicsCommandPool)
+        vkDestroyCommandPool(vulkanDevice->handle(), graphicsCommandPool, nullptr);
 
     if (surface)
         vkDestroySurfaceKHR(vulkanInstance->handle(), surface, nullptr);
