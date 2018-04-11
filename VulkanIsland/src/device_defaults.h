@@ -22,7 +22,7 @@ VkPhysicalDeviceFeatures constexpr kDEVICE_FEATURES{
     VkBool32(VK_FALSE), // largePoints,
     VkBool32(VK_FALSE), // alphaToOne,
     VkBool32(VK_FALSE), // multiViewport,
-    VkBool32(VK_FALSE), // samplerAnisotropy,
+    VkBool32(VK_TRUE),  // samplerAnisotropy,
     VkBool32(VK_FALSE), // textureCompressionETC2,
     VkBool32(VK_FALSE), // textureCompressionASTC_LDR,
     VkBool32(VK_FALSE), // textureCompressionBC,
