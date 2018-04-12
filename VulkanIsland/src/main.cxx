@@ -367,16 +367,23 @@ void CleanupSwapChain(VkDevice device, VkSwapchainKHR swapChain, VkPipeline grap
 
 void CreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout &descriptorSetLayout)
 {
-    VkDescriptorSetLayoutBinding const layoutBinding{
-        0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        1, VK_SHADER_STAGE_VERTEX_BIT,
-        nullptr
-    };
+    std::array<VkDescriptorSetLayoutBinding, 2> constexpr layoutBindings{{
+        {
+            0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            1, VK_SHADER_STAGE_VERTEX_BIT,
+            nullptr
+        },
+        {
+            1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            1, VK_SHADER_STAGE_FRAGMENT_BIT,
+            nullptr
+        }
+    }};
 
-    VkDescriptorSetLayoutCreateInfo const createInfo{
+    VkDescriptorSetLayoutCreateInfo constexpr createInfo{
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         nullptr, 0,
-        1, &layoutBinding
+        static_cast<std::uint32_t>(std::size(layoutBindings)), std::data(layoutBindings)
     };
 
     if (auto result = vkCreateDescriptorSetLayout(device, &createInfo, nullptr, &descriptorSetLayout); result != VK_SUCCESS)
@@ -877,14 +884,16 @@ void CreateUniformBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
 
 void CreateDescriptorPool(VkDevice device, VkDescriptorPool &descriptorPool)
 {
-    VkDescriptorPoolSize constexpr poolSize{
-        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1
-    };
+    std::array<VkDescriptorPoolSize, 2> constexpr poolSizes{{
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
+    }};
 
-    VkDescriptorPoolCreateInfo const createInfo{
+    VkDescriptorPoolCreateInfo constexpr createInfo{
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         nullptr, 0,
-        1, 1, &poolSize
+        1,
+        static_cast<std::uint32_t>(std::size(poolSizes)), std::data(poolSizes)
     };
 
     if (auto result = vkCreateDescriptorPool(device, &createInfo, nullptr, &descriptorPool); result != VK_SUCCESS)
@@ -909,18 +918,34 @@ void CreateDescriptorSet(VkDevice device, VkDescriptorSet &descriptorSet)
         uboBuffer, 0, sizeof(TRANSFORMS)
     };
 
-    VkWriteDescriptorSet const writeSet{
-        VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-        nullptr,
-        descriptorSet,
-        0, 0,
-        1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-        nullptr,
-        &bufferInfo,
-        nullptr
+    VkDescriptorImageInfo const imageInfo{
+        textureSampler, textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     };
 
-    vkUpdateDescriptorSets(device, 1, &writeSet, 0, nullptr);
+    std::array<VkWriteDescriptorSet, 2> const writeDescriptorsSet{{
+        {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            nullptr,
+            descriptorSet,
+            0, 0,
+            1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            nullptr,
+            &bufferInfo,
+            nullptr
+        },
+        {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            nullptr,
+            descriptorSet,
+            1, 0,
+            1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            &imageInfo,
+            nullptr,
+            nullptr
+        }
+    }};
+
+    vkUpdateDescriptorSets(device, static_cast<std::uint32_t>(std::size(writeDescriptorsSet)), std::data(writeDescriptorsSet), 0, nullptr);
 }
 
 void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPool commandPool)
