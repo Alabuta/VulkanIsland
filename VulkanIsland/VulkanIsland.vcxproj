@@ -190,7 +190,6 @@
     <ClInclude Include="src\queue_builder.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="shader.glsl" />
     <None Include="shaders\shader.frag" />
     <None Include="shaders\shader.vert" />
   </ItemGroup>

@@ -476,7 +476,7 @@ void CreateGraphicsPipeline(VkDevice device)
         VK_TRUE,
         VK_FALSE,
         VK_POLYGON_MODE_FILL,
-        VK_CULL_MODE_BACK_BIT,
+        VK_CULL_MODE_NONE,
         VK_FRONT_FACE_CLOCKWISE,
         VK_FALSE, 0, VK_FALSE, 0,
         1
@@ -1376,8 +1376,8 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     auto currentTime = std::chrono::high_resolution_clock::now();
     auto time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-    transforms.model = glm::rotate(glm::mat4(1.f), time * glm::radians(90.f), glm::vec3{0, 0, 1});
-    transforms.view = glm::lookAt(glm::vec3{2, 2, 2}, glm::vec3{0, 0, 0}, glm::vec3{0, 0, 1});
+    transforms.model = glm::rotate(glm::mat4(1.f), time * glm::radians(90.f), glm::vec3{0, 1, 0});
+    transforms.view = glm::lookAt(glm::vec3{0, 0, 4}, glm::vec3{0, 0, 0}, glm::vec3{0, 1, 0});
 #endif
     auto const aspect = static_cast<float>(width) / static_cast<float>(height);
 
