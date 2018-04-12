@@ -17,10 +17,10 @@
 
 
 auto vertices = make_array(
-    Vertex{{+1, +1, 0}, {1, 0, 0}},
-    Vertex{{+1, -1, 0}, {0, 1, 0}},
-    Vertex{{-1, +1, 0}, {0, 0, 1}},
-    Vertex{{-1, -1, 0}, {0, 1, 1}}
+    Vertex{{+1, +1, 0}, {1, 0, 0}, {1, 1}},
+    Vertex{{+1, -1, 0}, {0, 1, 0}, {1, 0}},
+    Vertex{{-1, +1, 0}, {0, 0, 1}, {0, 1}},
+    Vertex{{-1, -1, 0}, {0, 1, 1}, {0, 0}}
 );
 
 auto indices = make_array(
@@ -435,7 +435,8 @@ void CreateGraphicsPipeline(VkDevice device)
 
     auto const attributeDescriptions = make_array(
         VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)},
-        VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)}
+        VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
+        VkVertexInputAttributeDescription{2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)}
     );
 
     VkPipelineVertexInputStateCreateInfo const vertexInputCreateInfo{

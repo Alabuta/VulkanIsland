@@ -211,6 +211,7 @@ mat4 lookAt(T &&eye, T &&center, T &&up)
 struct Vertex {
     vec3 pos;
     vec3 color;
+    vec2 uv;
 };
 
 #define GLM_FORCE_RADIANS
