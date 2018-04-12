@@ -12,7 +12,7 @@
 #include "main.h"
 
 #define STB_IMAGE_IMPLEMENTATION
-#include <stb_image.h>
+#include "stb_image.h"
 
 
 
@@ -141,7 +141,7 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
     if (!fs::exists(current_path / directory))
         directory = current_path / fs::path{"../../VulkanIsland"s} / directory;
 
-    std::ifstream file(directory / name, std::ios::binary);
+    std::ifstream file((directory / name).native(), std::ios::binary);
 
     if (!file.is_open())
         return {};
@@ -779,7 +779,7 @@ void CopyBufferToImage(VkDevice device, Q &queue, VkBuffer srcBuffer, VkImage ds
 }
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-void TransitionImageLayout(VkDevice device, Q &queue, VkImage image, VkFormat format, VkImageLayout srcLayout, VkImageLayout dstLayout)
+void TransitionImageLayout(VkDevice device, Q &queue, VkImage image, /*VkFormat format, */VkImageLayout srcLayout, VkImageLayout dstLayout)
 {
     auto commandBuffer = BeginSingleTimeCommand(device, queue);
 
@@ -1082,17 +1082,17 @@ void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImag
                 static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height),
                 VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    TransitionImageLayout(device, transferQueue, image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    TransitionImageLayout(device, transferQueue, image, /*VK_FORMAT_R8G8B8A8_UNORM, */VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     CopyBufferToImage(device, transferQueue, stagingBuffer, image, static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
 
-    TransitionImageLayout(device, transferQueue, image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TransitionImageLayout(device, transferQueue, image, /*VK_FORMAT_R8G8B8A8_UNORM, */VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     vkFreeMemory(device, stagingBufferMemory, nullptr);
     vkDestroyBuffer(device, stagingBuffer, nullptr);
 }
 
-void CreateTextureImageView(VkPhysicalDevice physicalDevice, VkDevice device, VkImageView &imageView, VkImage &image)
+void CreateTextureImageView(VkDevice device, VkImageView &imageView, VkImage &image)
 {
     imageView = CreateImageView(device, image, VK_FORMAT_R8G8B8A8_UNORM);
 }
@@ -1252,7 +1252,7 @@ void InitVulkan(GLFWwindow *window)
     CreateCommandPool(vulkanDevice->handle(), graphicsQueue, graphicsCommandPool, 0);
 
     CreateTextureImage(vulkanDevice->physical_handle(), vulkanDevice->handle(), textureImage, textureImageMemory);
-    CreateTextureImageView(vulkanDevice->physical_handle(), vulkanDevice->handle(), textureImageView, textureImage);
+    CreateTextureImageView(vulkanDevice->handle(), textureImageView, textureImage);
     CreateTextureSampler(vulkanDevice->handle(), textureSampler);
 
     CreateVertexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
@@ -1361,7 +1361,7 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
 
     // Default OpenGL perspective projection matrix.
     auto const kFOV = 72.f, zNear = .01f, zFar = 100.f;
-    auto const f = 1.f / std::tan(kFOV * kPI_DIV_180 * 0.5f);
+    [[maybe_unused]] auto const f = 1.f / std::tan(kFOV * kPI_DIV_180 * 0.5f);
 
 #if !USE_GLM
     // Default OpenGL perspective projection matrix.
@@ -1378,7 +1378,7 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
         0, 0, kB, 0
     );
 #else
-    transforms.proj = glm::perspective(glm::radians(72.f), aspect, .01f, 100.f);
+    transforms.proj = glm::perspective(glm::radians(kFOV), aspect, zNear, zFar);
     transforms.proj[1][1] *= -1;
 #endif
 

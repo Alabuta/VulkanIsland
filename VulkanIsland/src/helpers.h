@@ -2,6 +2,7 @@
 
 #include <utility>
 #include <numeric>
+#include <cmath>
 #include <type_traits>
 
 template<class C, class = void>
