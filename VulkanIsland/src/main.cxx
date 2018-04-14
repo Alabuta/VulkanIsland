@@ -17,14 +17,20 @@
 
 
 auto vertices = make_array(
-    Vertex{{+1, +1, 0}, {1, 0, 0}, {1, 1}},
-    Vertex{{+1, -1, 0}, {0, 1, 0}, {1, 0}},
-    Vertex{{-1, +1, 0}, {0, 0, 1}, {0, 1}},
-    Vertex{{-1, -1, 0}, {0, 1, 1}, {0, 0}}
+    Vertex{{+2, +1, 0}, {1, 0, 0}, {1, 1}},
+    Vertex{{+2, -1, 0}, {0, 1, 0}, {1, 0}},
+    Vertex{{-2, +1, 0}, {0, 0, 1}, {0, 1}},
+    Vertex{{-2, -1, 0}, {0, 1, 1}, {0, 0}},
+
+    Vertex{{+1, +2, -1}, {1, 0, 0}, {1, 1}},
+    Vertex{{+1, -2, -1}, {0, 1, 0}, {1, 0}},
+    Vertex{{-1, +2, -1}, {0, 0, 1}, {0, 1}},
+    Vertex{{-1, -2, -1}, {0, 1, 1}, {0, 0}}
 );
 
 auto indices = make_array(
-    0_ui16, 1_ui16, 2_ui16, 2_ui16, 1_ui16, 3_ui16
+    0_ui16, 1_ui16, 2_ui16, 2_ui16, 1_ui16, 3_ui16,
+    4_ui16, 5_ui16, 6_ui16, 6_ui16, 5_ui16, 7_ui16
 );
 
 #define USE_GLM 1
@@ -82,6 +88,10 @@ VkImage textureImage;
 VkDeviceMemory textureImageMemory;
 VkImageView textureImageView;
 VkSampler textureSampler;
+
+VkImage depthImage;
+VkDeviceMemory depthImageMemory;
+VkImageView depthImageView;
 
 
 #ifdef USE_WIN32
@@ -244,7 +254,7 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     };
 }
 
-[[nodiscard]] VkImageView CreateImageView(VkDevice device, VkImage &image, VkFormat format)
+[[nodiscard]] VkImageView CreateImageView(VkDevice device, VkImage &image, VkFormat format, VkImageAspectFlags aspectFlags)
 {
     VkImageViewCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -252,8 +262,8 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
         image,
         VK_IMAGE_VIEW_TYPE_2D,
         format,
-        {VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY},
-        {VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1}
+        { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
+        { aspectFlags, 0, 1, 0, 1 }
     };
 
     VkImageView imageView;
@@ -264,6 +274,45 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     return imageView;
 }
 
+template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
+[[nodiscard]] std::optional<VkFormat> FindSupportedFormat(VkPhysicalDevice physicalDevice, T &&candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
+{
+    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkFormat>, "iterable object does not contain 'VkFormat' elements");
+
+    auto it_format = std::find_if(std::cbegin(candidates), std::cend(candidates), [physicalDevice, tiling, features] (auto candidate)
+    {
+        VkFormatProperties properties;
+        vkGetPhysicalDeviceFormatProperties(physicalDevice, candidate, &properties);
+
+        switch (tiling) {
+            case VK_IMAGE_TILING_LINEAR:
+                return (properties.linearTilingFeatures & features) == features;
+
+            case VK_IMAGE_TILING_OPTIMAL:
+                return (properties.optimalTilingFeatures & features) == features;
+
+            default:
+                return false;
+        }
+    });
+
+    return it_format != std::cend(candidates) ? *it_format : std::optional<VkFormat>();
+}
+
+[[nodiscard]] VkFormat FindDepthFormat(VkPhysicalDevice physicalDevice)
+{
+    auto const format = FindSupportedFormat(
+        physicalDevice,
+        make_array(VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT),
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+    );
+
+    if (!format)
+        throw std::runtime_error("failed to find format for depth attachement"s);
+
+    return format.value();
+}
 
 void CreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkSwapchainKHR &swapChain)
 {
@@ -329,7 +378,7 @@ void CreateSwapChainImageViews(VkDevice device, T &&swapChainImages)
     swapChainImageViews.clear();
 
     for (auto &&swapChainImage : swapChainImages) {
-        auto imageView = CreateImageView(device, swapChainImage, swapChainImageFormat);
+        auto imageView = CreateImageView(device, swapChainImage, swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT);
         swapChainImageViews.emplace_back(std::move(imageView));
     }
 }
@@ -362,6 +411,15 @@ void CleanupSwapChain(VkDevice device, VkSwapchainKHR swapChain, VkPipeline grap
 
     if (swapChain)
         vkDestroySwapchainKHR(device, swapChain, nullptr);
+
+    if (depthImageView)
+        vkDestroyImageView(vulkanDevice->handle(), depthImageView, nullptr);
+
+    if (depthImageMemory)
+        vkFreeMemory(vulkanDevice->handle(), depthImageMemory, nullptr);
+
+    if (depthImage)
+        vkDestroyImage(vulkanDevice->handle(), depthImage, nullptr);
 }
 
 
@@ -380,7 +438,7 @@ void CreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout &descripto
         }
     }};
 
-    VkDescriptorSetLayoutCreateInfo constexpr createInfo{
+    VkDescriptorSetLayoutCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
         nullptr, 0,
         static_cast<std::uint32_t>(std::size(layoutBindings)), std::data(layoutBindings)
@@ -476,7 +534,7 @@ void CreateGraphicsPipeline(VkDevice device)
         VK_TRUE,
         VK_FALSE,
         VK_POLYGON_MODE_FILL,
-        VK_CULL_MODE_NONE,
+        VK_CULL_MODE_BACK_BIT,
         VK_FRONT_FACE_CLOCKWISE,
         VK_FALSE, 0, VK_FALSE, 0,
         1
@@ -497,10 +555,9 @@ void CreateGraphicsPipeline(VkDevice device)
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         nullptr, 0,
         VK_TRUE, VK_TRUE,
-        VK_COMPARE_OP_GREATER,
+        VK_COMPARE_OP_LESS,
         VK_FALSE,
-        VK_FALSE,
-        VkStencilOpState{}, VkStencilOpState{},
+        VK_FALSE, VkStencilOpState{}, VkStencilOpState{},
         0, 0
     };
 
@@ -561,7 +618,7 @@ void CreateGraphicsPipeline(VkDevice device)
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
-void CreateRenderPass(VkDevice device)
+void CreateRenderPass(VkPhysicalDevice physicalDevice, VkDevice device)
 {
     VkAttachmentDescription const colorAttachment{
         VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
@@ -572,16 +629,30 @@ void CreateRenderPass(VkDevice device)
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
     };
 
-    VkAttachmentReference constexpr attachementReference{
+    VkAttachmentReference constexpr colorAttachmentReference{
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+    };
+
+    VkAttachmentDescription const depthAttachement{
+        VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
+        FindDepthFormat(physicalDevice),
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+    };
+
+    VkAttachmentReference constexpr depthAttachementReference{
+        1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
     };
 
     VkSubpassDescription const subpassDescription{
         0,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         0, nullptr,
-        1, &attachementReference,
-        nullptr, nullptr,
+        1, &colorAttachmentReference,
+        nullptr,
+        &depthAttachementReference,
         0, nullptr
     };
 
@@ -592,10 +663,12 @@ void CreateRenderPass(VkDevice device)
         0
     };
 
+    auto const attachments = make_array(colorAttachment, depthAttachement);
+
     VkRenderPassCreateInfo const renderPassCreateInfo{
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
         nullptr, 0,
-        1, &colorAttachment,
+        static_cast<std::uint32_t>(std::size(attachments)), std::data(attachments),
         1, &subpassDescription,
         1, &subpassDependency
     };
@@ -612,7 +685,7 @@ void CreateFramebuffers(VkRenderPass renderPass, T &&swapChainImageViews, VkDevi
     swapChainFramebuffers.clear();
 
     for (auto &&imageView : swapChainImageViews) {
-        auto const attachements = make_array(imageView);
+        auto const attachements = make_array(imageView, depthImageView);
 
         VkFramebufferCreateInfo const createInfo{
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -787,7 +860,7 @@ void CopyBufferToImage(VkDevice device, Q &queue, VkBuffer srcBuffer, VkImage ds
 }
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-void TransitionImageLayout(VkDevice device, Q &queue, VkImage image, /*VkFormat format, */VkImageLayout srcLayout, VkImageLayout dstLayout)
+void TransitionImageLayout(VkDevice device, Q &queue, VkImage image, VkFormat format, VkImageLayout srcLayout, VkImageLayout dstLayout)
 {
     auto commandBuffer = BeginSingleTimeCommand(device, queue);
 
@@ -800,6 +873,13 @@ void TransitionImageLayout(VkDevice device, Q &queue, VkImage image, /*VkFormat 
         image,
         { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
     };
+
+    if (dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+
+        if (format == VK_FORMAT_D32_SFLOAT_S8_UINT || format == VK_FORMAT_D24_UNORM_S8_UINT)
+            barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
+    }
 
     VkPipelineStageFlags srcStageFlags, dstStageFlags;
 
@@ -817,6 +897,14 @@ void TransitionImageLayout(VkDevice device, Q &queue, VkImage image, /*VkFormat 
 
         srcStageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
         dstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+    }
+
+    else if (srcLayout == VK_IMAGE_LAYOUT_UNDEFINED && dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+        barrier.srcAccessMask = 0;
+        barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+        srcStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        dstStageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
     }
 
     else throw std::logic_error("unsupported layout transition"s);
@@ -890,7 +978,7 @@ void CreateDescriptorPool(VkDevice device, VkDescriptorPool &descriptorPool)
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
     }};
 
-    VkDescriptorPoolCreateInfo constexpr createInfo{
+    VkDescriptorPoolCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         nullptr, 0,
         1,
@@ -979,13 +1067,18 @@ void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPoo
 
         VkClearValue constexpr clearColor{{{0.f, 0.f, 0.f, 1.f}}};
 
+        auto constexpr clearColors = make_array(
+            VkClearValue{{{0.f, 0.f, 0.f, 1.f}}},
+            VkClearValue{{{1.f, 0.f}}}
+        );
+
         VkRenderPassBeginInfo const renderPassInfo{
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             nullptr,
             renderPass,
             swapChainFramebuffers.at(i++),
             {{0, 0}, swapChainExtent},
-            1, &clearColor
+            static_cast<std::uint32_t>(std::size(clearColors)), std::data(clearColors)
         };
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -1025,29 +1118,29 @@ void CreateSemaphores(VkDevice device)
 
 
 void CreateImage(VkPhysicalDevice physicalDevice, VkDevice device,
-                 VkImage &textureImage, VkDeviceMemory &deviceMemory, std::uint32_t width, std::uint32_t height,
-                 VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+                 VkImage &image, VkDeviceMemory &deviceMemory, std::uint32_t width, std::uint32_t height,
+                 VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
 {
     VkImageCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         nullptr, 0,
         VK_IMAGE_TYPE_2D,
-        VK_FORMAT_R8G8B8A8_UNORM,
+        format,
         {width, height, 1},
         1, 1,
         VK_SAMPLE_COUNT_1_BIT,
-        VK_IMAGE_TILING_OPTIMAL,
+        tiling,
         usage,
         VK_SHARING_MODE_EXCLUSIVE,
         0, nullptr,
         VK_IMAGE_LAYOUT_UNDEFINED
     };
 
-    if (auto result = vkCreateImage(device, &createInfo, nullptr, &textureImage); result != VK_SUCCESS)
+    if (auto result = vkCreateImage(device, &createInfo, nullptr, &image); result != VK_SUCCESS)
         throw std::runtime_error("failed to create image: "s + std::to_string(result));
 
     VkMemoryRequirements memoryReqirements;
-    vkGetImageMemoryRequirements(device, textureImage, &memoryReqirements);
+    vkGetImageMemoryRequirements(device, image, &memoryReqirements);
 
     std::uint32_t memTypeIndex = 0;
 
@@ -1066,22 +1159,25 @@ void CreateImage(VkPhysicalDevice physicalDevice, VkDevice device,
     if (auto result = vkAllocateMemory(device, &memAllocInfo, nullptr, &deviceMemory); result != VK_SUCCESS)
         throw std::runtime_error("failed to allocate image buffer memory: "s + std::to_string(result));
 
-    if (auto result = vkBindImageMemory(device, textureImage, deviceMemory, 0); result != VK_SUCCESS)
+    if (auto result = vkBindImageMemory(device, image, deviceMemory, 0); result != VK_SUCCESS)
         throw std::runtime_error("failed to bind image buffer memory: "s + std::to_string(result));
 }
 
-void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImage &image, VkDeviceMemory &textureImageMemory)
+void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImage &image, VkDeviceMemory &imageMemory)
 {
     auto current_path = fs::current_path();
 
     fs::path directory{"textures"s};
     fs::path name{"texture.jpg"s};
 
+    auto path = "./textures/texture.jpg"s;
+
     if (!fs::exists(current_path / directory))
-        directory = current_path / fs::path{"../../VulkanIsland"s} / directory;
+        path = "../../VulkanIsland/textures/texture.jpg"s;
+        // directory = current_path / fs::path{"../../VulkanIsland"s} / directory;
 
     int width, height, channels;
-    auto pixels = stbi_load("./textures/texture.jpg", &width, &height, &channels, STBI_rgb_alpha);
+    auto pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
 
     if (!pixels)
         throw std::runtime_error("failed to load an image"s);
@@ -1104,15 +1200,14 @@ void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImag
 
     stbi_image_free(pixels);
 
-    CreateImage(vulkanDevice->physical_handle(), vulkanDevice->handle(), image, textureImageMemory,
-                static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height),
-                VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    CreateImage(physicalDevice, device, image, imageMemory, static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height), VK_FORMAT_R8G8B8A8_UNORM,
+                VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    TransitionImageLayout(device, transferQueue, image, /*VK_FORMAT_R8G8B8A8_UNORM, */VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    TransitionImageLayout(device, transferQueue, image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     CopyBufferToImage(device, transferQueue, stagingBuffer, image, static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
 
-    TransitionImageLayout(device, transferQueue, image, /*VK_FORMAT_R8G8B8A8_UNORM, */VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TransitionImageLayout(device, transferQueue, image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     vkFreeMemory(device, stagingBufferMemory, nullptr);
     vkDestroyBuffer(device, stagingBuffer, nullptr);
@@ -1120,7 +1215,7 @@ void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImag
 
 void CreateTextureImageView(VkDevice device, VkImageView &imageView, VkImage &image)
 {
-    imageView = CreateImageView(device, image, VK_FORMAT_R8G8B8A8_UNORM);
+    imageView = CreateImageView(device, image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 void CreateTextureSampler(VkDevice device, VkSampler &sampler)
@@ -1145,6 +1240,20 @@ void CreateTextureSampler(VkDevice device, VkSampler &sampler)
         throw std::runtime_error("failed to create sampler: "s + std::to_string(result));
 }
 
+
+void CreateDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, VkImage &image, VkDeviceMemory &imageMemory, VkImageView &imageView)
+{
+    auto const format = FindDepthFormat(physicalDevice);
+
+    CreateImage(physicalDevice, device, image, imageMemory, swapChainExtent.width, swapChainExtent.height, format,
+                VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+
+    imageView = CreateImageView(device, image, format, VK_IMAGE_ASPECT_DEPTH_BIT);
+
+    TransitionImageLayout(device, transferQueue, image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+}
+
+
 void RecreateSwapChain()
 {
     if (WIDTH < 1 || HEIGHT < 1) return;
@@ -1156,8 +1265,10 @@ void RecreateSwapChain()
     CreateSwapChain(vulkanDevice->physical_handle(), vulkanDevice->handle(), surface, swapChain);
     CreateSwapChainImageViews(vulkanDevice->handle(), swapChainImages);
 
-    CreateRenderPass(vulkanDevice->handle());
+    CreateRenderPass(vulkanDevice->physical_handle(), vulkanDevice->handle());
     CreateGraphicsPipeline(vulkanDevice->handle());
+
+    CreateDepthResources(vulkanDevice->physical_handle(), vulkanDevice->handle(), depthImage, depthImageMemory, depthImageView);
 
     CreateFramebuffers(renderPass, swapChainImageViews, vulkanDevice->handle());
 
@@ -1269,13 +1380,15 @@ void InitVulkan(GLFWwindow *window)
 
     CreateDescriptorSetLayout(vulkanDevice->handle(), descriptorSetLayout);
 
-    CreateRenderPass(vulkanDevice->handle());
+    CreateRenderPass(vulkanDevice->physical_handle(), vulkanDevice->handle());
     CreateGraphicsPipeline(vulkanDevice->handle());
-
-    CreateFramebuffers(renderPass, swapChainImageViews, vulkanDevice->handle());
 
     CreateCommandPool(vulkanDevice->handle(), transferQueue, transferCommandPool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
     CreateCommandPool(vulkanDevice->handle(), graphicsQueue, graphicsCommandPool, 0);
+
+    CreateDepthResources(vulkanDevice->physical_handle(), vulkanDevice->handle(), depthImage, depthImageMemory, depthImageView);
+
+    CreateFramebuffers(renderPass, swapChainImageViews, vulkanDevice->handle());
 
     CreateTextureImage(vulkanDevice->physical_handle(), vulkanDevice->handle(), textureImage, textureImageMemory);
     CreateTextureImageView(vulkanDevice->handle(), textureImageView, textureImage);
@@ -1376,8 +1489,8 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     auto currentTime = std::chrono::high_resolution_clock::now();
     auto time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-    transforms.model = glm::rotate(glm::mat4(1.f), time * glm::radians(90.f), glm::vec3{0, 1, 0});
-    transforms.view = glm::lookAt(glm::vec3{0, 0, 4}, glm::vec3{0, 0, 0}, glm::vec3{0, 1, 0});
+    transforms.model = glm::mat4(1.f); // glm::rotate(glm::mat4(1.f), time * glm::radians(90.f), glm::vec3{0, 1, 0});
+    transforms.view = glm::lookAt(glm::vec3{1, 1, 4}, glm::vec3{0, 0, 0}, glm::vec3{0, 1, 0});
 #endif
     auto const aspect = static_cast<float>(width) / static_cast<float>(height);
 
