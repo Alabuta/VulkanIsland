@@ -1386,10 +1386,11 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     [[maybe_unused]] auto constexpr kPI_DIV_180_INV = 57.2957795130823208767f;
 
     // Default OpenGL perspective projection matrix.
-    auto const kFOV = 72.f, zNear = .01f, zFar = 100.f;
-    [[maybe_unused]] auto const f = 1.f / std::tan(kFOV * kPI_DIV_180 * 0.5f);
+    auto constexpr kFOV = 72.f, zNear = .01f, zFar = 100.f;
 
 #if !USE_GLM
+    auto const f = 1.f / std::tan(kFOV * kPI_DIV_180 * 0.5f);
+
     // Default OpenGL perspective projection matrix.
     auto kA = -(zFar + zNear) / (zFar - zNear);
     auto kB = -2.f * zFar * zNear / (zFar - zNear);

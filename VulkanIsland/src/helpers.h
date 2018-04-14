@@ -11,8 +11,8 @@ struct is_iterable : std::false_type {};
 template<class C>
 struct is_iterable<C, std::void_t<decltype(std::cbegin(std::declval<C>()), std::cend(std::declval<C>()))>> : std::true_type {};
 
-template<class T>
-constexpr bool is_iterable_v = is_iterable<T>::value;
+template<class C>
+constexpr bool is_iterable_v = is_iterable<C>::value;
 
 template<class C, class = void>
 struct is_container : std::false_type {};
@@ -20,8 +20,8 @@ struct is_container : std::false_type {};
 template<class C>
 struct is_container<C, std::void_t<decltype(std::size(std::declval<C>()), std::data(std::declval<C>()))>> : std::true_type {};
 
-template<class T>
-constexpr bool is_container_v = is_container<T>::value;
+template<class C>
+constexpr bool is_container_v = is_container<C>::value;
 
 template<class T> struct always_false : std::false_type {};
 
