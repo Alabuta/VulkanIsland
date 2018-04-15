@@ -208,13 +208,10 @@ mat4 lookAt(T &&eye, T &&center, T &&up)
     return mat4(xAxis, yAxis, zAxis, position);
 }
 
-struct Vertex {
-    vec3 pos;
-    vec3 color;
-    vec2 uv;
-};
-
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+
+#define GLM_ENABLE_EXPERIMENTAL
+#include <glm/gtx/hash.hpp>

@@ -9,13 +9,47 @@
 
 #include <chrono>
 #include <cmath>
+#include <unordered_map>
+
 #include "main.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#define TINYOBJLOADER_IMPLEMENTATION
+#include "tiny_obj_loader.h"
 
 
+struct Vertex {
+    glm::vec3 pos;
+    glm::vec3 color;
+    glm::vec2 uv;
+
+    template<class P, class C, class UV, typename std::enable_if_t<are_same_types_v<glm::vec3, std::decay_t<P>, std::decay_t<C>> && std::is_same_v<glm::vec2, std::decay_t<UV>>>...>
+    Vertex(P &&position, C &&color, UV &&uv)
+    {
+        pos = std::forward<P>(position);
+        color = std::forward<C>(color);
+        uv = std::forward<UV>(uv);
+    }
+
+    template<class T, typename std::enable_if_t<std::is_same_v<Vertex, std::decay_t<T>>>...>
+    bool operator== (T &&rhs) const
+    {
+        return pos == rhs.pos && color == rhs.color && uv == rhs.uv;
+    }
+};
+
+namespace std {
+template<> struct hash<Vertex> {
+    std::size_t operator()(Vertex const& vertex) const
+    {
+        return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.uv) << 1);
+    }
+};
+}
+
+#if 0
 auto vertices = make_array(
     Vertex{{+2, +1, 0}, {1, 0, 0}, {1, 1}},
     Vertex{{+2, -1, 0}, {0, 1, 0}, {1, 0}},
@@ -32,6 +66,10 @@ auto indices = make_array(
     0_ui16, 1_ui16, 2_ui16, 2_ui16, 1_ui16, 3_ui16,
     4_ui16, 5_ui16, 6_ui16, 6_ui16, 5_ui16, 7_ui16
 );
+#else
+std::vector<Vertex> vertices;
+std::vector<std::uint32_t> indices;
+#endif
 
 #define USE_GLM 1
 
@@ -534,8 +572,8 @@ void CreateGraphicsPipeline(VkDevice device)
         VK_TRUE,
         VK_FALSE,
         VK_POLYGON_MODE_FILL,
-        VK_CULL_MODE_BACK_BIT,
-        VK_FRONT_FACE_CLOCKWISE,
+        VK_CULL_MODE_NONE,
+        VK_FRONT_FACE_COUNTER_CLOCKWISE,
         VK_FALSE, 0, VK_FALSE, 0,
         1
     };
@@ -914,6 +952,56 @@ void TransitionImageLayout(VkDevice device, Q &queue, VkImage image, VkFormat fo
     EndSingleTimeCommad(device, queue, commandBuffer);
 }
 
+void LoadModel()
+{
+    tinyobj::attrib_t attrib;
+    std::vector<tinyobj::shape_t> shapes;
+    std::vector<tinyobj::material_t> materials;
+    std::string err;
+
+    auto current_path = fs::current_path();
+
+    fs::path directory{"meshes"s};
+    fs::path name{"chalet.obj"s};
+
+    if (!fs::exists(current_path / directory))
+        directory = current_path / fs::path{"../../VulkanIsland"s} / directory;
+
+    auto path = (directory / name).string();
+
+    if (auto result = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, path.c_str()); !result)
+        throw std::runtime_error(err);
+
+    std::unordered_map<Vertex, std::uint32_t> unique_vertices;
+
+    for (auto const &shape : shapes) {
+        for (auto const &index : shape.mesh.indices) {
+            auto vertex = Vertex{
+                glm::vec3{
+                    attrib.vertices.at(index.vertex_index * 3 + 0),
+                    attrib.vertices.at(index.vertex_index * 3 + 1),
+                    attrib.vertices.at(index.vertex_index * 3 + 2)
+                },
+
+                glm::vec3{1.f, 1.f, 1.f},
+
+                glm::vec2{
+                    attrib.texcoords.at(index.texcoord_index * 2 + 0),
+                    1.f - attrib.texcoords.at(index.texcoord_index * 2 + 1)
+                }
+            };
+
+            indices.push_back(static_cast<std::uint32_t>(indices.size()));
+
+            if (unique_vertices.count(vertex) != 0)
+                continue;
+
+            unique_vertices[vertex] = static_cast<std::uint32_t>(std::size(vertices));
+            vertices.push_back(std::move(vertex));
+        }
+    }
+}
+
 void CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
 {
     VkDeviceSize bufferSize = sizeof(decltype(vertices)::value_type) * std::size(vertices);
@@ -1091,7 +1179,8 @@ void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPoo
         auto const offsets = make_array(VkDeviceSize{0});
 
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, std::data(vertexBuffers), std::data(offsets));
-        vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, VK_INDEX_TYPE_UINT16);
+        auto constexpr index_type = std::is_same_v<decltype(indices)::value_type, std::uint32_t> ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
+        vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, index_type);
 
         vkCmdDrawIndexed(commandBuffer, static_cast<std::uint32_t>(std::size(indices)), 1, 0, 0, 0);
 
@@ -1168,13 +1257,12 @@ void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImag
     auto current_path = fs::current_path();
 
     fs::path directory{"textures"s};
-    fs::path name{"texture.jpg"s};
-
-    auto path = "./textures/texture.jpg"s;
+    fs::path name{"chalet.jpg"s};
 
     if (!fs::exists(current_path / directory))
-        path = "../../VulkanIsland/textures/texture.jpg"s;
-        // directory = current_path / fs::path{"../../VulkanIsland"s} / directory;
+        directory = current_path / fs::path{"../../VulkanIsland"s} / directory;
+
+    auto path = (directory / name).string();
 
     int width, height, channels;
     auto pixels = stbi_load(path.c_str(), &width, &height, &channels, STBI_rgb_alpha);
@@ -1394,6 +1482,7 @@ void InitVulkan(GLFWwindow *window)
     CreateTextureImageView(vulkanDevice->handle(), textureImageView, textureImage);
     CreateTextureSampler(vulkanDevice->handle(), textureSampler);
 
+    LoadModel();
     CreateVertexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
     CreateIndexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
 
@@ -1489,8 +1578,8 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     auto currentTime = std::chrono::high_resolution_clock::now();
     auto time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-    transforms.model = glm::mat4(1.f); // glm::rotate(glm::mat4(1.f), time * glm::radians(90.f), glm::vec3{0, 1, 0});
-    transforms.view = glm::lookAt(glm::vec3{1, 1, 4}, glm::vec3{0, 0, 0}, glm::vec3{0, 1, 0});
+    transforms.model = glm::rotate(glm::mat4(1.f), time * glm::radians(90.f), glm::vec3{0, 0, 1});
+    transforms.view = glm::lookAt(glm::vec3{2, 2, 2}, glm::vec3{0, 0, 0}, glm::vec3{0, 0, 1});
 #endif
     auto const aspect = static_cast<float>(width) / static_cast<float>(height);
 
