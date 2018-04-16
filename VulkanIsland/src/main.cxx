@@ -13,41 +13,22 @@
 
 #include "main.h"
 
+#include "mesh_loader.h"
+
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
 
-
-struct Vertex {
-    glm::vec3 pos;
-    glm::vec3 color;
-    glm::vec2 uv;
-
-    template<class P, class C, class UV, typename std::enable_if_t<are_same_types_v<glm::vec3, std::decay_t<P>, std::decay_t<C>> && std::is_same_v<glm::vec2, std::decay_t<UV>>>...>
-    Vertex(P &&position, C &&color, UV &&uv)
-    {
-        pos = std::forward<P>(position);
-        color = std::forward<C>(color);
-        uv = std::forward<UV>(uv);
-    }
-
-    template<class T, typename std::enable_if_t<std::is_same_v<Vertex, std::decay_t<T>>>...>
-    bool operator== (T &&rhs) const
-    {
-        return pos == rhs.pos && color == rhs.color && uv == rhs.uv;
-    }
-};
-
-namespace std {
+/*namespace std {
 template<> struct hash<Vertex> {
     std::size_t operator()(Vertex const& vertex) const
     {
-        return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.color) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.uv) << 1);
+        return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.uv) << 1);
     }
 };
-}
+}*/
 
 #if 0
 auto vertices = make_array(
@@ -954,6 +935,12 @@ void TransitionImageLayout(VkDevice device, Q &queue, VkImage image, VkFormat fo
 
 void LoadModel()
 {
+    std::uint32_t count = 0;
+
+    if (auto result = LoadModel("chalet.obj"sv, count, vertices); !result)
+        throw std::runtime_error("failed to load mesh"s);
+
+#if 0
     tinyobj::attrib_t attrib;
     std::vector<tinyobj::shape_t> shapes;
     std::vector<tinyobj::material_t> materials;
@@ -1000,6 +987,7 @@ void LoadModel()
             vertices.push_back(std::move(vertex));
         }
     }
+#endif
 }
 
 void CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
