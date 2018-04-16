@@ -208,6 +208,29 @@ mat4 lookAt(T &&eye, T &&center, T &&up)
     return mat4(xAxis, yAxis, zAxis, position);
 }
 
+
+struct Vertex {
+    vec3 pos;
+    vec3 normal;
+    vec2 uv;
+
+    Vertex() = default;
+
+    template<class P, class N, class UV, typename std::enable_if_t<are_same_types_v<vec3, std::decay_t<P>, std::decay_t<N>> && std::is_same_v<vec2, std::decay_t<UV>>>...>
+    constexpr Vertex(P &&position, N &&normal, UV &&uv)
+    {
+        pos = std::forward<P>(position);
+        normal = std::forward<N>(normal);
+        uv = std::forward<UV>(uv);
+    }
+
+    template<class T, typename std::enable_if_t<std::is_same_v<Vertex, std::decay_t<T>>>...>
+    constexpr bool operator== (T &&rhs) const
+    {
+        return pos == rhs.pos && normal == rhs.normal && uv == rhs.uv;
+    }
+};
+
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <glm/glm.hpp>

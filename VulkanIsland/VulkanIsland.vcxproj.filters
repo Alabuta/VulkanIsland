@@ -23,6 +23,9 @@
     <ClCompile Include="src\debug.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\mesh_loader.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\helpers.h">
@@ -47,6 +50,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\queue_builder.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\mesh_loader.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
