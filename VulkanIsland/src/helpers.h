@@ -217,11 +217,11 @@ struct Vertex {
     Vertex() = default;
 
     template<class P, class N, class UV, typename std::enable_if_t<are_same_types_v<vec3, std::decay_t<P>, std::decay_t<N>> && std::is_same_v<vec2, std::decay_t<UV>>>...>
-    constexpr Vertex(P &&position, N &&normal, UV &&uv)
+    constexpr Vertex(P &&_position, N &&_normal, UV &&_uv)
     {
-        pos = std::forward<P>(position);
-        normal = std::forward<N>(normal);
-        uv = std::forward<UV>(uv);
+        pos = std::forward<P>(_position);
+        normal = std::forward<N>(_normal);
+        uv = std::forward<UV>(_uv);
     }
 
     template<class T, typename std::enable_if_t<std::is_same_v<Vertex, std::decay_t<T>>>...>

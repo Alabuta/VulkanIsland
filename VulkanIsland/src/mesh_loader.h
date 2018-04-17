@@ -86,12 +86,8 @@ bool LoadModel(std::string_view _name, std::uint32_t &count, std::vector<T> &ver
 
     if (!LoadBinaryModel(path, vertex_buffer)) {
         if (LoadOBJ(path, positions, normals, uvs, faces)) {
-            /* for (auto &face : faces)
-                std::transform(face.begin(), face.end(), face.begin(), [] (auto &&a) { return a - 1; });*/
-
             for (auto &&face : faces) {
                 std::transform(face.begin(), face.end(), face.begin(), [] (auto &&a) { return a - 1; });
-                // std::reverse(face.begin(), face.end());
 
                 for (auto it_index = face.cbegin(); it_index < face.cend(); std::advance(it_index, 1)) {
                     auto position = positions.at(*it_index);
