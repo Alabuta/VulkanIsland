@@ -5,7 +5,7 @@
 
 bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec3> &normals, std::vector<vec2> &uvs, std::vector<std::vector<std::size_t>> &faces)
 {
-    std::ifstream file(path, std::ios::in);
+    std::ifstream file(path.native(), std::ios::in);
 
     if (!file.is_open()) {
         std::cerr << "can't open file: "s << path << std::endl;

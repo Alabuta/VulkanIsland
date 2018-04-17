@@ -24,7 +24,7 @@ bool SaveBinaryModel(fs::path path, std::vector<T> const &vertex_buffer)
 {
     using namespace std::string_literals;
 
-    std::ofstream file(path += fs::path{".bin"s}, std::ios::out | std::ios::trunc | std::ios::binary);
+    std::ofstream file((path += fs::path{".bin"s}).native(), std::ios::out | std::ios::trunc | std::ios::binary);
 
     if (!file.is_open()) {
         std::cerr << "can't open file: "s << path << std::endl;
@@ -44,7 +44,7 @@ bool LoadBinaryModel(fs::path path, std::vector<T> &vertex_buffer)
 {
     using namespace std::string_literals;
 
-    std::ifstream file(path += fs::path{".bin"s}, std::ios::in | std::ios::binary);
+    std::ifstream file((path += fs::path{".bin"s}).native(), std::ios::in | std::ios::binary);
 
     if (!file.is_open()) {
         std::cerr << "can't open file: "s << path << std::endl;
