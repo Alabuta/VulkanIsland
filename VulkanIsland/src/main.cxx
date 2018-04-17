@@ -533,7 +533,7 @@ void CreateGraphicsPipeline(VkDevice device)
     VkViewport const viewport{
         0, 0,
         static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height),
-        0, 1
+        1, 0
     };
 
     VkRect2D const scissor{
@@ -574,10 +574,10 @@ void CreateGraphicsPipeline(VkDevice device)
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         nullptr, 0,
         VK_TRUE, VK_TRUE,
-        VK_COMPARE_OP_LESS,
+        VK_COMPARE_OP_GREATER,
         VK_FALSE,
         VK_FALSE, VkStencilOpState{}, VkStencilOpState{},
-        0, 1
+        1, 0
     };
 
     VkPipelineColorBlendAttachmentState constexpr colorBlendAttachment{
@@ -1142,8 +1142,8 @@ void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPoo
             throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
 
         auto constexpr clearColors = make_array(
-            VkClearValue{{{0.44f, 0.44f, 0.44f, 1.f}}},
-            VkClearValue{{{1.f, 0}}}
+            VkClearValue{{{0.64f, 0.64f, 0.64f, 1.f}}},
+            VkClearValue{{{0.f, 0}}}
         );
 
         VkRenderPassBeginInfo const renderPassInfo{
