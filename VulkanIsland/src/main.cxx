@@ -512,7 +512,7 @@ void CreateGraphicsPipeline(VkDevice device)
 
     auto const attributeDescriptions = make_array(
         VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)},
-        VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, color)},
+        VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
         VkVertexInputAttributeDescription{2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)}
     );
 
@@ -1141,11 +1141,9 @@ void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPoo
         if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
             throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
 
-        VkClearValue constexpr clearColor{{{0.f, 0.f, 0.f, 1.f}}};
-
         auto constexpr clearColors = make_array(
-            VkClearValue{{{0.f, 0.f, 0.f, 1.f}}},
-            VkClearValue{{{1.f, 0.f}}}
+            VkClearValue{{{0.44f, 0.44f, 0.44f, 1.f}}},
+            VkClearValue{{{1.f, 0}}}
         );
 
         VkRenderPassBeginInfo const renderPassInfo{
@@ -1566,8 +1564,8 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     auto currentTime = std::chrono::high_resolution_clock::now();
     auto time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-    transforms.model = glm::rotate(glm::mat4(1.f), time * glm::radians(90.f), glm::vec3{0, 0, 1});
-    transforms.view = glm::lookAt(glm::vec3{2, 2, 2}, glm::vec3{0, 0, 0}, glm::vec3{0, 0, 1});
+    transforms.model = glm::rotate(glm::mat4(1.f), .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});
+    transforms.view = glm::lookAt(glm::vec3{1.2f, 0.8f, 1.2f}, glm::vec3{0, .4f, 0}, glm::vec3{0, 1, 0});
 #endif
     auto const aspect = static_cast<float>(width) / static_cast<float>(height);
 
@@ -1576,7 +1574,7 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     [[maybe_unused]] auto constexpr kPI_DIV_180_INV = 57.2957795130823208767f;
 
     // Default OpenGL perspective projection matrix.
-    auto constexpr kFOV = 72.f, zNear = .01f, zFar = 100.f;
+    auto constexpr kFOV = 72.f, zNear = .01f, zFar = 1000.f;
 
 #if !USE_GLM
     auto const f = 1.f / std::tan(kFOV * kPI_DIV_180 * 0.5f);
