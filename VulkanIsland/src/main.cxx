@@ -533,7 +533,7 @@ void CreateGraphicsPipeline(VkDevice device)
     VkViewport const viewport{
         0, 0,
         static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height),
-        1, 0
+        0, 1
     };
 
     VkRect2D const scissor{
@@ -554,7 +554,7 @@ void CreateGraphicsPipeline(VkDevice device)
         VK_FALSE,
         VK_POLYGON_MODE_FILL,
         VK_CULL_MODE_NONE,
-        VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        VK_FRONT_FACE_CLOCKWISE,
         VK_FALSE, 0, VK_FALSE, 0,
         1
     };
@@ -577,7 +577,7 @@ void CreateGraphicsPipeline(VkDevice device)
         VK_COMPARE_OP_LESS,
         VK_FALSE,
         VK_FALSE, VkStencilOpState{}, VkStencilOpState{},
-        0, 0
+        0, 1
     };
 
     VkPipelineColorBlendAttachmentState constexpr colorBlendAttachment{
@@ -1165,10 +1165,11 @@ void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPoo
         auto const offsets = make_array(VkDeviceSize{0});
 
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, std::data(vertexBuffers), std::data(offsets));
-        auto constexpr index_type = std::is_same_v<decltype(indices)::value_type, std::uint32_t> ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
+        /*auto constexpr index_type = std::is_same_v<decltype(indices)::value_type, std::uint32_t> ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
         vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, index_type);
 
-        vkCmdDrawIndexed(commandBuffer, static_cast<std::uint32_t>(std::size(indices)), 1, 0, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, static_cast<std::uint32_t>(std::size(indices)), 1, 0, 0, 0);*/
+        vkCmdDraw(commandBuffer, static_cast<std::uint32_t>(std::size(vertices)), 1, 0, 0);
 
         vkCmdEndRenderPass(commandBuffer);
 
@@ -1470,7 +1471,7 @@ void InitVulkan(GLFWwindow *window)
 
     LoadModel();
     CreateVertexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
-    CreateIndexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
+    //CreateIndexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
 
     CreateUniformBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
 
