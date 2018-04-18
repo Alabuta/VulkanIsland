@@ -47,32 +47,33 @@ bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec
              std::vector<index_t> &indices);
 
 
+
 template<typename T>
-bool SaveBinaryModel(fs::path path, std::vector<T> const &vertex_buffer)
+bool SaveBinaryModel(fs::path path, std::vector<T> const &vertices)
 {
     using namespace std::string_literals;
 
-    std::ofstream file(path += fs::path{".bin"s}, std::ios::out | std::ios::trunc | std::ios::binary);
+    std::ofstream file((path += fs::path{".bin"s}).native(), std::ios::out | std::ios::trunc | std::ios::binary);
 
     if (!file.is_open()) {
         std::cerr << "can't open file: "s << path << std::endl;
         return false;
     }
 
-    auto count = static_cast<std::size_t>(std::size(vertex_buffer));
+    auto count = static_cast<std::size_t>(std::size(vertices));
     file.write(reinterpret_cast<char const *>(&count), sizeof(count));
 
-    file.write(reinterpret_cast<char const *>(std::data(vertex_buffer)), std::size(vertex_buffer) * sizeof(std::decay_t<T>));
+    file.write(reinterpret_cast<char const *>(std::data(vertices)), std::size(vertices) * sizeof(std::decay_t<T>));
 
     return true;
 }
 
 template<typename T>
-bool LoadBinaryModel(fs::path path, std::vector<T> &vertex_buffer)
+bool LoadBinaryModel(fs::path path, std::vector<T> &vertices)
 {
     using namespace std::string_literals;
 
-    std::ifstream file(path += fs::path{".bin"s}, std::ios::in | std::ios::binary);
+    std::ifstream file((path += fs::path{".bin"s}).native(), std::ios::in | std::ios::binary);
 
     if (!file.is_open()) {
         std::cerr << "can't open file: "s << path << std::endl;
@@ -85,14 +86,14 @@ bool LoadBinaryModel(fs::path path, std::vector<T> &vertex_buffer)
     if (count < 1 || count % 3 != 0)
         return false;
 
-    vertex_buffer.resize(count);
-    file.read(reinterpret_cast<char *>(std::data(vertex_buffer)), std::size(vertex_buffer) * sizeof(std::decay_t<T>));
+    vertices.resize(count);
+    file.read(reinterpret_cast<char *>(std::data(vertices)), std::size(vertices) * sizeof(std::decay_t<T>));
 
     return true;
 }
 
 template<typename T>
-bool LoadModel(std::string_view _name, std::uint32_t &count, std::vector<T> &vertex_buffer)
+bool LoadModel(std::string_view _name, std::uint32_t &count, std::vector<T> &vertices)
 {
     using namespace std::string_literals;
 
@@ -113,12 +114,12 @@ bool LoadModel(std::string_view _name, std::uint32_t &count, std::vector<T> &ver
 
     auto const path = directory / name;
 
-    if (!LoadBinaryModel(path, vertex_buffer)) {
+    if (!LoadBinaryModel(path, vertices)) {
         if (LoadOBJ(path, positions, normals, uvs, faces, indices)) {
             std::unordered_set<index_t> unique_indices{indices.cbegin(), indices.cend()};
 
             for (auto[p, n, t] : indices) {
-                vertex_buffer.emplace_back(positions.at(p), normals.at(n), uvs.at(t));
+                vertices.emplace_back(positions.at(p), normals.at(n), uvs.at(t));
             }
 
             //for (auto &&face : faces1) {
@@ -131,15 +132,14 @@ bool LoadModel(std::string_view _name, std::uint32_t &count, std::vector<T> &ver
 
                     vertex_buffer.emplace_back(std::move(position), std::move(normal), std::move(uv));
                 }*/
-            }
 
             //SaveBinaryModel(path, vertex_buffer);
-        //}
-
+        }
+        
         else return false;
     }
 
-    count = static_cast<std::decay_t<decltype(count)>>(std::size(vertex_buffer) / 3);
+    count = static_cast<std::decay_t<decltype(count)>>(std::size(vertices) / 3);
 
     return true;
 }
