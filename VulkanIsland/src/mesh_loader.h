@@ -4,6 +4,7 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include <unordered_set>
 
 #ifdef _MSC_VER
 #include <filesystem>
@@ -16,7 +17,34 @@ namespace fs = boost::filesystem;
 #include "main.h"
 #include "helpers.h"
 
-bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec3> &normals, std::vector<vec2> &uvs, std::vector<std::vector<std::size_t>> &faces);
+struct index_t {
+    std::size_t p, n, t;
+
+    template<class T, typename std::enable_if_t<std::is_same_v<index_t, std::decay_t<T>>>...>
+    constexpr bool operator== (T &&rhs) const
+    {
+        return p == rhs.p && n == rhs.n && t == rhs.t;
+    }
+};
+
+namespace std {
+template<>
+struct hash<index_t> {
+    template<class T, typename std::enable_if_t<std::is_same_v<index_t, std::decay_t<T>>>...>
+    std::size_t operator() (T &&index) const
+    {
+        using namespace std::string_literals;
+        return hash<std::string>{}(std::to_string(index.p) + "-"s + std::to_string(index.n) + "-"s + std::to_string(index.t));
+    }
+};
+}
+
+struct face_t {
+    std::array<index_t, 3> indices;
+};
+
+bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec3> &normals, std::vector<vec2> &uvs, std::vector<std::vector<std::size_t>> &, 
+             std::vector<index_t> &indices);
 
 
 template<typename T>
@@ -73,6 +101,7 @@ bool LoadModel(std::string_view _name, std::uint32_t &count, std::vector<T> &ver
     std::vector<vec2> uvs;
 
     std::vector<std::vector<std::size_t>> faces;
+    std::vector<index_t> indices;
 
     auto current_path = fs::current_path();
 
@@ -85,21 +114,27 @@ bool LoadModel(std::string_view _name, std::uint32_t &count, std::vector<T> &ver
     auto const path = directory / name;
 
     if (!LoadBinaryModel(path, vertex_buffer)) {
-        if (LoadOBJ(path, positions, normals, uvs, faces)) {
-            for (auto &&face : faces) {
-                std::transform(face.begin(), face.end(), face.begin(), [] (auto &&a) { return a - 1; });
+        if (LoadOBJ(path, positions, normals, uvs, faces, indices)) {
+            std::unordered_set<index_t> unique_indices{indices.cbegin(), indices.cend()};
 
-                for (auto it_index = face.cbegin(); it_index < face.cend(); std::advance(it_index, 1)) {
+            for (auto[p, n, t] : indices) {
+                vertex_buffer.emplace_back(positions.at(p), normals.at(n), uvs.at(t));
+            }
+
+            //for (auto &&face : faces1) {
+                // std::transform(std::begin(face), std::end(face), std::begin(face), [] (auto &&a) { return a - 1; });
+
+                /*for (auto it_index = face.cbegin(); it_index < face.cend(); std::advance(it_index, 1)) {
                     auto position = positions.at(*it_index);
                     auto uv = uvs.at(*++it_index);
                     auto normal = normals.at(*++it_index);
 
                     vertex_buffer.emplace_back(std::move(position), std::move(normal), std::move(uv));
-                }
+                }*/
             }
 
-            SaveBinaryModel(path, vertex_buffer);
-        }
+            //SaveBinaryModel(path, vertex_buffer);
+        //}
 
         else return false;
     }
