@@ -31,7 +31,7 @@ namespace std {
 template<>
 struct hash<index_t> {
     template<class T, typename std::enable_if_t<std::is_same_v<index_t, std::decay_t<T>>>...>
-    std::size_t operator() (T &&index) const
+    constexpr std::size_t operator() (T &&index) const
     {
         using namespace std::string_literals;
         return hash<std::string>{}(std::to_string(index.p) + "-"s + std::to_string(index.n) + "-"s + std::to_string(index.t));
@@ -39,17 +39,12 @@ struct hash<index_t> {
 };
 }
 
-struct face_t {
-    std::array<index_t, 3> indices;
-};
-
-bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec3> &normals, std::vector<vec2> &uvs, std::vector<std::vector<std::size_t>> &, 
-             std::vector<index_t> &indices);
+bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec3> &normals, std::vector<vec2> &uvs, std::vector<index_t> &indices);
 
 
 
 template<typename T>
-bool SaveBinaryModel(fs::path path, std::vector<T> const &vertices)
+bool SaveBinaryModel(fs::path path, std::vector<T> const &vertices, std::vector<std::uint32_t> const &indices)
 {
     using namespace std::string_literals;
 
@@ -60,16 +55,21 @@ bool SaveBinaryModel(fs::path path, std::vector<T> const &vertices)
         return false;
     }
 
-    auto count = static_cast<std::size_t>(std::size(vertices));
-    file.write(reinterpret_cast<char const *>(&count), sizeof(count));
+    auto vertices_count = static_cast<std::size_t>(std::size(vertices));
+    file.write(reinterpret_cast<char const *>(&vertices_count), sizeof(vertices_count));
 
     file.write(reinterpret_cast<char const *>(std::data(vertices)), std::size(vertices) * sizeof(std::decay_t<T>));
+
+    auto indices_count = static_cast<std::size_t>(std::size(indices));
+    file.write(reinterpret_cast<char const *>(&indices_count), sizeof(indices_count));
+
+    file.write(reinterpret_cast<char const *>(std::data(indices)), std::size(indices) * sizeof(std::decay_t<decltype(indices)>::value_type));
 
     return true;
 }
 
 template<typename T>
-bool LoadBinaryModel(fs::path path, std::vector<T> &vertices)
+bool LoadBinaryModel(fs::path path, std::vector<T> &vertices, std::vector<std::uint32_t> &indices)
 {
     using namespace std::string_literals;
 
@@ -83,17 +83,22 @@ bool LoadBinaryModel(fs::path path, std::vector<T> &vertices)
     std::size_t count = 18348;
     file.read(reinterpret_cast<char *>(&count), sizeof(count));
 
+    vertices.resize(count);
+    file.read(reinterpret_cast<char *>(std::data(vertices)), std::size(vertices) * sizeof(std::decay_t<T>));
+
+    file.read(reinterpret_cast<char *>(&count), sizeof(count));
+
     if (count < 1 || count % 3 != 0)
         return false;
 
-    vertices.resize(count);
-    file.read(reinterpret_cast<char *>(std::data(vertices)), std::size(vertices) * sizeof(std::decay_t<T>));
+    indices.resize(count);
+    file.read(reinterpret_cast<char *>(std::data(indices)), std::size(indices) * sizeof(std::decay_t<decltype(indices)>::value_type));
 
     return true;
 }
 
 template<typename T>
-bool LoadModel(std::string_view _name, std::uint32_t &count, std::vector<T> &vertices)
+bool LoadModel(std::string_view _name, std::vector<T> &vertices, std::vector<std::uint32_t> &indices)
 {
     using namespace std::string_literals;
 
@@ -102,7 +107,7 @@ bool LoadModel(std::string_view _name, std::uint32_t &count, std::vector<T> &ver
     std::vector<vec2> uvs;
 
     std::vector<std::vector<std::size_t>> faces;
-    std::vector<index_t> indices;
+    std::vector<index_t> _indices;
 
     auto current_path = fs::current_path();
 
@@ -114,32 +119,27 @@ bool LoadModel(std::string_view _name, std::uint32_t &count, std::vector<T> &ver
 
     auto const path = directory / name;
 
-    if (!LoadBinaryModel(path, vertices)) {
-        if (LoadOBJ(path, positions, normals, uvs, faces, indices)) {
-            std::unordered_set<index_t> unique_indices{indices.cbegin(), indices.cend()};
+    if (!LoadBinaryModel(path, vertices, indices)) {
+        if (LoadOBJ(path, positions, normals, uvs, _indices)) {
+            std::unordered_set<index_t> unique_indices{_indices.cbegin(), _indices.cend()};
 
-            for (auto[p, n, t] : indices) {
+            for (auto [p, n, t] : unique_indices)
                 vertices.emplace_back(positions.at(p), normals.at(n), uvs.at(t));
+
+            for (auto &&index : _indices) {
+                auto const it = unique_indices.find(index);
+
+                if (it == unique_indices.end())
+                    return false;
+
+                indices.emplace_back(static_cast<std::uint32_t>(std::distance(unique_indices.begin(), it)));
             }
 
-            //for (auto &&face : faces1) {
-                // std::transform(std::begin(face), std::end(face), std::begin(face), [] (auto &&a) { return a - 1; });
-
-                /*for (auto it_index = face.cbegin(); it_index < face.cend(); std::advance(it_index, 1)) {
-                    auto position = positions.at(*it_index);
-                    auto uv = uvs.at(*++it_index);
-                    auto normal = normals.at(*++it_index);
-
-                    vertex_buffer.emplace_back(std::move(position), std::move(normal), std::move(uv));
-                }*/
-
-            //SaveBinaryModel(path, vertex_buffer);
+            SaveBinaryModel(path, vertices, indices);
         }
         
         else return false;
     }
-
-    count = static_cast<std::decay_t<decltype(count)>>(std::size(vertices) / 3);
 
     return true;
 }

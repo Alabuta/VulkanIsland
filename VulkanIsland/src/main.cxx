@@ -933,61 +933,10 @@ void TransitionImageLayout(VkDevice device, Q &queue, VkImage image, VkFormat fo
     EndSingleTimeCommad(device, queue, commandBuffer);
 }
 
-void LoadModel()
+void LoadModel(std::string_view name)
 {
-    std::uint32_t count = 0;
-
-    if (auto result = LoadModel("chalet.obj"sv, count, vertices); !result)
+    if (auto result = LoadModel(name, vertices, indices); !result)
         throw std::runtime_error("failed to load mesh"s);
-
-#if 0
-    tinyobj::attrib_t attrib;
-    std::vector<tinyobj::shape_t> shapes;
-    std::vector<tinyobj::material_t> materials;
-    std::string err;
-
-    auto current_path = fs::current_path();
-
-    fs::path directory{"meshes"s};
-    fs::path name{"chalet.obj"s};
-
-    if (!fs::exists(current_path / directory))
-        directory = current_path / fs::path{"../../VulkanIsland"s} / directory;
-
-    auto path = (directory / name).string();
-
-    if (auto result = tinyobj::LoadObj(&attrib, &shapes, &materials, &err, path.c_str()); !result)
-        throw std::runtime_error(err);
-
-    std::unordered_map<Vertex, std::uint32_t> unique_vertices;
-
-    for (auto const &shape : shapes) {
-        for (auto const &index : shape.mesh.indices) {
-            auto vertex = Vertex{
-                glm::vec3{
-                    attrib.vertices.at(index.vertex_index * 3 + 0),
-                    attrib.vertices.at(index.vertex_index * 3 + 1),
-                    attrib.vertices.at(index.vertex_index * 3 + 2)
-                },
-
-                glm::vec3{1.f, 1.f, 1.f},
-
-                glm::vec2{
-                    attrib.texcoords.at(index.texcoord_index * 2 + 0),
-                    1.f - attrib.texcoords.at(index.texcoord_index * 2 + 1)
-                }
-            };
-
-            indices.push_back(static_cast<std::uint32_t>(indices.size()));
-
-            if (unique_vertices.count(vertex) != 0)
-                continue;
-
-            unique_vertices[vertex] = static_cast<std::uint32_t>(std::size(vertices));
-            vertices.push_back(std::move(vertex));
-        }
-    }
-#endif
 }
 
 void CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
@@ -1165,11 +1114,10 @@ void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPoo
         auto const offsets = make_array(VkDeviceSize{0});
 
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, std::data(vertexBuffers), std::data(offsets));
-        /*auto constexpr index_type = std::is_same_v<decltype(indices)::value_type, std::uint32_t> ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
+        auto constexpr index_type = std::is_same_v<decltype(indices)::value_type, std::uint32_t> ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
         vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, index_type);
 
-        vkCmdDrawIndexed(commandBuffer, static_cast<std::uint32_t>(std::size(indices)), 1, 0, 0, 0);*/
-        vkCmdDraw(commandBuffer, static_cast<std::uint32_t>(std::size(vertices)), 1, 0, 0);
+        vkCmdDrawIndexed(commandBuffer, static_cast<std::uint32_t>(std::size(indices)), 1, 0, 0, 0);
 
         vkCmdEndRenderPass(commandBuffer);
 
@@ -1469,9 +1417,9 @@ void InitVulkan(GLFWwindow *window)
     CreateTextureImageView(vulkanDevice->handle(), textureImageView, textureImage);
     CreateTextureSampler(vulkanDevice->handle(), textureSampler);
 
-    LoadModel();
+    LoadModel("chalet.obj"sv);
     CreateVertexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
-    //CreateIndexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
+    CreateIndexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
 
     CreateUniformBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
 
