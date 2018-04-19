@@ -14,12 +14,14 @@
 #include "main.h"
 
 #include "mesh_loader.h"
+#include "TARGA_loader.h"
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
 #define TINYOBJLOADER_IMPLEMENTATION
 #include "tiny_obj_loader.h"
+
 
 /*namespace std {
 template<> struct hash<Vertex> {
@@ -1189,6 +1191,11 @@ void CreateImage(VkPhysicalDevice physicalDevice, VkDevice device,
 
 void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImage &image, VkDeviceMemory &imageMemory)
 {
+    std::vector<std::byte> pixels1;
+
+    if (auto result = LoadTARGA("chalet.tga"sv, pixels1); !result)
+        throw std::runtime_error("failed to load an image"s);
+
     auto current_path = fs::current_path();
 
     fs::path directory{"textures"s};

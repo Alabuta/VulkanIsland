@@ -179,6 +179,7 @@
     <ClCompile Include="src\instance.cxx" />
     <ClCompile Include="src\main.cxx" />
     <ClCompile Include="src\mesh_loader.cxx" />
+    <ClCompile Include="src\TARGA_loader.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\debug.h" />
@@ -190,6 +191,7 @@
     <ClInclude Include="src\mesh_loader.h" />
     <ClInclude Include="src\queues.h" />
     <ClInclude Include="src\queue_builder.h" />
+    <ClInclude Include="src\TARGA_loader.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag" />
