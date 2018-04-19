@@ -80,6 +80,9 @@ bool LoadBinaryModel(fs::path path, std::vector<T> &vertices, std::vector<std::u
         return false;
     }
 
+    vertices.clear();
+    indices.clear();
+
     std::size_t count = 18348;
     file.read(reinterpret_cast<char *>(&count), sizeof(count));
 
@@ -121,6 +124,9 @@ bool LoadModel(std::string_view _name, std::vector<T> &vertices, std::vector<std
 
     if (!LoadBinaryModel(path, vertices, indices)) {
         if (LoadOBJ(path, positions, normals, uvs, _indices)) {
+            vertices.clear();
+            indices.clear();
+
             std::unordered_set<index_t> unique_indices{_indices.cbegin(), _indices.cend()};
 
             for (auto [p, n, t] : unique_indices)

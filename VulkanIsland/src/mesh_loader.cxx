@@ -13,8 +13,6 @@ bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec
         return false;
     }
 
-    std::vector<std::size_t> face;
-
     std::string line;
     std::string attribute;
 
@@ -46,8 +44,6 @@ bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec
         }
 
         else if (attribute == "f"s) {
-            face.clear();
-
             std::smatch matches;
             if (std::regex_search(line, matches, regex_pattern)) {
                 if (matches.size() != 3 + 1)
