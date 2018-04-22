@@ -223,7 +223,7 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 
     auto supported = std::any_of(surfaceFormats.cbegin(), surfaceFormats.cend(), [] (auto &&surfaceFormat)
     {
-        return surfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM && surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+        return surfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM&& surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
     });
 
     if (supported)
@@ -1037,6 +1037,9 @@ void CreateDescriptorSet(VkDevice device, VkDescriptorSet &descriptorSet)
     VkDescriptorImageInfo const imageInfo{
         textureSampler, textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     };
+    std::cout << &textureImageView << '\n';
+    std::cout << &textureSampler << '\n';
+    std::cout << &imageInfo << '\n';
 
     std::array<VkWriteDescriptorSet, 2> const writeDescriptorsSet{{
         {
@@ -1060,6 +1063,7 @@ void CreateDescriptorSet(VkDevice device, VkDescriptorSet &descriptorSet)
             nullptr
         }
     }};
+    std::cout << &writeDescriptorsSet << '\n';
 
     vkUpdateDescriptorSets(device, static_cast<std::uint32_t>(std::size(writeDescriptorsSet)), std::data(writeDescriptorsSet), 0, nullptr);
 }
@@ -1191,11 +1195,16 @@ void CreateImage(VkPhysicalDevice physicalDevice, VkDevice device,
 
 void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImage &image, VkDeviceMemory &imageMemory)
 {
-    std::vector<std::byte> pixels1;
+    std::vector<std::byte> pixels;
 
-    if (auto result = LoadTARGA("chalet.tga"sv, pixels1); !result)
+    std::int32_t width, height;
+
+    if (auto rect = LoadTARGA("chalet.tga"sv, pixels); !rect)
         throw std::runtime_error("failed to load an image"s);
 
+    else std::tie(width, height) = rect.value();
+
+#if 0
     auto current_path = fs::current_path();
 
     fs::path directory{"textures"s};
@@ -1211,6 +1220,7 @@ void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImag
 
     if (!pixels)
         throw std::runtime_error("failed to load an image"s);
+#endif
 
     VkDeviceSize bufferSize = width * height * 4;
 
@@ -1220,24 +1230,25 @@ void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImag
     CreateBuffer(physicalDevice, device, stagingBuffer, stagingBufferMemory, bufferSize,
                  VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-    stbi_uc *data;
+    decltype(pixels)::value_type *data;
     if (auto result = vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
         throw std::runtime_error("failed to map image buffer memory: "s + std::to_string(result));
 
-    std::uninitialized_copy_n(pixels, static_cast<std::size_t>(bufferSize), data);
+    //std::uninitialized_copy_n(pixels, static_cast<std::size_t>(bufferSize), data);
+    std::uninitialized_copy(std::begin(pixels), std::end(pixels), data);
 
     vkUnmapMemory(device, stagingBufferMemory);
 
-    stbi_image_free(pixels);
+    // stbi_image_free(pixels);
 
-    CreateImage(physicalDevice, device, image, imageMemory, static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height), VK_FORMAT_R8G8B8A8_UNORM,
+    CreateImage(physicalDevice, device, image, imageMemory, static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height), VK_FORMAT_B8G8R8A8_UNORM,
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    TransitionImageLayout(device, transferQueue, image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    TransitionImageLayout(device, transferQueue, image, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
     CopyBufferToImage(device, transferQueue, stagingBuffer, image, static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height));
 
-    TransitionImageLayout(device, transferQueue, image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    TransitionImageLayout(device, transferQueue, image, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     vkFreeMemory(device, stagingBufferMemory, nullptr);
     vkDestroyBuffer(device, stagingBuffer, nullptr);
@@ -1245,7 +1256,7 @@ void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImag
 
 void CreateTextureImageView(VkDevice device, VkImageView &imageView, VkImage &image)
 {
-    imageView = CreateImageView(device, image, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
+    imageView = CreateImageView(device, image, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
 }
 
 void CreateTextureSampler(VkDevice device, VkSampler &sampler)

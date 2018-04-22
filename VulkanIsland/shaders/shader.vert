@@ -22,5 +22,5 @@ void main()
 {
     gl_Position = transforms.proj * transforms.view * transforms.model * vec4(inVertex, 1.0);
     perVertexNormal = inNormal;
-    perVertexUV = vec2(inUV.x, 1.0 - inUV.y);
+    perVertexUV = vec2(inUV.x, inUV.y);
 }
