@@ -22,4 +22,4 @@ struct Image {
     // std::uint8_t BytesPerPixel() const;
 };
 
-[[nodiscard]] bool LoadTARGA(std::string_view name, std::vector<std::byte> &pixels);
+[[nodiscard]] std::optional<std::pair<std::int32_t, std::int32_t>> LoadTARGA(std::string_view name, std::vector<std::byte> &pixels);

@@ -4,7 +4,7 @@
 #include "main.h"
 #include "TARGA_loader.h"
 
-bool LoadUncompressedTARGA(Image &_image, std::ifstream &_file)
+bool LoadUncompressedTARGA(Image &_image, std::ifstream &_file, std::vector<std::byte> &pixels)
 {
     size_t const count = _image.bpp * _image.width * _image.height;
 
@@ -32,16 +32,21 @@ bool LoadUncompressedTARGA(Image &_image, std::ifstream &_file)
             return false;
     }
 
+#if 0
     _image.data.resize(count);
     _file.read(reinterpret_cast<char *>(std::data(_image.data)), count);
     //_image.data_.assign(std::istreambuf_iterator<char>(_file), std::istreambuf_iterator<char>());
     _image.data.shrink_to_fit();
+#endif
+    pixels.resize(count);
+    _file.read(reinterpret_cast<char *>(std::data(pixels)), count);
+    pixels.shrink_to_fit();
 
     _file.close();
     return true;
 }
 
-[[nodiscard]] bool LoadTARGA(std::string_view _name, std::vector<std::byte> &pixels)
+[[nodiscard]] std::optional<std::pair<std::int32_t, std::int32_t>> LoadTARGA(std::string_view _name, std::vector<std::byte> &pixels)
 {
     auto current_path = fs::current_path();
 
@@ -54,8 +59,9 @@ bool LoadUncompressedTARGA(Image &_image, std::ifstream &_file)
     std::ifstream file((directory / name).native(), std::ios::binary);
 
     if (!file.is_open())
-        return false;
+        return {};
 
+#if 0
     struct header_t {
         std::byte ID_length;
         std::byte color_map_type;
@@ -76,35 +82,37 @@ bool LoadUncompressedTARGA(Image &_image, std::ifstream &_file)
 
     image_and_color_map_data.image_id.resize(static_cast<std::size_t>(header.ID_length));
     file.read(reinterpret_cast<char *>(std::data(image_and_color_map_data.image_id)), sizeof(std::byte) * static_cast<std::size_t>(header.ID_length));
-
+#endif
     /* std::byte width, height;
     std::uint8_t bpp;*/
 
-    /*char headerTARGA = 0;
+    file.seekg(sizeof(std::byte) * 2, std::ios::beg);
+
+    char headerTARGA = 0;
     file.read(&headerTARGA, sizeof(headerTARGA));
 
     file.seekg(sizeof(std::byte) * 9, std::ios::cur);
 
-    // char header[6]{0};
+    char header[6]{0};
 
     file.read(reinterpret_cast<char *>(&header), sizeof(header));
 
     Image image;
 
-    image.width = header.width;
+    /*image.width = header.width;
     image.height = header.height;
     image.bpp = header.bpp / 8;*/
 
-    /*image.width = (header[1] << 8) + header[0];
+    image.width = (header[1] << 8) + header[0];
     image.height = (header[3] << 8) + header[2];
-    image.bpp = header[4] / 8;*/
+    image.bpp = header[4] / 8;
 
-    /*if (image.width * image.height * image.bpp < 0)
-        return false;
+    if (image.width * image.height * image.bpp < 0)
+        return {};
 
     switch (headerTARGA) {
         case 2:
-            LoadUncompressedTARGA(image, file);
+            LoadUncompressedTARGA(image, file, pixels);
             break;
 
         case 10:
@@ -113,11 +121,11 @@ bool LoadUncompressedTARGA(Image &_image, std::ifstream &_file)
 
         default:
             break;
-    }*/
+    }
 
     // image.type = GL_UNSIGNED_BYTE;
 
     file.close();
 
-    return true;
+    return std::make_pair(image.width, image.height);
 }
