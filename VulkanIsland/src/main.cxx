@@ -16,12 +16,6 @@
 #include "mesh_loader.h"
 #include "TARGA_loader.h"
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
-#define TINYOBJLOADER_IMPLEMENTATION
-#include "tiny_obj_loader.h"
-
 
 /*namespace std {
 template<> struct hash<Vertex> {
@@ -1503,6 +1497,8 @@ void CleanUp()
     if (surface)
         vkDestroySurfaceKHR(vulkanInstance->handle(), surface, nullptr);
 
+    vulkanDevice.reset(nullptr);
+    vulkanInstance.reset(nullptr);
 }
 
 void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t height)
