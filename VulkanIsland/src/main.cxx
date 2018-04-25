@@ -12,19 +12,14 @@
 #include <unordered_map>
 
 #include "main.h"
+#include "instance.h"
+#include "device.h"
+#include "swapchain.h"
+
 
 #include "mesh_loader.h"
 #include "TARGA_loader.h"
 
-
-/*namespace std {
-template<> struct hash<Vertex> {
-    std::size_t operator()(Vertex const& vertex) const
-    {
-        return ((hash<glm::vec3>()(vertex.pos) ^ (hash<glm::vec3>()(vertex.normal) << 1)) >> 1) ^ (hash<glm::vec2>()(vertex.uv) << 1);
-    }
-};
-}*/
 
 #if 0
 auto vertices = make_array(
@@ -75,22 +70,16 @@ GraphicsQueue graphicsQueue;
 TransferQueue transferQueue;
 PresentationQueue presentationQueue;
 
-VkSwapchainKHR swapChain;
 VkDescriptorSetLayout descriptorSetLayout;
 VkPipelineLayout pipelineLayout;
 VkRenderPass renderPass;
 VkPipeline graphicsPipeline;
-
-VkFormat swapChainImageFormat;
-VkExtent2D swapChainExtent;
 
 VkCommandPool graphicsCommandPool, transferCommandPool;
 
 VkDescriptorPool descriptorPool;
 VkDescriptorSet descriptorSet;
 
-std::vector<VkImage> swapChainImages;
-std::vector<VkImageView> swapChainImageViews;
 std::vector<VkFramebuffer> swapChainFramebuffers;
 std::vector<VkCommandBuffer> commandBuffers;
 
@@ -111,51 +100,19 @@ VkImageView depthImageView;
 
 
 
-#ifdef USE_WIN32
+#if USE_WIN32
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
-    VkInstance vulkanInstance->handle(), VkWin32SurfaceCreateInfoKHR const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkSurfaceKHR *pSurface)
+    VkInstance vulkanInstance, VkWin32SurfaceCreateInfoKHR const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkSurfaceKHR *pSurface)
 {
-    auto traverse = reinterpret_cast<PFN_vkCreateWin32SurfaceKHR>(vkGetInstanceProcAddr(vulkanInstance->handle(), "vkCreateWin32SurfaceKHR"));
+    auto traverse = reinterpret_cast<PFN_vkCreateWin32SurfaceKHR>(vkGetInstanceProcAddr(vulkanInstance, "vkCreateWin32SurfaceKHR"));
 
     if (traverse)
-        return traverse(vulkanInstance->handle(), pCreateInfo, pAllocator, pSurface);
+        return traverse(vulkanInstance, pCreateInfo, pAllocator, pSurface);
 
     return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 #endif
 
-
-[[nodiscard]] SwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
-{
-    SwapChainSupportDetails details;
-
-    if (auto result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface capabilities: "s + std::to_string(result));
-
-    std::uint32_t formatsCount = 0;
-    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, nullptr); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface formats count: "s + std::to_string(result));
-
-    details.formats.resize(formatsCount);
-    if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, std::data(details.formats)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface formats: "s + std::to_string(result));
-
-    if (details.formats.empty())
-        return {};
-
-    std::uint32_t presentModeCount = 0;
-    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface presentation modes count: "s + std::to_string(result));
-
-    details.presentModes.resize(presentModeCount);
-    if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, std::data(details.presentModes)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface presentation modes: "s + std::to_string(result));
-
-    if (details.presentModes.empty())
-        return {};
-
-    return details;
-}
 
 
 [[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view _name)
@@ -207,68 +164,6 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
         throw std::runtime_error("failed to create shader module: "s + std::to_string(result));
 
     return shaderModule;
-}
-
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
-[[nodiscard]] VkSurfaceFormatKHR ChooseSwapSurfaceFormat(T &&surfaceFormats)
-{
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkSurfaceFormatKHR>, "iterable object does not contain VkSurfaceFormatKHR elements");
-
-    if (surfaceFormats.size() == 1 && surfaceFormats.at(0).format == VK_FORMAT_UNDEFINED)
-        return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
-
-    auto supported = std::any_of(surfaceFormats.cbegin(), surfaceFormats.cend(), [] (auto &&surfaceFormat)
-    {
-        return surfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM&& surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
-    });
-
-    if (supported)
-        return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
-
-    return surfaceFormats.at(0);
-}
-
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
-[[nodiscard]] VkPresentModeKHR ChooseSwapPresentMode(T &&presentModes)
-{
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkPresentModeKHR>, "iterable object does not contain VkPresentModeKHR elements");
-
-    auto mailbox = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
-    {
-        return mode == VK_PRESENT_MODE_MAILBOX_KHR;
-    });
-
-    if (mailbox)
-        return VK_PRESENT_MODE_MAILBOX_KHR;
-
-    auto relaxed = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
-    {
-        return mode == VK_PRESENT_MODE_FIFO_RELAXED_KHR;
-    });
-
-    if (relaxed)
-        return VK_PRESENT_MODE_FIFO_RELAXED_KHR;
-
-    auto fifo = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
-    {
-        return mode == VK_PRESENT_MODE_FIFO_KHR;
-    });
-
-    if (fifo)
-        return VK_PRESENT_MODE_FIFO_KHR;
-
-    return VK_PRESENT_MODE_IMMEDIATE_KHR;
-}
-
-[[nodiscard]] VkExtent2D ChooseSwapExtent(VkSurfaceCapabilitiesKHR &surfaceCapabilities)
-{
-    if (surfaceCapabilities.currentExtent.width != std::numeric_limits<std::uint32_t>::max())
-        return surfaceCapabilities.currentExtent;
-
-    return {
-        std::clamp(WIDTH, surfaceCapabilities.minImageExtent.width, surfaceCapabilities.maxImageExtent.width),
-        std::clamp(HEIGHT, surfaceCapabilities.minImageExtent.height, surfaceCapabilities.maxImageExtent.height)
-    };
 }
 
 [[nodiscard]] VkImageView CreateImageView(VkDevice device, VkImage &image, VkFormat format, VkImageAspectFlags aspectFlags, std::uint32_t mipLevels)
@@ -331,74 +226,6 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     return format.value();
 }
 
-void CreateSwapChain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkSwapchainKHR &swapChain)
-{
-    auto swapChainSupportDetails = QuerySwapChainSupportDetails(physicalDevice, surface);
-
-    auto surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupportDetails.formats);
-    auto presentMode = ChooseSwapPresentMode(swapChainSupportDetails.presentModes);
-    auto extent = ChooseSwapExtent(swapChainSupportDetails.capabilities);
-
-    swapChainImageFormat = surfaceFormat.format;
-    swapChainExtent = extent;
-
-    auto imageCount = swapChainSupportDetails.capabilities.minImageCount + 1;
-
-    if (swapChainSupportDetails.capabilities.maxImageCount > 0)
-        imageCount = std::min(imageCount, swapChainSupportDetails.capabilities.maxImageCount);
-
-    VkSwapchainCreateInfoKHR swapchainCreateInfo{
-        VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-        nullptr, 0,
-        surface,
-        imageCount,
-        surfaceFormat.format, surfaceFormat.colorSpace,
-        extent,
-        1,
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
-        VK_SHARING_MODE_EXCLUSIVE,
-        0, nullptr,
-        swapChainSupportDetails.capabilities.currentTransform,
-        VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-        presentMode,
-        VK_FALSE,
-        nullptr
-    };
-
-    auto const queueFamilyIndices = make_array(
-        graphicsQueue.family(), presentationQueue.family()
-    );
-
-    if (graphicsQueue.family() != presentationQueue.family()) {
-        swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-        swapchainCreateInfo.queueFamilyIndexCount = static_cast<std::uint32_t>(std::size(queueFamilyIndices));
-        swapchainCreateInfo.pQueueFamilyIndices = std::data(queueFamilyIndices);
-    }
-
-    if (auto result = vkCreateSwapchainKHR(device, &swapchainCreateInfo, nullptr, &swapChain); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create required swap chain: "s + std::to_string(result));
-
-    std::uint32_t imagesCount = 0;
-    if (auto result = vkGetSwapchainImagesKHR(device, swapChain, &imagesCount, nullptr); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve swap chain images count: "s + std::to_string(result));
-
-    swapChainImages.resize(imagesCount);
-    if (auto result = vkGetSwapchainImagesKHR(device, swapChain, &imagesCount, std::data(swapChainImages)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve swap chain images: "s + std::to_string(result));
-}
-
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
-void CreateSwapChainImageViews(VkDevice device, T &&swapChainImages)
-{
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkImage>, "iterable object does not contain VkImage elements");
-
-    swapChainImageViews.clear();
-
-    for (auto &&swapChainImage : swapChainImages) {
-        auto imageView = CreateImageView(device, swapChainImage, swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-        swapChainImageViews.emplace_back(std::move(imageView));
-    }
-}
 
 void CleanupSwapChain(VkDevice device, VkSwapchainKHR swapChain, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
 {
@@ -1338,8 +1165,8 @@ void RecreateSwapChain()
 
     CleanupSwapChain(vulkanDevice->handle(), swapChain, graphicsPipeline, pipelineLayout, renderPass);
 
-    CreateSwapChain(vulkanDevice->physical_handle(), vulkanDevice->handle(), surface, swapChain);
-    CreateSwapChainImageViews(vulkanDevice->handle(), swapChainImages);
+    CreateSwapChain(vulkanDevice.get(), surface, swapChain, WIDTH, HEIGHT, presentationQueue, graphicsQueue);
+    CreateSwapChainImageAndViews(vulkanDevice.get(), swapChainImages, swapChainImageViews);
 
     CreateRenderPass(vulkanDevice->physical_handle(), vulkanDevice->handle());
     CreateGraphicsPipeline(vulkanDevice->handle());
@@ -1451,8 +1278,8 @@ void InitVulkan(GLFWwindow *window)
     transferQueue = vulkanDevice->Get<TransferQueue>();
     presentationQueue = vulkanDevice->Get<PresentationQueue>();
 
-    CreateSwapChain(vulkanDevice->physical_handle(), vulkanDevice->handle(), surface, swapChain);
-    CreateSwapChainImageViews(vulkanDevice->handle(), swapChainImages);
+    CreateSwapChain(vulkanDevice.get(), surface, swapChain, WIDTH, HEIGHT, presentationQueue, graphicsQueue);
+    CreateSwapChainImageAndViews(vulkanDevice.get(), swapChainImages, swapChainImageViews);
 
     CreateDescriptorSetLayout(vulkanDevice->handle(), descriptorSetLayout);
 

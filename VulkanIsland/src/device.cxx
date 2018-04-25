@@ -2,6 +2,7 @@
 #include <functional>
 
 #include "main.h"
+#include "swapchain.h"
 #include "device.h"
 #include "device_defaults.h"
 
