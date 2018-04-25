@@ -34,13 +34,15 @@ using namespace std::string_view_literals;
 #define GLFW_EXPOSE_NATIVE_WIN32
 #endif
 
+#define USE_WIN32 0
+
+#if USE_WIN32
+#define VK_USE_PLATFORM_WIN32_KHR
+#endif
+
 #ifndef GLFW_INCLUDE_VULKAN
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
-#endif
-
-#ifndef VK_USE_PLATFORM_WIN32_KHR
-#define VK_USE_PLATFORM_WIN32_KHR
 #endif
 
 
