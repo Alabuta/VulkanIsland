@@ -12,6 +12,10 @@ extern VkExtent2D swapChainExtent;
 extern std::vector<VkImage> swapChainImages;
 extern std::vector<VkImageView> swapChainImageViews;
 
+extern VkImage depthImage;
+extern VkDeviceMemory depthImageMemory;
+extern VkImageView depthImageView;
+
 struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
     std::vector<VkSurfaceFormatKHR> formats;
@@ -29,3 +33,6 @@ void CreateSwapChain(VulkanDevice *device, VkSurfaceKHR surface, VkSwapchainKHR 
                      VulkanQueue<PresentationQueue> const &presentationQueue, VulkanQueue<GraphicsQueue> const &graphicsQueue);
 
 void CreateSwapChainImageAndViews(VulkanDevice *device, std::vector<VkImage> &swapChainImages, std::vector<VkImageView> &swapChainImageViews);
+
+
+void CleanupSwapChain(VulkanDevice *vulkanDevice, VkSwapchainKHR swapChain);

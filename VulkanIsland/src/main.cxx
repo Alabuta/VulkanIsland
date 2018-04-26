@@ -94,10 +94,6 @@ VkDeviceMemory textureImageMemory;
 VkImageView textureImageView;
 VkSampler textureSampler;
 
-VkImage depthImage;
-VkDeviceMemory depthImageMemory;
-VkImageView depthImageView;
-
 
 
 #if USE_WIN32
@@ -227,43 +223,28 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 }
 
 
-void CleanupSwapChain(VkDevice device, VkSwapchainKHR swapChain, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
+void CleanupSwapChain(VulkanDevice *device, VkSwapchainKHR swapChain, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
 {
     for (auto &&swapChainFramebuffer : swapChainFramebuffers)
-        vkDestroyFramebuffer(device, swapChainFramebuffer, nullptr);
+        vkDestroyFramebuffer(device->handle(), swapChainFramebuffer, nullptr);
 
     swapChainFramebuffers.clear();
 
     if (graphicsCommandPool)
-        vkFreeCommandBuffers(device, graphicsCommandPool, static_cast<std::uint32_t>(std::size(commandBuffers)), std::data(commandBuffers));
+        vkFreeCommandBuffers(device->handle(), graphicsCommandPool, static_cast<std::uint32_t>(std::size(commandBuffers)), std::data(commandBuffers));
 
     commandBuffers.clear();
 
     if (graphicsPipeline)
-        vkDestroyPipeline(device, graphicsPipeline, nullptr);
+        vkDestroyPipeline(device->handle(), graphicsPipeline, nullptr);
 
     if (pipelineLayout)
-        vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+        vkDestroyPipelineLayout(device->handle(), pipelineLayout, nullptr);
 
     if (renderPass)
-        vkDestroyRenderPass(device, renderPass, nullptr);
+        vkDestroyRenderPass(device->handle(), renderPass, nullptr);
 
-    for (auto &&swapChainImageView : swapChainImageViews)
-        vkDestroyImageView(device, swapChainImageView, nullptr);
-
-    swapChainImageViews.clear();
-
-    if (swapChain)
-        vkDestroySwapchainKHR(device, swapChain, nullptr);
-
-    if (depthImageView)
-        vkDestroyImageView(vulkanDevice->handle(), depthImageView, nullptr);
-
-    if (depthImageMemory)
-        vkFreeMemory(vulkanDevice->handle(), depthImageMemory, nullptr);
-
-    if (depthImage)
-        vkDestroyImage(vulkanDevice->handle(), depthImage, nullptr);
+    CleanupSwapChain(device, swapChain);
 }
 
 
@@ -548,6 +529,7 @@ void CreateFramebuffers(VkRenderPass renderPass, T &&swapChainImageViews, VkDevi
         swapChainFramebuffers.push_back(std::move(framebuffer));
     }
 }
+
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
 void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, VkCommandPoolCreateFlags flags)
@@ -955,6 +937,7 @@ void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPoo
     }
 }
 
+
 void CreateSemaphores(VkDevice device)
 {
     VkSemaphoreCreateInfo constexpr createInfo{
@@ -968,6 +951,7 @@ void CreateSemaphores(VkDevice device)
     if (auto result = vkCreateSemaphore(device, &createInfo, nullptr, &renderFinishedSemaphore); result != VK_SUCCESS)
         throw std::runtime_error("failed to create render semaphore: "s + std::to_string(result));
 }
+
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
 void GenerateMipMaps(VkDevice device, Q &queue, VkImage image, std::int32_t width, std::int32_t height, std::uint32_t mipLevels)
@@ -1144,16 +1128,16 @@ void CreateTextureSampler(VkDevice device, VkSampler &sampler, std::uint32_t mip
 }
 
 
-void CreateDepthResources(VkPhysicalDevice physicalDevice, VkDevice device, VkImage &image, VkDeviceMemory &imageMemory, VkImageView &imageView)
+void CreateDepthResources(VulkanDevice *vulkanDevice, VkImage &image, VkDeviceMemory &imageMemory, VkImageView &imageView)
 {
-    auto const format = FindDepthFormat(physicalDevice);
+    auto const format = FindDepthFormat(vulkanDevice->physical_handle());
 
-    CreateImage(physicalDevice, device, image, imageMemory, swapChainExtent.width, swapChainExtent.height, 1, format,
+    CreateImage(vulkanDevice->physical_handle(), vulkanDevice->handle(), image, imageMemory, swapChainExtent.width, swapChainExtent.height, 1, format,
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    imageView = CreateImageView(device, image, format, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+    imageView = CreateImageView(vulkanDevice->handle(), image, format, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 
-    TransitionImageLayout(device, transferQueue, image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
+    TransitionImageLayout(vulkanDevice->handle(), transferQueue, image, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1);
 }
 
 
@@ -1163,15 +1147,15 @@ void RecreateSwapChain()
 
     vkDeviceWaitIdle(vulkanDevice->handle());
 
-    CleanupSwapChain(vulkanDevice->handle(), swapChain, graphicsPipeline, pipelineLayout, renderPass);
+    CleanupSwapChain(vulkanDevice.get(), swapChain, graphicsPipeline, pipelineLayout, renderPass);
 
     CreateSwapChain(vulkanDevice.get(), surface, swapChain, WIDTH, HEIGHT, presentationQueue, graphicsQueue);
     CreateSwapChainImageAndViews(vulkanDevice.get(), swapChainImages, swapChainImageViews);
 
+    CreateDepthResources(vulkanDevice.get(), depthImage, depthImageMemory, depthImageView);
+
     CreateRenderPass(vulkanDevice->physical_handle(), vulkanDevice->handle());
     CreateGraphicsPipeline(vulkanDevice->handle());
-
-    CreateDepthResources(vulkanDevice->physical_handle(), vulkanDevice->handle(), depthImage, depthImageMemory, depthImageView);
 
     CreateFramebuffers(renderPass, swapChainImageViews, vulkanDevice->handle());
 
@@ -1289,7 +1273,7 @@ void InitVulkan(GLFWwindow *window)
     CreateCommandPool(vulkanDevice->handle(), transferQueue, transferCommandPool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
     CreateCommandPool(vulkanDevice->handle(), graphicsQueue, graphicsCommandPool, 0);
 
-    CreateDepthResources(vulkanDevice->physical_handle(), vulkanDevice->handle(), depthImage, depthImageMemory, depthImageView);
+    CreateDepthResources(vulkanDevice.get(), depthImage, depthImageMemory, depthImageView);
 
     CreateFramebuffers(renderPass, swapChainImageViews, vulkanDevice->handle());
 
@@ -1321,7 +1305,7 @@ void CleanUp()
     if (imageAvailableSemaphore)
         vkDestroySemaphore(vulkanDevice->handle(), imageAvailableSemaphore, nullptr);
 
-    CleanupSwapChain(vulkanDevice->handle(), swapChain, graphicsPipeline, pipelineLayout, renderPass);
+    CleanupSwapChain(vulkanDevice.get(), swapChain, graphicsPipeline, pipelineLayout, renderPass);
 
     vkDestroyDescriptorSetLayout(vulkanDevice->handle(), descriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(vulkanDevice->handle(), descriptorPool, nullptr);

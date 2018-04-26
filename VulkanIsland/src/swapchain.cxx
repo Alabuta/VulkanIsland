@@ -8,6 +8,10 @@ VkExtent2D swapChainExtent;
 std::vector<VkImage> swapChainImages;
 std::vector<VkImageView> swapChainImageViews;
 
+VkImage depthImage;
+VkDeviceMemory depthImageMemory;
+VkImageView depthImageView;
+
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 [[nodiscard]] VkSurfaceFormatKHR ChooseSwapSurfaceFormat(T &&surfaceFormats)
@@ -171,4 +175,26 @@ void CreateSwapChainImageAndViews(VulkanDevice *device, std::vector<VkImage> &sw
         auto imageView = CreateImageView(device->handle(), swapChainImage, swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
         swapChainImageViews.emplace_back(std::move(imageView));
     }
+}
+
+
+void CleanupSwapChain(VulkanDevice *vulkanDevice, VkSwapchainKHR swapChain)
+{
+    for (auto &&swapChainImageView : swapChainImageViews)
+        vkDestroyImageView(vulkanDevice->handle(), swapChainImageView, nullptr);
+
+    if (swapChain)
+        vkDestroySwapchainKHR(vulkanDevice->handle(), swapChain, nullptr);
+
+    if (depthImageView)
+        vkDestroyImageView(vulkanDevice->handle(), depthImageView, nullptr);
+
+    if (depthImageMemory)
+        vkFreeMemory(vulkanDevice->handle(), depthImageMemory, nullptr);
+
+    if (depthImage)
+        vkDestroyImage(vulkanDevice->handle(), depthImage, nullptr);
+
+    swapChainImageViews.clear();
+    swapChainImages.clear();
 }
