@@ -67,6 +67,9 @@
     <ClInclude Include="src\swapchain.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\program.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

@@ -190,6 +190,7 @@
     <ClInclude Include="src\instance.h" />
     <ClInclude Include="src\main.h" />
     <ClInclude Include="src\mesh_loader.h" />
+    <ClInclude Include="src\program.h" />
     <ClInclude Include="src\queues.h" />
     <ClInclude Include="src\queue_builder.h" />
     <ClInclude Include="src\swapchain.h" />
