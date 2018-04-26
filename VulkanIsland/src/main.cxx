@@ -16,6 +16,8 @@
 #include "device.h"
 #include "swapchain.h"
 #include "program.h"
+#include "buffer.h"
+
 
 
 #include "mesh_loader.h"
@@ -494,23 +496,6 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
         throw std::runtime_error("failed to create a command buffer: "s + std::to_string(result));
 }
 
-[[nodiscard]] std::optional<std::uint32_t> FindMemoryType(VkPhysicalDevice physicalDevice, std::uint32_t filter, VkMemoryPropertyFlags properties)
-{
-    VkPhysicalDeviceMemoryProperties memoryProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
-
-    auto const memoryTypes = to_array(memoryProperties.memoryTypes);
-
-    auto it_type = std::find_if(memoryTypes.begin(), memoryTypes.end(), [filter, properties, i = 0](auto type) mutable
-    {
-        return (filter & (1 << i++)) && (type.propertyFlags & properties) == properties;
-    });
-
-    if (it_type != memoryTypes.end())
-        return static_cast<std::uint32_t>(std::distance(memoryTypes.begin(), it_type));
-
-    return {};
-}
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
 [[nodiscard]] VkCommandBuffer BeginSingleTimeCommand(VkDevice device, [[maybe_unused]] Q &queue)
@@ -542,7 +527,7 @@ template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, st
 }
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-void EndSingleTimeCommad(VkDevice device, Q &queue, VkCommandBuffer commandBuffer)
+void EndSingleTimeCommand(VkDevice device, Q &queue, VkCommandBuffer commandBuffer)
 {
     if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS)
         throw std::runtime_error("failed to end command buffer: "s + std::to_string(result));
@@ -564,48 +549,9 @@ void EndSingleTimeCommad(VkDevice device, Q &queue, VkCommandBuffer commandBuffe
     vkFreeCommandBuffers(device, transferCommandPool, 1, &commandBuffer);
 }
 
-void CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device,
-                  VkBuffer &buffer, VkDeviceMemory &deviceMemory, VkDeviceSize size,
-                  VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
-{
-    VkBufferCreateInfo const bufferCreateInfo{
-        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        nullptr, 0,
-        size,
-        usage,
-        VK_SHARING_MODE_EXCLUSIVE,
-        0, nullptr
-    };
-
-    if (auto result = vkCreateBuffer(device, &bufferCreateInfo, nullptr, &buffer); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create vertex buffer: "s + std::to_string(result));
-
-    VkMemoryRequirements memoryReqirements;
-    vkGetBufferMemoryRequirements(device, buffer, &memoryReqirements);
-
-    std::uint32_t memTypeIndex = 0;
-
-    if (auto index = FindMemoryType(physicalDevice, memoryReqirements.memoryTypeBits, properties); !index)
-        throw std::runtime_error("failed to find suitable memory type"s);
-
-    else memTypeIndex = index.value();
-
-    VkMemoryAllocateInfo const memAllocInfo{
-        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        nullptr,
-        memoryReqirements.size,
-        memTypeIndex
-    };
-
-    if (auto result = vkAllocateMemory(device, &memAllocInfo, nullptr, &deviceMemory); result != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate vertex buffer memory: "s + std::to_string(result));
-
-    if (auto result = vkBindBufferMemory(device, buffer, deviceMemory, 0); result != VK_SUCCESS)
-        throw std::runtime_error("failed to bind vertex buffer memory: "s + std::to_string(result));
-}
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-void CopyBuffer(VkDevice device, Q &queue, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
+void CopyBufferToBuffer(VkDevice device, Q &queue, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size)
 {
     auto commandBuffer = BeginSingleTimeCommand(device, queue);
 
@@ -613,7 +559,7 @@ void CopyBuffer(VkDevice device, Q &queue, VkBuffer srcBuffer, VkBuffer dstBuffe
 
     vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
 
-    EndSingleTimeCommad(device, queue, commandBuffer);
+    EndSingleTimeCommand(device, queue, commandBuffer);
 }
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
@@ -631,8 +577,9 @@ void CopyBufferToImage(VkDevice device, Q &queue, VkBuffer srcBuffer, VkImage ds
 
     vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
-    EndSingleTimeCommad(device, queue, commandBuffer);
+    EndSingleTimeCommand(device, queue, commandBuffer);
 }
+
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
 void TransitionImageLayout(VkDevice device, Q &queue, VkImage image, VkFormat format, VkImageLayout srcLayout, VkImageLayout dstLayout, std::uint32_t mipLevels)
@@ -686,7 +633,7 @@ void TransitionImageLayout(VkDevice device, Q &queue, VkImage image, VkFormat fo
 
     vkCmdPipelineBarrier(commandBuffer, srcStageFlags, dstStageFlags, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-    EndSingleTimeCommad(device, queue, commandBuffer);
+    EndSingleTimeCommand(device, queue, commandBuffer);
 }
 
 void LoadModel(std::string_view name)
@@ -695,62 +642,65 @@ void LoadModel(std::string_view name)
         throw std::runtime_error("failed to load mesh"s);
 }
 
-void CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
+
+void CreateVertexBuffer(VulkanDevice *vulkanDevice, VkBuffer &vertexBuffer, VkDeviceMemory &vertexBufferMemory)
 {
     VkDeviceSize bufferSize = sizeof(decltype(vertices)::value_type) * std::size(vertices);
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
 
-    CreateBuffer(physicalDevice, device, stagingBuffer, stagingBufferMemory, bufferSize,
+    CreateBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle(),
+                 stagingBuffer, stagingBufferMemory, bufferSize,
                  VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     decltype(vertices)::value_type *data;
-    if (auto result = vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
+    if (auto result = vkMapMemory(vulkanDevice->handle(), stagingBufferMemory, 0, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
         throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
 
     std::uninitialized_copy(std::begin(vertices), std::end(vertices), data);
 
-    vkUnmapMemory(device, stagingBufferMemory);
+    vkUnmapMemory(vulkanDevice->handle(), stagingBufferMemory);
 
-    CreateBuffer(physicalDevice, device, vertexBuffer, vertexBufferMemory, bufferSize,
+    CreateBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle(),
+                 vertexBuffer, vertexBufferMemory, bufferSize,
                  VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    CopyBuffer(device, transferQueue, stagingBuffer, vertexBuffer, bufferSize);
+    CopyBufferToBuffer(vulkanDevice->handle(), transferQueue, stagingBuffer, vertexBuffer, bufferSize);
 
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
+    vkDestroyBuffer(vulkanDevice->handle(), stagingBuffer, nullptr);
 }
 
-void CreateIndexBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
+void CreateIndexBuffer(VulkanDevice *vulkanDevice, VkBuffer &indexBuffer, VkDeviceMemory &indexBufferMemory)
 {
     VkDeviceSize bufferSize = sizeof(decltype(indices)::value_type) * std::size(indices);
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
 
-    CreateBuffer(physicalDevice, device, stagingBuffer, stagingBufferMemory, bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    CreateBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle(),
+                 stagingBuffer, stagingBufferMemory, bufferSize,
+                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     decltype(indices)::value_type *data;
-    if (auto result = vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
+    if (auto result = vkMapMemory(vulkanDevice->handle(), stagingBufferMemory, 0, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
         throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
 
     std::uninitialized_copy(std::begin(indices), std::end(indices), data);
 
-    vkUnmapMemory(device, stagingBufferMemory);
+    vkUnmapMemory(vulkanDevice->handle(), stagingBufferMemory);
 
-    CreateBuffer(physicalDevice, device, indexBuffer, indexBufferMemory, bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    CreateBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle(),
+                 indexBuffer, indexBufferMemory, bufferSize,
+                 VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
-    CopyBuffer(device, transferQueue, stagingBuffer, indexBuffer, bufferSize);
+    CopyBufferToBuffer(vulkanDevice->handle(), transferQueue, stagingBuffer, indexBuffer, bufferSize);
 
-    vkFreeMemory(device, stagingBufferMemory, nullptr);
-    vkDestroyBuffer(device, stagingBuffer, nullptr);
+    vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
+    vkDestroyBuffer(vulkanDevice->handle(), stagingBuffer, nullptr);
 }
 
-void CreateUniformBuffer(VkPhysicalDevice physicalDevice, VkDevice device)
-{
-    CreateBuffer(physicalDevice, device, uboBuffer, uboBufferMemory, sizeof(TRANSFORMS), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
-}
 
 void CreateDescriptorPool(VkDevice device, VkDescriptorPool &descriptorPool)
 {
@@ -954,55 +904,9 @@ void GenerateMipMaps(VkDevice device, Q &queue, VkImage image, std::int32_t widt
 
     vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-    EndSingleTimeCommad(device, queue, commandBuffer);
+    EndSingleTimeCommand(device, queue, commandBuffer);
 }
 
-void CreateImage(VkPhysicalDevice physicalDevice, VkDevice device,
-                 VkImage &image, VkDeviceMemory &deviceMemory, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
-                 VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
-{
-    VkImageCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        nullptr, 0,
-        VK_IMAGE_TYPE_2D,
-        format,
-        { width, height, 1 },
-        mipLevels,
-        1,
-        VK_SAMPLE_COUNT_1_BIT,
-        tiling,
-        usage,
-        VK_SHARING_MODE_EXCLUSIVE,
-        0, nullptr,
-        VK_IMAGE_LAYOUT_UNDEFINED
-    };
-
-    if (auto result = vkCreateImage(device, &createInfo, nullptr, &image); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create image: "s + std::to_string(result));
-
-    VkMemoryRequirements memoryReqirements;
-    vkGetImageMemoryRequirements(device, image, &memoryReqirements);
-
-    std::uint32_t memTypeIndex = 0;
-
-    if (auto index = FindMemoryType(physicalDevice, memoryReqirements.memoryTypeBits, properties); !index)
-        throw std::runtime_error("failed to find suitable memory type"s);
-
-    else memTypeIndex = index.value();
-
-    VkMemoryAllocateInfo const memAllocInfo{
-        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        nullptr,
-        memoryReqirements.size,
-        memTypeIndex
-    };
-
-    if (auto result = vkAllocateMemory(device, &memAllocInfo, nullptr, &deviceMemory); result != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate image buffer memory: "s + std::to_string(result));
-
-    if (auto result = vkBindImageMemory(device, image, deviceMemory, 0); result != VK_SUCCESS)
-        throw std::runtime_error("failed to bind image buffer memory: "s + std::to_string(result));
-}
 
 void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImage &image, VkDeviceMemory &imageMemory)
 {
@@ -1231,10 +1135,13 @@ void InitVulkan(GLFWwindow *window)
     CreateTextureSampler(vulkanDevice->handle(), textureSampler, mipLevels);
 
     LoadModel("chalet.obj"sv);
-    CreateVertexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
-    CreateIndexBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
+    if (auto result = LoadModel("chalet.obj"sv, vertices, indices); !result)
+        throw std::runtime_error("failed to load mesh"s);
 
-    CreateUniformBuffer(vulkanDevice->physical_handle(), vulkanDevice->handle());
+    CreateVertexBuffer(vulkanDevice.get(), vertexBuffer, vertexBufferMemory);
+    CreateIndexBuffer(vulkanDevice.get(), indexBuffer, indexBufferMemory);
+
+    CreateUniformBuffer(vulkanDevice.get(), uboBuffer, uboBufferMemory, sizeof(TRANSFORMS));
 
     CreateDescriptorPool(vulkanDevice->handle(), descriptorPool);
     CreateDescriptorSet(vulkanDevice->handle(), descriptorSet);

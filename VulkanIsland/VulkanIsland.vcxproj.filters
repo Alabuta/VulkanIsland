@@ -32,6 +32,9 @@
     <ClCompile Include="src\swapchain.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\buffer.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\helpers.h">
@@ -68,6 +71,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\program.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\buffer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

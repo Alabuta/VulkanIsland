@@ -174,6 +174,7 @@
     </PreBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\buffer.cxx" />
     <ClCompile Include="src\debug.cxx" />
     <ClCompile Include="src\device.cxx" />
     <ClCompile Include="src\instance.cxx" />
@@ -183,6 +184,7 @@
     <ClCompile Include="src\TARGA_loader.cxx" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\buffer.h" />
     <ClInclude Include="src\debug.h" />
     <ClInclude Include="src\device.h" />
     <ClInclude Include="src\device_defaults.h" />
