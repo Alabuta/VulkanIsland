@@ -636,11 +636,6 @@ void TransitionImageLayout(VkDevice device, Q &queue, VkImage image, VkFormat fo
     EndSingleTimeCommand(device, queue, commandBuffer);
 }
 
-void LoadModel(std::string_view name)
-{
-    if (auto result = LoadModel(name, vertices, indices); !result)
-        throw std::runtime_error("failed to load mesh"s);
-}
 
 
 void CreateVertexBuffer(VulkanDevice *vulkanDevice, VkBuffer &vertexBuffer, VkDeviceMemory &vertexBufferMemory)
@@ -1134,7 +1129,6 @@ void InitVulkan(GLFWwindow *window)
     CreateTextureImageView(vulkanDevice->handle(), textureImageView, textureImage, mipLevels);
     CreateTextureSampler(vulkanDevice->handle(), textureSampler, mipLevels);
 
-    LoadModel("chalet.obj"sv);
     if (auto result = LoadModel("chalet.obj"sv, vertices, indices); !result)
         throw std::runtime_error("failed to load mesh"s);
 
