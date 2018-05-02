@@ -105,7 +105,7 @@ struct vec3 {
     vec3() = default;
 
     template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 3>>>...>
-    constexpr vec3(T &&xyz) : xyz(std::forward(xyz)) {}
+    constexpr vec3(T &&xyz) : xyz(std::forward<T>(xyz)) {}
     constexpr vec3(float x, float y, float z = 0) : xyz({ x, y, z }) {}
 
     float length() const
@@ -170,7 +170,7 @@ struct mat4 {
     mat4() = default;
 
     template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 16>>>...>
-    constexpr mat4(T &&array) : m(std::forward(array)) { }
+    constexpr mat4(T &&array) : m(std::forward<T>(array)) { }
 
     template<class T0, class T1, class T2, class T3, typename std::enable_if_t<are_same_types_v<vec3, T0, T1, T2, T3>>...>
     constexpr mat4(T0 &&xAxis, T1 &&yAxis, T2 &&zAxis, T3 &&translation)
@@ -207,6 +207,16 @@ mat4 lookAt(T &&eye, T &&center, T &&up)
 
     return mat4(xAxis, yAxis, zAxis, position);
 }
+
+struct quat {
+    std::array<float, 4> xyzw;
+
+    quat() = default;
+
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 4>>>...>
+    constexpr quat(T &&xyzw) : xyzw(std::forward<T>(xyzw)) { }
+    constexpr quat(float x, float y, float z, float w) : xyzw({x, y, z, w}) { }
+};
 
 
 struct Vertex {
