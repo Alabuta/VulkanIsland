@@ -928,7 +928,6 @@ void CreateTextureImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImag
     if (auto result = vkMapMemory(device, stagingBufferMemory, 0, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
         throw std::runtime_error("failed to map image buffer memory: "s + std::to_string(result));
 
-    //std::uninitialized_copy_n(pixels, static_cast<std::size_t>(bufferSize), data);
     std::uninitialized_copy(std::begin(pixels), std::end(pixels), data);
 
     vkUnmapMemory(device, stagingBufferMemory);

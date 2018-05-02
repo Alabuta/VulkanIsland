@@ -99,11 +99,19 @@
       <AdditionalLibraryDirectories>%VULKAN_SDK%\Lib32;C:\Users\Almaz\Documents\Visual Studio 2017\glfw-3.2.1\build\src\Debug</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>"$(SolutionDir)glsl2spirv/main.py"</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <PreBuildEvent>
-      <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
+      <Message>
+      </Message>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>"$(SolutionDir)glsl2spirv/main.py"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -119,11 +127,19 @@
       <AdditionalLibraryDirectories>$(VK_SDK_PATH)\Lib;C:\Users\Almaz\Documents\Visual Studio 2017\glfw-3.2.1\build\src\Debug</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>"$(SolutionDir)glsl2spirv/main.py"</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <PreBuildEvent>
-      <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
+      <Message>
+      </Message>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>"$(SolutionDir)glsl2spirv/main.py"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <ClCompile>
@@ -143,11 +159,19 @@
       <AdditionalLibraryDirectories>%VULKAN_SDK%Lib32</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>"$(SolutionDir)glsl2spirv/main.py"</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <PreBuildEvent>
-      <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
+      <Message>
+      </Message>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>"$(SolutionDir)glsl2spirv/main.py"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <ClCompile>
@@ -167,11 +191,19 @@
       <AdditionalLibraryDirectories>$(VK_SDK_PATH)\Lib;C:\Users\Almaz\Documents\Visual Studio 2017\glfw-3.2.1\build\src\Release</AdditionalLibraryDirectories>
     </Link>
     <PreBuildEvent>
-      <Command>"$(SolutionDir)glsl2spirv/main.py"</Command>
+      <Command>
+      </Command>
     </PreBuildEvent>
     <PreBuildEvent>
-      <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
+      <Message>
+      </Message>
     </PreBuildEvent>
+    <PostBuildEvent>
+      <Command>"$(SolutionDir)glsl2spirv/main.py"</Command>
+    </PostBuildEvent>
+    <PostBuildEvent>
+      <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
+    </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\buffer.cxx" />
