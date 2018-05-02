@@ -41,6 +41,7 @@ struct hash<index_t> {
 
 bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec3> &normals, std::vector<vec2> &uvs, std::vector<index_t> &indices);
 
+bool LoadGLTF(std::string_view name);
 
 
 template<typename T>
@@ -104,6 +105,8 @@ template<typename T>
 bool LoadModel(std::string_view _name, std::vector<T> &vertices, std::vector<std::uint32_t> &indices)
 {
     using namespace std::string_literals;
+
+    LoadGLTF("Hebe"sv);
 
     std::vector<vec3> positions;
     std::vector<vec3> normals;
