@@ -126,20 +126,47 @@ struct mesh_t {
 };
 
 struct material_t {
-    struct normalmap_t {
-        std::size_t index;
-        std::size_t texCoord;
-        float scale;
-    } normalmap;
+    struct pbr_t {
+        struct texture_t {
+            std::size_t index;
+            std::size_t texCoord{0};
+        };
 
-    struct occlusionmap_t {
+        std::optional<texture_t> baseColorTexture;
+        std::optional<texture_t> metallicRoughnessTexture;
+
+        std::array<float, 4> baseColorFactor{{1.f, 1.f, 1.f, 1.f}};
+
+        float metallicFactor, roughnessFactor;
+    } pbr;
+
+    struct normal_texture_t {
         std::size_t index;
-        std::size_t texCoord;
+        std::size_t texCoord{0};
         float scale;
-    } occlusionmap;
+    };
+
+    std::optional<normal_texture_t> normalTexture;
+
+    struct occlusion_texture_t {
+        std::size_t index;
+        std::size_t texCoord{0};
+        float strength;
+    };
+
+    std::optional<occlusion_texture_t> occlusionTexture;
+
+    struct emissive_texture_t {
+        std::size_t index;
+        std::size_t texCoord{0};
+    };
+
+    std::optional<emissive_texture_t> emissiveTexture;
+
+    std::array<float, 3> emissiveFactor{{1.f, 1.f, 1.f}};
 
     std::string name;
-    bool doubleSide{false};
+    bool doubleSided{false};
 };
 
 struct camera_t {
@@ -215,34 +242,96 @@ void from_json(nlohmann::json const &j, node_t &node)
         node.camera = j.at("camera"s).get<std::decay_t<decltype(node.camera)>>();
 }
 
+void from_json(nlohmann::json const &j, material_t &material)
+{
+    auto const json_pbrMetallicRoughness = j.at("pbrMetallicRoughness"s);
+
+    material_t::pbr_t pbr;
+
+    if (json_pbrMetallicRoughness.count("baseColorTexture"s)) {
+        auto const json_baseColorTexture = json_pbrMetallicRoughness.at("baseColorTexture"s);
+
+        pbr.baseColorTexture = {
+            json_baseColorTexture.at("index"s).get<decltype(material_t::pbr_t::texture_t::index)>(),
+            json_baseColorTexture.count("texCoord"s) ? json_baseColorTexture.at("texCoord"s).get<decltype(material_t::pbr_t::texture_t::texCoord)>() : 0
+        };
+    }
+
+    material.pbr.baseColorFactor = json_pbrMetallicRoughness.at("baseColorFactor"s).get<decltype(material_t::pbr_t::baseColorFactor)>();
+
+    if (json_pbrMetallicRoughness.count("metallicRoughnessTexture"s)) {
+        auto const json_metallicRoughnessTexture = json_pbrMetallicRoughness.at("metallicRoughnessTexture"s);
+
+        pbr.baseColorTexture = {
+            json_metallicRoughnessTexture.at("index"s).get<decltype(material_t::pbr_t::texture_t::index)>(),
+            json_metallicRoughnessTexture.count("texCoord"s) ? json_metallicRoughnessTexture.at("texCoord"s).get<decltype(material_t::pbr_t::texture_t::texCoord)>() : 0
+        };
+    }
+
+    material.pbr.metallicFactor = json_pbrMetallicRoughness.at("metallicFactor"s).get<decltype(material_t::pbr_t::metallicFactor)>();
+    material.pbr.roughnessFactor = json_pbrMetallicRoughness.at("roughnessFactor"s).get<decltype(material_t::pbr_t::roughnessFactor)>();
+
+    if (j.count("normalTexture"s)) {
+        auto const json_normalTexture = j.at("normalTexture"s);
+
+        material.normalTexture = {
+            json_normalTexture.at("index"s).get<decltype(material_t::normal_texture_t::index)>(),
+            json_normalTexture.count("texCoord"s) ? json_normalTexture.at("texCoord"s).get<decltype(material_t::normal_texture_t::texCoord)>() : 0,
+            json_normalTexture.at("scale"s).get<decltype(material_t::normal_texture_t::scale)>()
+        };
+    }
+
+    if (j.count("occlusionTexture"s)) {
+        auto const json_occlusionTexture = j.at("occlusionTexture"s);
+
+        material.occlusionTexture = {
+            json_occlusionTexture.at("index"s).get<decltype(material_t::occlusion_texture_t::index)>(),
+            json_occlusionTexture.count("texCoord"s) ? json_occlusionTexture.at("texCoord"s).get<decltype(material_t::occlusion_texture_t::texCoord)>() : 0,
+            json_occlusionTexture.at("strength"s).get<decltype(material_t::occlusion_texture_t::strength)>()
+        };
+    }
+
+    if (j.count("emissiveTexture"s)) {
+        auto const json_emissiveTexture = j.at("emissiveTexture"s);
+
+        material.emissiveTexture = {
+            json_emissiveTexture.at("index"s).get<decltype(material_t::emissive_texture_t::index)>(),
+            json_emissiveTexture.count("texCoord"s) ? json_emissiveTexture.at("texCoord"s).get<decltype(material_t::emissive_texture_t::texCoord)>() : 0
+        };
+
+        material.emissiveFactor = j.at("emissiveFactor"s).get<decltype(material_t::emissiveFactor)>();
+    }
+
+    material.name = j.at("name"s).get<decltype(material_t::name)>();
+    material.doubleSided = j.at("doubleSided"s).get<decltype(material_t::doubleSided)>();
+}
+
 void from_json(nlohmann::json const &j, camera_t &camera)
 {
-    camera.type = j.at("type"s).get<std::decay_t<decltype(camera.type)>>();
+    camera.type = j.at("type"s).get<decltype(camera_t::type)>();
 
     auto const json_camera = j.at(camera.type);
 
     if (camera.type == "perspective"s) {
         camera_t::perspective_t instance;
 
-        instance.aspectRatio = json_camera.get<decltype(instance.aspectRatio)>();
-        instance.yfov = json_camera.get<decltype(instance.yfov)>();
-        instance.znear = json_camera.get<decltype(instance.znear)>();
+        instance.aspectRatio = json_camera.get<decltype(camera_t::perspective_t::aspectRatio)>();
+        instance.yfov = json_camera.get<decltype(camera_t::perspective_t::yfov)>();
+        instance.znear = json_camera.get<decltype(camera_t::perspective_t::znear)>();
 
         if (json_camera.count("zfar"s))
-            instance.zfar = json_camera.get<decltype(instance.zfar)>();
+            instance.zfar = json_camera.get<decltype(camera_t::perspective_t::zfar)>();
 
         camera.instance = instance;
     }
 
     else {
-        camera_t::orthographic_t instance;
-
-        instance.xmag = json_camera.get<decltype(instance.xmag)>();
-        instance.ymag = json_camera.get<decltype(instance.ymag)>();
-        instance.znear = json_camera.get<decltype(instance.znear)>();
-        instance.zfar = json_camera.get<decltype(instance.zfar)>();
-
-        camera.instance = instance;
+        camera.instance = camera_t::orthographic_t{
+            json_camera.get<decltype(camera_t::orthographic_t::xmag)>(),
+            json_camera.get<decltype(camera_t::orthographic_t::ymag)>(),
+            json_camera.get<decltype(camera_t::orthographic_t::znear)>(),
+            json_camera.get<decltype(camera_t::orthographic_t::zfar)>()
+        };
     }
 }
 }
@@ -280,263 +369,9 @@ bool LoadGLTF(std::string_view name)
 
     auto nodes = json.at("nodes"s).get<std::vector<glTF::node_t>>();
 
+    auto materials = json.at("materials"s).get<std::vector<glTF::material_t>>();
+
     // auto cameras = json.at("cameras"s).get<std::vector<glTF::camera_t>>();
 
     return true;
 }
-
-/*
-{
-	"accessors": [
-		{
-			"bufferView": 2,
-			"componentType": 5126,
-			"count": 33576,
-			"max": [
-				56.88610076904297,
-				64.0969009399414,
-				358.36639404296875
-			],
-			"min": [
-				-56.88610076904297,
-				-64.09599304199219,
-				-0.0681999996304512
-			],
-			"type": "VEC3"
-		},
-		{
-			"bufferView": 2,
-			"byteOffset": 402912,
-			"componentType": 5126,
-			"count": 33576,
-			"max": [
-				0.9999837875366211,
-				0.9999515414237976,
-				1
-			],
-			"min": [
-				-0.9999638795852661,
-				-0.999963104724884,
-				-1
-			],
-			"type": "VEC3"
-		},
-		{
-			"bufferView": 3,
-			"componentType": 5126,
-			"count": 33576,
-			"max": [
-				1,
-				0.9999980926513672,
-				0.9999934434890747,
-				1
-			],
-			"min": [
-				-0.9999961256980896,
-				-0.9999960660934448,
-				-0.9997523427009583,
-				-1
-			],
-			"type": "VEC4"
-		},
-		{
-			"bufferView": 1,
-			"componentType": 5126,
-			"count": 33576,
-			"max": [
-				3.906080961227417,
-				3.8973329067230225
-			],
-			"min": [
-				-2.906730890274048,
-				-2.893332004547119
-			],
-			"type": "VEC2"
-		},
-		{
-			"bufferView": 0,
-			"componentType": 5125,
-			"count": 178164,
-			"max": [
-				33575
-			],
-			"min": [
-				0
-			],
-			"type": "SCALAR"
-		}
-	],
-	"asset": {
-		"extras": {
-			"author": "auqolaq (https://sketchfab.com/auqolaq)",
-			"license": "CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)",
-			"source": "https://sketchfab.com/models/0219531e3c174e9dbf8c28f35290db5e",
-			"title": "Hebe"
-		},
-		"generator": "Sketchfab-3.22.5",
-		"version": "2.0"
-	},
-	"bufferViews": [
-		{
-			"buffer": 0,
-			"byteLength": 712656,
-			"byteOffset": 0,
-			"name": "floatBufferViews",
-			"target": 34963
-		},
-		{
-			"buffer": 0,
-			"byteLength": 268608,
-			"byteOffset": 712656,
-			"byteStride": 8,
-			"name": "floatBufferViews",
-			"target": 34962
-		},
-		{
-			"buffer": 0,
-			"byteLength": 805824,
-			"byteOffset": 981264,
-			"byteStride": 12,
-			"name": "floatBufferViews",
-			"target": 34962
-		},
-		{
-			"buffer": 0,
-			"byteLength": 537216,
-			"byteOffset": 1787088,
-			"byteStride": 16,
-			"name": "floatBufferViews",
-			"target": 34962
-		}
-	],
-	"buffers": [
-		{
-			"byteLength": 2324304,
-			"uri": "scene.bin"
-		}
-	],
-	"images": [
-		{
-			"uri": "textures/HebehebemissinSG1_baseColor.png"
-		},
-		{
-			"uri": "textures/HebehebemissinSG1_normal.png"
-		},
-		{
-			"uri": "textures/HebehebemissinSG1_metallicRoughness.png"
-		}
-	],
-	"materials": [
-		{
-			"doubleSided": true,
-			"name": "HebehebemissinSG1",
-			"normalTexture": {
-				"index": 1,
-				"scale": 1,
-				"texCoord": 0
-			},
-			"occlusionTexture": {
-				"index": 2,
-				"strength": 1,
-				"texCoord": 0
-			},
-			"pbrMetallicRoughness": {
-				"baseColorFactor": [
-					1,
-					1,
-					1,
-					1
-				],
-				"baseColorTexture": {
-					"index": 0,
-					"texCoord": 0
-				},
-				"metallicFactor": 1,
-				"metallicRoughnessTexture": {
-					"index": 2,
-					"texCoord": 0
-				},
-				"roughnessFactor": 1
-			}
-		}
-	],
-	"meshes": [
-		{
-			"primitives": [
-				{
-					"attributes": {
-						"NORMAL": 1,
-						"POSITION": 0,
-						"TANGENT": 2,
-						"TEXCOORD_0": 3
-					},
-					"indices": 4,
-					"material": 0,
-					"mode": 4
-				}
-			]
-		}
-	],
-	"nodes": [
-		{
-			"children": [
-				1
-			],
-			"name": "RootNode (gltf orientation matrix)",
-			"rotation": [
-				-0.7071067811865475,
-				0,
-				0,
-				0.7071067811865476
-			]
-		},
-		{
-			"children": [
-				2
-			],
-			"name": "RootNode (model correction matrix)"
-		},
-		{
-			"children": [
-				3
-			],
-			"name": "hebe.obj.cleaner.materialmerger.gles"
-		},
-		{
-			"mesh": 0,
-			"name": ""
-		}
-	],
-	"samplers": [
-		{
-			"magFilter": 9729,
-			"minFilter": 9987,
-			"wrapS": 10497,
-			"wrapT": 10497
-		}
-	],
-	"scene": 0,
-	"scenes": [
-		{
-			"name": "OSG_Scene",
-			"nodes": [
-				0
-			]
-		}
-	],
-	"textures": [
-		{
-			"sampler": 0,
-			"source": 0
-		},
-		{
-			"sampler": 0,
-			"source": 1
-		},
-		{
-			"sampler": 0,
-			"source": 2
-		}
-	]
-}
-*/
