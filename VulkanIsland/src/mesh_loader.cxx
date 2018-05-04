@@ -3,7 +3,8 @@
 #include <regex>
 #include <vector>
 #include <variant>
-#include <json.hpp>
+
+#include "../includes/nlohmann/json.hpp"
 
 #include "helpers.h"
 #include "mesh_loader.h"
