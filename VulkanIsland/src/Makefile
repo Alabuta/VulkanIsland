@@ -4,11 +4,10 @@ CFLAGS = -I$(VULKAN_SDK)/include -std=c++17 -pedantic -Wall -Wextra -fPIC -fPIE 
 CFLAGS_D = -I$(VULKAN_SDK)/include -std=c++17 -pedantic -Wall -Wextra -fPIC -fPIE -DDEBUG -g #-fsanitize=address
 LDFLAGS = -L$(LD_LIBRARY_PATH) `pkg-config --static --libs glfw3` -lvulkan -lboost_system -lboost_filesystem
 
-VulkanIsland: TARGA_loader.cxx mesh_loader.cxx debug.cxx device.cxx instance.cxx main.cxx
-	g++ $(CFLAGS) -o VulkanIsland TARGA_loader.cxx mesh_loader.cxx debug.cxx device.cxx instance.cxx main.cxx $(LDFLAGS)
 
-VulkanIsland_d: TARGA_loader.cxx mesh_loader.cxx debug.cxx device.cxx instance.cxx main.cxx
-	g++ $(CFLAGS_D) -o VulkanIsland_d TARGA_loader.cxx mesh_loader.cxx debug.cxx device.cxx instance.cxx main.cxx $(LDFLAGS)
+VulkanIsland: buffer.cxx debug.cxx device.cxx instance.cxx main.cxx mesh_loader.cxx swapchain.cxx TARGA_loader.cxx
+	g++ $(CFLAGS) -o VulkanIsland buffer.cxx debug.cxx device.cxx instance.cxx main.cxx mesh_loader.cxx swapchain.cxx TARGA_loader.cxx $(LDFLAGS)
+
 
 .PHONY: test clean temp
 
