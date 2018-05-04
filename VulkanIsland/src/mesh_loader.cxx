@@ -110,7 +110,12 @@ struct buffer_t {
 };
 
 struct image_t {
-    std::string uri;
+    struct view_t {
+        std::size_t bufferView;
+        std::string mimeType;
+    };
+
+    std::variant<std::string, view_t> data;
 };
 
 struct mesh_t {
@@ -118,11 +123,17 @@ struct mesh_t {
         std::size_t material;
         std::size_t indices;
 
-        struct attribute_t {
-        } attribute;
+        struct attributes_t {
+            vec3 position;
+            vec3 normal;
+            vec3 tangent;
+            vec2 texCoord0;
+        } attributes;
 
         std::uint32_t mode;
     };
+
+    std::vector<primitive_t> primitives;
 };
 
 struct material_t {
@@ -185,6 +196,15 @@ struct camera_t {
     std::variant<perspective_t, orthographic_t> instance;
 };
 
+struct texture_t {
+    std::size_t source;
+    std::size_t sampler;
+};
+
+struct sampler_t {
+    std::uint32_t minFilter, magFilter;
+    std::uint32_t wrapS, wrapT;
+};
 
 void from_json(nlohmann::json const &j, buffer_t &buffer)
 {
@@ -194,7 +214,13 @@ void from_json(nlohmann::json const &j, buffer_t &buffer)
 
 void from_json(nlohmann::json const &j, image_t &image)
 {
-    image.uri = j.at("uri"s).get<std::decay_t<decltype(image.uri)>>();
+    if (j.count("uri"s))
+        image.data = j.at("uri"s).get<std::string>();
+
+    else image.data = image_t::view_t{
+        j.at("bufferView"s).get<std::size_t>(),
+        j.at("mimeType"s).get<std::string>()
+    };
 }
 
 void from_json(nlohmann::json const &j, scene_t &scene)
@@ -246,12 +272,10 @@ void from_json(nlohmann::json const &j, material_t &material)
 {
     auto const json_pbrMetallicRoughness = j.at("pbrMetallicRoughness"s);
 
-    material_t::pbr_t pbr;
-
     if (json_pbrMetallicRoughness.count("baseColorTexture"s)) {
         auto const json_baseColorTexture = json_pbrMetallicRoughness.at("baseColorTexture"s);
 
-        pbr.baseColorTexture = {
+        material.pbr.baseColorTexture = {
             json_baseColorTexture.at("index"s).get<decltype(material_t::pbr_t::texture_t::index)>(),
             json_baseColorTexture.count("texCoord"s) ? json_baseColorTexture.at("texCoord"s).get<decltype(material_t::pbr_t::texture_t::texCoord)>() : 0
         };
@@ -262,7 +286,7 @@ void from_json(nlohmann::json const &j, material_t &material)
     if (json_pbrMetallicRoughness.count("metallicRoughnessTexture"s)) {
         auto const json_metallicRoughnessTexture = json_pbrMetallicRoughness.at("metallicRoughnessTexture"s);
 
-        pbr.baseColorTexture = {
+        material.pbr.metallicRoughnessTexture = {
             json_metallicRoughnessTexture.at("index"s).get<decltype(material_t::pbr_t::texture_t::index)>(),
             json_metallicRoughnessTexture.count("texCoord"s) ? json_metallicRoughnessTexture.at("texCoord"s).get<decltype(material_t::pbr_t::texture_t::texCoord)>() : 0
         };
@@ -336,6 +360,22 @@ void from_json(nlohmann::json const &j, camera_t &camera)
         };
     }
 }
+
+void from_json(nlohmann::json const &j, texture_t &texture)
+{
+    texture.source = j.at("source"s).get<decltype(texture_t::source)>();
+    texture.sampler = j.at("sampler"s).get<decltype(texture_t::sampler)>();
+}
+
+void from_json(nlohmann::json const &j, sampler_t &sampler)
+{
+    sampler.minFilter = j.at("minFilter"s).get<decltype(sampler_t::minFilter)>();
+    sampler.magFilter = j.at("magFilter"s).get<decltype(sampler_t::magFilter)>();
+
+    sampler.wrapS = j.at("wrapS"s).get<decltype(sampler_t::wrapS)>();
+    sampler.wrapT = j.at("wrapT"s).get<decltype(sampler_t::wrapT)>();
+}
+
 }
 
 bool LoadGLTF(std::string_view name)
@@ -362,8 +402,6 @@ bool LoadGLTF(std::string_view name)
     nlohmann::json json;
     glTF_file >> json;
 
-    // std::cout << std::setw(4) << json << '\n';
-
     auto buffers = json.at("buffers"s).get<std::vector<glTF::buffer_t>>();
     auto images = json.at("images"s).get<std::vector<glTF::image_t>>();
 
@@ -372,6 +410,9 @@ bool LoadGLTF(std::string_view name)
     auto nodes = json.at("nodes"s).get<std::vector<glTF::node_t>>();
 
     auto materials = json.at("materials"s).get<std::vector<glTF::material_t>>();
+
+    auto textures = json.at("textures"s).get<std::vector<glTF::texture_t>>();
+    auto samplers = json.at("samplers"s).get<std::vector<glTF::sampler_t>>();
 
     // auto cameras = json.at("cameras"s).get<std::vector<glTF::camera_t>>();
 
