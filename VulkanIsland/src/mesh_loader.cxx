@@ -119,7 +119,6 @@ struct mesh_t {
         std::size_t indices;
 
         struct attribute_t {
-            ;
         } attribute;
 
         std::uint32_t mode;
@@ -174,8 +173,8 @@ struct camera_t {
     std::string type;
 
     struct perspective_t {
-        float aspectRatio, yfov, znear;
-        float zfar = std::numeric_limits<float>::infinity();
+        float aspectRatio, yfov;
+        float znear, zfar;
     };
 
     struct orthographic_t {
@@ -322,6 +321,8 @@ void from_json(nlohmann::json const &j, camera_t &camera)
 
         if (json_camera.count("zfar"s))
             instance.zfar = json_camera.get<decltype(camera_t::perspective_t::zfar)>();
+
+        else instance.zfar = std::numeric_limits<float>::infinity();
 
         camera.instance = instance;
     }
