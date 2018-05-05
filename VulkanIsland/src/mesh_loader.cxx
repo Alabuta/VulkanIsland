@@ -124,10 +124,10 @@ struct mesh_t {
         std::size_t indices;
 
         struct attributes_t {
-            vec3 position;
-            vec3 normal;
-            vec3 tangent;
-            vec2 texCoord0;
+            std::size_t position;
+            std::size_t normal;
+            std::size_t tangent;
+            std::size_t texCoord0;
         } attributes;
 
         std::uint32_t mode;
@@ -266,6 +266,30 @@ void from_json(nlohmann::json const &j, node_t &node)
 
     if (j.count("camera"s))
         node.camera = j.at("camera"s).get<std::decay_t<decltype(node.camera)>>();
+}
+
+void from_json(nlohmann::json const &j, mesh_t &mesh)
+{
+    auto const json = j.at("primitives"s);
+
+    std::transform(std::cbegin(json), std::cend(json), std::back_inserter(mesh.primitives), [] (auto &&primitive)
+    {
+        mesh_t::primitive_t mesh;
+
+        mesh.material = primitive.at("material"s).get<decltype(mesh_t::primitive_t::material)>();
+        mesh.indices = primitive.at("indices"s).get<decltype(mesh_t::primitive_t::indices)>();
+
+        auto const json_attributes = primitive.at("attributes"s);
+
+        mesh.attributes.position = json_attributes.at("POSITION"s).get<decltype(mesh_t::primitive_t::attributes_t::position)>();
+        mesh.attributes.normal = json_attributes.at("NORMAL"s).get<decltype(mesh_t::primitive_t::attributes_t::normal)>();
+        mesh.attributes.tangent = json_attributes.at("TANGENT"s).get<decltype(mesh_t::primitive_t::attributes_t::tangent)>();
+        mesh.attributes.texCoord0 = json_attributes.at("TEXCOORD_0"s).get<decltype(mesh_t::primitive_t::attributes_t::texCoord0)>();
+
+        mesh.mode = primitive.at("mode"s).get<decltype(mesh_t::primitive_t::mode)>();
+
+        return mesh;
+    });
 }
 
 void from_json(nlohmann::json const &j, material_t &material)
@@ -413,6 +437,8 @@ bool LoadGLTF(std::string_view name)
 
     auto textures = json.at("textures"s).get<std::vector<glTF::texture_t>>();
     auto samplers = json.at("samplers"s).get<std::vector<glTF::sampler_t>>();
+
+    auto meshes = json.at("meshes"s).get<std::vector<glTF::mesh_t>>();
 
     // auto cameras = json.at("cameras"s).get<std::vector<glTF::camera_t>>();
 
