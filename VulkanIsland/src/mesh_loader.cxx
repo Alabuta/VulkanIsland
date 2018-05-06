@@ -89,6 +89,17 @@ bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec
 
 namespace glTF {
 
+auto constexpr GL_BYTE                 = 0x1400;
+auto constexpr GL_UNSIGNED_BYTE        = 0x1401;
+auto constexpr GL_SHORT                = 0x1402;
+auto constexpr GL_UNSIGNED_SHORT       = 0x1403;
+auto constexpr GL_INT                  = 0x1404;
+auto constexpr GL_UNSIGNED_INT         = 0x1405;
+auto constexpr GL_FLOAT                = 0x1406;
+
+auto constexpr GL_ARRAY_BUFFER         = 0x8892;
+auto constexpr GL_ELEMENT_ARRAY_BUFFER = 0x8893;
+
 struct scene_t {
     std::string name;
     std::vector<std::size_t> nodes;
@@ -206,10 +217,40 @@ struct sampler_t {
     std::uint32_t wrapS, wrapT;
 };
 
+struct buffer_view_t {
+    std::size_t buffer;
+    std::size_t byteOffset;
+    std::size_t byteLength;
+    std::size_t byteStride;
+    std::uint32_t target;
+};
+
+struct accessor_t {
+    std::size_t bufferView;
+    std::size_t byteOffset;
+    std::size_t count;
+
+    struct sparse_t {
+        std::size_t count;
+        std::size_t valuesBufferView;
+
+        std::size_t indicesBufferView;
+        std::uint32_t indicesComponentType;
+    };
+
+    std::optional<sparse_t> sparse;
+
+    std::vector<float> min, max;
+
+    std::uint32_t componentType;
+
+    std::string type;
+};
+
 void from_json(nlohmann::json const &j, buffer_t &buffer)
 {
-    buffer.byteLength = j.at("byteLength"s).get<std::decay_t<decltype(buffer.byteLength)>>();
-    buffer.uri = j.at("uri"s).get<std::decay_t<decltype(buffer.uri)>>();
+    buffer.byteLength = j.at("byteLength"s).get<decltype(buffer_t::byteLength)>();
+    buffer.uri = j.at("uri"s).get<decltype(buffer_t::uri)>();
 }
 
 void from_json(nlohmann::json const &j, image_t &image)
@@ -400,6 +441,54 @@ void from_json(nlohmann::json const &j, sampler_t &sampler)
     sampler.wrapT = j.at("wrapT"s).get<decltype(sampler_t::wrapT)>();
 }
 
+void from_json(nlohmann::json const &j, buffer_view_t &bufferView)
+{
+    bufferView.buffer = j.at("buffer"s).get<decltype(buffer_view_t::buffer)>();
+    bufferView.byteOffset = j.at("byteOffset"s).get<decltype(buffer_view_t::byteOffset)>();
+    bufferView.byteLength = j.at("byteLength"s).get<decltype(buffer_view_t::byteLength)>();
+
+    if (j.count("byteStride"s))
+        bufferView.byteStride = j.at("byteStride"s).get<decltype(buffer_view_t::byteStride)>();
+
+    else bufferView.byteStride = 0;
+
+    if (j.count("target"s))
+        bufferView.target = j.at("target"s).get<decltype(buffer_view_t::target)>();
+}
+
+void from_json(nlohmann::json const &j, accessor_t &accessor)
+{
+    accessor.bufferView = j.at("bufferView"s).get<decltype(accessor_t::bufferView)>();
+
+    if (j.count("byteOffset"s))
+        accessor.byteOffset = j.at("byteOffset"s).get<decltype(accessor_t::byteOffset)>();
+
+    else accessor.byteOffset = 0;
+
+    accessor.count = j.at("count"s).get<decltype(accessor_t::count)>();
+
+    if (j.count("sparse"s)) {
+        auto const json_sparse = j.at("sparse"s);
+
+        accessor_t::sparse_t sparse;
+
+        sparse.count = json_sparse.at("count"s).get<decltype(accessor_t::sparse_t::count)>();
+
+        sparse.valuesBufferView = json_sparse.at("values"s).at("bufferView"s).get<decltype(accessor_t::sparse_t::valuesBufferView)>();
+
+        sparse.indicesBufferView = json_sparse.at("indices"s).at("bufferView"s).get<decltype(accessor_t::sparse_t::indicesBufferView)>();
+        sparse.indicesComponentType = json_sparse.at("indices"s).at("componentType"s).get<decltype(accessor_t::sparse_t::indicesComponentType)>();
+
+        accessor.sparse = sparse;
+    }
+
+    accessor.min = j.at("min"s).get<decltype(accessor_t::min)>();
+    accessor.max = j.at("max"s).get<decltype(accessor_t::max)>();
+
+    accessor.type = j.at("type"s).get<decltype(accessor_t::type)>();
+    accessor.componentType = j.at("componentType"s).get<decltype(accessor_t::componentType)>();
+}
+
 }
 
 bool LoadGLTF(std::string_view name)
@@ -440,7 +529,31 @@ bool LoadGLTF(std::string_view name)
 
     auto meshes = json.at("meshes"s).get<std::vector<glTF::mesh_t>>();
 
+    auto bufferViews = json.at("bufferViews"s).get<std::vector<glTF::buffer_view_t>>();
+    auto accessors = json.at("accessors"s).get<std::vector<glTF::accessor_t>>();
+
     // auto cameras = json.at("cameras"s).get<std::vector<glTF::camera_t>>();
+
+    std::vector<std::vector<std::byte>> bin_buffers;
+    bin_buffers.reserve(std::size(buffers));
+
+    for (auto &&buffer : buffers) {
+        auto bin_path = folder / fs::path{buffer.uri};
+
+        std::ifstream bin_file(bin_path.native(), std::ios::in | std::ios::binary);
+
+        if (!bin_file.is_open()) {
+            std::cerr << "can't open file: "s << bin_path << std::endl;
+            return false;
+        }
+
+        std::vector<std::byte> byteCode(buffer.byteLength);
+
+        if (!byteCode.empty())
+            bin_file.read(reinterpret_cast<char *>(std::data(byteCode)), std::size(byteCode));
+
+        bin_buffers.emplace_back(std::move(byteCode));
+    }
 
     return true;
 }
