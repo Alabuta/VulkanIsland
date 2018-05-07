@@ -1,0 +1,11 @@
+//
+// Created by almaz on 5/7/18.
+//
+
+#ifndef VULKANISLAND_CONFIG_H
+#define VULKANISLAND_CONFIG_H
+
+#define VulkanIsland_VERSION_MAJOR @VulkanIsland_VERSION_MAJOR@
+#define VulkanIsland_VERSION_MINOR @VulkanIsland_VERSION_MINOR@
+
+#endif //VULKANISLAND_CONFIG_H
