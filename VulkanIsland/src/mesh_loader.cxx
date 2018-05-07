@@ -89,7 +89,7 @@ bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec
 
 namespace glTF {
 
-auto constexpr GL_BYTE                 = 0x1400;
+/*auto constexpr GL_BYTE                 = 0x1400;
 auto constexpr GL_UNSIGNED_BYTE        = 0x1401;
 auto constexpr GL_SHORT                = 0x1402;
 auto constexpr GL_UNSIGNED_SHORT       = 0x1403;
@@ -98,7 +98,7 @@ auto constexpr GL_UNSIGNED_INT         = 0x1405;
 auto constexpr GL_FLOAT                = 0x1406;
 
 auto constexpr GL_ARRAY_BUFFER         = 0x8892;
-auto constexpr GL_ELEMENT_ARRAY_BUFFER = 0x8893;
+auto constexpr GL_ELEMENT_ARRAY_BUFFER = 0x8893;*/
 
 struct scene_t {
     std::string name;
@@ -313,7 +313,7 @@ void from_json(nlohmann::json const &j, mesh_t &mesh)
 {
     auto const json = j.at("primitives"s);
 
-    std::transform(std::cbegin(json), std::cend(json), std::back_inserter(mesh.primitives), [] (auto &&primitive)
+    std::transform(std::cbegin(json), std::cend(json), std::back_inserter(mesh.primitives), [] (nlohmann::json const &primitive)
     {
         mesh_t::primitive_t mesh;
 
