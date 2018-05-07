@@ -12,8 +12,12 @@ configure_file(
 )
 
 find_package(Vulkan REQUIRED)
+
+if(NOT WIN32)
 find_package(glm REQUIRED)
 find_package(X11 REQUIRED)
+endif()
+
 find_package(glfw3 3.3 REQUIRED)
 
 set(SOURCE_FILES
@@ -74,8 +78,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
         dl
         X11
-
-        pthread
 
         Boost::boost
         Boost::filesystem

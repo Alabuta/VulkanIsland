@@ -1,10 +1,5 @@
 #pragma once
 
-#ifdef _MSC_VER
-#pragma comment(lib, "vulkan-1.lib")
-#pragma comment(lib, "glfw3.lib")
-#endif
-
 
 #include <iostream>
 #include <memory>
