@@ -10,6 +10,6 @@ layout(location = 0) out vec4 fragColor;
 
 void main()
 {
-    // fragColor = vec4(perVertexUV, 0.0, 1.0);
+    // fragColor = vec4(perVertexNormal, 1.0);
     fragColor = texture(textureSampler, perVertexUV);
 }

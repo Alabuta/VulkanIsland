@@ -63,6 +63,7 @@ struct TRANSFORMS {
     glm::mat4 model;
     glm::mat4 view;
     glm::mat4 proj;
+    glm::mat4 modelView;
 #endif
 } transforms;
 
@@ -1236,6 +1237,7 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
 
     transforms.model = glm::rotate(glm::mat4(1.f), .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});
     transforms.view = glm::lookAt(glm::vec3{1.2f, 0.8f, 1.2f}, glm::vec3{0, .4f, 0}, glm::vec3{0, 1, 0});
+    transforms.modelView = transforms.view * transforms.model;
 #endif
     auto const aspect = static_cast<float>(width) / static_cast<float>(height);
 
