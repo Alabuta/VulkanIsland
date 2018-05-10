@@ -69,7 +69,7 @@ find_package(Boost REQUIRED COMPONENTS
         filesystem
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATEbi
+target_link_libraries(${PROJECT_NAME} PRIVATE
         -Wl,-no-undefined
         -Wl,-no-allow-shlib-undefined
         -Wl,-unresolved-symbols=report-all
