@@ -38,9 +38,7 @@ set(SOURCE_FILES
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
-target_link_libraries(${PROJECT_NAME})
-
-set_target_properties(VulkanIsland PROPERTIES
+set_target_properties(${PROJECT_NAME} PROPERTIES
         VERSION ${PROJECT_VERSION}
 
         CXX_STANDARD 17
@@ -53,7 +51,7 @@ set_target_properties(VulkanIsland PROPERTIES
 )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(VulkanIsland PRIVATE
+    target_compile_options(${PROJECT_NAME} PRIVATE
             -pedantic
             -Wall
             -Wextra
@@ -61,7 +59,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 )
 
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    target_compile_options(VulkanIsland PRIVATE
+    target_compile_options(${PROJECT_NAME} PRIVATE
             /Wall
 )
 
@@ -71,13 +69,15 @@ find_package(Boost REQUIRED COMPONENTS
         filesystem
 )
 
-target_link_libraries(${PROJECT_NAME} PRIVATE
+target_link_libraries(${PROJECT_NAME} PRIVATEbi
         -Wl,-no-undefined
         -Wl,-no-allow-shlib-undefined
         -Wl,-unresolved-symbols=report-all
 
         dl
         X11
+
+        pthread
 
         Boost::boost
         Boost::filesystem
