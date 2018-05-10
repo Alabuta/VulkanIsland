@@ -164,6 +164,17 @@ struct vec3 {
         return xyz[0] * rhs.xyz[0] + xyz[1] * rhs.xyz[1] + xyz[2] * rhs.xyz[2];
     }
 };
+
+struct vec4 {
+    std::array<float, 4> xyzw;
+
+    vec4() = default;
+
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 4>>>...>
+    constexpr vec4(T &&xyzw) : xyzw(std::forward<T>(xyzw)) { }
+    constexpr vec4(float x, float y, float z, float w) : xyzw({x, y, z, w}) { }
+};
+
 struct mat4 {
     std::array<float, 16> m;
 

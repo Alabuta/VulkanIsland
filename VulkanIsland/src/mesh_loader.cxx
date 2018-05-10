@@ -1,3 +1,4 @@
+#define _SCL_SECURE_NO_WARNINGS 
 
 #include <sstream>
 #include <regex>
@@ -88,6 +89,17 @@ bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec
 }
 
 namespace glTF {
+auto constexpr kBYTE                 = 0x1400;
+auto constexpr kUNSIGNED_BYTE        = 0x1401;
+auto constexpr kSHORT                = 0x1402;
+auto constexpr kUNSIGNED_SHORT       = 0x1403;
+auto constexpr kINT                  = 0x1404;
+auto constexpr kUNSIGNED_INT         = 0x1405;
+auto constexpr kFLOAT                = 0x1406;
+
+auto constexpr kARRAY_BUFFER         = 0x8892;
+auto constexpr kELEMENT_ARRAY_BUFFER = 0x8893;
+
 template<std::size_t N, class T>
 struct vec {
     std::array<T, N> array;
@@ -126,17 +138,6 @@ namespace attribute {
             std::vector<vec<4, std::float_t>>
     >;
 }
-
-/*auto constexpr GL_BYTE                 = 0x1400;
-auto constexpr GL_UNSIGNED_BYTE        = 0x1401;
-auto constexpr GL_SHORT                = 0x1402;
-auto constexpr GL_UNSIGNED_SHORT       = 0x1403;
-auto constexpr GL_INT                  = 0x1404;
-auto constexpr GL_UNSIGNED_INT         = 0x1405;
-auto constexpr GL_FLOAT                = 0x1406;
-
-auto constexpr GL_ARRAY_BUFFER         = 0x8892;
-auto constexpr GL_ELEMENT_ARRAY_BUFFER = 0x8893;*/
 
 struct scene_t {
     std::string name;
@@ -607,8 +608,23 @@ bool LoadGLTF(std::string_view name)
     attribute_buffers.reserve(std::size(accessors));
 
     for (auto &&accessor : accessors) {
-        ;
+        if (accessor.type == "SCALAR"s && accessor.componentType == glTF::kUNSIGNED_INT) {
+            auto &&bufferView = bufferViews.at(accessor.bufferView);
+
+            if (bufferView.byteStride != 0)
+                throw std::runtime_error("unsupported interleaved attributes layout"s);
+
+            std::vector<std::byte> stagingBuffer(bufferView.byteLength);
+            std::uninitialized_copy_n(
+                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), bufferView.byteOffset), bufferView.byteLength, std::data(stagingBuffer)
+            );
+
+            std::vector<std::uint32_t> buffer(accessor.count);
+            memmove_s(std::data(buffer), std::size(buffer) * sizeof(std::uint32_t), std::data(stagingBuffer), std::size(stagingBuffer));
+        }
     }
+
+
 
     return true;
 }
