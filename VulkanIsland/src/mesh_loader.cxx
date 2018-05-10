@@ -88,6 +88,44 @@ bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec
 }
 
 namespace glTF {
+template<std::size_t N, class T>
+struct vec {
+    std::array<T, N> array;
+};
+
+namespace attribute {
+    using buffer_t = std::variant<
+            std::vector<vec<1, std::int8_t>>,
+            std::vector<vec<2, std::int8_t>>,
+            std::vector<vec<3, std::int8_t>>,
+            std::vector<vec<4, std::int8_t>>,
+
+            std::vector<vec<1, std::uint8_t>>,
+            std::vector<vec<2, std::uint8_t>>,
+            std::vector<vec<3, std::uint8_t>>,
+            std::vector<vec<4, std::uint8_t>>,
+
+            std::vector<vec<1, std::int16_t>>,
+            std::vector<vec<2, std::int16_t>>,
+            std::vector<vec<3, std::int16_t>>,
+            std::vector<vec<4, std::int16_t>>,
+
+            std::vector<vec<1, std::uint16_t>>,
+            std::vector<vec<2, std::uint16_t>>,
+            std::vector<vec<3, std::uint16_t>>,
+            std::vector<vec<4, std::uint16_t>>,
+
+            std::vector<vec<1, std::uint32_t>>,
+            std::vector<vec<2, std::uint32_t>>,
+            std::vector<vec<3, std::uint32_t>>,
+            std::vector<vec<4, std::uint32_t>>,
+
+            std::vector<vec<1, std::float_t>>,
+            std::vector<vec<2, std::float_t>>,
+            std::vector<vec<3, std::float_t>>,
+            std::vector<vec<4, std::float_t>>
+    >;
+}
 
 /*auto constexpr GL_BYTE                 = 0x1400;
 auto constexpr GL_UNSIGNED_BYTE        = 0x1401;
@@ -131,7 +169,7 @@ struct image_t {
 
 struct mesh_t {
     struct primitive_t {
-        std::size_t material;
+        std::optional<std::size_t> material;
         std::size_t indices;
 
         struct attributes_t {
@@ -141,7 +179,7 @@ struct mesh_t {
             std::size_t texCoord0;
         } attributes;
 
-        std::uint32_t mode;
+        std::optional<std::uint32_t> mode;
     };
 
     std::vector<primitive_t> primitives;
@@ -266,13 +304,20 @@ void from_json(nlohmann::json const &j, image_t &image)
 
 void from_json(nlohmann::json const &j, scene_t &scene)
 {
-    scene.name = j.at("name"s).get<std::decay_t<decltype(scene.name)>>();
-    scene.nodes = j.at("nodes"s).get<std::decay_t<decltype(scene.nodes)>>();
+    if (j.count("name"s))
+        scene.name = j.at("name"s).get<decltype(scene_t::name)>();
+
+    else scene.name = ""s;
+
+    scene.nodes = j.at("nodes"s).get<decltype(scene_t::nodes)>();
 }
 
 void from_json(nlohmann::json const &j, node_t &node)
 {
-    node.name = j.at("name"s).get<std::decay_t<decltype(node.name)>>();
+    if (j.count("name"s))
+        node.name = j.at("name"s).get<decltype(node_t::name)>();
+
+    else node.name = ""s;
 
     if (j.count("matrix"s)) {
         std::array<float, 16> matrix;
@@ -317,7 +362,9 @@ void from_json(nlohmann::json const &j, mesh_t &mesh)
     {
         mesh_t::primitive_t mesh;
 
-        mesh.material = primitive.at("material"s).get<decltype(mesh_t::primitive_t::material)>();
+        if (primitive.count("material"s))
+            mesh.material = primitive.at("material"s).get<decltype(mesh_t::primitive_t::material)::value_type>();
+
         mesh.indices = primitive.at("indices"s).get<decltype(mesh_t::primitive_t::indices)>();
 
         auto const json_attributes = primitive.at("attributes"s);
@@ -327,7 +374,8 @@ void from_json(nlohmann::json const &j, mesh_t &mesh)
         mesh.attributes.tangent = json_attributes.at("TANGENT"s).get<decltype(mesh_t::primitive_t::attributes_t::tangent)>();
         mesh.attributes.texCoord0 = json_attributes.at("TEXCOORD_0"s).get<decltype(mesh_t::primitive_t::attributes_t::texCoord0)>();
 
-        mesh.mode = primitive.at("mode"s).get<decltype(mesh_t::primitive_t::mode)>();
+        if (primitive.count("mode"s))
+            mesh.mode = primitive.at("mode"s).get<decltype(mesh_t::primitive_t::mode)::value_type>();
 
         return mesh;
     });
@@ -516,16 +564,16 @@ bool LoadGLTF(std::string_view name)
     glTF_file >> json;
 
     auto buffers = json.at("buffers"s).get<std::vector<glTF::buffer_t>>();
-    auto images = json.at("images"s).get<std::vector<glTF::image_t>>();
+    //auto images = json.at("images"s).get<std::vector<glTF::image_t>>();
 
     auto scenes = json.at("scenes"s).get<std::vector<glTF::scene_t>>();
 
     auto nodes = json.at("nodes"s).get<std::vector<glTF::node_t>>();
 
-    auto materials = json.at("materials"s).get<std::vector<glTF::material_t>>();
+    /* auto materials = json.at("materials"s).get<std::vector<glTF::material_t>>();
 
     auto textures = json.at("textures"s).get<std::vector<glTF::texture_t>>();
-    auto samplers = json.at("samplers"s).get<std::vector<glTF::sampler_t>>();
+    auto samplers = json.at("samplers"s).get<std::vector<glTF::sampler_t>>();*/
 
     auto meshes = json.at("meshes"s).get<std::vector<glTF::mesh_t>>();
 
@@ -553,6 +601,13 @@ bool LoadGLTF(std::string_view name)
             bin_file.read(reinterpret_cast<char *>(std::data(byteCode)), std::size(byteCode));
 
         bin_buffers.emplace_back(std::move(byteCode));
+    }
+
+    std::vector<glTF::attribute::buffer_t> attribute_buffers;
+    attribute_buffers.reserve(std::size(accessors));
+
+    for (auto &&accessor : accessors) {
+        ;
     }
 
     return true;
