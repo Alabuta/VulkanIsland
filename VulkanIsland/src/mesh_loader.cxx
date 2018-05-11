@@ -611,20 +611,46 @@ bool LoadGLTF(std::string_view name)
         if (accessor.type == "SCALAR"s && accessor.componentType == glTF::kUNSIGNED_INT) {
             auto &&bufferView = bufferViews.at(accessor.bufferView);
 
-            if (bufferView.byteStride != 0)
-                throw std::runtime_error("unsupported interleaved attributes layout"s);
+            std::vector<std::byte> stagingBuffer(bufferView.byteLength);
+            std::uninitialized_copy_n(
+                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), bufferView.byteOffset), bufferView.byteLength, std::data(stagingBuffer)
+            );
+
+            std::vector<glTF::vec<1, std::uint32_t>> buffer(accessor.count);
+            memmove_s(std::data(buffer), std::size(buffer) * sizeof(decltype(buffer)::value_type), std::data(stagingBuffer), std::size(stagingBuffer));
+
+            attribute_buffers.emplace_back(std::move(buffer));
+        }
+
+        else if (accessor.type == "VEC2"s && accessor.componentType == glTF::kFLOAT) {
+            auto &&bufferView = bufferViews.at(accessor.bufferView);
 
             std::vector<std::byte> stagingBuffer(bufferView.byteLength);
             std::uninitialized_copy_n(
                 std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), bufferView.byteOffset), bufferView.byteLength, std::data(stagingBuffer)
             );
 
-            std::vector<std::uint32_t> buffer(accessor.count);
-            memmove_s(std::data(buffer), std::size(buffer) * sizeof(std::uint32_t), std::data(stagingBuffer), std::size(stagingBuffer));
+            std::vector<glTF::vec<2, std::float_t>> buffer(accessor.count);
+            memmove_s(std::data(buffer), std::size(buffer) * sizeof(decltype(buffer)::value_type), std::data(stagingBuffer), std::size(stagingBuffer));
+
+            attribute_buffers.emplace_back(std::move(buffer));
+        }
+
+        else if (accessor.type == "VEC3"s && accessor.componentType == glTF::kFLOAT) {
+            auto &&bufferView = bufferViews.at(accessor.bufferView);
+
+            std::vector<std::byte> stagingBuffer(bufferView.byteLength);
+            std::uninitialized_copy_n(
+                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), bufferView.byteOffset), bufferView.byteLength, std::data(stagingBuffer)
+            );
+
+            std::vector<glTF::vec<3, std::float_t>> buffer(accessor.count);
+            auto x = std::size(buffer) * sizeof(decltype(buffer)::value_type);
+            memmove_s(std::data(buffer), std::size(buffer) * sizeof(decltype(buffer)::value_type), std::data(stagingBuffer), std::size(stagingBuffer));
+
+            attribute_buffers.emplace_back(std::move(buffer));
         }
     }
-
-
 
     return true;
 }
