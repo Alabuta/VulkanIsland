@@ -540,7 +540,7 @@ void from_json(nlohmann::json const &j, accessor_t &accessor)
 
 }
 
-bool LoadGLTF(std::string_view name)
+bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &indices)
 {
     auto current_path = fs::current_path();
 
@@ -565,16 +565,16 @@ bool LoadGLTF(std::string_view name)
     glTF_file >> json;
 
     auto buffers = json.at("buffers"s).get<std::vector<glTF::buffer_t>>();
-    //auto images = json.at("images"s).get<std::vector<glTF::image_t>>();
+    auto images = json.at("images"s).get<std::vector<glTF::image_t>>();
 
     auto scenes = json.at("scenes"s).get<std::vector<glTF::scene_t>>();
 
     auto nodes = json.at("nodes"s).get<std::vector<glTF::node_t>>();
 
-    /* auto materials = json.at("materials"s).get<std::vector<glTF::material_t>>();
+    auto materials = json.at("materials"s).get<std::vector<glTF::material_t>>();
 
     auto textures = json.at("textures"s).get<std::vector<glTF::texture_t>>();
-    auto samplers = json.at("samplers"s).get<std::vector<glTF::sampler_t>>();*/
+    auto samplers = json.at("samplers"s).get<std::vector<glTF::sampler_t>>();
 
     auto meshes = json.at("meshes"s).get<std::vector<glTF::mesh_t>>();
 
@@ -611,13 +611,20 @@ bool LoadGLTF(std::string_view name)
         if (accessor.type == "SCALAR"s && accessor.componentType == glTF::kUNSIGNED_INT) {
             auto &&bufferView = bufferViews.at(accessor.bufferView);
 
-            std::vector<std::byte> stagingBuffer(bufferView.byteLength);
+            auto const byteLength = accessor.count * sizeof(glTF::vec<1, std::uint32_t>);
+
+            std::vector<std::byte> stagingBuffer(byteLength);
             std::uninitialized_copy_n(
-                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), bufferView.byteOffset), bufferView.byteLength, std::data(stagingBuffer)
+                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), bufferView.byteOffset), byteLength, std::data(stagingBuffer)
             );
 
             std::vector<glTF::vec<1, std::uint32_t>> buffer(accessor.count);
-            memmove_s(std::data(buffer), std::size(buffer) * sizeof(decltype(buffer)::value_type), std::data(stagingBuffer), std::size(stagingBuffer));
+
+            if (bufferView.byteStride != 0)
+                for (std::size_t i = 0, j = 0u; i < std::size(stagingBuffer); i += bufferView.byteStride, ++j)
+                    memmove(&buffer.at(j), &stagingBuffer.at(i), sizeof(decltype(buffer)::value_type));
+
+            else memmove_s(std::data(buffer), byteLength, std::data(stagingBuffer), std::size(stagingBuffer));
 
             attribute_buffers.emplace_back(std::move(buffer));
         }
@@ -625,13 +632,20 @@ bool LoadGLTF(std::string_view name)
         else if (accessor.type == "VEC2"s && accessor.componentType == glTF::kFLOAT) {
             auto &&bufferView = bufferViews.at(accessor.bufferView);
 
-            std::vector<std::byte> stagingBuffer(bufferView.byteLength);
+            auto const byteLength = accessor.count * sizeof(glTF::vec<2, std::float_t>);
+
+            std::vector<std::byte> stagingBuffer(byteLength);
             std::uninitialized_copy_n(
-                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), bufferView.byteOffset), bufferView.byteLength, std::data(stagingBuffer)
+                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), accessor.byteOffset + bufferView.byteOffset), byteLength, std::data(stagingBuffer)
             );
 
             std::vector<glTF::vec<2, std::float_t>> buffer(accessor.count);
-            memmove_s(std::data(buffer), std::size(buffer) * sizeof(decltype(buffer)::value_type), std::data(stagingBuffer), std::size(stagingBuffer));
+
+            if (bufferView.byteStride != 0)
+                for (std::size_t i = 0, j = 0u; i < std::size(stagingBuffer); i += bufferView.byteStride, ++j)
+                    memmove(&buffer.at(j), &stagingBuffer.at(i), sizeof(decltype(buffer)::value_type));
+
+            else memmove_s(std::data(buffer), byteLength, std::data(stagingBuffer), std::size(stagingBuffer));
 
             attribute_buffers.emplace_back(std::move(buffer));
         }
@@ -639,18 +653,26 @@ bool LoadGLTF(std::string_view name)
         else if (accessor.type == "VEC3"s && accessor.componentType == glTF::kFLOAT) {
             auto &&bufferView = bufferViews.at(accessor.bufferView);
 
-            std::vector<std::byte> stagingBuffer(bufferView.byteLength);
+            auto const byteLength = accessor.count * sizeof(glTF::vec<3, std::float_t>);
+
+            std::vector<std::byte> stagingBuffer(byteLength);
             std::uninitialized_copy_n(
-                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), bufferView.byteOffset), bufferView.byteLength, std::data(stagingBuffer)
+                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), accessor.byteOffset + bufferView.byteOffset), byteLength, std::data(stagingBuffer)
             );
 
             std::vector<glTF::vec<3, std::float_t>> buffer(accessor.count);
-            auto x = std::size(buffer) * sizeof(decltype(buffer)::value_type);
-            memmove_s(std::data(buffer), std::size(buffer) * sizeof(decltype(buffer)::value_type), std::data(stagingBuffer), std::size(stagingBuffer));
+
+            if (bufferView.byteStride != 0)
+                for (std::size_t i = 0, j = 0u; i < std::size(stagingBuffer); i += bufferView.byteStride, ++j)
+                    memmove(&buffer.at(j), &stagingBuffer.at(i), sizeof(decltype(buffer)::value_type));
+
+            else memmove_s(std::data(buffer), byteLength, std::data(stagingBuffer), std::size(stagingBuffer));
 
             attribute_buffers.emplace_back(std::move(buffer));
         }
     }
+
+    ;
 
     return true;
 }
