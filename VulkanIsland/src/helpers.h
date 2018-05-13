@@ -245,6 +245,15 @@ struct Vertex {
         uv = std::forward<UV>(_uv);
     }
 
+    template<class P, class N, class UV,
+        typename std::enable_if_t<are_same_types_v<std::array<float, 3>, std::decay_t<P>, std::decay_t<N>> && std::is_same_v<std::array<float, 2>, std::decay_t<UV>>>...>
+    constexpr Vertex(P &&_position, N &&_normal, UV &&_uv)
+    {
+        pos = std::move(vec3{std::forward<P>(_position)});
+        normal = std::move(vec3{std::forward<N>(_normal)});
+        uv = std::move(vec2{std::forward<UV>(_uv)});
+    }
+
     template<class T, typename std::enable_if_t<std::is_same_v<Vertex, std::decay_t<T>>>...>
     constexpr bool operator== (T &&rhs) const
     {

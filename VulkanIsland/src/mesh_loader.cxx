@@ -540,7 +540,7 @@ void from_json(nlohmann::json const &j, accessor_t &accessor)
 
 }
 
-bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &indices)
+bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &_indices)
 {
     auto current_path = fs::current_path();
 
@@ -670,9 +670,48 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
             attribute_buffers.emplace_back(std::move(buffer));
         }
+
+        else if (accessor.type == "VEC4"s && accessor.componentType == glTF::kFLOAT) {
+            auto &&bufferView = bufferViews.at(accessor.bufferView);
+
+            auto const byteLength = accessor.count * sizeof(glTF::vec<4, std::float_t>);
+
+            std::vector<std::byte> stagingBuffer(byteLength);
+            std::uninitialized_copy_n(
+                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), accessor.byteOffset + bufferView.byteOffset), byteLength, std::data(stagingBuffer)
+            );
+
+            std::vector<glTF::vec<4, std::float_t>> buffer(accessor.count);
+
+            if (bufferView.byteStride != 0)
+                for (std::size_t i = 0, j = 0u; i < std::size(stagingBuffer); i += bufferView.byteStride, ++j)
+                    memmove(&buffer.at(j), &stagingBuffer.at(i), sizeof(decltype(buffer)::value_type));
+
+            else memmove_s(std::data(buffer), byteLength, std::data(stagingBuffer), std::size(stagingBuffer));
+
+            attribute_buffers.emplace_back(std::move(buffer));
+        }
     }
 
-    ;
+    for (auto &&mesh : meshes) {
+        for (auto &&primitive : mesh.primitives) {
+            auto &&positions = std::get<std::vector<glTF::vec<3, std::float_t>>>(attribute_buffers.at(primitive.attributes.position));
+            auto &&normals = std::get<std::vector<glTF::vec<3, std::float_t>>>(attribute_buffers.at(primitive.attributes.normal));
+            auto &&uvs = std::get<std::vector<glTF::vec<2, std::float_t>>>(attribute_buffers.at(primitive.attributes.texCoord0));
+
+            vertices.reserve(std::size(positions));
+
+            for (auto i = 0u; i < std::size(positions); ++i)
+                vertices.emplace_back(positions.at(i).array, normals.at(i).array, uvs.at(i).array);
+
+            auto &&indices = std::get<std::vector<glTF::vec<1, std::uint32_t>>>(attribute_buffers.at(primitive.indices));
+
+            _indices.resize(std::size(indices));
+            //std::move(std::begin(indices), std::end(indices), std::back_inserter(_indices));
+            //std::uninitialized_move(std::begin(indices), std::end(indices), std::back_inserter(_indices));
+            memmove_s(std::data(_indices), std::size(_indices), std::data(indices), std::size(indices));
+        }
+    }
 
     return true;
 }
