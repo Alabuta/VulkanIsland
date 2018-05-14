@@ -180,7 +180,7 @@ struct mesh_t {
             std::size_t texCoord0;
         } attributes;
 
-        std::optional<std::uint32_t> mode;
+        std::uint32_t mode;
     };
 
     std::vector<primitive_t> primitives;
@@ -370,13 +370,22 @@ void from_json(nlohmann::json const &j, mesh_t &mesh)
 
         auto const json_attributes = primitive.at("attributes"s);
 
-        mesh.attributes.position = json_attributes.at("POSITION"s).get<decltype(mesh_t::primitive_t::attributes_t::position)>();
-        mesh.attributes.normal = json_attributes.at("NORMAL"s).get<decltype(mesh_t::primitive_t::attributes_t::normal)>();
-        mesh.attributes.tangent = json_attributes.at("TANGENT"s).get<decltype(mesh_t::primitive_t::attributes_t::tangent)>();
-        mesh.attributes.texCoord0 = json_attributes.at("TEXCOORD_0"s).get<decltype(mesh_t::primitive_t::attributes_t::texCoord0)>();
+        if (json_attributes.count("POSITION"s))
+            mesh.attributes.position = json_attributes.at("POSITION"s).get<decltype(mesh_t::primitive_t::attributes_t::position)>();
+
+        if (json_attributes.count("NORMAL"s))
+            mesh.attributes.normal = json_attributes.at("NORMAL"s).get<decltype(mesh_t::primitive_t::attributes_t::normal)>();
+
+        if (json_attributes.count("TANGENT"s))
+            mesh.attributes.tangent = json_attributes.at("TANGENT"s).get<decltype(mesh_t::primitive_t::attributes_t::tangent)>();
+
+        if (json_attributes.count("TEXCOORD_0"s))
+            mesh.attributes.texCoord0 = json_attributes.at("TEXCOORD_0"s).get<decltype(mesh_t::primitive_t::attributes_t::texCoord0)>();
 
         if (primitive.count("mode"s))
-            mesh.mode = primitive.at("mode"s).get<decltype(mesh_t::primitive_t::mode)::value_type>();
+            mesh.mode = primitive.at("mode"s).get<decltype(mesh_t::primitive_t::mode)>();
+
+        else mesh.mode = 4;
 
         return mesh;
     });
@@ -615,7 +624,7 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
             std::vector<std::byte> stagingBuffer(byteLength);
             std::uninitialized_copy_n(
-                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), bufferView.byteOffset), byteLength, std::data(stagingBuffer)
+                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), accessor.byteOffset + bufferView.byteOffset), byteLength, std::data(stagingBuffer)
             );
 
             std::vector<glTF::vec<1, std::uint32_t>> buffer(accessor.count);
@@ -709,7 +718,8 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
             _indices.resize(std::size(indices));
             //std::move(std::begin(indices), std::end(indices), std::back_inserter(_indices));
             //std::uninitialized_move(std::begin(indices), std::end(indices), std::back_inserter(_indices));
-            memmove_s(std::data(_indices), std::size(_indices), std::data(indices), std::size(indices));
+            memmove_s(std::data(_indices), std::size(_indices) * sizeof(std::decay_t<decltype(_indices)>::value_type),
+                      std::data(indices), std::size(indices) * sizeof(std::decay_t<decltype(indices)>::value_type));
         }
     }
 
