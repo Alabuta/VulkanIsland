@@ -109,35 +109,35 @@ struct vec {
 
 namespace attribute {
     using buffer_t = std::variant<
-            std::vector<vec<1, std::int8_t>>,
-            std::vector<vec<2, std::int8_t>>,
-            std::vector<vec<3, std::int8_t>>,
-            std::vector<vec<4, std::int8_t>>,
+        std::vector<vec<1, std::int8_t>>,
+        std::vector<vec<2, std::int8_t>>,
+        std::vector<vec<3, std::int8_t>>,
+        std::vector<vec<4, std::int8_t>>,
 
-            std::vector<vec<1, std::uint8_t>>,
-            std::vector<vec<2, std::uint8_t>>,
-            std::vector<vec<3, std::uint8_t>>,
-            std::vector<vec<4, std::uint8_t>>,
+        std::vector<vec<1, std::uint8_t>>,
+        std::vector<vec<2, std::uint8_t>>,
+        std::vector<vec<3, std::uint8_t>>,
+        std::vector<vec<4, std::uint8_t>>,
 
-            std::vector<vec<1, std::int16_t>>,
-            std::vector<vec<2, std::int16_t>>,
-            std::vector<vec<3, std::int16_t>>,
-            std::vector<vec<4, std::int16_t>>,
+        std::vector<vec<1, std::int16_t>>,
+        std::vector<vec<2, std::int16_t>>,
+        std::vector<vec<3, std::int16_t>>,
+        std::vector<vec<4, std::int16_t>>,
 
-            std::vector<vec<1, std::uint16_t>>,
-            std::vector<vec<2, std::uint16_t>>,
-            std::vector<vec<3, std::uint16_t>>,
-            std::vector<vec<4, std::uint16_t>>,
+        std::vector<vec<1, std::uint16_t>>,
+        std::vector<vec<2, std::uint16_t>>,
+        std::vector<vec<3, std::uint16_t>>,
+        std::vector<vec<4, std::uint16_t>>,
 
-            std::vector<vec<1, std::uint32_t>>,
-            std::vector<vec<2, std::uint32_t>>,
-            std::vector<vec<3, std::uint32_t>>,
-            std::vector<vec<4, std::uint32_t>>,
+        std::vector<vec<1, std::uint32_t>>,
+        std::vector<vec<2, std::uint32_t>>,
+        std::vector<vec<3, std::uint32_t>>,
+        std::vector<vec<4, std::uint32_t>>,
 
-            std::vector<vec<1, std::float_t>>,
-            std::vector<vec<2, std::float_t>>,
-            std::vector<vec<3, std::float_t>>,
-            std::vector<vec<4, std::float_t>>
+        std::vector<vec<1, std::float_t>>,
+        std::vector<vec<2, std::float_t>>,
+        std::vector<vec<3, std::float_t>>,
+        std::vector<vec<4, std::float_t>>
     >;
 }
 
@@ -550,7 +550,7 @@ void from_json(nlohmann::json const &j, accessor_t &accessor)
 }
 
 template<std::size_t N>
-std::optional<attribute::buffer_t> foo(std::int32_t componentType)
+std::optional<attribute::buffer_t> instantiate_attribute_buffer(std::int32_t componentType)
 {
     switch (componentType) {
         case glTF::kBYTE:
@@ -568,39 +568,30 @@ std::optional<attribute::buffer_t> foo(std::int32_t componentType)
         case glTF::kUNSIGNED_INT:
             return std::make_optional<std::vector<glTF::vec<N, std::uint32_t>>>();
 
+        case glTF::kFLOAT:
+            return std::make_optional<std::vector<glTF::vec<N, std::float_t>>>();
+
         default:
             return std::nullopt;
     }
 }
 
-std::optional<attribute::buffer_t> getBuffer(std::string_view type, std::int32_t componentType)
+std::optional<attribute::buffer_t> instantiate_attribute_buffer(std::string_view type, std::int32_t componentType)
 {
     if (type == "SCALAR"sv)
-        return glTF::foo<1>(componentType);
+        return glTF::instantiate_attribute_buffer<1>(componentType);
 
     else if (type == "VEC2"sv)
-        return glTF::foo<2>(componentType);
+        return glTF::instantiate_attribute_buffer<2>(componentType);
 
     else if (type == "VEC3"sv)
-        return glTF::foo<3>(componentType);
+        return glTF::instantiate_attribute_buffer<3>(componentType);
 
     else if (type == "VEC4"sv)
-        return glTF::foo<4>(componentType);
+        return glTF::instantiate_attribute_buffer<4>(componentType);
 
     return std::nullopt;
 }
-
-auto bar = [] (auto &buffer)
-{
-    using T = std::decay_t<decltype(buffer)>;
-
-    if constexpr (std::is_same_v<T, std::vector<glTF::vec<1, std::uint32_t>>>) {
-        return std::get<std::vector<glTF::vec<1, std::uint32_t>>>(buffer);
-    }
-
-    return std::vector<glTF::vec<1, std::uint32_t>>{};
-};
-
 }
 
 bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &_indices)
@@ -646,8 +637,8 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
     // auto cameras = json.at("cameras"s).get<std::vector<glTF::camera_t>>();
 
-    std::vector<std::vector<std::byte>> bin_buffers;
-    bin_buffers.reserve(std::size(buffers));
+    std::vector<std::vector<std::byte>> binBuffers;
+    binBuffers.reserve(std::size(buffers));
 
     for (auto &&buffer : buffers) {
         auto bin_path = folder / fs::path{buffer.uri};
@@ -664,101 +655,35 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
         if (!byteCode.empty())
             bin_file.read(reinterpret_cast<char *>(std::data(byteCode)), std::size(byteCode));
 
-        bin_buffers.emplace_back(std::move(byteCode));
+        binBuffers.emplace_back(std::move(byteCode));
     }
 
     std::vector<glTF::attribute::buffer_t> attribute_buffers;
     attribute_buffers.reserve(std::size(accessors));
-
+    
     for (auto &&accessor : accessors) {
-        if (accessor.type == "SCALAR"s && accessor.componentType == glTF::kUNSIGNED_INT) {
+        if (auto buffer = glTF::instantiate_attribute_buffer(accessor.type, accessor.componentType); buffer) {
             auto &&bufferView = bufferViews.at(accessor.bufferView);
+            auto &&binBuffer = binBuffers.at(bufferView.buffer);
 
-            auto const byteLength = accessor.count * sizeof(glTF::vec<1, std::uint32_t>);
+            std::visit([&accessor, &bufferView, &binBuffer, &attribute_buffers] (auto buffer)
+            {
+                using T = std::decay_t<decltype(buffer)>;
 
-            std::vector<std::byte> stagingBuffer(byteLength);
-            std::uninitialized_copy_n(
-                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), accessor.byteOffset + bufferView.byteOffset), byteLength, std::data(stagingBuffer)
-            );
+                std::size_t const srcBeginIndex = accessor.byteOffset + bufferView.byteOffset;
+                std::size_t const srcEndIndex = srcBeginIndex + accessor.count * sizeof(T::value_type);
 
-            //std::vector<glTF::vec<1, std::uint32_t>> buffer(accessor.count);
+                buffer.resize(accessor.count);
 
-            auto buffer_opt = glTF::getBuffer(accessor.type, accessor.componentType);
+                if (bufferView.byteStride != 0)
+                    for (std::size_t srcIndex = srcBeginIndex, dstIndex = 0u; srcIndex < srcEndIndex; srcIndex += bufferView.byteStride, ++dstIndex)
+                        memmove(&buffer.at(dstIndex), &binBuffer.at(srcIndex), sizeof(T::value_type));
 
-            auto buffer = glTF::bar(buffer_opt.value());
-            buffer.resize(accessor.count);
+                else memmove(std::data(buffer), &binBuffer.at(srcBeginIndex), srcEndIndex - srcBeginIndex);
 
+                attribute_buffers.emplace_back(std::move(buffer));
 
-            if (bufferView.byteStride != 0)
-                for (std::size_t i = 0, j = 0u; i < std::size(stagingBuffer); i += bufferView.byteStride, ++j)
-                    memmove(&buffer.at(j), &stagingBuffer.at(i), sizeof(decltype(buffer)::value_type));
-
-            else memmove(std::data(buffer), std::data(stagingBuffer), std::size(stagingBuffer));
-
-            attribute_buffers.emplace_back(std::move(buffer));
-        }
-
-        else if (accessor.type == "VEC2"s && accessor.componentType == glTF::kFLOAT) {
-            auto &&bufferView = bufferViews.at(accessor.bufferView);
-
-            auto const byteLength = accessor.count * sizeof(glTF::vec<2, std::float_t>);
-
-            std::vector<std::byte> stagingBuffer(byteLength);
-            std::uninitialized_copy_n(
-                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), accessor.byteOffset + bufferView.byteOffset), byteLength, std::data(stagingBuffer)
-            );
-
-            std::vector<glTF::vec<2, std::float_t>> buffer(accessor.count);
-
-            if (bufferView.byteStride != 0)
-                for (std::size_t i = 0, j = 0u; i < std::size(stagingBuffer); i += bufferView.byteStride, ++j)
-                    memmove(&buffer.at(j), &stagingBuffer.at(i), sizeof(decltype(buffer)::value_type));
-
-            else memmove(std::data(buffer), std::data(stagingBuffer), std::size(stagingBuffer));
-
-            attribute_buffers.emplace_back(std::move(buffer));
-        }
-
-        else if (accessor.type == "VEC3"s && accessor.componentType == glTF::kFLOAT) {
-            auto &&bufferView = bufferViews.at(accessor.bufferView);
-
-            auto const byteLength = accessor.count * sizeof(glTF::vec<3, std::float_t>);
-
-            std::vector<std::byte> stagingBuffer(byteLength);
-            std::uninitialized_copy_n(
-                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), accessor.byteOffset + bufferView.byteOffset), byteLength, std::data(stagingBuffer)
-            );
-
-            std::vector<glTF::vec<3, std::float_t>> buffer(accessor.count);
-
-            if (bufferView.byteStride != 0)
-                for (std::size_t i = 0, j = 0u; i < std::size(stagingBuffer); i += bufferView.byteStride, ++j)
-                    memmove(&buffer.at(j), &stagingBuffer.at(i), sizeof(decltype(buffer)::value_type));
-
-            else memmove(std::data(buffer), std::data(stagingBuffer), std::size(stagingBuffer));
-
-            attribute_buffers.emplace_back(std::move(buffer));
-        }
-
-        else if (accessor.type == "VEC4"s && accessor.componentType == glTF::kFLOAT) {
-            auto &&bufferView = bufferViews.at(accessor.bufferView);
-
-            auto const byteLength = accessor.count * sizeof(glTF::vec<4, std::float_t>);
-
-            std::vector<std::byte> stagingBuffer(byteLength);
-            std::uninitialized_copy_n(
-                std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), accessor.byteOffset + bufferView.byteOffset), byteLength, std::data(stagingBuffer)
-            );
-
-            std::vector<glTF::vec<4, std::float_t>> buffer(accessor.count);
-
-            if (bufferView.byteStride != 0)
-                for (std::size_t i = 0, j = 0u; i < std::size(stagingBuffer); i += bufferView.byteStride, ++j)
-                    memmove(&buffer.at(j), &stagingBuffer.at(i), sizeof(decltype(buffer)::value_type));
-
-            else memmove(std::data(buffer), std::data(stagingBuffer), std::size(stagingBuffer));
-
-            attribute_buffers.emplace_back(std::move(buffer));
+            }, buffer.value());
         }
     }
 
