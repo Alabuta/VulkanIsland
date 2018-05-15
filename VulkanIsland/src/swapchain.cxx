@@ -13,6 +13,21 @@ VkDeviceMemory depthImageMemory;
 VkImageView depthImageView;
 
 
+
+#if USE_WIN32
+VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
+    VkInstance vulkanInstance, VkWin32SurfaceCreateInfoKHR const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkSurfaceKHR *pSurface)
+{
+    auto traverse = reinterpret_cast<PFN_vkCreateWin32SurfaceKHR>(vkGetInstanceProcAddr(vulkanInstance, "vkCreateWin32SurfaceKHR"));
+
+    if (traverse)
+        return traverse(vulkanInstance, pCreateInfo, pAllocator, pSurface);
+
+    return VK_ERROR_EXTENSION_NOT_PRESENT;
+}
+#endif
+
+
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 [[nodiscard]] VkSurfaceFormatKHR ChooseSwapSurfaceFormat(T &&surfaceFormats)
 {
@@ -180,6 +195,11 @@ void CreateSwapChainImageAndViews(VulkanDevice *device, std::vector<VkImage> &sw
 
 void CleanupSwapChain(VulkanDevice *vulkanDevice, VkSwapchainKHR swapChain)
 {
+    for (auto &&swapChainFramebuffer : swapChainFramebuffers)
+        vkDestroyFramebuffer(vulkanDevice->handle(), swapChainFramebuffer, nullptr);
+
+    swapChainFramebuffers.clear();
+
     for (auto &&swapChainImageView : swapChainImageViews)
         vkDestroyImageView(vulkanDevice->handle(), swapChainImageView, nullptr);
 

@@ -11,6 +11,7 @@ extern VkExtent2D swapChainExtent;
 
 extern std::vector<VkImage> swapChainImages;
 extern std::vector<VkImageView> swapChainImageViews;
+extern std::vector<VkFramebuffer> swapChainFramebuffers;
 
 extern VkImage depthImage;
 extern VkDeviceMemory depthImageMemory;
