@@ -4,6 +4,8 @@
 #include <regex>
 #include <vector>
 #include <variant>
+#include <optional>
+#include <map>
 
 #include "../includes/nlohmann/json.hpp"
 
@@ -547,6 +549,58 @@ void from_json(nlohmann::json const &j, accessor_t &accessor)
     accessor.componentType = j.at("componentType"s).get<decltype(accessor_t::componentType)>();
 }
 
+template<std::size_t N>
+std::optional<attribute::buffer_t> foo(std::int32_t componentType)
+{
+    switch (componentType) {
+        case glTF::kBYTE:
+            return std::make_optional<std::vector<glTF::vec<N, std::int8_t>>>();
+
+        case glTF::kUNSIGNED_BYTE:
+            return std::make_optional<std::vector<glTF::vec<N, std::uint8_t>>>();
+
+        case glTF::kSHORT:
+            return std::make_optional<std::vector<glTF::vec<N, std::int16_t>>>();
+
+        case glTF::kUNSIGNED_SHORT:
+            return std::make_optional<std::vector<glTF::vec<N, std::uint16_t>>>();
+
+        case glTF::kUNSIGNED_INT:
+            return std::make_optional<std::vector<glTF::vec<N, std::uint32_t>>>();
+
+        default:
+            return std::nullopt;
+    }
+}
+
+std::optional<attribute::buffer_t> getBuffer(std::string_view type, std::int32_t componentType)
+{
+    if (type == "SCALAR"sv)
+        return glTF::foo<1>(componentType);
+
+    else if (type == "VEC2"sv)
+        return glTF::foo<2>(componentType);
+
+    else if (type == "VEC3"sv)
+        return glTF::foo<3>(componentType);
+
+    else if (type == "VEC4"sv)
+        return glTF::foo<4>(componentType);
+
+    return std::nullopt;
+}
+
+auto bar = [] (auto &buffer)
+{
+    using T = std::decay_t<decltype(buffer)>;
+
+    if constexpr (std::is_same_v<T, std::vector<glTF::vec<1, std::uint32_t>>>) {
+        return std::get<std::vector<glTF::vec<1, std::uint32_t>>>(buffer);
+    }
+
+    return std::vector<glTF::vec<1, std::uint32_t>>{};
+};
+
 }
 
 bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &_indices)
@@ -627,13 +681,19 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
                 std::next(std::cbegin(bin_buffers.at(bufferView.buffer)), accessor.byteOffset + bufferView.byteOffset), byteLength, std::data(stagingBuffer)
             );
 
-            std::vector<glTF::vec<1, std::uint32_t>> buffer(accessor.count);
+            //std::vector<glTF::vec<1, std::uint32_t>> buffer(accessor.count);
+
+            auto buffer_opt = glTF::getBuffer(accessor.type, accessor.componentType);
+
+            auto buffer = glTF::bar(buffer_opt.value());
+            buffer.resize(accessor.count);
+
 
             if (bufferView.byteStride != 0)
                 for (std::size_t i = 0, j = 0u; i < std::size(stagingBuffer); i += bufferView.byteStride, ++j)
                     memmove(&buffer.at(j), &stagingBuffer.at(i), sizeof(decltype(buffer)::value_type));
 
-            else memmove_s(std::data(buffer), byteLength, std::data(stagingBuffer), std::size(stagingBuffer));
+            else memmove(std::data(buffer), std::data(stagingBuffer), std::size(stagingBuffer));
 
             attribute_buffers.emplace_back(std::move(buffer));
         }
@@ -654,7 +714,7 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
                 for (std::size_t i = 0, j = 0u; i < std::size(stagingBuffer); i += bufferView.byteStride, ++j)
                     memmove(&buffer.at(j), &stagingBuffer.at(i), sizeof(decltype(buffer)::value_type));
 
-            else memmove_s(std::data(buffer), byteLength, std::data(stagingBuffer), std::size(stagingBuffer));
+            else memmove(std::data(buffer), std::data(stagingBuffer), std::size(stagingBuffer));
 
             attribute_buffers.emplace_back(std::move(buffer));
         }
@@ -675,7 +735,7 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
                 for (std::size_t i = 0, j = 0u; i < std::size(stagingBuffer); i += bufferView.byteStride, ++j)
                     memmove(&buffer.at(j), &stagingBuffer.at(i), sizeof(decltype(buffer)::value_type));
 
-            else memmove_s(std::data(buffer), byteLength, std::data(stagingBuffer), std::size(stagingBuffer));
+            else memmove(std::data(buffer), std::data(stagingBuffer), std::size(stagingBuffer));
 
             attribute_buffers.emplace_back(std::move(buffer));
         }
@@ -696,7 +756,7 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
                 for (std::size_t i = 0, j = 0u; i < std::size(stagingBuffer); i += bufferView.byteStride, ++j)
                     memmove(&buffer.at(j), &stagingBuffer.at(i), sizeof(decltype(buffer)::value_type));
 
-            else memmove_s(std::data(buffer), byteLength, std::data(stagingBuffer), std::size(stagingBuffer));
+            else memmove(std::data(buffer), std::data(stagingBuffer), std::size(stagingBuffer));
 
             attribute_buffers.emplace_back(std::move(buffer));
         }
@@ -718,8 +778,7 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
             _indices.resize(std::size(indices));
             //std::move(std::begin(indices), std::end(indices), std::back_inserter(_indices));
             //std::uninitialized_move(std::begin(indices), std::end(indices), std::back_inserter(_indices));
-            memmove_s(std::data(_indices), std::size(_indices) * sizeof(std::decay_t<decltype(_indices)>::value_type),
-                      std::data(indices), std::size(indices) * sizeof(std::decay_t<decltype(indices)>::value_type));
+            memmove(std::data(_indices), std::data(indices), std::size(indices) * sizeof(std::decay_t<decltype(indices)>::value_type));
         }
     }
 

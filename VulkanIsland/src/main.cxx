@@ -158,10 +158,10 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 [[nodiscard]] VkFormat FindDepthImageFormat(VkPhysicalDevice physicalDevice)
 {
     auto const format = FindSupportedImageFormat(
-            physicalDevice,
-            make_array(VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT),
-            VK_IMAGE_TILING_OPTIMAL,
-            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+        physicalDevice,
+        make_array(VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT),
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
     );
 
     if (!format)
@@ -434,9 +434,22 @@ void CreateRenderPass(VkPhysicalDevice physicalDevice, VkDevice device)
 
     auto const attachments = make_array(colorAttachment, depthAttachement);
 
+#if NOT_YET_IMPLEMENTED
+    VkInputAttachmentAspectReference const depthAttachmentAspectReference{
+        0, 0, VK_IMAGE_ASPECT_DEPTH_BIT
+    };
+
+    VkRenderPassInputAttachmentAspectCreateInfo const depthAttachmentAspect{
+        VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO,
+        nullptr,
+        1, &depthAttachmentAspectReference
+    };
+#endif
+
     VkRenderPassCreateInfo const renderPassCreateInfo{
         VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-        nullptr, 0,
+        nullptr,
+        0,
         static_cast<std::uint32_t>(std::size(attachments)), std::data(attachments),
         1, &subpassDescription,
         1, &subpassDependency
@@ -461,12 +474,12 @@ void CreateFramebuffers(VulkanDevice *vulkanDevice, VkRenderPass renderPass, T &
         auto const attachements = make_array(imageView, depthImageView);
 
         VkFramebufferCreateInfo const createInfo{
-                VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-                nullptr, 0,
-                renderPass,
-                static_cast<std::uint32_t>(std::size(attachements)), std::data(attachements),
-                swapChainExtent.width, swapChainExtent.height,
-                1
+            VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            nullptr, 0,
+            renderPass,
+            static_cast<std::uint32_t>(std::size(attachements)), std::data(attachements),
+            swapChainExtent.width, swapChainExtent.height,
+            1
         };
 
         VkFramebuffer framebuffer;
