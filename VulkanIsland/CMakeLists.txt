@@ -21,6 +21,7 @@ endif()
 find_package(glfw3 3.3 REQUIRED)
 
 set(SOURCE_FILES
+        src/command_buffer.h
         src/device_defaults.h
         src/helpers.h
         src/program.h

@@ -23,6 +23,7 @@
 #include "swapchain.h"
 #include "program.h"
 #include "buffer.h"
+#include "command_buffer.h"
 
 
 
@@ -129,7 +130,8 @@ VkSampler textureSampler;
 
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
-[[nodiscard]] std::optional<VkFormat> FindSupportedFormat(VkPhysicalDevice physicalDevice, T &&candidates, VkImageTiling tiling, VkFormatFeatureFlags features)
+[[nodiscard]] std::optional<VkFormat> FindSupportedImageFormat(VkPhysicalDevice physicalDevice, T &&candidates,
+                                                               VkImageTiling tiling, VkFormatFeatureFlags features)
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkFormat>, "iterable object does not contain 'VkFormat' elements");
 
@@ -153,13 +155,13 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     return it_format != std::cend(candidates) ? *it_format : std::optional<VkFormat>();
 }
 
-[[nodiscard]] VkFormat FindDepthFormat(VkPhysicalDevice physicalDevice)
+[[nodiscard]] VkFormat FindDepthImageFormat(VkPhysicalDevice physicalDevice)
 {
-    auto const format = FindSupportedFormat(
-        physicalDevice,
-        make_array(VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT),
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
+    auto const format = FindSupportedImageFormat(
+            physicalDevice,
+            make_array(VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT),
+            VK_IMAGE_TILING_OPTIMAL,
+            VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
     );
 
     if (!format)
@@ -402,7 +404,7 @@ void CreateRenderPass(VkPhysicalDevice physicalDevice, VkDevice device)
 
     VkAttachmentDescription const depthAttachement{
         VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
-        FindDepthFormat(physicalDevice),
+        FindDepthImageFormat(physicalDevice),
         VK_SAMPLE_COUNT_1_BIT,
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -493,88 +495,8 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
 }
 
 
-template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-[[nodiscard]] VkCommandBuffer BeginSingleTimeCommand(VulkanDevice *vulkanDevice, [[maybe_unused]] Q &queue, VkCommandPool commandPool)
-{
-    VkCommandBuffer commandBuffer;
-
-    VkCommandBufferAllocateInfo const allocateInfo{
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        nullptr,
-        commandPool,
-        VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        1
-    };
-
-    if (auto result = vkAllocateCommandBuffers(vulkanDevice->handle(), &allocateInfo, &commandBuffer); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create allocate command buffers: "s + std::to_string(result));
-
-    VkCommandBufferBeginInfo const beginInfo{
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        nullptr,
-        VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        nullptr
-    };
-
-    if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
-        throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
-
-    return commandBuffer;
-}
-
-template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-void EndSingleTimeCommand(VulkanDevice *vulkanDevice, Q &queue, VkCommandBuffer commandBuffer, VkCommandPool commandPool)
-{
-    if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS)
-        throw std::runtime_error("failed to end command buffer: "s + std::to_string(result));
-
-    VkSubmitInfo const submitInfo{
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        nullptr,
-        0, nullptr,
-        nullptr,
-        1, &commandBuffer,
-        0, nullptr,
-    };
-
-    if (auto result = vkQueueSubmit(queue.handle(), 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS)
-        throw std::runtime_error("failed to submit command buffer: "s + std::to_string(result));
-
-    vkQueueWaitIdle(queue.handle());
-
-    vkFreeCommandBuffers(vulkanDevice->handle(), commandPool, 1, &commandBuffer);
-}
 
 
-template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-void CopyBufferToBuffer(VulkanDevice *vulkanDevice, Q &queue, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool commandPool)
-{
-    auto commandBuffer = BeginSingleTimeCommand(vulkanDevice, queue, commandPool);
-
-    VkBufferCopy const copyRegion{ 0, 0, size };
-
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
-
-    EndSingleTimeCommand(vulkanDevice, queue, commandBuffer, commandPool);
-}
-
-template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-void CopyBufferToImage(VulkanDevice *vulkanDevice, Q &queue, VkBuffer srcBuffer, VkImage dstImage, std::uint32_t width, std::uint32_t height, VkCommandPool commandPool)
-{
-    auto commandBuffer = BeginSingleTimeCommand(vulkanDevice, queue, commandPool);
-
-    VkBufferImageCopy const copyRegion{
-        0,
-        0, 0,
-        { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
-        { 0, 0, 0 },
-        { width, height, 1 }
-    };
-
-    vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
-
-    EndSingleTimeCommand(vulkanDevice, queue, commandBuffer, commandPool);
-}
 
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
@@ -762,9 +684,13 @@ void CreateDescriptorSet(VkDevice device, VkDescriptorSet &descriptorSet)
 
 
 
-void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPool commandPool)
+template<class T, class U, typename std::enable_if_t<is_iterable_v<std::decay_t<T>> && is_iterable_v<std::decay_t<U>>>...>
+void CreateCommandBuffers(VulkanDevice *vulkanDevice, VkRenderPass renderPass, VkCommandPool commandPool, T &commandBuffers, U &framebuffers)
 {
-    commandBuffers.resize(swapChainFramebuffers.size());
+    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkCommandBuffer>, "iterable object does not contain VkCommandBuffer elements");
+    static_assert(std::is_same_v<typename std::decay_t<U>::value_type, VkFramebuffer>, "iterable object does not contain VkFramebuffer elements");
+
+    commandBuffers.resize(framebuffers.size());
 
     VkCommandBufferAllocateInfo const allocateInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
@@ -774,7 +700,7 @@ void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPoo
         static_cast<std::uint32_t>(std::size(commandBuffers))
     };
 
-    if (auto result = vkAllocateCommandBuffers(device, &allocateInfo, std::data(commandBuffers)); result != VK_SUCCESS)
+    if (auto result = vkAllocateCommandBuffers(vulkanDevice->handle(), &allocateInfo, std::data(commandBuffers)); result != VK_SUCCESS)
         throw std::runtime_error("failed to create allocate command buffers: "s + std::to_string(result));
 
     std::size_t i = 0;
@@ -790,7 +716,7 @@ void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPoo
         if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
             throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
 
-        auto constexpr clearColors = make_array(
+        auto const clearColors = make_array(
             VkClearValue{{{0.64f, 0.64f, 0.64f, 1.f}}},
             VkClearValue{{{0.f, 0}}}
         );
@@ -799,7 +725,7 @@ void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPoo
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             nullptr,
             renderPass,
-            swapChainFramebuffers.at(i++),
+            framebuffers.at(i++),
             {{0, 0}, swapChainExtent},
             static_cast<std::uint32_t>(std::size(clearColors)), std::data(clearColors)
         };
@@ -814,6 +740,7 @@ void CreateCommandBuffers(VkDevice device, VkRenderPass renderPass, VkCommandPoo
         auto const offsets = make_array(VkDeviceSize{0});
 
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, std::data(vertexBuffers), std::data(offsets));
+
         auto constexpr index_type = std::is_same_v<decltype(indices)::value_type, std::uint32_t> ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
         vkCmdBindIndexBuffer(commandBuffer, indexBuffer, 0, index_type);
 
@@ -974,7 +901,7 @@ void CreateTextureSampler(VkDevice device, VkSampler &sampler, std::uint32_t mip
 
 void CreateDepthResources(VulkanDevice *vulkanDevice, VkImage &image, VkDeviceMemory &imageMemory, VkImageView &imageView)
 {
-    auto const format = FindDepthFormat(vulkanDevice->physical_handle());
+    auto const format = FindDepthImageFormat(vulkanDevice->physical_handle());
 
     CreateImage(vulkanDevice, image, imageMemory, swapChainExtent.width, swapChainExtent.height, 1, format,
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
@@ -1005,7 +932,7 @@ void RecreateSwapChain()
 
     CreateFramebuffers(vulkanDevice.get(), renderPass, swapChainImageViews, swapChainFramebuffers);
 
-    CreateCommandBuffers(vulkanDevice->handle(), renderPass, graphicsCommandPool);
+    CreateCommandBuffers(vulkanDevice.get(), renderPass, graphicsCommandPool, commandBuffers, swapChainFramebuffers);
 }
 
 void OnWindowResize([[maybe_unused]] GLFWwindow *window, int width, int height)
@@ -1138,7 +1065,7 @@ void InitVulkan(GLFWwindow *window)
     CreateDescriptorPool(vulkanDevice->handle(), descriptorPool);
     CreateDescriptorSet(vulkanDevice->handle(), descriptorSet);
 
-    CreateCommandBuffers(vulkanDevice->handle(), renderPass, graphicsCommandPool);
+    CreateCommandBuffers(vulkanDevice.get(), renderPass, graphicsCommandPool, commandBuffers, swapChainFramebuffers);
 
     CreateSemaphores(vulkanDevice->handle());
 }
