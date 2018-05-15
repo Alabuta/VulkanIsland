@@ -618,24 +618,26 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
     nlohmann::json json;
     glTF_file >> json;
 
-    auto buffers = json.at("buffers"s).get<std::vector<glTF::buffer_t>>();
-    auto images = json.at("images"s).get<std::vector<glTF::image_t>>();
-
     auto scenes = json.at("scenes"s).get<std::vector<glTF::scene_t>>();
-
     auto nodes = json.at("nodes"s).get<std::vector<glTF::node_t>>();
-
-    auto materials = json.at("materials"s).get<std::vector<glTF::material_t>>();
-
-    auto textures = json.at("textures"s).get<std::vector<glTF::texture_t>>();
-    auto samplers = json.at("samplers"s).get<std::vector<glTF::sampler_t>>();
 
     auto meshes = json.at("meshes"s).get<std::vector<glTF::mesh_t>>();
 
+    auto buffers = json.at("buffers"s).get<std::vector<glTF::buffer_t>>();
     auto bufferViews = json.at("bufferViews"s).get<std::vector<glTF::buffer_view_t>>();
     auto accessors = json.at("accessors"s).get<std::vector<glTF::accessor_t>>();
 
-    // auto cameras = json.at("cameras"s).get<std::vector<glTF::camera_t>>();
+#if TEMPORARILY_DISABLED
+    auto images = json.at("images"s).get<std::vector<glTF::image_t>>();
+    auto textures = json.at("textures"s).get<std::vector<glTF::texture_t>>();
+    auto samplers = json.at("samplers"s).get<std::vector<glTF::sampler_t>>();
+
+    auto materials = json.at("materials"s).get<std::vector<glTF::material_t>>();
+#endif
+
+#if TEMPORARILY_DISABLED
+    auto cameras = json.at("cameras"s).get<std::vector<glTF::camera_t>>();
+#endif
 
     std::vector<std::vector<std::byte>> binBuffers;
     binBuffers.reserve(std::size(buffers));
@@ -691,7 +693,8 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
         for (auto &&primitive : mesh.primitives) {
             auto &&positions = std::get<std::vector<glTF::vec<3, std::float_t>>>(attribute_buffers.at(primitive.attributes.position));
             auto &&normals = std::get<std::vector<glTF::vec<3, std::float_t>>>(attribute_buffers.at(primitive.attributes.normal));
-            auto &&uvs = std::get<std::vector<glTF::vec<2, std::float_t>>>(attribute_buffers.at(primitive.attributes.texCoord0));
+            //auto &&uvs = std::get<std::vector<glTF::vec<2, std::float_t>>>(attribute_buffers.at(primitive.attributes.texCoord0));
+            std::vector<glTF::vec<2, std::float_t>> uvs(normals.size());
 
             vertices.reserve(std::size(positions));
 
