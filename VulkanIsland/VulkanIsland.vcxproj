@@ -217,6 +217,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\buffer.h" />
+    <ClInclude Include="src\command_buffer.h" />
     <ClInclude Include="src\debug.h" />
     <ClInclude Include="src\device.h" />
     <ClInclude Include="src\device_defaults.h" />
