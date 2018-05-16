@@ -108,42 +108,96 @@ struct vec {
 };
 
 namespace attribute {
-    using buffer_t = std::variant<
-        std::vector<vec<1, std::int8_t>>,
-        std::vector<vec<2, std::int8_t>>,
-        std::vector<vec<3, std::int8_t>>,
-        std::vector<vec<4, std::int8_t>>,
+using attribute_t = std::variant<
+    vec<1, std::int8_t>,
+    vec<2, std::int8_t>,
+    vec<3, std::int8_t>,
+    vec<4, std::int8_t>,
 
-        std::vector<vec<1, std::uint8_t>>,
-        std::vector<vec<2, std::uint8_t>>,
-        std::vector<vec<3, std::uint8_t>>,
-        std::vector<vec<4, std::uint8_t>>,
+    vec<1, std::uint8_t>,
+    vec<2, std::uint8_t>,
+    vec<3, std::uint8_t>,
+    vec<4, std::uint8_t>,
 
-        std::vector<vec<1, std::int16_t>>,
-        std::vector<vec<2, std::int16_t>>,
-        std::vector<vec<3, std::int16_t>>,
-        std::vector<vec<4, std::int16_t>>,
+    vec<1, std::int16_t>,
+    vec<2, std::int16_t>,
+    vec<3, std::int16_t>,
+    vec<4, std::int16_t>,
 
-        std::vector<vec<1, std::uint16_t>>,
-        std::vector<vec<2, std::uint16_t>>,
-        std::vector<vec<3, std::uint16_t>>,
-        std::vector<vec<4, std::uint16_t>>,
+    vec<1, std::uint16_t>,
+    vec<2, std::uint16_t>,
+    vec<3, std::uint16_t>,
+    vec<4, std::uint16_t>,
 
-        std::vector<vec<1, std::int32_t>>,
-        std::vector<vec<2, std::int32_t>>,
-        std::vector<vec<3, std::int32_t>>,
-        std::vector<vec<4, std::int32_t>>,
+    vec<1, std::int32_t>,
+    vec<2, std::int32_t>,
+    vec<3, std::int32_t>,
+    vec<4, std::int32_t>,
 
-        std::vector<vec<1, std::uint32_t>>,
-        std::vector<vec<2, std::uint32_t>>,
-        std::vector<vec<3, std::uint32_t>>,
-        std::vector<vec<4, std::uint32_t>>,
+    vec<1, std::uint32_t>,
+    vec<2, std::uint32_t>,
+    vec<3, std::uint32_t>,
+    vec<4, std::uint32_t>,
 
-        std::vector<vec<1, std::float_t>>,
-        std::vector<vec<2, std::float_t>>,
-        std::vector<vec<3, std::float_t>>,
-        std::vector<vec<4, std::float_t>>
-    >;
+    vec<1, std::float_t>,
+    vec<2, std::float_t>,
+    vec<3, std::float_t>,
+    vec<4, std::float_t>
+>;
+
+template<class V, std::size_t... I>
+struct foo_t {
+    //using V = std::variant<std::vector<T>...>;
+
+    using t = std::variant<std::vector<std::variant_alternative_t<I, V>>...>;
+};
+
+template<class V, std::size_t N = std::variant_size_v<V>>
+struct bar_t : foo_t<V, std::make_index_sequence<N>> {
+};
+
+bar_t<attribute_t> bar;
+
+using buffer_t = std::variant<
+    std::vector<vec<1, std::int8_t>>,
+    std::vector<vec<2, std::int8_t>>,
+    std::vector<vec<3, std::int8_t>>,
+    std::vector<vec<4, std::int8_t>>,
+
+    std::vector<vec<1, std::uint8_t>>,
+    std::vector<vec<2, std::uint8_t>>,
+    std::vector<vec<3, std::uint8_t>>,
+    std::vector<vec<4, std::uint8_t>>,
+
+    std::vector<vec<1, std::int16_t>>,
+    std::vector<vec<2, std::int16_t>>,
+    std::vector<vec<3, std::int16_t>>,
+    std::vector<vec<4, std::int16_t>>,
+
+    std::vector<vec<1, std::uint16_t>>,
+    std::vector<vec<2, std::uint16_t>>,
+    std::vector<vec<3, std::uint16_t>>,
+    std::vector<vec<4, std::uint16_t>>,
+
+    std::vector<vec<1, std::int32_t>>,
+    std::vector<vec<2, std::int32_t>>,
+    std::vector<vec<3, std::int32_t>>,
+    std::vector<vec<4, std::int32_t>>,
+
+    std::vector<vec<1, std::uint32_t>>,
+    std::vector<vec<2, std::uint32_t>>,
+    std::vector<vec<3, std::uint32_t>>,
+    std::vector<vec<4, std::uint32_t>>,
+
+    std::vector<vec<1, std::float_t>>,
+    std::vector<vec<2, std::float_t>>,
+    std::vector<vec<3, std::float_t>>,
+    std::vector<vec<4, std::float_t>>
+>;
+
+using vertex_t = std::variant<
+    int
+>;
 }
 
 struct scene_t {
@@ -331,6 +385,10 @@ void from_json(nlohmann::json const &j, node_t &node)
         std::array<float, 16> matrix;
         matrix = j.at("matrix"s).get<std::decay_t<decltype(matrix)>>();
 
+        // :TODO:
+        // If the determinant of the transform is a negative value,
+        // the winding order of the mesh triangle faces should be reversed.
+        // This supports negative scales for mirroring geometry.
         node.transform = std::move(mat4(std::move(matrix)));
     }
 
@@ -616,15 +674,15 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
     auto glTF_path = folder / fs::path{"scene.gltf"s};
 
-    std::ifstream glTF_file(glTF_path.native(), std::ios::in);
+    std::ifstream glTFFile(glTF_path.native(), std::ios::in);
 
-    if (!glTF_file.is_open()) {
+    if (glTFFile.bad() || glTFFile.fail()) {
         std::cerr << "can't open file: "s << glTF_path << std::endl;
         return false;
     }
 
     nlohmann::json json;
-    glTF_file >> json;
+    glTFFile >> json;
 
     auto scenes = json.at("scenes"s).get<std::vector<glTF::scene_t>>();
     auto nodes = json.at("nodes"s).get<std::vector<glTF::node_t>>();
@@ -703,7 +761,7 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
             {
                 std::transform(std::begin(indices), std::end(indices), std::back_inserter(_indices), [offset] (auto index)
                 {
-                    return offset + index.array.at(0);
+                    return static_cast<std::uint32_t>(offset + index.array.at(0));
                 });
 
             }, attribute_buffers.at(primitive.indices));
