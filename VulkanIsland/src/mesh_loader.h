@@ -106,7 +106,7 @@ bool LoadModel(std::string_view _name, std::vector<T> &vertices, std::vector<std
 {
     using namespace std::string_literals;
 
-    return LoadGLTF("Hebe"sv, vertices, indices);
+    return LoadGLTF("sponza"sv, vertices, indices);
 
     std::vector<vec3> positions;
     std::vector<vec3> normals;

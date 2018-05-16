@@ -91,13 +91,13 @@ bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec
 }
 
 namespace glTF {
-auto constexpr kBYTE                 = 0x1400;
+auto constexpr kBYTE                 = 0x1400; // 5120
 auto constexpr kUNSIGNED_BYTE        = 0x1401;
 auto constexpr kSHORT                = 0x1402;
-auto constexpr kUNSIGNED_SHORT       = 0x1403;
+auto constexpr kUNSIGNED_SHORT       = 0x1403; // 5123
 auto constexpr kINT                  = 0x1404;
 auto constexpr kUNSIGNED_INT         = 0x1405;
-auto constexpr kFLOAT                = 0x1406;
+auto constexpr kFLOAT                = 0x1406; // 5126
 
 auto constexpr kARRAY_BUFFER         = 0x8892;
 auto constexpr kELEMENT_ARRAY_BUFFER = 0x8893;
@@ -128,6 +128,11 @@ namespace attribute {
         std::vector<vec<2, std::uint16_t>>,
         std::vector<vec<3, std::uint16_t>>,
         std::vector<vec<4, std::uint16_t>>,
+
+        std::vector<vec<1, std::int32_t>>,
+        std::vector<vec<2, std::int32_t>>,
+        std::vector<vec<3, std::int32_t>>,
+        std::vector<vec<4, std::int32_t>>,
 
         std::vector<vec<1, std::uint32_t>>,
         std::vector<vec<2, std::uint32_t>>,
@@ -565,6 +570,9 @@ std::optional<attribute::buffer_t> instantiate_attribute_buffer(std::int32_t com
         case glTF::kUNSIGNED_SHORT:
             return std::make_optional<std::vector<glTF::vec<N, std::uint16_t>>>();
 
+        case glTF::kINT:
+            return std::make_optional<std::vector<glTF::vec<N, std::int32_t>>>();
+
         case glTF::kUNSIGNED_INT:
             return std::make_optional<std::vector<glTF::vec<N, std::uint32_t>>>();
 
@@ -670,16 +678,16 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
             std::visit([&accessor, &bufferView, &binBuffer, &attribute_buffers] (auto buffer)
             {
-                using T = std::decay_t<decltype(buffer)>;
+                auto const size = sizeof(typename std::decay_t<decltype(buffer)>::value_type);
 
                 std::size_t const srcBeginIndex = accessor.byteOffset + bufferView.byteOffset;
-                std::size_t const srcEndIndex = srcBeginIndex + accessor.count * sizeof(T::value_type);
+                std::size_t const srcEndIndex = srcBeginIndex + accessor.count * size;
 
                 buffer.resize(accessor.count);
 
                 if (bufferView.byteStride != 0)
                     for (std::size_t srcIndex = srcBeginIndex, dstIndex = 0u; srcIndex < srcEndIndex; srcIndex += bufferView.byteStride, ++dstIndex)
-                        memmove(&buffer.at(dstIndex), &binBuffer.at(srcIndex), sizeof(T::value_type));
+                        memmove(&buffer.at(dstIndex), &binBuffer.at(srcIndex), size);
 
                 else memmove(std::data(buffer), &binBuffer.at(srcBeginIndex), srcEndIndex - srcBeginIndex);
 
@@ -691,6 +699,15 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
     for (auto &&mesh : meshes) {
         for (auto &&primitive : mesh.primitives) {
+            std::visit([&_indices, offset = std::size(vertices)] (auto indices)
+            {
+                std::transform(std::begin(indices), std::end(indices), std::back_inserter(_indices), [offset] (auto index)
+                {
+                    return offset + index.array.at(0);
+                });
+
+            }, attribute_buffers.at(primitive.indices));
+
             auto &&positions = std::get<std::vector<glTF::vec<3, std::float_t>>>(attribute_buffers.at(primitive.attributes.position));
             auto &&normals = std::get<std::vector<glTF::vec<3, std::float_t>>>(attribute_buffers.at(primitive.attributes.normal));
             //auto &&uvs = std::get<std::vector<glTF::vec<2, std::float_t>>>(attribute_buffers.at(primitive.attributes.texCoord0));
@@ -700,13 +717,6 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
             for (auto i = 0u; i < std::size(positions); ++i)
                 vertices.emplace_back(positions.at(i).array, normals.at(i).array, uvs.at(i).array);
-
-            auto &&indices = std::get<std::vector<glTF::vec<1, std::uint32_t>>>(attribute_buffers.at(primitive.indices));
-
-            _indices.resize(std::size(indices));
-            //std::move(std::begin(indices), std::end(indices), std::back_inserter(_indices));
-            //std::uninitialized_move(std::begin(indices), std::end(indices), std::back_inserter(_indices));
-            memmove(std::data(_indices), std::data(indices), std::size(indices) * sizeof(std::decay_t<decltype(indices)>::value_type));
         }
     }
 
