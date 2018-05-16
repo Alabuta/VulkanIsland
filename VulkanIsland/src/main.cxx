@@ -1168,10 +1168,10 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     auto time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     transforms.model = glm::rotate(glm::mat4(1.f), .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});
-    transforms.model = glm::rotate(transforms.model, glm::radians(-90.f), glm::vec3{1, 0, 0});
-    transforms.model = glm::translate(transforms.model, {0, 0, -250});
+    transforms.model = glm::rotate(transforms.model, glm::radians(90.f), glm::vec3{1, 0, 0});
+    //transforms.model = glm::translate(transforms.model, {0, 0, -250});
     //transforms.model = glm::rotate(glm::mat4(1.f), .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});// *glm::scale(glm::mat4(1.f), {.0f, .0f, .0f});
-    transforms.view = glm::lookAt(glm::vec3{100.2f, 100.8f, 100.2f}, glm::vec3{0, .4f, 0}, glm::vec3{0, 1, 0});
+    transforms.view = glm::lookAt(glm::vec3{10.2f, 20.8f, 10.2f}, glm::vec3{0, 20.4f, 0}, glm::vec3{0, 1, 0});
     transforms.modelView = transforms.view * transforms.model;
 #endif
     auto const aspect = static_cast<float>(width) / static_cast<float>(height);
@@ -1181,7 +1181,7 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     [[maybe_unused]] auto constexpr kPI_DIV_180_INV = 57.2957795130823208767f;
 
     // Default OpenGL perspective projection matrix.
-    auto constexpr kFOV = 72.f, zNear = .01f, zFar = 1000.f;
+    auto constexpr kFOV = 72.f, zNear = .1f, zFar = 1000.f;
 
 #if !USE_GLM
     auto const f = 1.f / std::tan(kFOV * kPI_DIV_180 * 0.5f);

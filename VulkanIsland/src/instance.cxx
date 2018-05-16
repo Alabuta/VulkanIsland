@@ -90,6 +90,14 @@ VulkanInstance::~VulkanInstance()
 
 void VulkanInstance::CreateInstance(std::vector<char const *> &&extensions, std::vector<char const *> &&layers)
 {
+    std::uint32_t apiVersion = 0;
+
+    if (auto result = vkEnumerateInstanceVersion(&apiVersion); result != VK_SUCCESS)
+        throw std::runtime_error("failed to retrieve Vulkan API version"s);
+
+    if (apiVersion != app_info.apiVersion)
+        throw std::runtime_error("unsupported Vulkan API version"s);
+
     VkInstanceCreateInfo createInfo{
         VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         nullptr, 0,

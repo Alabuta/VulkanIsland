@@ -151,9 +151,15 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
     if (auto result = vkEnumeratePhysicalDevices(instance, &devicesCount, std::data(devices)); result != VK_SUCCESS)
         throw std::runtime_error("failed to retrieve physical devices: "s + std::to_string(result));
 
-    // Matching by supported features and extensions.
+    // Matching by supported properties, features and extensions.
     auto it_end = std::remove_if(devices.begin(), devices.end(), [&extensions] (auto &&device)
     {
+        VkPhysicalDeviceProperties properties;
+        vkGetPhysicalDeviceProperties(device, &properties);
+
+        if (properties.apiVersion < app_info.apiVersion)
+            return true;
+
         VkPhysicalDeviceFeatures features;
         vkGetPhysicalDeviceFeatures(device, &features);
 

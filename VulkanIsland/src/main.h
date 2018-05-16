@@ -55,6 +55,8 @@ VkApplicationInfo constexpr app_info{
 };
 
 auto constexpr extensions = make_array(
+    // VK_KHR_MAINTENANCE1_EXTENSION_NAME,
+
     VK_KHR_SURFACE_EXTENSION_NAME,
 #ifdef _MSC_VER
 #if USE_WIN32
