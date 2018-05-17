@@ -7,7 +7,7 @@
 #include <optional>
 #include <map>
 
-#include "../includes/nlohmann/json.hpp"
+#include "nlohmann/json.hpp"
 
 #include "helpers.h"
 #include "mesh_loader.h"

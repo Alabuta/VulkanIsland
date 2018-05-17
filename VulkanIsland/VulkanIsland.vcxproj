@@ -91,7 +91,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>src\;%VULKAN_SDK%\Include;C:\Users\Almaz\Documents\Visual Studio 2017\glfw-3.2.1\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include/;src/;%VULKAN_SDK%\Include;C:\Users\Almaz\Documents\Visual Studio 2017\glfw-3.2.1\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <EnablePREfast>false</EnablePREfast>
     </ClCompile>
@@ -119,7 +119,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>src\;$(VK_SDK_PATH)\Include;C:\Users\Almaz\Documents\Visual Studio 2017\glfw-3.2.1\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include/;src/;$(VK_SDK_PATH)\Include;C:\Users\Almaz\Documents\Visual Studio 2017\glfw-3.2.1\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <EnablePREfast>false</EnablePREfast>
     </ClCompile>
@@ -149,7 +149,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>src\;%VULKAN_SDK%\Include;C:\Users\Almaz\Documents\Visual Studio 2017\glfw-3.2.1\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include/;src/;%VULKAN_SDK%\Include;C:\Users\Almaz\Documents\Visual Studio 2017\glfw-3.2.1\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <EnablePREfast>false</EnablePREfast>
     </ClCompile>
@@ -181,7 +181,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>src\;$(VK_SDK_PATH)\Include;C:\Users\Almaz\Documents\Visual Studio 2017\glfw-3.2.1\include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>include/;src/;$(VK_SDK_PATH)\Include;C:\Users\Almaz\Documents\Visual Studio 2017\glfw-3.2.1\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <EnablePREfast>false</EnablePREfast>
     </ClCompile>

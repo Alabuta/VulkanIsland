@@ -40,7 +40,7 @@ using namespace std::string_view_literals;
 #include <GLFW/glfw3.h>
 #endif
 
-#include "../includes/config.h"
+#include "config.h"
 
 
 
