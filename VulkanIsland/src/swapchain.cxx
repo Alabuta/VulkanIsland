@@ -68,15 +68,15 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     if (relaxed)
         return VK_PRESENT_MODE_FIFO_RELAXED_KHR;
 
-    auto fifo = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
+    auto immediate = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
     {
-        return mode == VK_PRESENT_MODE_FIFO_KHR;
+        return mode == VK_PRESENT_MODE_IMMEDIATE_KHR;
     });
 
-    if (fifo)
-        return VK_PRESENT_MODE_FIFO_KHR;
+    if (immediate)
+        return VK_PRESENT_MODE_IMMEDIATE_KHR;
 
-    return VK_PRESENT_MODE_IMMEDIATE_KHR;
+    return VK_PRESENT_MODE_FIFO_KHR;
 }
 
 
