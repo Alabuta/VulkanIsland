@@ -5,6 +5,7 @@
 #include <vector>
 #include <variant>
 #include <optional>
+#include <tuple>
 #include <map>
 
 #include "nlohmann/json.hpp"
@@ -108,7 +109,7 @@ struct vec {
 };
 
 namespace attribute {
-using attribute_t = std::variant<
+using attribute_t = std::variant <
     vec<1, std::int8_t>,
     vec<2, std::int8_t>,
     vec<3, std::int8_t>,
@@ -143,10 +144,34 @@ using attribute_t = std::variant<
     vec<2, std::float_t>,
     vec<3, std::float_t>,
     vec<4, std::float_t>
->;
+> ;
 
 using buffer_t = wrap_variant_by_vector<attribute_t>::type;
 
+template<class V, class S = std::make_index_sequence<std::variant_size_v<V>>>
+struct foo;
+
+template<class V, size_t... I>
+struct foo<V, std::index_sequence<I...>> {
+    using type = std::variant<std::vector<std::variant_alternative_t<I, V>>...>;
+};
+
+template<class T, class... Ts>
+struct row {
+    using type = std::tuple<T, Ts...>;
+};
+
+template<class T, class... Ts>
+struct cross_product {
+    using type = std::tuple<typename row<T, Ts...>::type>;
+};
+
+using bar = cross_product<int, float, bool>::type;
+
+using vertex_t = std::variant<
+    std::tuple<int, float>,
+    std::tuple<float, float>
+>;
 
 }
 
