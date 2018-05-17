@@ -145,59 +145,9 @@ using attribute_t = std::variant<
     vec<4, std::float_t>
 >;
 
-template<class V, std::size_t... I>
-struct foo_t {
-    //using V = std::variant<std::vector<T>...>;
+using buffer_t = wrap_variant_by_vector<attribute_t>::type;
 
-    using t = std::variant<std::vector<std::variant_alternative_t<I, V>>...>;
-};
 
-template<class V, std::size_t N = std::variant_size_v<V>>
-struct bar_t : foo_t<V, std::make_index_sequence<N>> {
-};
-
-bar_t<attribute_t> bar;
-
-using buffer_t = std::variant<
-    std::vector<vec<1, std::int8_t>>,
-    std::vector<vec<2, std::int8_t>>,
-    std::vector<vec<3, std::int8_t>>,
-    std::vector<vec<4, std::int8_t>>,
-
-    std::vector<vec<1, std::uint8_t>>,
-    std::vector<vec<2, std::uint8_t>>,
-    std::vector<vec<3, std::uint8_t>>,
-    std::vector<vec<4, std::uint8_t>>,
-
-    std::vector<vec<1, std::int16_t>>,
-    std::vector<vec<2, std::int16_t>>,
-    std::vector<vec<3, std::int16_t>>,
-    std::vector<vec<4, std::int16_t>>,
-
-    std::vector<vec<1, std::uint16_t>>,
-    std::vector<vec<2, std::uint16_t>>,
-    std::vector<vec<3, std::uint16_t>>,
-    std::vector<vec<4, std::uint16_t>>,
-
-    std::vector<vec<1, std::int32_t>>,
-    std::vector<vec<2, std::int32_t>>,
-    std::vector<vec<3, std::int32_t>>,
-    std::vector<vec<4, std::int32_t>>,
-
-    std::vector<vec<1, std::uint32_t>>,
-    std::vector<vec<2, std::uint32_t>>,
-    std::vector<vec<3, std::uint32_t>>,
-    std::vector<vec<4, std::uint32_t>>,
-
-    std::vector<vec<1, std::float_t>>,
-    std::vector<vec<2, std::float_t>>,
-    std::vector<vec<3, std::float_t>>,
-    std::vector<vec<4, std::float_t>>
->;
-
-using vertex_t = std::variant<
-    int
->;
 }
 
 struct scene_t {
