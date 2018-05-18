@@ -979,7 +979,7 @@ void DrawFrame(VkDevice device, VkSwapchainKHR swapChain)
     auto const signalSemaphores = make_array(renderFinishedSemaphore);
 
     std::array<VkPipelineStageFlags, 1> constexpr waitStages{
-        {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT}
+        { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
     };
 
     VkSubmitInfo const submitInfo{

@@ -8,7 +8,7 @@ project(VulkanIsland VERSION ${PROJECT_VERSION})
 
 configure_file(
         "${PROJECT_SOURCE_DIR}/config.h.in"
-        "${PROJECT_SOURCE_DIR}/includes/config.h"
+        "${PROJECT_SOURCE_DIR}/include/config.h"
 )
 
 find_package(Vulkan REQUIRED)
@@ -19,6 +19,8 @@ find_package(X11 REQUIRED)
 endif()
 
 find_package(glfw3 3.3 REQUIRED)
+
+include_directories(include)
 
 set(SOURCE_FILES
         src/command_buffer.h
