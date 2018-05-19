@@ -103,11 +103,6 @@ auto constexpr kFLOAT                = 0x1406; // 5126
 auto constexpr kARRAY_BUFFER         = 0x8892;
 auto constexpr kELEMENT_ARRAY_BUFFER = 0x8893;
 
-template<std::size_t N, class T>
-struct vec {
-    std::array<T, N> array;
-};
-
 namespace attribute {
 using attribute_t = std::variant <
     vec<1, std::int8_t>,
@@ -148,14 +143,6 @@ using attribute_t = std::variant <
 
 using buffer_t = wrap_variant_by_vector<attribute_t>::type;
 
-template<class V, class S = std::make_index_sequence<std::variant_size_v<V>>>
-struct foo;
-
-template<class V, size_t... I>
-struct foo<V, std::index_sequence<I...>> {
-    using type = std::variant<std::vector<std::variant_alternative_t<I, V>>...>;
-};
-
 template<class T, class... Ts>
 struct row {
     using type = std::tuple<T, Ts...>;
@@ -168,10 +155,17 @@ struct cross_product {
 
 using bar = cross_product<int, float, bool>::type;
 
-using vertex_t = std::variant<
-    std::tuple<int, float>,
-    std::tuple<float, float>
->;
+
+enum eSEMANTICS : std::size_t {
+    nPOSITION = 0,
+    nNORMAL,
+    nTANGENT,
+    nTEXCOORD_0,
+    nTEXCOORD_1,
+    nCOLOR_0,
+    nJOINTS_0,
+    nWEIGHTS_0
+};
 
 }
 
@@ -210,10 +204,14 @@ struct mesh_t {
         std::size_t indices;
 
         struct attributes_t {
-            std::size_t position;
-            std::size_t normal;
-            std::size_t tangent;
-            std::size_t texCoord0;
+            std::optional<std::size_t> position;
+            std::optional<std::size_t> normal;
+            std::optional<std::size_t> tangent;
+            std::optional<std::size_t> texCoord0;
+            std::optional<std::size_t> texCoord1;
+            std::optional<std::size_t> color0;
+            std::optional<std::size_t> joints0;
+            std::optional<std::size_t> weights0;
         } attributes;
 
         std::uint32_t mode;
@@ -411,16 +409,28 @@ void from_json(nlohmann::json const &j, mesh_t &mesh)
         auto const json_attributes = primitive.at("attributes"s);
 
         if (json_attributes.count("POSITION"s))
-            mesh.attributes.position = json_attributes.at("POSITION"s).get<decltype(mesh_t::primitive_t::attributes_t::position)>();
+            mesh.attributes.position = json_attributes.at("POSITION"s).get<decltype(mesh_t::primitive_t::attributes_t::position)::value_type>();
 
         if (json_attributes.count("NORMAL"s))
-            mesh.attributes.normal = json_attributes.at("NORMAL"s).get<decltype(mesh_t::primitive_t::attributes_t::normal)>();
+            mesh.attributes.normal = json_attributes.at("NORMAL"s).get<decltype(mesh_t::primitive_t::attributes_t::normal)::value_type>();
 
         if (json_attributes.count("TANGENT"s))
-            mesh.attributes.tangent = json_attributes.at("TANGENT"s).get<decltype(mesh_t::primitive_t::attributes_t::tangent)>();
+            mesh.attributes.tangent = json_attributes.at("TANGENT"s).get<decltype(mesh_t::primitive_t::attributes_t::tangent)::value_type>();
 
         if (json_attributes.count("TEXCOORD_0"s))
-            mesh.attributes.texCoord0 = json_attributes.at("TEXCOORD_0"s).get<decltype(mesh_t::primitive_t::attributes_t::texCoord0)>();
+            mesh.attributes.texCoord0 = json_attributes.at("TEXCOORD_0"s).get<decltype(mesh_t::primitive_t::attributes_t::texCoord0)::value_type>();
+
+        if (json_attributes.count("TEXCOORD_1"s))
+            mesh.attributes.texCoord1 = json_attributes.at("TEXCOORD_1"s).get<decltype(mesh_t::primitive_t::attributes_t::texCoord1)::value_type>();
+
+        if (json_attributes.count("COLOR_0"s))
+            mesh.attributes.color0 = json_attributes.at("COLOR_0"s).get<decltype(mesh_t::primitive_t::attributes_t::color0)::value_type>();
+
+        if (json_attributes.count("JOINTS_0"s))
+            mesh.attributes.joints0 = json_attributes.at("JOINTS_0"s).get<decltype(mesh_t::primitive_t::attributes_t::joints0)::value_type>();
+
+        if (json_attributes.count("WEIGHTS_0"s))
+            mesh.attributes.weights0 = json_attributes.at("WEIGHTS_0"s).get<decltype(mesh_t::primitive_t::attributes_t::weights0)::value_type>();
 
         if (primitive.count("mode"s))
             mesh.mode = primitive.at("mode"s).get<decltype(mesh_t::primitive_t::mode)>();
@@ -709,7 +719,7 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
             auto &&bufferView = bufferViews.at(accessor.bufferView);
             auto &&binBuffer = binBuffers.at(bufferView.buffer);
 
-            std::visit([&accessor, &bufferView, &binBuffer, &attribute_buffers] (auto buffer)
+            std::visit([&accessor, &bufferView, &binBuffer, &attribute_buffers] (auto &&buffer)
             {
                 auto const size = sizeof(typename std::decay_t<decltype(buffer)>::value_type);
 
@@ -726,13 +736,13 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
                 attribute_buffers.emplace_back(std::move(buffer));
 
-            }, buffer.value());
+            }, std::move(buffer.value()));
         }
     }
 
     for (auto &&mesh : meshes) {
         for (auto &&primitive : mesh.primitives) {
-            std::visit([&_indices, offset = std::size(vertices)] (auto indices)
+            std::visit([&_indices, offset = std::size(vertices)] (auto &&indices)
             {
                 std::transform(std::begin(indices), std::end(indices), std::back_inserter(_indices), [offset] (auto index)
                 {
@@ -741,8 +751,8 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
             }, attribute_buffers.at(primitive.indices));
 
-            auto &&positions = std::get<std::vector<glTF::vec<3, std::float_t>>>(attribute_buffers.at(primitive.attributes.position));
-            auto &&normals = std::get<std::vector<glTF::vec<3, std::float_t>>>(attribute_buffers.at(primitive.attributes.normal));
+            auto &&positions = std::get<std::vector<glTF::vec<3, std::float_t>>>(attribute_buffers.at(*primitive.attributes.position));
+            auto &&normals = std::get<std::vector<glTF::vec<3, std::float_t>>>(attribute_buffers.at(*primitive.attributes.normal));
             //auto &&uvs = std::get<std::vector<glTF::vec<2, std::float_t>>>(attribute_buffers.at(primitive.attributes.texCoord0));
             std::vector<glTF::vec<2, std::float_t>> uvs(normals.size());
 

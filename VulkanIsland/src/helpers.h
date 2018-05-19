@@ -27,12 +27,12 @@ constexpr bool is_container_v = is_container<C>::value;
 template<class T> struct always_false : std::false_type {};
 
 template<class T, class... Ts>
-struct are_same_types {
+struct are_same {
     static auto constexpr value_type = std::conjunction_v<std::is_same<T, std::decay_t<Ts>>...>;
 };
 
 template<class T, class... Ts>
-inline auto constexpr are_same_types_v = are_same_types<T, Ts...>::value_type;
+inline auto constexpr are_same_v = are_same<T, Ts...>::value_type;
 
 //template<class T, typename std::enable_if_t<std::is_integral_v<std::decay_t<T>>>...>
 constexpr std::uint16_t operator"" _ui16(unsigned long long value)
@@ -192,7 +192,7 @@ struct mat4 {
     template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 16>>>...>
     constexpr mat4(T &&array) : m(std::forward<T>(array)) { }
 
-    template<class T0, class T1, class T2, class T3, typename std::enable_if_t<are_same_types_v<vec3, T0, T1, T2, T3>>...>
+    template<class T0, class T1, class T2, class T3, typename std::enable_if_t<are_same_v<vec3, T0, T1, T2, T3>>...>
     constexpr mat4(T0 &&xAxis, T1 &&yAxis, T2 &&zAxis, T3 &&translation)
     {
         std::fill(std::begin(m), std::end(m), 0.f);
@@ -246,7 +246,7 @@ struct Vertex {
 
     Vertex() = default;
 
-    template<class P, class N, class UV, typename std::enable_if_t<are_same_types_v<vec3, std::decay_t<P>, std::decay_t<N>> && std::is_same_v<vec2, std::decay_t<UV>>>...>
+    template<class P, class N, class UV, typename std::enable_if_t<are_same_v<vec3, std::decay_t<P>, std::decay_t<N>> && std::is_same_v<vec2, std::decay_t<UV>>>...>
     constexpr Vertex(P &&_position, N &&_normal, UV &&_uv)
     {
         pos = std::forward<P>(_position);
@@ -255,7 +255,7 @@ struct Vertex {
     }
 
     template<class P, class N, class UV,
-        typename std::enable_if_t<are_same_types_v<std::array<float, 3>, std::decay_t<P>, std::decay_t<N>> && std::is_same_v<std::array<float, 2>, std::decay_t<UV>>>...>
+        typename std::enable_if_t<are_same_v<std::array<float, 3>, std::decay_t<P>, std::decay_t<N>> && std::is_same_v<std::array<float, 2>, std::decay_t<UV>>>...>
     constexpr Vertex(P &&_position, N &&_normal, UV &&_uv)
     {
         pos = std::move(vec3{std::forward<P>(_position)});

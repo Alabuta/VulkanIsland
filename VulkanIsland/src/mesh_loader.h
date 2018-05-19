@@ -39,6 +39,18 @@ struct hash<index_t> {
 };
 }
 
+namespace glTF {
+template<std::size_t N, class T>
+struct vec {
+    std::array<T, N> array;
+};
+
+using vertex_t = std::variant<
+    std::tuple<vec<3, std::float_t>, vec<3, std::float_t>, vec<2, std::float_t>, vec<4, std::float_t>>,
+    std::tuple<vec<3, std::float_t>, vec<3, std::float_t>, vec<4, std::float_t>>
+>;
+}
+
 bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec3> &normals, std::vector<vec2> &uvs, std::vector<index_t> &indices);
 
 bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &indices);
