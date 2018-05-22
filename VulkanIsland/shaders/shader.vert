@@ -14,6 +14,7 @@ layout(binding = 0) uniform TRANSFORMS {
 
 layout(location = 0) out vec3 perVertexNormal;
 layout(location = 1) out vec2 perVertexUV;
+layout(location = 2) out vec3 perVertexPos;
 
 out gl_PerVertex {
     vec4 gl_Position;
@@ -21,7 +22,11 @@ out gl_PerVertex {
 
 void main()
 {
-    gl_Position = transforms.proj * transforms.view * transforms.model * vec4(inVertex, 1.0);
+    gl_Position = transforms.view * transforms.model * vec4(inVertex, 1.0);
+
+    perVertexPos = gl_Position.xyz;
+
+    gl_Position = transforms.proj * gl_Position;
 
     perVertexNormal = normalize((transpose(inverse(transforms.modelView)) * vec4(inNormal, 0.0)).xyz);
     perVertexUV = vec2(inUV.x, inUV.y);

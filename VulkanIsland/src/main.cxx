@@ -196,7 +196,7 @@ void CreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout &descripto
     std::array<VkDescriptorSetLayoutBinding, 2> constexpr layoutBindings{{
         {
             0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            1, VK_SHADER_STAGE_VERTEX_BIT,
+            1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             nullptr
         },
         {
