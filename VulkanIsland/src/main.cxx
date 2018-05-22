@@ -53,6 +53,8 @@ std::vector<Vertex> vertices;
 std::vector<std::uint32_t> indices;
 #endif
 
+auto mouseX = 0.f, mouseY = 0.f;
+
 #define USE_GLM 1
 
 struct TRANSFORMS {
@@ -1167,11 +1169,13 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     auto currentTime = std::chrono::high_resolution_clock::now();
     auto time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-    transforms.model = glm::rotate(glm::mat4(1.f), .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});
-    transforms.model = glm::rotate(transforms.model, glm::radians(90.f), glm::vec3{1, 0, 0});
+    //transforms.model = glm::rotate(glm::mat4(1.f), .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});
+    transforms.model = glm::rotate(glm::mat4(1.f), glm::radians(90.f), glm::vec3{1, 0, 0});
     //transforms.model = glm::translate(transforms.model, {0, 0, -250});
     //transforms.model = glm::rotate(glm::mat4(1.f), .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});// *glm::scale(glm::mat4(1.f), {.0f, .0f, .0f});
     transforms.view = glm::lookAt(glm::vec3{10.2f, 20.8f, 10.2f}, glm::vec3{0, 20.4f, 0}, glm::vec3{0, 1, 0});
+
+
     transforms.modelView = transforms.view * transforms.model;
 #endif
     auto const aspect = static_cast<float>(width) / static_cast<float>(height);
@@ -1216,6 +1220,12 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     vkUnmapMemory(device, uboBufferMemory);
 }
 
+void CursorCallback(GLFWwindow *window, double x, double y)
+{
+    mouseX = WIDTH * .5f - static_cast<float>(x);
+    mouseY = HEIGHT * .5f - static_cast<float>(y);
+}
+
 
 int main()
 try {
@@ -1230,6 +1240,8 @@ try {
     auto window = glfwCreateWindow(WIDTH, HEIGHT, "VulkanIsland", nullptr, nullptr);
 
     glfwSetWindowSizeCallback(window, OnWindowResize);
+
+    glfwSetCursorPosCallback(window, CursorCallback);
 
     InitVulkan(window);
 

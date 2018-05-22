@@ -711,15 +711,15 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
         binBuffers.emplace_back(std::move(byteCode));
     }
 
-    std::vector<glTF::attribute::buffer_t> attribute_buffers;
-    attribute_buffers.reserve(std::size(accessors));
+    std::vector<glTF::attribute::buffer_t> attributeBuffers;
+    attributeBuffers.reserve(std::size(accessors));
     
     for (auto &&accessor : accessors) {
         if (auto buffer = glTF::instantiate_attribute_buffer(accessor.type, accessor.componentType); buffer) {
             auto &&bufferView = bufferViews.at(accessor.bufferView);
             auto &&binBuffer = binBuffers.at(bufferView.buffer);
 
-            std::visit([&accessor, &bufferView, &binBuffer, &attribute_buffers] (auto &&buffer)
+            std::visit([&accessor, &bufferView, &binBuffer, &attributeBuffers] (auto &&buffer)
             {
                 auto const size = sizeof(typename std::decay_t<decltype(buffer)>::value_type);
 
@@ -734,7 +734,7 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
                 else memmove(std::data(buffer), &binBuffer.at(srcBeginIndex), srcEndIndex - srcBeginIndex);
 
-                attribute_buffers.emplace_back(std::move(buffer));
+                attributeBuffers.emplace_back(std::move(buffer));
 
             }, std::move(buffer.value()));
         }
@@ -749,11 +749,11 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
                     return static_cast<std::uint32_t>(offset + index.array.at(0));
                 });
 
-            }, attribute_buffers.at(primitive.indices));
+            }, attributeBuffers.at(primitive.indices));
 
-            auto &&positions = std::get<std::vector<glTF::vec<3, std::float_t>>>(attribute_buffers.at(*primitive.attributes.position));
-            auto &&normals = std::get<std::vector<glTF::vec<3, std::float_t>>>(attribute_buffers.at(*primitive.attributes.normal));
-            //auto &&uvs = std::get<std::vector<glTF::vec<2, std::float_t>>>(attribute_buffers.at(primitive.attributes.texCoord0));
+            auto &&positions = std::get<std::vector<glTF::vec<3, std::float_t>>>(attributeBuffers.at(*primitive.attributes.position));
+            auto &&normals = std::get<std::vector<glTF::vec<3, std::float_t>>>(attributeBuffers.at(*primitive.attributes.normal));
+            //auto &&uvs = std::get<std::vector<glTF::vec<2, std::float_t>>>(attributeBuffers.at(primitive.attributes.texCoord0));
             std::vector<glTF::vec<2, std::float_t>> uvs(normals.size());
 
             vertices.reserve(std::size(positions));
