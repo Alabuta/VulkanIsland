@@ -22,6 +22,34 @@
 
 
 
+auto constexpr extensions = make_array(
+    VK_KHR_SURFACE_EXTENSION_NAME,
+#ifdef _MSC_VER
+#if USE_WIN32
+    VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+#else
+    "VK_KHR_win32_surface",
+#endif
+#else
+    "VK_KHR_xcb_surface",
+#endif
+    VK_EXT_DEBUG_REPORT_EXTENSION_NAME
+);
+
+auto constexpr layers = make_array(
+#if TEMPORARILY_DISABLED
+    "VK_LAYER_NV_nsight",
+    "VK_LAYER_LUNARG_api_dump",
+#endif
+
+    "VK_LAYER_LUNARG_assistant_layer",
+    "VK_LAYER_LUNARG_core_validation",
+    "VK_LAYER_LUNARG_object_tracker",
+    "VK_LAYER_LUNARG_parameter_validation",
+    "VK_LAYER_GOOGLE_threading",
+    "VK_LAYER_GOOGLE_unique_objects"
+);
+
 class VulkanInstance final {
 public:
 

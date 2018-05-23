@@ -6,6 +6,12 @@
 #include "queue_builder.h"
 
 
+
+auto constexpr deviceExtensions = make_array(
+    VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+    VK_KHR_MAINTENANCE1_EXTENSION_NAME
+);
+
 class VulkanDevice final {
 public:
 
