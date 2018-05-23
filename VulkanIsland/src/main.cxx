@@ -1181,7 +1181,7 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
 
     transforms.view = glm::mat4(1.f);
     transforms.view = glm::translate(transforms.view, translate);*/
-    transforms.view = glm::lookAt(glm::vec3{10.f, 20.f, 50.f}, glm::vec3{0, 4.f, 0}, glm::vec3{0, 1, 0});
+    transforms.view = glm::lookAt(glm::vec3{10.f, 20.f, 0.f + std::sin(time * .4f) * 64.f}, glm::vec3{0, 10.f, 0}, glm::vec3{0, 1, 0});
 
 
     transforms.modelView = transforms.view * transforms.model;
