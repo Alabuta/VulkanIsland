@@ -1169,11 +1169,19 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     auto currentTime = std::chrono::high_resolution_clock::now();
     auto time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-    transforms.model = glm::rotate(glm::mat4(1.f), .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});
+    transforms.model = glm::mat4(1.f);
+    //transforms.model = glm::rotate(transforms.model, .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});
     transforms.model = glm::rotate(transforms.model, glm::radians(90.f), glm::vec3{1, 0, 0});
+    transforms.model = glm::rotate(transforms.model, glm::radians(90.f), glm::vec3{0, 0, 1});
+    //transforms.model = glm::scale(transforms.model, glm::vec3{.1f, .1f, .1f});
     //transforms.model = glm::translate(transforms.model, {0, 0, -250});
     //transforms.model = glm::rotate(glm::mat4(1.f), .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});// *glm::scale(glm::mat4(1.f), {.0f, .0f, .0f});
-    transforms.view = glm::lookAt(glm::vec3{10.2f, 20.8f, 10.2f}, glm::vec3{0, 20.4f, 0}, glm::vec3{0, 1, 0});
+
+    /*auto translate = glm::vec3{0.f, 4.f, 0.f + 0*std::sin(time) * 40.f};
+
+    transforms.view = glm::mat4(1.f);
+    transforms.view = glm::translate(transforms.view, translate);*/
+    transforms.view = glm::lookAt(glm::vec3{10.f, 20.f, 50.f}, glm::vec3{0, 4.f, 0}, glm::vec3{0, 1, 0});
 
 
     transforms.modelView = transforms.view * transforms.model;
@@ -1245,7 +1253,7 @@ try {
 
     InitVulkan(window);
 
-    while (!glfwWindowShouldClose(window)) {
+    while (!glfwWindowShouldClose(window) && glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS) {
         glfwPollEvents();
         UpdateUniformBuffer(vulkanDevice->handle(), WIDTH, HEIGHT);
         DrawFrame(vulkanDevice->handle(), swapChain);

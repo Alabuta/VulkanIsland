@@ -1,11 +1,11 @@
-#version 450
+#version 460
 #extension GL_ARB_separate_shader_objects : enable
 
 layout(location = 0) in vec3 inVertex;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inUV;
 
-layout(binding = 0) uniform TRANSFORMS {
+layout(set = 0, binding = 0) uniform TRANSFORMS {
     mat4 model;
     mat4 view;
     mat4 proj;
@@ -29,5 +29,5 @@ void main()
     gl_Position = transforms.proj * gl_Position;
 
     perVertexNormal = normalize((transpose(inverse(transforms.modelView)) * vec4(inNormal, 0.0)).xyz);
-    perVertexUV = vec2(inUV.x, inUV.y);
+    perVertexUV = vec2(inUV.x, 1.0 - inUV.y);
 }
