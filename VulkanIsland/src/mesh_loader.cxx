@@ -753,8 +753,8 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
             auto &&positions = std::get<std::vector<glTF::vec<3, std::float_t>>>(attributeBuffers.at(*primitive.attributes.position));
             auto &&normals = std::get<std::vector<glTF::vec<3, std::float_t>>>(attributeBuffers.at(*primitive.attributes.normal));
-            //auto &&uvs = std::get<std::vector<glTF::vec<2, std::float_t>>>(attributeBuffers.at(primitive.attributes.texCoord0));
-            std::vector<glTF::vec<2, std::float_t>> uvs(normals.size());
+            auto &&uvs = std::get<std::vector<glTF::vec<2, std::float_t>>>(attributeBuffers.at(*primitive.attributes.texCoord0));
+            //std::vector<glTF::vec<2, std::float_t>> uvs(normals.size());
 
             vertices.reserve(std::size(positions));
 
