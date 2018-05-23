@@ -10,9 +10,9 @@ layout(set = 0, binding = 0) uniform TRANSFORMS {
 
 layout(set = 0, binding = 1) uniform sampler2D textureSampler;
 
-layout(location = 0) in vec3 perVertexNormal;
-layout(location = 1) in vec2 perVertexUV;
-layout(location = 2) in vec3 perVertexPos;
+layout(location = 0) in vec3 viewSpaceNormal;
+layout(location = 1) in vec2 texCoord;
+layout(location = 2) in vec3 viewSpacePosition;
 
 layout(location = 0) out vec4 fragColor;
 
@@ -32,14 +32,14 @@ const PointLight pointLights[kPOINT_LIGHTS] = {
 
 void main()
 {
-    //fragColor = vec4(vec3(perVertexNormal * 0.5 + 0.5), 1.0);
-    //fragColor = vec4(perVertexUV, perVertexUV.y / perVertexUV.x, 1.0);
-    //fragColor = texture(textureSampler, perVertexUV);
+    //fragColor = vec4(vec3(viewSpaceNormal * 0.5 + 0.5), 1.0);
+    //fragColor = vec4(texCoord, texCoord.y / texCoord.x, 1.0);
+    //fragColor = texture(textureSampler, texCoord);
 
-    //fragColor.rgb = perVertexPos / 100.0;
+    //fragColor.rgb = viewSpacePosition / 100.0;
     //fragColor.a = 1.0;
 
-    fragColor = vec4(vec3(0.16), 1);
+    fragColor = vec4(vec3(0.08), 1);
 
     vec4 lightPos;
     float dist, attenuation;
@@ -47,7 +47,7 @@ void main()
     for (int i = 0; i < kPOINT_LIGHTS; ++i) {
         lightPos = transforms.view * vec4(pointLights[i].position * 2.0, 1.0);
 
-        dist = distance(perVertexPos, lightPos.xyz);
+        dist = distance(viewSpacePosition, lightPos.xyz);
         attenuation = 1.0 / (1.0 + dist * (0.09 + dist * 0.032));
 
         fragColor.rgb += pointLights[i].color * attenuation;

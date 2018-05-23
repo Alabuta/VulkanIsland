@@ -666,9 +666,6 @@ void CreateDescriptorSet(VkDevice device, VkDescriptorSet &descriptorSet)
     VkDescriptorImageInfo const imageInfo{
         textureSampler, textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     };
-    std::cout << &textureImageView << '\n';
-    std::cout << &textureSampler << '\n';
-    std::cout << &imageInfo << '\n';
 
     std::array<VkWriteDescriptorSet, 2> const writeDescriptorsSet{{
         {
@@ -692,7 +689,6 @@ void CreateDescriptorSet(VkDevice device, VkDescriptorSet &descriptorSet)
             nullptr
         }
     }};
-    std::cout << &writeDescriptorsSet << '\n';
 
     vkUpdateDescriptorSets(device, static_cast<std::uint32_t>(std::size(writeDescriptorsSet)), std::data(writeDescriptorsSet), 0, nullptr);
 }
