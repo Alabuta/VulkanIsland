@@ -50,13 +50,15 @@ bool LoadUncompressedTARGA(Image &_image, std::ifstream &_file, std::vector<std:
 {
     auto current_path = fs::current_path();
 
-    fs::path directory{"textures"s};
+    fs::path directory{"contents"s};
     fs::path name{std::data(_name)};
 
     if (!fs::exists(current_path / directory))
         directory = current_path / fs::path{"../../VulkanIsland"s} / directory;
 
     std::ifstream file((directory / name).native(), std::ios::binary);
+
+    std::cout << (directory / name).native() << '\n';
 
     if (!file.is_open())
         return {};

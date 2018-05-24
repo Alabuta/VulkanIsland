@@ -842,7 +842,7 @@ void CreateTextureImage(VulkanDevice *vulkanDevice, VkImage &image, VkDeviceMemo
 
     std::int32_t width, height;
 
-    if (auto rect = LoadTARGA("chalet.tga"sv, pixels); !rect)
+    if (auto rect = LoadTARGA("sponza/textures/sponza_curtain_green_diff.tga"sv, pixels); !rect)
         throw std::runtime_error("failed to load an image"s);
 
     else std::tie(width, height) = rect.value();
