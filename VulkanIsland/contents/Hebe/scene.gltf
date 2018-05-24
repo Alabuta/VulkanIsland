@@ -129,13 +129,13 @@
   ],
   "images": [
     {
-      "uri": "textures/HebehebemissinSG1_baseColor.png"
+      "uri": "textures/HebehebemissinSG1_baseColor.tga"
     },
     {
-      "uri": "textures/HebehebemissinSG1_normal.png"
+      "uri": "textures/HebehebemissinSG1_normal.tga"
     },
     {
-      "uri": "textures/HebehebemissinSG1_metallicRoughness.png"
+      "uri": "textures/HebehebemissinSG1_metallicRoughness.tga"
     }
   ],
   "materials": [
