@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11.1)
+cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
 
 if(NOT DEFINED PROJECT_VERSION)
     set(PROJECT_VERSION 1.0.0)
@@ -72,6 +72,10 @@ find_package(Boost REQUIRED COMPONENTS
         filesystem
 )
 
+target_include_directories(${PROJECT_NAME} PRIVATE
+	Vulkan::Vulkan
+)
+
 target_link_libraries(${PROJECT_NAME} PRIVATE
         -Wl,-no-undefined
         -Wl,-no-allow-shlib-undefined
@@ -85,7 +89,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
         Boost::boost
         Boost::filesystem
 
-        vulkan
+        Vulkan::Vulkan
 
         glm
         glfw3
