@@ -13,11 +13,11 @@ struct alignas(sizeof(std::uint32_t)) RGBA
 };
 
 struct Image {
-    std::vector<RGBA> data;
-
     std::int32_t bpp{0};
     std::int32_t width{0}, height{0};
     std::uint32_t type{0}, format{0};
+
+    std::vector<RGBA> data;
 
     // std::uint8_t BytesPerPixel() const;
 };
