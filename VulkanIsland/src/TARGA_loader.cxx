@@ -38,19 +38,6 @@ void LoadUncompressedImage(Image &image, std::ifstream &file)
 
     if (!buffer) return;
 
-    std::visit([&image, &file] (auto &&buffer)
-    {
-        auto const size = static_cast<std::size_t>(image.width * image.height);
-
-        buffer.resize(size);
-
-        file.read(reinterpret_cast<char *>(std::data(buffer)), size);
-        buffer.shrink_to_fit();
-
-        image.data = std::move(buffer);
-
-    }, std::move(buffer.value()));
-
     switch (image.pixelDepth) {
         case 8:
             image.pixelLayout = ePIXEL_LAYOUT::nRED;
@@ -71,7 +58,49 @@ void LoadUncompressedImage(Image &image, std::ifstream &file)
         default:
             image.pixelLayout = ePIXEL_LAYOUT::nINVALID;
     }
+
+    std::visit([&image, &file] (auto &&buffer)
+    {
+        buffer.resize(image.width * image.height);
+
+        file.read(reinterpret_cast<char *>(std::data(buffer)), std::size(buffer));
+        buffer.shrink_to_fit();
+
+        using texel_t = typename std::decay_t<decltype(buffer)>::value_type;
+
+        if constexpr (texel_t::size == 3)
+        {
+            std::vector<vec<4, texel_t::value_type>> dstBuffer;
+            dstBuffer.reserve(std::size(buffer));
+
+            std::transform(std::begin(buffer), std::end(buffer), std::back_inserter(dstBuffer), [] (auto &&texel)
+            {
+                return vec<4, texel_t::value_type>{{ texel.array.at(0), texel.array.at(1), texel.array.at(2), 1 }};
+            });
+
+            image.data = std::move(dstBuffer);
+        }
+
+        else image.data = std::move(buffer);
+
+    }, std::move(buffer.value()));
 }
+
+// A function execution duration measurement.
+template<typename TimeT = std::chrono::milliseconds>
+struct measure {
+    template<typename F, typename... Args>
+    static auto execution(F func, Args &&... args)
+    {
+        auto start = std::chrono::system_clock::now();
+
+        func(std::forward<Args>(args)...);
+
+        auto duration = typename std::chrono::duration_cast<TimeT>(std::chrono::system_clock::now() - start);
+
+        return duration.count();
+    }
+};
 
 [[nodiscard]] std::optional<Image> LoadTARGA(std::string_view _name)
 {
@@ -145,7 +174,7 @@ void LoadUncompressedImage(Image &image, std::ifstream &file)
 
         // Uncompressed true-color image
         case 0x02:
-            LoadUncompressedImage(image, file);
+            std::cout << measure<>::execution(LoadUncompressedImage, image, file) << '\n';
             break;
 
         // Run-length encoded true-color image

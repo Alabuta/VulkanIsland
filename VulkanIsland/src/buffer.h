@@ -37,11 +37,11 @@ void CopyBufferToImage(VulkanDevice *vulkanDevice, Q &queue, VkBuffer srcBuffer,
     auto commandBuffer = BeginSingleTimeCommand(vulkanDevice, queue, commandPool);
 
     VkBufferImageCopy const copyRegion{
-            0,
-            0, 0,
-            { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
-            { 0, 0, 0 },
-            { width, height, 1 }
+        0,
+        0, 0,
+        { VK_IMAGE_ASPECT_COLOR_BIT, 0, 0, 1 },
+        { 0, 0, 0 },
+        { width, height, 1 }
     };
 
     vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);

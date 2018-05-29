@@ -21,6 +21,9 @@ using byte_t = std::uint8_t;
 
 template<std::size_t N, class T>
 struct vec {
+    static auto constexpr size = N;
+    using value_type = T;
+
     std::array<T, N> array;
 };
 
