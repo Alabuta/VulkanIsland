@@ -836,48 +836,57 @@ void GenerateMipMaps(VulkanDevice *vulkanDevice, Q &queue, VkImage image, std::i
 }
 
 
-void CreateTextureImage(VulkanDevice *vulkanDevice, VkImage &image, VkDeviceMemory &imageMemory)
+void CreateTextureImage(VulkanDevice *vulkanDevice, VkImage &imageHandle, VkDeviceMemory &imageMemory)
 {
-    std::vector<std::byte> pixels;
+    std::vector<std::byte> texels;
 
-    std::int32_t width, height;
+    Image image;
 
-    if (auto rect = LoadTARGA("Hebe/textures/HebehebemissinSG1_normal.tga"sv, pixels); !rect)
-    //if (auto rect = LoadTARGA("sponza/textures/sponza_curtain_blue_diff.tga"sv, pixels); !rect)
+    //if (auto rect = LoadTARGA("Hebe/textures/HebehebemissinSG1_normal.tga"sv); !rect)
+    if (auto result = LoadTARGA("sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
         throw std::runtime_error("failed to load an image"s);
 
-    else std::tie(width, height) = rect.value();
+    else image = result.value();
 
-    mipLevels = static_cast<std::uint32_t>(std::floor(std::log2(std::max(width, height)))) + 1;
-
-    VkDeviceSize bufferSize = width * height * 4;
+    mipLevels = static_cast<std::uint32_t>(std::floor(std::log2(std::max(image.width, image.height)))) + 1;
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
 
-    CreateBuffer(vulkanDevice, stagingBuffer, stagingBufferMemory, bufferSize,
-                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    VkFormat format = VK_FORMAT_B8G8R8A8_UNORM;
 
-    decltype(pixels)::value_type *data;
-    if (auto result = vkMapMemory(vulkanDevice->handle(), stagingBufferMemory, 0, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to map image buffer memory: "s + std::to_string(result));
+    std::visit([&] (auto &&texels)
+    {
+        using texel_t = typename std::decay_t<decltype(texels)>::value_type;
 
-    std::uninitialized_copy(std::begin(pixels), std::end(pixels), data);
+        auto const bufferSize = static_cast<VkDeviceSize>(std::size(texels)) * sizeof(texel_t);
 
-    vkUnmapMemory(vulkanDevice->handle(), stagingBufferMemory);
+        CreateBuffer(vulkanDevice, stagingBuffer, stagingBufferMemory, bufferSize,
+                     VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
-    CreateImage(vulkanDevice, image, imageMemory, static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height), mipLevels, VK_FORMAT_B8G8R8A8_UNORM,
+        texel_t *data;
+
+        if (auto result = vkMapMemory(vulkanDevice->handle(), stagingBufferMemory, 0, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
+            throw std::runtime_error("failed to map image buffer memory: "s + std::to_string(result));
+
+        std::uninitialized_copy(std::begin(texels), std::end(texels), data);
+
+        vkUnmapMemory(vulkanDevice->handle(), stagingBufferMemory);
+
+    }, std::move(image.data));
+
+    CreateImage(vulkanDevice, imageHandle, imageMemory, static_cast<std::uint32_t>(image.width), static_cast<std::uint32_t>(image.height), mipLevels, format,
                 VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
     TransitionImageLayout(vulkanDevice, transferQueue,
-                          image, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels,
+                          imageHandle, format, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels,
                           transferCommandPool);
 
-    CopyBufferToImage(vulkanDevice, transferQueue, stagingBuffer, image, static_cast<std::uint32_t>(width), static_cast<std::uint32_t>(height), transferCommandPool);
+    CopyBufferToImage(vulkanDevice, transferQueue, stagingBuffer, imageHandle, static_cast<std::uint32_t>(image.width), static_cast<std::uint32_t>(image.height), transferCommandPool);
 
-    //TransitionImageLayout(device, transferQueue, image, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);
+    //TransitionImageLayout(device, transferQueue, imageHandle, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);
 
-    GenerateMipMaps(vulkanDevice, transferQueue, image, width, height, mipLevels, transferCommandPool);
+    GenerateMipMaps(vulkanDevice, transferQueue, imageHandle, image.width, image.height, mipLevels, transferCommandPool);
 
     vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
     vkDestroyBuffer(vulkanDevice->handle(), stagingBuffer, nullptr);
@@ -1225,11 +1234,11 @@ void UpdateUniformBuffer(VkDevice device, std::uint32_t width, std::uint32_t hei
     vkUnmapMemory(device, uboBufferMemory);
 }
 
-void CursorCallback(GLFWwindow *window, double x, double y)
+/* void CursorCallback(GLFWwindow *window, double x, double y)
 {
     mouseX = WIDTH * .5f - static_cast<float>(x);
     mouseY = HEIGHT * .5f - static_cast<float>(y);
-}
+}*/
 
 
 int main()
@@ -1246,7 +1255,7 @@ try {
 
     glfwSetWindowSizeCallback(window, OnWindowResize);
 
-    glfwSetCursorPosCallback(window, CursorCallback);
+    // glfwSetCursorPosCallback(window, CursorCallback);
 
     InitVulkan(window);
 

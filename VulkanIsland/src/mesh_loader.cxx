@@ -139,7 +139,7 @@ using attribute_t = std::variant <
     vec<2, std::float_t>,
     vec<3, std::float_t>,
     vec<4, std::float_t>
-> ;
+>;
 
 using buffer_t = wrap_variant_by_vector<attribute_t>::type;
 

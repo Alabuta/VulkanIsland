@@ -4,45 +4,76 @@
 #include "main.h"
 #include "TARGA_loader.h"
 
-enum class ePIXEL_LAYOUT {
-    nRED = 0, nRG, nRGB, nBGR, nRGBA, nBGRA
-};
 
-bool LoadUncompressedTARGA(Image &_image, std::ifstream &_file, std::vector<std::byte> &pixels)
+
+template<std::size_t N>
+std::optional<texel_buffer_t> instantiate_texel_buffer()
 {
-    auto const count = static_cast<std::size_t>(_image.bpp * _image.width * _image.height);
+    return std::make_optional<std::vector<vec<N, std::uint8_t>>>();
+}
 
-    ePIXEL_LAYOUT pixelLayout;
+std::optional<texel_buffer_t> instantiate_texel_buffer(std::uint8_t pixelDepth)
+{
+    switch (pixelDepth) {
+        case 8:
+            return instantiate_texel_buffer<1>();
 
-    switch (_image.bpp) {
-        case 1:
-            pixelLayout = ePIXEL_LAYOUT::nRED;
+        case 16:
+            return instantiate_texel_buffer<2>();
+
+        case 24:
+            return instantiate_texel_buffer<3>();
+
+        case 32:
+            return instantiate_texel_buffer<4>();
+
+        default:
+            return std::nullopt;
+    }
+}
+
+void LoadUncompressedImage(Image &image, std::ifstream &file)
+{
+    auto buffer = instantiate_texel_buffer(image.pixelDepth);
+
+    if (!buffer) return;
+
+    std::visit([&image, &file] (auto &&buffer)
+    {
+        auto const size = static_cast<std::size_t>(image.width * image.height);
+
+        buffer.resize(size);
+
+        file.read(reinterpret_cast<char *>(std::data(buffer)), size);
+        buffer.shrink_to_fit();
+
+        image.data = std::move(buffer);
+
+    }, std::move(buffer.value()));
+
+    switch (image.pixelDepth) {
+        case 8:
+            image.pixelLayout = ePIXEL_LAYOUT::nRED;
             break;
 
-        case 2:
-            pixelLayout = ePIXEL_LAYOUT::nRG;
+        case 16:
+            image.pixelLayout = ePIXEL_LAYOUT::nRG;
             break;
 
-        case 3:
-            pixelLayout = ePIXEL_LAYOUT::nBGR;
+        case 24:
+            image.pixelLayout = ePIXEL_LAYOUT::nBGR;
             break;
 
-        case 4:
-            pixelLayout = ePIXEL_LAYOUT::nBGRA;
+        case 32:
+            image.pixelLayout = ePIXEL_LAYOUT::nBGRA;
             break;
 
         default:
-            return false;
+            image.pixelLayout = ePIXEL_LAYOUT::nINVALID;
     }
-
-    pixels.resize(count);
-    _file.read(reinterpret_cast<char *>(std::data(pixels)), count);
-    pixels.shrink_to_fit();
-
-    return true;
 }
 
-[[nodiscard]] std::optional<std::pair<std::int32_t, std::int32_t>> LoadTARGA(std::string_view _name, std::vector<std::byte> &pixels)
+[[nodiscard]] std::optional<Image> LoadTARGA(std::string_view _name)
 {
     auto current_path = fs::current_path();
 
@@ -57,31 +88,6 @@ bool LoadUncompressedTARGA(Image &_image, std::ifstream &_file, std::vector<std:
     if (!file.is_open())
         return { };
 
-#if 0
-    struct header_t {
-        std::byte IDLength;
-        std::byte colorMapType;
-        std::byte imageType;
-        std::array<std::byte, 5> colorMapSpec;
-        std::array<std::byte, 10> imageSpec;
-    } header;
-
-    file.read(reinterpret_cast<char *>(&header), sizeof(header_t));
-
-    struct image_and_color_map_data_t {
-        std::vector<std::byte> image_id;
-        std::vector<std::byte> color_map_data;
-        std::vector<std::byte> image_data;
-    } image_and_color_map_data;
-
-    file.read(reinterpret_cast<char *>(&image_and_color_map_data), sizeof(image_and_color_map_data_t));
-
-    image_and_color_map_data.image_id.resize(static_cast<std::size_t>(header.IDLength));
-    file.read(reinterpret_cast<char *>(std::data(image_and_color_map_data.image_id)), sizeof(std::byte) * static_cast<std::size_t>(header.IDLength));
-#endif
-
-    using byte_t = std::int8_t;
-
     struct header_t {
         byte_t IDLength;
         byte_t colorMapType;
@@ -94,19 +100,15 @@ bool LoadUncompressedTARGA(Image &_image, std::ifstream &_file, std::vector<std:
 
     auto const hasColorMap = (header.colorMapType & 0x01) == 0x01;
 
-    auto const width = static_cast<std::int16_t>((header.imageSpec.at(5) << 8) + header.imageSpec.at(4));
-    auto const height = static_cast<std::int16_t>((header.imageSpec.at(7) << 8) + header.imageSpec.at(6));
-
-    auto const pixelDepth = header.imageSpec.at(8);
-    auto const alphaDepth = header.imageSpec.at(9) & 0x07; // First three bits from last byte of image specification field.
-
     Image image;
 
-    image.width = width;
-    image.height = height;
-    image.bpp = pixelDepth / 8;
+    image.width = static_cast<std::int16_t>((header.imageSpec.at(5) << 8) + header.imageSpec.at(4));
+    image.height = static_cast<std::int16_t>((header.imageSpec.at(7) << 8) + header.imageSpec.at(6));
+    image.pixelDepth = header.imageSpec.at(8);
 
-    if (image.width * image.height * image.bpp < 0)
+    [[maybe_unused]] auto const alphaDepth = header.imageSpec.at(9) & 0x07; // First three bits from last byte of image specification field.
+
+    if (image.width * image.height * image.pixelDepth < 0)
         return { };
 
     std::vector<std::byte> imageID(header.IDLength);
@@ -122,6 +124,8 @@ bool LoadUncompressedTARGA(Image &_image, std::ifstream &_file, std::vector<std:
         auto colorMapDepth = header.colorMapSpec.at(4);
 
         colorMap.resize(colorMapLength * colorMapDepth / 8);
+
+        file.seekg(colorMapStart, std::ios::cur);
 
         file.read(reinterpret_cast<char *>(std::data(colorMap)), sizeof(std::size(colorMap)));
     }
@@ -141,7 +145,7 @@ bool LoadUncompressedTARGA(Image &_image, std::ifstream &_file, std::vector<std:
 
         // Uncompressed true-color image
         case 0x02:
-            LoadUncompressedTARGA(image, file, pixels);
+            LoadUncompressedImage(image, file);
             break;
 
         // Run-length encoded true-color image
@@ -155,5 +159,8 @@ bool LoadUncompressedTARGA(Image &_image, std::ifstream &_file, std::vector<std:
 
     file.close();
 
-    return std::make_pair(image.width, image.height);
+    if (image.pixelLayout == ePIXEL_LAYOUT::nINVALID)
+        return { };
+
+    return image;
 }

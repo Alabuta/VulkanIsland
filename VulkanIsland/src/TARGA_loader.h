@@ -3,6 +3,7 @@
 #include <array>
 #include <vector>
 #include <string_view>
+#include <variant>
 
 struct alignas(sizeof(std::uint32_t)) RGBA
 {
@@ -12,14 +13,32 @@ struct alignas(sizeof(std::uint32_t)) RGBA
     };
 };
 
-struct Image {
-    std::int32_t bpp{0};
-    std::int32_t width{0}, height{0};
-    std::uint32_t type{0}, format{0};
-
-    std::vector<RGBA> data;
-
-    // std::uint8_t BytesPerPixel() const;
+enum class ePIXEL_LAYOUT {
+    nINVALID = 0, nRED, nRG, nRGB, nBGR, nRGBA, nBGRA
 };
 
-[[nodiscard]] std::optional<std::pair<std::int32_t, std::int32_t>> LoadTARGA(std::string_view name, std::vector<std::byte> &pixels);
+using byte_t = std::uint8_t;
+
+template<std::size_t N, class T>
+struct vec {
+    std::array<T, N> array;
+};
+
+using texel_t = std::variant<
+    vec<1, std::uint8_t>,
+    vec<2, std::uint8_t>,
+    vec<3, std::uint8_t>,
+    vec<4, std::uint8_t>
+>;
+
+using texel_buffer_t = wrap_variant_by_vector<texel_t>::type;
+
+struct Image {
+    ePIXEL_LAYOUT pixelLayout = ePIXEL_LAYOUT::nINVALID;
+    std::int16_t width = 0, height = 0;
+    std::uint8_t pixelDepth = 0;
+
+    texel_buffer_t data;
+};
+
+[[nodiscard]] std::optional<Image> LoadTARGA(std::string_view name);
