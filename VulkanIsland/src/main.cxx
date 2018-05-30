@@ -840,8 +840,8 @@ void CreateTextureImage(VulkanDevice *vulkanDevice, VkImage &imageHandle, VkDevi
 {
     Image image;
 
-    //if (auto result = LoadTARGA("Hebe/textures/HebehebemissinSG1_normal.tga"sv); !result)
-    if (auto result = LoadTARGA("sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
+    if (auto result = LoadTARGA("Hebe/textures/HebehebemissinSG1_normal.tga"sv); !result)
+    //if (auto result = LoadTARGA("sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
     //if (auto result = LoadTARGA("chalet/textures/chalet.tga"sv); !result)
         throw std::runtime_error("failed to load an image"s);
 
@@ -1256,7 +1256,8 @@ try {
 
     // glfwSetCursorPosCallback(window, CursorCallback);
 
-    InitVulkan(window);
+    std::cout << measure<>::execution(InitVulkan, window) << '\n';
+    //InitVulkan(window);
 
     while (!glfwWindowShouldClose(window) && glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS) {
         glfwPollEvents();

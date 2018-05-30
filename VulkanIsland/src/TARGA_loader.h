@@ -25,6 +25,11 @@ struct vec {
     using value_type = T;
 
     std::array<T, N> array;
+
+    vec() = default;
+
+    template<class... Ts, typename = std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == size>>
+    constexpr vec(Ts... values) : array{static_cast<typename std::decay_t<decltype(array)>::value_type>(values)...} { }
 };
 
 using texel_t = std::variant<

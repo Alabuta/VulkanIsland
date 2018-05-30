@@ -5,6 +5,9 @@
 #include "TARGA_loader.h"
 
 
+#define STB_IMAGE_IMPLEMENTATION
+#include "stb_image.h"
+
 
 template<std::size_t N>
 std::optional<texel_buffer_t> instantiate_texel_buffer()
@@ -32,7 +35,7 @@ std::optional<texel_buffer_t> instantiate_texel_buffer(std::uint8_t pixelDepth)
     }
 }
 
-void LoadUncompressedImage(Image &image, std::ifstream &file)
+void LoadUncompressedTrueColorImage(Image &image, std::ifstream &file)
 {
     auto buffer = instantiate_texel_buffer(image.pixelDepth);
 
@@ -63,20 +66,20 @@ void LoadUncompressedImage(Image &image, std::ifstream &file)
     {
         buffer.resize(image.width * image.height);
 
-        file.read(reinterpret_cast<char *>(std::data(buffer)), std::size(buffer));
+        file.read(reinterpret_cast<char *>(std::data(buffer)), std::size(buffer) * sizeof(std::decay_t<decltype(buffer)>::value_type));
         buffer.shrink_to_fit();
 
         using texel_t = typename std::decay_t<decltype(buffer)>::value_type;
 
         if constexpr (texel_t::size == 3)
         {
-            std::vector<vec<4, typename texel_t::value_type>> dstBuffer;
-            dstBuffer.reserve(std::size(buffer));
+            using vec_type = vec<4, typename texel_t::value_type>;
 
-            std::transform(std::begin(buffer), std::end(buffer), std::back_inserter(dstBuffer), [] (auto &&texel)
-            {
-                return vec<4, typename texel_t::value_type>{{ texel.array.at(0), texel.array.at(1), texel.array.at(2), 1 }};
-            });
+            std::vector<vec_type> dstBuffer(std::size(buffer));
+
+            std::size_t i = 0;
+            for (auto &&texel : buffer)
+                dstBuffer.at(++i - 1) = std::move(vec_type{texel.array.at(0), texel.array.at(1), texel.array.at(2), 1});
 
             image.data = std::move(dstBuffer);
         }
@@ -84,6 +87,34 @@ void LoadUncompressedImage(Image &image, std::ifstream &file)
         else image.data = std::move(buffer);
 
     }, std::move(buffer.value()));
+}
+
+void LoadUncompressedColorMappedImage(Image &image, std::ifstream &file)
+{
+    auto buffer = instantiate_texel_buffer(image.pixelDepth);
+
+    if (!buffer) return;
+
+    switch (image.pixelDepth) {
+        case 8:
+            image.pixelLayout = ePIXEL_LAYOUT::nRED;
+            break;
+
+        case 16:
+            image.pixelLayout = ePIXEL_LAYOUT::nRG;
+            break;
+
+        case 24:
+            image.pixelLayout = ePIXEL_LAYOUT::nBGR;
+            break;
+
+        case 32:
+            image.pixelLayout = ePIXEL_LAYOUT::nBGRA;
+            break;
+
+        default:
+            image.pixelLayout = ePIXEL_LAYOUT::nINVALID;
+    }
 }
 
 [[nodiscard]] std::optional<Image> LoadTARGA(std::string_view _name)
@@ -136,6 +167,8 @@ void LoadUncompressedImage(Image &image, std::ifstream &file)
         auto colorMapLength = static_cast<std::size_t>((header.colorMapSpec.at(3) << 8) + header.colorMapSpec.at(2));
         auto colorMapDepth = header.colorMapSpec.at(4);
 
+        image.pixelDepth = colorMapDepth;
+
         colorMap.resize(colorMapLength * colorMapDepth / 8);
 
         file.seekg(colorMapStart, std::ios::cur);
@@ -146,8 +179,6 @@ void LoadUncompressedImage(Image &image, std::ifstream &file)
     switch (header.imageType) {
         // No image data is present
         case 0x00:
-        // Uncompressed color-mapped image
-        case 0x01:
         // Uncompressed monochrome image
         case 0x03:
         // Run-length encoded color-mapped image
@@ -156,9 +187,14 @@ void LoadUncompressedImage(Image &image, std::ifstream &file)
         case 0x0B:
             return { };
 
+        // Uncompressed color-mapped image
+        case 0x01:
+            std::cout << measure<>::execution(LoadUncompressedColorMappedImage, image, file) << '\n';
+            break;
+
         // Uncompressed true-color image
         case 0x02:
-            std::cout << measure<>::execution(LoadUncompressedImage, image, file) << '\n';
+            std::cout << measure<>::execution(LoadUncompressedTrueColorImage, image, file) << '\n';
             break;
 
         // Run-length encoded true-color image
