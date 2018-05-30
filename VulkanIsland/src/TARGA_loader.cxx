@@ -86,22 +86,6 @@ void LoadUncompressedImage(Image &image, std::ifstream &file)
     }, std::move(buffer.value()));
 }
 
-// A function execution duration measurement.
-template<typename TimeT = std::chrono::milliseconds>
-struct measure {
-    template<typename F, typename... Args>
-    static auto execution(F func, Args &&... args)
-    {
-        auto start = std::chrono::system_clock::now();
-
-        func(std::forward<Args>(args)...);
-
-        auto duration = typename std::chrono::duration_cast<TimeT>(std::chrono::system_clock::now() - start);
-
-        return duration.count();
-    }
-};
-
 [[nodiscard]] std::optional<Image> LoadTARGA(std::string_view _name)
 {
     auto current_path = fs::current_path();

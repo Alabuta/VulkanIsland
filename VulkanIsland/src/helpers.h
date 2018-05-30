@@ -5,6 +5,7 @@
 #include <variant>
 #include <cmath>
 #include <type_traits>
+#include <chrono>
 
 template<class C, class = void>
 struct is_iterable : std::false_type {};
@@ -97,6 +98,24 @@ template<class V, size_t... I>
 struct wrap_variant_by_vector<V, std::index_sequence<I...>> {
     using type = std::variant<std::vector<std::variant_alternative_t<I, V>>...>;
 };
+
+
+// A function execution duration measurement.
+template<typename TimeT = std::chrono::milliseconds>
+struct measure {
+    template<typename F, typename... Args>
+    static auto execution(F func, Args &&... args)
+    {
+        auto start = std::chrono::system_clock::now();
+
+        func(std::forward<Args>(args)...);
+
+        auto duration = std::chrono::duration_cast<TimeT>(std::chrono::system_clock::now() - start);
+
+        return duration.count();
+    }
+};
+
 
 struct vec2 {
     std::array<float, 2> xy;
