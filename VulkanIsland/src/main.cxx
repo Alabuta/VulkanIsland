@@ -838,8 +838,6 @@ void GenerateMipMaps(VulkanDevice *vulkanDevice, Q &queue, VkImage image, std::i
 
 void CreateTextureImage(VulkanDevice *vulkanDevice, VkImage &imageHandle, VkDeviceMemory &imageMemory)
 {
-    std::vector<std::byte> texels;
-
     Image image;
 
     //if (auto result = LoadTARGA("Hebe/textures/HebehebemissinSG1_normal.tga"sv); !result)

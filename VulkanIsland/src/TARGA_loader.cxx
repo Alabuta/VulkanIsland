@@ -70,12 +70,12 @@ void LoadUncompressedImage(Image &image, std::ifstream &file)
 
         if constexpr (texel_t::size == 3)
         {
-            std::vector<vec<4, texel_t::value_type>> dstBuffer;
+            std::vector<vec<4, typename texel_t::value_type>> dstBuffer;
             dstBuffer.reserve(std::size(buffer));
 
             std::transform(std::begin(buffer), std::end(buffer), std::back_inserter(dstBuffer), [] (auto &&texel)
             {
-                return vec<4, texel_t::value_type>{{ texel.array.at(0), texel.array.at(1), texel.array.at(2), 1 }};
+                return vec<4, typename texel_t::value_type>{{ texel.array.at(0), texel.array.at(1), texel.array.at(2), 1 }};
             });
 
             image.data = std::move(dstBuffer);
