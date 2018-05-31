@@ -667,6 +667,10 @@ void CreateDescriptorSet(VkDevice device, VkDescriptorSet &descriptorSet)
         textureSampler, textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     };
 
+    std::cout << &textureImageView << '\n';
+    std::cout << &textureSampler << '\n';
+    std::cout << &imageInfo << '\n';
+
     std::array<VkWriteDescriptorSet, 2> const writeDescriptorsSet{{
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -689,6 +693,8 @@ void CreateDescriptorSet(VkDevice device, VkDescriptorSet &descriptorSet)
             nullptr
         }
     }};
+
+    std::cout << &writeDescriptorsSet << '\n';
 
     vkUpdateDescriptorSets(device, static_cast<std::uint32_t>(std::size(writeDescriptorsSet)), std::data(writeDescriptorsSet), 0, nullptr);
 }
@@ -840,8 +846,8 @@ void CreateTextureImage(VulkanDevice *vulkanDevice, VkImage &imageHandle, VkDevi
 {
     Image image;
 
-    if (auto result = LoadTARGA("Hebe/textures/HebehebemissinSG1_normal.tga"sv); !result)
-    //if (auto result = LoadTARGA("sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
+    //if (auto result = LoadTARGA("Hebe/textures/HebehebemissinSG1_normal.tga"sv); !result)
+    if (auto result = LoadTARGA("sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
     //if (auto result = LoadTARGA("chalet/textures/chalet.tga"sv); !result)
         throw std::runtime_error("failed to load an image"s);
 

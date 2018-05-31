@@ -52,6 +52,7 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkPresentModeKHR>, "iterable object does not contain VkPresentModeKHR elements");
 
+#ifndef _DEBUG
     auto mailbox = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
     {
         return mode == VK_PRESENT_MODE_MAILBOX_KHR;
@@ -59,6 +60,7 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 
     if (mailbox)
         return VK_PRESENT_MODE_MAILBOX_KHR;
+#endif
 
     auto relaxed = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
     {
