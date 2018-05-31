@@ -32,13 +32,16 @@ std::optional<texel_buffer_t> instantiate_texel_buffer(std::uint8_t pixelDepth)
     }
 }
 
-void LoadUncompressedTrueColorImage(Image &image, std::ifstream &file)
+void LoadUncompressedTrueColorImage(Image &image, TARGA &targa, std::ifstream &file)
 {
-    auto buffer = instantiate_texel_buffer(image.pixelDepth);
+    texel_buffer_t buffer;
 
-    if (!buffer) return;
+    if (auto result = instantiate_texel_buffer(targa.pixelDepth); result)
+        buffer = result.value();
 
-    switch (image.pixelDepth) {
+    else return;
+
+    switch (targa.pixelDepth) {
         case 8:
             image.pixelLayout = ePIXEL_LAYOUT::nRED;
             break;
@@ -66,24 +69,23 @@ void LoadUncompressedTrueColorImage(Image &image, std::ifstream &file)
         using texel_t = typename std::decay_t<decltype(buffer)>::value_type;
 
         file.read(reinterpret_cast<char *>(std::data(buffer)), std::size(buffer) * sizeof(texel_t));
-        buffer.shrink_to_fit();
 
         if constexpr (texel_t::size == 3)
         {
             using vec_type = vec<4, typename texel_t::value_type>;
 
-            std::vector<vec_type> dstBuffer(std::size(buffer));
+            std::vector<vec_type> intermidiateBuffer(std::size(buffer));
 
             std::size_t i = 0;
             for (auto &&texel : buffer)
-                dstBuffer.at(++i - 1) = std::move(vec_type{texel.array.at(0), texel.array.at(1), texel.array.at(2), 1});
+                intermidiateBuffer.at(++i - 1) = std::move(vec_type{texel.array.at(0), texel.array.at(1), texel.array.at(2), 1});
 
-            image.data = std::move(dstBuffer);
+            image.data = std::move(intermidiateBuffer);
         }
 
         else image.data = std::move(buffer);
 
-    }, std::move(buffer.value()));
+    }, std::move(buffer));
 }
 
 void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream &file)
@@ -155,9 +157,25 @@ void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream 
     {
         using texel_t = typename std::decay_t<decltype(palette)>::value_type;
 
-        std::decay_t<decltype(palette)> buffer(image.width * image.height);
+        std::vector<std::size_t> indices(image.width * image.height);
+        file.read(reinterpret_cast<char *>(std::data(indices)), std::size(indices) * sizeof(std::byte));
 
-        ;
+        std::decay_t<decltype(palette)> buffer(image.width * image.height);
+     
+        std::size_t begin, end;
+        std::size_t colorIndex;
+
+        for (auto it_index = std::cbegin(indices); it_index < std::cend(indices); ) {
+            begin = std::distance(std::cbegin(indices), it_index);
+
+            colorIndex = *it_index;
+
+            it_index = std::partition_point(it_index, std::cend(indices), [colorIndex] (auto index) { return index == colorIndex; });
+
+            end = std::distance(std::cbegin(indices), it_index);
+
+            std::fill_n(std::next(std::begin(buffer), begin), end - begin, palette.at(colorIndex));
+        }
 
         image.data = std::move(buffer);
 
@@ -221,7 +239,7 @@ void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream 
 
         // Uncompressed true-color image
         case 0x02:
-            std::cout << measure<>::execution(LoadUncompressedTrueColorImage, image, file) << '\n';
+            std::cout << measure<>::execution(LoadUncompressedTrueColorImage, image, targa, file) << '\n';
             break;
 
         // Run-length encoded true-color image
