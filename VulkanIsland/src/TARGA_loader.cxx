@@ -5,9 +5,6 @@
 #include "TARGA_loader.h"
 
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
-
 
 template<std::size_t N>
 std::optional<texel_buffer_t> instantiate_texel_buffer()
@@ -66,10 +63,10 @@ void LoadUncompressedTrueColorImage(Image &image, std::ifstream &file)
     {
         buffer.resize(image.width * image.height);
 
-        file.read(reinterpret_cast<char *>(std::data(buffer)), std::size(buffer) * sizeof(std::decay_t<decltype(buffer)>::value_type));
-        buffer.shrink_to_fit();
-
         using texel_t = typename std::decay_t<decltype(buffer)>::value_type;
+
+        file.read(reinterpret_cast<char *>(std::data(buffer)), std::size(buffer) * sizeof(texel_t));
+        buffer.shrink_to_fit();
 
         if constexpr (texel_t::size == 3)
         {
@@ -89,13 +86,21 @@ void LoadUncompressedTrueColorImage(Image &image, std::ifstream &file)
     }, std::move(buffer.value()));
 }
 
-void LoadUncompressedColorMappedImage(Image &image, std::ifstream &file)
+void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream &file)
 {
-    auto buffer = instantiate_texel_buffer(image.pixelDepth);
+    if ((targa.header.colorMapType & 0x01) != 0x01)
+        return;
 
-    if (!buffer) return;
+    targa.colorMapDepth = targa.header.colorMapSpec.at(4);
 
-    switch (image.pixelDepth) {
+    texel_buffer_t palette;
+
+    if (auto buffer = instantiate_texel_buffer(targa.colorMapDepth); buffer)
+        palette = buffer.value();
+
+    else return;
+
+    switch (targa.colorMapDepth) {
         case 8:
             image.pixelLayout = ePIXEL_LAYOUT::nRED;
             break;
@@ -115,6 +120,48 @@ void LoadUncompressedColorMappedImage(Image &image, std::ifstream &file)
         default:
             image.pixelLayout = ePIXEL_LAYOUT::nINVALID;
     }
+
+    auto colorMapStart = static_cast<std::size_t>((targa.header.colorMapSpec.at(1) << 8) + targa.header.colorMapSpec.at(0));
+    auto colorMapLength = static_cast<std::size_t>((targa.header.colorMapSpec.at(3) << 8) + targa.header.colorMapSpec.at(2));
+
+    file.seekg(colorMapStart, std::ios::cur);
+
+    palette = std::visit([&] (auto &&palette) -> texel_buffer_t
+    {
+        palette.resize(colorMapLength);
+
+        using texel_t = typename std::decay_t<decltype(palette)>::value_type;
+
+        file.read(reinterpret_cast<char *>(std::data(palette)), std::size(palette) * sizeof(texel_t));
+
+        if constexpr (texel_t::size == 3)
+        {
+            using vec_type = vec<4, typename texel_t::value_type>;
+
+            std::vector<vec_type> intermidiateBuffer(std::size(palette));
+
+            std::size_t i = 0;
+            for (auto &&texel : palette)
+                intermidiateBuffer.at(++i - 1) = std::move(vec_type{texel.array.at(0), texel.array.at(1), texel.array.at(2), 1});
+
+            return std::move(intermidiateBuffer);
+        }
+
+        else return std::move(palette);
+
+    }, std::move(palette));
+
+    std::visit([&image, &file] (auto &&palette)
+    {
+        using texel_t = typename std::decay_t<decltype(palette)>::value_type;
+
+        std::decay_t<decltype(palette)> buffer(image.width * image.height);
+
+        ;
+
+        image.data = std::move(buffer);
+
+    }, std::move(palette));
 }
 
 [[nodiscard]] std::optional<Image> LoadTARGA(std::string_view _name)
@@ -132,51 +179,31 @@ void LoadUncompressedColorMappedImage(Image &image, std::ifstream &file)
     if (!file.is_open())
         return { };
 
-    struct header_t {
-        byte_t IDLength;
-        byte_t colorMapType;
-        byte_t imageType;
-        std::array<byte_t, 5> colorMapSpec;
-        std::array<byte_t, 10> imageSpec;
-    } header;
+    TARGA targa;
 
-    file.read(reinterpret_cast<char *>(&header), sizeof(header));
+    file.read(reinterpret_cast<char *>(&targa.header), sizeof(targa.header));
 
-    auto const hasColorMap = (header.colorMapType & 0x01) == 0x01;
+    targa.width = static_cast<std::int16_t>((targa.header.imageSpec.at(5) << 8) + targa.header.imageSpec.at(4));
+    targa.height = static_cast<std::int16_t>((targa.header.imageSpec.at(7) << 8) + targa.header.imageSpec.at(6));
+    targa.pixelDepth = targa.header.imageSpec.at(8);
 
     Image image;
 
-    image.width = static_cast<std::int16_t>((header.imageSpec.at(5) << 8) + header.imageSpec.at(4));
-    image.height = static_cast<std::int16_t>((header.imageSpec.at(7) << 8) + header.imageSpec.at(6));
-    image.pixelDepth = header.imageSpec.at(8);
+    image.width = targa.width;
+    image.height = targa.height;
+    image.pixelDepth = targa.pixelDepth;
 
-    [[maybe_unused]] auto const alphaDepth = header.imageSpec.at(9) & 0x07; // First three bits from last byte of image specification field.
+    [[maybe_unused]] auto const alphaDepth = targa.header.imageSpec.at(9) & 0x07; // First three bits from last byte of image specification field.
 
     if (image.width * image.height * image.pixelDepth < 0)
         return { };
 
-    std::vector<std::byte> imageID(header.IDLength);
+    std::vector<std::byte> imageID(targa.header.IDLength);
 
     if (std::size(imageID))
         file.read(reinterpret_cast<char *>(std::data(imageID)), sizeof(std::size(imageID)));
 
-    std::vector<std::byte> colorMap;
-
-    if (hasColorMap) {
-        auto colorMapStart = static_cast<std::size_t>((header.colorMapSpec.at(1) << 8) + header.colorMapSpec.at(0));
-        auto colorMapLength = static_cast<std::size_t>((header.colorMapSpec.at(3) << 8) + header.colorMapSpec.at(2));
-        auto colorMapDepth = header.colorMapSpec.at(4);
-
-        image.pixelDepth = colorMapDepth;
-
-        colorMap.resize(colorMapLength * colorMapDepth / 8);
-
-        file.seekg(colorMapStart, std::ios::cur);
-
-        file.read(reinterpret_cast<char *>(std::data(colorMap)), sizeof(std::size(colorMap)));
-    }
-
-    switch (header.imageType) {
+    switch (targa.header.imageType) {
         // No image data is present
         case 0x00:
         // Uncompressed monochrome image
@@ -189,7 +216,7 @@ void LoadUncompressedColorMappedImage(Image &image, std::ifstream &file)
 
         // Uncompressed color-mapped image
         case 0x01:
-            std::cout << measure<>::execution(LoadUncompressedColorMappedImage, image, file) << '\n';
+            std::cout << measure<>::execution(LoadUncompressedColorMappedImage, image, targa, file) << '\n';
             break;
 
         // Uncompressed true-color image

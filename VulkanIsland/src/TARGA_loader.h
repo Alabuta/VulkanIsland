@@ -49,4 +49,29 @@ struct Image {
     texel_buffer_t data;
 };
 
+struct Image1 {
+    VkImage handle;
+    VkFormat format{VK_FORMAT_UNDEFINED};
+
+    std::int16_t width{0}, height{0};
+    std::uint32_t mipLevels;
+};
+
+struct TARGA {
+    struct header_t {
+        byte_t IDLength;
+        byte_t colorMapType;
+        byte_t imageType;
+        std::array<byte_t, 5> colorMapSpec;
+        std::array<byte_t, 10> imageSpec;
+    } header;
+
+    ePIXEL_LAYOUT pixelLayout{ePIXEL_LAYOUT::nINVALID};
+
+    std::int16_t width{0}, height{0};
+    std::uint8_t pixelDepth{0}, colorMapDepth{0};
+
+    texel_buffer_t data;
+};
+
 [[nodiscard]] std::optional<Image> LoadTARGA(std::string_view name);
