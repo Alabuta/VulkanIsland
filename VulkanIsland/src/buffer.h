@@ -5,6 +5,30 @@
 #include "command_buffer.h"
 
 
+class BufferManager final {
+
+    template<class T>
+    [[nodiscard]] std::optional<VkBuffer> CreateStagingBuffer(VulkanDevice *vulkanDevice, std::size_t length)
+    {
+        return {};
+    }
+
+};
+
+class DeviceMemoryAllocator final {
+public:
+
+
+    [[nodiscard]] std::optional<std::pair<VkDeviceMemory, std::size_t>> AllocateMemory()
+    {
+        return {};
+    }
+
+private:
+
+    ;
+};
+
 
 void CreateBuffer(VulkanDevice *vulkanDevice,
                   VkBuffer &buffer, VkDeviceMemory &deviceMemory, VkDeviceSize size,

@@ -48,6 +48,8 @@ struct Image1 {
 
     std::int16_t width{0}, height{0};
     std::uint32_t mipLevels;
+
+    texel_buffer_t data;
 };
 
 struct TARGA {
