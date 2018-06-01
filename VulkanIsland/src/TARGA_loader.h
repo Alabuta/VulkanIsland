@@ -5,13 +5,6 @@
 #include <string_view>
 #include <variant>
 
-struct alignas(sizeof(std::uint32_t)) RGBA
-{
-    union {
-        std::array<std::byte, 4> channels;
-        std::uint32_t value;
-    };
-};
 
 enum class ePIXEL_LAYOUT {
     nINVALID = 0, nRED, nRG, nRGB, nBGR, nRGBA, nBGRA

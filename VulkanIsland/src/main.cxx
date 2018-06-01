@@ -864,7 +864,7 @@ void CreateTextureImage(VulkanDevice *vulkanDevice, VkImage &imageHandle, VkDevi
     {
         using texel_t = typename std::decay_t<decltype(texels)>::value_type;
 
-        auto const bufferSize = static_cast<VkDeviceSize>(std::size(texels)) * sizeof(texel_t);
+        auto const bufferSize = static_cast<VkDeviceSize>(std::size(texels) * sizeof(texel_t));
 
         CreateBuffer(vulkanDevice, stagingBuffer, stagingBufferMemory, bufferSize,
                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);

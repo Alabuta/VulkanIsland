@@ -155,14 +155,12 @@ void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream 
 
     std::visit([&image, &file] (auto &&palette)
     {
-        using texel_t = typename std::decay_t<decltype(palette)>::value_type;
-
         std::vector<std::size_t> indices(image.width * image.height);
         file.read(reinterpret_cast<char *>(std::data(indices)), std::size(indices) * sizeof(std::byte));
 
         std::decay_t<decltype(palette)> buffer(image.width * image.height);
-     
-        std::size_t begin, end;
+
+        std::ptrdiff_t begin, end;
         std::size_t colorIndex;
 
         for (auto it_index = std::cbegin(indices); it_index < std::cend(indices); ) {

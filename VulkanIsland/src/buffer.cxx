@@ -53,10 +53,10 @@ void CreateBuffer(VulkanDevice *vulkanDevice,
     };
 
     if (auto result = vkAllocateMemory(vulkanDevice->handle(), &memAllocInfo, nullptr, &deviceMemory); result != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate vertex buffer memory: "s + std::to_string(result));
+        throw std::runtime_error("failed to allocate buffer memory: "s + std::to_string(result));
 
     if (auto result = vkBindBufferMemory(vulkanDevice->handle(), buffer, deviceMemory, 0); result != VK_SUCCESS)
-        throw std::runtime_error("failed to bind vertex buffer memory: "s + std::to_string(result));
+        throw std::runtime_error("failed to bind buffer memory: "s + std::to_string(result));
 }
 
 
