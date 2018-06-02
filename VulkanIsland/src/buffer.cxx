@@ -1,22 +1,65 @@
+#include <unordered_map>
+
 #include "buffer.h"
 
-[[nodiscard]] std::optional<std::uint32_t> FindMemoryType(VkPhysicalDevice physicalDevice, std::uint32_t filter, VkMemoryPropertyFlags properties)
-{
-    VkPhysicalDeviceMemoryProperties memoryProperties;
-    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+class DeviceMemoryPool final {
+public:
 
-    auto const memoryTypes = to_array(memoryProperties.memoryTypes);
 
-    auto it_type = std::find_if(memoryTypes.begin(), memoryTypes.end(), [filter, properties, i = 0] (auto type) mutable
+    template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>...>
+    [[nodiscard]] static std::optional<VkDeviceMemory> AllocateMemory(VulkanDevice *vulkanDevice, T buffer, VkMemoryPropertyFlags properties)
     {
-        return (filter & (1 << i++)) && (type.propertyFlags & properties) == properties;
-    });
+        VkMemoryRequirements memoryReqirements;
 
-    if (it_type != memoryTypes.end())
-        return static_cast<std::uint32_t>(std::distance(memoryTypes.begin(), it_type));
+        if constexpr (std::is_same_v<T, VkBuffer>)
+            vkGetBufferMemoryRequirements(vulkanDevice->handle(), buffer, &memoryReqirements);
 
-    return { };
-}
+        else vkGetImageMemoryRequirements(vulkanDevice->handle(), buffer, &memoryReqirements);
+
+        std::uint32_t memTypeIndex = 0;
+
+        if (auto index = FindMemoryType(vulkanDevice, memoryReqirements.memoryTypeBits, properties); !index)
+            throw std::runtime_error("failed to find suitable memory type"s);
+
+        else memTypeIndex = index.value();
+
+        VkMemoryAllocateInfo const memAllocInfo{
+            VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            nullptr,
+            memoryReqirements.size,
+            memTypeIndex
+        };
+
+        VkDeviceMemory deviceMemory;
+
+        if (auto result = vkAllocateMemory(vulkanDevice->handle(), &memAllocInfo, nullptr, &deviceMemory); result != VK_SUCCESS)
+            return { };
+
+        return deviceMemory;
+    }
+
+private:
+
+    std::unordered_map<std::uint32_t, VkDeviceMemory> pool_;
+
+    [[nodiscard]] static std::optional<std::uint32_t> FindMemoryType(VulkanDevice *vulkanDevice, std::uint32_t filter, VkMemoryPropertyFlags properties)
+    {
+        VkPhysicalDeviceMemoryProperties memoryProperties;
+        vkGetPhysicalDeviceMemoryProperties(vulkanDevice->physical_handle(), &memoryProperties);
+
+        auto const memoryTypes = to_array(memoryProperties.memoryTypes);
+
+        auto it_type = std::find_if(std::cbegin(memoryTypes), std::cend(memoryTypes), [filter, properties, i = 0u] (auto type) mutable
+        {
+            return (filter & (1 << i++)) && (type.propertyFlags & properties) == properties;
+        });
+
+        if (it_type < std::next(std::cbegin(memoryTypes), memoryProperties.memoryTypeCount))
+            return static_cast<std::uint32_t>(std::distance(std::cbegin(memoryTypes), it_type));
+
+        return { };
+    }
+};
 
 
 void CreateBuffer(VulkanDevice *vulkanDevice,
@@ -33,27 +76,12 @@ void CreateBuffer(VulkanDevice *vulkanDevice,
     };
 
     if (auto result = vkCreateBuffer(vulkanDevice->handle(), &bufferCreateInfo, nullptr, &buffer); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create vertex buffer: "s + std::to_string(result));
+        throw std::runtime_error("failed to create buffer: "s + std::to_string(result));
 
-    VkMemoryRequirements memoryReqirements;
-    vkGetBufferMemoryRequirements(vulkanDevice->handle(), buffer, &memoryReqirements);
+    if (auto result = DeviceMemoryPool::AllocateMemory(vulkanDevice, buffer, properties); !result)
+        throw std::runtime_error("failed to allocate buffer memory"s);
 
-    std::uint32_t memTypeIndex = 0;
-
-    if (auto index = FindMemoryType(vulkanDevice->physical_handle(), memoryReqirements.memoryTypeBits, properties); !index)
-        throw std::runtime_error("failed to find suitable memory type"s);
-
-    else memTypeIndex = index.value();
-
-    VkMemoryAllocateInfo const memAllocInfo{
-        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        nullptr,
-        memoryReqirements.size,
-        memTypeIndex
-    };
-
-    if (auto result = vkAllocateMemory(vulkanDevice->handle(), &memAllocInfo, nullptr, &deviceMemory); result != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate buffer memory: "s + std::to_string(result));
+    else deviceMemory = result.value();
 
     if (auto result = vkBindBufferMemory(vulkanDevice->handle(), buffer, deviceMemory, 0); result != VK_SUCCESS)
         throw std::runtime_error("failed to bind buffer memory: "s + std::to_string(result));
@@ -84,25 +112,10 @@ void CreateImage(VulkanDevice *vulkanDevice,
     if (auto result = vkCreateImage(vulkanDevice->handle(), &createInfo, nullptr, &image); result != VK_SUCCESS)
         throw std::runtime_error("failed to create image: "s + std::to_string(result));
 
-    VkMemoryRequirements memoryReqirements;
-    vkGetImageMemoryRequirements(vulkanDevice->handle(), image, &memoryReqirements);
+    if (auto result = DeviceMemoryPool::AllocateMemory(vulkanDevice, image, properties); !result)
+        throw std::runtime_error("failed to allocate image buffer memory"s);
 
-    std::uint32_t memTypeIndex = 0;
-
-    if (auto index = FindMemoryType(vulkanDevice->physical_handle(), memoryReqirements.memoryTypeBits, properties); !index)
-        throw std::runtime_error("failed to find suitable memory type"s);
-
-    else memTypeIndex = index.value();
-
-    VkMemoryAllocateInfo const memAllocInfo{
-        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        nullptr,
-        memoryReqirements.size,
-        memTypeIndex
-    };
-
-    if (auto result = vkAllocateMemory(vulkanDevice->handle(), &memAllocInfo, nullptr, &deviceMemory); result != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate image buffer memory: "s + std::to_string(result));
+    else deviceMemory = result.value();
 
     if (auto result = vkBindImageMemory(vulkanDevice->handle(), image, deviceMemory, 0); result != VK_SUCCESS)
         throw std::runtime_error("failed to bind image buffer memory: "s + std::to_string(result));

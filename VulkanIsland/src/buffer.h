@@ -15,20 +15,6 @@ class BufferManager final {
 
 };
 
-class DeviceMemoryAllocator final {
-public:
-
-
-    [[nodiscard]] std::optional<std::pair<VkDeviceMemory, std::size_t>> AllocateMemory()
-    {
-        return {};
-    }
-
-private:
-
-    ;
-};
-
 
 void CreateBuffer(VulkanDevice *vulkanDevice,
                   VkBuffer &buffer, VkDeviceMemory &deviceMemory, VkDeviceSize size,
