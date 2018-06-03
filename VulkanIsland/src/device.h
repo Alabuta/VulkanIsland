@@ -25,12 +25,13 @@ public:
     template<class Q, std::size_t I = 0, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
     Q const &Get() const;
 
+
+#if NOT_YET_IMPLEMENTED
     template<VkCommandBufferLevel L>
     struct VulkanCmdBuffer {
         static auto constexpr level{L};
     };
 
-#if NOT_YET_IMPLEMENTED
     template<class Q, std::size_t I = 0, VkCommandBufferLevel L, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
     std::vector<VulkanCmdBuffer<L>> AllocateCmdBuffers(std::size_t count)
     {
@@ -51,12 +52,7 @@ public:
     }
 #endif
 
-
 private:
-
-    VulkanDevice() = delete;
-    VulkanDevice(VulkanDevice const &) = delete;
-    VulkanDevice(VulkanDevice &&) = delete;
 
     VkPhysicalDevice physicalDevice_{nullptr};
     VkDevice device_{nullptr};
@@ -67,6 +63,11 @@ private:
         std::vector<TransferQueue> transferQueues_;
         std::vector<PresentationQueue> presentationQueues_;
     } queuePool_;
+
+
+    VulkanDevice() = delete;
+    VulkanDevice(VulkanDevice const &) = delete;
+    VulkanDevice(VulkanDevice &&) = delete;
 
     void PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions);
     void CreateDevice(VkSurfaceKHR surface, std::vector<char const *> &&extensions);
