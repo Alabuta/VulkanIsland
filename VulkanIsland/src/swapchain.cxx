@@ -211,8 +211,8 @@ void CleanupSwapChain(VulkanDevice *vulkanDevice, VkSwapchainKHR swapChain)
     if (depthImageView)
         vkDestroyImageView(vulkanDevice->handle(), depthImageView, nullptr);
 
-    if (depthImageMemory)
-        vkFreeMemory(vulkanDevice->handle(), depthImageMemory, nullptr);
+    /*if (depthImageMemory)
+        vkFreeMemory(vulkanDevice->handle(), depthImageMemory, nullptr);*/
 
     if (depthImage)
         vkDestroyImage(vulkanDevice->handle(), depthImage, nullptr);
