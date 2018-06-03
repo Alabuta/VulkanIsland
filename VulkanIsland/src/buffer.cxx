@@ -7,7 +7,8 @@ public:
 
 
     template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>...>
-    [[nodiscard]] static std::optional<VkDeviceMemory> AllocateMemory(VulkanDevice *vulkanDevice, T buffer, VkMemoryPropertyFlags properties)
+    [[nodiscard]] auto AllocateMemory(VulkanDevice *vulkanDevice, T buffer, VkMemoryPropertyFlags properties) ->
+        std::optional<std::pair<VkDeviceMemory, std::uint32_t>>
     {
         VkMemoryRequirements memoryReqirements;
 
@@ -23,6 +24,9 @@ public:
 
         else memTypeIndex = index.value();
 
+        /*if (pool_.count(memTypeIndex) > 0)
+            return std::make_pair(pool_.at(memTypeIndex), 0);*/
+
         VkMemoryAllocateInfo const memAllocInfo{
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
             nullptr,
@@ -31,14 +35,23 @@ public:
         };
 
         VkDeviceMemory deviceMemory;
+        std::uint32_t memoryOffset = 0;
 
         if (auto result = vkAllocateMemory(vulkanDevice->handle(), &memAllocInfo, nullptr, &deviceMemory); result != VK_SUCCESS)
             return { };
 
-        return deviceMemory;
+        pool_.emplace(memTypeIndex, deviceMemory);
+
+        return std::make_pair(deviceMemory, memoryOffset);
     }
 
 private:
+
+    struct memory_chunk_t {
+        VkDeviceMemory handle;
+        VkDeviceSize size;
+        VkDeviceSize memoryOffset;
+    };
 
     std::unordered_map<std::uint32_t, VkDeviceMemory> pool_;
 
@@ -59,7 +72,7 @@ private:
 
         return { };
     }
-};
+} deviceMemoryPool;
 
 
 void CreateBuffer(VulkanDevice *vulkanDevice,
@@ -78,12 +91,14 @@ void CreateBuffer(VulkanDevice *vulkanDevice,
     if (auto result = vkCreateBuffer(vulkanDevice->handle(), &bufferCreateInfo, nullptr, &buffer); result != VK_SUCCESS)
         throw std::runtime_error("failed to create buffer: "s + std::to_string(result));
 
-    if (auto result = DeviceMemoryPool::AllocateMemory(vulkanDevice, buffer, properties); !result)
+    std::uint32_t memoryOffset = 0;
+
+    if (auto result = deviceMemoryPool.AllocateMemory(vulkanDevice, buffer, properties); !result)
         throw std::runtime_error("failed to allocate buffer memory"s);
 
-    else deviceMemory = result.value();
+    else std::tie(deviceMemory, memoryOffset) = result.value();
 
-    if (auto result = vkBindBufferMemory(vulkanDevice->handle(), buffer, deviceMemory, 0); result != VK_SUCCESS)
+    if (auto result = vkBindBufferMemory(vulkanDevice->handle(), buffer, deviceMemory, memoryOffset); result != VK_SUCCESS)
         throw std::runtime_error("failed to bind buffer memory: "s + std::to_string(result));
 }
 
@@ -112,12 +127,14 @@ void CreateImage(VulkanDevice *vulkanDevice,
     if (auto result = vkCreateImage(vulkanDevice->handle(), &createInfo, nullptr, &image); result != VK_SUCCESS)
         throw std::runtime_error("failed to create image: "s + std::to_string(result));
 
-    if (auto result = DeviceMemoryPool::AllocateMemory(vulkanDevice, image, properties); !result)
+    std::uint32_t memoryOffset = 0;
+
+    if (auto result = deviceMemoryPool.AllocateMemory(vulkanDevice, image, properties); !result)
         throw std::runtime_error("failed to allocate image buffer memory"s);
 
-    else deviceMemory = result.value();
+    else std::tie(deviceMemory, memoryOffset) = result.value();
 
-    if (auto result = vkBindImageMemory(vulkanDevice->handle(), image, deviceMemory, 0); result != VK_SUCCESS)
+    if (auto result = vkBindImageMemory(vulkanDevice->handle(), image, deviceMemory, memoryOffset); result != VK_SUCCESS)
         throw std::runtime_error("failed to bind image buffer memory: "s + std::to_string(result));
 }
 
