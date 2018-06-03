@@ -100,6 +100,7 @@ VkSemaphore imageAvailableSemaphore, renderFinishedSemaphore;
 
 VkBuffer vertexBuffer, indexBuffer, uboBuffer;
 VkDeviceMemory vertexBufferMemory, indexBufferMemory, uboBufferMemory;
+VkDeviceSize vertexBufferOffset, indexBufferOffset, uboBufferOffset;
 
 std::uint32_t mipLevels;
 VkImage textureImage;
@@ -576,12 +577,13 @@ void CreateVertexBuffer(VulkanDevice *vulkanDevice, VkBuffer &vertexBuffer, VkDe
 
     VkBuffer stagingBuffer;
     VkDeviceMemory stagingBufferMemory;
+    VkDeviceSize stagingOffset = 0;
 
     CreateBuffer(vulkanDevice, stagingBuffer, stagingBufferMemory, bufferSize,
                  VK_BUFFER_USAGE_TRANSFER_SRC_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
 
     decltype(vertices)::value_type *data;
-    if (auto result = vkMapMemory(vulkanDevice->handle(), stagingBufferMemory, 0, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
+    if (auto result = vkMapMemory(vulkanDevice->handle(), stagingBufferMemory, stagingOffset, bufferSize, 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
         throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
 
     std::uninitialized_copy(std::begin(vertices), std::end(vertices), data);
@@ -593,7 +595,7 @@ void CreateVertexBuffer(VulkanDevice *vulkanDevice, VkBuffer &vertexBuffer, VkDe
 
     CopyBufferToBuffer(vulkanDevice, transferQueue, stagingBuffer, vertexBuffer, bufferSize, transferCommandPool);
 
-    vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
+    //vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
     vkDestroyBuffer(vulkanDevice->handle(), stagingBuffer, nullptr);
 }
 
@@ -620,7 +622,7 @@ void CreateIndexBuffer(VulkanDevice *vulkanDevice, VkBuffer &indexBuffer, VkDevi
 
     CopyBufferToBuffer(vulkanDevice, transferQueue, stagingBuffer, indexBuffer, bufferSize, transferCommandPool);
 
-    vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
+    //vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
     vkDestroyBuffer(vulkanDevice->handle(), stagingBuffer, nullptr);
 }
 
@@ -892,7 +894,7 @@ void CreateTextureImage(VulkanDevice *vulkanDevice, VkImage &imageHandle, VkDevi
 
     GenerateMipMaps(vulkanDevice, transferQueue, imageHandle, image.width, image.height, mipLevels, transferCommandPool);
 
-    vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
+    //vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
     vkDestroyBuffer(vulkanDevice->handle(), stagingBuffer, nullptr);
 }
 
@@ -1116,26 +1118,26 @@ void CleanUp()
     if (textureImageView)
         vkDestroyImageView(vulkanDevice->handle(), textureImageView, nullptr);
 
-    if (textureImageMemory)
-        vkFreeMemory(vulkanDevice->handle(), textureImageMemory, nullptr);
+    /*if (textureImageMemory)
+        vkFreeMemory(vulkanDevice->handle(), textureImageMemory, nullptr);*/
 
     if (textureImage)
         vkDestroyImage(vulkanDevice->handle(), textureImage, nullptr);
 
-    if (uboBufferMemory)
-        vkFreeMemory(vulkanDevice->handle(), uboBufferMemory, nullptr);
+    /*if (uboBufferMemory)
+        vkFreeMemory(vulkanDevice->handle(), uboBufferMemory, nullptr);*/
 
     if (uboBuffer)
         vkDestroyBuffer(vulkanDevice->handle(), uboBuffer, nullptr);
 
-    if (indexBufferMemory)
-        vkFreeMemory(vulkanDevice->handle(), indexBufferMemory, nullptr);
+    /*if (indexBufferMemory)
+        vkFreeMemory(vulkanDevice->handle(), indexBufferMemory, nullptr);*/
 
     if (indexBuffer)
         vkDestroyBuffer(vulkanDevice->handle(), indexBuffer, nullptr);
 
-    if (vertexBufferMemory)
-        vkFreeMemory(vulkanDevice->handle(), vertexBufferMemory, nullptr);
+    /*if (vertexBufferMemory)
+        vkFreeMemory(vulkanDevice->handle(), vertexBufferMemory, nullptr);*/
 
     if (vertexBuffer)
         vkDestroyBuffer(vulkanDevice->handle(), vertexBuffer, nullptr);

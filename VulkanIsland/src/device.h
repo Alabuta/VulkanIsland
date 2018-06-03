@@ -5,6 +5,7 @@
 #include "queues.h"
 #include "queue_builder.h"
 
+class DeviceMemoryPool;
 
 
 auto constexpr deviceExtensions = make_array(
@@ -25,6 +26,7 @@ public:
     template<class Q, std::size_t I = 0, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
     Q const &Get() const;
 
+    DeviceMemoryPool *memoryPool() noexcept { return memoryPool_.get(); }
 
 #if NOT_YET_IMPLEMENTED
     template<VkCommandBufferLevel L>
@@ -64,6 +66,7 @@ private:
         std::vector<PresentationQueue> presentationQueues_;
     } queuePool_;
 
+    std::unique_ptr<DeviceMemoryPool> memoryPool_;
 
     VulkanDevice() = delete;
     VulkanDevice(VulkanDevice const &) = delete;
@@ -104,6 +107,8 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
 
     PickPhysicalDevice(instance.handle(), surface, std::move(extensions_view));
     CreateDevice(surface, std::move(extensions_));
+
+    memoryPool_ = std::move(std::make_unique<DeviceMemoryPool>(this));
 }
 
 template<class Q, std::size_t I, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>

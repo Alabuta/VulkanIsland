@@ -1,18 +1,97 @@
 #pragma once
 
+#include <vector>
+#include <set>
+#include <map>
+
 #include "main.h"
 #include "device.h"
 #include "command_buffer.h"
 
+class DeviceMemoryPool final {
+public:
+    static VkDeviceSize constexpr kBLOCK_ALLOCATION_SIZE{0x4'000'000};   // 64 MB
 
-class BufferManager final {
+    DeviceMemoryPool(VulkanDevice *vulkanDevice) : vulkanDevice_{vulkanDevice} { }
+    ~DeviceMemoryPool();
 
-    template<class T>
-    [[nodiscard]] std::optional<VkBuffer> CreateStagingBuffer(VulkanDevice *vulkanDevice, std::size_t length)
+    template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>...>
+    [[nodiscard]] auto AllocateMemory(T buffer, VkMemoryPropertyFlags properties)
+        -> std::optional<std::pair<VkDeviceMemory, VkDeviceSize>>
     {
-        return {};
+        VkMemoryRequirements memoryReqirements;
+
+        if constexpr (std::is_same_v<T, VkBuffer>)
+            vkGetBufferMemoryRequirements(vulkanDevice_->handle(), buffer, &memoryReqirements);
+
+        else vkGetImageMemoryRequirements(vulkanDevice_->handle(), buffer, &memoryReqirements);
+
+        return AllocateMemory(memoryReqirements, properties);
     }
 
+private:
+
+    VulkanDevice *vulkanDevice_;
+
+    class DeviceMemory {
+    public:
+
+        DeviceMemory(VkDeviceMemory handle, VkDeviceSize size, VkDeviceSize offset) noexcept : handle_{handle}, size_{size}, offset_{offset} { }
+
+        VkDeviceMemory handle() const noexcept { return handle_; }
+
+        VkDeviceSize size() const noexcept { return size_; }
+        VkDeviceSize offset() const noexcept { return offset_; }
+
+    private:
+        VkDeviceMemory handle_;
+        VkDeviceSize size_, offset_;
+
+        DeviceMemory(DeviceMemory const &) = delete;
+    };
+
+    std::vector<DeviceMemory> allocatedMemory;
+
+    struct MemoryBlock {
+        VkDeviceMemory handle;
+        VkDeviceSize availableSize{0};
+
+        struct MemoryChunk {
+            VkDeviceSize offset{0}, size{0};
+
+            MemoryChunk(VkDeviceSize offset, VkDeviceSize size) noexcept : offset{offset}, size{size} { }
+
+            struct comparator {
+                using is_transparent = void;
+
+                template<class L, class R, typename std::enable_if_t<are_same_v<MemoryChunk, L, R>>...>
+                auto operator() (L &&lhs, R &&rhs) const noexcept
+                {
+                    return lhs.size < rhs.size;
+                }
+
+                template<class T, class S, typename std::enable_if_t<std::is_same_v<MemoryChunk, std::decay_t<T>> && std::is_integral_v<S>>...>
+                auto operator() (T &&lhs, S size) const noexcept
+                {
+                    return lhs.size < size;
+                }
+            };
+        };
+
+        std::set<MemoryChunk, MemoryChunk::comparator> availableChunks;
+
+        MemoryBlock(VkDeviceMemory handle, VkDeviceSize availableSize) : handle{handle}, availableSize{availableSize}, availableChunks{{0, availableSize}} { }
+    };
+
+    std::multimap<std::uint32_t, MemoryBlock> memoryBlocks_;
+
+    [[nodiscard]] std::optional<std::pair<VkDeviceMemory, VkDeviceSize>>
+    AllocateMemory(VkMemoryRequirements const &memoryReqirements, VkMemoryPropertyFlags properties);
+
+    auto AllocateMemoryBlock(std::uint32_t memTypeIndex, VkDeviceSize size)
+        -> decltype(memoryBlocks_)::iterator;
+
+    [[nodiscard]] std::optional<std::uint32_t> FindMemoryType(std::uint32_t filter, VkMemoryPropertyFlags properties);
 };
 
 

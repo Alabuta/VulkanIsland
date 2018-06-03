@@ -1,78 +1,129 @@
-#include <unordered_map>
-
+#include "device.h"
 #include "buffer.h"
 
-class DeviceMemoryPool final {
-public:
 
+[[nodiscard]] std::optional<std::pair<VkDeviceMemory, VkDeviceSize>>
+DeviceMemoryPool::AllocateMemory(VkMemoryRequirements const &memoryReqirements, VkMemoryPropertyFlags properties)
+{
+    std::uint32_t memTypeIndex = 0;
 
-    template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>...>
-    [[nodiscard]] auto AllocateMemory(VulkanDevice *vulkanDevice, T buffer, VkMemoryPropertyFlags properties) ->
-        std::optional<std::pair<VkDeviceMemory, std::uint32_t>>
+    if (auto index = FindMemoryType(memoryReqirements.memoryTypeBits, properties); !index)
+        throw std::runtime_error("failed to find suitable memory type"s);
+
+    else memTypeIndex = index.value();
+
+    if (memoryBlocks_.find(memTypeIndex) == std::end(memoryBlocks_))
+        AllocateMemoryBlock(memTypeIndex, memoryReqirements.size);
+
+    auto [it_begin, it_end] = memoryBlocks_.equal_range(memTypeIndex);
+
+    decltype(MemoryBlock::availableChunks)::iterator it_chunk;
+
+    auto it_memoryBlock = std::find_if(it_begin, it_end, [&it_chunk, &memoryReqirements](auto &&pair)
     {
-        VkMemoryRequirements memoryReqirements;
+        auto &&[memTypeIndex, memoryBlock] = pair;
 
-        if constexpr (std::is_same_v<T, VkBuffer>)
-            vkGetBufferMemoryRequirements(vulkanDevice->handle(), buffer, &memoryReqirements);
+        if (memoryBlock.availableSize < memoryReqirements.size)
+            return false;
 
-        else vkGetImageMemoryRequirements(vulkanDevice->handle(), buffer, &memoryReqirements);
+#if NOT_YET_IMPLEMENTED
+        it_chunk = memoryBlock.availableChunks.lower_bound(memoryReqirements.size);
 
-        std::uint32_t memTypeIndex = 0;
+        if (it_chunk == std::end(memoryBlock.availableChunks))
+            return false;
 
-        if (auto index = FindMemoryType(vulkanDevice, memoryReqirements.memoryTypeBits, properties); !index)
-            throw std::runtime_error("failed to find suitable memory type"s);
+        auto [offset, size] = *it_chunk;
 
-        else memTypeIndex = index.value();
+        auto aligment = std::min(VkDeviceSize{1}, offset % memoryReqirements.alignment) * (memoryReqirements.alignment - (offset % memoryReqirements.alignment));
 
-        /*if (pool_.count(memTypeIndex) > 0)
-            return std::make_pair(pool_.at(memTypeIndex), 0);*/
+        return memoryReqirements.size <= size - aligment;
+#else
+        it_chunk = memoryBlock.availableChunks.lower_bound(kBLOCK_ALLOCATION_SIZE);
+        return it_chunk != std::end(memoryBlock.availableChunks);
+#endif
+    });
 
-        VkMemoryAllocateInfo const memAllocInfo{
-            VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-            nullptr,
-            memoryReqirements.size,
-            memTypeIndex
-        };
-
-        VkDeviceMemory deviceMemory;
-        std::uint32_t memoryOffset = 0;
-
-        if (auto result = vkAllocateMemory(vulkanDevice->handle(), &memAllocInfo, nullptr, &deviceMemory); result != VK_SUCCESS)
-            return { };
-
-        pool_.emplace(memTypeIndex, deviceMemory);
-
-        return std::make_pair(deviceMemory, memoryOffset);
+    if (it_memoryBlock == it_end) {
+        it_memoryBlock = AllocateMemoryBlock(memTypeIndex, memoryReqirements.size);
+        it_chunk = it_memoryBlock->second.availableChunks.lower_bound(kBLOCK_ALLOCATION_SIZE);
     }
 
-private:
+    VkDeviceSize memoryOffset;
 
-    struct memory_chunk_t {
-        VkDeviceMemory handle;
-        VkDeviceSize size;
-        VkDeviceSize memoryOffset;
+    auto &&availableChunks = it_memoryBlock->second.availableChunks;
+
+    if (auto node = availableChunks.extract(it_chunk); node) {
+        auto &&[offset, size] = node.value();
+
+#if NOT_YET_IMPLEMENTED
+        auto aligment = std::min(VkDeviceSize{1}, offset % memoryReqirements.alignment) * (memoryReqirements.alignment - (offset % memoryReqirements.alignment));
+#else
+        auto aligment = 0;
+#endif
+
+        memoryOffset = offset + aligment;
+
+        offset += memoryReqirements.size + aligment;
+        size -= memoryReqirements.size + aligment;
+
+        availableChunks.insert(std::move(node));
+
+        it_memoryBlock->second.availableSize -= memoryReqirements.size + aligment;
+    }
+
+    else throw std::runtime_error("failed to extract available memory block chunk"s);
+
+    return std::make_pair(it_memoryBlock->second.handle, memoryOffset);
+}
+
+DeviceMemoryPool::~DeviceMemoryPool()
+{
+    for (auto &&memoryBlock : memoryBlocks_)
+        vkFreeMemory(vulkanDevice_->handle(), memoryBlock.second.handle, nullptr);
+
+    memoryBlocks_.clear();
+}
+
+auto DeviceMemoryPool::AllocateMemoryBlock(std::uint32_t memTypeIndex, VkDeviceSize size)
+-> decltype(memoryBlocks_)::iterator
+{
+    if (size > kBLOCK_ALLOCATION_SIZE)
+        throw std::runtime_error("requested allocation size is bigger than memory block allocation size"s);
+
+    VkMemoryAllocateInfo const memAllocInfo{
+        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        nullptr,
+        kBLOCK_ALLOCATION_SIZE,
+        memTypeIndex
     };
 
-    std::unordered_map<std::uint32_t, VkDeviceMemory> pool_;
+    VkDeviceMemory deviceMemory;
 
-    [[nodiscard]] static std::optional<std::uint32_t> FindMemoryType(VulkanDevice *vulkanDevice, std::uint32_t filter, VkMemoryPropertyFlags properties)
+    if (auto result = vkAllocateMemory(vulkanDevice_->handle(), &memAllocInfo, nullptr, &deviceMemory); result != VK_SUCCESS)
+        throw std::runtime_error("failed to allocate block from device memory pool"s);
+
+    return memoryBlocks_.emplace(std::piecewise_construct,
+                                 std::forward_as_tuple(memTypeIndex), std::forward_as_tuple(deviceMemory, kBLOCK_ALLOCATION_SIZE));
+}
+
+[[nodiscard]] std::optional<std::uint32_t>
+DeviceMemoryPool::FindMemoryType(std::uint32_t filter, VkMemoryPropertyFlags propertyFlags)
+{
+    VkPhysicalDeviceMemoryProperties memoryProperties;
+    vkGetPhysicalDeviceMemoryProperties(vulkanDevice_->physical_handle(), &memoryProperties);
+
+    auto const memoryTypes = to_array(memoryProperties.memoryTypes);
+
+    auto it_type = std::find_if(std::cbegin(memoryTypes), std::cend(memoryTypes), [filter, propertyFlags, i = 0u] (auto type) mutable
     {
-        VkPhysicalDeviceMemoryProperties memoryProperties;
-        vkGetPhysicalDeviceMemoryProperties(vulkanDevice->physical_handle(), &memoryProperties);
+        return (filter & (1 << i++)) && (type.propertyFlags & propertyFlags) == propertyFlags;
+    });
 
-        auto const memoryTypes = to_array(memoryProperties.memoryTypes);
+    if (it_type < std::next(std::cbegin(memoryTypes), memoryProperties.memoryTypeCount))
+        return static_cast<std::uint32_t>(std::distance(std::cbegin(memoryTypes), it_type));
 
-        auto it_type = std::find_if(std::cbegin(memoryTypes), std::cend(memoryTypes), [filter, properties, i = 0u] (auto type) mutable
-        {
-            return (filter & (1 << i++)) && (type.propertyFlags & properties) == properties;
-        });
-
-        if (it_type < std::next(std::cbegin(memoryTypes), memoryProperties.memoryTypeCount))
-            return static_cast<std::uint32_t>(std::distance(std::cbegin(memoryTypes), it_type));
-
-        return { };
-    }
-} deviceMemoryPool;
+    return { };
+}
 
 
 void CreateBuffer(VulkanDevice *vulkanDevice,
@@ -91,9 +142,9 @@ void CreateBuffer(VulkanDevice *vulkanDevice,
     if (auto result = vkCreateBuffer(vulkanDevice->handle(), &bufferCreateInfo, nullptr, &buffer); result != VK_SUCCESS)
         throw std::runtime_error("failed to create buffer: "s + std::to_string(result));
 
-    std::uint32_t memoryOffset = 0;
+    VkDeviceSize memoryOffset;
 
-    if (auto result = deviceMemoryPool.AllocateMemory(vulkanDevice, buffer, properties); !result)
+    if (auto result = vulkanDevice->memoryPool()->AllocateMemory(buffer, properties); !result)
         throw std::runtime_error("failed to allocate buffer memory"s);
 
     else std::tie(deviceMemory, memoryOffset) = result.value();
@@ -127,9 +178,9 @@ void CreateImage(VulkanDevice *vulkanDevice,
     if (auto result = vkCreateImage(vulkanDevice->handle(), &createInfo, nullptr, &image); result != VK_SUCCESS)
         throw std::runtime_error("failed to create image: "s + std::to_string(result));
 
-    std::uint32_t memoryOffset = 0;
+    VkDeviceSize memoryOffset;
 
-    if (auto result = deviceMemoryPool.AllocateMemory(vulkanDevice, image, properties); !result)
+    if (auto result = vulkanDevice->memoryPool()->AllocateMemory(image, properties); !result)
         throw std::runtime_error("failed to allocate image buffer memory"s);
 
     else std::tie(deviceMemory, memoryOffset) = result.value();
