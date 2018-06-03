@@ -220,6 +220,78 @@ void CreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout &descripto
 
 
 
+void CreateRenderPass(VkPhysicalDevice physicalDevice, VkDevice device)
+{
+    VkAttachmentDescription const colorAttachment{
+        VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
+        swapChainImageFormat,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+    };
+
+    VkAttachmentReference constexpr colorAttachmentReference{
+        0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+    };
+
+    VkAttachmentDescription const depthAttachement{
+        VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
+        FindDepthImageFormat(physicalDevice),
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+    };
+
+    VkAttachmentReference constexpr depthAttachementReference{
+        1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
+    };
+
+    VkSubpassDescription const subpassDescription{
+        0,
+        VK_PIPELINE_BIND_POINT_GRAPHICS,
+        0, nullptr,
+        1, &colorAttachmentReference,
+        nullptr,
+        &depthAttachementReference,
+        0, nullptr
+    };
+
+    VkSubpassDependency constexpr subpassDependency{
+        VK_SUBPASS_EXTERNAL, 0,
+        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+        0, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+        0
+    };
+
+    auto const attachments = make_array(colorAttachment, depthAttachement);
+
+#if NOT_YET_IMPLEMENTED
+    VkInputAttachmentAspectReference const depthAttachmentAspectReference{
+        0, 0, VK_IMAGE_ASPECT_DEPTH_BIT
+    };
+
+    VkRenderPassInputAttachmentAspectCreateInfo const depthAttachmentAspect{
+        VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO,
+        nullptr,
+        1, &depthAttachmentAspectReference
+    };
+#endif
+
+    VkRenderPassCreateInfo const renderPassCreateInfo{
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        nullptr,
+        0,
+        static_cast<std::uint32_t>(std::size(attachments)), std::data(attachments),
+        1, &subpassDescription,
+        1, &subpassDependency
+    };
+
+    if (auto result = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &renderPass); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create render pass: "s + std::to_string(result));
+}
+
 void CreateGraphicsPipeline(VkDevice device)
 {
     auto const vertShaderByteCode = ReadShaderFile(R"(vert.spv)"sv);
@@ -315,8 +387,7 @@ void CreateGraphicsPipeline(VkDevice device)
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         nullptr, 0,
         VK_SAMPLE_COUNT_1_BIT,
-        VK_FALSE,
-        1,
+        VK_FALSE, 1,
         nullptr,
         VK_FALSE,
         VK_FALSE
@@ -326,7 +397,7 @@ void CreateGraphicsPipeline(VkDevice device)
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         nullptr, 0,
         VK_TRUE, VK_TRUE,
-        VK_COMPARE_OP_GREATER,
+        VK_COMPARE_OP_GREATER,   // Reversed depth.
         VK_FALSE,
         VK_FALSE, VkStencilOpState{}, VkStencilOpState{},
         1, 0
@@ -350,7 +421,7 @@ void CreateGraphicsPipeline(VkDevice device)
         VK_LOGIC_OP_COPY,
         1,
         &colorBlendAttachment,
-        {0, 0, 0, 0}
+        { 0, 0, 0, 0 }
     };
 
     VkPipelineLayoutCreateInfo constexpr layoutCreateInfo{
@@ -387,78 +458,6 @@ void CreateGraphicsPipeline(VkDevice device)
 
     vkDestroyShaderModule(device, fragShaderModule, nullptr);
     vkDestroyShaderModule(device, vertShaderModule, nullptr);
-}
-
-void CreateRenderPass(VkPhysicalDevice physicalDevice, VkDevice device)
-{
-    VkAttachmentDescription const colorAttachment{
-        VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
-        swapChainImageFormat,
-        VK_SAMPLE_COUNT_1_BIT,
-        VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
-        VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
-    };
-
-    VkAttachmentReference constexpr colorAttachmentReference{
-        0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
-    };
-
-    VkAttachmentDescription const depthAttachement{
-        VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
-        FindDepthImageFormat(physicalDevice),
-        VK_SAMPLE_COUNT_1_BIT,
-        VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-    };
-
-    VkAttachmentReference constexpr depthAttachementReference{
-        1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
-    };
-
-    VkSubpassDescription const subpassDescription{
-        0,
-        VK_PIPELINE_BIND_POINT_GRAPHICS,
-        0, nullptr,
-        1, &colorAttachmentReference,
-        nullptr,
-        &depthAttachementReference,
-        0, nullptr
-    };
-
-    VkSubpassDependency constexpr subpassDependency{
-        VK_SUBPASS_EXTERNAL, 0,
-        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-        0, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
-        0
-    };
-
-    auto const attachments = make_array(colorAttachment, depthAttachement);
-
-#if NOT_YET_IMPLEMENTED
-    VkInputAttachmentAspectReference const depthAttachmentAspectReference{
-        0, 0, VK_IMAGE_ASPECT_DEPTH_BIT
-    };
-
-    VkRenderPassInputAttachmentAspectCreateInfo const depthAttachmentAspect{
-        VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO,
-        nullptr,
-        1, &depthAttachmentAspectReference
-    };
-#endif
-
-    VkRenderPassCreateInfo const renderPassCreateInfo{
-        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
-        nullptr,
-        0,
-        static_cast<std::uint32_t>(std::size(attachments)), std::data(attachments),
-        1, &subpassDescription,
-        1, &subpassDependency
-    };
-
-    if (auto result = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &renderPass); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create render pass: "s + std::to_string(result));
 }
 
 
@@ -913,7 +912,7 @@ void CreateTextureSampler(VkDevice device, VkSampler &sampler, std::uint32_t mip
         VK_SAMPLER_ADDRESS_MODE_REPEAT,
         VK_SAMPLER_ADDRESS_MODE_REPEAT,
         0.f,
-        VK_TRUE, 16,
+        VK_TRUE, 16.f,
         VK_FALSE, VK_COMPARE_OP_ALWAYS,
         0.f, static_cast<float>(mipLevels),
         VK_BORDER_COLOR_INT_OPAQUE_BLACK,
