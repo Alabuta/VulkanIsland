@@ -8,33 +8,16 @@
 #include "device.h"
 #include "command_buffer.h"
 
+class BufferPool;
+
 class DeviceMemoryPool final {
 public:
     using memory_type_index_t = std::uint32_t;
 
+    class DeviceMemory;
+
     DeviceMemoryPool(VulkanDevice *vulkanDevice) : vulkanDevice_{vulkanDevice} { }
     ~DeviceMemoryPool();
-
-    class DeviceMemory {
-    public:
-
-        DeviceMemory(VkDeviceMemory handle, memory_type_index_t memTypeIndex, VkDeviceSize size, VkDeviceSize offset) noexcept
-            : handle_{handle}, memTypeIndex_{memTypeIndex}, size_{size}, offset_{offset} { }
-
-        DeviceMemory(DeviceMemory &&) = default;
-
-        VkDeviceMemory handle() const noexcept { return handle_; }
-
-        VkDeviceSize size() const noexcept { return size_; }
-        VkDeviceSize offset() const noexcept { return offset_; }
-
-    private:
-        VkDeviceMemory handle_;
-        memory_type_index_t memTypeIndex_;
-        VkDeviceSize size_, offset_;
-
-        DeviceMemory(DeviceMemory const &) = delete;
-    };
 
     template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>...>
     [[nodiscard]] auto AllocateMemory(T buffer, VkMemoryPropertyFlags properties)
@@ -50,7 +33,35 @@ public:
         return AllocateMemory(memoryReqirements, properties);
     }
 
+
+    class DeviceMemory {
+    public:
+
+        DeviceMemory(DeviceMemory &&) = default;
+        DeviceMemory &operator= (DeviceMemory &&) = default;
+
+        VkDeviceMemory handle() const noexcept { return handle_; }
+
+        VkDeviceSize size() const noexcept { return size_; }
+        VkDeviceSize offset() const noexcept { return offset_; }
+
+    private:
+        VkDeviceMemory handle_;
+        memory_type_index_t memTypeIndex_;
+        VkDeviceSize size_, offset_;
+
+        DeviceMemory() = delete;
+        DeviceMemory(DeviceMemory const &) = delete;
+
+        DeviceMemory(VkDeviceMemory handle, memory_type_index_t memTypeIndex, VkDeviceSize size, VkDeviceSize offset) noexcept
+            : handle_{handle}, memTypeIndex_{memTypeIndex}, size_{size}, offset_{offset} { }
+
+        friend DeviceMemoryPool;
+    };
+
 private:
+
+    friend BufferPool;
 
     static VkDeviceSize constexpr kBLOCK_ALLOCATION_SIZE{0x4'000'000};   // 64 MB
 
@@ -98,30 +109,35 @@ private:
     [[nodiscard]] std::optional<DeviceMemoryPool::memory_type_index_t> FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFlags propertyFlags);
 };
 
+class BufferPool {
+public:
 
-/*[[nodiscard]]*/ auto CreateBuffer(VulkanDevice *vulkanDevice, VkBuffer &buffer, VkDeviceMemory &deviceMemory,
-                                VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
-    ->std::optional<DeviceMemoryPool::DeviceMemory>;
+    
+    [[nodiscard]] static auto CreateBuffer(VulkanDevice *vulkanDevice, VkBuffer &buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+        ->std::optional<DeviceMemoryPool::DeviceMemory>;
 
-/*[[nodiscard]]*/ auto CreateImage(VulkanDevice *vulkanDevice, VkImage &image, VkDeviceMemory &deviceMemory,
-                               std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
-                               VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
-    -> std::optional<DeviceMemoryPool::DeviceMemory>;
+    
+    [[nodiscard]] static auto CreateImage(VulkanDevice *vulkanDevice, VkImage &image,
+                                       std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
+                                       VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+        ->std::optional<DeviceMemoryPool::DeviceMemory>;
+
+    
+    [[nodiscard]] static auto CreateUniformBuffer(VulkanDevice *vulkanDevice, VkBuffer &uboBuffer, std::size_t size)
+        -> std::optional<DeviceMemoryPool::DeviceMemory>;
+};
 
 
-std::optional<DeviceMemoryPool::DeviceMemory>
-CreateUniformBuffer(VulkanDevice *vulkanDevice, VkBuffer &uboBuffer, VkDeviceMemory &uboBufferMemory, std::size_t size);
 
 
-
-template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-void CopyBufferToBuffer(VulkanDevice *vulkanDevice, Q &queue, VkBuffer srcBuffer, VkBuffer dstBuffer, VkDeviceSize size, VkCommandPool commandPool)
+template<class Q, class R, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>> && is_container_v<std::decay_t<R>>>...>
+void CopyBufferToBuffer(VulkanDevice *vulkanDevice, Q &queue, VkBuffer srcBuffer, VkBuffer dstBuffer, R &&copyRegion, VkCommandPool commandPool)
 {
+    static_assert(std::is_same_v<typename std::decay_t<R>::value_type, VkBufferCopy>, "'copyRegion' argument does not contain 'VkBufferCopy' elements");
+
     auto commandBuffer = BeginSingleTimeCommand(vulkanDevice, queue, commandPool);
 
-    VkBufferCopy const copyRegion{ 0, 0, size };
-
-    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, 1, &copyRegion);
+    vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, static_cast<std::uint32_t>(std::size(copyRegion)), std::data(copyRegion));
 
     EndSingleTimeCommand(vulkanDevice, queue, commandBuffer, commandPool);
 }

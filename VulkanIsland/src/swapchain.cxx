@@ -9,9 +9,9 @@ std::vector<VkImage> swapChainImages;
 std::vector<VkImageView> swapChainImageViews;
 
 VkImage depthImage;
-VkDeviceMemory depthImageMemory;
+std::optional<DeviceMemoryPool::DeviceMemory> depthImageMemory;
 VkImageView depthImageView;
-
+VkDeviceSize depthImageOffset;
 
 
 #if USE_WIN32

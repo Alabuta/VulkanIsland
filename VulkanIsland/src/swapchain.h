@@ -2,6 +2,7 @@
 
 #include "main.h"
 #include "device.h"
+#include "buffer.h"
 
 
 extern VkSwapchainKHR swapChain;
@@ -14,8 +15,9 @@ extern std::vector<VkImageView> swapChainImageViews;
 extern std::vector<VkFramebuffer> swapChainFramebuffers;
 
 extern VkImage depthImage;
-extern VkDeviceMemory depthImageMemory;
+extern std::optional<DeviceMemoryPool::DeviceMemory> depthImageMemory;
 extern VkImageView depthImageView;
+extern VkDeviceSize depthImageOffset;
 
 struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;

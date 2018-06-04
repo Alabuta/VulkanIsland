@@ -68,7 +68,7 @@ DeviceMemoryPool::AllocateMemory(VkMemoryRequirements const &memoryReqirements, 
 
         it_memoryBlock->second.availableSize -= memoryReqirements.size + aligment;
 
-        return std::make_optional<DeviceMemory>(it_memoryBlock->second.handle, memTypeIndex, memoryReqirements.size, memoryOffset);
+        return DeviceMemory{ it_memoryBlock->second.handle, memTypeIndex, memoryReqirements.size, memoryOffset };
     }
 
     else throw std::runtime_error("failed to extract available memory block chunk"s);
@@ -126,8 +126,8 @@ DeviceMemoryPool::FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFla
 }
 
 
-/*[[nodiscard]]*/ auto CreateBuffer(VulkanDevice *vulkanDevice, VkBuffer &buffer, VkDeviceMemory &deviceMemory,
-                                VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+[[nodiscard]] auto BufferPool::CreateBuffer(VulkanDevice *vulkanDevice, VkBuffer &buffer,
+                                            VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
     -> std::optional<DeviceMemoryPool::DeviceMemory>
 {
     VkBufferCreateInfo const bufferCreateInfo{
@@ -154,9 +154,8 @@ DeviceMemoryPool::FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFla
 
 
 
-/*[[nodiscard]]*/ auto CreateImage(VulkanDevice *vulkanDevice, VkImage &image, VkDeviceMemory &deviceMemory,
-                               std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
-                               VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+[[nodiscard]] auto BufferPool::CreateImage(VulkanDevice *vulkanDevice, VkImage &image, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
+                                           VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
     -> std::optional<DeviceMemoryPool::DeviceMemory>
 {
     VkImageCreateInfo const createInfo{
@@ -190,9 +189,11 @@ DeviceMemoryPool::FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFla
 
 
 
-std::optional<DeviceMemoryPool::DeviceMemory>
-CreateUniformBuffer(VulkanDevice *vulkanDevice, VkBuffer &uboBuffer, VkDeviceMemory &uboBufferMemory, std::size_t size)
+[[nodiscard]] auto BufferPool::CreateUniformBuffer(VulkanDevice *vulkanDevice, VkBuffer &uboBuffer, std::size_t size)
+    -> std::optional<DeviceMemoryPool::DeviceMemory>
 {
-    return CreateBuffer(vulkanDevice, uboBuffer, uboBufferMemory, size,
-                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    auto constexpr usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    return CreateBuffer(vulkanDevice, uboBuffer, size, usageFlags, propertyFlags);
 }
