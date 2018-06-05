@@ -1,5 +1,6 @@
 #pragma once
 
+#include <optional>
 #include <vector>
 #include <set>
 #include <map>
@@ -33,6 +34,7 @@ public:
         return AllocateMemory(memoryReqirements, properties);
     }
 
+    void FreeMemory(std::optional<DeviceMemory> &&memory);
 
     class DeviceMemory {
     public:
@@ -71,10 +73,26 @@ private:
         VkDeviceMemory handle;
         VkDeviceSize availableSize{0};
 
+        memory_type_index_t memoryType;
+
+        struct comparator {
+            using is_transparent = void;
+
+            template<class L, class R, typename std::enable_if_t<are_same_v<MemoryBlock, L, R>>...>
+            auto operator() (L &&lhs, R &&rhs) const noexcept
+            {
+                return lhs.handle < rhs.handle;
+            }
+
+            template<class T, typename std::enable_if_t<std::is_same_v<MemoryBlock, std::decay_t<T>>>...>
+            auto operator() (T &&block, memory_type_index_t memoryType) const noexcept
+            {
+                return block.memoryType < memoryType;
+            }
+        };
+
         struct MemoryChunk {
             VkDeviceSize offset{0}, size{0};
-
-            MemoryChunk(VkDeviceSize offset, VkDeviceSize size) noexcept : offset{offset}, size{size} { }
 
             struct comparator {
                 using is_transparent = void;
@@ -86,19 +104,22 @@ private:
                 }
 
                 template<class T, class S, typename std::enable_if_t<std::is_same_v<MemoryChunk, std::decay_t<T>> && std::is_integral_v<S>>...>
-                auto operator() (T &&lhs, S size) const noexcept
+                auto operator() (T &&chunk, S size) const noexcept
                 {
-                    return lhs.size < size;
+                    return chunk.size < size;
                 }
             };
+
+            MemoryChunk(VkDeviceSize offset, VkDeviceSize size) noexcept : offset{offset}, size{size} { }
         };
 
         std::set<MemoryChunk, MemoryChunk::comparator> availableChunks;
 
-        MemoryBlock(VkDeviceMemory handle, VkDeviceSize availableSize) : handle{handle}, availableSize{availableSize}, availableChunks{{0, availableSize}} { }
+        MemoryBlock(VkDeviceMemory handle, VkDeviceSize availableSize, memory_type_index_t memoryType)
+            : handle{handle}, availableSize{availableSize}, memoryType{memoryType}, availableChunks{{0, availableSize}} { }
     };
 
-    std::multimap<memory_type_index_t, MemoryBlock> memoryBlocks_;
+    std::set<MemoryBlock, MemoryBlock::comparator> memoryBlocks_;
 
     [[nodiscard]] std::optional<DeviceMemoryPool::DeviceMemory>
     AllocateMemory(VkMemoryRequirements const &memoryReqirements, VkMemoryPropertyFlags properties);
