@@ -11,18 +11,18 @@
 
 class BufferPool;
 
-class DeviceMemoryPool final {
+class MemoryPool final {
 public:
     using memory_type_index_t = std::uint32_t;
 
     class DeviceMemory;
 
-    DeviceMemoryPool(VulkanDevice *vulkanDevice) : vulkanDevice_{vulkanDevice} { }
-    ~DeviceMemoryPool();
+    MemoryPool(VulkanDevice *vulkanDevice) : vulkanDevice_{vulkanDevice} { }
+    ~MemoryPool();
 
     template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>...>
     [[nodiscard]] auto AllocateMemory(T buffer, VkMemoryPropertyFlags properties)
-        -> std::optional<DeviceMemoryPool::DeviceMemory>
+        -> std::optional<MemoryPool::DeviceMemory>
     {
         VkMemoryRequirements memoryReqirements;
 
@@ -60,7 +60,7 @@ public:
         DeviceMemory(VkDeviceMemory handle, memory_type_index_t memTypeIndex, VkDeviceSize size, VkDeviceSize offset) noexcept
             : handle_{handle}, memoryTypeIndex_{memTypeIndex}, size_{size}, offset_{offset} { }
 
-        friend DeviceMemoryPool;
+        friend MemoryPool;
     };
 
 private:
@@ -113,13 +113,13 @@ private:
 
     std::multimap<memory_type_index_t, MemoryBlock> memoryBlocks_;
 
-    [[nodiscard]] std::optional<DeviceMemoryPool::DeviceMemory>
+    [[nodiscard]] std::optional<MemoryPool::DeviceMemory>
     AllocateMemory(VkMemoryRequirements const &memoryReqirements, VkMemoryPropertyFlags properties);
 
     auto AllocateMemoryBlock(memory_type_index_t memTypeIndex, VkDeviceSize size)
         -> decltype(memoryBlocks_)::iterator;
 
-    [[nodiscard]] std::optional<DeviceMemoryPool::memory_type_index_t> FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFlags propertyFlags);
+    [[nodiscard]] std::optional<MemoryPool::memory_type_index_t> FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFlags propertyFlags);
 };
 
 class BufferPool {
@@ -127,17 +127,17 @@ public:
 
     
     [[nodiscard]] static auto CreateBuffer(VulkanDevice *vulkanDevice, VkBuffer &buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
-        ->std::optional<DeviceMemoryPool::DeviceMemory>;
+        ->std::optional<MemoryPool::DeviceMemory>;
 
     
     [[nodiscard]] static auto CreateImage(VulkanDevice *vulkanDevice, VkImage &image,
                                        std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
                                        VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
-        ->std::optional<DeviceMemoryPool::DeviceMemory>;
+        ->std::optional<MemoryPool::DeviceMemory>;
 
     
     [[nodiscard]] static auto CreateUniformBuffer(VulkanDevice *vulkanDevice, VkBuffer &uboBuffer, std::size_t size)
-        -> std::optional<DeviceMemoryPool::DeviceMemory>;
+        -> std::optional<MemoryPool::DeviceMemory>;
 };
 
 

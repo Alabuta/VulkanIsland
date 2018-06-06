@@ -2,7 +2,7 @@
 #include "buffer.h"
 
 
-DeviceMemoryPool::~DeviceMemoryPool()
+MemoryPool::~MemoryPool()
 {
     for (auto &&memoryBlock : memoryBlocks_)
         vkFreeMemory(vulkanDevice_->handle(), memoryBlock.second.handle, nullptr);
@@ -10,8 +10,8 @@ DeviceMemoryPool::~DeviceMemoryPool()
     memoryBlocks_.clear();
 }
 
-[[nodiscard]] std::optional<DeviceMemoryPool::DeviceMemory>
-DeviceMemoryPool::AllocateMemory(VkMemoryRequirements const &memoryReqirements, VkMemoryPropertyFlags properties)
+[[nodiscard]] std::optional<MemoryPool::DeviceMemory>
+MemoryPool::AllocateMemory(VkMemoryRequirements const &memoryReqirements, VkMemoryPropertyFlags properties)
 {
     memory_type_index_t memoryTypeIndex{0};
 
@@ -76,7 +76,7 @@ DeviceMemoryPool::AllocateMemory(VkMemoryRequirements const &memoryReqirements, 
     return std::nullopt;
 }
 
-void DeviceMemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
+void MemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
 {
     if (_memory == std::nullopt)
         return;
@@ -138,7 +138,7 @@ void DeviceMemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
     }
 }
 
-auto DeviceMemoryPool::AllocateMemoryBlock(memory_type_index_t memoryTypeIndex, VkDeviceSize size)
+auto MemoryPool::AllocateMemoryBlock(memory_type_index_t memoryTypeIndex, VkDeviceSize size)
 -> decltype(memoryBlocks_)::iterator
 {
     if (size > kBLOCK_ALLOCATION_SIZE)
@@ -160,8 +160,8 @@ auto DeviceMemoryPool::AllocateMemoryBlock(memory_type_index_t memoryTypeIndex, 
                                  std::forward_as_tuple(memoryTypeIndex), std::forward_as_tuple(handle, kBLOCK_ALLOCATION_SIZE, memoryTypeIndex));
 }
 
-[[nodiscard]] std::optional<DeviceMemoryPool::memory_type_index_t>
-DeviceMemoryPool::FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFlags propertyFlags)
+[[nodiscard]] std::optional<MemoryPool::memory_type_index_t>
+MemoryPool::FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFlags propertyFlags)
 {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(vulkanDevice_->physical_handle(), &memoryProperties);
@@ -182,7 +182,7 @@ DeviceMemoryPool::FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFla
 
 [[nodiscard]] auto BufferPool::CreateBuffer(VulkanDevice *vulkanDevice, VkBuffer &buffer,
                                             VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
-    -> std::optional<DeviceMemoryPool::DeviceMemory>
+    -> std::optional<MemoryPool::DeviceMemory>
 {
     VkBufferCreateInfo const bufferCreateInfo{
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -210,7 +210,7 @@ DeviceMemoryPool::FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFla
 
 [[nodiscard]] auto BufferPool::CreateImage(VulkanDevice *vulkanDevice, VkImage &image, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
                                            VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
-    -> std::optional<DeviceMemoryPool::DeviceMemory>
+    -> std::optional<MemoryPool::DeviceMemory>
 {
     VkImageCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -244,7 +244,7 @@ DeviceMemoryPool::FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFla
 
 
 [[nodiscard]] auto BufferPool::CreateUniformBuffer(VulkanDevice *vulkanDevice, VkBuffer &uboBuffer, std::size_t size)
-    -> std::optional<DeviceMemoryPool::DeviceMemory>
+    -> std::optional<MemoryPool::DeviceMemory>
 {
     auto constexpr usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;

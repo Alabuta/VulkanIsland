@@ -99,11 +99,11 @@ std::vector<VkCommandBuffer> commandBuffers;
 VkSemaphore imageAvailableSemaphore, renderFinishedSemaphore;
 
 VkBuffer vertexBuffer, indexBuffer, uboBuffer;
-std::optional<DeviceMemoryPool::DeviceMemory> vertexMemory, indexMemory, uboMemory;
+std::optional<MemoryPool::DeviceMemory> vertexMemory, indexMemory, uboMemory;
 
 std::uint32_t mipLevels;
 VkImage textureImage;
-std::optional<DeviceMemoryPool::DeviceMemory> textureImageMemory;
+std::optional<MemoryPool::DeviceMemory> textureImageMemory;
 VkImageView textureImageView;
 VkSampler textureSampler;
 
@@ -568,7 +568,7 @@ void TransitionImageLayout(VulkanDevice *vulkanDevice, Q &queue, VkImage image, 
 
 
 auto CreateVertexBuffer(VulkanDevice *vulkanDevice, VkBuffer &vertexBuffer)
--> std::optional<DeviceMemoryPool::DeviceMemory>
+-> std::optional<MemoryPool::DeviceMemory>
 {
     VkBuffer stagingBuffer;
 
@@ -621,7 +621,7 @@ auto CreateVertexBuffer(VulkanDevice *vulkanDevice, VkBuffer &vertexBuffer)
 }
 
 auto CreateIndexBuffer(VulkanDevice *vulkanDevice, VkBuffer &indexBuffer)
--> std::optional<DeviceMemoryPool::DeviceMemory>
+-> std::optional<MemoryPool::DeviceMemory>
 {
     VkBuffer stagingBuffer;
 
@@ -891,7 +891,7 @@ void GenerateMipMaps(VulkanDevice *vulkanDevice, Q &queue, VkImage image, std::i
 
 
 auto CreateTextureImage(VulkanDevice *vulkanDevice, VkImage &imageHandle)
--> std::optional<DeviceMemoryPool::DeviceMemory>
+-> std::optional<MemoryPool::DeviceMemory>
 {
     Image image;
 
@@ -995,7 +995,7 @@ void CreateTextureSampler(VkDevice device, VkSampler &sampler, std::uint32_t mip
 
 
 auto CreateDepthResources(VulkanDevice *vulkanDevice, VkImage &image, VkImageView &imageView)
--> std::optional<DeviceMemoryPool::DeviceMemory>
+-> std::optional<MemoryPool::DeviceMemory>
 {
     auto const format = FindDepthImageFormat(vulkanDevice->physical_handle());
 
@@ -1133,9 +1133,9 @@ void InitVulkan(GLFWwindow *window)
 
     vulkanDevice = std::make_unique<VulkanDevice>(*vulkanInstance, surface, deviceExtensions, std::move(qpool));
 
-    graphicsQueue = vulkanDevice->Get<GraphicsQueue>();
-    transferQueue = vulkanDevice->Get<TransferQueue>();
-    presentationQueue = vulkanDevice->Get<PresentationQueue>();
+    graphicsQueue = vulkanDevice->queue<GraphicsQueue>();
+    transferQueue = vulkanDevice->queue<TransferQueue>();
+    presentationQueue = vulkanDevice->queue<PresentationQueue>();
 
     CreateSwapChain(vulkanDevice.get(), surface, swapChain, WIDTH, HEIGHT, presentationQueue, graphicsQueue);
     CreateSwapChainImageAndViews(vulkanDevice.get(), swapChainImages, swapChainImageViews);

@@ -15,7 +15,7 @@ extern std::vector<VkImageView> swapChainImageViews;
 extern std::vector<VkFramebuffer> swapChainFramebuffers;
 
 extern VkImage depthImage;
-extern std::optional<DeviceMemoryPool::DeviceMemory> depthImageMemory;
+extern std::optional<MemoryPool::DeviceMemory> depthImageMemory;
 extern VkImageView depthImageView;
 extern VkDeviceSize depthImageOffset;
 
