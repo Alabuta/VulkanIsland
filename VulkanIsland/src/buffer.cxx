@@ -15,8 +15,6 @@ DeviceMemoryPool::AllocateMemory(VkMemoryRequirements const &memoryReqirements, 
 {
     memory_type_index_t memoryTypeIndex{0};
 
-    std::cout << __FUNCTION__ << '\n';
-
     if (auto index = FindMemoryType(memoryReqirements.memoryTypeBits, properties); !index)
         throw std::runtime_error("failed to find suitable memory type"s);
 
@@ -36,7 +34,6 @@ DeviceMemoryPool::AllocateMemory(VkMemoryRequirements const &memoryReqirements, 
         if (memoryBlock.availableSize < memoryReqirements.size)
             return false;
 
-#if NOT_YET_IMPLEMENTED
         it_chunk = memoryBlock.availableChunks.lower_bound(memoryReqirements.size);
 
         if (it_chunk == std::end(memoryBlock.availableChunks))
@@ -47,10 +44,6 @@ DeviceMemoryPool::AllocateMemory(VkMemoryRequirements const &memoryReqirements, 
         auto aligment = std::min(VkDeviceSize{1}, offset % memoryReqirements.alignment) * (memoryReqirements.alignment - (offset % memoryReqirements.alignment));
 
         return memoryReqirements.size <= size - aligment;
-#else
-        it_chunk = memoryBlock.availableChunks.lower_bound(kBLOCK_ALLOCATION_SIZE);
-        return it_chunk != std::end(memoryBlock.availableChunks);
-#endif
     });
 
     if (it_memoryBlock == it_end) {
@@ -58,40 +51,27 @@ DeviceMemoryPool::AllocateMemory(VkMemoryRequirements const &memoryReqirements, 
         it_chunk = it_memoryBlock->second.availableChunks.lower_bound(kBLOCK_ALLOCATION_SIZE);
     }
 
-    //if (auto memoryBlock = memoryBlocks_.extract(it_memoryBlock); memoryBlock) {
     auto &&memoryBlock = it_memoryBlock->second;
+    auto &&availableChunks = memoryBlock.availableChunks;
 
-        auto &&availableChunks = memoryBlock.availableChunks;
+    if (auto node = availableChunks.extract(it_chunk); node) {
+        auto &&[offset, size] = node.value();
 
-        if (auto node = availableChunks.extract(it_chunk); node) {
-            auto &&[offset, size] = node.value();
+        auto aligment = std::min(VkDeviceSize{1}, offset % memoryReqirements.alignment) * (memoryReqirements.alignment - (offset % memoryReqirements.alignment));
 
-#if NOT_YET_IMPLEMENTED
-            auto aligment = std::min(VkDeviceSize{1}, offset % memoryReqirements.alignment) * (memoryReqirements.alignment - (offset % memoryReqirements.alignment));
-#else
-            auto aligment = 0;
-#endif
+        auto memoryOffset = offset + aligment;
 
-            auto memoryOffset = offset + aligment;
+        offset += memoryReqirements.size + aligment;
+        size -= memoryReqirements.size + aligment;
 
-            offset += memoryReqirements.size + aligment;
-            size -= memoryReqirements.size + aligment;
+        availableChunks.insert(std::move(node));
 
-            availableChunks.insert(std::move(node));
+        memoryBlock.availableSize -= memoryReqirements.size + aligment;
 
-            memoryBlock.availableSize -= memoryReqirements.size + aligment;
+        return DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryReqirements.size, memoryOffset};
+    }
 
-            // DeviceMemory deviceMemory{memoryBlock.handle, memoryTypeIndex, memoryReqirements.size, memoryOffset};
-
-            // memoryBlocks_.insert(std::move(memoryBlock));
-
-            return DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryReqirements.size, memoryOffset};
-        }
-
-        else throw std::runtime_error("failed to extract available memory block chunk"s);
-    /*}
-
-    else throw std::runtime_error("failed to extract memory block"s);*/
+    else throw std::runtime_error("failed to extract available memory block chunk"s);
 
     return std::nullopt;
 }
@@ -105,64 +85,62 @@ void DeviceMemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
 
     _memory.reset();
 
-    auto [it_begin, it_end] = memoryBlocks_.equal_range(memory.memoryTypeIndex());
+    auto[it_begin, it_end] = memoryBlocks_.equal_range(memory.memoryTypeIndex());
 
-    auto it_pair = std::find_if(it_begin, it_end, [handle = memory.handle()] (auto &&pair)
+    auto it_memoryBlock = std::find_if(it_begin, it_end, [handle = memory.handle()](auto &&pair)
     {
         return handle == pair.second.handle;
     });
 
-    if (it_pair == it_end)
+    if (it_memoryBlock == it_end)
         return;
 
-    auto &&memoryBlock = it_pair->second;
+    auto &&memoryBlock = it_memoryBlock->second;
 
-     auto &&availableChunks = it_pair->second.availableChunks;
+    auto &&availableChunks = it_memoryBlock->second.availableChunks;
 
-     auto it_chunk = std::find_if(std::begin(availableChunks), std::end(availableChunks), [&memory] (auto &&chunk)
-     {
-         return chunk.offset == memory.offset() + memory.size();
-     });
+    auto it_chunk = std::find_if(std::begin(availableChunks), std::end(availableChunks), [&memory] (auto &&chunk)
+    {
+        return chunk.offset == memory.offset() + memory.size();
+    });
 
-     if (it_chunk != std::end(availableChunks)) {
-         if (auto node = availableChunks.extract(it_chunk); node) {
-             auto &&[offset, size] = node.value();
+    if (it_chunk != std::end(availableChunks)) {
+        if (auto node = availableChunks.extract(it_chunk); node) {
+            auto &&[offset, size] = node.value();
 
-             offset -= memory.size();
-             size += memory.size();
+            offset -= memory.size();
+            size += memory.size();
 
-             availableChunks.insert(std::move(node));
+            availableChunks.insert(std::move(node));
 
-             memoryBlock.availableSize += memory.size();
-         }
-     }
+            memoryBlock.availableSize += memory.size();
+        }
+    }
 
-     else {
-         it_chunk = std::find_if(std::begin(availableChunks), std::end(availableChunks), [&memory] (auto &&chunk)
-         {
-             return chunk.offset + chunk.size == memory.offset();
-         });
+    else {
+        it_chunk = std::find_if(std::begin(availableChunks), std::end(availableChunks), [&memory] (auto &&chunk)
+        {
+            return chunk.offset + chunk.size == memory.offset();
+        });
 
-         if (it_chunk == std::end(availableChunks))
-             return;
+        if (it_chunk == std::end(availableChunks))
+            return;
 
-         if (auto node = availableChunks.extract(it_chunk); node) {
-             auto &&[offset, size] = node.value();
+        if (auto node = availableChunks.extract(it_chunk); node) {
+            auto &&[offset, size] = node.value();
 
-             size += memory.size();
+            size += memory.size();
 
-             availableChunks.insert(std::move(node));
+            availableChunks.insert(std::move(node));
 
-             memoryBlock.availableSize += memory.size();
-         }
-     }
+            memoryBlock.availableSize += memory.size();
+        }
+    }
 }
 
 auto DeviceMemoryPool::AllocateMemoryBlock(memory_type_index_t memoryTypeIndex, VkDeviceSize size)
 -> decltype(memoryBlocks_)::iterator
 {
-    std::cout << __FUNCTION__ << '\n';
-
     if (size > kBLOCK_ALLOCATION_SIZE)
         throw std::runtime_error("requested allocation size is bigger than memory block allocation size"s);
 

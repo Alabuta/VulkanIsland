@@ -510,9 +510,6 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
 
 
 
-
-
-
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
 void TransitionImageLayout(VulkanDevice *vulkanDevice, Q &queue, VkImage image, VkFormat format, VkImageLayout srcLayout, VkImageLayout dstLayout, std::uint32_t mipLevels, VkCommandPool commandPool)
 {
@@ -1196,26 +1193,14 @@ void CleanUp()
     if (textureImageView)
         vkDestroyImageView(vulkanDevice->handle(), textureImageView, nullptr);
 
-    /*if (textureImageMemory)
-        vkFreeMemory(vulkanDevice->handle(), textureImageMemory, nullptr);*/
-
     if (textureImage)
         vkDestroyImage(vulkanDevice->handle(), textureImage, nullptr);
-
-    /*if (uboBufferMemory)
-        vkFreeMemory(vulkanDevice->handle(), uboBufferMemory, nullptr);*/
 
     if (uboBuffer)
         vkDestroyBuffer(vulkanDevice->handle(), uboBuffer, nullptr);
 
-    /*if (indexBufferMemory)
-        vkFreeMemory(vulkanDevice->handle(), indexBufferMemory, nullptr);*/
-
     if (indexBuffer)
         vkDestroyBuffer(vulkanDevice->handle(), indexBuffer, nullptr);
-
-    /*if (vertexBufferMemory)
-        vkFreeMemory(vulkanDevice->handle(), vertexBufferMemory, nullptr);*/
 
     if (vertexBuffer)
         vkDestroyBuffer(vulkanDevice->handle(), vertexBuffer, nullptr);

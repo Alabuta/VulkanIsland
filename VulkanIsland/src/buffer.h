@@ -67,7 +67,7 @@ private:
 
     friend BufferPool;
 
-    static VkDeviceSize constexpr kBLOCK_ALLOCATION_SIZE{0x4'000'000};   // 64 MB
+    static VkDeviceSize constexpr kBLOCK_ALLOCATION_SIZE{0x10'000'000};   // 256 MB
 
     VulkanDevice *vulkanDevice_;
 
@@ -76,28 +76,6 @@ private:
         VkDeviceSize availableSize{0};
 
         memory_type_index_t memoryTypeIndex;
-
-        struct comparator {
-            using is_transparent = void;
-
-            template<class L, class R, typename std::enable_if_t<are_same_v<MemoryBlock, L, R>>...>
-            auto operator() (L &&lhs, R &&rhs) const noexcept
-            {
-                return lhs.memoryTypeIndex < rhs.memoryTypeIndex;
-            }
-
-            template<class T, typename std::enable_if_t<std::is_same_v<MemoryBlock, std::decay_t<T>>>...>
-            auto operator() (T &&block, memory_type_index_t memoryType) const noexcept
-            {
-                return block.memoryTypeIndex < memoryType;
-            }
-
-            template<class T, typename std::enable_if_t<std::is_same_v<MemoryBlock, std::decay_t<T>>>...>
-            auto operator() (memory_type_index_t memoryType, T &&block) const noexcept
-            {
-                return memoryType < block.memoryTypeIndex;
-            }
-        };
 
         struct MemoryChunk {
             VkDeviceSize offset{0}, size{0};
@@ -134,7 +112,6 @@ private:
     };
 
     std::multimap<memory_type_index_t, MemoryBlock> memoryBlocks_;
-    // std::multimap<MemoryBlock, MemoryBlock, MemoryBlock::comparator> memoryBlocks_;
 
     [[nodiscard]] std::optional<DeviceMemoryPool::DeviceMemory>
     AllocateMemory(VkMemoryRequirements const &memoryReqirements, VkMemoryPropertyFlags properties);
