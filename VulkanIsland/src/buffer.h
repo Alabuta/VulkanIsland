@@ -47,16 +47,18 @@ public:
         VkDeviceSize size() const noexcept { return size_; }
         VkDeviceSize offset() const noexcept { return offset_; }
 
+        memory_type_index_t memoryTypeIndex() const noexcept { return memoryTypeIndex_; }
+
     private:
         VkDeviceMemory handle_;
-        memory_type_index_t memTypeIndex_;
+        memory_type_index_t memoryTypeIndex_;
         VkDeviceSize size_, offset_;
 
         DeviceMemory() = delete;
         DeviceMemory(DeviceMemory const &) = delete;
 
         DeviceMemory(VkDeviceMemory handle, memory_type_index_t memTypeIndex, VkDeviceSize size, VkDeviceSize offset) noexcept
-            : handle_{handle}, memTypeIndex_{memTypeIndex}, size_{size}, offset_{offset} { }
+            : handle_{handle}, memoryTypeIndex_{memTypeIndex}, size_{size}, offset_{offset} { }
 
         friend DeviceMemoryPool;
     };
@@ -73,7 +75,7 @@ private:
         VkDeviceMemory handle;
         VkDeviceSize availableSize{0};
 
-        memory_type_index_t memoryType;
+        memory_type_index_t memoryTypeIndex;
 
         struct comparator {
             using is_transparent = void;
@@ -81,13 +83,19 @@ private:
             template<class L, class R, typename std::enable_if_t<are_same_v<MemoryBlock, L, R>>...>
             auto operator() (L &&lhs, R &&rhs) const noexcept
             {
-                return lhs.handle < rhs.handle;
+                return lhs.memoryTypeIndex < rhs.memoryTypeIndex;
             }
 
             template<class T, typename std::enable_if_t<std::is_same_v<MemoryBlock, std::decay_t<T>>>...>
             auto operator() (T &&block, memory_type_index_t memoryType) const noexcept
             {
-                return block.memoryType < memoryType;
+                return block.memoryTypeIndex < memoryType;
+            }
+
+            template<class T, typename std::enable_if_t<std::is_same_v<MemoryBlock, std::decay_t<T>>>...>
+            auto operator() (memory_type_index_t memoryType, T &&block) const noexcept
+            {
+                return memoryType < block.memoryTypeIndex;
             }
         };
 
@@ -108,6 +116,12 @@ private:
                 {
                     return chunk.size < size;
                 }
+
+                template<class S, class T, typename std::enable_if_t<std::is_same_v<MemoryChunk, std::decay_t<T>> && std::is_integral_v<S>>...>
+                auto operator() (S size, T &&chunk) const noexcept
+                {
+                    return chunk.size < size;
+                }
             };
 
             MemoryChunk(VkDeviceSize offset, VkDeviceSize size) noexcept : offset{offset}, size{size} { }
@@ -115,11 +129,12 @@ private:
 
         std::set<MemoryChunk, MemoryChunk::comparator> availableChunks;
 
-        MemoryBlock(VkDeviceMemory handle, VkDeviceSize availableSize, memory_type_index_t memoryType)
-            : handle{handle}, availableSize{availableSize}, memoryType{memoryType}, availableChunks{{0, availableSize}} { }
+        MemoryBlock(VkDeviceMemory handle, VkDeviceSize availableSize, memory_type_index_t memoryTypeIndex)
+            : handle{handle}, availableSize{availableSize}, memoryTypeIndex{memoryTypeIndex}, availableChunks{{0, availableSize}} { }
     };
 
-    std::set<MemoryBlock, MemoryBlock::comparator> memoryBlocks_;
+    std::multimap<memory_type_index_t, MemoryBlock> memoryBlocks_;
+    // std::multimap<MemoryBlock, MemoryBlock, MemoryBlock::comparator> memoryBlocks_;
 
     [[nodiscard]] std::optional<DeviceMemoryPool::DeviceMemory>
     AllocateMemory(VkMemoryRequirements const &memoryReqirements, VkMemoryPropertyFlags properties);

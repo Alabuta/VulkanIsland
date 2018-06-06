@@ -5,7 +5,7 @@
 DeviceMemoryPool::~DeviceMemoryPool()
 {
     for (auto &&memoryBlock : memoryBlocks_)
-        vkFreeMemory(vulkanDevice_->handle(), memoryBlock.handle, nullptr);
+        vkFreeMemory(vulkanDevice_->handle(), memoryBlock.second.handle, nullptr);
 
     memoryBlocks_.clear();
 }
@@ -13,27 +13,26 @@ DeviceMemoryPool::~DeviceMemoryPool()
 [[nodiscard]] std::optional<DeviceMemoryPool::DeviceMemory>
 DeviceMemoryPool::AllocateMemory(VkMemoryRequirements const &memoryReqirements, VkMemoryPropertyFlags properties)
 {
-    memory_type_index_t memTypeIndex{0};
+    memory_type_index_t memoryTypeIndex{0};
+
+    std::cout << __FUNCTION__ << '\n';
 
     if (auto index = FindMemoryType(memoryReqirements.memoryTypeBits, properties); !index)
         throw std::runtime_error("failed to find suitable memory type"s);
 
-    else memTypeIndex = index.value();
+    else memoryTypeIndex = index.value();
 
-    /*if (memoryBlocks_.find(memTypeIndex) == std::end(memoryBlocks_))
-        AllocateMemoryBlock(memTypeIndex, memoryReqirements.size);*/
+    if (memoryBlocks_.find(memoryTypeIndex) == std::end(memoryBlocks_))
+        AllocateMemoryBlock(memoryTypeIndex, memoryReqirements.size);
 
-    //auto [it_begin, it_end] = memoryBlocks_.equal_range(memTypeIndex);
-
-    auto [it_begin, it_end] = std::equal_range(std::begin(memoryBlocks_), std::end(memoryBlocks_), memTypeIndex, [] (auto &&lhs, auto &&rhs)
-    {
-        return lhs.memoryType < rhs.memoryType;
-    });
+    auto [it_begin, it_end] = memoryBlocks_.equal_range(memoryTypeIndex);
 
     decltype(MemoryBlock::availableChunks)::iterator it_chunk;
 
-    auto it_memoryBlock = std::find_if(it_begin, it_end, [&it_chunk, &memoryReqirements] (auto &&memoryBlock)
+    auto it_memoryBlock = std::find_if(it_begin, it_end, [&it_chunk, &memoryReqirements] (auto &&pair)
     {
+        auto &&[type, memoryBlock] = pair;
+
         if (memoryBlock.availableSize < memoryReqirements.size)
             return false;
 
@@ -55,12 +54,14 @@ DeviceMemoryPool::AllocateMemory(VkMemoryRequirements const &memoryReqirements, 
     });
 
     if (it_memoryBlock == it_end) {
-        it_memoryBlock = AllocateMemoryBlock(memTypeIndex, memoryReqirements.size);
-        it_chunk = it_memoryBlock->availableChunks.lower_bound(kBLOCK_ALLOCATION_SIZE);
+        it_memoryBlock = AllocateMemoryBlock(memoryTypeIndex, memoryReqirements.size);
+        it_chunk = it_memoryBlock->second.availableChunks.lower_bound(kBLOCK_ALLOCATION_SIZE);
     }
 
-    if (auto memoryBlock = memoryBlocks_.extract(it_memoryBlock); memoryBlock) {
-        auto &&availableChunks = memoryBlock.value().availableChunks;
+    //if (auto memoryBlock = memoryBlocks_.extract(it_memoryBlock); memoryBlock) {
+    auto &&memoryBlock = it_memoryBlock->second;
+
+        auto &&availableChunks = memoryBlock.availableChunks;
 
         if (auto node = availableChunks.extract(it_chunk); node) {
             auto &&[offset, size] = node.value();
@@ -78,33 +79,90 @@ DeviceMemoryPool::AllocateMemory(VkMemoryRequirements const &memoryReqirements, 
 
             availableChunks.insert(std::move(node));
 
-            memoryBlock.value().availableSize -= memoryReqirements.size + aligment;
+            memoryBlock.availableSize -= memoryReqirements.size + aligment;
 
-            DeviceMemory deviceMemory{memoryBlock.value().handle, memTypeIndex, memoryReqirements.size, memoryOffset};
+            // DeviceMemory deviceMemory{memoryBlock.handle, memoryTypeIndex, memoryReqirements.size, memoryOffset};
 
-            memoryBlocks_.insert(std::move(memoryBlock));
+            // memoryBlocks_.insert(std::move(memoryBlock));
 
-            return deviceMemory;
+            return DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryReqirements.size, memoryOffset};
         }
 
         else throw std::runtime_error("failed to extract available memory block chunk"s);
-    }
+    /*}
 
-    else throw std::runtime_error("failed to extract memory block"s);
+    else throw std::runtime_error("failed to extract memory block"s);*/
 
     return std::nullopt;
 }
 
-void DeviceMemoryPool::FreeMemory(std::optional<DeviceMemory> &&memory)
+void DeviceMemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
 {
-    ;
+    if (_memory == std::nullopt)
+        return;
 
-    memory.reset();
+    auto memory = std::move(_memory.value());
+
+    _memory.reset();
+
+    auto [it_begin, it_end] = memoryBlocks_.equal_range(memory.memoryTypeIndex());
+
+    auto it_pair = std::find_if(it_begin, it_end, [handle = memory.handle()] (auto &&pair)
+    {
+        return handle == pair.second.handle;
+    });
+
+    if (it_pair == it_end)
+        return;
+
+    auto &&memoryBlock = it_pair->second;
+
+     auto &&availableChunks = it_pair->second.availableChunks;
+
+     auto it_chunk = std::find_if(std::begin(availableChunks), std::end(availableChunks), [&memory] (auto &&chunk)
+     {
+         return chunk.offset == memory.offset() + memory.size();
+     });
+
+     if (it_chunk != std::end(availableChunks)) {
+         if (auto node = availableChunks.extract(it_chunk); node) {
+             auto &&[offset, size] = node.value();
+
+             offset -= memory.size();
+             size += memory.size();
+
+             availableChunks.insert(std::move(node));
+
+             memoryBlock.availableSize += memory.size();
+         }
+     }
+
+     else {
+         it_chunk = std::find_if(std::begin(availableChunks), std::end(availableChunks), [&memory] (auto &&chunk)
+         {
+             return chunk.offset + chunk.size == memory.offset();
+         });
+
+         if (it_chunk == std::end(availableChunks))
+             return;
+
+         if (auto node = availableChunks.extract(it_chunk); node) {
+             auto &&[offset, size] = node.value();
+
+             size += memory.size();
+
+             availableChunks.insert(std::move(node));
+
+             memoryBlock.availableSize += memory.size();
+         }
+     }
 }
 
-auto DeviceMemoryPool::AllocateMemoryBlock(memory_type_index_t memTypeIndex, VkDeviceSize size)
+auto DeviceMemoryPool::AllocateMemoryBlock(memory_type_index_t memoryTypeIndex, VkDeviceSize size)
 -> decltype(memoryBlocks_)::iterator
 {
+    std::cout << __FUNCTION__ << '\n';
+
     if (size > kBLOCK_ALLOCATION_SIZE)
         throw std::runtime_error("requested allocation size is bigger than memory block allocation size"s);
 
@@ -112,17 +170,16 @@ auto DeviceMemoryPool::AllocateMemoryBlock(memory_type_index_t memTypeIndex, VkD
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         nullptr,
         kBLOCK_ALLOCATION_SIZE,
-        memTypeIndex
+        memoryTypeIndex
     };
 
-    VkDeviceMemory deviceMemory;
+    VkDeviceMemory handle;
 
-    if (auto result = vkAllocateMemory(vulkanDevice_->handle(), &memAllocInfo, nullptr, &deviceMemory); result != VK_SUCCESS)
+    if (auto result = vkAllocateMemory(vulkanDevice_->handle(), &memAllocInfo, nullptr, &handle); result != VK_SUCCESS)
         throw std::runtime_error("failed to allocate block from device memory pool"s);
 
-    auto [it, inserted] = memoryBlocks_.emplace(deviceMemory, kBLOCK_ALLOCATION_SIZE, memTypeIndex);
-
-    return it;
+    return memoryBlocks_.emplace(std::piecewise_construct, 
+                                 std::forward_as_tuple(memoryTypeIndex), std::forward_as_tuple(handle, kBLOCK_ALLOCATION_SIZE, memoryTypeIndex));
 }
 
 [[nodiscard]] std::optional<DeviceMemoryPool::memory_type_index_t>

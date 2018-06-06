@@ -612,6 +612,8 @@ auto CreateVertexBuffer(VulkanDevice *vulkanDevice, VkBuffer &vertexBuffer)
             CopyBufferToBuffer(vulkanDevice, transferQueue, stagingBuffer, vertexBuffer, std::move(copyRegions), transferCommandPool);
         }
 
+        vulkanDevice->memoryPool()->FreeMemory(std::move(stagingMemory));
+
         //vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
         vkDestroyBuffer(vulkanDevice->handle(), stagingBuffer, nullptr);
 
@@ -662,6 +664,8 @@ auto CreateIndexBuffer(VulkanDevice *vulkanDevice, VkBuffer &indexBuffer)
 
             CopyBufferToBuffer(vulkanDevice, transferQueue, stagingBuffer, indexBuffer, std::move(copyRegions), transferCommandPool);
         }
+
+        vulkanDevice->memoryPool()->FreeMemory(std::move(stagingMemory));
 
         //vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
         vkDestroyBuffer(vulkanDevice->handle(), stagingBuffer, nullptr);
@@ -953,6 +957,8 @@ auto CreateTextureImage(VulkanDevice *vulkanDevice, VkImage &imageHandle)
 
             GenerateMipMaps(vulkanDevice, transferQueue, imageHandle, image.width, image.height, mipLevels, transferCommandPool);;
         }
+
+        vulkanDevice->memoryPool()->FreeMemory(std::move(stagingMemory));
 
         //vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
         vkDestroyBuffer(vulkanDevice->handle(), stagingBuffer, nullptr);
