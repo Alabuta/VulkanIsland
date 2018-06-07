@@ -2,6 +2,8 @@
 #include "buffer.h"
 
 
+
+
 MemoryPool::~MemoryPool()
 {
     for (auto &&memoryBlock : memoryBlocks_)
@@ -10,44 +12,58 @@ MemoryPool::~MemoryPool()
     memoryBlocks_.clear();
 }
 
+template<class R, typename std::enable_if_t<std::is_same_v<std::decay_t<R>, VkMemoryRequirements> || std::is_same_v<std::decay_t<R>, VkMemoryRequirements2>>...>
 [[nodiscard]] std::optional<MemoryPool::DeviceMemory>
-MemoryPool::AllocateMemory(VkMemoryRequirements const &memoryReqirements, VkMemoryPropertyFlags properties)
+MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags properties)
 {
-    memory_type_index_t memoryTypeIndex{0};
+    auto constexpr nonDedicated = std::is_same_v<std::decay_t<R>, VkMemoryRequirements>;
 
-    if (auto index = FindMemoryType(memoryReqirements.memoryTypeBits, properties); !index)
+    memory_type_index_t memoryTypeIndex{0};
+    
+    auto &&memoryRequirements = nonDedicated ? memoryRequirements2 : memoryRequirements2.memoryRequirements;
+
+    if constexpr (nonDedicated)
+    {
+        if (memoryRequirements.size > kBLOCK_ALLOCATION_SIZE)
+            throw std::runtime_error("requested allocation size is bigger than memory block allocation size"s);
+    }
+
+    if (auto index = FindMemoryType(memoryRequirements.memoryTypeBits, properties); !index)
         throw std::runtime_error("failed to find suitable memory type"s);
 
     else memoryTypeIndex = index.value();
 
     if (memoryBlocks_.find(memoryTypeIndex) == std::end(memoryBlocks_))
-        AllocateMemoryBlock(memoryTypeIndex, memoryReqirements.size);
+        AllocateMemoryBlock(memoryTypeIndex, kBLOCK_ALLOCATION_SIZE);
 
     auto [it_begin, it_end] = memoryBlocks_.equal_range(memoryTypeIndex);
 
     decltype(MemoryBlock::availableChunks)::iterator it_chunk;
 
-    auto it_memoryBlock = std::find_if(it_begin, it_end, [&it_chunk, &memoryReqirements] (auto &&pair)
+    auto it_memoryBlock = std::find_if(it_begin, it_end, [&it_chunk, &memoryRequirements] (auto &&pair)
     {
         auto &&[type, memoryBlock] = pair;
 
-        if (memoryBlock.availableSize < memoryReqirements.size)
+        if (memoryBlock.availableSize < memoryRequirements.size)
             return false;
 
-        it_chunk = memoryBlock.availableChunks.lower_bound(memoryReqirements.size);
+        it_chunk = memoryBlock.availableChunks.lower_bound(memoryRequirements.size);
 
         if (it_chunk == std::end(memoryBlock.availableChunks))
             return false;
 
         auto [offset, size] = *it_chunk;
 
-        auto aligment = std::min(VkDeviceSize{1}, offset % memoryReqirements.alignment) * (memoryReqirements.alignment - (offset % memoryReqirements.alignment));
+        auto aligment = std::min(VkDeviceSize{1}, offset % memoryRequirements.alignment) * (memoryRequirements.alignment - (offset % memoryRequirements.alignment));
 
-        return memoryReqirements.size <= size - aligment;
+        return memoryRequirements.size <= size - aligment;
     });
 
+    if (it_memoryBlock == it_end)
+        std::cout << "!!!!!!\n";
+
     if (it_memoryBlock == it_end) {
-        it_memoryBlock = AllocateMemoryBlock(memoryTypeIndex, memoryReqirements.size);
+        it_memoryBlock = AllocateMemoryBlock(memoryTypeIndex, kBLOCK_ALLOCATION_SIZE);
         it_chunk = it_memoryBlock->second.availableChunks.lower_bound(kBLOCK_ALLOCATION_SIZE);
     }
 
@@ -57,18 +73,18 @@ MemoryPool::AllocateMemory(VkMemoryRequirements const &memoryReqirements, VkMemo
     if (auto node = availableChunks.extract(it_chunk); node) {
         auto &&[offset, size] = node.value();
 
-        auto aligment = std::min(VkDeviceSize{1}, offset % memoryReqirements.alignment) * (memoryReqirements.alignment - (offset % memoryReqirements.alignment));
+        auto aligment = std::min(VkDeviceSize{1}, offset % memoryRequirements.alignment) * (memoryRequirements.alignment - (offset % memoryRequirements.alignment));
 
         auto memoryOffset = offset + aligment;
 
-        offset += memoryReqirements.size + aligment;
-        size -= memoryReqirements.size + aligment;
+        offset += memoryRequirements.size + aligment;
+        size -= memoryRequirements.size + aligment;
 
         availableChunks.insert(std::move(node));
 
-        memoryBlock.availableSize -= memoryReqirements.size + aligment;
+        memoryBlock.availableSize -= memoryRequirements.size + aligment;
 
-        return DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryReqirements.size, memoryOffset};
+        return DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryRequirements.size, memoryOffset};
     }
 
     else throw std::runtime_error("failed to extract available memory block chunk"s);
@@ -76,10 +92,52 @@ MemoryPool::AllocateMemory(VkMemoryRequirements const &memoryReqirements, VkMemo
     return std::nullopt;
 }
 
-void MemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
+[[nodiscard]] std::optional<MemoryPool::DeviceMemory>
+MemoryPool::AllocateDedicatedMemory(VkMemoryDedicatedRequirements const &dedicatedRequirements,
+                                    VkMemoryRequirements2 const &memoryRequirements2, VkMemoryPropertyFlags properties)
 {
+    memory_type_index_t memoryTypeIndex{0};
+
+    std::cout << __FUNCTION__ << '\n';
+
+    auto &&memoryRequirements = memoryRequirements2.memoryRequirements;
+
+    if (auto index = FindMemoryType(memoryRequirements.memoryTypeBits, properties); !index)
+        throw std::runtime_error("failed to find suitable memory type"s);
+
+    else memoryTypeIndex = index.value();
+
+    auto [it_begin, it_end] = memoryBlocks_.equal_range(memoryTypeIndex);
+
+    auto it_memoryBlock = std::find_if(it_begin, it_end, [&memoryRequirements] (auto &&pair)
+    {
+        auto &&[type, memoryBlock] = pair;
+
+        return memoryBlock.availableSize >= memoryRequirements.size;
+    });
+
+    if (it_memoryBlock == it_end)
+        std::cout << "!!!!!!\n";
+
+    if (it_memoryBlock == it_end)
+        it_memoryBlock = AllocateMemoryBlock(memoryTypeIndex, memoryRequirements.size);
+
+    auto &&memoryBlock = it_memoryBlock->second;
+    auto &&availableChunks = memoryBlock.availableChunks;
+
+    availableChunks.emplace(0, memoryRequirements.size);
+
+    memoryBlock.availableSize = 0;
+
+    return DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryRequirements.size, 0};
+}
+
+void MemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
+try {
     if (_memory == std::nullopt)
         return;
+
+    std::cout << __FUNCTION__ << '\n';
 
     auto memory = std::move(_memory.value());
 
@@ -96,7 +154,6 @@ void MemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
         return;
 
     auto &&memoryBlock = it_memoryBlock->second;
-
     auto &&availableChunks = it_memoryBlock->second.availableChunks;
 
     auto it_chunk = std::find_if(std::begin(availableChunks), std::end(availableChunks), [&memory] (auto &&chunk)
@@ -137,17 +194,19 @@ void MemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
         }
     }
 }
+catch (...) {
+    ;
+}
 
 auto MemoryPool::AllocateMemoryBlock(memory_type_index_t memoryTypeIndex, VkDeviceSize size)
 -> decltype(memoryBlocks_)::iterator
 {
-    if (size > kBLOCK_ALLOCATION_SIZE)
-        throw std::runtime_error("requested allocation size is bigger than memory block allocation size"s);
+    std::cout << __FUNCTION__ << '\n';
 
     VkMemoryAllocateInfo const memAllocInfo{
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
         nullptr,
-        kBLOCK_ALLOCATION_SIZE,
+        size,
         memoryTypeIndex
     };
 
@@ -157,7 +216,7 @@ auto MemoryPool::AllocateMemoryBlock(memory_type_index_t memoryTypeIndex, VkDevi
         throw std::runtime_error("failed to allocate block from device memory pool"s);
 
     return memoryBlocks_.emplace(std::piecewise_construct, 
-                                 std::forward_as_tuple(memoryTypeIndex), std::forward_as_tuple(handle, kBLOCK_ALLOCATION_SIZE, memoryTypeIndex));
+                                 std::forward_as_tuple(memoryTypeIndex), std::forward_as_tuple(handle, size, memoryTypeIndex));
 }
 
 [[nodiscard]] std::optional<MemoryPool::memory_type_index_t>
@@ -251,3 +310,4 @@ MemoryPool::FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFlags pro
 
     return CreateBuffer(vulkanDevice, uboBuffer, size, usageFlags, propertyFlags);
 }
+

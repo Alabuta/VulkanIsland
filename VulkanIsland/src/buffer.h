@@ -20,18 +20,45 @@ public:
     MemoryPool(VulkanDevice *vulkanDevice) : vulkanDevice_{vulkanDevice} { }
     ~MemoryPool();
 
-    template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>...>
+    template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>* = 0>
     [[nodiscard]] auto AllocateMemory(T buffer, VkMemoryPropertyFlags properties)
         -> std::optional<MemoryPool::DeviceMemory>
     {
-        VkMemoryRequirements memoryReqirements;
+        VkMemoryDedicatedRequirements memoryDedicatedRequirements{
+            VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
+            nullptr,
+            0, 0
+        };
 
-        if constexpr (std::is_same_v<T, VkBuffer>)
-            vkGetBufferMemoryRequirements(vulkanDevice_->handle(), buffer, &memoryReqirements);
+        VkMemoryRequirements2 memoryRequirements2{
+            VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
+            &memoryDedicatedRequirements, {}
+        };
 
-        else vkGetImageMemoryRequirements(vulkanDevice_->handle(), buffer, &memoryReqirements);
+        if constexpr (std::is_same_v<T, VkBuffer>) {
+            VkBufferMemoryRequirementsInfo2 const bufferMemoryRequirements{
+                VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
+                nullptr,
+                buffer
+            };
 
-        return AllocateMemory(memoryReqirements, properties);
+            vkGetBufferMemoryRequirements2(vulkanDevice_->handle(), &bufferMemoryRequirements, &memoryRequirements2);
+        }
+
+        else {
+            VkImageMemoryRequirementsInfo2 const imageMemoryRequirements{
+                VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
+                nullptr,
+                buffer
+            };
+
+            vkGetImageMemoryRequirements2(vulkanDevice_->handle(), &imageMemoryRequirements, &memoryRequirements2);
+        }
+
+        if (memoryDedicatedRequirements.prefersDedicatedAllocation | memoryDedicatedRequirements.requiresDedicatedAllocation)
+            return AllocateMemory(memoryRequirements2, properties);
+
+        else return AllocateMemory(memoryRequirements2.memoryRequirements, properties);
     }
 
     void FreeMemory(std::optional<DeviceMemory> &&memory);
@@ -113,8 +140,12 @@ private:
 
     std::multimap<memory_type_index_t, MemoryBlock> memoryBlocks_;
 
+    template<class R, typename std::enable_if_t<std::is_same_v<std::decay_t<R>, VkMemoryRequirements> || std::is_same_v<std::decay_t<R>, VkMemoryRequirements2>>...>
     [[nodiscard]] std::optional<MemoryPool::DeviceMemory>
-    AllocateMemory(VkMemoryRequirements const &memoryReqirements, VkMemoryPropertyFlags properties);
+    AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties);
+
+    [[nodiscard]] std::optional<MemoryPool::DeviceMemory>
+    AllocateDedicatedMemory(VkMemoryDedicatedRequirements const &dedicatedRequirements, VkMemoryRequirements2 const &memoryRequirements2, VkMemoryPropertyFlags properties);
 
     auto AllocateMemoryBlock(memory_type_index_t memTypeIndex, VkDeviceSize size)
         -> decltype(memoryBlocks_)::iterator;
