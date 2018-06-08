@@ -20,7 +20,7 @@ public:
     MemoryPool(VulkanDevice *vulkanDevice) : vulkanDevice_{vulkanDevice} { }
     ~MemoryPool();
 
-    template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>...>
+    template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>, int> = 0>
     [[nodiscard]] auto AllocateMemory(T buffer, VkMemoryPropertyFlags properties)
         -> std::optional<MemoryPool::DeviceMemory>
     {
@@ -56,7 +56,7 @@ public:
         }
 
         if (memoryDedicatedRequirements.prefersDedicatedAllocation | memoryDedicatedRequirements.requiresDedicatedAllocation)
-            return AllocateMemory(memoryRequirements2, properties);
+            return AllocateMemory(memoryRequirements2.memoryRequirements, properties);
 
         else return AllocateMemory(memoryRequirements2.memoryRequirements, properties);
     }
@@ -132,7 +132,7 @@ private:
             MemoryChunk(VkDeviceSize offset, VkDeviceSize size) noexcept : offset{offset}, size{size} { }
         };
 
-        std::set<MemoryChunk, MemoryChunk::comparator> availableChunks;
+        std::multiset<MemoryChunk, MemoryChunk::comparator> availableChunks;
 
         MemoryBlock(VkDeviceMemory handle, VkDeviceSize availableSize, memory_type_index_t memoryTypeIndex)
             : handle{handle}, availableSize{availableSize}, memoryTypeIndex{memoryTypeIndex}, availableChunks{{0, availableSize}} { }

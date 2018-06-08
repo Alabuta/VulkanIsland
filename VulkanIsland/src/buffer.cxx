@@ -24,12 +24,12 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
             return memoryRequirements2;
 
         else return memoryRequirements2.memoryRequirements;
-    } (std::forward<R>(memoryRequirements2));
 
-    if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>)
-    {
+    } (memoryRequirements2);
+
+    if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>) {
         if (memoryRequirements.size > kBLOCK_ALLOCATION_SIZE)
-            throw std::runtime_error("requested allocation size is bigger than memory block allocation size"s);
+            throw std::runtime_error("requested allocation size is bigger than memory page size"s);
     }
 
     if (auto index = FindMemoryType(memoryRequirements.memoryTypeBits, properties); !index)
@@ -48,23 +48,29 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
     {
         auto &&[type, memoryBlock] = pair;
 
+        if (memoryBlock.availableSize < memoryRequirements.size)
+            return false;
+
+        auto &&availableChunks = memoryBlock.availableChunks;
+
         if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>) {
-            if (memoryBlock.availableSize < memoryRequirements.size)
-                return false;
+            auto [it_chunk_begin, it_chunk_end] = availableChunks.equal_range(memoryRequirements.size);
 
-            it_chunk = memoryBlock.availableChunks.lower_bound(memoryRequirements.size);
+            it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [&memoryRequirements] (auto &&chunk)
+            {
+                auto alignedOffset = ((chunk.offset + memoryRequirements.alignment - 1) / memoryRequirements.alignment) * memoryRequirements.alignment;
 
-            if (it_chunk == std::end(memoryBlock.availableChunks))
-                return false;
+                return alignedOffset + memoryRequirements.size <= chunk.offset + chunk.size;
+            });
 
-            auto[offset, size] = *it_chunk;
-
-            auto aligment = std::min(VkDeviceSize{1}, offset % memoryRequirements.alignment) * (memoryRequirements.alignment - (offset % memoryRequirements.alignment));
-
-            return memoryRequirements.size <= size - aligment;
+            return it_chunk != it_chunk_end;
         }
 
-        else return memoryBlock.availableSize >= memoryRequirements.size;
+        else {
+            it_chunk = std::begin(availableChunks);
+
+            return availableChunks.size() == 1 && it_chunk->offset == 0;
+        }
     });
 
     if (it_memoryBlock == it_end)
@@ -86,17 +92,19 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
         if (auto node = availableChunks.extract(it_chunk); node) {
             auto &&[offset, size] = node.value();
 
-            auto aligment = ((offset + memoryRequirements.alignment - 1) / memoryRequirements.alignment) * memoryRequirements.alignment;
+            auto alignedOffset = ((offset + memoryRequirements.alignment - 1) / memoryRequirements.alignment) * memoryRequirements.alignment;
 
-            auto memoryOffset = offset + aligment;
-
-            offset += memoryRequirements.size + aligment;
-            size -= memoryRequirements.size + aligment;
+            size -= memoryRequirements.size + alignedOffset - offset;
+            offset = alignedOffset + memoryRequirements.size;
 
             availableChunks.insert(std::move(node));
-            memoryBlock.availableSize -= memoryRequirements.size + aligment;
 
-            return DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryRequirements.size, memoryOffset};
+            if (alignedOffset > offset)
+                availableChunks.emplace(offset, alignedOffset - offset);
+
+            memoryBlock.availableSize -= memoryRequirements.size;
+
+            return DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryRequirements.size, alignedOffset};
         }
 
         else throw std::runtime_error("failed to extract available memory block chunk"s);
@@ -230,6 +238,8 @@ auto MemoryPool::AllocateMemoryBlock(memory_type_index_t memoryTypeIndex, VkDevi
 
     if (auto result = vkAllocateMemory(vulkanDevice_->handle(), &memAllocInfo, nullptr, &handle); result != VK_SUCCESS)
         throw std::runtime_error("failed to allocate block from device memory pool"s);
+
+    std::cout << memoryBlocks_.size() + 1 << '\n';
 
     return memoryBlocks_.emplace(std::piecewise_construct, 
                                  std::forward_as_tuple(memoryTypeIndex), std::forward_as_tuple(handle, size, memoryTypeIndex));
