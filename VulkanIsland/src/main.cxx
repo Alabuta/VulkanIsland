@@ -1002,6 +1002,8 @@ auto CreateDepthResources(VulkanDevice *vulkanDevice, VkImage &image, VkImageVie
     auto constexpr usageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
+    vulkanDevice->memoryPool()->FreeMemory(std::move(depthImageMemory));
+
     auto memory = BufferPool::CreateImage(vulkanDevice, image, swapChainExtent.width, swapChainExtent.height, 1, format,
                                           VK_IMAGE_TILING_OPTIMAL, usageFlags, propertyFlags);
 

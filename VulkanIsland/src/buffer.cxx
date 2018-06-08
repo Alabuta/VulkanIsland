@@ -16,13 +16,17 @@ template<class R, typename std::enable_if_t<std::is_same_v<std::decay_t<R>, VkMe
 [[nodiscard]] std::optional<MemoryPool::DeviceMemory>
 MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags properties)
 {
-    auto constexpr nonDedicated = std::is_same_v<std::decay_t<R>, VkMemoryRequirements>;
-
     memory_type_index_t memoryTypeIndex{0};
-    
-    auto &&memoryRequirements = nonDedicated ? memoryRequirements2 : memoryRequirements2.memoryRequirements;
 
-    if constexpr (nonDedicated)
+    auto &&memoryRequirements = [] (auto &&memoryRequirements2)
+    {
+        if constexpr (std::is_same_v<std::decay_t<decltype(memoryRequirements2)>, VkMemoryRequirements>)
+            return memoryRequirements2;
+
+        else return memoryRequirements2.memoryRequirements;
+    } (std::forward<R>(memoryRequirements2));
+
+    if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>)
     {
         if (memoryRequirements.size > kBLOCK_ALLOCATION_SIZE)
             throw std::runtime_error("requested allocation size is bigger than memory block allocation size"s);
@@ -44,50 +48,66 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
     {
         auto &&[type, memoryBlock] = pair;
 
-        if (memoryBlock.availableSize < memoryRequirements.size)
-            return false;
+        if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>) {
+            if (memoryBlock.availableSize < memoryRequirements.size)
+                return false;
 
-        it_chunk = memoryBlock.availableChunks.lower_bound(memoryRequirements.size);
+            it_chunk = memoryBlock.availableChunks.lower_bound(memoryRequirements.size);
 
-        if (it_chunk == std::end(memoryBlock.availableChunks))
-            return false;
+            if (it_chunk == std::end(memoryBlock.availableChunks))
+                return false;
 
-        auto [offset, size] = *it_chunk;
+            auto[offset, size] = *it_chunk;
 
-        auto aligment = std::min(VkDeviceSize{1}, offset % memoryRequirements.alignment) * (memoryRequirements.alignment - (offset % memoryRequirements.alignment));
+            auto aligment = std::min(VkDeviceSize{1}, offset % memoryRequirements.alignment) * (memoryRequirements.alignment - (offset % memoryRequirements.alignment));
 
-        return memoryRequirements.size <= size - aligment;
+            return memoryRequirements.size <= size - aligment;
+        }
+
+        else return memoryBlock.availableSize >= memoryRequirements.size;
     });
 
     if (it_memoryBlock == it_end)
         std::cout << "!!!!!!\n";
 
     if (it_memoryBlock == it_end) {
-        it_memoryBlock = AllocateMemoryBlock(memoryTypeIndex, kBLOCK_ALLOCATION_SIZE);
-        it_chunk = it_memoryBlock->second.availableChunks.lower_bound(kBLOCK_ALLOCATION_SIZE);
+        if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>) {
+            it_memoryBlock = AllocateMemoryBlock(memoryTypeIndex, kBLOCK_ALLOCATION_SIZE);
+            it_chunk = it_memoryBlock->second.availableChunks.lower_bound(kBLOCK_ALLOCATION_SIZE);
+        }
+
+        else it_memoryBlock = AllocateMemoryBlock(memoryTypeIndex, memoryRequirements.size);
     }
 
     auto &&memoryBlock = it_memoryBlock->second;
     auto &&availableChunks = memoryBlock.availableChunks;
 
-    if (auto node = availableChunks.extract(it_chunk); node) {
-        auto &&[offset, size] = node.value();
+    if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>) {
+        if (auto node = availableChunks.extract(it_chunk); node) {
+            auto &&[offset, size] = node.value();
 
-        auto aligment = std::min(VkDeviceSize{1}, offset % memoryRequirements.alignment) * (memoryRequirements.alignment - (offset % memoryRequirements.alignment));
+            auto aligment = ((offset + memoryRequirements.alignment - 1) / memoryRequirements.alignment) * memoryRequirements.alignment;
 
-        auto memoryOffset = offset + aligment;
+            auto memoryOffset = offset + aligment;
 
-        offset += memoryRequirements.size + aligment;
-        size -= memoryRequirements.size + aligment;
+            offset += memoryRequirements.size + aligment;
+            size -= memoryRequirements.size + aligment;
 
-        availableChunks.insert(std::move(node));
+            availableChunks.insert(std::move(node));
+            memoryBlock.availableSize -= memoryRequirements.size + aligment;
 
-        memoryBlock.availableSize -= memoryRequirements.size + aligment;
+            return DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryRequirements.size, memoryOffset};
+        }
 
-        return DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryRequirements.size, memoryOffset};
+        else throw std::runtime_error("failed to extract available memory block chunk"s);
     }
 
-    else throw std::runtime_error("failed to extract available memory block chunk"s);
+    else {
+        availableChunks.emplace(0, memoryRequirements.size);
+        memoryBlock.availableSize = 0;
+
+        return DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryRequirements.size, 0};
+    }
 
     return std::nullopt;
 }
@@ -133,7 +153,7 @@ MemoryPool::AllocateDedicatedMemory(VkMemoryDedicatedRequirements const &dedicat
 }
 
 void MemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
-try {
+{
     if (_memory == std::nullopt)
         return;
 
@@ -193,9 +213,6 @@ try {
             memoryBlock.availableSize += memory.size();
         }
     }
-}
-catch (...) {
-    ;
 }
 
 auto MemoryPool::AllocateMemoryBlock(memory_type_index_t memoryTypeIndex, VkDeviceSize size)
