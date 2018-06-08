@@ -20,7 +20,7 @@ public:
     MemoryPool(VulkanDevice *vulkanDevice) : vulkanDevice_{vulkanDevice} { }
     ~MemoryPool();
 
-    template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>* = 0>
+    template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>...>
     [[nodiscard]] auto AllocateMemory(T buffer, VkMemoryPropertyFlags properties)
         -> std::optional<MemoryPool::DeviceMemory>
     {
@@ -125,7 +125,7 @@ private:
                 template<class S, class T, typename std::enable_if_t<std::is_same_v<MemoryChunk, std::decay_t<T>> && std::is_integral_v<S>>...>
                 auto operator() (S size, T &&chunk) const noexcept
                 {
-                    return chunk.size < size;
+                    return size < chunk.size;
                 }
             };
 
@@ -145,7 +145,7 @@ private:
     AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties);
 
     [[nodiscard]] std::optional<MemoryPool::DeviceMemory>
-    AllocateDedicatedMemory(VkMemoryDedicatedRequirements const &dedicatedRequirements, VkMemoryRequirements2 const &memoryRequirements2, VkMemoryPropertyFlags properties);
+    AllocateDedicatedMemory(VkMemoryRequirements2 const &memoryRequirements2, VkMemoryPropertyFlags properties);
 
     auto AllocateMemoryBlock(memory_type_index_t memTypeIndex, VkDeviceSize size)
         -> decltype(memoryBlocks_)::iterator;

@@ -113,8 +113,7 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
 }
 
 [[nodiscard]] std::optional<MemoryPool::DeviceMemory>
-MemoryPool::AllocateDedicatedMemory(VkMemoryDedicatedRequirements const &dedicatedRequirements,
-                                    VkMemoryRequirements2 const &memoryRequirements2, VkMemoryPropertyFlags properties)
+MemoryPool::AllocateDedicatedMemory(VkMemoryRequirements2 const &memoryRequirements2, VkMemoryPropertyFlags properties)
 {
     memory_type_index_t memoryTypeIndex{0};
 

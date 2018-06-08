@@ -74,6 +74,9 @@ private:
 template<class E, class L>
 inline VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
 {
+    using namespace std::string_literals;
+    using namespace std::string_view_literals;
+
     auto constexpr use_extensions = !std::is_same_v<std::false_type, E>;
     auto constexpr use_layers = !std::is_same_v<std::false_type, L>;
 
