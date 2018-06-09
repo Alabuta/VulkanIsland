@@ -18,6 +18,8 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
 {
     memory_type_index_t memoryTypeIndex{0};
 
+    auto constexpr kNOT_DEDICATED = std::is_same_v<std::decay_t<R>, VkMemoryRequirements>;
+
     auto &&memoryRequirements = [] (auto &&memoryRequirements2)
     {
         if constexpr (std::is_same_v<std::decay_t<decltype(memoryRequirements2)>, VkMemoryRequirements>)
@@ -27,7 +29,7 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
 
     } (memoryRequirements2);
 
-    if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>) {
+    if constexpr (kNOT_DEDICATED) {
         if (memoryRequirements.size > kBLOCK_ALLOCATION_SIZE)
             throw std::runtime_error("requested allocation size is bigger than memory page size"s);
     }
@@ -38,7 +40,7 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
     else memoryTypeIndex = index.value();
 
     if (memoryBlocks_.find(memoryTypeIndex) == std::end(memoryBlocks_))
-        AllocateMemoryBlock(memoryTypeIndex, kBLOCK_ALLOCATION_SIZE);
+        AllocateMemoryBlock(memoryTypeIndex, kNOT_DEDICATED ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
 
     auto [it_begin, it_end] = memoryBlocks_.equal_range(memoryTypeIndex);
 
@@ -73,25 +75,20 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
         }
     });
 
-    if (it_memoryBlock == it_end)
-        std::cout << "!!!!!!\n";
-
     if (it_memoryBlock == it_end) {
-        if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>) {
-            it_memoryBlock = AllocateMemoryBlock(memoryTypeIndex, kBLOCK_ALLOCATION_SIZE);
-            it_chunk = it_memoryBlock->second.availableChunks.lower_bound(kBLOCK_ALLOCATION_SIZE);
-        }
-
-        else it_memoryBlock = AllocateMemoryBlock(memoryTypeIndex, memoryRequirements.size);
+        it_memoryBlock = AllocateMemoryBlock(memoryTypeIndex, kNOT_DEDICATED ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
+        it_chunk = it_memoryBlock->second.availableChunks.lower_bound(kNOT_DEDICATED ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
     }
 
     auto &&memoryBlock = it_memoryBlock->second;
     auto &&availableChunks = memoryBlock.availableChunks;
 
-    if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>) {
-        if (auto node = availableChunks.extract(it_chunk); node) {
-            auto &&[offset, size] = node.value();
+    if (auto node = availableChunks.extract(it_chunk); node) {
+        auto &&[offset, size] = node.value();
 
+        auto memoryOffset = offset;
+
+        if constexpr (kNOT_DEDICATED) {
             auto alignedOffset = ((offset + memoryRequirements.alignment - 1) / memoryRequirements.alignment) * memoryRequirements.alignment;
 
             size -= memoryRequirements.size + alignedOffset - offset;
@@ -103,60 +100,24 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
                 availableChunks.emplace(offset, alignedOffset - offset);
 
             memoryBlock.availableSize -= memoryRequirements.size;
-
-            return DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryRequirements.size, alignedOffset};
+            memoryOffset = alignedOffset;
         }
 
-        else throw std::runtime_error("failed to extract available memory block chunk"s);
+        else {
+            auto const wastedMemoryRatio = 100.f - memoryRequirements.size / static_cast<float>(memoryBlock.availableSize) * 100.f;
+            if (wastedMemoryRatio > 0.f)
+                std::cout << "Wasted memory ratio: "s << wastedMemoryRatio << "%\n"s;
+
+            availableChunks.emplace(memoryRequirements.size, memoryBlock.availableSize - memoryRequirements.size);
+            memoryBlock.availableSize = 0;
+        }
+
+        return DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryRequirements.size, memoryOffset};
     }
 
-    else {
-        availableChunks.emplace(0, memoryRequirements.size);
-        memoryBlock.availableSize = 0;
-
-        return DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryRequirements.size, 0};
-    }
+    else throw std::runtime_error("failed to extract available memory block chunk"s);
 
     return std::nullopt;
-}
-
-[[nodiscard]] std::optional<MemoryPool::DeviceMemory>
-MemoryPool::AllocateDedicatedMemory(VkMemoryRequirements2 const &memoryRequirements2, VkMemoryPropertyFlags properties)
-{
-    memory_type_index_t memoryTypeIndex{0};
-
-    std::cout << __FUNCTION__ << '\n';
-
-    auto &&memoryRequirements = memoryRequirements2.memoryRequirements;
-
-    if (auto index = FindMemoryType(memoryRequirements.memoryTypeBits, properties); !index)
-        throw std::runtime_error("failed to find suitable memory type"s);
-
-    else memoryTypeIndex = index.value();
-
-    auto [it_begin, it_end] = memoryBlocks_.equal_range(memoryTypeIndex);
-
-    auto it_memoryBlock = std::find_if(it_begin, it_end, [&memoryRequirements] (auto &&pair)
-    {
-        auto &&[type, memoryBlock] = pair;
-
-        return memoryBlock.availableSize >= memoryRequirements.size;
-    });
-
-    if (it_memoryBlock == it_end)
-        std::cout << "!!!!!!\n";
-
-    if (it_memoryBlock == it_end)
-        it_memoryBlock = AllocateMemoryBlock(memoryTypeIndex, memoryRequirements.size);
-
-    auto &&memoryBlock = it_memoryBlock->second;
-    auto &&availableChunks = memoryBlock.availableChunks;
-
-    availableChunks.emplace(0, memoryRequirements.size);
-
-    memoryBlock.availableSize = 0;
-
-    return DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryRequirements.size, 0};
 }
 
 void MemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
@@ -225,7 +186,7 @@ void MemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
 auto MemoryPool::AllocateMemoryBlock(memory_type_index_t memoryTypeIndex, VkDeviceSize size)
 -> decltype(memoryBlocks_)::iterator
 {
-    std::cout << __FUNCTION__ << '\n';
+    std::cout << "Memory page allocation: "s << (size / 1024) << " KB\n"s;
 
     VkMemoryAllocateInfo const memAllocInfo{
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,

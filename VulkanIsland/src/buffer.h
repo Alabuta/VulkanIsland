@@ -56,7 +56,7 @@ public:
         }
 
         if (memoryDedicatedRequirements.prefersDedicatedAllocation | memoryDedicatedRequirements.requiresDedicatedAllocation)
-            return AllocateMemory(memoryRequirements2.memoryRequirements, properties);
+            return AllocateMemory(memoryRequirements2, properties);
 
         else return AllocateMemory(memoryRequirements2.memoryRequirements, properties);
     }
@@ -125,7 +125,7 @@ private:
                 template<class S, class T, typename std::enable_if_t<std::is_same_v<MemoryChunk, std::decay_t<T>> && std::is_integral_v<S>>...>
                 auto operator() (S size, T &&chunk) const noexcept
                 {
-                    return size < chunk.size;
+                    return chunk.size < size;
                 }
             };
 
@@ -143,9 +143,6 @@ private:
     template<class R, typename std::enable_if_t<std::is_same_v<std::decay_t<R>, VkMemoryRequirements> || std::is_same_v<std::decay_t<R>, VkMemoryRequirements2>>...>
     [[nodiscard]] std::optional<MemoryPool::DeviceMemory>
     AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties);
-
-    [[nodiscard]] std::optional<MemoryPool::DeviceMemory>
-    AllocateDedicatedMemory(VkMemoryRequirements2 const &memoryRequirements2, VkMemoryPropertyFlags properties);
 
     auto AllocateMemoryBlock(memory_type_index_t memTypeIndex, VkDeviceSize size)
         -> decltype(memoryBlocks_)::iterator;
