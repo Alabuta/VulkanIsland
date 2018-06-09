@@ -22,9 +22,10 @@ public:
 
     template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>, int> = 0>
     [[nodiscard]] auto AllocateMemory(T buffer, VkMemoryPropertyFlags properties)
-        -> std::optional<MemoryPool::DeviceMemory>
+        -> std::optional<DeviceMemory>
     {
-        VkMemoryDedicatedRequirements memoryDedicatedRequirements{
+        return CheckMemoryRequirements(buffer, properties);
+        /*VkMemoryDedicatedRequirements memoryDedicatedRequirements{
             VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
             nullptr,
             0, 0
@@ -58,8 +59,9 @@ public:
         if (memoryDedicatedRequirements.prefersDedicatedAllocation | memoryDedicatedRequirements.requiresDedicatedAllocation)
             return AllocateMemory(memoryRequirements2, properties);
 
-        else return AllocateMemory(memoryRequirements2.memoryRequirements, properties);
+        else return AllocateMemory(memoryRequirements2.memoryRequirements, properties);*/
     }
+
 
     void FreeMemory(std::optional<DeviceMemory> &&memory);
 
@@ -141,13 +143,17 @@ private:
     std::multimap<memory_type_index_t, MemoryBlock> memoryBlocks_;
 
     template<class R, typename std::enable_if_t<std::is_same_v<std::decay_t<R>, VkMemoryRequirements> || std::is_same_v<std::decay_t<R>, VkMemoryRequirements2>>...>
-    [[nodiscard]] std::optional<MemoryPool::DeviceMemory>
+    [[nodiscard]] std::optional<DeviceMemory>
     AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties);
+
+    template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>...>
+    [[nodiscard]] auto CheckMemoryRequirements(T buffer, VkMemoryPropertyFlags properties)
+        ->std::optional<DeviceMemory>;
 
     auto AllocateMemoryBlock(memory_type_index_t memTypeIndex, VkDeviceSize size)
         -> decltype(memoryBlocks_)::iterator;
 
-    [[nodiscard]] std::optional<MemoryPool::memory_type_index_t> FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFlags propertyFlags);
+    [[nodiscard]] std::optional<memory_type_index_t> FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFlags propertyFlags);
 };
 
 class BufferPool {

@@ -12,13 +12,55 @@ MemoryPool::~MemoryPool()
     memoryBlocks_.clear();
 }
 
+template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>...>
+[[nodiscard]] auto MemoryPool::CheckMemoryRequirements(T buffer, VkMemoryPropertyFlags properties)
+-> std::optional<MemoryPool::DeviceMemory>
+{
+    VkMemoryDedicatedRequirements memoryDedicatedRequirements{
+        VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
+        nullptr,
+        0, 0
+    };
+
+    VkMemoryRequirements2 memoryRequirements2{
+        VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
+        &memoryDedicatedRequirements,{ }
+    };
+
+    if constexpr (std::is_same_v<T, VkBuffer>)
+    {
+        VkBufferMemoryRequirementsInfo2 const bufferMemoryRequirements{
+            VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
+            nullptr,
+            buffer
+        };
+
+        vkGetBufferMemoryRequirements2(vulkanDevice_->handle(), &bufferMemoryRequirements, &memoryRequirements2);
+    }
+
+    else {
+        VkImageMemoryRequirementsInfo2 const imageMemoryRequirements{
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
+            nullptr,
+            buffer
+        };
+
+        vkGetImageMemoryRequirements2(vulkanDevice_->handle(), &imageMemoryRequirements, &memoryRequirements2);
+    }
+
+    if (memoryDedicatedRequirements.prefersDedicatedAllocation | memoryDedicatedRequirements.requiresDedicatedAllocation)
+        return AllocateMemory(memoryRequirements2, properties);
+
+    else return AllocateMemory(memoryRequirements2.memoryRequirements, properties);
+}
+
 template<class R, typename std::enable_if_t<std::is_same_v<std::decay_t<R>, VkMemoryRequirements> || std::is_same_v<std::decay_t<R>, VkMemoryRequirements2>>...>
 [[nodiscard]] std::optional<MemoryPool::DeviceMemory>
 MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags properties)
 {
     memory_type_index_t memoryTypeIndex{0};
 
-    auto constexpr kNOT_DEDICATED = std::is_same_v<std::decay_t<R>, VkMemoryRequirements>;
+    auto constexpr kSUB_ALLOCATION = std::is_same_v<std::decay_t<R>, VkMemoryRequirements>;
 
     auto &&memoryRequirements = [] (auto &&memoryRequirements2)
     {
@@ -29,7 +71,7 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
 
     } (memoryRequirements2);
 
-    if constexpr (kNOT_DEDICATED) {
+    if constexpr (kSUB_ALLOCATION) {
         if (memoryRequirements.size > kBLOCK_ALLOCATION_SIZE)
             throw std::runtime_error("requested allocation size is bigger than memory page size"s);
     }
@@ -40,13 +82,13 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
     else memoryTypeIndex = index.value();
 
     if (memoryBlocks_.find(memoryTypeIndex) == std::end(memoryBlocks_))
-        AllocateMemoryBlock(memoryTypeIndex, kNOT_DEDICATED ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
+        AllocateMemoryBlock(memoryTypeIndex, kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
 
     auto [it_begin, it_end] = memoryBlocks_.equal_range(memoryTypeIndex);
 
     decltype(MemoryBlock::availableChunks)::iterator it_chunk;
 
-    auto it_memoryBlock = std::find_if(it_begin, it_end, [&it_chunk, &memoryRequirements] (auto &&pair)
+    auto it_block = std::find_if(it_begin, it_end, [&it_chunk, &memoryRequirements] (auto &&pair)
     {
         auto &&[type, memoryBlock] = pair;
 
@@ -75,12 +117,12 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
         }
     });
 
-    if (it_memoryBlock == it_end) {
-        it_memoryBlock = AllocateMemoryBlock(memoryTypeIndex, kNOT_DEDICATED ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
-        it_chunk = it_memoryBlock->second.availableChunks.lower_bound(kNOT_DEDICATED ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
+    if (it_block == it_end) {
+        it_block = AllocateMemoryBlock(memoryTypeIndex, kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
+        it_chunk = it_block->second.availableChunks.lower_bound(kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
     }
 
-    auto &&memoryBlock = it_memoryBlock->second;
+    auto &&memoryBlock = it_block->second;
     auto &&availableChunks = memoryBlock.availableChunks;
 
     if (auto node = availableChunks.extract(it_chunk); node) {
@@ -88,7 +130,7 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
 
         auto memoryOffset = offset;
 
-        if constexpr (kNOT_DEDICATED) {
+        if constexpr (kSUB_ALLOCATION) {
             auto alignedOffset = ((offset + memoryRequirements.alignment - 1) / memoryRequirements.alignment) * memoryRequirements.alignment;
 
             size -= memoryRequirements.size + alignedOffset - offset;
@@ -125,24 +167,22 @@ void MemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
     if (_memory == std::nullopt)
         return;
 
-    std::cout << __FUNCTION__ << '\n';
-
     auto memory = std::move(_memory.value());
 
     _memory.reset();
 
     auto[it_begin, it_end] = memoryBlocks_.equal_range(memory.memoryTypeIndex());
 
-    auto it_memoryBlock = std::find_if(it_begin, it_end, [handle = memory.handle()](auto &&pair)
+    auto it_block = std::find_if(it_begin, it_end, [handle = memory.handle()](auto &&pair)
     {
         return handle == pair.second.handle;
     });
 
-    if (it_memoryBlock == it_end)
+    if (it_block == it_end)
         return;
 
-    auto &&memoryBlock = it_memoryBlock->second;
-    auto &&availableChunks = it_memoryBlock->second.availableChunks;
+    auto &&memoryBlock = it_block->second;
+    auto &&availableChunks = it_block->second.availableChunks;
 
     auto it_chunk = std::find_if(std::begin(availableChunks), std::end(availableChunks), [&memory] (auto &&chunk)
     {
@@ -186,7 +226,6 @@ void MemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
 auto MemoryPool::AllocateMemoryBlock(memory_type_index_t memoryTypeIndex, VkDeviceSize size)
 -> decltype(memoryBlocks_)::iterator
 {
-    std::cout << "Memory page allocation: "s << (size / 1024) << " KB\n"s;
 
     VkMemoryAllocateInfo const memAllocInfo{
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -200,7 +239,7 @@ auto MemoryPool::AllocateMemoryBlock(memory_type_index_t memoryTypeIndex, VkDevi
     if (auto result = vkAllocateMemory(vulkanDevice_->handle(), &memAllocInfo, nullptr, &handle); result != VK_SUCCESS)
         throw std::runtime_error("failed to allocate block from device memory pool"s);
 
-    std::cout << memoryBlocks_.size() + 1 << '\n';
+    std::cout << "Memory page allocation #"s << memoryBlocks_.size() + 1 << ": "s << (size / 1024) << " KB\n"s;
 
     return memoryBlocks_.emplace(std::piecewise_construct, 
                                  std::forward_as_tuple(memoryTypeIndex), std::forward_as_tuple(handle, size, memoryTypeIndex));
@@ -220,7 +259,7 @@ MemoryPool::FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFlags pro
     });
 
     if (it_type < std::next(std::cbegin(memoryTypes), memoryProperties.memoryTypeCount))
-        return static_cast<std::uint32_t>(std::distance(std::cbegin(memoryTypes), it_type));
+        return static_cast<memory_type_index_t>(std::distance(std::cbegin(memoryTypes), it_type));
 
     return { };
 }
@@ -242,14 +281,15 @@ MemoryPool::FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFlags pro
     if (auto result = vkCreateBuffer(vulkanDevice->handle(), &bufferCreateInfo, nullptr, &buffer); result != VK_SUCCESS)
         throw std::runtime_error("failed to create buffer: "s + std::to_string(result));
 
-    if (auto deviceMemory = vulkanDevice->memoryPool()->AllocateMemory(buffer, properties); deviceMemory) {
-        if (auto result = vkBindBufferMemory(vulkanDevice->handle(), buffer, deviceMemory->handle(), deviceMemory->offset()); result != VK_SUCCESS)
+    if (auto memory = vulkanDevice->memoryPool()->AllocateMemory(buffer, properties); !memory)
+        throw std::runtime_error("failed to allocate buffer memory"s);
+
+    else {
+        if (auto result = vkBindBufferMemory(vulkanDevice->handle(), buffer, memory->handle(), memory->offset()); result != VK_SUCCESS)
             throw std::runtime_error("failed to bind buffer memory: "s + std::to_string(result));
 
-        return std::move(deviceMemory);
+        return std::move(memory);
     }
-
-    else throw std::runtime_error("failed to allocate buffer memory"s);
 }
 
 
