@@ -1,19 +1,39 @@
 #include "device.h"
 #include "buffer.h"
 
+namespace {
 
+[[nodiscard]] auto FindMemoryType(VulkanDevice const &vulkanDevice, MemoryPool::memory_type_index_t filter, VkMemoryPropertyFlags propertyFlags)
+-> std::optional<MemoryPool::memory_type_index_t>
+{
+    VkPhysicalDeviceMemoryProperties memoryProperties;
+    vkGetPhysicalDeviceMemoryProperties(vulkanDevice.physical_handle(), &memoryProperties);
+
+    auto const memoryTypes = to_array(memoryProperties.memoryTypes);
+
+    auto it_type = std::find_if(std::cbegin(memoryTypes), std::cend(memoryTypes), [filter, propertyFlags, i = 0u] (auto type) mutable
+    {
+        return (filter & (1 << i++)) && (type.propertyFlags & propertyFlags) == propertyFlags;
+    });
+
+    if (it_type < std::next(std::cbegin(memoryTypes), memoryProperties.memoryTypeCount))
+        return static_cast<MemoryPool::memory_type_index_t>(std::distance(std::cbegin(memoryTypes), it_type));
+
+    return { };
+}
+}
 
 
 MemoryPool::~MemoryPool()
 {
     for (auto &&memoryBlock : memoryBlocks_)
-        vkFreeMemory(vulkanDevice_->handle(), memoryBlock.second.handle, nullptr);
+        vkFreeMemory(vulkanDevice_.handle(), memoryBlock.second.handle, nullptr);
 
     memoryBlocks_.clear();
 }
 
 template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>...>
-[[nodiscard]] auto MemoryPool::CheckMemoryRequirements(T buffer, VkMemoryPropertyFlags properties)
+[[nodiscard]] auto MemoryPool::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties)
 -> std::optional<MemoryPool::DeviceMemory>
 {
     VkMemoryDedicatedRequirements memoryDedicatedRequirements{
@@ -35,7 +55,7 @@ template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::
             buffer
         };
 
-        vkGetBufferMemoryRequirements2(vulkanDevice_->handle(), &bufferMemoryRequirements, &memoryRequirements2);
+        vkGetBufferMemoryRequirements2(vulkanDevice_.handle(), &bufferMemoryRequirements, &memoryRequirements2);
     }
 
     else {
@@ -45,7 +65,7 @@ template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::
             buffer
         };
 
-        vkGetImageMemoryRequirements2(vulkanDevice_->handle(), &imageMemoryRequirements, &memoryRequirements2);
+        vkGetImageMemoryRequirements2(vulkanDevice_.handle(), &imageMemoryRequirements, &memoryRequirements2);
     }
 
     if (memoryDedicatedRequirements.prefersDedicatedAllocation | memoryDedicatedRequirements.requiresDedicatedAllocation)
@@ -54,9 +74,10 @@ template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::
     else return AllocateMemory(memoryRequirements2.memoryRequirements, properties);
 }
 
-template<class R, typename std::enable_if_t<std::is_same_v<std::decay_t<R>, VkMemoryRequirements> || std::is_same_v<std::decay_t<R>, VkMemoryRequirements2>>...>
-[[nodiscard]] std::optional<MemoryPool::DeviceMemory>
-MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags properties)
+template<class R, typename std::enable_if_t<
+    std::is_same_v<std::decay_t<R>, VkMemoryRequirements> || std::is_same_v<std::decay_t<R>, VkMemoryRequirements2>>...>
+[[nodiscard]] auto MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags properties)
+-> std::optional<MemoryPool::DeviceMemory>
 {
     memory_type_index_t memoryTypeIndex{0};
 
@@ -76,7 +97,7 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
             throw std::runtime_error("requested allocation size is bigger than memory page size"s);
     }
 
-    if (auto index = FindMemoryType(memoryRequirements.memoryTypeBits, properties); !index)
+    if (auto index = FindMemoryType(vulkanDevice_, memoryRequirements.memoryTypeBits, properties); !index)
         throw std::runtime_error("failed to find suitable memory type"s);
 
     else memoryTypeIndex = index.value();
@@ -147,8 +168,8 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
 
         else {
             auto const wastedMemoryRatio = 100.f - memoryRequirements.size / static_cast<float>(memoryBlock.availableSize) * 100.f;
-            if (wastedMemoryRatio > 0.f)
-                std::cout << "Wasted memory ratio: "s << wastedMemoryRatio << "%\n"s;
+            if (wastedMemoryRatio > 1.f)
+                std::cerr << "Memory pool: wasted memory ratio: "s << wastedMemoryRatio << "%\n"s;
 
             availableChunks.emplace(memoryRequirements.size, memoryBlock.availableSize - memoryRequirements.size);
             memoryBlock.availableSize = 0;
@@ -162,24 +183,51 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
     return std::nullopt;
 }
 
+auto MemoryPool::AllocateMemoryBlock(memory_type_index_t memoryTypeIndex, VkDeviceSize size)
+-> decltype(memoryBlocks_)::iterator
+{
+    VkMemoryAllocateInfo const memAllocInfo{
+        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        nullptr,
+        size,
+        memoryTypeIndex
+    };
+
+    VkDeviceMemory handle;
+
+    if (auto result = vkAllocateMemory(vulkanDevice_.handle(), &memAllocInfo, nullptr, &handle); result != VK_SUCCESS)
+        throw std::runtime_error("failed to allocate block from device memory pool"s);
+
+    allocatedSize_ += size;
+
+    std::cout << "Memory pool: page allocation #"s << memoryTypeIndex << ": "s << size / 1024.f << " KB/"s;
+    std::cout << allocatedSize_ / std::pow(2.f, 20.f) << "MB\n"s;
+
+    return memoryBlocks_.emplace(std::piecewise_construct, 
+                                 std::forward_as_tuple(memoryTypeIndex), std::forward_as_tuple(handle, size, memoryTypeIndex));
+}
+
 void MemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
 {
     if (_memory == std::nullopt)
         return;
 
     auto memory = std::move(_memory.value());
-
     _memory.reset();
 
-    auto[it_begin, it_end] = memoryBlocks_.equal_range(memory.memoryTypeIndex());
+    auto [it_begin, it_end] = memoryBlocks_.equal_range(memory.typeIndex());
 
     auto it_block = std::find_if(it_begin, it_end, [handle = memory.handle()](auto &&pair)
     {
         return handle == pair.second.handle;
     });
 
-    if (it_block == it_end)
+    if (it_block == it_end) {
+        std::cerr << "Memory pool: dead chunk encountered.\n"s;
         return;
+    }
+
+    std::cout << "Memory pool: "s << memory.size() / 1024.f << "KB has been released.\n"s;
 
     auto &&memoryBlock = it_block->second;
     auto &&availableChunks = it_block->second.availableChunks;
@@ -221,47 +269,6 @@ void MemoryPool::FreeMemory(std::optional<DeviceMemory> &&_memory)
             memoryBlock.availableSize += memory.size();
         }
     }
-}
-
-auto MemoryPool::AllocateMemoryBlock(memory_type_index_t memoryTypeIndex, VkDeviceSize size)
--> decltype(memoryBlocks_)::iterator
-{
-
-    VkMemoryAllocateInfo const memAllocInfo{
-        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-        nullptr,
-        size,
-        memoryTypeIndex
-    };
-
-    VkDeviceMemory handle;
-
-    if (auto result = vkAllocateMemory(vulkanDevice_->handle(), &memAllocInfo, nullptr, &handle); result != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate block from device memory pool"s);
-
-    std::cout << "Memory page allocation #"s << memoryBlocks_.size() + 1 << ": "s << (size / 1024) << " KB\n"s;
-
-    return memoryBlocks_.emplace(std::piecewise_construct, 
-                                 std::forward_as_tuple(memoryTypeIndex), std::forward_as_tuple(handle, size, memoryTypeIndex));
-}
-
-[[nodiscard]] std::optional<MemoryPool::memory_type_index_t>
-MemoryPool::FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFlags propertyFlags)
-{
-    VkPhysicalDeviceMemoryProperties memoryProperties;
-    vkGetPhysicalDeviceMemoryProperties(vulkanDevice_->physical_handle(), &memoryProperties);
-
-    auto const memoryTypes = to_array(memoryProperties.memoryTypes);
-
-    auto it_type = std::find_if(std::cbegin(memoryTypes), std::cend(memoryTypes), [filter, propertyFlags, i = 0u] (auto type) mutable
-    {
-        return (filter & (1 << i++)) && (type.propertyFlags & propertyFlags) == propertyFlags;
-    });
-
-    if (it_type < std::next(std::cbegin(memoryTypes), memoryProperties.memoryTypeCount))
-        return static_cast<memory_type_index_t>(std::distance(std::cbegin(memoryTypes), it_type));
-
-    return { };
 }
 
 

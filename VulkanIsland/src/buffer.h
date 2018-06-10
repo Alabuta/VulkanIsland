@@ -17,49 +17,13 @@ public:
 
     class DeviceMemory;
 
-    MemoryPool(VulkanDevice *vulkanDevice) : vulkanDevice_{vulkanDevice} { }
+    MemoryPool(VulkanDevice &vulkanDevice) : vulkanDevice_{vulkanDevice} { }
     ~MemoryPool();
 
     template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>, int> = 0>
-    [[nodiscard]] auto AllocateMemory(T buffer, VkMemoryPropertyFlags properties)
-        -> std::optional<DeviceMemory>
+    [[nodiscard]] std::optional<DeviceMemory> AllocateMemory(T buffer, VkMemoryPropertyFlags properties)
     {
-        return CheckMemoryRequirements(buffer, properties);
-        /*VkMemoryDedicatedRequirements memoryDedicatedRequirements{
-            VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
-            nullptr,
-            0, 0
-        };
-
-        VkMemoryRequirements2 memoryRequirements2{
-            VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
-            &memoryDedicatedRequirements, {}
-        };
-
-        if constexpr (std::is_same_v<T, VkBuffer>) {
-            VkBufferMemoryRequirementsInfo2 const bufferMemoryRequirements{
-                VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
-                nullptr,
-                buffer
-            };
-
-            vkGetBufferMemoryRequirements2(vulkanDevice_->handle(), &bufferMemoryRequirements, &memoryRequirements2);
-        }
-
-        else {
-            VkImageMemoryRequirementsInfo2 const imageMemoryRequirements{
-                VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
-                nullptr,
-                buffer
-            };
-
-            vkGetImageMemoryRequirements2(vulkanDevice_->handle(), &imageMemoryRequirements, &memoryRequirements2);
-        }
-
-        if (memoryDedicatedRequirements.prefersDedicatedAllocation | memoryDedicatedRequirements.requiresDedicatedAllocation)
-            return AllocateMemory(memoryRequirements2, properties);
-
-        else return AllocateMemory(memoryRequirements2.memoryRequirements, properties);*/
+        return CheckRequirementsAndAllocate(buffer, properties);
     }
 
 
@@ -76,29 +40,29 @@ public:
         VkDeviceSize size() const noexcept { return size_; }
         VkDeviceSize offset() const noexcept { return offset_; }
 
-        memory_type_index_t memoryTypeIndex() const noexcept { return memoryTypeIndex_; }
+        memory_type_index_t typeIndex() const noexcept { return typeIndex_; }
 
     private:
         VkDeviceMemory handle_;
-        memory_type_index_t memoryTypeIndex_;
         VkDeviceSize size_, offset_;
+
+        memory_type_index_t typeIndex_;
 
         DeviceMemory() = delete;
         DeviceMemory(DeviceMemory const &) = delete;
 
-        DeviceMemory(VkDeviceMemory handle, memory_type_index_t memTypeIndex, VkDeviceSize size, VkDeviceSize offset) noexcept
-            : handle_{handle}, memoryTypeIndex_{memTypeIndex}, size_{size}, offset_{offset} { }
+        DeviceMemory(VkDeviceMemory handle, memory_type_index_t typeIndex, VkDeviceSize size, VkDeviceSize offset) noexcept
+            : handle_{handle}, typeIndex_{typeIndex}, size_{size}, offset_{offset} { }
 
         friend MemoryPool;
     };
 
 private:
 
-    friend BufferPool;
-
     static VkDeviceSize constexpr kBLOCK_ALLOCATION_SIZE{0x10'000'000};   // 256 MB
 
-    VulkanDevice *vulkanDevice_;
+    VulkanDevice &vulkanDevice_;
+    VkDeviceSize allocatedSize_{0};
 
     struct MemoryBlock {
         VkDeviceMemory handle;
@@ -143,17 +107,14 @@ private:
     std::multimap<memory_type_index_t, MemoryBlock> memoryBlocks_;
 
     template<class R, typename std::enable_if_t<std::is_same_v<std::decay_t<R>, VkMemoryRequirements> || std::is_same_v<std::decay_t<R>, VkMemoryRequirements2>>...>
-    [[nodiscard]] std::optional<DeviceMemory>
-    AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties);
+    [[nodiscard]] auto AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties) -> std::optional<DeviceMemory>;
 
     template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>...>
-    [[nodiscard]] auto CheckMemoryRequirements(T buffer, VkMemoryPropertyFlags properties)
-        ->std::optional<DeviceMemory>;
+    [[nodiscard]] auto CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties) -> std::optional<DeviceMemory>;
 
-    auto AllocateMemoryBlock(memory_type_index_t memTypeIndex, VkDeviceSize size)
-        -> decltype(memoryBlocks_)::iterator;
+    auto AllocateMemoryBlock(memory_type_index_t memTypeIndex, VkDeviceSize size) -> decltype(memoryBlocks_)::iterator;
 
-    [[nodiscard]] std::optional<memory_type_index_t> FindMemoryType(memory_type_index_t filter, VkMemoryPropertyFlags propertyFlags);
+    friend BufferPool;
 };
 
 class BufferPool {
