@@ -7,9 +7,10 @@ VkExtent2D swapChainExtent;
 
 std::vector<VkImage> swapChainImages;
 std::vector<VkImageView> swapChainImageViews;
+std::vector<VkFramebuffer> swapChainFramebuffers;
 
 VkImage depthImage;
-std::optional<MemoryPool::DeviceMemory> depthImageMemory;
+std::shared_ptr<DeviceMemory> depthImageMemory;
 VkImageView depthImageView;
 VkDeviceSize depthImageOffset;
 
@@ -211,7 +212,7 @@ void CleanupSwapChain(VulkanDevice *vulkanDevice, VkSwapchainKHR swapChain)
     if (depthImageView)
         vkDestroyImageView(vulkanDevice->handle(), depthImageView, nullptr);
 
-    vulkanDevice->memoryPool()->FreeMemory(std::move(depthImageMemory));
+    depthImageMemory.reset();
 
     if (depthImage)
         vkDestroyImage(vulkanDevice->handle(), depthImage, nullptr);
