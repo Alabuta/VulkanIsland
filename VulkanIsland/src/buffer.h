@@ -132,6 +132,10 @@ public:
 
     [[nodiscard]] static auto CreateUniformBuffer(VulkanDevice &device, VkBuffer &uboBuffer, std::size_t size)
         -> std::shared_ptr<DeviceMemory>;
+
+    [[nodiscard]] static std::optional<VkImage>
+    CreateImageHandle(VulkanDevice &vulkanDevice, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
+                      VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage);
 };
 
 

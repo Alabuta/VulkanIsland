@@ -113,6 +113,30 @@ struct app_t {
 };
 
 
+[[nodiscard]] std::optional<VulkanImageView>
+CreateImageView(VulkanDevice const &device, VulkanImage const &image, VkFormat format, VkImageAspectFlags aspectFlags)
+{
+    std::optional<VulkanImageView> view;
+
+    VkImageViewCreateInfo const createInfo{
+        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+        nullptr, 0,
+        image.handle,
+        VK_IMAGE_VIEW_TYPE_2D,
+        format,
+        { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
+        { aspectFlags, 0, image.mipLevels, 0, 1 }
+    };
+
+    VkImageView handle;
+
+    if (auto result = vkCreateImageView(device.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create image view: "s + std::to_string(result));
+
+    else view.emplace(handle);
+
+    return view;
+}
 
 
 [[nodiscard]] VkImageView CreateImageView(VkDevice device, VkImage &image, VkFormat format, VkImageAspectFlags aspectFlags, std::uint32_t mipLevels)
@@ -477,7 +501,7 @@ void CreateFramebuffers(VulkanDevice *vulkanDevice, VkRenderPass renderPass, T &
 
     std::transform(std::cbegin(imageViews), std::cend(imageViews), std::back_inserter(framebuffers), [vulkanDevice, renderPass] (auto &&imageView)
     {
-        auto const attachements = make_array(imageView, depthImageView);
+        auto const attachements = make_array(imageView, depthTexture.view.handle);
 
         VkFramebufferCreateInfo const createInfo{
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -884,7 +908,7 @@ void GenerateMipMaps(VulkanDevice const &device, Q &queue, VkImage image, std::i
     EndSingleTimeCommand(device, queue, commandBuffer, commandPool);
 }
 
-std::optional<VulkanImage> CreateImage(app_t &app, VulkanDevice *const vulkanDevice)
+[[nodiscard]] std::optional<VulkanImage> CreateImage(app_t &app, VulkanDevice &device)
 {
     Image rawImage;
 
@@ -988,7 +1012,7 @@ void CreateTextureSampler(VkDevice device, VkSampler &sampler, std::uint32_t mip
 }
 
 
-std::optional<VulkanImage> CreateDepthResources(app_t &app, VulkanDevice *vulkanDevice, VkImageView &imageView)
+std::optional<VulkanTexture> CreateDepthAttachement(app_t &app, VulkanDevice &vulkanDevice)
 {
     auto const format = FindDepthImageFormat(vulkanDevice.physical_handle());
 
@@ -1002,6 +1026,21 @@ std::optional<VulkanImage> CreateDepthResources(app_t &app, VulkanDevice *vulkan
 
     std::optional<VulkanTexture> texture;
 
+    /*VkImageCreateInfo const createInfo{
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        nullptr, 0,
+        VK_IMAGE_TYPE_2D,
+        format,
+        { width, height, 1 },
+        mipLevels, 1,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0, nullptr,
+        VK_IMAGE_LAYOUT_UNDEFINED
+    };*/
+
     VkImage handle;
 
     auto memory = BufferPool::CreateImage(vulkanDevice, handle, width, height, mipLevels, format,
@@ -1009,6 +1048,13 @@ std::optional<VulkanImage> CreateDepthResources(app_t &app, VulkanDevice *vulkan
 
     if (memory) {
         VulkanImage image{handle, memory, mipLevels, static_cast<std::uint16_t>(width), static_cast<std::uint16_t>(height)};
+
+        VulkanImageView view;
+
+        if (auto result = CreateImageView(vulkanDevice, image, format, VK_IMAGE_ASPECT_DEPTH_BIT); !result)
+            throw std::runtime_error("failed to create depth image view"s);
+
+        else view = std::move(result.value());
 
         TransitionImageLayout(vulkanDevice, app.transferQueue, handle, format,
                               VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, mipLevels, app.transferCommandPool);
@@ -1050,6 +1096,9 @@ void OnWindowResize([[maybe_unused]] GLFWwindow *window, int width, int height)
     HEIGHT = height;
 
     auto app = reinterpret_cast<app_t *const>(glfwGetWindowUserPointer(window));
+
+    if (width == 803)
+        std::cout << width << '\n';
 
     RecreateSwapChain(*app);
 }

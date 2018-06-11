@@ -6,6 +6,8 @@
 
 struct VulkanImage final {
     VkImage handle;
+    VkImageView viewHandle;
+
     std::shared_ptr<DeviceMemory> memory;
 
     std::uint32_t mipLevels{1};
@@ -20,7 +22,9 @@ struct VulkanImage final {
 struct VulkanImageView final {
     VkImageView handle;
 
-    //std::uint32_t mipLevels{1};
+    VulkanImageView() = default;
+
+    VulkanImageView(VkImageView handle) : handle{handle} { }
 };
 
 struct VulkanSampler final {
@@ -29,6 +33,10 @@ struct VulkanSampler final {
 
 struct VulkanTexture final {
     VulkanImage image;
-    VulkanSampler sampler;
     VulkanImageView view;
+    //VulkanSampler sampler;
+
+    VulkanTexture() = default;
+
+    VulkanTexture(VulkanImage image, VulkanImageView view) : image{image}, view{view} { }
 };

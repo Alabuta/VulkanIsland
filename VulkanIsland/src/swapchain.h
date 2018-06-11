@@ -15,8 +15,7 @@ extern std::vector<VkImage> swapChainImages;
 extern std::vector<VkImageView> swapChainImageViews;
 extern std::vector<VkFramebuffer> swapChainFramebuffers;
 
-extern VulkanImage depthImage;
-extern VkImageView depthImageView;
+extern VulkanTexture depthTexture;
 extern VkDeviceSize depthImageOffset;
 
 struct SwapChainSupportDetails {
