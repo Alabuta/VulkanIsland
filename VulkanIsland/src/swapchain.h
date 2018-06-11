@@ -32,10 +32,10 @@ struct SwapChainSupportDetails {
 [[nodiscard]] VkExtent2D ChooseSwapExtent(VkSurfaceCapabilitiesKHR &surfaceCapabilities, std::uint32_t width, std::uint32_t height);
 
 
-void CreateSwapChain(VulkanDevice *device, VkSurfaceKHR surface, VkSwapchainKHR &swapChain, std::uint32_t width, std::uint32_t height,
+void CreateSwapChain(VulkanDevice const &device, VkSurfaceKHR surface, VkSwapchainKHR &swapChain, std::uint32_t width, std::uint32_t height,
                      VulkanQueue<PresentationQueue> const &presentationQueue, VulkanQueue<GraphicsQueue> const &graphicsQueue);
 
-void CreateSwapChainImageAndViews(VulkanDevice *device, std::vector<VkImage> &swapChainImages, std::vector<VkImageView> &swapChainImageViews);
+void CreateSwapChainImageAndViews(VulkanDevice const &device, std::vector<VkImage> &swapChainImages, std::vector<VkImageView> &swapChainImageViews);
 
 
-void CleanupSwapChain(VulkanDevice *vulkanDevice, VkSwapchainKHR swapChain);
+void CleanupSwapChain(VulkanDevice const &device, VkSwapchainKHR swapChain);

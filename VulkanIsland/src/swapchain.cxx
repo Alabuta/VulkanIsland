@@ -127,10 +127,10 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 }
 
 
-void CreateSwapChain(VulkanDevice *device, VkSurfaceKHR surface, VkSwapchainKHR &swapChain, std::uint32_t width, std::uint32_t height,
+void CreateSwapChain(VulkanDevice const &device, VkSurfaceKHR surface, VkSwapchainKHR &swapChain, std::uint32_t width, std::uint32_t height,
                      VulkanQueue<PresentationQueue> const &presentationQueue, VulkanQueue<GraphicsQueue> const &graphicsQueue)
 {
-    auto swapChainSupportDetails = QuerySwapChainSupportDetails(device->physical_handle(), surface);
+    auto swapChainSupportDetails = QuerySwapChainSupportDetails(device.physical_handle(), surface);
 
     auto surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupportDetails.formats);
     auto presentMode = ChooseSwapPresentMode(swapChainSupportDetails.presentModes);
@@ -172,50 +172,50 @@ void CreateSwapChain(VulkanDevice *device, VkSurfaceKHR surface, VkSwapchainKHR 
         swapchainCreateInfo.pQueueFamilyIndices = std::data(queueFamilyIndices);
     }
 
-    if (auto result = vkCreateSwapchainKHR(device->handle(), &swapchainCreateInfo, nullptr, &swapChain); result != VK_SUCCESS)
+    if (auto result = vkCreateSwapchainKHR(device.handle(), &swapchainCreateInfo, nullptr, &swapChain); result != VK_SUCCESS)
         throw std::runtime_error("failed to create required swap chain: "s + std::to_string(result));
 }
 
 
-void CreateSwapChainImageAndViews(VulkanDevice *device, std::vector<VkImage> &swapChainImages, std::vector<VkImageView> &swapChainImageViews)
+void CreateSwapChainImageAndViews(VulkanDevice const &device, std::vector<VkImage> &swapChainImages, std::vector<VkImageView> &swapChainImageViews)
 {
     std::uint32_t imagesCount = 0;
-    if (auto result = vkGetSwapchainImagesKHR(device->handle(), swapChain, &imagesCount, nullptr); result != VK_SUCCESS)
+    if (auto result = vkGetSwapchainImagesKHR(device.handle(), swapChain, &imagesCount, nullptr); result != VK_SUCCESS)
         throw std::runtime_error("failed to retrieve swap chain images count: "s + std::to_string(result));
 
     swapChainImages.resize(imagesCount);
-    if (auto result = vkGetSwapchainImagesKHR(device->handle(), swapChain, &imagesCount, std::data(swapChainImages)); result != VK_SUCCESS)
+    if (auto result = vkGetSwapchainImagesKHR(device.handle(), swapChain, &imagesCount, std::data(swapChainImages)); result != VK_SUCCESS)
         throw std::runtime_error("failed to retrieve swap chain images: "s + std::to_string(result));
 
     swapChainImageViews.clear();
 
     for (auto &&swapChainImage : swapChainImages) {
-        auto imageView = CreateImageView(device->handle(), swapChainImage, swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        auto imageView = CreateImageView(device.handle(), swapChainImage, swapChainImageFormat, VK_IMAGE_ASPECT_COLOR_BIT, 1);
         swapChainImageViews.emplace_back(std::move(imageView));
     }
 }
 
 
-void CleanupSwapChain(VulkanDevice *vulkanDevice, VkSwapchainKHR swapChain)
+void CleanupSwapChain(VulkanDevice const &device, VkSwapchainKHR swapChain)
 {
     for (auto &&swapChainFramebuffer : swapChainFramebuffers)
-        vkDestroyFramebuffer(vulkanDevice->handle(), swapChainFramebuffer, nullptr);
+        vkDestroyFramebuffer(device.handle(), swapChainFramebuffer, nullptr);
 
     swapChainFramebuffers.clear();
 
     for (auto &&swapChainImageView : swapChainImageViews)
-        vkDestroyImageView(vulkanDevice->handle(), swapChainImageView, nullptr);
+        vkDestroyImageView(device.handle(), swapChainImageView, nullptr);
 
     if (swapChain)
-        vkDestroySwapchainKHR(vulkanDevice->handle(), swapChain, nullptr);
+        vkDestroySwapchainKHR(device.handle(), swapChain, nullptr);
 
     if (depthImageView)
-        vkDestroyImageView(vulkanDevice->handle(), depthImageView, nullptr);
+        vkDestroyImageView(device.handle(), depthImageView, nullptr);
 
     depthImageMemory.reset();
 
     if (depthImage)
-        vkDestroyImage(vulkanDevice->handle(), depthImage, nullptr);
+        vkDestroyImage(device.handle(), depthImage, nullptr);
 
     swapChainImageViews.clear();
     swapChainImages.clear();

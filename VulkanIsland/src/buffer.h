@@ -20,7 +20,7 @@ public:
     MemoryPool(VulkanDevice &vulkanDevice);
     ~MemoryPool();
 
-    template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>, int> = 0>
+    template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
     [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(T buffer, VkMemoryPropertyFlags properties)
     {
         return CheckRequirementsAndAllocate(buffer, properties);
@@ -75,15 +75,15 @@ private:
 
     std::multimap<std::uint32_t, Block> memoryBlocks_;
 
-    template<class R, typename std::enable_if_t<std::is_same_v<std::decay_t<R>, VkMemoryRequirements> || std::is_same_v<std::decay_t<R>, VkMemoryRequirements2>>...>
+    template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
     [[nodiscard]] auto AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties) -> std::shared_ptr<DeviceMemory>;
 
-    template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>...>
+    template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
     [[nodiscard]] auto CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties) -> std::shared_ptr<DeviceMemory>;
 
     auto AllocateMemoryBlock(std::uint32_t memTypeIndex, VkDeviceSize size) -> decltype(memoryBlocks_)::iterator;
 
-    void DeallocateMemory(DeviceMemory &&deviceMemory);
+    void DeallocateMemory(DeviceMemory const &deviceMemory);
 
     friend BufferPool;
 };
@@ -91,9 +91,6 @@ private:
 
 class DeviceMemory final {
 public:
-
-    DeviceMemory(DeviceMemory &&) = default;
-    DeviceMemory &operator= (DeviceMemory &&) = default;
 
     VkDeviceMemory handle() const noexcept { return handle_; }
 
@@ -112,8 +109,12 @@ private:
         : handle_{handle}, typeIndex_{typeIndex}, size_{size}, offset_{offset} { }
 
     DeviceMemory() = delete;
+
     DeviceMemory(DeviceMemory const &) = delete;
     DeviceMemory &operator= (DeviceMemory const &) = delete;
+
+    DeviceMemory(DeviceMemory &&) = delete;
+    DeviceMemory &operator= (DeviceMemory &&) = delete;
 
     friend MemoryPool;
 };

@@ -104,6 +104,23 @@ std::shared_ptr<DeviceMemory> textureImageMemory;
 VkImageView textureImageView;
 VkSampler textureSampler;*/
 
+
+struct VulkanImage final {
+    std::shared_ptr<DeviceMemory> memory;
+    VkImage handle;
+
+    std::uint32_t mipLevels;
+};
+
+struct VulkanSampler final {
+    VkSampler handle;
+};
+
+struct VulkanTexture final {
+    VulkanImage image;
+    VulkanSampler sampler;
+};
+
 struct app_t {
     std::vector<Vertex> vertices;
     std::vector<std::uint32_t> indices;
@@ -140,22 +157,6 @@ struct app_t {
     std::shared_ptr<DeviceMemory> textureImageMemory;
     VkImageView textureImageView;
     VkSampler textureSampler;
-};
-
-struct VulkanImage final {
-    std::shared_ptr<DeviceMemory> memory;
-    VkImage handle;
-
-    std::uint32_t mipLevels;
-};
-
-struct VulkanSampler final {
-    VkSampler handle;
-};
-
-struct VulkanTexture final {
-    VulkanImage image;
-    VulkanSampler sampler;
 };
 
 
@@ -224,21 +225,21 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 }
 
 
-void CleanupSwapChain(app_t &app, VulkanDevice *device, VkSwapchainKHR swapChain, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
+void CleanupSwapChain(app_t &app, VulkanDevice const &device, VkSwapchainKHR swapChain, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
 {
     if (app.graphicsCommandPool)
-        vkFreeCommandBuffers(device->handle(), app.graphicsCommandPool, static_cast<std::uint32_t>(std::size(app.commandBuffers)), std::data(app.commandBuffers));
+        vkFreeCommandBuffers(device.handle(), app.graphicsCommandPool, static_cast<std::uint32_t>(std::size(app.commandBuffers)), std::data(app.commandBuffers));
 
     app.commandBuffers.clear();
 
     if (graphicsPipeline)
-        vkDestroyPipeline(device->handle(), graphicsPipeline, nullptr);
+        vkDestroyPipeline(device.handle(), graphicsPipeline, nullptr);
 
     if (pipelineLayout)
-        vkDestroyPipelineLayout(device->handle(), pipelineLayout, nullptr);
+        vkDestroyPipelineLayout(device.handle(), pipelineLayout, nullptr);
 
     if (renderPass)
-        vkDestroyRenderPass(device->handle(), renderPass, nullptr);
+        vkDestroyRenderPass(device.handle(), renderPass, nullptr);
 
     CleanupSwapChain(device, swapChain);
 }
@@ -762,10 +763,6 @@ void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descripto
         app.textureSampler, app.textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     };
 
-    std::cout << &app.textureImageView << '\n';
-    std::cout << &app.textureSampler << '\n';
-    std::cout << &imageInfo << '\n';
-
     std::array<VkWriteDescriptorSet, 2> const writeDescriptorsSet{{
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -788,8 +785,6 @@ void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descripto
             nullptr
         }
     }};
-
-    std::cout << &writeDescriptorsSet << '\n';
 
     vkUpdateDescriptorSets(device, static_cast<std::uint32_t>(std::size(writeDescriptorsSet)), std::data(writeDescriptorsSet), 0, nullptr);
 }
@@ -1067,10 +1062,10 @@ void RecreateSwapChain(app_t &app)
 
     vkDeviceWaitIdle(app.vulkanDevice->handle());
 
-    CleanupSwapChain(app, app.vulkanDevice.get(), swapChain, app.graphicsPipeline, app.pipelineLayout, app.renderPass);
+    CleanupSwapChain(app, *app.vulkanDevice, swapChain, app.graphicsPipeline, app.pipelineLayout, app.renderPass);
 
-    CreateSwapChain(app.vulkanDevice.get(), app.surface, swapChain, WIDTH, HEIGHT, app.presentationQueue, app.graphicsQueue);
-    CreateSwapChainImageAndViews(app.vulkanDevice.get(), swapChainImages, swapChainImageViews);
+    CreateSwapChain(*app.vulkanDevice, app.surface, swapChain, WIDTH, HEIGHT, app.presentationQueue, app.graphicsQueue);
+    CreateSwapChainImageAndViews(*app.vulkanDevice, swapChainImages, swapChainImageViews);
 
     depthImageMemory = std::move(CreateDepthResources(app, app.vulkanDevice.get(), depthImage, depthImageView));
 
@@ -1092,13 +1087,14 @@ void OnWindowResize([[maybe_unused]] GLFWwindow *window, int width, int height)
     RecreateSwapChain(*app);
 }
 
-void DrawFrame(VkDevice device, app_t &app, VkSwapchainKHR swapChain)
+void DrawFrame(VulkanDevice const &vulkanDevice, app_t &app, VkSwapchainKHR swapChain)
 {
     vkQueueWaitIdle(app.presentationQueue.handle());
 
     std::uint32_t imageIndex;
 
-    switch (auto result = vkAcquireNextImageKHR(device, swapChain, std::numeric_limits<std::uint64_t>::max(), app.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex); result) {
+    switch (auto result = vkAcquireNextImageKHR(vulkanDevice.handle(), swapChain,
+            std::numeric_limits<std::uint64_t>::max(),app.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex); result) {
         case VK_ERROR_OUT_OF_DATE_KHR:
             RecreateSwapChain(app);
             return;
@@ -1184,8 +1180,8 @@ void InitVulkan(GLFWwindow *window, app_t &app)
     app.transferQueue = app.vulkanDevice->queue<TransferQueue>();
     app.presentationQueue = app.vulkanDevice->queue<PresentationQueue>();
 
-    CreateSwapChain(app.vulkanDevice.get(), app.surface, swapChain, WIDTH, HEIGHT, app.presentationQueue, app.graphicsQueue);
-    CreateSwapChainImageAndViews(app.vulkanDevice.get(), swapChainImages, swapChainImageViews);
+    CreateSwapChain(*app.vulkanDevice, app.surface, swapChain, WIDTH, HEIGHT, app.presentationQueue, app.graphicsQueue);
+    CreateSwapChainImageAndViews(*app.vulkanDevice, swapChainImages, swapChainImageViews);
 
     CreateDescriptorSetLayout(app.vulkanDevice->handle(), app.descriptorSetLayout);
 
@@ -1229,7 +1225,7 @@ void CleanUp(app_t &app)
     if (app.imageAvailableSemaphore)
         vkDestroySemaphore(app.vulkanDevice->handle(), app.imageAvailableSemaphore, nullptr);
 
-    CleanupSwapChain(app, app.vulkanDevice.get(), swapChain, app.graphicsPipeline, app.pipelineLayout, app.renderPass);
+    CleanupSwapChain(app, *app.vulkanDevice, swapChain, app.graphicsPipeline, app.pipelineLayout, app.renderPass);
 
     vkDestroyDescriptorSetLayout(app.vulkanDevice->handle(), app.descriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(app.vulkanDevice->handle(), app.descriptorPool, nullptr);
@@ -1270,7 +1266,7 @@ void CleanUp(app_t &app)
     app.vulkanInstance.reset(nullptr);
 }
 
-void UpdateUniformBuffer(VkDevice device, app_t &app, std::uint32_t width, std::uint32_t height)
+void UpdateUniformBuffer(VulkanDevice const &device, DeviceMemory const &memory, std::uint32_t width, std::uint32_t height)
 {
     if (width * height < 1) return;
 
@@ -1346,13 +1342,13 @@ void UpdateUniformBuffer(VkDevice device, app_t &app, std::uint32_t width, std::
 #endif
 
     decltype(transforms) *data;
-    if (auto result = vkMapMemory(device, app.uboMemory->handle(), app.uboMemory->offset(), app.uboMemory->size(), 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
+    if (auto result = vkMapMemory(device.handle(), memory.handle(), memory.offset(), memory.size(), 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
         throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
 
     auto const array = make_array(transforms);
     std::uninitialized_copy(std::begin(array), std::end(array), data);
 
-    vkUnmapMemory(device, app.uboMemory->handle());
+    vkUnmapMemory(device.handle(), memory.handle());
 }
 
 /* void CursorCallback(GLFWwindow *window, double x, double y)
@@ -1375,7 +1371,6 @@ try {
     auto window = glfwCreateWindow(WIDTH, HEIGHT, "VulkanIsland", nullptr, nullptr);
 
     app_t app;
-
     glfwSetWindowUserPointer(window, &app);
 
     glfwSetWindowSizeCallback(window, OnWindowResize);
@@ -1387,8 +1382,8 @@ try {
 
     while (!glfwWindowShouldClose(window) && glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS) {
         glfwPollEvents();
-        UpdateUniformBuffer(app.vulkanDevice->handle(), app, WIDTH, HEIGHT);
-        DrawFrame(app.vulkanDevice->handle(), app, swapChain);
+        UpdateUniformBuffer(*app.vulkanDevice.get(), *app.uboMemory, WIDTH, HEIGHT);
+        DrawFrame(*app.vulkanDevice, app, swapChain);
     }
 
     CleanUp(app);

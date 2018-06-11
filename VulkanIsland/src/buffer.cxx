@@ -34,7 +34,7 @@ MemoryPool::~MemoryPool()
     memoryBlocks_.clear();
 }
 
-template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::is_same_v<T, VkImage>>...>
+template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
 [[nodiscard]] auto MemoryPool::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties)
 -> std::shared_ptr<DeviceMemory>
 {
@@ -76,8 +76,7 @@ template<class T, typename std::enable_if_t<std::is_same_v<T, VkBuffer> || std::
     else return AllocateMemory(memoryRequirements2.memoryRequirements, properties);
 }
 
-template<class R, typename std::enable_if_t<
-    std::is_same_v<std::decay_t<R>, VkMemoryRequirements> || std::is_same_v<std::decay_t<R>, VkMemoryRequirements2>>...>
+template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
 [[nodiscard]] auto MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags properties)
 -> std::shared_ptr<DeviceMemory>
 {
@@ -179,21 +178,15 @@ template<class R, typename std::enable_if_t<
 
         std::cout << "Memory pool: ["s << memoryTypeIndex << "]: sub-allocation : "s << memoryRequirements.size / 1024.f << "KB\n"s;
 
-        
-
         return std::shared_ptr<DeviceMemory>{
             new DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryRequirements.size, memoryOffset},
             [this] (DeviceMemory *const ptr_memory)
             {
-                DeallocateMemory(std::move(*ptr_memory));
+                DeallocateMemory(*ptr_memory);
 
                 delete ptr_memory;
             }
         };
-
-        /*return std::shared_ptr<DeviceMemory>{
-            new DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryRequirements.size, memoryOffset}, *deleter_
-        };*/
     }
 
     else throw std::runtime_error("failed to extract available memory block chunk"s);
@@ -225,10 +218,8 @@ auto MemoryPool::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize
                                  std::forward_as_tuple(memoryTypeIndex), std::forward_as_tuple(handle, size, memoryTypeIndex));
 }
 
-void MemoryPool::DeallocateMemory(DeviceMemory &&deviceMemory)
+void MemoryPool::DeallocateMemory(DeviceMemory const &memory)
 {
-    auto memory = std::move(deviceMemory);
-
     auto [it_begin, it_end] = memoryBlocks_.equal_range(memory.typeIndex());
 
     auto it_block = std::find_if(it_begin, it_end, [handle = memory.handle()](auto &&pair)
