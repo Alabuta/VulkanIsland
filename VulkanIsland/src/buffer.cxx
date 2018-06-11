@@ -106,42 +106,50 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
     if (memoryBlocks_.find(memoryTypeIndex) == std::end(memoryBlocks_))
         AllocateMemoryBlock(memoryTypeIndex, kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
 
-    auto [it_begin, it_end] = memoryBlocks_.equal_range(memoryTypeIndex);
-
+    decltype(memoryBlocks_)::iterator it_block;
     decltype(Block::availableChunks)::iterator it_chunk;
 
-    auto it_block = std::find_if(it_begin, it_end, [&it_chunk, &memoryRequirements] (auto &&pair)
-    {
-        auto &&[type, memoryBlock] = pair;
+    auto [it_begin, it_end] = memoryBlocks_.equal_range(memoryTypeIndex);
 
-        if (memoryBlock.availableSize < memoryRequirements.size)
-            return false;
-
-        auto &&availableChunks = memoryBlock.availableChunks;
-
-        if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>) {
-            auto [it_chunk_begin, it_chunk_end] = availableChunks.equal_range(memoryRequirements.size);
-
-            it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [&memoryRequirements] (auto &&chunk)
-            {
-                auto alignedOffset = ((chunk.offset + memoryRequirements.alignment - 1) / memoryRequirements.alignment) * memoryRequirements.alignment;
-
-                return alignedOffset + memoryRequirements.size <= chunk.offset + chunk.size;
-            });
-
-            return it_chunk != it_chunk_end;
-        }
-
-        else {
-            it_chunk = std::begin(availableChunks);
-
-            return availableChunks.size() == 1 && it_chunk->offset == 0;
-        }
-    });
-
-    if (it_block == it_end) {
+    if (it_begin == std::end(memoryBlocks_)) {
         it_block = AllocateMemoryBlock(memoryTypeIndex, kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
         it_chunk = it_block->second.availableChunks.lower_bound(kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
+    }
+
+    else {
+        it_block = std::find_if(it_begin, it_end, [&it_chunk, &memoryRequirements] (auto &&pair)
+        {
+            auto &&[type, memoryBlock] = pair;
+
+            if (memoryBlock.availableSize < memoryRequirements.size)
+                return false;
+
+            auto &&availableChunks = memoryBlock.availableChunks;
+
+            if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>) {
+                auto [it_chunk_begin, it_chunk_end] = availableChunks.equal_range(memoryRequirements.size);
+
+                it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [&memoryRequirements] (auto &&chunk)
+                {
+                    auto alignedOffset = ((chunk.offset + memoryRequirements.alignment - 1) / memoryRequirements.alignment) * memoryRequirements.alignment;
+
+                    return alignedOffset + memoryRequirements.size <= chunk.offset + chunk.size;
+                });
+
+                return it_chunk != it_chunk_end;
+            }
+
+            else {
+                it_chunk = std::begin(availableChunks);
+
+                return availableChunks.size() == 1 && it_chunk->offset == 0;
+            }
+        });
+
+        if (it_block == it_end) {
+            it_block = AllocateMemoryBlock(memoryTypeIndex, kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
+            it_chunk = it_block->second.availableChunks.lower_bound(kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
+        }
     }
 
     auto &&memoryBlock = it_block->second;
@@ -173,7 +181,7 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
                 std::cerr << "Memory pool: wasted memory ratio: "s << wastedMemoryRatio << "%\n"s;
 
             availableChunks.emplace(memoryRequirements.size, memoryBlock.availableSize - memoryRequirements.size);
-            memoryBlock.availableSize = 0;
+            memoryBlock.availableSize -= memoryRequirements.size;
         }
 
         std::cout << "Memory pool: ["s << memoryTypeIndex << "]: sub-allocation : "s << memoryRequirements.size / 1024.f << "KB\n"s;
@@ -211,8 +219,8 @@ auto MemoryPool::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize
 
     allocatedSize_ += size;
 
-    std::cout << "Memory pool: ["s << memoryTypeIndex << "]: page allocation: "s << size / 1024.f << " KB/"s;
-    std::cout << allocatedSize_ / std::pow(2.f, 20.f) << "MB\n"s;
+    std::cout << "Memory pool: ["s << memoryTypeIndex << "]: #"s << memoryBlocks_.size() + 1 << " page allocation: "s;
+    std::cout << size / 1024.f << " KB/"s << allocatedSize_ / std::pow(2.f, 20.f) << "MB\n"s;
 
     return memoryBlocks_.emplace(std::piecewise_construct, 
                                  std::forward_as_tuple(memoryTypeIndex), std::forward_as_tuple(handle, size, memoryTypeIndex));
@@ -221,6 +229,11 @@ auto MemoryPool::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize
 void MemoryPool::DeallocateMemory(DeviceMemory const &memory)
 {
     auto [it_begin, it_end] = memoryBlocks_.equal_range(memory.typeIndex());
+
+    if (it_begin == std::end(memoryBlocks_)) {
+        std::cerr << "Memory pool: dead chunk encountered.\n"s;
+        return;
+    }
 
     auto it_block = std::find_if(it_begin, it_end, [handle = memory.handle()](auto &&pair)
     {
