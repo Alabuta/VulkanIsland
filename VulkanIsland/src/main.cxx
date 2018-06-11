@@ -71,55 +71,8 @@ struct TRANSFORMS {
 auto WIDTH = 800u;
 auto HEIGHT = 600u;
 
-/*std::unique_ptr<VulkanInstance> vulkanInstance;
-std::unique_ptr<VulkanDevice> vulkanDevice;
-
-VkSurfaceKHR surface;
-
-GraphicsQueue graphicsQueue;
-TransferQueue transferQueue;
-PresentationQueue presentationQueue;
-
-VkDescriptorSetLayout descriptorSetLayout;
-VkPipelineLayout pipelineLayout;
-VkRenderPass renderPass;
-VkPipeline graphicsPipeline;
-
-VkCommandPool graphicsCommandPool, transferCommandPool;
-
-VkDescriptorPool descriptorPool;
-VkDescriptorSet descriptorSet;
-
-std::vector<VkFramebuffer> swapChainFramebuffers;
-std::vector<VkCommandBuffer> commandBuffers;
-
-VkSemaphore imageAvailableSemaphore, renderFinishedSemaphore;
-
-VkBuffer vertexBuffer, indexBuffer, uboBuffer;
-std::shared_ptr<DeviceMemory> vertexMemory, indexMemory, uboMemory;
-
-std::uint32_t mipLevels;
-VkImage textureImage;
-std::shared_ptr<DeviceMemory> textureImageMemory;
-VkImageView textureImageView;
-VkSampler textureSampler;*/
 
 
-struct VulkanImage final {
-    std::shared_ptr<DeviceMemory> memory;
-    VkImage handle;
-
-    std::uint32_t mipLevels;
-};
-
-struct VulkanSampler final {
-    VkSampler handle;
-};
-
-struct VulkanTexture final {
-    VulkanImage image;
-    VulkanSampler sampler;
-};
 
 struct app_t {
     std::vector<Vertex> vertices;

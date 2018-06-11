@@ -76,10 +76,10 @@ private:
     std::multimap<std::uint32_t, Block> memoryBlocks_;
 
     template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
-    [[nodiscard]] auto AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties) -> std::shared_ptr<DeviceMemory>;
+    [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties);
 
     template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
-    [[nodiscard]] auto CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties) -> std::shared_ptr<DeviceMemory>;
+    [[nodiscard]] std::shared_ptr<DeviceMemory> CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties);
 
     auto AllocateMemoryBlock(std::uint32_t memTypeIndex, VkDeviceSize size) -> decltype(memoryBlocks_)::iterator;
 

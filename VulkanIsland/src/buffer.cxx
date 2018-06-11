@@ -3,8 +3,8 @@
 
 namespace {
 
-[[nodiscard]] auto FindMemoryType(VulkanDevice const &vulkanDevice, std::uint32_t filter, VkMemoryPropertyFlags propertyFlags)
--> std::optional<std::uint32_t>
+[[nodiscard]] std::optional<std::uint32_t>
+FindMemoryType(VulkanDevice const &vulkanDevice, std::uint32_t filter, VkMemoryPropertyFlags propertyFlags)
 {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(vulkanDevice.physical_handle(), &memoryProperties);
@@ -35,8 +35,8 @@ MemoryPool::~MemoryPool()
 }
 
 template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
-[[nodiscard]] auto MemoryPool::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties)
--> std::shared_ptr<DeviceMemory>
+[[nodiscard]] std::shared_ptr<DeviceMemory>
+MemoryPool::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties)
 {
     VkMemoryDedicatedRequirements memoryDedicatedRequirements{
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
@@ -77,8 +77,8 @@ template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>..
 }
 
 template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
-[[nodiscard]] auto MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags properties)
--> std::shared_ptr<DeviceMemory>
+[[nodiscard]] std::shared_ptr<DeviceMemory>
+MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags properties)
 {
     std::uint32_t memoryTypeIndex{0};
 
