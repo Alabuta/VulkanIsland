@@ -36,6 +36,14 @@ struct are_same {
 template<class T, class... Ts>
 inline auto constexpr are_same_v = are_same<T, Ts...>::value_type;
 
+template<class T, class... Ts>
+struct is_one_of {
+    static auto constexpr value = std::disjunction_v<std::is_same<T, Ts>...>;
+};
+
+template<class T, class... Ts>
+auto constexpr is_one_of_v = is_one_of<T, Ts...>::value;
+
 //template<class T, typename std::enable_if_t<std::is_integral_v<std::decay_t<T>>>...>
 constexpr std::uint16_t operator"" _ui16(unsigned long long value)
 {
