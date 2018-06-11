@@ -9,8 +9,7 @@ std::vector<VkImage> swapChainImages;
 std::vector<VkImageView> swapChainImageViews;
 std::vector<VkFramebuffer> swapChainFramebuffers;
 
-VkImage depthImage;
-std::shared_ptr<DeviceMemory> depthImageMemory;
+VulkanImage depthImage;
 VkImageView depthImageView;
 VkDeviceSize depthImageOffset;
 
@@ -212,10 +211,9 @@ void CleanupSwapChain(VulkanDevice const &device, VkSwapchainKHR swapChain)
     if (depthImageView)
         vkDestroyImageView(device.handle(), depthImageView, nullptr);
 
-    depthImageMemory.reset();
+    depthImage.memory.reset();
 
-    if (depthImage)
-        vkDestroyImage(device.handle(), depthImage, nullptr);
+    vkDestroyImage(device.handle(), depthImage.handle, nullptr);
 
     swapChainImageViews.clear();
     swapChainImages.clear();

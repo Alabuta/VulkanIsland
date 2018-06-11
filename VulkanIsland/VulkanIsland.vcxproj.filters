@@ -79,6 +79,9 @@
     <ClInclude Include="src\command_buffer.h">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\image.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">

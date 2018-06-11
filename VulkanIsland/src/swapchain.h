@@ -3,6 +3,7 @@
 #include "main.h"
 #include "device.h"
 #include "buffer.h"
+#include "image.h"
 
 
 extern VkSwapchainKHR swapChain;
@@ -14,8 +15,7 @@ extern std::vector<VkImage> swapChainImages;
 extern std::vector<VkImageView> swapChainImageViews;
 extern std::vector<VkFramebuffer> swapChainFramebuffers;
 
-extern VkImage depthImage;
-extern std::shared_ptr<DeviceMemory> depthImageMemory;
+extern VulkanImage depthImage;
 extern VkImageView depthImageView;
 extern VkDeviceSize depthImageOffset;
 
