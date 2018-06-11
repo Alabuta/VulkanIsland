@@ -42,6 +42,8 @@ private:
         struct Chunk final {
             VkDeviceSize offset{0}, size{0};
 
+            Chunk(VkDeviceSize offset, VkDeviceSize size) noexcept : offset{offset}, size{size} { }
+
             struct comparator final {
                 using is_transparent = void;
 
@@ -63,8 +65,6 @@ private:
                     return chunk.size < size;
                 }
             };
-
-            Chunk(VkDeviceSize offset, VkDeviceSize size) noexcept : offset{offset}, size{size} { }
         };
 
         std::multiset<Chunk, Chunk::comparator> availableChunks;
@@ -75,7 +75,7 @@ private:
 
     std::multimap<std::uint32_t, Block> memoryBlocks_;
 
-    template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>, int> = 0>
+    template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
     [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties);
 
     template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
@@ -106,7 +106,7 @@ private:
     std::uint32_t typeIndex_;
 
     DeviceMemory(VkDeviceMemory handle, std::uint32_t typeIndex, VkDeviceSize size, VkDeviceSize offset) noexcept
-        : handle_{handle}, typeIndex_{typeIndex}, size_{size}, offset_{offset} { }
+        : handle_{handle}, size_{size}, offset_{offset}, typeIndex_{typeIndex} { }
 
     DeviceMemory() = delete;
 

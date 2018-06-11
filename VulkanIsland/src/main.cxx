@@ -825,7 +825,9 @@ void CreateCommandBuffers(app_t &app, VulkanDevice *vulkanDevice, VkRenderPass r
 
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, std::data(vertexBuffers), std::data(offsets));
 
-        auto constexpr index_type = std::is_same_v<decltype(app.indices)::value_type, std::uint32_t> ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
+        auto constexpr index_type = std::is_same_v<typename decltype(app.indices)::value_type, std::uint32_t> ?
+                                    VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
+
         vkCmdBindIndexBuffer(commandBuffer, app.indexBuffer, 0, index_type);
 
         vkCmdDrawIndexed(commandBuffer, static_cast<std::uint32_t>(std::size(app.indices)), 1, 0, 0, 0);
@@ -1095,7 +1097,7 @@ void OnWindowResize([[maybe_unused]] GLFWwindow *window, int width, int height)
     WIDTH = width;
     HEIGHT = height;
 
-    auto app = reinterpret_cast<app_t *const>(glfwGetWindowUserPointer(window));
+    auto app = reinterpret_cast<app_t *>(glfwGetWindowUserPointer(window));
 
     if (width == 803)
         std::cout << width << '\n';
