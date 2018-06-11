@@ -4,7 +4,7 @@
 #include "device.h"
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-[[nodiscard]] VkCommandBuffer BeginSingleTimeCommand(VulkanDevice *vulkanDevice, [[maybe_unused]] Q &queue, VkCommandPool commandPool)
+[[nodiscard]] VkCommandBuffer BeginSingleTimeCommand(VulkanDevice const &device, [[maybe_unused]] Q &queue, VkCommandPool commandPool)
 {
     VkCommandBuffer commandBuffer;
 
@@ -16,7 +16,7 @@ template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, st
         1
     };
 
-    if (auto result = vkAllocateCommandBuffers(vulkanDevice->handle(), &allocateInfo, &commandBuffer); result != VK_SUCCESS)
+    if (auto result = vkAllocateCommandBuffers(device.handle(), &allocateInfo, &commandBuffer); result != VK_SUCCESS)
         throw std::runtime_error("failed to create allocate command buffers: "s + std::to_string(result));
 
     VkCommandBufferBeginInfo const beginInfo{
@@ -33,7 +33,7 @@ template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, st
 }
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-void EndSingleTimeCommand(VulkanDevice *vulkanDevice, Q &queue, VkCommandBuffer commandBuffer, VkCommandPool commandPool)
+void EndSingleTimeCommand(VulkanDevice const &device, Q &queue, VkCommandBuffer commandBuffer, VkCommandPool commandPool)
 {
     if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS)
         throw std::runtime_error("failed to end command buffer: "s + std::to_string(result));
@@ -52,5 +52,5 @@ void EndSingleTimeCommand(VulkanDevice *vulkanDevice, Q &queue, VkCommandBuffer 
 
     vkQueueWaitIdle(queue.handle());
 
-    vkFreeCommandBuffers(vulkanDevice->handle(), commandPool, 1, &commandBuffer);
+    vkFreeCommandBuffers(device.handle(), commandPool, 1, &commandBuffer);
 }

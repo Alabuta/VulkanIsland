@@ -516,9 +516,9 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
 
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-void TransitionImageLayout(VulkanDevice *vulkanDevice, Q &queue, VkImage image, VkFormat format, VkImageLayout srcLayout, VkImageLayout dstLayout, std::uint32_t mipLevels, VkCommandPool commandPool)
+void TransitionImageLayout(VulkanDevice const &device, Q &queue, VkImage image, VkFormat format, VkImageLayout srcLayout, VkImageLayout dstLayout, std::uint32_t mipLevels, VkCommandPool commandPool)
 {
-    auto commandBuffer = BeginSingleTimeCommand(vulkanDevice, queue, commandPool);
+    auto commandBuffer = BeginSingleTimeCommand(device, queue, commandPool);
 
     VkImageMemoryBarrier barrier{
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -567,12 +567,12 @@ void TransitionImageLayout(VulkanDevice *vulkanDevice, Q &queue, VkImage image, 
 
     vkCmdPipelineBarrier(commandBuffer, srcStageFlags, dstStageFlags, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-    EndSingleTimeCommand(vulkanDevice, queue, commandBuffer, commandPool);
+    EndSingleTimeCommand(device, queue, commandBuffer, commandPool);
 }
 
 
 
-auto CreateVertexBuffer(app_t &app, VulkanDevice *vulkanDevice, VkBuffer &vertexBuffer)
+auto CreateVertexBuffer(app_t &app, VulkanDevice &device, VkBuffer &vertexBuffer)
 -> std::shared_ptr<DeviceMemory>
 {
     VkBuffer stagingBuffer;
@@ -584,17 +584,17 @@ auto CreateVertexBuffer(app_t &app, VulkanDevice *vulkanDevice, VkBuffer &vertex
 
         auto const bufferSize = static_cast<VkDeviceSize>(sizeof(decltype(app.vertices)::value_type) * std::size(app.vertices));
 
-        auto memory = BufferPool::CreateBuffer(vulkanDevice, stagingBuffer, bufferSize, usageFlags, propertyFlags);
+        auto memory = BufferPool::CreateBuffer(device, stagingBuffer, bufferSize, usageFlags, propertyFlags);
 
         if (memory) {
             decltype(app.vertices)::value_type *data;
 
-            if (auto result = vkMapMemory(vulkanDevice->handle(), memory->handle(), memory->offset(), memory->size(), 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
+            if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
                 throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
 
             std::uninitialized_copy(std::begin(app.vertices), std::end(app.vertices), data);
 
-            vkUnmapMemory(vulkanDevice->handle(), memory->handle());
+            vkUnmapMemory(device.handle(), memory->handle());
         }
 
         return memory;
@@ -604,18 +604,18 @@ auto CreateVertexBuffer(app_t &app, VulkanDevice *vulkanDevice, VkBuffer &vertex
         auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-        auto memory = BufferPool::CreateBuffer(vulkanDevice, vertexBuffer, stagingMemory->size(), usageFlags, propertyFlags);
+        auto memory = BufferPool::CreateBuffer(device, vertexBuffer, stagingMemory->size(), usageFlags, propertyFlags);
 
         if (memory) {
             auto copyRegions = make_array(
                 VkBufferCopy{ /*stagingMemory->offset(), memory->offset()*/0, 0, stagingMemory->size()}
             );
 
-            CopyBufferToBuffer(vulkanDevice, app.transferQueue, stagingBuffer, vertexBuffer, std::move(copyRegions), app.transferCommandPool);
+            CopyBufferToBuffer(device, app.transferQueue, stagingBuffer, vertexBuffer, std::move(copyRegions), app.transferCommandPool);
         }
 
         //vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
-        vkDestroyBuffer(vulkanDevice->handle(), stagingBuffer, nullptr);
+        vkDestroyBuffer(device.handle(), stagingBuffer, nullptr);
 
         return memory;
     }
@@ -623,7 +623,7 @@ auto CreateVertexBuffer(app_t &app, VulkanDevice *vulkanDevice, VkBuffer &vertex
     return { };
 }
 
-auto CreateIndexBuffer(app_t &app, VulkanDevice *vulkanDevice, VkBuffer &indexBuffer)
+auto CreateIndexBuffer(app_t &app, VulkanDevice &device, VkBuffer &indexBuffer)
 -> std::shared_ptr<DeviceMemory>
 {
     VkBuffer stagingBuffer;
@@ -635,17 +635,17 @@ auto CreateIndexBuffer(app_t &app, VulkanDevice *vulkanDevice, VkBuffer &indexBu
 
         auto const bufferSize = static_cast<VkDeviceSize>(sizeof(decltype(app.indices)::value_type) * std::size(app.indices));
 
-        auto memory = BufferPool::CreateBuffer(vulkanDevice, stagingBuffer, bufferSize, usageFlags, propertyFlags);
+        auto memory = BufferPool::CreateBuffer(device, stagingBuffer, bufferSize, usageFlags, propertyFlags);
 
         if (memory) {
             decltype(app.indices)::value_type *data;
 
-            if (auto result = vkMapMemory(vulkanDevice->handle(), memory->handle(), memory->offset(), memory->size(), 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
+            if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
                 throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
 
             std::uninitialized_copy(std::begin(app.indices), std::end(app.indices), data);
 
-            vkUnmapMemory(vulkanDevice->handle(), memory->handle());
+            vkUnmapMemory(device.handle(), memory->handle());
         }
 
         return memory;
@@ -655,18 +655,18 @@ auto CreateIndexBuffer(app_t &app, VulkanDevice *vulkanDevice, VkBuffer &indexBu
         auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-        auto memory = BufferPool::CreateBuffer(vulkanDevice, indexBuffer, stagingMemory->size(), usageFlags, propertyFlags);
+        auto memory = BufferPool::CreateBuffer(device, indexBuffer, stagingMemory->size(), usageFlags, propertyFlags);
 
         if (memory) {
             auto copyRegions = make_array(
                 VkBufferCopy{ /*stagingMemory->offset(), memory->offset()*/0, 0, stagingMemory->size()}
             );
 
-            CopyBufferToBuffer(vulkanDevice, app.transferQueue, stagingBuffer, indexBuffer, std::move(copyRegions), app.transferCommandPool);
+            CopyBufferToBuffer(device, app.transferQueue, stagingBuffer, indexBuffer, std::move(copyRegions), app.transferCommandPool);
         }
 
         //vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
-        vkDestroyBuffer(vulkanDevice->handle(), stagingBuffer, nullptr);
+        vkDestroyBuffer(device.handle(), stagingBuffer, nullptr);
 
         return memory;
     }
@@ -830,9 +830,9 @@ void CreateSemaphores(app_t &app, VkDevice device)
 
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-void GenerateMipMaps(VulkanDevice *vulkanDevice, Q &queue, VkImage image, std::int32_t width, std::int32_t height, std::uint32_t mipLevels, VkCommandPool commandPool)
+void GenerateMipMaps(VulkanDevice const &device, Q &queue, VkImage image, std::int32_t width, std::int32_t height, std::uint32_t mipLevels, VkCommandPool commandPool)
 {
-    auto commandBuffer = BeginSingleTimeCommand(vulkanDevice, queue, commandPool);
+    auto commandBuffer = BeginSingleTimeCommand(device, queue, commandPool);
 
     VkImageMemoryBarrier barrier{
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -881,7 +881,7 @@ void GenerateMipMaps(VulkanDevice *vulkanDevice, Q &queue, VkImage image, std::i
 
     vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-    EndSingleTimeCommand(vulkanDevice, queue, commandBuffer, commandPool);
+    EndSingleTimeCommand(device, queue, commandBuffer, commandPool);
 }
 
 std::optional<VulkanImage> CreateImage(app_t &app, VulkanDevice *const vulkanDevice)
@@ -906,17 +906,17 @@ std::optional<VulkanImage> CreateImage(app_t &app, VulkanDevice *const vulkanDev
 
         auto const bufferSize = static_cast<VkDeviceSize>(std::size(texels) * sizeof(texel_t));
 
-        auto memory = BufferPool::CreateBuffer(vulkanDevice, stagingBuffer, bufferSize, usageFlags, propertyFlags);
+        auto memory = BufferPool::CreateBuffer(device, stagingBuffer, bufferSize, usageFlags, propertyFlags);
 
         if (memory) {
             texel_t *data;
 
-            if (auto result = vkMapMemory(vulkanDevice->handle(), memory->handle(), memory->offset(), memory->size(), 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
+            if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
                 throw std::runtime_error("failed to map image buffer memory: "s + std::to_string(result));
 
             std::uninitialized_copy(std::begin(texels), std::end(texels), data);
 
-            vkUnmapMemory(vulkanDevice->handle(), memory->handle());
+            vkUnmapMemory(device.handle(), memory->handle());
         }
 
         return memory;
@@ -938,23 +938,23 @@ std::optional<VulkanImage> CreateImage(app_t &app, VulkanDevice *const vulkanDev
 
         VkImage handle;
 
-        auto memory = BufferPool::CreateImage(vulkanDevice, handle, width, height, mipLevels, format, VK_IMAGE_TILING_OPTIMAL, usageFlags, propertyFlags);
+        auto memory = BufferPool::CreateImage(device, handle, width, height, mipLevels, format, VK_IMAGE_TILING_OPTIMAL, usageFlags, propertyFlags);
 
         if (memory) {
-            TransitionImageLayout(vulkanDevice, app.transferQueue, handle, format,
-                                  VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, app.transferCommandPool);
+            TransitionImageLayout(device, app.transferQueue, handle, format, VK_IMAGE_LAYOUT_UNDEFINED,
+                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, app.transferCommandPool);
 
-            CopyBufferToImage(vulkanDevice, app.transferQueue, stagingBuffer, handle, width, height, app.transferCommandPool);
+            CopyBufferToImage(device, app.transferQueue, stagingBuffer, handle, width, height, app.transferCommandPool);
 
             //TransitionImageLayout(device, transferQueue, image.handle, VK_FORMAT_B8G8R8A8_UNORM,
             //                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, image.mipLevels);
 
-            GenerateMipMaps(vulkanDevice, app.transferQueue, handle, width, width, mipLevels, app.transferCommandPool);
+            GenerateMipMaps(device, app.transferQueue, handle, width, width, mipLevels, app.transferCommandPool);
 
             image.emplace(handle, memory, mipLevels, width, height);
         }
 
-        vkDestroyBuffer(vulkanDevice->handle(), stagingBuffer, nullptr);
+        vkDestroyBuffer(device.handle(), stagingBuffer, nullptr);
     }
 
     return image;
@@ -990,28 +990,33 @@ void CreateTextureSampler(VkDevice device, VkSampler &sampler, std::uint32_t mip
 
 std::optional<VulkanImage> CreateDepthResources(app_t &app, VulkanDevice *vulkanDevice, VkImageView &imageView)
 {
-    auto const format = FindDepthImageFormat(vulkanDevice->physical_handle());
+    auto const format = FindDepthImageFormat(vulkanDevice.physical_handle());
+
+    auto const width = static_cast<std::uint32_t>(swapChainExtent.width);
+    auto const height = static_cast<std::uint32_t>(swapChainExtent.height);
+
+    auto constexpr mipLevels = 1u;
 
     auto constexpr usageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-    std::optional<VulkanImage> image;
+    std::optional<VulkanTexture> texture;
 
     VkImage handle;
 
-    auto memory = BufferPool::CreateImage(vulkanDevice, handle, swapChainExtent.width, swapChainExtent.height, 1, format,
+    auto memory = BufferPool::CreateImage(vulkanDevice, handle, width, height, mipLevels, format,
                                           VK_IMAGE_TILING_OPTIMAL, usageFlags, propertyFlags);
 
     if (memory) {
-        imageView = CreateImageView(vulkanDevice->handle(), handle, format, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
+        VulkanImage image{handle, memory, mipLevels, static_cast<std::uint16_t>(width), static_cast<std::uint16_t>(height)};
 
         TransitionImageLayout(vulkanDevice, app.transferQueue, handle, format,
-                              VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, 1, app.transferCommandPool);
+                              VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, mipLevels, app.transferCommandPool);
 
-        image.emplace(handle, memory, 1, swapChainExtent.width, swapChainExtent.height);
+        texture.emplace(image, view);
     }
 
-    return image;
+    return texture;
 }
 
 
@@ -1026,10 +1031,10 @@ void RecreateSwapChain(app_t &app)
     CreateSwapChain(*app.vulkanDevice, app.surface, swapChain, WIDTH, HEIGHT, app.presentationQueue, app.graphicsQueue);
     CreateSwapChainImageAndViews(*app.vulkanDevice, swapChainImages, swapChainImageViews);
 
-    if (auto result = CreateDepthResources(app, app.vulkanDevice.get(), depthImageView); !result)
-        throw std::runtime_error("failed to create depth image"s);
+    if (auto result = CreateDepthAttachement(app, *app.vulkanDevice); !result)
+        throw std::runtime_error("failed to create depth texture"s);
 
-    else depthImage = std::move(result.value());
+    else depthTexture = std::move(result.value());
 
     CreateRenderPass(app, app.vulkanDevice->physical_handle(), app.vulkanDevice->handle());
     CreateGraphicsPipeline(app, app.vulkanDevice->handle());
@@ -1153,14 +1158,14 @@ void InitVulkan(GLFWwindow *window, app_t &app)
     CreateCommandPool(app.vulkanDevice->handle(), app.transferQueue, app.transferCommandPool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
     CreateCommandPool(app.vulkanDevice->handle(), app.graphicsQueue, app.graphicsCommandPool, 0);
 
-    if (auto result = CreateDepthResources(app, app.vulkanDevice.get(), depthImageView); !result)
-        throw std::runtime_error("failed to create depth image"s);
+    if (auto result = CreateDepthAttachement(app, *app.vulkanDevice); !result)
+        throw std::runtime_error("failed to create depth texture"s);
 
-    else depthImage = std::move(result.value());
+    else depthTexture = std::move(result.value());
 
     CreateFramebuffers(app.vulkanDevice.get(), app.renderPass, swapChainImageViews, swapChainFramebuffers);
 
-    if (auto result = CreateImage(app, app.vulkanDevice.get()); !result)
+    if (auto result = CreateImage(app, *app.vulkanDevice); !result)
         throw std::runtime_error("failed to create texture image"s);
 
     else app.textureImage = std::move(result.value());
@@ -1171,10 +1176,10 @@ void InitVulkan(GLFWwindow *window, app_t &app)
     if (auto result = LoadModel("chalet.obj"sv, app.vertices, app.indices); !result)
         throw std::runtime_error("failed to load mesh"s);
 
-    app.vertexMemory = std::move(CreateVertexBuffer(app, app.vulkanDevice.get(), app.vertexBuffer));
-    app.indexMemory = std::move(CreateIndexBuffer(app, app.vulkanDevice.get(), app.indexBuffer));
+    app.vertexMemory = std::move(CreateVertexBuffer(app, *app.vulkanDevice, app.vertexBuffer));
+    app.indexMemory = std::move(CreateIndexBuffer(app, *app.vulkanDevice, app.indexBuffer));
 
-    app.uboMemory = std::move(BufferPool::CreateUniformBuffer(app.vulkanDevice.get(), app.uboBuffer, sizeof(TRANSFORMS)));
+    app.uboMemory = std::move(BufferPool::CreateUniformBuffer(*app.vulkanDevice, app.uboBuffer, sizeof(TRANSFORMS)));
 
     CreateDescriptorPool(app.vulkanDevice->handle(), app.descriptorPool);
     CreateDescriptorSet(app, app.vulkanDevice->handle(), app.descriptorSet);

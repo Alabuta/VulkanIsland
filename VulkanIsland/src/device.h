@@ -28,7 +28,8 @@ public:
     template<class Q, std::size_t I = 0, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
     Q const &queue() const noexcept;
 
-    MemoryPool *memoryPool() noexcept { return memoryPool_.get(); }
+    MemoryPool &memoryPool() noexcept { return *memoryPool_; }
+    MemoryPool const &memoryPool() const noexcept { return *memoryPool_; }
 
 #if NOT_YET_IMPLEMENTED
     template<VkCommandBufferLevel L>

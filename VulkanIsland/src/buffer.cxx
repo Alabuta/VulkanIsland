@@ -76,7 +76,7 @@ MemoryPool::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags propert
     else return AllocateMemory(memoryRequirements2.memoryRequirements, properties);
 }
 
-template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
+template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>, int>>
 [[nodiscard]] std::shared_ptr<DeviceMemory>
 MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags properties)
 {
@@ -276,7 +276,7 @@ void MemoryPool::DeallocateMemory(DeviceMemory const &memory)
     }
 }
 
-[[nodiscard]] auto BufferPool::CreateBuffer(VulkanDevice *vulkanDevice, VkBuffer &buffer,
+[[nodiscard]] auto BufferPool::CreateBuffer(VulkanDevice &device, VkBuffer &buffer,
                                             VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
     -> std::shared_ptr<DeviceMemory>
 {
@@ -289,21 +289,21 @@ void MemoryPool::DeallocateMemory(DeviceMemory const &memory)
         0, nullptr
     };
 
-    if (auto result = vkCreateBuffer(vulkanDevice->handle(), &bufferCreateInfo, nullptr, &buffer); result != VK_SUCCESS)
+    if (auto result = vkCreateBuffer(device.handle(), &bufferCreateInfo, nullptr, &buffer); result != VK_SUCCESS)
         throw std::runtime_error("failed to create buffer: "s + std::to_string(result));
 
-    if (auto memory = vulkanDevice->memoryPool()->AllocateMemory(buffer, properties); !memory)
+    if (auto memory = device.memoryPool().AllocateMemory(buffer, properties); !memory)
         throw std::runtime_error("failed to allocate buffer memory"s);
 
     else {
-        if (auto result = vkBindBufferMemory(vulkanDevice->handle(), buffer, memory->handle(), memory->offset()); result != VK_SUCCESS)
+        if (auto result = vkBindBufferMemory(device.handle(), buffer, memory->handle(), memory->offset()); result != VK_SUCCESS)
             throw std::runtime_error("failed to bind buffer memory: "s + std::to_string(result));
 
         return std::move(memory);
     }
 }
 
-[[nodiscard]] auto BufferPool::CreateImage(VulkanDevice *vulkanDevice, VkImage &image, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
+[[nodiscard]] auto BufferPool::CreateImage(VulkanDevice &vulkanDevice, VkImage &image, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
                                            VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
     -> std::shared_ptr<DeviceMemory>
 {
@@ -323,11 +323,11 @@ void MemoryPool::DeallocateMemory(DeviceMemory const &memory)
         VK_IMAGE_LAYOUT_UNDEFINED
     };
 
-    if (auto result = vkCreateImage(vulkanDevice->handle(), &createInfo, nullptr, &image); result != VK_SUCCESS)
+    if (auto result = vkCreateImage(vulkanDevice.handle(), &createInfo, nullptr, &image); result != VK_SUCCESS)
         throw std::runtime_error("failed to create image: "s + std::to_string(result));
 
-    if (auto deviceMemory = vulkanDevice->memoryPool()->AllocateMemory(image, properties); deviceMemory) {
-        if (auto result = vkBindImageMemory(vulkanDevice->handle(), image, deviceMemory->handle(), deviceMemory->offset()); result != VK_SUCCESS)
+    if (auto deviceMemory = vulkanDevice.memoryPool().AllocateMemory(image, properties); deviceMemory) {
+        if (auto result = vkBindImageMemory(vulkanDevice.handle(), image, deviceMemory->handle(), deviceMemory->offset()); result != VK_SUCCESS)
             throw std::runtime_error("failed to bind image buffer memory: "s + std::to_string(result));
 
         return std::move(deviceMemory);
@@ -336,12 +336,14 @@ void MemoryPool::DeallocateMemory(DeviceMemory const &memory)
     else throw std::runtime_error("failed to allocate image buffer memory"s);
 }
 
-[[nodiscard]] auto BufferPool::CreateUniformBuffer(VulkanDevice *vulkanDevice, VkBuffer &uboBuffer, std::size_t size)
+
+
+[[nodiscard]] auto BufferPool::CreateUniformBuffer(VulkanDevice &device, VkBuffer &uboBuffer, std::size_t size)
     -> std::shared_ptr<DeviceMemory>
 {
     auto constexpr usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-    return CreateBuffer(vulkanDevice, uboBuffer, size, usageFlags, propertyFlags);
+    return CreateBuffer(device, uboBuffer, size, usageFlags, propertyFlags);
 }
 
