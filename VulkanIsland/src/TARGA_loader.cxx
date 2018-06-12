@@ -32,6 +32,30 @@ std::optional<texel_buffer_t> instantiate_texel_buffer(std::uint8_t pixelDepth)
     }
 }
 
+constexpr auto GetPixelLayout(std::uint8_t pixelDepth)
+{
+    switch (pixelDepth) {
+        case 8:
+            return ePIXEL_LAYOUT::nRED;
+            break;
+
+        case 16:
+            return ePIXEL_LAYOUT::nRG;
+            break;
+
+        case 24:
+            return ePIXEL_LAYOUT::nBGR;
+            break;
+
+        case 32:
+            return ePIXEL_LAYOUT::nBGRA;
+            break;
+
+        default:
+            return ePIXEL_LAYOUT::nINVALID;
+    }
+}
+
 void LoadUncompressedTrueColorImage(Image &image, TARGA &targa, std::ifstream &file)
 {
     texel_buffer_t buffer;
@@ -41,26 +65,7 @@ void LoadUncompressedTrueColorImage(Image &image, TARGA &targa, std::ifstream &f
 
     else return;
 
-    switch (targa.pixelDepth) {
-        case 8:
-            image.pixelLayout = ePIXEL_LAYOUT::nRED;
-            break;
-
-        case 16:
-            image.pixelLayout = ePIXEL_LAYOUT::nRG;
-            break;
-
-        case 24:
-            image.pixelLayout = ePIXEL_LAYOUT::nBGR;
-            break;
-
-        case 32:
-            image.pixelLayout = ePIXEL_LAYOUT::nBGRA;
-            break;
-
-        default:
-            image.pixelLayout = ePIXEL_LAYOUT::nINVALID;
-    }
+    image.pixelLayout = GetPixelLayout(targa.pixelDepth);
 
     std::visit([&image, &file] (auto &&buffer)
     {
@@ -102,26 +107,7 @@ void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream 
 
     else return;
 
-    switch (targa.colorMapDepth) {
-        case 8:
-            image.pixelLayout = ePIXEL_LAYOUT::nRED;
-            break;
-
-        case 16:
-            image.pixelLayout = ePIXEL_LAYOUT::nRG;
-            break;
-
-        case 24:
-            image.pixelLayout = ePIXEL_LAYOUT::nBGR;
-            break;
-
-        case 32:
-            image.pixelLayout = ePIXEL_LAYOUT::nBGRA;
-            break;
-
-        default:
-            image.pixelLayout = ePIXEL_LAYOUT::nINVALID;
-    }
+    image.pixelLayout = GetPixelLayout(targa.colorMapDepth);
 
     auto colorMapStart = static_cast<std::size_t>((targa.header.colorMapSpec.at(1) << 8) + targa.header.colorMapSpec.at(0));
     auto colorMapLength = static_cast<std::size_t>((targa.header.colorMapSpec.at(3) << 8) + targa.header.colorMapSpec.at(2));
@@ -228,6 +214,8 @@ void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream 
         case 0x09:
         // Run-length encoded monochrome image
         case 0x0B:
+        // Run-length encoded true-color image
+        case 0x0A:
             return { };
 
         // Uncompressed color-mapped image
@@ -238,11 +226,6 @@ void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream 
         // Uncompressed true-color image
         case 0x02:
             std::cout << measure<>::execution(LoadUncompressedTrueColorImage, image, targa, file) << '\n';
-            break;
-
-        // Run-length encoded true-color image
-        case 0x0A:
-            //LoadCompressedTARGA(image, file);
             break;
 
         default:

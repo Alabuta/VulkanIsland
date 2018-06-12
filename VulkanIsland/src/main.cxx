@@ -638,7 +638,6 @@ auto CreateVertexBuffer(app_t &app, VulkanDevice &device, VkBuffer &vertexBuffer
             CopyBufferToBuffer(device, app.transferQueue, stagingBuffer, vertexBuffer, std::move(copyRegions), app.transferCommandPool);
         }
 
-        //vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
         vkDestroyBuffer(device.handle(), stagingBuffer, nullptr);
 
         return memory;
@@ -689,7 +688,6 @@ auto CreateIndexBuffer(app_t &app, VulkanDevice &device, VkBuffer &indexBuffer)
             CopyBufferToBuffer(device, app.transferQueue, stagingBuffer, indexBuffer, std::move(copyRegions), app.transferCommandPool);
         }
 
-        //vkFreeMemory(vulkanDevice->handle(), stagingBufferMemory, nullptr);
         vkDestroyBuffer(device.handle(), stagingBuffer, nullptr);
 
         return memory;
@@ -769,7 +767,7 @@ void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descripto
 
 
 template<class T, class U, typename std::enable_if_t<is_iterable_v<std::decay_t<T>> && is_iterable_v<std::decay_t<U>>>...>
-void CreateCommandBuffers(app_t &app, VulkanDevice *vulkanDevice, VkRenderPass renderPass, VkCommandPool commandPool, T &commandBuffers, U &framebuffers)
+void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass renderPass, VkCommandPool commandPool, T &commandBuffers, U &framebuffers)
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkCommandBuffer>, "iterable object does not contain VkCommandBuffer elements");
     static_assert(std::is_same_v<typename std::decay_t<U>::value_type, VkFramebuffer>, "iterable object does not contain VkFramebuffer elements");
@@ -784,7 +782,7 @@ void CreateCommandBuffers(app_t &app, VulkanDevice *vulkanDevice, VkRenderPass r
         static_cast<std::uint32_t>(std::size(commandBuffers))
     };
 
-    if (auto result = vkAllocateCommandBuffers(vulkanDevice->handle(), &allocateInfo, std::data(commandBuffers)); result != VK_SUCCESS)
+    if (auto result = vkAllocateCommandBuffers(device.handle(), &allocateInfo, std::data(commandBuffers)); result != VK_SUCCESS)
         throw std::runtime_error("failed to create allocate command buffers: "s + std::to_string(result));
 
     std::size_t i = 0;
@@ -913,7 +911,7 @@ void GenerateMipMaps(VulkanDevice const &device, Q &queue, VkImage image, std::i
     Image rawImage;
 
     //if (auto result = LoadTARGA("chalet/textures/chalet.tga"sv); !result)
-    //if (auto result = LoadTARGA("Hebe/textures/HebehebemissinSG1_normal.tga"sv); !result)
+    //if (auto result = LoadTARGA("Hebe/textures/HebehebemissinSG1_metallicRoughness.tga"sv); !result)
     if (auto result = LoadTARGA("sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
         throw std::runtime_error("failed to load an image"s);
 
@@ -1087,7 +1085,7 @@ void RecreateSwapChain(app_t &app)
 
     CreateFramebuffers(app.vulkanDevice.get(), app.renderPass, swapChainImageViews, swapChainFramebuffers);
 
-    CreateCommandBuffers(app, app.vulkanDevice.get(), app.renderPass, app.graphicsCommandPool, app.commandBuffers, swapChainFramebuffers);
+    CreateCommandBuffers(app, *app.vulkanDevice, app.renderPass, app.graphicsCommandPool, app.commandBuffers, swapChainFramebuffers);
 }
 
 void OnWindowResize([[maybe_unused]] GLFWwindow *window, int width, int height)
@@ -1096,9 +1094,6 @@ void OnWindowResize([[maybe_unused]] GLFWwindow *window, int width, int height)
     HEIGHT = height;
 
     auto app = reinterpret_cast<app_t *const>(glfwGetWindowUserPointer(window));
-
-    if (width == 803)
-        std::cout << width << '\n';
 
     RecreateSwapChain(*app);
 }
@@ -1233,7 +1228,7 @@ void InitVulkan(GLFWwindow *window, app_t &app)
     CreateDescriptorPool(app.vulkanDevice->handle(), app.descriptorPool);
     CreateDescriptorSet(app, app.vulkanDevice->handle(), app.descriptorSet);
 
-    CreateCommandBuffers(app, app.vulkanDevice.get(), app.renderPass, app.graphicsCommandPool, app.commandBuffers, swapChainFramebuffers);
+    CreateCommandBuffers(app, *app.vulkanDevice, app.renderPass, app.graphicsCommandPool, app.commandBuffers, swapChainFramebuffers);
 
     CreateSemaphores(app, app.vulkanDevice->handle());
 }
