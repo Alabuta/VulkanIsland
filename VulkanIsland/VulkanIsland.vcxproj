@@ -224,6 +224,7 @@
     <ClInclude Include="src\image.h" />
     <ClInclude Include="src\helpers.h" />
     <ClInclude Include="src\instance.h" />
+    <ClInclude Include="src\isle_math.h" />
     <ClInclude Include="src\main.h" />
     <ClInclude Include="src\mesh_loader.h" />
     <ClInclude Include="src\program.h" />

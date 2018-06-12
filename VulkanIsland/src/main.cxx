@@ -18,6 +18,7 @@
 #include <unordered_map>
 
 #include "main.h"
+#include "isle_math.h"
 #include "instance.h"
 #include "device.h"
 #include "swapchain.h"
