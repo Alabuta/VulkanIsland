@@ -1223,10 +1223,10 @@ void InitVulkan(GLFWwindow *window, app_t &app)
     if (auto result = LoadModel("chalet.obj"sv, app.vertices, app.indices); !result)
         throw std::runtime_error("failed to load mesh"s);
 
-    app.vertexMemory = std::move(CreateVertexBuffer(app, *app.vulkanDevice, app.vertexBuffer));
-    app.indexMemory = std::move(CreateIndexBuffer(app, *app.vulkanDevice, app.indexBuffer));
+    app.vertexMemory = CreateVertexBuffer(app, *app.vulkanDevice, app.vertexBuffer);
+    app.indexMemory = CreateIndexBuffer(app, *app.vulkanDevice, app.indexBuffer);
 
-    app.uboMemory = std::move(BufferPool::CreateUniformBuffer(*app.vulkanDevice, app.uboBuffer, sizeof(TRANSFORMS)));
+    app.uboMemory = BufferPool::CreateUniformBuffer(*app.vulkanDevice, app.uboBuffer, sizeof(TRANSFORMS));
 
     CreateDescriptorPool(app.vulkanDevice->handle(), app.descriptorPool);
     CreateDescriptorSet(app, app.vulkanDevice->handle(), app.descriptorSet);
@@ -1348,16 +1348,14 @@ void UpdateUniformBuffer(VulkanDevice const &device, DeviceMemory const &memory,
         kB *= -1;
     }
 
-    auto proj = mat4{
+    auto proj = mat4(
         f / aspect, 0, 0, 0,
         0, f, 0, 0,
         0, 0, kA, -1,
         0, 0, kB, 0
-    };
+    );
 
-    transforms.proj = glm::perspective(glm::radians(kFOV), aspect, zNear, zFar);
-    std::memcpy(&transforms.proj, std::data(proj.m), sizeof(proj));
-
+    transforms.proj = glm::make_mat4(std::data(proj.m));
     //transforms.proj = glm::perspective(glm::radians(kFOV), aspect, zNear, zFar);
 
     decltype(transforms) *data;

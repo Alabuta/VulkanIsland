@@ -47,8 +47,9 @@ private:
             struct comparator final {
                 using is_transparent = void;
 
-                template<class L, class R, typename std::enable_if_t<are_same_v<Chunk, L, R>>...>
-                auto operator() (L &&lhs, R &&rhs) const noexcept
+                template<class L, class R>
+                std::enable_if_t<are_same_v<Chunk, L, R>, bool>
+                operator() (L &&lhs, R &&rhs) const noexcept
                 {
                     return lhs.size < rhs.size;
                 }

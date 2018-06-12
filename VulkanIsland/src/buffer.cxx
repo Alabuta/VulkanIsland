@@ -337,7 +337,7 @@ void MemoryPool::DeallocateMemory(DeviceMemory const &memory)
         if (auto result = vkBindImageMemory(vulkanDevice.handle(), image, deviceMemory->handle(), deviceMemory->offset()); result != VK_SUCCESS)
             throw std::runtime_error("failed to bind image buffer memory: "s + std::to_string(result));
 
-        return std::move(deviceMemory);
+        return deviceMemory;
     }
 
     else throw std::runtime_error("failed to allocate image buffer memory"s);

@@ -100,8 +100,8 @@ auto constexpr kINT                  = 0x1404;
 auto constexpr kUNSIGNED_INT         = 0x1405;
 auto constexpr kFLOAT                = 0x1406; // 5126
 
-auto constexpr kARRAY_BUFFER         = 0x8892;
-auto constexpr kELEMENT_ARRAY_BUFFER = 0x8893;
+//auto constexpr kARRAY_BUFFER         = 0x8892;
+//auto constexpr kELEMENT_ARRAY_BUFFER = 0x8893;
 
 namespace attribute {
 using attribute_t = std::variant <
@@ -362,7 +362,7 @@ void from_json(nlohmann::json const &j, node_t &node)
         // If the determinant of the transform is a negative value,
         // the winding order of the mesh triangle faces should be reversed.
         // This supports negative scales for mirroring geometry.
-        node.transform = std::move(mat4(std::move(matrix)));
+        node.transform = mat4(std::move(matrix));
     }
 
     else {
@@ -380,7 +380,7 @@ void from_json(nlohmann::json const &j, node_t &node)
             scale = j.at("scale"s).get<std::decay_t<decltype(scale)>>();
 
 
-        node.transform = std::move(std::make_tuple(vec3{std::move(translation)}, quat{std::move(rotation)}, vec3{std::move(scale)}));
+        node.transform = std::make_tuple(vec3{std::move(translation)}, quat{std::move(rotation)}, vec3{std::move(scale)});
     }
 
     if (j.count("children"s))

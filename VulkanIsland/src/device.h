@@ -111,7 +111,7 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
     PickPhysicalDevice(instance.handle(), surface, std::move(extensions_view));
     CreateDevice(surface, std::move(extensions_));
 
-    memoryPool_ = std::move(std::make_unique<MemoryPool>(*this));
+    memoryPool_ = std::make_unique<MemoryPool>(*this);
 }
 
 template<class Q, std::size_t I, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>

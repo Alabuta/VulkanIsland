@@ -94,10 +94,10 @@ struct mat4 {
 
     mat4() = default;
 
-    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 16>>>...>
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 16>>, int> = 1>
     constexpr mat4(T &&array) : m(std::forward<T>(array)) { }
 
-    template<class T0, class T1, class T2, class T3, typename std::enable_if_t<are_same_v<vec3, T0, T1, T2, T3>>...>
+    template<class T0, class T1, class T2, class T3, typename std::enable_if_t<are_same_v<vec3, T0, T1, T2, T3>, char> = 2>
     constexpr mat4(T0 &&xAxis, T1 &&yAxis, T2 &&zAxis, T3 &&translation)
     {
         std::fill(std::begin(m), std::end(m), 0.f);
@@ -106,13 +106,13 @@ struct mat4 {
         auto tr = -std::forward<T3>(translation);
 
         std::uninitialized_copy_n(std::begin(xAxis.xyz), std::size(xAxis.xyz), std::begin(m));
-        std::uninitialized_copy_n(std::begin(yAxis.xyz), std::size(yAxis.xyz), std::begin(m)+4);
-        std::uninitialized_copy_n(std::begin(zAxis.xyz), std::size(zAxis.xyz), std::begin(m)+4*2);
-        std::uninitialized_copy_n(std::begin(tr.xyz), std::size(tr.xyz), std::begin(m)+4*3);
+        std::uninitialized_copy_n(std::begin(yAxis.xyz), std::size(yAxis.xyz), std::begin(m) + 4);
+        std::uninitialized_copy_n(std::begin(zAxis.xyz), std::size(zAxis.xyz), std::begin(m) + 4 * 2);
+        std::uninitialized_copy_n(std::begin(tr.xyz), std::size(tr.xyz), std::begin(m) + 4 * 3);
     }
 
-    template<class... Ts, typename std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == 16>* = 0>
-    constexpr mat4(Ts... values) : m({{static_cast<std::decay_t<decltype(m)>::value_type>(values)...}}) { }
+    template<class... Ts, typename std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == 16>...>
+    constexpr mat4(Ts... values) : m({{ static_cast<std::decay_t<decltype(m)>::value_type>(values)... }}) { }
 };
 
 template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, vec3>>...>
@@ -163,9 +163,9 @@ struct Vertex {
         typename std::enable_if_t<are_same_v<std::array<float, 3>, std::decay_t<P>, std::decay_t<N>> && std::is_same_v<std::array<float, 2>, std::decay_t<UV>>>...>
     constexpr Vertex(P &&_position, N &&_normal, UV &&_uv)
     {
-        pos = std::move(vec3{std::forward<P>(_position)});
-        normal = std::move(vec3{std::forward<N>(_normal)});
-        uv = std::move(vec2{std::forward<UV>(_uv)});
+        pos = vec3{std::forward<P>(_position)};
+        normal = vec3{std::forward<N>(_normal)};
+        uv = vec2{std::forward<UV>(_uv)};
     }
 
     template<class T, typename std::enable_if_t<std::is_same_v<Vertex, std::decay_t<T>>>...>
@@ -177,8 +177,11 @@ struct Vertex {
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_CXX14
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
 
 #define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>

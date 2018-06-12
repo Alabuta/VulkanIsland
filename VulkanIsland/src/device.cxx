@@ -261,16 +261,16 @@ void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<char const *> 
     QueueHelper queueHelper;
 
     for (auto &&queue : queuePool_.computeQueues_)
-        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface));
+        queue = queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface);
 
     for (auto &&queue : queuePool_.graphicsQueues_)
-        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface));
+        queue = queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface);
 
     for (auto &&queue : queuePool_.transferQueues_)
-        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface));
+        queue = queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface);
 
     for (auto &&queue : queuePool_.presentationQueues_)
-        queue = std::move(queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface));
+        queue = queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::vector<std::vector<float>> priorities;
