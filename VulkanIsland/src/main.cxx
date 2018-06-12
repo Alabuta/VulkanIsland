@@ -385,9 +385,9 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
     };
 
     VkViewport const viewport{
-        0, 0,
-        static_cast<float>(swapChainExtent.width), static_cast<float>(swapChainExtent.height),
-        1, 0
+        0, static_cast<float>(swapChainExtent.height),
+        static_cast<float>(swapChainExtent.width), -static_cast<float>(swapChainExtent.height),
+        0, 1
     };
 
     VkRect2D const scissor{
@@ -407,8 +407,8 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         VK_TRUE,
         VK_FALSE,
         VK_POLYGON_MODE_FILL,
-        VK_CULL_MODE_NONE,
-        VK_FRONT_FACE_CLOCKWISE,
+        VK_CULL_MODE_BACK_BIT,
+        VK_FRONT_FACE_COUNTER_CLOCKWISE,
         VK_FALSE, 0, VK_FALSE, 0,
         1
     };
@@ -427,10 +427,10 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         nullptr, 0,
         VK_TRUE, VK_TRUE,
-        VK_COMPARE_OP_GREATER,   // Reversed depth.
+        kREVERSED_DEPTH ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_LESS,
         VK_FALSE,
         VK_FALSE, VkStencilOpState{}, VkStencilOpState{},
-        1, 0
+        0, 1
     };
 
     VkPipelineColorBlendAttachmentState constexpr colorBlendAttachment{
@@ -801,7 +801,7 @@ void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass r
 
         auto const clearColors = make_array(
             VkClearValue{{{0.64f, 0.64f, 0.64f, 1.f}}},
-            VkClearValue{{{0.f, 0}}}
+            VkClearValue{{{kREVERSED_DEPTH ? 0 : 1, 0}}}
         );
 
         VkRenderPassBeginInfo const renderPassInfo{
@@ -1337,29 +1337,28 @@ void UpdateUniformBuffer(VulkanDevice const &device, DeviceMemory const &memory,
     [[maybe_unused]] auto constexpr kPI_DIV_180 = 0.01745329251994329576f;
     [[maybe_unused]] auto constexpr kPI_DIV_180_INV = 57.2957795130823208767f;
 
-    // Default OpenGL perspective projection matrix.
     auto constexpr kFOV = 72.f, zNear = .1f, zFar = 1000.f;
+    auto const f = 1.f / std::tan(kFOV * kPI_DIV_180 * .5f);
 
-#if !USE_GLM
-    auto const f = 1.f / std::tan(kFOV * kPI_DIV_180 * 0.5f);
+    auto kA = -zFar / (zFar - zNear);
+    auto kB = -zFar * zNear / (zFar - zNear);
 
-    // Default OpenGL perspective projection matrix.
-    auto kA = -(zFar + zNear) / (zFar - zNear);
-    auto kB = -2.f * zFar * zNear / (zFar - zNear);
+    if constexpr (kREVERSED_DEPTH) {
+        kA = -kA - 1;
+        kB *= -1;
+    }
 
-    kA = 0;
-    kB = zNear;
-
-    transforms.proj = mat4(
+    auto proj = mat4{
         f / aspect, 0, 0, 0,
-        0, -f, 0, 0,
+        0, f, 0, 0,
         0, 0, kA, -1,
         0, 0, kB, 0
-    );
-#else
+    };
+
     transforms.proj = glm::perspective(glm::radians(kFOV), aspect, zNear, zFar);
-    transforms.proj[1][1] *= -1;
-#endif
+    std::memcpy(&transforms.proj, std::data(proj.m), sizeof(proj));
+
+    //transforms.proj = glm::perspective(glm::radians(kFOV), aspect, zNear, zFar);
 
     decltype(transforms) *data;
     if (auto result = vkMapMemory(device.handle(), memory.handle(), memory.offset(), memory.size(), 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)

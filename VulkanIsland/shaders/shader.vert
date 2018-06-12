@@ -29,5 +29,5 @@ void main()
     gl_Position = transforms.proj * gl_Position;
 
     viewSpaceNormal = normalize((transpose(inverse(transforms.modelView)) * vec4(inNormal, 0.0)).xyz);
-    texCoord = vec2(inUV.x, 1.0 - inUV.y);
+    texCoord = vec2(inUV.x, inUV.y);
 }

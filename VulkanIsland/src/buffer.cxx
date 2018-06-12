@@ -77,7 +77,7 @@ MemoryPool::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags propert
     else return AllocateMemory(memoryRequirements2.memoryRequirements, properties);
 }
 
-template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>>
+template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
 [[nodiscard]] std::shared_ptr<DeviceMemory>
 MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags properties)
 {
