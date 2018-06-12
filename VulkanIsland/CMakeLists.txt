@@ -26,6 +26,8 @@ set(SOURCE_FILES
         src/command_buffer.h
         src/device_defaults.h
         src/helpers.h
+        src/isle_math.h
+        src/image.h
         src/program.h
         src/queue_builder.h
         src/queues.h
