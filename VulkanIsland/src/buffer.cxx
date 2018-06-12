@@ -185,6 +185,8 @@ MemoryPool::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags proper
             memoryBlock.availableSize -= memoryRequirements.size;
         }
 
+        availableChunks.erase(Block::Chunk{0, 0});
+
         std::cout << "Memory pool: ["s << memoryTypeIndex << "]: sub-allocation : "s << memoryRequirements.size / 1024.f << "KB\n"s;
 
         return std::shared_ptr<DeviceMemory>{
@@ -251,43 +253,31 @@ void MemoryPool::DeallocateMemory(DeviceMemory const &memory)
     auto &&memoryBlock = it_block->second;
     auto &&availableChunks = it_block->second.availableChunks;
 
-    auto it_chunk = std::find_if(std::begin(availableChunks), std::end(availableChunks), [&memory] (auto &&chunk)
+    auto it_chunk = availableChunks.emplace(memory.offset(), memory.size());
+
+    auto FindAdjacent = [] (auto begin, auto end, auto it_chunk) constexpr
     {
-        return chunk.offset == memory.offset() + memory.size();
-    });
-
-    if (it_chunk != std::end(availableChunks)) {
-        if (auto node = availableChunks.extract(it_chunk); node) {
-            auto &&[offset, size] = node.value();
-
-            offset -= memory.size();
-            size += memory.size();
-
-            availableChunks.insert(std::move(node));
-
-            memoryBlock.availableSize += memory.size();
-        }
-    }
-
-    else {
-        it_chunk = std::find_if(std::begin(availableChunks), std::end(availableChunks), [&memory] (auto &&chunk)
+        return std::find_if(begin, end, [it_chunk] (auto &&chunk)
         {
-            return chunk.offset + chunk.size == memory.offset();
+            return chunk.offset + chunk.size == it_chunk->offset || it_chunk->offset + it_chunk->size == chunk.offset;
         });
+    };
 
-        if (it_chunk == std::end(availableChunks))
-            return;
+    auto it_adjacent = FindAdjacent(std::begin(availableChunks), std::end(availableChunks), it_chunk);
 
-        if (auto node = availableChunks.extract(it_chunk); node) {
-            auto &&[offset, size] = node.value();
+    while (it_adjacent != std::end(availableChunks)) {
+        auto[offsetA, sizeA] = *it_chunk;
+        auto[offsetB, sizeB] = *it_adjacent;
 
-            size += memory.size();
+        availableChunks.erase(it_chunk);
+        availableChunks.erase(it_adjacent);
 
-            availableChunks.insert(std::move(node));
+        it_chunk = availableChunks.emplace(std::min(offsetA, offsetB), sizeA + sizeB);
 
-            memoryBlock.availableSize += memory.size();
-        }
+        it_adjacent = FindAdjacent(std::begin(availableChunks), std::end(availableChunks), it_chunk);
     }
+
+    memoryBlock.availableSize += memory.size();
 }
 
 [[nodiscard]] auto BufferPool::CreateBuffer(VulkanDevice &device, VkBuffer &buffer,
@@ -306,6 +296,7 @@ void MemoryPool::DeallocateMemory(DeviceMemory const &memory)
     if (auto result = vkCreateBuffer(device.handle(), &bufferCreateInfo, nullptr, &buffer); result != VK_SUCCESS)
         throw std::runtime_error("failed to create buffer: "s + std::to_string(result));
 
+
     if (auto memory = device.memoryPool().AllocateMemory(buffer, properties); !memory)
         throw std::runtime_error("failed to allocate buffer memory"s);
 
@@ -313,8 +304,10 @@ void MemoryPool::DeallocateMemory(DeviceMemory const &memory)
         if (auto result = vkBindBufferMemory(device.handle(), buffer, memory->handle(), memory->offset()); result != VK_SUCCESS)
             throw std::runtime_error("failed to bind buffer memory: "s + std::to_string(result));
 
-        return std::move(memory);
+        return memory;
     }
+
+    return { };
 }
 
 [[nodiscard]] auto BufferPool::CreateImage(VulkanDevice &vulkanDevice, VkImage &image, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
