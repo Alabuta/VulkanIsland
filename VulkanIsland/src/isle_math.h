@@ -94,10 +94,10 @@ struct mat4 {
 
     mat4() = default;
 
-    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 16>>, int> = 1>
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::decay_t<decltype(m)>>>* = 0>
     constexpr mat4(T &&array) : m(std::forward<T>(array)) { }
 
-    template<class T0, class T1, class T2, class T3, typename std::enable_if_t<are_same_v<vec3, T0, T1, T2, T3>, char> = 2>
+    template<class T0, class T1, class T2, class T3, typename std::enable_if_t<are_same_v<vec3, T0, T1, T2, T3>>* = 0>
     constexpr mat4(T0 &&xAxis, T1 &&yAxis, T2 &&zAxis, T3 &&translation)
     {
         std::fill(std::begin(m), std::end(m), 0.f);
@@ -111,7 +111,7 @@ struct mat4 {
         std::uninitialized_copy_n(std::begin(tr.xyz), std::size(tr.xyz), std::begin(m) + 4 * 3);
     }
 
-    template<class... Ts, typename std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == 16>...>
+    template<class... Ts, typename std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == 16>* = 0>
     constexpr mat4(Ts... values) : m({{ static_cast<std::decay_t<decltype(m)>::value_type>(values)... }}) { }
 };
 
@@ -177,7 +177,9 @@ struct Vertex {
 
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#define GLM_FORCE_CXX14
+#ifndef _MSC_VER
+#define GLM_FORCE_CXX17
+#endif
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
