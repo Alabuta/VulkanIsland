@@ -104,7 +104,7 @@ auto constexpr kFLOAT                = 0x1406; // 5126
 //auto constexpr kELEMENT_ARRAY_BUFFER = 0x8893;
 
 namespace attribute {
-using attribute_t = std::variant <
+using attribute_t = std::variant<
     vec<1, std::int8_t>,
     vec<2, std::int8_t>,
     vec<3, std::int8_t>,
@@ -143,29 +143,25 @@ using attribute_t = std::variant <
 
 using buffer_t = wrap_variant_by_vector<attribute_t>::type;
 
-template<class T, class... Ts>
-struct row {
-    using type = std::tuple<T, Ts...>;
-};
+using position_t = vec<3, std::float_t>;
+using normal_t = vec<3, std::float_t>;
 
-template<class T, class... Ts>
-struct cross_product {
-    using type = std::tuple<typename row<T, Ts...>::type>;
-};
-
-using bar = cross_product<int, float, bool>::type;
+using vertex2_t = std::variant<
+    std::tuple<>
+>;
 
 
 enum eSEMANTICS : std::size_t {
     nPOSITION = 0,
     nNORMAL,
-    nTANGENT,
     nTEXCOORD_0,
     nTEXCOORD_1,
+    nTANGENT,
     nCOLOR_0,
     nJOINTS_0,
     nWEIGHTS_0
 };
+
 
 }
 

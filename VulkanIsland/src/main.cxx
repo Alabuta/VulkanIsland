@@ -89,13 +89,13 @@ struct app_t {
     TransferQueue transferQueue;
     PresentationQueue presentationQueue;
 
-    VkDescriptorSetLayout descriptorSetLayout;
     VkPipelineLayout pipelineLayout;
     VkRenderPass renderPass;
     VkPipeline graphicsPipeline;
 
     VkCommandPool graphicsCommandPool, transferCommandPool;
 
+    VkDescriptorSetLayout descriptorSetLayout;
     VkDescriptorPool descriptorPool;
     VkDescriptorSet descriptorSet;
 
@@ -223,6 +223,7 @@ void CleanupSwapChain(app_t &app, VulkanDevice const &device, VkSwapchainKHR swa
 }
 
 
+
 void CreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout &descriptorSetLayout)
 {
     std::array<VkDescriptorSetLayoutBinding, 2> constexpr layoutBindings{{
@@ -246,6 +247,72 @@ void CreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout &descripto
 
     if (auto result = vkCreateDescriptorSetLayout(device, &createInfo, nullptr, &descriptorSetLayout); result != VK_SUCCESS)
         throw std::runtime_error("failed to create descriptor set layout: "s + std::to_string(result));
+}
+
+void CreateDescriptorPool(VkDevice device, VkDescriptorPool &descriptorPool)
+{
+    std::array<VkDescriptorPoolSize, 2> constexpr poolSizes{{
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
+    }};
+
+    VkDescriptorPoolCreateInfo const createInfo{
+        VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
+        nullptr, 0,
+        1,
+        static_cast<std::uint32_t>(std::size(poolSizes)), std::data(poolSizes)
+    };
+
+    if (auto result = vkCreateDescriptorPool(device, &createInfo, nullptr, &descriptorPool); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create descriptor pool: "s + std::to_string(result));
+}
+
+void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descriptorSet)
+{
+    auto layouts = make_array(app.descriptorSetLayout);
+
+    VkDescriptorSetAllocateInfo const allocateInfo{
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        nullptr,
+        app.descriptorPool,
+        static_cast<std::uint32_t>(std::size(layouts)), std::data(layouts)
+    };
+
+    if (auto result = vkAllocateDescriptorSets(device, &allocateInfo, &descriptorSet); result != VK_SUCCESS)
+        throw std::runtime_error("failed to allocate descriptor sets: "s + std::to_string(result));
+
+    VkDescriptorBufferInfo const bufferInfo{
+        app.uboBuffer, 0, sizeof(TRANSFORMS)
+    };
+
+    VkDescriptorImageInfo const imageInfo{
+        app.textureSampler, app.textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+    };
+
+    std::array<VkWriteDescriptorSet, 2> const writeDescriptorsSet{{
+        {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            nullptr,
+            descriptorSet,
+            0, 0,
+            1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            nullptr,
+            &bufferInfo,
+            nullptr
+        },
+        {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            nullptr,
+            descriptorSet,
+            1, 0,
+            1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            &imageInfo,
+            nullptr,
+            nullptr
+        }
+    }};
+
+    vkUpdateDescriptorSets(device, static_cast<std::uint32_t>(std::size(writeDescriptorsSet)), std::data(writeDescriptorsSet), 0, nullptr);
 }
 
 
@@ -698,72 +765,6 @@ auto CreateIndexBuffer(app_t &app, VulkanDevice &device, VkBuffer &indexBuffer)
 }
 
 
-
-void CreateDescriptorPool(VkDevice device, VkDescriptorPool &descriptorPool)
-{
-    std::array<VkDescriptorPoolSize, 2> constexpr poolSizes{{
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
-    }};
-
-    VkDescriptorPoolCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        nullptr, 0,
-        1,
-        static_cast<std::uint32_t>(std::size(poolSizes)), std::data(poolSizes)
-    };
-
-    if (auto result = vkCreateDescriptorPool(device, &createInfo, nullptr, &descriptorPool); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor pool: "s + std::to_string(result));
-}
-
-void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descriptorSet)
-{
-    auto layouts = make_array(app.descriptorSetLayout);
-
-    VkDescriptorSetAllocateInfo const allocateInfo{
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-        nullptr,
-        app.descriptorPool,
-        static_cast<std::uint32_t>(std::size(layouts)), std::data(layouts)
-    };
-
-    if (auto result = vkAllocateDescriptorSets(device, &allocateInfo, &descriptorSet); result != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate descriptor sets: "s + std::to_string(result));
-
-    VkDescriptorBufferInfo const bufferInfo{
-        app.uboBuffer, 0, sizeof(TRANSFORMS)
-    };
-
-    VkDescriptorImageInfo const imageInfo{
-        app.textureSampler, app.textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-    };
-
-    std::array<VkWriteDescriptorSet, 2> const writeDescriptorsSet{{
-        {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            nullptr,
-            descriptorSet,
-            0, 0,
-            1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            nullptr,
-            &bufferInfo,
-            nullptr
-        },
-        {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            nullptr,
-            descriptorSet,
-            1, 0,
-            1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            &imageInfo,
-            nullptr,
-            nullptr
-        }
-    }};
-
-    vkUpdateDescriptorSets(device, static_cast<std::uint32_t>(std::size(writeDescriptorsSet)), std::data(writeDescriptorsSet), 0, nullptr);
-}
 
 
 
