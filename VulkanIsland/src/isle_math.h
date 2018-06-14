@@ -94,7 +94,7 @@ struct mat4 {
 
     mat4() = default;
 
-    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::decay_t<decltype(m)>>>* = 0>
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::decay_t<decltype(m)>>>...>
     constexpr mat4(T &&array) : m(std::forward<T>(array)) { }
 
     template<class T0, class T1, class T2, class T3, typename std::enable_if_t<are_same_v<vec3, T0, T1, T2, T3>>* = 0>
@@ -111,7 +111,7 @@ struct mat4 {
         std::uninitialized_copy_n(std::begin(tr.xyz), std::size(tr.xyz), std::begin(m) + 4 * 3);
     }
 
-    template<class... Ts, typename std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == 16>* = 0>
+    template<class... Ts, typename std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == 16>...>
     constexpr mat4(Ts... values) : m({{ static_cast<std::decay_t<decltype(m)>::value_type>(values)... }}) { }
 };
 

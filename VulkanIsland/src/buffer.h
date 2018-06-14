@@ -20,7 +20,7 @@ public:
     MemoryPool(VulkanDevice &vulkanDevice);
     ~MemoryPool();
 
-    template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>, int> = 0>
+    template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
     [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(T buffer, VkMemoryPropertyFlags properties)
     {
         return CheckRequirementsAndAllocate(buffer, properties);
