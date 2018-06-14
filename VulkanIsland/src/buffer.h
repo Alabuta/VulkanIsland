@@ -17,7 +17,7 @@ class DeviceMemory;
 class MemoryPool final {
 public:
 
-    MemoryPool(VulkanDevice &vulkanDevice);
+    MemoryPool(VulkanDevice &vulkanDevice, VkDeviceSize bufferImageGranularity);
     ~MemoryPool();
 
     template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
@@ -31,6 +31,7 @@ private:
     static VkDeviceSize constexpr kBLOCK_ALLOCATION_SIZE{0x10'000'000};   // 256 MB
 
     VulkanDevice &vulkanDevice_;
+    VkDeviceSize bufferImageGranularity_{0};
     VkDeviceSize allocatedSize_{0};
 
     struct Block final {

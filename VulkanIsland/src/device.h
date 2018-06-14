@@ -111,7 +111,10 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
     PickPhysicalDevice(instance.handle(), surface, std::move(extensions_view));
     CreateDevice(surface, std::move(extensions_));
 
-    memoryPool_ = std::make_unique<MemoryPool>(*this);
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(physicalDevice_, &properties);
+
+    memoryPool_ = std::make_unique<MemoryPool>(*this, properties.limits.bufferImageGranularity);
 }
 
 template<class Q, std::size_t I, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
