@@ -143,13 +143,6 @@ using attribute_t = std::variant<
 
 using buffer_t = wrap_variant_by_vector<attribute_t>::type;
 
-using position_t = vec<3, std::float_t>;
-using normal_t = vec<3, std::float_t>;
-
-using vertex2_t = std::variant<
-    std::tuple<>
->;
-
 
 enum eSEMANTICS : std::size_t {
     nPOSITION = 0,
@@ -161,6 +154,55 @@ enum eSEMANTICS : std::size_t {
     nJOINTS_0,
     nWEIGHTS_0
 };
+
+namespace semantic {
+    struct position {};
+    struct normal {};
+    struct tex_coord_0 {};
+    struct tex_coord_1 {};
+    struct tangent {};
+    struct color_0 {};
+    struct joints_0 {};
+    struct weights_0 {};
+}
+
+using position_t = vec<3, std::float_t>;
+using normal_t = vec<3, std::float_t>;
+using tex_coord_t = vec<2, std::float_t>;
+
+using vertex_buffer_t = std::variant<
+    std::pair<
+        std::tuple<semantic::position>,
+        std::vector<std::tuple<attribute_t>>
+    >,
+    std::pair<
+        std::tuple<semantic::position, semantic::normal>,
+        std::vector<std::tuple<attribute_t, attribute_t>>
+    >
+>;
+
+using vertexx_t = std::variant<
+    std::tuple<
+        std::pair<semantic::position, vec<3, std::float_t>>
+    >,
+    std::tuple<
+        std::pair<semantic::position, vec<3, std::float_t>>,
+        std::pair<semantic::normal, vec<3, std::float_t>>
+    >,
+    std::tuple<
+        std::pair<semantic::position, vec<3, std::float_t>>,
+        std::pair<semantic::normal, vec<3, std::float_t>>,
+        std::pair<semantic::tex_coord_0, vec<2, std::float_t>>
+    >,
+    std::tuple<
+        std::pair<semantic::position, vec<3, std::float_t>>,
+        std::pair<semantic::normal, vec<3, std::float_t>>,
+        std::pair<semantic::tex_coord_0, vec<2, std::float_t>>,
+        std::pair<semantic::tangent, vec<4, std::float_t>>
+    >
+>;
+
+
 
 
 }
