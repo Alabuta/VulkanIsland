@@ -19,7 +19,7 @@ DebugCallback([[maybe_unused]] VkDebugReportFlagsEXT flags, [[maybe_unused]] VkD
               [[maybe_unused]] std::uint64_t object, [[maybe_unused]] std::size_t location, [[maybe_unused]] std::int32_t messageCode,
               [[maybe_unused]] const char *pLayerPrefix, const char *pMessage, [[maybe_unused]] void *pUserData)
 {
-    std::cerr << pMessage << std::endl;
+    std::cerr << location << ':' << pMessage << std::endl;
 
     return VK_FALSE;
 }

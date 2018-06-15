@@ -385,5 +385,20 @@ BufferPool::CreateImageHandle(VulkanDevice &vulkanDevice, std::uint32_t width, s
     if (auto result = vkCreateImage(vulkanDevice.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
         throw std::runtime_error("failed to create image: "s + std::to_string(result));
 
+    auto constexpr tag = "image"sv;
+
+    VkDebugMarkerObjectNameInfoEXT const info{
+        VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_TAG_INFO_EXT,
+        nullptr,
+        VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT,
+        (std::uint64_t)handle,//static_cast<std::uint64_t>(handle),
+        std::data(tag)
+    };
+
+    auto vkDebugMarkerSetObjectNameEXT = (PFN_vkDebugMarkerSetObjectNameEXT)vkGetDeviceProcAddr(vulkanDevice.handle(), "vkDebugMarkerSetObjectNameEXT");
+
+    if (auto result = vkDebugMarkerSetObjectNameEXT(vulkanDevice.handle(), &info); result != VK_SUCCESS)
+        throw std::runtime_error("failed to set the image debug marker: "s + std::to_string(result));
+
     return handle;
 }
