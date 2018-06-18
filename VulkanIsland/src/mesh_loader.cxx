@@ -7,6 +7,8 @@
 #include <optional>
 #include <tuple>
 #include <map>
+#include <functional>
+
 
 #include "nlohmann/json.hpp"
 
@@ -156,28 +158,76 @@ enum eSEMANTICS : std::size_t {
 };
 
 namespace semantic {
-    struct position {};
-    struct normal {};
-    struct tex_coord_0 {};
-    struct tex_coord_1 {};
-    struct tangent {};
-    struct color_0 {};
-    struct joints_0 {};
-    struct weights_0 {};
+template<class T>
+struct attribute { };
+
+struct position : attribute<position> {};
+struct normal : attribute<normal> {};
+struct tex_coord_0 : attribute<tex_coord_0> {};
+struct tex_coord_1 : attribute<tex_coord_1> {};
+struct tangent : attribute<tangent> {};
+struct color_0 : attribute<color_0> {};
+struct joints_0 : attribute<joints_0> {};
+struct weights_0 : attribute<weights_0> {};
 }
 
-using position_t = vec<3, std::float_t>;
-using normal_t = vec<3, std::float_t>;
-using tex_coord_t = vec<2, std::float_t>;
+using semantic_t = std::variant<
+    semantic::position,
+    semantic::normal,
+    semantic::tex_coord_0,
+    semantic::tex_coord_1,
+    semantic::tangent,
+    semantic::color_0,
+    semantic::joints_0,
+    semantic::weights_0
+>;
+
+using vertex_attribute_t = std::variant<
+    std::pair<semantic::position, attribute_t>,
+    std::pair<semantic::normal, attribute_t>,
+    std::pair<semantic::tex_coord_0, attribute_t>,
+    std::pair<semantic::tex_coord_1, attribute_t>,
+    std::pair<semantic::tangent, attribute_t>,
+    std::pair<semantic::color_0, attribute_t>,
+    std::pair<semantic::joints_0, attribute_t>,
+    std::pair<semantic::weights_0, attribute_t>
+>;
+
+using accessor_t = std::variant<
+    std::pair<semantic::position, std::size_t>,
+    std::pair<semantic::normal, std::size_t>,
+    std::pair<semantic::tex_coord_0, std::size_t>,
+    std::pair<semantic::tex_coord_1, std::size_t>,
+    std::pair<semantic::tangent, std::size_t>,
+    std::pair<semantic::color_0, std::size_t>,
+    std::pair<semantic::joints_0, std::size_t>,
+    std::pair<semantic::weights_0, std::size_t>
+>;
 
 using vertex_buffer_t = std::variant<
     std::pair<
         std::tuple<semantic::position>,
-        std::vector<std::tuple<attribute_t>>
+        std::vector<std::tuple<vec<3, std::float_t>>>
     >,
     std::pair<
         std::tuple<semantic::position, semantic::normal>,
-        std::vector<std::tuple<attribute_t, attribute_t>>
+        std::vector<std::tuple<vec<3, std::float_t>, vec<3, std::float_t>>>
+    >,
+    std::pair<
+        std::tuple<semantic::position, semantic::tex_coord_0>,
+        std::vector<std::tuple<vec<3, std::float_t>, vec<2, std::float_t>>>
+    >,
+    std::pair<
+        std::tuple<semantic::position, semantic::normal, semantic::tex_coord_0>,
+        std::vector<std::tuple<vec<3, std::float_t>, vec<3, std::float_t>, vec<2, std::float_t>>>
+    >,
+    std::pair<
+        std::tuple<semantic::position, semantic::normal, semantic::tangent>,
+        std::vector<std::tuple<vec<3, std::float_t>, vec<3, std::float_t>, vec<4, std::float_t>>>
+    >,
+    std::pair<
+        std::tuple<semantic::position, semantic::normal, semantic::tex_coord_0, semantic::tangent>,
+        std::vector<std::tuple<vec<3, std::float_t>, vec<3, std::float_t>, vec<2, std::float_t>, vec<4, std::float_t>>>
     >
 >;
 
@@ -196,12 +246,49 @@ using vertexx_t = std::variant<
     >,
     std::tuple<
         std::pair<semantic::position, vec<3, std::float_t>>,
+        std::pair<semantic::tex_coord_0, vec<2, std::float_t>>
+    >,
+    std::tuple<
+        std::pair<semantic::position, vec<3, std::float_t>>,
+        std::pair<semantic::normal, vec<3, std::float_t>>,
+        std::pair<semantic::tangent, vec<4, std::float_t>>
+    >,
+    std::tuple<
+        std::pair<semantic::position, vec<3, std::float_t>>,
         std::pair<semantic::normal, vec<3, std::float_t>>,
         std::pair<semantic::tex_coord_0, vec<2, std::float_t>>,
         std::pair<semantic::tangent, vec<4, std::float_t>>
     >
 >;
 
+std::optional<semantic_t> get_semantic(std::string_view name)
+{
+    if (name == "POSITION"sv)
+        return semantic::position{ };
+
+    else if (name == "NORMAL"sv)
+        return semantic::normal{ };
+
+    else if (name == "TEXCOORD_0"sv)
+        return semantic::tex_coord_0{ };
+
+    else if (name == "TEXCOORD_1"sv)
+        return semantic::tex_coord_1{ };
+
+    else if (name == "TANGENT"sv)
+        return semantic::tangent{ };
+
+    else if (name == "COLOR_0"sv)
+        return semantic::color_0{ };
+
+    else if (name == "JOINTS_0"sv)
+        return semantic::joints_0{ };
+
+    else if (name == "WEIGHTS_0"sv)
+        return semantic::weights_0{ };
+
+    return { };
+}
 
 
 
@@ -240,6 +327,8 @@ struct mesh_t {
     struct primitive_t {
         std::optional<std::size_t> material;
         std::size_t indices;
+
+        std::vector<glTF::attribute::accessor_t> attributeAccessors;
 
         struct attributes_t {
             std::optional<std::size_t> position;
@@ -435,47 +524,61 @@ void from_json(nlohmann::json const &j, mesh_t &mesh)
 {
     auto const json = j.at("primitives"s);
 
-    std::transform(std::cbegin(json), std::cend(json), std::back_inserter(mesh.primitives), [] (nlohmann::json const &primitive)
+    std::transform(std::cbegin(json), std::cend(json), std::back_inserter(mesh.primitives), [] (nlohmann::json const &json_primitive)
     {
-        mesh_t::primitive_t mesh;
+        mesh_t::primitive_t primitive;
 
-        if (primitive.count("material"s))
-            mesh.material = primitive.at("material"s).get<decltype(mesh_t::primitive_t::material)::value_type>();
+        if (json_primitive.count("material"s))
+            primitive.material = json_primitive.at("material"s).get<decltype(mesh_t::primitive_t::material)::value_type>();
 
-        mesh.indices = primitive.at("indices"s).get<decltype(mesh_t::primitive_t::indices)>();
+        primitive.indices = json_primitive.at("indices"s).get<decltype(mesh_t::primitive_t::indices)>();
 
-        auto const json_attributes = primitive.at("attributes"s);
+        auto const json_attributes = json_primitive.at("attributes"s);
+
+        for (auto it = std::begin(json_attributes); it != std::end(json_attributes); ++it) {
+            if (auto semantic = attribute::get_semantic(it.key()); semantic) {
+                auto index = it->get<std::size_t>();
+
+                std::visit([index, &primitive] (auto semantic)
+                {
+                    attribute::accessor_t accessor = std::make_pair(semantic, index);
+
+                    primitive.attributeAccessors.push_back(std::move(accessor));
+
+                }, semantic.value());
+            }
+        }
 
         if (json_attributes.count("POSITION"s))
-            mesh.attributes.position = json_attributes.at("POSITION"s).get<decltype(mesh_t::primitive_t::attributes_t::position)::value_type>();
+            primitive.attributes.position = json_attributes.at("POSITION"s).get<decltype(mesh_t::primitive_t::attributes_t::position)::value_type>();
 
         if (json_attributes.count("NORMAL"s))
-            mesh.attributes.normal = json_attributes.at("NORMAL"s).get<decltype(mesh_t::primitive_t::attributes_t::normal)::value_type>();
+            primitive.attributes.normal = json_attributes.at("NORMAL"s).get<decltype(mesh_t::primitive_t::attributes_t::normal)::value_type>();
 
         if (json_attributes.count("TANGENT"s))
-            mesh.attributes.tangent = json_attributes.at("TANGENT"s).get<decltype(mesh_t::primitive_t::attributes_t::tangent)::value_type>();
+            primitive.attributes.tangent = json_attributes.at("TANGENT"s).get<decltype(mesh_t::primitive_t::attributes_t::tangent)::value_type>();
 
         if (json_attributes.count("TEXCOORD_0"s))
-            mesh.attributes.texCoord0 = json_attributes.at("TEXCOORD_0"s).get<decltype(mesh_t::primitive_t::attributes_t::texCoord0)::value_type>();
+            primitive.attributes.texCoord0 = json_attributes.at("TEXCOORD_0"s).get<decltype(mesh_t::primitive_t::attributes_t::texCoord0)::value_type>();
 
         if (json_attributes.count("TEXCOORD_1"s))
-            mesh.attributes.texCoord1 = json_attributes.at("TEXCOORD_1"s).get<decltype(mesh_t::primitive_t::attributes_t::texCoord1)::value_type>();
+            primitive.attributes.texCoord1 = json_attributes.at("TEXCOORD_1"s).get<decltype(mesh_t::primitive_t::attributes_t::texCoord1)::value_type>();
 
         if (json_attributes.count("COLOR_0"s))
-            mesh.attributes.color0 = json_attributes.at("COLOR_0"s).get<decltype(mesh_t::primitive_t::attributes_t::color0)::value_type>();
+            primitive.attributes.color0 = json_attributes.at("COLOR_0"s).get<decltype(mesh_t::primitive_t::attributes_t::color0)::value_type>();
 
         if (json_attributes.count("JOINTS_0"s))
-            mesh.attributes.joints0 = json_attributes.at("JOINTS_0"s).get<decltype(mesh_t::primitive_t::attributes_t::joints0)::value_type>();
+            primitive.attributes.joints0 = json_attributes.at("JOINTS_0"s).get<decltype(mesh_t::primitive_t::attributes_t::joints0)::value_type>();
 
         if (json_attributes.count("WEIGHTS_0"s))
-            mesh.attributes.weights0 = json_attributes.at("WEIGHTS_0"s).get<decltype(mesh_t::primitive_t::attributes_t::weights0)::value_type>();
+            primitive.attributes.weights0 = json_attributes.at("WEIGHTS_0"s).get<decltype(mesh_t::primitive_t::attributes_t::weights0)::value_type>();
 
-        if (primitive.count("mode"s))
-            mesh.mode = primitive.at("mode"s).get<decltype(mesh_t::primitive_t::mode)>();
+        if (json_primitive.count("mode"s))
+            primitive.mode = json_primitive.at("mode"s).get<decltype(mesh_t::primitive_t::mode)>();
 
-        else mesh.mode = 4;
+        else primitive.mode = 4;
 
-        return mesh;
+        return primitive;
     });
 }
 
@@ -640,28 +743,28 @@ std::optional<attribute::buffer_t> instantiate_attribute_buffer(std::int32_t com
 {
     switch (componentType) {
         case glTF::kBYTE:
-            return std::make_optional<std::vector<glTF::vec<N, std::int8_t>>>();
+            return std::vector<glTF::vec<N, std::int8_t>>();
 
         case glTF::kUNSIGNED_BYTE:
-            return std::make_optional<std::vector<glTF::vec<N, std::uint8_t>>>();
+            return std::vector<glTF::vec<N, std::uint8_t>>();
 
         case glTF::kSHORT:
-            return std::make_optional<std::vector<glTF::vec<N, std::int16_t>>>();
+            return std::vector<glTF::vec<N, std::int16_t>>();
 
         case glTF::kUNSIGNED_SHORT:
-            return std::make_optional<std::vector<glTF::vec<N, std::uint16_t>>>();
+            return std::vector<glTF::vec<N, std::uint16_t>>();
 
         case glTF::kINT:
-            return std::make_optional<std::vector<glTF::vec<N, std::int32_t>>>();
+            return std::vector<glTF::vec<N, std::int32_t>>();
 
         case glTF::kUNSIGNED_INT:
-            return std::make_optional<std::vector<glTF::vec<N, std::uint32_t>>>();
+            return std::vector<glTF::vec<N, std::uint32_t>>();
 
         case glTF::kFLOAT:
-            return std::make_optional<std::vector<glTF::vec<N, std::float_t>>>();
+            return std::vector<glTF::vec<N, std::float_t>>();
 
         default:
-            return std::nullopt;
+            return { };
     }
 }
 
@@ -788,6 +891,14 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
                 });
 
             }, attributeBuffers.at(primitive.indices));
+
+            for (auto &&accessor : primitive.attributeAccessors) {
+                std::visit([] (auto accessor)
+                {
+                    ;
+
+                }, accessor);
+            }
 
             auto &&positions = std::get<std::vector<glTF::vec<3, std::float_t>>>(attributeBuffers.at(*primitive.attributes.position));
             auto &&normals = std::get<std::vector<glTF::vec<3, std::float_t>>>(attributeBuffers.at(*primitive.attributes.normal));
