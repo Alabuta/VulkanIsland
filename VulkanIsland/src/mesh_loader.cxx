@@ -146,7 +146,7 @@ using attribute_t = std::variant<
 using buffer_t = wrap_variant_by_vector<attribute_t>::type;
 
 
-enum eSEMANTICS : std::size_t {
+enum class eSEMANTIC : std::size_t {
     nPOSITION = 0,
     nNORMAL,
     nTEXCOORD_0,
@@ -158,17 +158,24 @@ enum eSEMANTICS : std::size_t {
 };
 
 namespace semantic {
-template<class T>
-struct attribute { };
+template<eSEMANTIC S>
+struct attribute {
+    static auto constexpr semantic{S};
 
-struct position : attribute<position> {};
-struct normal : attribute<normal> {};
-struct tex_coord_0 : attribute<tex_coord_0> {};
-struct tex_coord_1 : attribute<tex_coord_1> {};
-struct tangent : attribute<tangent> {};
-struct color_0 : attribute<color_0> {};
-struct joints_0 : attribute<joints_0> {};
-struct weights_0 : attribute<weights_0> {};
+    auto constexpr operator< (attribute rhs) const noexcept
+    {
+        return semantic < rhs.semantic;
+    }
+};
+
+struct position : attribute<eSEMANTIC::nPOSITION> {};
+struct normal : attribute<eSEMANTIC::nNORMAL> {};
+struct tex_coord_0 : attribute<eSEMANTIC::nTEXCOORD_0> {};
+struct tex_coord_1 : attribute<eSEMANTIC::nTEXCOORD_1> {};
+struct tangent : attribute<eSEMANTIC::nTANGENT> {};
+struct color_0 : attribute<eSEMANTIC::nCOLOR_0> {};
+struct joints_0 : attribute<eSEMANTIC::nJOINTS_0> {};
+struct weights_0 : attribute<eSEMANTIC::nWEIGHTS_0> {};
 }
 
 using semantic_t = std::variant<
@@ -328,7 +335,7 @@ struct mesh_t {
         std::optional<std::size_t> material;
         std::size_t indices;
 
-        std::vector<glTF::attribute::accessor_t> attributeAccessors;
+        std::set<glTF::attribute::accessor_t> attributeAccessors;
 
         struct attributes_t {
             std::optional<std::size_t> position;
@@ -543,7 +550,7 @@ void from_json(nlohmann::json const &j, mesh_t &mesh)
                 {
                     attribute::accessor_t accessor = std::make_pair(semantic, index);
 
-                    primitive.attributeAccessors.push_back(std::move(accessor));
+                    primitive.attributeAccessors.emplace(std::move(accessor));
 
                 }, semantic.value());
             }
@@ -880,6 +887,8 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
             }, std::move(buffer.value()));
         }
     }
+
+    glTF::attribute::vertex_buffer_t vertexBuffer;
 
     for (auto &&mesh : meshes) {
         for (auto &&primitive : mesh.primitives) {
