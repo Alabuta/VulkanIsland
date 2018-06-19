@@ -890,6 +890,8 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
     glTF::attribute::vertex_buffer_t vertexBuffer;
 
+    std::vector<glTF::attribute::vertex_attribute_t> vertexAttributes;
+
     for (auto &&mesh : meshes) {
         for (auto &&primitive : mesh.primitives) {
             std::visit([&_indices, offset = std::size(vertices)] (auto &&indices)
@@ -902,9 +904,21 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
             }, attributeBuffers.at(primitive.indices));
 
             for (auto &&accessor : primitive.attributeAccessors) {
-                std::visit([] (auto accessor)
+                std::visit([&vertexAttributes, &attributeBuffers] (auto accessor)
                 {
-                    ;
+                    auto [semantic, index] = accessor;
+
+                    /*glTF::attribute::vertex_attribute_t pair = std::make_pair(semantic, std::move(attributeBuffers.at(index)));
+
+                    vertexAttributes.push_back(std::move(pair));*/
+
+                    /*std::visit([semantic = semantic, &vertexAttributes] (auto &&buffer)
+                    {
+                        glTF::attribute::vertex_attribute_t pair = std::make_pair(semantic, std::move(buffer));
+
+                        vertexAttributes.push_back(std::move(pair));
+
+                    }, attributeBuffers.at(index));*/
 
                 }, accessor);
             }
