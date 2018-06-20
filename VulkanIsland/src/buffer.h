@@ -14,6 +14,57 @@ class BufferPool;
 
 class DeviceMemory;
 
+class MemoryManager final {
+public:
+
+    MemoryManager(VulkanDevice &vulkanDevice, VkDeviceSize bufferImageGranularity);
+    ~MemoryManager();
+
+private:
+
+    static VkDeviceSize constexpr kBLOCK_ALLOCATION_SIZE{0x10'000'000};   // 256 MB
+
+    VulkanDevice &vulkanDevice_;
+    VkDeviceSize allocatedSize_{0}, bufferImageGranularity_{0};
+
+    struct Pool final {
+        std::uint32_t memoryTypeIndex;
+
+        struct comparator final {
+            using is_transparent = void;
+
+            template<class L, class R>
+            std::enable_if_t<are_same_v<Pool, L, R>, bool>
+            operator() (L &&lhs, R &&rhs) const noexcept
+            {
+                return lhs.memoryTypeIndex < rhs.memoryTypeIndex;
+            }
+
+            template<class T, class I, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>> && std::is_integral_v<I>>...>
+            auto operator() (T &&chunk, I memoryTypeIndex) const noexcept
+            {
+                return chunk.memoryTypeIndex < memoryTypeIndex;
+            }
+
+            template<class I, class T, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>> && std::is_integral_v<I>>...>
+            auto operator() (I memoryTypeIndex, T &&chunk) const noexcept
+            {
+                return chunk.memoryTypeIndex < memoryTypeIndex;
+            }
+        };
+
+        struct Block final {
+            VkDeviceMemory handle;
+            VkDeviceSize availableSize{0};
+
+            Block(VkDeviceMemory handle, VkDeviceSize availableSize)
+                    : handle{handle}, availableSize{availableSize}/*, availableChunks{{0, availableSize}}*/ { }
+        };
+    };
+
+    std::set<Pool, Pool::comparator> pools;
+};
+
 class MemoryPool final {
 public:
 

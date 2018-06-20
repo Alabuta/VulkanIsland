@@ -24,6 +24,19 @@ FindMemoryType(VulkanDevice const &vulkanDevice, std::uint32_t filter, VkMemoryP
 }
 }
 
+
+MemoryManager::MemoryManager(VulkanDevice &vulkanDevice, VkDeviceSize bufferImageGranularity)
+        : vulkanDevice_{vulkanDevice}, bufferImageGranularity_{bufferImageGranularity}
+{
+    if (kBLOCK_ALLOCATION_SIZE < bufferImageGranularity_)
+        throw std::runtime_error("default memory page is less than buffer image granularity size"s);
+
+}
+
+MemoryManager::~MemoryManager()
+{
+}
+
 MemoryPool::MemoryPool(VulkanDevice &vulkanDevice, VkDeviceSize bufferImageGranularity)
         : vulkanDevice_{vulkanDevice}, bufferImageGranularity_{bufferImageGranularity}
 {
