@@ -5,6 +5,7 @@
 #include <memory>
 #include <set>
 #include <map>
+#include <unordered_map>
 
 #include "main.h"
 #include "device.h"
@@ -17,39 +18,46 @@ class DeviceMemory;
 class MemoryManager final {
 public:
 
-    MemoryManager(VulkanDevice &vulkanDevice, VkDeviceSize bufferImageGranularity);
+    MemoryManager(VulkanDevice const &vulkanDevice, VkDeviceSize bufferImageGranularity);
     ~MemoryManager();
+
+    template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
+    [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(T buffer, VkMemoryPropertyFlags properties, bool linear = true)
+    {
+        return CheckRequirementsAndAllocate(buffer, properties, linear);
+    }
 
 private:
 
     static VkDeviceSize constexpr kBLOCK_ALLOCATION_SIZE{0x10'000'000};   // 256 MB
 
-    VulkanDevice &vulkanDevice_;
-    VkDeviceSize allocatedSize_{0}, bufferImageGranularity_{0};
+    VulkanDevice const &vulkanDevice_;
+    VkDeviceSize totalAllocatedSize_{0}, bufferImageGranularity_{0};
 
     struct Pool final {
-        std::uint32_t memoryTypeIndex;
+        std::uint32_t memoryTypeIndex{0};
+        VkDeviceSize allocatedSize{0};
 
         struct comparator final {
             using is_transparent = void;
 
             template<class L, class R>
             std::enable_if_t<are_same_v<Pool, L, R>, bool>
-            operator() (L &&lhs, R &&rhs) const noexcept
+                operator() (L &&lhs, R &&rhs) const noexcept
             {
                 return lhs.memoryTypeIndex < rhs.memoryTypeIndex;
             }
 
-            template<class T, class I, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>> && std::is_integral_v<I>>...>
-            auto operator() (T &&chunk, I memoryTypeIndex) const noexcept
+            template<class T, class S, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>> && std::is_integral_v<S>>...>
+            auto operator() (T &&pool, S memoryTypeIndex) const noexcept
             {
-                return chunk.memoryTypeIndex < memoryTypeIndex;
+                return pool.memoryTypeIndex < memoryTypeIndex;
             }
 
-            template<class I, class T, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>> && std::is_integral_v<I>>...>
-            auto operator() (I memoryTypeIndex, T &&chunk) const noexcept
+            template<class S, class T, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>> && std::is_integral_v<S>>...>
+            auto operator() (S memoryTypeIndex, T &&pool) const noexcept
             {
-                return chunk.memoryTypeIndex < memoryTypeIndex;
+                return pool.memoryTypeIndex < memoryTypeIndex;
             }
         };
 
@@ -57,12 +65,80 @@ private:
             VkDeviceMemory handle;
             VkDeviceSize availableSize{0};
 
+            struct comparator final {
+                using is_transparent = void;
+
+                template<class L, class R>
+                std::enable_if_t<are_same_v<Block, L, R>, bool>
+                    operator() (L &&lhs, R &&rhs) const noexcept
+                {
+                    return lhs.availableSize < rhs.availableSize;
+                }
+
+                template<class T, class S, typename std::enable_if_t<std::is_same_v<Block, std::decay_t<T>> && std::is_integral_v<S>>...>
+                auto operator() (T &&block, S availableSize) const noexcept
+                {
+                    return block.availableSize < availableSize;
+                }
+
+                template<class S, class T, typename std::enable_if_t<std::is_same_v<Block, std::decay_t<T>> && std::is_integral_v<S>>...>
+                auto operator() (S availableSize, T &&block) const noexcept
+                {
+                    return block.availableSize < availableSize;
+                }
+            };
+
+            struct Chunk final {
+                VkDeviceSize offset{0}, size{0};
+
+                Chunk(VkDeviceSize offset, VkDeviceSize size) noexcept : offset{offset}, size{size} { }
+
+                struct comparator final {
+                    using is_transparent = void;
+
+                    template<class L, class R>
+                    std::enable_if_t<are_same_v<Chunk, L, R>, bool>
+                    operator() (L &&lhs, R &&rhs) const noexcept
+                    {
+                        return lhs.size < rhs.size;
+                    }
+
+                    template<class T, class S, typename std::enable_if_t<std::is_same_v<Chunk, std::decay_t<T>> && std::is_integral_v<S>>...>
+                    auto operator() (T &&chunk, S size) const noexcept
+                    {
+                        return chunk.size < size;
+                    }
+
+                    template<class S, class T, typename std::enable_if_t<std::is_same_v<Chunk, std::decay_t<T>> && std::is_integral_v<S>>...>
+                    auto operator() (S size, T &&chunk) const noexcept
+                    {
+                        return chunk.size < size;
+                    }
+                };
+            };
+
+            std::multiset<Chunk, Chunk::comparator> availableChunks;
+
             Block(VkDeviceMemory handle, VkDeviceSize availableSize)
-                    : handle{handle}, availableSize{availableSize}/*, availableChunks{{0, availableSize}}*/ { }
+                : handle{handle}, availableSize{availableSize}, availableChunks{{0, availableSize}} { }
         };
+
+        std::unordered_map<VkDeviceMemory, Block/*, Block::comparator*/> blocks;
+
+        Pool(std::uint32_t memoryTypeIndex) : memoryTypeIndex{memoryTypeIndex} { }
     };
 
-    std::set<Pool, Pool::comparator> pools;
+    std::unordered_map<std::uint32_t, Pool/*, Pool::comparator*/> pools_;
+
+    /*template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
+    [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties);
+
+    template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
+    [[nodiscard]] std::shared_ptr<DeviceMemory> CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, bool linear);*/
+
+    auto AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size) -> decltype(Pool::blocks)::iterator;
+
+    void DeallocateMemory(DeviceMemory const &deviceMemory);
 };
 
 class MemoryPool final {
@@ -174,21 +250,21 @@ private:
 
 class BufferPool {
 public:
-    
+
     [[nodiscard]] static auto CreateBuffer(VulkanDevice &device, VkBuffer &buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
         ->std::shared_ptr<DeviceMemory>;
 
     [[nodiscard]] static auto CreateImage(VulkanDevice &vulkanDevice, VkImage &image,
-                                       std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
-                                       VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+                                          std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
+                                          VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
         ->std::shared_ptr<DeviceMemory>;
 
     [[nodiscard]] static auto CreateUniformBuffer(VulkanDevice &device, VkBuffer &uboBuffer, std::size_t size)
-        -> std::shared_ptr<DeviceMemory>;
+        ->std::shared_ptr<DeviceMemory>;
 
     [[nodiscard]] static std::optional<VkImage>
-    CreateImageHandle(VulkanDevice &vulkanDevice, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
-                      VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage);
+        CreateImageHandle(VulkanDevice &vulkanDevice, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
+                          VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage);
 };
 
 

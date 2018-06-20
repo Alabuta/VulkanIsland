@@ -3,7 +3,6 @@
 #include "image.h"
 
 namespace {
-
 [[nodiscard]] std::optional<std::uint32_t>
 FindMemoryType(VulkanDevice const &vulkanDevice, std::uint32_t filter, VkMemoryPropertyFlags propertyFlags)
 {
@@ -25,7 +24,7 @@ FindMemoryType(VulkanDevice const &vulkanDevice, std::uint32_t filter, VkMemoryP
 }
 
 
-MemoryManager::MemoryManager(VulkanDevice &vulkanDevice, VkDeviceSize bufferImageGranularity)
+MemoryManager::MemoryManager(VulkanDevice const &vulkanDevice, VkDeviceSize bufferImageGranularity)
         : vulkanDevice_{vulkanDevice}, bufferImageGranularity_{bufferImageGranularity}
 {
     if (kBLOCK_ALLOCATION_SIZE < bufferImageGranularity_)
@@ -35,7 +34,91 @@ MemoryManager::MemoryManager(VulkanDevice &vulkanDevice, VkDeviceSize bufferImag
 
 MemoryManager::~MemoryManager()
 {
+    for (auto &&[type, pool] : pools_)
+        for (auto &&[type, block] : pool.blocks)
+            vkFreeMemory(vulkanDevice_.handle(), block.handle, nullptr);
+
+    pools_.clear();
 }
+
+auto MemoryManager::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size)
+-> decltype(Pool::blocks)::iterator
+{
+    auto it_pool = pools_.try_emplace(memoryTypeIndex, memoryTypeIndex).first;
+    auto &&pool = it_pool->second;
+
+    VkMemoryAllocateInfo const memAllocInfo{
+        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+        nullptr,
+        size,
+        memoryTypeIndex
+    };
+
+    VkDeviceMemory handle;
+
+    if (auto result = vkAllocateMemory(vulkanDevice_.handle(), &memAllocInfo, nullptr, &handle); result != VK_SUCCESS)
+        throw std::runtime_error("failed to allocate block from device memory pool"s);
+
+    totalAllocatedSize_ += size;
+    pool.allocatedSize += size;
+
+    auto it = pool.blocks.try_emplace(handle, handle, size).first;
+
+    std::cout << "Memory pool: ["s << memoryTypeIndex << "]: #"s << std::size(pool.blocks) << " page allocation: "s;
+    std::cout << size / 1024.f << " KB/"s << totalAllocatedSize_ / std::pow(2.f, 20.f) << "MB\n"s;
+
+    return it;
+}
+
+void MemoryManager::DeallocateMemory(DeviceMemory const &memory)
+{
+    if (pools_.count(memory.typeIndex()) < 1) {
+        std::cerr << "Memory pool: dead chunk encountered.\n"s;
+        return;
+    }
+
+    auto &&pool = pools_.at(memory.typeIndex());
+
+    if (pool.blocks.count(memory.handle()) < 1) {
+        std::cerr << "Memory pool: dead chunk encountered.\n"s;
+        return;
+    }
+
+    auto &&block = pool.blocks.at(memory.handle());
+    auto &&availableChunks = block.availableChunks;
+
+    std::cout << "Memory pool: ["s << memory.typeIndex() << "]: releasing chunk: "s << memory.size() / 1024.f << "KB.\n"s;
+
+    auto it_chunk = availableChunks.emplace(memory.offset(), memory.size());
+
+    auto FindAdjacent = [] (auto begin, auto end, auto it_chunk) constexpr
+    {
+        return std::find_if(begin, end, [it_chunk] (auto &&chunk)
+        {
+            return chunk.offset + chunk.size == it_chunk->offset || it_chunk->offset + it_chunk->size == chunk.offset;
+        });
+    };
+
+    auto it_adjacent = FindAdjacent(std::begin(availableChunks), std::end(availableChunks), it_chunk);
+
+    while (it_adjacent != std::end(availableChunks)) {
+        auto [offsetA, sizeA] = *it_chunk;
+        auto [offsetB, sizeB] = *it_adjacent;
+
+        availableChunks.erase(it_chunk);
+        availableChunks.erase(it_adjacent);
+
+        it_chunk = availableChunks.emplace(std::min(offsetA, offsetB), sizeA + sizeB);
+
+        it_adjacent = FindAdjacent(std::begin(availableChunks), std::end(availableChunks), it_chunk);
+    }
+
+    block.availableSize += memory.size();
+}
+
+
+
+
 
 MemoryPool::MemoryPool(VulkanDevice &vulkanDevice, VkDeviceSize bufferImageGranularity)
         : vulkanDevice_{vulkanDevice}, bufferImageGranularity_{bufferImageGranularity}
