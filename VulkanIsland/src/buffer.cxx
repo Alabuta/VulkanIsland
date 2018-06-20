@@ -42,7 +42,7 @@ MemoryPool::~MemoryPool()
 
 template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
 [[nodiscard]] std::shared_ptr<DeviceMemory>
-MemoryPool::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties)
+MemoryPool::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, bool linear)
 {
     VkMemoryDedicatedRequirements memoryDedicatedRequirements{
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
@@ -338,7 +338,7 @@ void MemoryPool::DeallocateMemory(DeviceMemory const &memory)
     if (auto result = vkCreateImage(vulkanDevice.handle(), &createInfo, nullptr, &image); result != VK_SUCCESS)
         throw std::runtime_error("failed to create image: "s + std::to_string(result));
 
-    if (auto deviceMemory = vulkanDevice.memoryPool().AllocateMemory(image, properties); deviceMemory) {
+    if (auto deviceMemory = vulkanDevice.memoryPool().AllocateMemory(image, properties, tiling == VK_IMAGE_TILING_LINEAR); deviceMemory) {
         if (auto result = vkBindImageMemory(vulkanDevice.handle(), image, deviceMemory->handle(), deviceMemory->offset()); result != VK_SUCCESS)
             throw std::runtime_error("failed to bind image buffer memory: "s + std::to_string(result));
 

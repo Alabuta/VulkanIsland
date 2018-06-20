@@ -21,9 +21,9 @@ public:
     ~MemoryPool();
 
     template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
-    [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(T buffer, VkMemoryPropertyFlags properties)
+    [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(T buffer, VkMemoryPropertyFlags properties, bool linear = true)
     {
-        return CheckRequirementsAndAllocate(buffer, properties);
+        return CheckRequirementsAndAllocate(buffer, properties, linear);
     }
 
 private:
@@ -81,7 +81,7 @@ private:
     [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties);
 
     template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
-    [[nodiscard]] std::shared_ptr<DeviceMemory> CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties);
+    [[nodiscard]] std::shared_ptr<DeviceMemory> CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, bool linear);
 
     auto AllocateMemoryBlock(std::uint32_t memTypeIndex, VkDeviceSize size) -> decltype(memoryBlocks_)::iterator;
 
