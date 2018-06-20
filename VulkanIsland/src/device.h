@@ -5,6 +5,8 @@
 #include "queues.h"
 #include "queue_builder.h"
 
+#define USE_DEBUG_MARKERS 0
+
 class MemoryPool;
 
 
@@ -12,8 +14,7 @@ auto constexpr deviceExtensions = make_array(
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     VK_KHR_MAINTENANCE1_EXTENSION_NAME,
     VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
-    VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,
-    VK_EXT_DEBUG_MARKER_EXTENSION_NAME
+    VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME
 );
 
 class VulkanDevice final {
@@ -98,6 +99,10 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
             std::move(extensions.begin(), extensions.end(), std::back_inserter(extensions_));
 
         else std::copy(extensions.begin(), extensions.end(), std::back_inserter(extensions_));
+
+#if USE_DEBUG_MARKERS
+        extensions_.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+#endif
 
         std::copy(extensions_.begin(), extensions_.end(), std::back_inserter(extensions_view));
     }

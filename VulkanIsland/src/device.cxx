@@ -45,8 +45,6 @@ template<bool check_on_duplicates = false>
         return prop;
     });
 
-    //requiredExtensions.push_back(VkExtensionProperties{VK_EXT_DEBUG_MARKER_EXTENSION_NAME});
-
     std::sort(requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
 
     if constexpr (check_on_duplicates)
