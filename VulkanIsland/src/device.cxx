@@ -129,8 +129,8 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 
 VulkanDevice::~VulkanDevice()
 {
-    if (memoryPool_)
-        memoryPool_.reset(nullptr);
+    if (memoryManager_)
+        memoryManager_.reset(nullptr);
 
     if (device_) {
         vkDeviceWaitIdle(device_);

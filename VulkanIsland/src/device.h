@@ -8,7 +8,6 @@
 #define USE_DEBUG_MARKERS 0
 
 class MemoryManager;
-class MemoryPool;
 
 
 auto constexpr deviceExtensions = make_array(
@@ -30,9 +29,6 @@ public:
 
     template<class Q, std::size_t I = 0, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
     Q const &queue() const noexcept;
-
-    MemoryPool &memoryPool() noexcept { return *memoryPool_; }
-    MemoryPool const &memoryPool() const noexcept { return *memoryPool_; }
 
     MemoryManager &memoryManager() noexcept { return *memoryManager_; }
     MemoryManager const &memoryManager() const noexcept { return *memoryManager_; }
@@ -76,7 +72,6 @@ private:
     } queuePool_;
 
     std::unique_ptr<MemoryManager> memoryManager_;
-    std::unique_ptr<MemoryPool> memoryPool_;
 
     VulkanDevice() = delete;
     VulkanDevice(VulkanDevice const &) = delete;
@@ -125,7 +120,6 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
     VkPhysicalDeviceProperties properties;
     vkGetPhysicalDeviceProperties(physicalDevice_, &properties);
 
-    memoryPool_ = std::make_unique<MemoryPool>(*this, properties.limits.bufferImageGranularity);
     memoryManager_ = std::make_unique<MemoryManager>(*this, properties.limits.bufferImageGranularity);
 }
 
