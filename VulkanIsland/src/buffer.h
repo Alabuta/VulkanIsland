@@ -130,11 +130,11 @@ private:
 
     std::unordered_map<std::uint32_t, Pool/*, Pool::comparator*/> pools_;
 
-    /*template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
+    template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
     [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties);
 
     template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
-    [[nodiscard]] std::shared_ptr<DeviceMemory> CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, bool linear);*/
+    [[nodiscard]] std::shared_ptr<DeviceMemory> CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, bool linear);
 
     auto AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size) -> decltype(Pool::blocks)::iterator;
 

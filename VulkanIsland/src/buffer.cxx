@@ -41,11 +41,226 @@ MemoryManager::~MemoryManager()
     pools_.clear();
 }
 
+
+template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
+[[nodiscard]] std::shared_ptr<DeviceMemory>
+MemoryManager::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, bool linear)
+{
+    std::cout << std::boolalpha << linear << '\n';
+
+    VkMemoryDedicatedRequirements memoryDedicatedRequirements{
+            VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
+            nullptr,
+            0, 0
+    };
+
+    VkMemoryRequirements2 memoryRequirements2{
+            VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
+            &memoryDedicatedRequirements,{ }
+    };
+
+    if constexpr (std::is_same_v<T, VkBuffer>)
+    {
+        VkBufferMemoryRequirementsInfo2 const bufferMemoryRequirements{
+                VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
+                nullptr,
+                buffer
+        };
+
+        vkGetBufferMemoryRequirements2(vulkanDevice_.handle(), &bufferMemoryRequirements, &memoryRequirements2);
+    }
+
+    else {
+        VkImageMemoryRequirementsInfo2 const imageMemoryRequirements{
+                VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
+                nullptr,
+                buffer
+        };
+
+        vkGetImageMemoryRequirements2(vulkanDevice_.handle(), &imageMemoryRequirements, &memoryRequirements2);
+    }
+
+    return {};
+
+    if (memoryDedicatedRequirements.prefersDedicatedAllocation | memoryDedicatedRequirements.requiresDedicatedAllocation)
+        return AllocateMemory(memoryRequirements2, properties);
+
+    else return AllocateMemory(memoryRequirements2.memoryRequirements, properties);
+}
+
+template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
+[[nodiscard]] std::shared_ptr<DeviceMemory>
+MemoryManager::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags properties)
+{
+    std::uint32_t memoryTypeIndex{0};
+
+    auto constexpr kSUB_ALLOCATION = std::is_same_v<std::decay_t<R>, VkMemoryRequirements>;
+
+    auto &&memoryRequirements = [] (auto &&memoryRequirements2)
+    {
+        if constexpr (std::is_same_v<std::decay_t<decltype(memoryRequirements2)>, VkMemoryRequirements>)
+            return memoryRequirements2;
+
+        else return memoryRequirements2.memoryRequirements;
+
+    } (memoryRequirements2);
+
+    if constexpr (kSUB_ALLOCATION) {
+        if (memoryRequirements.size > kBLOCK_ALLOCATION_SIZE)
+            throw std::runtime_error("requested allocation size is bigger than memory page size"s);
+    }
+
+    if (auto index = FindMemoryType(vulkanDevice_, memoryRequirements.memoryTypeBits, properties); !index)
+        throw std::runtime_error("failed to find suitable memory type"s);
+
+    else memoryTypeIndex = index.value();
+
+    if (pools_.count(memoryTypeIndex) < 1) {
+        pools_.emplace(memoryTypeIndex);
+        //AllocateMemoryBlock(memoryTypeIndex, kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
+    }
+
+    auto &&pool = pools_.at(memoryTypeIndex);
+
+    decltype(Pool::blocks)::iterator it_block;
+    decltype(Pool::Block::availableChunks)::iterator it_chunk;
+
+
+    it_block = std::find_if(std::begin(pool.blocks), std::end(pool.blocks), [&it_chunk, &memoryRequirements] (auto &&pair)
+    {
+        auto &&[handle, memoryBlock] = pair;
+
+        if (memoryBlock.availableSize < memoryRequirements.size)
+            return false;
+
+        auto &&availableChunks = memoryBlock.availableChunks;
+
+        if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>) {
+            auto [it_chunk_begin, it_chunk_end] = availableChunks.equal_range(memoryRequirements.size);
+
+            it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [&memoryRequirements] (auto &&chunk)
+            {
+                auto alignedOffset = ((chunk.offset + memoryRequirements.alignment - 1) / memoryRequirements.alignment) * memoryRequirements.alignment;
+
+                return alignedOffset + memoryRequirements.size <= chunk.offset + chunk.size;
+            });
+
+            return it_chunk != it_chunk_end;
+        }
+
+        else {
+            it_chunk = std::begin(availableChunks);
+
+            return availableChunks.size() == 1 && it_chunk->offset == 0;
+        }
+    });
+
+
+#if 0
+
+    auto [it_begin, it_end] = memoryBlocks_.equal_range(memoryTypeIndex);
+
+    if (it_begin == std::end(memoryBlocks_)) {
+        it_block = AllocateMemoryBlock(memoryTypeIndex, kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
+        it_chunk = it_block->second.availableChunks.lower_bound(kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
+    }
+
+    else {
+        it_block = std::find_if(it_begin, it_end, [&it_chunk, &memoryRequirements] (auto &&pair)
+        {
+            auto &&[type, memoryBlock] = pair;
+
+            if (memoryBlock.availableSize < memoryRequirements.size)
+                return false;
+
+            auto &&availableChunks = memoryBlock.availableChunks;
+
+            if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>) {
+                auto [it_chunk_begin, it_chunk_end] = availableChunks.equal_range(memoryRequirements.size);
+
+                it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [&memoryRequirements] (auto &&chunk)
+                {
+                    auto alignedOffset = ((chunk.offset + memoryRequirements.alignment - 1) / memoryRequirements.alignment) * memoryRequirements.alignment;
+
+                    return alignedOffset + memoryRequirements.size <= chunk.offset + chunk.size;
+                });
+
+                return it_chunk != it_chunk_end;
+            }
+
+            else {
+                it_chunk = std::begin(availableChunks);
+
+                return availableChunks.size() == 1 && it_chunk->offset == 0;
+            }
+        });
+
+        if (it_block == it_end) {
+            it_block = AllocateMemoryBlock(memoryTypeIndex, kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
+            it_chunk = it_block->second.availableChunks.lower_bound(kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
+        }
+    }
+
+    auto &&memoryBlock = it_block->second;
+    auto &&availableChunks = memoryBlock.availableChunks;
+
+    if (auto node = availableChunks.extract(it_chunk); node) {
+        auto &&[offset, size] = node.value();
+
+        auto memoryOffset = offset;
+
+        if constexpr (kSUB_ALLOCATION) {
+            auto alignedOffset = ((offset + memoryRequirements.alignment - 1) / memoryRequirements.alignment) * memoryRequirements.alignment;
+
+            size -= memoryRequirements.size + alignedOffset - offset;
+            offset = alignedOffset + memoryRequirements.size;
+
+            availableChunks.insert(std::move(node));
+
+            if (alignedOffset > offset)
+                availableChunks.emplace(offset, alignedOffset - offset);
+
+            memoryBlock.availableSize -= memoryRequirements.size;
+            memoryOffset = alignedOffset;
+        }
+
+        else {
+            auto const wastedMemoryRatio = 100.f - memoryRequirements.size / static_cast<float>(memoryBlock.availableSize) * 100.f;
+            if (wastedMemoryRatio > 1.f)
+                std::cerr << "Memory pool: wasted memory ratio: "s << wastedMemoryRatio << "%\n"s;
+
+            availableChunks.emplace(memoryRequirements.size, memoryBlock.availableSize - memoryRequirements.size);
+            memoryBlock.availableSize -= memoryRequirements.size;
+        }
+
+        availableChunks.erase(Block::Chunk{0, 0});
+
+        std::cout << "Memory pool: ["s << memoryTypeIndex << "]: sub-allocation : "s << memoryRequirements.size / 1024.f << "KB\n"s;
+
+        return std::shared_ptr<DeviceMemory>{
+                new DeviceMemory{memoryBlock.handle, memoryTypeIndex, memoryRequirements.size, memoryOffset},
+                [this] (DeviceMemory *const ptr_memory)
+                {
+                    DeallocateMemory(*ptr_memory);
+
+                    delete ptr_memory;
+                }
+        };
+    }
+
+    else throw std::runtime_error("failed to extract available memory block chunk"s);
+#endif
+
+    return { };
+}
+
 auto MemoryManager::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size)
 -> decltype(Pool::blocks)::iterator
 {
-    auto it_pool = pools_.try_emplace(memoryTypeIndex, memoryTypeIndex).first;
-    auto &&pool = it_pool->second;
+    if (pools_.count(memoryTypeIndex) < 1)
+        throw std::runtime_error("failed to find instantiated memory pool for type index: "s + std::to_string(memoryTypeIndex));
+
+    auto &&pool = pools_.at(memoryTypeIndex);
 
     VkMemoryAllocateInfo const memAllocInfo{
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -140,6 +355,8 @@ template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>..
 [[nodiscard]] std::shared_ptr<DeviceMemory>
 MemoryPool::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, bool linear)
 {
+    std::cout << std::boolalpha << linear << '\n';
+
     VkMemoryDedicatedRequirements memoryDedicatedRequirements{
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
         nullptr,
@@ -396,6 +613,9 @@ void MemoryPool::DeallocateMemory(DeviceMemory const &memory)
 
     if (auto result = vkCreateBuffer(device.handle(), &bufferCreateInfo, nullptr, &buffer); result != VK_SUCCESS)
         throw std::runtime_error("failed to create buffer: "s + std::to_string(result));
+
+    auto x = device.memoryManager().AllocateMemory(buffer, properties);
+    std::cout << x;
 
 
     if (auto memory = device.memoryPool().AllocateMemory(buffer, properties); !memory)
