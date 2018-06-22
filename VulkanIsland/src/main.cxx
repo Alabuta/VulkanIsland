@@ -134,7 +134,7 @@ CreateImageView(VulkanDevice const &device, VulkanImage const &image, VkFormat f
     if (auto result = vkCreateImageView(device.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
         throw std::runtime_error("failed to create image view: "s + std::to_string(result));
 
-    else view.emplace(handle);
+    else view.emplace(handle, format);
 
     return view;
 }
@@ -959,25 +959,31 @@ void GenerateMipMaps(VulkanDevice const &device, Q &queue, VkImage image, std::i
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
         auto constexpr format = VK_FORMAT_B8G8R8A8_UNORM;
+        auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
 
         auto const mipLevels = static_cast<std::uint32_t>(std::floor(std::log2(std::max(width, height))) + 1);
 
-        VkImage handle;
+        auto handle = CreateImageHandle(device, width, height, mipLevels, format, tiling, usageFlags);
 
-        auto memory = BufferPool::CreateImage(device, handle, width, height, mipLevels, format, VK_IMAGE_TILING_OPTIMAL, usageFlags, propertyFlags);
+        if (handle) {
+            auto memory = device.memoryManager().AllocateMemory(*handle, propertyFlags, tiling == VK_IMAGE_TILING_LINEAR);
 
-        if (memory) {
-            TransitionImageLayout(device, app.transferQueue, handle, format, VK_IMAGE_LAYOUT_UNDEFINED,
-                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, app.transferCommandPool);
+            if (memory) {
+                if (auto result = vkBindImageMemory(device.handle(), *handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
+                    throw std::runtime_error("failed to bind image buffer memory: "s + std::to_string(result));
 
-            CopyBufferToImage(device, app.transferQueue, stagingBuffer, handle, width, height, app.transferCommandPool);
+                TransitionImageLayout(device, app.transferQueue, *handle, format, VK_IMAGE_LAYOUT_UNDEFINED,
+                                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, app.transferCommandPool);
 
-            //TransitionImageLayout(device, transferQueue, image.handle, VK_FORMAT_B8G8R8A8_UNORM,
-            //                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, image.mipLevels);
+                CopyBufferToImage(device, app.transferQueue, stagingBuffer, *handle, width, height, app.transferCommandPool);
 
-            GenerateMipMaps(device, app.transferQueue, handle, width, width, mipLevels, app.transferCommandPool);
+                //TransitionImageLayout(device, transferQueue, image.handle, VK_FORMAT_B8G8R8A8_UNORM,
+                //                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, image.mipLevels);
 
-            image.emplace(handle, memory, mipLevels, width, height);
+                GenerateMipMaps(device, app.transferQueue, *handle, width, width, mipLevels, app.transferCommandPool);
+
+                image.emplace(*handle, memory, mipLevels, width, height);
+            }
         }
 
         vkDestroyBuffer(device.handle(), stagingBuffer, nullptr);
@@ -1014,9 +1020,9 @@ void CreateTextureSampler(VkDevice device, VkSampler &sampler, std::uint32_t mip
 }
 
 
-std::optional<VulkanTexture> CreateDepthAttachement(app_t &app, VulkanDevice &vulkanDevice)
+std::optional<VulkanTexture> CreateDepthAttachement(app_t &app, VulkanDevice &device)
 {
-    auto const format = FindDepthImageFormat(vulkanDevice.physical_handle());
+    auto const format = FindDepthImageFormat(device.physical_handle());
 
     auto const width = static_cast<std::uint32_t>(swapChainExtent.width);
     auto const height = static_cast<std::uint32_t>(swapChainExtent.height);
@@ -1026,43 +1032,37 @@ std::optional<VulkanTexture> CreateDepthAttachement(app_t &app, VulkanDevice &vu
     auto constexpr usageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
+    auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
+
     std::optional<VulkanTexture> texture;
 
-    /*VkImageCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        nullptr, 0,
-        VK_IMAGE_TYPE_2D,
-        format,
-        { width, height, 1 },
-        mipLevels, 1,
-        VK_SAMPLE_COUNT_1_BIT,
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
-        VK_SHARING_MODE_EXCLUSIVE,
-        0, nullptr,
-        VK_IMAGE_LAYOUT_UNDEFINED
-    };*/
+    auto handle = CreateImageHandle(device, width, height, mipLevels, format, tiling, usageFlags);
 
-    VkImage handle;
+    if (!handle)
+        return { };
 
-    auto memory = BufferPool::CreateImage(vulkanDevice, handle, width, height, mipLevels, format,
-                                          VK_IMAGE_TILING_OPTIMAL, usageFlags, propertyFlags);
+    auto memory = device.memoryManager().AllocateMemory(*handle, propertyFlags, tiling == VK_IMAGE_TILING_LINEAR);
 
-    if (memory) {
-        VulkanImage image{handle, memory, mipLevels, static_cast<std::uint16_t>(width), static_cast<std::uint16_t>(height)};
+    if (!memory)
+        return { };
 
-        VulkanImageView view;
+    if (auto result = vkBindImageMemory(device.handle(), *handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
+        throw std::runtime_error("failed to bind image buffer memory: "s + std::to_string(result));
 
-        if (auto result = CreateImageView(vulkanDevice, image, format, VK_IMAGE_ASPECT_DEPTH_BIT); !result)
-            throw std::runtime_error("failed to create depth image view"s);
+    std::optional<VulkanImage> image;
+    image.emplace(*handle, memory, mipLevels, width, height);
 
-        else view = std::move(result.value());
+    VulkanImageView view;
 
-        TransitionImageLayout(vulkanDevice, app.transferQueue, handle, format,
-                              VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, mipLevels, app.transferCommandPool);
+    if (auto result = CreateImageView(device, *image, format, VK_IMAGE_ASPECT_DEPTH_BIT); !result)
+        throw std::runtime_error("failed to create depth image view"s);
 
-        texture.emplace(image, view);
-    }
+    else view = std::move(result.value());
+
+    TransitionImageLayout(device, app.transferQueue, *handle, format, 
+                          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, mipLevels, app.transferCommandPool);
+
+    texture.emplace(*image, view);
 
     return texture;
 }
@@ -1414,4 +1414,5 @@ try {
 
 } catch (std::exception const &ex) {
     std::cout << ex.what() << std::endl;
+    std::cin.get();
 }

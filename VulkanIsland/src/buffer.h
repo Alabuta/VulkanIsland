@@ -11,8 +11,6 @@
 #include "device.h"
 #include "command_buffer.h"
 
-class BufferPool;
-
 class DeviceMemory;
 
 class MemoryManager final {
@@ -28,7 +26,6 @@ public:
     }
 
 private:
-
     static VkDeviceSize constexpr kBLOCK_ALLOCATION_SIZE{0x10'000'000};   // 256 MB
 
     VulkanDevice const &vulkanDevice_;
@@ -138,10 +135,6 @@ public:
 
     [[nodiscard]] static auto CreateUniformBuffer(VulkanDevice &device, VkBuffer &uboBuffer, std::size_t size)
         ->std::shared_ptr<DeviceMemory>;
-
-    [[nodiscard]] static std::optional<VkImage>
-        CreateImageHandle(VulkanDevice &vulkanDevice, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
-                          VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage);
 };
 
 
