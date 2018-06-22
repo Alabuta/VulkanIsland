@@ -79,17 +79,57 @@ private:
 
     std::unordered_map<std::uint32_t, Pool> pools_;
 
-    template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
-    [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties);
-
     template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
     [[nodiscard]] std::shared_ptr<DeviceMemory> CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, bool linear);
+
+    template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
+    [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties);
 
     auto AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size) -> decltype(Pool::blocks)::iterator;
 
     void DeallocateMemory(DeviceMemory const &deviceMemory);
 };
 
+template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
+[[nodiscard]] std::shared_ptr<DeviceMemory>
+MemoryManager::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, [[maybe_unused]] bool linear)
+{
+    VkMemoryDedicatedRequirements memoryDedicatedRequirements{
+        VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
+        nullptr,
+        0, 0
+    };
+
+    VkMemoryRequirements2 memoryRequirements2{
+        VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
+        &memoryDedicatedRequirements,{ }
+    };
+
+    if constexpr (std::is_same_v<T, VkBuffer>) {
+        VkBufferMemoryRequirementsInfo2 const bufferMemoryRequirements{
+            VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
+            nullptr,
+            buffer
+        };
+
+        vkGetBufferMemoryRequirements2(vulkanDevice_.handle(), &bufferMemoryRequirements, &memoryRequirements2);
+    }
+
+    else {
+        VkImageMemoryRequirementsInfo2 const imageMemoryRequirements{
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
+            nullptr,
+            buffer
+        };
+
+        vkGetImageMemoryRequirements2(vulkanDevice_.handle(), &imageMemoryRequirements, &memoryRequirements2);
+    }
+
+    if (memoryDedicatedRequirements.prefersDedicatedAllocation | memoryDedicatedRequirements.requiresDedicatedAllocation)
+        return AllocateMemory(memoryRequirements2, properties);
+
+    else return AllocateMemory(memoryRequirements2.memoryRequirements, properties);
+}
 
 
 class DeviceMemory final {
@@ -122,15 +162,11 @@ private:
     friend MemoryManager;
 };
 
+
 class BufferPool {
 public:
 
     [[nodiscard]] static auto CreateBuffer(VulkanDevice &device, VkBuffer &buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
-        ->std::shared_ptr<DeviceMemory>;
-
-    [[nodiscard]] static auto CreateImage(VulkanDevice &vulkanDevice, VkImage &image,
-                                          std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
-                                          VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
         ->std::shared_ptr<DeviceMemory>;
 
     [[nodiscard]] static auto CreateUniformBuffer(VulkanDevice &device, VkBuffer &uboBuffer, std::size_t size)

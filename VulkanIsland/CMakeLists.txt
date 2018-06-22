@@ -27,11 +27,11 @@ set(SOURCE_FILES
         src/device_defaults.h
         src/helpers.h
         src/isle_math.h
-        src/image.h
         src/program.h
         src/queue_builder.h
         src/queues.h
         src/buffer.cxx                          src/buffer.h
+        src/image.cxx                           src/image.h
         src/debug.cxx                           src/debug.h
         src/device.cxx                          src/device.h
         src/instance.cxx                        src/instance.h

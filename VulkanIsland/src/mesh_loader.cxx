@@ -903,6 +903,7 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
             }, attributeBuffers.at(primitive.indices));
 
+#if NOT_YET_IMPLEMENTED
             for (auto &&accessor : primitive.attributeAccessors) {
                 std::visit([&vertexAttributes, &attributeBuffers] (auto accessor)
                 {
@@ -922,6 +923,7 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
                 }, accessor);
             }
+#endif
 
             auto &&positions = std::get<std::vector<glTF::vec<3, std::float_t>>>(attributeBuffers.at(*primitive.attributes.position));
             auto &&normals = std::get<std::vector<glTF::vec<3, std::float_t>>>(attributeBuffers.at(*primitive.attributes.normal));

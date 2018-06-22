@@ -41,50 +41,6 @@ MemoryManager::~MemoryManager()
 }
 
 
-template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
-[[nodiscard]] std::shared_ptr<DeviceMemory>
-MemoryManager::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, bool linear)
-{
-    std::cout << std::boolalpha << linear << '\n';
-
-    VkMemoryDedicatedRequirements memoryDedicatedRequirements{
-            VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,
-            nullptr,
-            0, 0
-    };
-
-    VkMemoryRequirements2 memoryRequirements2{
-            VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2,
-            &memoryDedicatedRequirements,{ }
-    };
-
-    if constexpr (std::is_same_v<T, VkBuffer>)
-    {
-        VkBufferMemoryRequirementsInfo2 const bufferMemoryRequirements{
-                VK_STRUCTURE_TYPE_BUFFER_MEMORY_REQUIREMENTS_INFO_2,
-                nullptr,
-                buffer
-        };
-
-        vkGetBufferMemoryRequirements2(vulkanDevice_.handle(), &bufferMemoryRequirements, &memoryRequirements2);
-    }
-
-    else {
-        VkImageMemoryRequirementsInfo2 const imageMemoryRequirements{
-                VK_STRUCTURE_TYPE_IMAGE_MEMORY_REQUIREMENTS_INFO_2,
-                nullptr,
-                buffer
-        };
-
-        vkGetImageMemoryRequirements2(vulkanDevice_.handle(), &imageMemoryRequirements, &memoryRequirements2);
-    }
-
-    if (memoryDedicatedRequirements.prefersDedicatedAllocation | memoryDedicatedRequirements.requiresDedicatedAllocation)
-        return AllocateMemory(memoryRequirements2, properties);
-
-    else return AllocateMemory(memoryRequirements2.memoryRequirements, properties);
-}
-
 template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
 [[nodiscard]] std::shared_ptr<DeviceMemory>
 MemoryManager::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags properties)
@@ -314,41 +270,6 @@ void MemoryManager::DeallocateMemory(DeviceMemory const &memory)
     return { };
 }
 
-[[nodiscard]] auto BufferPool::CreateImage(VulkanDevice &vulkanDevice, VkImage &image, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
-                                           VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
-    -> std::shared_ptr<DeviceMemory>
-{
-    VkImageCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-        nullptr, 0,
-        VK_IMAGE_TYPE_2D,
-        format,
-        { width, height, 1 },
-        mipLevels,
-        1,
-        VK_SAMPLE_COUNT_1_BIT,
-        tiling,
-        usage,
-        VK_SHARING_MODE_EXCLUSIVE,
-        0, nullptr,
-        VK_IMAGE_LAYOUT_UNDEFINED
-    };
-
-    if (auto result = vkCreateImage(vulkanDevice.handle(), &createInfo, nullptr, &image); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create image: "s + std::to_string(result));
-
-    if (auto deviceMemory = vulkanDevice.memoryManager().AllocateMemory(image, properties, tiling == VK_IMAGE_TILING_LINEAR); deviceMemory) {
-        if (auto result = vkBindImageMemory(vulkanDevice.handle(), image, deviceMemory->handle(), deviceMemory->offset()); result != VK_SUCCESS)
-            throw std::runtime_error("failed to bind image buffer memory: "s + std::to_string(result));
-
-        return deviceMemory;
-    }
-
-    else throw std::runtime_error("failed to allocate image buffer memory"s);
-}
-
-
-
 [[nodiscard]] auto BufferPool::CreateUniformBuffer(VulkanDevice &device, VkBuffer &uboBuffer, std::size_t size)
     -> std::shared_ptr<DeviceMemory>
 {
@@ -357,4 +278,3 @@ void MemoryManager::DeallocateMemory(DeviceMemory const &memory)
 
     return CreateBuffer(device, uboBuffer, size, usageFlags, propertyFlags);
 }
-
