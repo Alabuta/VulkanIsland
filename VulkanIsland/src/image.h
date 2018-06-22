@@ -19,12 +19,16 @@ struct VulkanImage final {
         handle{handle}, memory{memory}, mipLevels{mipLevels}, width{width}, height{height} { }
 };
 
+// template<VkImageViewType ImageViewType>
 struct VulkanImageView final {
+    // static auto constexpr kImageViewType{ImageViewType};
+
     VkImageView handle;
+    VkFormat format{VK_FORMAT_UNDEFINED};
 
     VulkanImageView() = default;
 
-    VulkanImageView(VkImageView handle) : handle{handle} { }
+    VulkanImageView(VkImageView handle, VkFormat format) : handle{handle}, format{format} { }
 };
 
 struct VulkanSampler final {
@@ -40,3 +44,7 @@ struct VulkanTexture final {
 
     VulkanTexture(VulkanImage image, VulkanImageView view) : image{image}, view{view} { }
 };
+
+[[nodiscard]] std::optional<VkImage>
+CreateImageHandle(VulkanDevice &vulkanDevice, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
+                  VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage);
