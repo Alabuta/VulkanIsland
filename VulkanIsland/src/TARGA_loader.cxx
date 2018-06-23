@@ -12,7 +12,7 @@ std::optional<texel_buffer_t> instantiate_texel_buffer()
     return std::make_optional<std::vector<vec<N, std::uint8_t>>>();
 }
 
-std::optional<texel_buffer_t> instantiate_texel_buffer(std::uint8_t pixelDepth)
+std::optional<texel_buffer_t> instantiate_texel_buffer(std::uint8_t pixelDepth) noexcept
 {
     switch (pixelDepth) {
         case 8:
@@ -32,7 +32,7 @@ std::optional<texel_buffer_t> instantiate_texel_buffer(std::uint8_t pixelDepth)
     }
 }
 
-constexpr auto GetPixelLayout(std::uint8_t pixelDepth)
+constexpr ePIXEL_LAYOUT GetPixelLayout(std::uint8_t pixelDepth) noexcept
 {
     switch (pixelDepth) {
         case 8:
@@ -52,11 +52,39 @@ constexpr auto GetPixelLayout(std::uint8_t pixelDepth)
             break;
 
         default:
-            return ePIXEL_LAYOUT::nINVALID;
+            return ePIXEL_LAYOUT::nUNDEFINED;
     }
 }
 
-void LoadUncompressedTrueColorImage(Image &image, TARGA &targa, std::ifstream &file)
+constexpr VkFormat GetPixelFormat(ePIXEL_LAYOUT pixelLayout) noexcept
+{
+    switch (pixelLayout) {
+        case ePIXEL_LAYOUT::nRED:
+            return VK_FORMAT_R8_UNORM;
+
+        case ePIXEL_LAYOUT::nRG:
+            return VK_FORMAT_R8G8_UNORM;
+
+        case ePIXEL_LAYOUT::nRGB:
+            return VK_FORMAT_R8G8B8_UNORM;
+
+        case ePIXEL_LAYOUT::nBGR:
+            return VK_FORMAT_B8G8R8_UNORM;
+
+        case ePIXEL_LAYOUT::nRGBA:
+            return VK_FORMAT_R8G8B8A8_UNORM;
+
+        case ePIXEL_LAYOUT::nBGRA:
+            return VK_FORMAT_B8G8R8A8_UNORM;
+
+        case ePIXEL_LAYOUT::nUNDEFINED:
+        default:
+            return VK_FORMAT_UNDEFINED;
+    }
+}
+
+
+void LoadUncompressedTrueColorImage(TARGA &targa, std::ifstream &file)
 {
     texel_buffer_t buffer;
 
@@ -65,11 +93,11 @@ void LoadUncompressedTrueColorImage(Image &image, TARGA &targa, std::ifstream &f
 
     else return;
 
-    image.pixelLayout = GetPixelLayout(targa.pixelDepth);
+    targa.pixelLayout = GetPixelLayout(targa.pixelDepth);
 
-    std::visit([&image, &file] (auto &&buffer)
+    std::visit([&targa, &file] (auto &&buffer)
     {
-        buffer.resize(image.width * image.height);
+        buffer.resize(targa.width * targa.height);
 
         using texel_t = typename std::decay_t<decltype(buffer)>::value_type;
 
@@ -77,6 +105,8 @@ void LoadUncompressedTrueColorImage(Image &image, TARGA &targa, std::ifstream &f
 
         if constexpr (texel_t::size == 3)
         {
+            targa.pixelLayout = targa.pixelLayout == ePIXEL_LAYOUT::nRGB ? ePIXEL_LAYOUT::nRGBA : ePIXEL_LAYOUT::nBGRA;
+
             using vec_type = vec<4, typename texel_t::value_type>;
 
             std::vector<vec_type> intermidiateBuffer(std::size(buffer));
@@ -85,15 +115,15 @@ void LoadUncompressedTrueColorImage(Image &image, TARGA &targa, std::ifstream &f
             for (auto &&texel : buffer)
                 intermidiateBuffer.at(++i - 1) = std::move(vec_type{texel.array.at(0), texel.array.at(1), texel.array.at(2), 1});
 
-            image.data = std::move(intermidiateBuffer);
+            targa.data = std::move(intermidiateBuffer);
         }
 
-        else image.data = std::move(buffer);
+        else targa.data = std::move(buffer);
 
     }, std::move(buffer));
 }
 
-void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream &file)
+void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
 {
     if ((targa.header.colorMapType & 0x01) != 0x01)
         return;
@@ -107,7 +137,7 @@ void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream 
 
     else return;
 
-    image.pixelLayout = GetPixelLayout(targa.colorMapDepth);
+    targa.pixelLayout = GetPixelLayout(targa.colorMapDepth);
 
     auto colorMapStart = static_cast<std::size_t>((targa.header.colorMapSpec.at(1) << 8) + targa.header.colorMapSpec.at(0));
     auto colorMapLength = static_cast<std::size_t>((targa.header.colorMapSpec.at(3) << 8) + targa.header.colorMapSpec.at(2));
@@ -124,6 +154,8 @@ void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream 
 
         if constexpr (texel_t::size == 3)
         {
+            targa.pixelLayout = targa.pixelLayout == ePIXEL_LAYOUT::nRGB ? ePIXEL_LAYOUT::nRGBA : ePIXEL_LAYOUT::nBGRA;
+
             using vec_type = vec<4, typename texel_t::value_type>;
 
             std::vector<vec_type> intermidiateBuffer(std::size(palette));
@@ -139,12 +171,12 @@ void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream 
 
     }, std::move(palette));
 
-    std::visit([&image, &file] (auto &&palette)
+    std::visit([&targa, &file] (auto &&palette)
     {
-        std::vector<std::size_t> indices(image.width * image.height);
+        std::vector<std::size_t> indices(targa.width * targa.height);
         file.read(reinterpret_cast<char *>(std::data(indices)), std::size(indices) * sizeof(std::byte));
 
-        std::decay_t<decltype(palette)> buffer(image.width * image.height);
+        std::decay_t<decltype(palette)> buffer(targa.width * targa.height);
 
         std::ptrdiff_t begin, end;
         std::size_t colorIndex;
@@ -161,12 +193,12 @@ void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream 
             std::fill_n(std::next(std::begin(buffer), begin), end - begin, palette.at(colorIndex));
         }
 
-        image.data = std::move(buffer);
+        targa.data = std::move(buffer);
 
     }, std::move(palette));
 }
 
-[[nodiscard]] std::optional<Image> LoadTARGA(std::string_view _name)
+[[nodiscard]] std::optional<RawImage> LoadTARGA(std::string_view _name)
 {
     auto current_path = fs::current_path();
 
@@ -189,16 +221,11 @@ void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream 
     targa.height = static_cast<std::int16_t>((targa.header.imageSpec.at(7) << 8) + targa.header.imageSpec.at(6));
     targa.pixelDepth = targa.header.imageSpec.at(8);
 
-    Image image;
-
-    image.width = targa.width;
-    image.height = targa.height;
-    image.pixelDepth = targa.pixelDepth;
-
-    [[maybe_unused]] auto const alphaDepth = targa.header.imageSpec.at(9) & 0x07; // First three bits from last byte of image specification field.
-
-    if (image.width * image.height * image.pixelDepth < 0)
+    if (targa.width * targa.height * targa.pixelDepth < 0)
         return { };
+
+    // 0x07 - first three bits from last byte of image specification field.
+    [[maybe_unused]] auto const alphaDepth = targa.header.imageSpec.at(9) & 0x07;
 
     std::vector<std::byte> imageID(targa.header.IDLength);
 
@@ -220,12 +247,12 @@ void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream 
 
         // Uncompressed color-mapped image
         case 0x01:
-            std::cout << measure<>::execution(LoadUncompressedColorMappedImage, image, targa, file) << '\n';
+            LoadUncompressedColorMappedImage(targa, file);
             break;
 
         // Uncompressed true-color image
         case 0x02:
-            std::cout << measure<>::execution(LoadUncompressedTrueColorImage, image, targa, file) << '\n';
+            LoadUncompressedTrueColorImage(targa, file);
             break;
 
         default:
@@ -234,8 +261,19 @@ void LoadUncompressedColorMappedImage(Image &image, TARGA &targa, std::ifstream 
 
     file.close();
 
-    if (image.pixelLayout == ePIXEL_LAYOUT::nINVALID)
+    if (targa.pixelLayout == ePIXEL_LAYOUT::nUNDEFINED)
         return { };
+
+    RawImage image;
+
+    image.format = GetPixelFormat(targa.pixelLayout);
+
+    image.width = targa.width;
+    image.height = targa.height;
+
+    image.mipLevels = static_cast<std::uint32_t>(std::floor(std::log2(std::max(image.width, image.height))) + 1);
+
+    image.data = std::move(targa.data);
 
     return image;
 }

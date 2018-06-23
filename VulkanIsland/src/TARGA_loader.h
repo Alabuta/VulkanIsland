@@ -7,7 +7,7 @@
 
 
 enum class ePIXEL_LAYOUT {
-    nINVALID = 0, nRED, nRG, nRGB, nBGR, nRGBA, nBGRA
+    nUNDEFINED = 0, nRED, nRG, nRGB, nBGR, nRGBA, nBGRA
 };
 
 using byte_t = std::uint8_t;
@@ -34,16 +34,7 @@ using texel_t = std::variant<
 
 using texel_buffer_t = wrap_variant_by_vector<texel_t>::type;
 
-struct Image {
-    ePIXEL_LAYOUT pixelLayout = ePIXEL_LAYOUT::nINVALID;
-    std::int16_t width = 0, height = 0;
-    std::uint8_t pixelDepth = 0;
-
-    texel_buffer_t data;
-};
-
-struct Image1 {
-    VkImage handle;
+struct RawImage {
     VkFormat format{VK_FORMAT_UNDEFINED};
 
     std::int16_t width{0}, height{0};
@@ -61,7 +52,7 @@ struct TARGA {
         std::array<byte_t, 10> imageSpec;
     } header;
 
-    ePIXEL_LAYOUT pixelLayout{ePIXEL_LAYOUT::nINVALID};
+    ePIXEL_LAYOUT pixelLayout{ePIXEL_LAYOUT::nUNDEFINED};
 
     std::int16_t width{0}, height{0};
     std::uint8_t pixelDepth{0}, colorMapDepth{0};
@@ -69,4 +60,4 @@ struct TARGA {
     texel_buffer_t data;
 };
 
-[[nodiscard]] std::optional<Image> LoadTARGA(std::string_view name);
+[[nodiscard]] std::optional<RawImage> LoadTARGA(std::string_view name);

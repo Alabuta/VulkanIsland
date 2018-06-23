@@ -887,7 +887,7 @@ void CreateSemaphores(app_t &app, VkDevice device)
 {
     std::optional<VulkanImage> image;
 
-    Image rawImage;
+    RawImage rawImage;
 
     if (auto result = LoadTARGA(name); !result) {
         std::cerr << "failed to load an image\n"s;
@@ -931,12 +931,9 @@ void CreateSemaphores(app_t &app, VkDevice device)
         auto constexpr usageFlags = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-        auto constexpr format = VK_FORMAT_B8G8R8A8_UNORM;
         auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
 
-        auto const mipLevels = static_cast<std::uint32_t>(std::floor(std::log2(std::max(width, height))) + 1);
-
-        auto handle = CreateImageHandle(device, width, height, mipLevels, format, tiling, usageFlags);
+        auto handle = CreateImageHandle(device, width, height, rawImage.mipLevels, rawImage.format, tiling, usageFlags);
 
         if (handle) {
             auto memory = device.memoryManager().AllocateMemory(*handle, propertyFlags, tiling == VK_IMAGE_TILING_LINEAR);
@@ -945,18 +942,18 @@ void CreateSemaphores(app_t &app, VkDevice device)
                 if (auto result = vkBindImageMemory(device.handle(), *handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
                     throw std::runtime_error("failed to bind image buffer memory: "s + std::to_string(result));
 
-                TransitionImageLayout(device, app.transferQueue, *handle, format, VK_IMAGE_LAYOUT_UNDEFINED,
-                                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, app.transferCommandPool);
+                TransitionImageLayout(device, app.transferQueue, *handle, rawImage.format, VK_IMAGE_LAYOUT_UNDEFINED,
+                                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, rawImage.mipLevels, app.transferCommandPool);
 
-                image.emplace(*handle, memory, format, mipLevels, width, height);
+                image.emplace(*handle, memory, rawImage.format, rawImage.mipLevels, width, height);
 
                 CopyBufferToImage(device, app.transferQueue, stagingBuffer, *handle, width, height, app.transferCommandPool);
 
                 if (generateMipMaps)
                     GenerateMipMaps(device, app.transferQueue, *image, app.transferCommandPool);
 
-                else TransitionImageLayout(device, app.transferQueue, *handle, format,
-                                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels, app.transferCommandPool);
+                else TransitionImageLayout(device, app.transferQueue, *handle, rawImage.format, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, rawImage.mipLevels, app.transferCommandPool);
             }
         }
 
