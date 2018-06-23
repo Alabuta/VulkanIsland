@@ -35,7 +35,7 @@
     <ClCompile Include="src\buffer.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\image.cxx\image.cxx">
+    <ClCompile Include="src\image.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
