@@ -135,6 +135,7 @@ MemoryManager::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags pro
 
         else {
             auto const wastedMemoryRatio = 100.f - memoryRequirements.size / static_cast<float>(memoryBlock.availableSize) * 100.f;
+
             if (wastedMemoryRatio > 1.f)
                 std::cerr << "Memory pool: wasted memory ratio: "s << wastedMemoryRatio << "%\n"s;
 

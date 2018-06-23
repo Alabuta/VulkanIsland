@@ -707,12 +707,12 @@ auto CreateVertexBuffer(app_t &app, VulkanDevice &device, VkBuffer &vertexBuffer
         auto memory = BufferPool::CreateBuffer(device, stagingBuffer, bufferSize, usageFlags, propertyFlags);
 
         if (memory) {
-            decltype(app.vertices)::value_type *data;
+            void *data;
 
-            if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
+            if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, &data); result != VK_SUCCESS)
                 throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
 
-            std::uninitialized_copy(std::begin(app.vertices), std::end(app.vertices), data);
+            std::uninitialized_copy(std::begin(app.vertices), std::end(app.vertices), reinterpret_cast<decltype(app.vertices)::value_type*>(data));
 
             vkUnmapMemory(device.handle(), memory->handle());
         }
@@ -1323,12 +1323,12 @@ void UpdateUniformBuffer(VulkanDevice const &device, DeviceMemory const &memory,
     transforms.proj = glm::make_mat4(std::data(proj.m));
     //transforms.proj = glm::perspective(glm::radians(kFOV), aspect, zNear, zFar);
 
-    decltype(transforms) *data;
-    if (auto result = vkMapMemory(device.handle(), memory.handle(), memory.offset(), memory.size(), 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
+    void *data;
+    if (auto result = vkMapMemory(device.handle(), memory.handle(), memory.offset(), memory.size(), 0, &data); result != VK_SUCCESS)
         throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
 
     auto const array = make_array(transforms);
-    std::uninitialized_copy(std::begin(array), std::end(array), data);
+    std::uninitialized_copy(std::begin(array), std::end(array), reinterpret_cast<decltype(transforms)*>(data));
 
     vkUnmapMemory(device.handle(), memory.handle());
 }
