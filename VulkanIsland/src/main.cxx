@@ -107,15 +107,13 @@ struct app_t {
     VkBuffer vertexBuffer, indexBuffer, uboBuffer;
     std::shared_ptr<DeviceMemory> vertexMemory, indexMemory, uboMemory;
 
-    VkImageView textureImageView;
-    VkSampler textureSampler;
-
-    VulkanImage textureImage;
+    VulkanTexture texture;
+    VulkanSampler textureSampler;
 };
 
 
 [[nodiscard]] std::optional<VulkanImageView>
-CreateImageView(VulkanDevice const &device, VulkanImage const &image, VkFormat format, VkImageAspectFlags aspectFlags)
+CreateImageView(VulkanDevice const &device, VulkanImage const &image, VkImageAspectFlags aspectFlags) noexcept
 {
     std::optional<VulkanImageView> view;
 
@@ -124,7 +122,7 @@ CreateImageView(VulkanDevice const &device, VulkanImage const &image, VkFormat f
         nullptr, 0,
         image.handle,
         VK_IMAGE_VIEW_TYPE_2D,
-        format,
+        image.format,
         { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
         { aspectFlags, 0, image.mipLevels, 0, 1 }
     };
@@ -132,11 +130,41 @@ CreateImageView(VulkanDevice const &device, VulkanImage const &image, VkFormat f
     VkImageView handle;
 
     if (auto result = vkCreateImageView(device.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create image view: "s + std::to_string(result));
+        std::cerr << "failed to create image view: "s << result << '\n';
 
-    else view.emplace(handle, format);
+    else view.emplace(handle, image.format);
 
     return view;
+}
+
+std::optional<VulkanSampler> CreateTextureSampler(VkDevice device, std::uint32_t mipLevels) noexcept
+{
+    std::optional<VulkanSampler> sampler;
+
+    VkSamplerCreateInfo const createInfo{
+        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        nullptr, 0,
+        VK_FILTER_LINEAR, VK_FILTER_LINEAR,
+        VK_SAMPLER_MIPMAP_MODE_LINEAR,
+        VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        VK_SAMPLER_ADDRESS_MODE_REPEAT,
+        0.f,
+        VK_TRUE, 16.f,
+        VK_FALSE, VK_COMPARE_OP_ALWAYS,
+        0.f, static_cast<float>(mipLevels),
+        VK_BORDER_COLOR_INT_OPAQUE_BLACK,
+        VK_FALSE
+    };
+
+    VkSampler handle;
+
+    if (auto result = vkCreateSampler(device, &createInfo, nullptr, &handle); result != VK_SUCCESS)
+        std::cerr << "failed to create sampler: "s << result << '\n';
+
+    else sampler.emplace(handle);
+
+    return sampler;
 }
 
 
@@ -286,7 +314,7 @@ void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descripto
     };
 
     VkDescriptorImageInfo const imageInfo{
-        app.textureSampler, app.textureImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        app.textureSampler.handle, app.texture.view.handle, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     };
 
     std::array<VkWriteDescriptorSet, 2> const writeDescriptorsSet{{
@@ -855,69 +883,16 @@ void CreateSemaphores(app_t &app, VkDevice device)
 }
 
 
-template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
-void GenerateMipMaps(VulkanDevice const &device, Q &queue, VkImage image, std::int32_t width, std::int32_t height, std::uint32_t mipLevels, VkCommandPool commandPool)
+[[nodiscard]] std::optional<VulkanImage> LoadImage(app_t &app, VulkanDevice &device, std::string_view name, bool generateMipMaps)
 {
-    auto commandBuffer = BeginSingleTimeCommand(device, queue, commandPool);
+    std::optional<VulkanImage> image;
 
-    VkImageMemoryBarrier barrier{
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
-        nullptr,
-        0, 0,
-        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_UNDEFINED,
-        VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
-        image,
-        { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
-    };
-
-    for (auto i = 1u; i < mipLevels; ++i) {
-        barrier.subresourceRange.baseMipLevel = i - 1;
-        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-        barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-
-        vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-        VkImageBlit const imageBlit{
-            { VK_IMAGE_ASPECT_COLOR_BIT, i - 1, 0, 1 },
-            {{ 0, 0, 0 }, { width, height, 1 }},
-            { VK_IMAGE_ASPECT_COLOR_BIT, i, 0, 1 },
-            {{ 0, 0, 0 }, { width / 2, height / 2, 1 }}
-        };
-
-        vkCmdBlitImage(commandBuffer, image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
-
-        barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-        barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-        barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
-        barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-        vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-        if (width > 1) width /= 2;
-        if (height > 1) height /= 2;
-    }
-
-    barrier.subresourceRange.baseMipLevel = mipLevels - 1;
-    barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-    barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-    barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
-
-    vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
-
-    EndSingleTimeCommand(device, queue, commandBuffer, commandPool);
-}
-
-[[nodiscard]] std::optional<VulkanImage> CreateImage(app_t &app, VulkanDevice &device)
-{
     Image rawImage;
 
-    //if (auto result = LoadTARGA("chalet/textures/chalet.tga"sv); !result)
-    //if (auto result = LoadTARGA("Hebe/textures/HebehebemissinSG1_metallicRoughness.tga"sv); !result)
-    if (auto result = LoadTARGA("sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
-        throw std::runtime_error("failed to load an image"s);
+    if (auto result = LoadTARGA(name); !result) {
+        std::cerr << "failed to load an image\n"s;
+        return { };
+    }
 
     else rawImage = std::move(result.value());
 
@@ -935,12 +910,12 @@ void GenerateMipMaps(VulkanDevice const &device, Q &queue, VkImage image, std::i
         auto memory = BufferPool::CreateBuffer(device, stagingBuffer, bufferSize, usageFlags, propertyFlags);
 
         if (memory) {
-            texel_t *data;
+            void *data;
 
-            if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
+            if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, &data); result != VK_SUCCESS)
                 throw std::runtime_error("failed to map image buffer memory: "s + std::to_string(result));
 
-            std::uninitialized_copy(std::begin(texels), std::end(texels), data);
+            std::uninitialized_copy(std::begin(texels), std::end(texels), reinterpret_cast<texel_t*>(data));
 
             vkUnmapMemory(device.handle(), memory->handle());
         }
@@ -948,8 +923,6 @@ void GenerateMipMaps(VulkanDevice const &device, Q &queue, VkImage image, std::i
         return memory;
 
     }, std::move(rawImage.data));
-
-    std::optional<VulkanImage> image;
 
     if (stagingMemory) {
         auto const width = static_cast<std::uint32_t>(rawImage.width);
@@ -975,14 +948,15 @@ void GenerateMipMaps(VulkanDevice const &device, Q &queue, VkImage image, std::i
                 TransitionImageLayout(device, app.transferQueue, *handle, format, VK_IMAGE_LAYOUT_UNDEFINED,
                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels, app.transferCommandPool);
 
+                image.emplace(*handle, memory, format, mipLevels, width, height);
+
                 CopyBufferToImage(device, app.transferQueue, stagingBuffer, *handle, width, height, app.transferCommandPool);
 
-                //TransitionImageLayout(device, transferQueue, image.handle, VK_FORMAT_B8G8R8A8_UNORM,
-                //                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, image.mipLevels);
+                if (generateMipMaps)
+                    GenerateMipMaps(device, app.transferQueue, *image, app.transferCommandPool);
 
-                GenerateMipMaps(device, app.transferQueue, *handle, width, width, mipLevels, app.transferCommandPool);
-
-                image.emplace(*handle, memory, mipLevels, width, height);
+                else TransitionImageLayout(device, app.transferQueue, *handle, format,
+                                           VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels, app.transferCommandPool);
             }
         }
 
@@ -992,33 +966,22 @@ void GenerateMipMaps(VulkanDevice const &device, Q &queue, VkImage image, std::i
     return image;
 }
 
-void CreateTextureImageView(VkDevice device, VkImageView &imageView, VkImage &image, std::uint32_t mipLevels)
+
+std::optional<VulkanTexture> CreateTexture(app_t &app, VulkanDevice &device, std::string_view name)
 {
-    imageView = CreateImageView(device, image, VK_FORMAT_B8G8R8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, mipLevels);
+    std::optional<VulkanTexture> texture;
+
+    if (auto image = LoadImage(app, *app.vulkanDevice, name, true); image)
+        if (auto view = CreateImageView(device, *image, VK_IMAGE_ASPECT_COLOR_BIT); view)
+            texture.emplace(*image, *view);
+
+    /*auto sampler = CreateTextureSampler(app.vulkanDevice->handle(), image->mipLevels);
+
+    if (!sampler)
+        return { };*/
+
+    return texture;
 }
-
-void CreateTextureSampler(VkDevice device, VkSampler &sampler, std::uint32_t mipLevels)
-{
-    VkSamplerCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        nullptr, 0,
-        VK_FILTER_LINEAR, VK_FILTER_LINEAR,
-        VK_SAMPLER_MIPMAP_MODE_LINEAR,
-        VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        0.f,
-        VK_TRUE, 16.f,
-        VK_FALSE, VK_COMPARE_OP_ALWAYS,
-        0.f, static_cast<float>(mipLevels),
-        VK_BORDER_COLOR_INT_OPAQUE_BLACK,
-        VK_FALSE
-    };
-
-    if (auto result = vkCreateSampler(device, &createInfo, nullptr, &sampler); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create sampler: "s + std::to_string(result));
-}
-
 
 std::optional<VulkanTexture> CreateDepthAttachement(app_t &app, VulkanDevice &device)
 {
@@ -1050,11 +1013,11 @@ std::optional<VulkanTexture> CreateDepthAttachement(app_t &app, VulkanDevice &de
         throw std::runtime_error("failed to bind image buffer memory: "s + std::to_string(result));
 
     std::optional<VulkanImage> image;
-    image.emplace(*handle, memory, mipLevels, width, height);
+    image.emplace(*handle, memory, format, mipLevels, width, height);
 
     VulkanImageView view;
 
-    if (auto result = CreateImageView(device, *image, format, VK_IMAGE_ASPECT_DEPTH_BIT); !result)
+    if (auto result = CreateImageView(device, *image, VK_IMAGE_ASPECT_DEPTH_BIT); !result)
         throw std::runtime_error("failed to create depth image view"s);
 
     else view = std::move(result.value());
@@ -1213,13 +1176,17 @@ void InitVulkan(GLFWwindow *window, app_t &app)
 
     CreateFramebuffers(app.vulkanDevice.get(), app.renderPass, swapChainImageViews, swapChainFramebuffers);
 
-    if (auto result = CreateImage(app, *app.vulkanDevice); !result)
-        throw std::runtime_error("failed to create texture image"s);
+    // "chalet/textures/chalet.tga"sv
+    // "Hebe/textures/HebehebemissinSG1_metallicRoughness.tga"sv
+    if (auto result = CreateTexture(app, *app.vulkanDevice, "sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
+        throw std::runtime_error("failed to load a texture"s);
 
-    else app.textureImage = std::move(result.value());
+    else app.texture = std::move(result.value());
 
-    CreateTextureImageView(app.vulkanDevice->handle(), app.textureImageView, app.textureImage.handle, app.textureImage.mipLevels);
-    CreateTextureSampler(app.vulkanDevice->handle(), app.textureSampler, app.textureImage.mipLevels);
+    if (auto result = CreateTextureSampler(app.vulkanDevice->handle(), app.texture.image.mipLevels); !result)
+        throw std::runtime_error("failed to create a texture sampler"s);
+
+    else app.textureSampler = std::move(result.value());
 
     if (auto result = LoadGLTF("sponza"sv, app.vertices, app.indices); !result)
         throw std::runtime_error("failed to load a mesh"s);
@@ -1252,14 +1219,14 @@ void CleanUp(app_t &app)
     vkDestroyDescriptorSetLayout(app.vulkanDevice->handle(), app.descriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(app.vulkanDevice->handle(), app.descriptorPool, nullptr);
 
-    if (app.textureSampler)
-        vkDestroySampler(app.vulkanDevice->handle(), app.textureSampler, nullptr);
+    if (app.textureSampler.handle)
+        vkDestroySampler(app.vulkanDevice->handle(), app.textureSampler.handle, nullptr);
 
-    if (app.textureImageView)
-        vkDestroyImageView(app.vulkanDevice->handle(), app.textureImageView, nullptr);
+    if (app.texture.view.handle)
+        vkDestroyImageView(app.vulkanDevice->handle(), app.texture.view.handle, nullptr);
 
-    vkDestroyImage(app.vulkanDevice->handle(), app.textureImage.handle, nullptr);
-    app.textureImage.memory.reset();
+    vkDestroyImage(app.vulkanDevice->handle(), app.texture.image.handle, nullptr);
+    app.texture.image.memory.reset();
 
     if (app.uboBuffer)
         vkDestroyBuffer(app.vulkanDevice->handle(), app.uboBuffer, nullptr);
