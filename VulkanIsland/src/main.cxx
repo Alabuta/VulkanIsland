@@ -112,61 +112,6 @@ struct app_t {
 };
 
 
-[[nodiscard]] std::optional<VulkanImageView>
-CreateImageView(VulkanDevice const &device, VulkanImage const &image, VkImageAspectFlags aspectFlags) noexcept
-{
-    std::optional<VulkanImageView> view;
-
-    VkImageViewCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        nullptr, 0,
-        image.handle,
-        VK_IMAGE_VIEW_TYPE_2D,
-        image.format,
-        { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
-        { aspectFlags, 0, image.mipLevels, 0, 1 }
-    };
-
-    VkImageView handle;
-
-    if (auto result = vkCreateImageView(device.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
-        std::cerr << "failed to create image view: "s << result << '\n';
-
-    else view.emplace(handle, image.format);
-
-    return view;
-}
-
-std::optional<VulkanSampler> CreateTextureSampler(VkDevice device, std::uint32_t mipLevels) noexcept
-{
-    std::optional<VulkanSampler> sampler;
-
-    VkSamplerCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        nullptr, 0,
-        VK_FILTER_LINEAR, VK_FILTER_LINEAR,
-        VK_SAMPLER_MIPMAP_MODE_LINEAR,
-        VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        0.f,
-        VK_TRUE, 16.f,
-        VK_FALSE, VK_COMPARE_OP_ALWAYS,
-        0.f, static_cast<float>(mipLevels),
-        VK_BORDER_COLOR_INT_OPAQUE_BLACK,
-        VK_FALSE
-    };
-
-    VkSampler handle;
-
-    if (auto result = vkCreateSampler(device, &createInfo, nullptr, &handle); result != VK_SUCCESS)
-        std::cerr << "failed to create sampler: "s << result << '\n';
-
-    else sampler.emplace(handle);
-
-    return sampler;
-}
-
 
 [[nodiscard]] VkImageView CreateImageView(VkDevice device, VkImage &image, VkFormat format, VkImageAspectFlags aspectFlags, std::uint32_t mipLevels)
 {
@@ -189,46 +134,7 @@ std::optional<VulkanSampler> CreateTextureSampler(VkDevice device, std::uint32_t
 }
 
 
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
-[[nodiscard]] std::optional<VkFormat> FindSupportedImageFormat(VkPhysicalDevice physicalDevice, T &&candidates,
-                                                               VkImageTiling tiling, VkFormatFeatureFlags features)
-{
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkFormat>, "iterable object does not contain 'VkFormat' elements");
 
-    auto it_format = std::find_if(std::cbegin(candidates), std::cend(candidates), [physicalDevice, tiling, features] (auto candidate)
-    {
-        VkFormatProperties properties;
-        vkGetPhysicalDeviceFormatProperties(physicalDevice, candidate, &properties);
-
-        switch (tiling) {
-            case VK_IMAGE_TILING_LINEAR:
-                return (properties.linearTilingFeatures & features) == features;
-
-            case VK_IMAGE_TILING_OPTIMAL:
-                return (properties.optimalTilingFeatures & features) == features;
-
-            default:
-                return false;
-        }
-    });
-
-    return it_format != std::cend(candidates) ? *it_format : std::optional<VkFormat>();
-}
-
-[[nodiscard]] VkFormat FindDepthImageFormat(VkPhysicalDevice physicalDevice)
-{
-    auto const format = FindSupportedImageFormat(
-        physicalDevice,
-        make_array(VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT),
-        VK_IMAGE_TILING_OPTIMAL,
-        VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
-    );
-
-    if (!format)
-        throw std::runtime_error("failed to find format for depth attachement"s);
-
-    return format.value();
-}
 
 
 void CleanupSwapChain(app_t &app, VulkanDevice const &device, VkSwapchainKHR swapChain, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
@@ -360,9 +266,14 @@ void CreateRenderPass(app_t &app, VkPhysicalDevice physicalDevice, VkDevice devi
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
     };
 
+    auto depthFormat = FindDepthImageFormat(physicalDevice);
+
+    if (!depthFormat)
+        throw std::runtime_error("failed to find format for depth attachement"s);
+
     VkAttachmentDescription const depthAttachement{
         VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
-        FindDepthImageFormat(physicalDevice),
+        *depthFormat,
         VK_SAMPLE_COUNT_1_BIT,
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -963,8 +874,7 @@ void CreateSemaphores(app_t &app, VkDevice device)
     return image;
 }
 
-
-std::optional<VulkanTexture> CreateTexture(app_t &app, VulkanDevice &device, std::string_view name)
+std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
 {
     std::optional<VulkanTexture> texture;
 
@@ -982,47 +892,26 @@ std::optional<VulkanTexture> CreateTexture(app_t &app, VulkanDevice &device, std
 
 std::optional<VulkanTexture> CreateDepthAttachement(app_t &app, VulkanDevice &device)
 {
-    auto const format = FindDepthImageFormat(device.physical_handle());
-
-    auto const width = static_cast<std::uint32_t>(swapChainExtent.width);
-    auto const height = static_cast<std::uint32_t>(swapChainExtent.height);
-
-    auto constexpr mipLevels = 1u;
-
-    auto constexpr usageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-    auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
-
     std::optional<VulkanTexture> texture;
 
-    auto handle = CreateImageHandle(device, width, height, mipLevels, format, tiling, usageFlags);
+    if (auto const format = FindDepthImageFormat(device.physical_handle()); format) {
+        auto const width = static_cast<std::uint32_t>(swapChainExtent.width);
+        auto const height = static_cast<std::uint32_t>(swapChainExtent.height);
 
-    if (!handle)
-        return { };
+        auto constexpr mipLevels = 1u;
 
-    auto memory = device.memoryManager().AllocateMemory(*handle, propertyFlags, tiling == VK_IMAGE_TILING_LINEAR);
+        auto constexpr usageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-    if (!memory)
-        return { };
+        auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
 
-    if (auto result = vkBindImageMemory(device.handle(), *handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
-        throw std::runtime_error("failed to bind image buffer memory: "s + std::to_string(result));
+        texture = CreateTexture(device, *format, width, height, mipLevels, tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
 
-    std::optional<VulkanImage> image;
-    image.emplace(*handle, memory, format, mipLevels, width, height);
+        TransitionImageLayout(device, app.transferQueue, texture->image.handle, *format, VK_IMAGE_LAYOUT_UNDEFINED,
+                              VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, mipLevels, app.transferCommandPool);
+    }
 
-    VulkanImageView view;
-
-    if (auto result = CreateImageView(device, *image, VK_IMAGE_ASPECT_DEPTH_BIT); !result)
-        throw std::runtime_error("failed to create depth image view"s);
-
-    else view = std::move(result.value());
-
-    TransitionImageLayout(device, app.transferQueue, *handle, format, 
-                          VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, mipLevels, app.transferCommandPool);
-
-    texture.emplace(*image, view);
+    else std::cerr << "failed to find format for depth attachement\n"s;
 
     return texture;
 }
@@ -1173,12 +1062,19 @@ void InitVulkan(GLFWwindow *window, app_t &app)
 
     CreateFramebuffers(app.vulkanDevice.get(), app.renderPass, swapChainImageViews, swapChainFramebuffers);
 
+
+
     // "chalet/textures/chalet.tga"sv
     // "Hebe/textures/HebehebemissinSG1_metallicRoughness.tga"sv
-    if (auto result = CreateTexture(app, *app.vulkanDevice, "sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
+    if (auto result = LoadTexture(app, *app.vulkanDevice, "sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
         throw std::runtime_error("failed to load a texture"s);
 
     else app.texture = std::move(result.value());
+
+
+    //app.texture = CreateTexture(device, *format, width, height, mipLevels, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
+
+
 
     if (auto result = CreateTextureSampler(app.vulkanDevice->handle(), app.texture.image.mipLevels); !result)
         throw std::runtime_error("failed to create a texture sampler"s);
