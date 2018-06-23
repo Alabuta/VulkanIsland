@@ -1221,8 +1221,8 @@ void InitVulkan(GLFWwindow *window, app_t &app)
     CreateTextureImageView(app.vulkanDevice->handle(), app.textureImageView, app.textureImage.handle, app.textureImage.mipLevels);
     CreateTextureSampler(app.vulkanDevice->handle(), app.textureSampler, app.textureImage.mipLevels);
 
-    if (auto result = LoadModel("chalet.obj"sv, app.vertices, app.indices); !result)
-        throw std::runtime_error("failed to load mesh"s);
+    if (auto result = LoadGLTF("sponza"sv, app.vertices, app.indices); !result)
+        throw std::runtime_error("failed to load a mesh"s);
 
     app.vertexMemory = CreateVertexBuffer(app, *app.vulkanDevice, app.vertexBuffer);
     app.indexMemory = CreateIndexBuffer(app, *app.vulkanDevice, app.indexBuffer);
