@@ -1,6 +1,4 @@
-
-
-#define _SCL_SECURE_NO_WARNINGS 
+#define _SCL_SECURE_NO_WARNINGS
 
 
 #ifdef _MSC_VER
@@ -84,6 +82,7 @@ struct app_t {
     std::unique_ptr<VulkanDevice> vulkanDevice;
 
     VkSurfaceKHR surface;
+    VulkanSwapchain swapchain;
 
     GraphicsQueue graphicsQueue;
     TransferQueue transferQueue;
@@ -99,7 +98,6 @@ struct app_t {
     VkDescriptorPool descriptorPool;
     VkDescriptorSet descriptorSet;
 
-    //std::vector<VkFramebuffer> swapChainFramebuffers;
     std::vector<VkCommandBuffer> commandBuffers;
 
     VkSemaphore imageAvailableSemaphore, renderFinishedSemaphore;
@@ -113,31 +111,7 @@ struct app_t {
 
 
 
-[[nodiscard]] VkImageView CreateImageView(VkDevice device, VkImage &image, VkFormat format, VkImageAspectFlags aspectFlags, std::uint32_t mipLevels)
-{
-    VkImageViewCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        nullptr, 0,
-        image,
-        VK_IMAGE_VIEW_TYPE_2D,
-        format,
-        { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
-        { aspectFlags, 0, mipLevels, 0, 1 }
-    };
-
-    VkImageView imageView;
-
-    if (auto result = vkCreateImageView(device, &createInfo, nullptr, &imageView); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create image view: "s + std::to_string(result));
-
-    return imageView;
-}
-
-
-
-
-
-void CleanupSwapChain(app_t &app, VulkanDevice const &device, VkSwapchainKHR swapChain, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
+void CleanupFrameData(app_t &app, VulkanDevice &device, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
 {
     if (app.graphicsCommandPool)
         vkFreeCommandBuffers(device.handle(), app.graphicsCommandPool, static_cast<std::uint32_t>(std::size(app.commandBuffers)), std::data(app.commandBuffers));
@@ -153,9 +127,8 @@ void CleanupSwapChain(app_t &app, VulkanDevice const &device, VkSwapchainKHR swa
     if (renderPass)
         vkDestroyRenderPass(device.handle(), renderPass, nullptr);
 
-    CleanupSwapChain(device, swapChain);
+    CleanupSwapchain(device, app.swapchain);
 }
-
 
 
 void CreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout &descriptorSetLayout)
@@ -250,12 +223,11 @@ void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descripto
 }
 
 
-
 void CreateRenderPass(app_t &app, VkPhysicalDevice physicalDevice, VkDevice device)
 {
     VkAttachmentDescription const colorAttachment{
         VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
-        swapChainImageFormat,
+        app.swapchain.format,
         VK_SAMPLE_COUNT_1_BIT,
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -391,13 +363,13 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
     };
 
     VkViewport const viewport{
-        0, static_cast<float>(swapChainExtent.height),
-        static_cast<float>(swapChainExtent.width), -static_cast<float>(swapChainExtent.height),
+        0, static_cast<float>(app.swapchain.extent.height),
+        static_cast<float>(app.swapchain.extent.width), -static_cast<float>(app.swapchain.extent.height),
         0, 1
     };
 
     VkRect2D const scissor{
-        {0, 0}, swapChainExtent
+        {0, 0}, app.swapchain.extent
     };
 
     VkPipelineViewportStateCreateInfo const viewportStateCreateInfo{
@@ -497,37 +469,34 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
 }
 
 
-
-template<class T, class U, typename std::enable_if_t<is_iterable_v<std::decay_t<T>> && is_iterable_v<std::decay_t<U>>>...>
-void CreateFramebuffers(VulkanDevice *vulkanDevice, VkRenderPass renderPass, T &&imageViews, U &framebuffers)
+void CreateFramebuffers(VulkanDevice const &device, VkRenderPass renderPass, VulkanSwapchain &swapchain)
 {
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkImageView>, "iterable object does not contain VkImageView elements");
-    static_assert(std::is_same_v<typename std::decay_t<U>::value_type, VkFramebuffer>, "iterable object does not contain VkFramebuffer elements");
+    auto &&framebuffers = swapchain.framebuffers;
+    auto &&views = swapchain.views;
 
     framebuffers.clear();
 
-    std::transform(std::cbegin(imageViews), std::cend(imageViews), std::back_inserter(framebuffers), [vulkanDevice, renderPass] (auto &&imageView)
+    std::transform(std::cbegin(views), std::cend(views), std::back_inserter(framebuffers), [&device, renderPass, &swapchain] (auto &&imageView)
     {
-        auto const attachements = make_array(imageView, depthTexture.view.handle);
+        auto const attachements = make_array(imageView, swapchain.depthTexture.view.handle);
 
         VkFramebufferCreateInfo const createInfo{
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
             nullptr, 0,
             renderPass,
             static_cast<std::uint32_t>(std::size(attachements)), std::data(attachements),
-            swapChainExtent.width, swapChainExtent.height,
+            swapchain.extent.width, swapchain.extent.height,
             1
         };
 
         VkFramebuffer framebuffer;
 
-        if (auto result = vkCreateFramebuffer(vulkanDevice->handle(), &createInfo, nullptr, &framebuffer); result != VK_SUCCESS)
+        if (auto result = vkCreateFramebuffer(device.handle(), &createInfo, nullptr, &framebuffer); result != VK_SUCCESS)
             throw std::runtime_error("failed to create a framebuffer: "s + std::to_string(result));
 
         return framebuffer;
     });
 }
-
 
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
@@ -543,9 +512,6 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
     if (auto result = vkCreateCommandPool(device, &createInfo, nullptr, &commandPool); result != VK_SUCCESS)
         throw std::runtime_error("failed to create a command buffer: "s + std::to_string(result));
 }
-
-
-
 
 
 auto CreateVertexBuffer(app_t &app, VulkanDevice &device, VkBuffer &vertexBuffer)
@@ -649,9 +615,6 @@ auto CreateIndexBuffer(app_t &app, VulkanDevice &device, VkBuffer &indexBuffer)
 }
 
 
-
-
-
 template<class T, class U, typename std::enable_if_t<is_iterable_v<std::decay_t<T>> && is_iterable_v<std::decay_t<U>>>...>
 void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass renderPass, VkCommandPool commandPool, T &commandBuffers, U &framebuffers)
 {
@@ -694,7 +657,7 @@ void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass r
             nullptr,
             renderPass,
             framebuffers.at(i++),
-            {{0, 0}, swapChainExtent},
+            {{0, 0}, app.swapchain.extent},
             static_cast<std::uint32_t>(std::size(clearColors)), std::data(clearColors)
         };
 
@@ -722,7 +685,6 @@ void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass r
             throw std::runtime_error("failed to end command buffer: "s + std::to_string(result));
     }
 }
-
 
 void CreateSemaphores(app_t &app, VkDevice device)
 {
@@ -793,22 +755,22 @@ void RecreateSwapChain(app_t &app)
 
     vkDeviceWaitIdle(app.vulkanDevice->handle());
 
-    CleanupSwapChain(app, *app.vulkanDevice, swapChain, app.graphicsPipeline, app.pipelineLayout, app.renderPass);
+    CleanupFrameData(app, *app.vulkanDevice, app.graphicsPipeline, app.pipelineLayout, app.renderPass);
 
-    CreateSwapChain(*app.vulkanDevice, app.surface, swapChain, WIDTH, HEIGHT, app.presentationQueue, app.graphicsQueue);
-    CreateSwapChainImageAndViews(*app.vulkanDevice, swapChainImages, swapChainImageViews);
+    auto swapchain = CreateSwapchain(*app.vulkanDevice, app.surface, WIDTH, HEIGHT,
+                                     app.presentationQueue, app.graphicsQueue, app.transferQueue, app.transferCommandPool);
 
-    if (auto result = CreateDepthAttachement(*app.vulkanDevice, app.transferQueue, app.transferCommandPool); !result)
-        throw std::runtime_error("failed to create depth texture"s);
+    if (swapchain)
+        app.swapchain = std::move(swapchain.value());
 
-    else depthTexture = std::move(result.value());
+    else throw std::runtime_error("failed to create the swapchain"s);
 
     CreateRenderPass(app, app.vulkanDevice->physical_handle(), app.vulkanDevice->handle());
     CreateGraphicsPipeline(app, app.vulkanDevice->handle());
 
-    CreateFramebuffers(app.vulkanDevice.get(), app.renderPass, swapChainImageViews, swapChainFramebuffers);
+    CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
-    CreateCommandBuffers(app, *app.vulkanDevice, app.renderPass, app.graphicsCommandPool, app.commandBuffers, swapChainFramebuffers);
+    CreateCommandBuffers(app, *app.vulkanDevice, app.renderPass, app.graphicsCommandPool, app.commandBuffers, app.swapchain.framebuffers);
 }
 
 void OnWindowResize([[maybe_unused]] GLFWwindow *window, int width, int height)
@@ -821,13 +783,13 @@ void OnWindowResize([[maybe_unused]] GLFWwindow *window, int width, int height)
     RecreateSwapChain(*app);
 }
 
-void DrawFrame(VulkanDevice const &vulkanDevice, app_t &app, VkSwapchainKHR swapChain)
+void DrawFrame(VulkanDevice const &vulkanDevice, app_t &app)
 {
     vkQueueWaitIdle(app.presentationQueue.handle());
 
     std::uint32_t imageIndex;
 
-    switch (auto result = vkAcquireNextImageKHR(vulkanDevice.handle(), swapChain,
+    switch (auto result = vkAcquireNextImageKHR(vulkanDevice.handle(), app.swapchain.handle,
             std::numeric_limits<std::uint64_t>::max(),app.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex); result) {
         case VK_ERROR_OUT_OF_DATE_KHR:
             RecreateSwapChain(app);
@@ -860,13 +822,11 @@ void DrawFrame(VulkanDevice const &vulkanDevice, app_t &app, VkSwapchainKHR swap
     if (auto result = vkQueueSubmit(app.graphicsQueue.handle(), 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS)
         throw std::runtime_error("failed to submit draw command buffer: "s + std::to_string(result));
 
-    auto const swapchains = make_array(swapChain);
-
     VkPresentInfoKHR const presentInfo{
         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         nullptr,
         static_cast<std::uint32_t>(std::size(signalSemaphores)), std::data(signalSemaphores),
-        static_cast<std::uint32_t>(std::size(swapchains)), std::data(swapchains),
+        1, &app.swapchain.handle,
         &imageIndex, nullptr
     };
 
@@ -914,23 +874,23 @@ void InitVulkan(GLFWwindow *window, app_t &app)
     app.transferQueue = app.vulkanDevice->queue<TransferQueue>();
     app.presentationQueue = app.vulkanDevice->queue<PresentationQueue>();
 
-    CreateSwapChain(*app.vulkanDevice, app.surface, swapChain, WIDTH, HEIGHT, app.presentationQueue, app.graphicsQueue);
-    CreateSwapChainImageAndViews(*app.vulkanDevice, swapChainImages, swapChainImageViews);
+    CreateCommandPool(app.vulkanDevice->handle(), app.transferQueue, app.transferCommandPool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
+    CreateCommandPool(app.vulkanDevice->handle(), app.graphicsQueue, app.graphicsCommandPool, 0);
+
+    auto swapchain = CreateSwapchain(*app.vulkanDevice, app.surface, WIDTH, HEIGHT,
+                                     app.presentationQueue, app.graphicsQueue, app.transferQueue, app.transferCommandPool);
+
+    if (swapchain)
+        app.swapchain = std::move(swapchain.value());
+
+    else throw std::runtime_error("failed to create the swapchain"s);
 
     CreateDescriptorSetLayout(app.vulkanDevice->handle(), app.descriptorSetLayout);
 
     CreateRenderPass(app, app.vulkanDevice->physical_handle(), app.vulkanDevice->handle());
     CreateGraphicsPipeline(app, app.vulkanDevice->handle());
 
-    CreateCommandPool(app.vulkanDevice->handle(), app.transferQueue, app.transferCommandPool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
-    CreateCommandPool(app.vulkanDevice->handle(), app.graphicsQueue, app.graphicsCommandPool, 0);
-
-    if (auto result = CreateDepthAttachement(*app.vulkanDevice, app.transferQueue, app.transferCommandPool); !result)
-        throw std::runtime_error("failed to create depth texture"s);
-
-    else depthTexture = std::move(result.value());
-
-    CreateFramebuffers(app.vulkanDevice.get(), app.renderPass, swapChainImageViews, swapChainFramebuffers);
+    CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
     // "chalet/textures/chalet.tga"sv
     // "Hebe/textures/HebehebemissinSG1_metallicRoughness.tga"sv
@@ -955,7 +915,7 @@ void InitVulkan(GLFWwindow *window, app_t &app)
     CreateDescriptorPool(app.vulkanDevice->handle(), app.descriptorPool);
     CreateDescriptorSet(app, app.vulkanDevice->handle(), app.descriptorSet);
 
-    CreateCommandBuffers(app, *app.vulkanDevice, app.renderPass, app.graphicsCommandPool, app.commandBuffers, swapChainFramebuffers);
+    CreateCommandBuffers(app, *app.vulkanDevice, app.renderPass, app.graphicsCommandPool, app.commandBuffers, app.swapchain.framebuffers);
 
     CreateSemaphores(app, app.vulkanDevice->handle());
 }
@@ -970,16 +930,13 @@ void CleanUp(app_t &app)
     if (app.imageAvailableSemaphore)
         vkDestroySemaphore(app.vulkanDevice->handle(), app.imageAvailableSemaphore, nullptr);
 
-    CleanupSwapChain(app, *app.vulkanDevice, swapChain, app.graphicsPipeline, app.pipelineLayout, app.renderPass);
+    CleanupFrameData(app, *app.vulkanDevice, app.graphicsPipeline, app.pipelineLayout, app.renderPass);
 
     vkDestroyDescriptorSetLayout(app.vulkanDevice->handle(), app.descriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(app.vulkanDevice->handle(), app.descriptorPool, nullptr);
 
-    if (app.textureSampler.handle)
-        vkDestroySampler(app.vulkanDevice->handle(), app.textureSampler.handle, nullptr);
-
-    if (app.texture.view.handle)
-        vkDestroyImageView(app.vulkanDevice->handle(), app.texture.view.handle, nullptr);
+    vkDestroySampler(app.vulkanDevice->handle(), app.textureSampler.handle, nullptr);
+    vkDestroyImageView(app.vulkanDevice->handle(), app.texture.view.handle, nullptr);
 
     vkDestroyImage(app.vulkanDevice->handle(), app.texture.image.handle, nullptr);
     app.texture.image.memory.reset();
@@ -1124,7 +1081,7 @@ try {
     while (!glfwWindowShouldClose(window) && glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS) {
         glfwPollEvents();
         UpdateUniformBuffer(*app.vulkanDevice.get(), *app.uboMemory, WIDTH, HEIGHT);
-        DrawFrame(*app.vulkanDevice, app, swapChain);
+        DrawFrame(*app.vulkanDevice, app);
     }
 
     CleanUp(app);

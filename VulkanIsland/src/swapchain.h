@@ -5,40 +5,38 @@
 #include "buffer.h"
 #include "image.h"
 
+struct VulkanSwapchain final {
+    VkSwapchainKHR handle;
 
-extern VkSwapchainKHR swapChain;
+    VkFormat format{VK_FORMAT_UNDEFINED};
+    VkExtent2D extent;
 
-extern VkFormat swapChainImageFormat;
-extern VkExtent2D swapChainExtent;
+    VulkanTexture depthTexture;
 
-extern std::vector<VkImage> swapChainImages;
-extern std::vector<VkImageView> swapChainImageViews;
-extern std::vector<VkFramebuffer> swapChainFramebuffers;
+    std::vector<VkImage> images;
+    std::vector<VkImageView> views;
 
-extern VulkanTexture depthTexture;
-extern VkDeviceSize depthImageOffset;
+    std::vector<VkFramebuffer> framebuffers;
+};
+
 
 struct SwapChainSupportDetails {
     VkSurfaceCapabilitiesKHR capabilities;
+
     std::vector<VkSurfaceFormatKHR> formats;
     std::vector<VkPresentModeKHR> presentModes;
 };
 
-
-
 [[nodiscard]] SwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
 
-[[nodiscard]] VkExtent2D ChooseSwapExtent(VkSurfaceCapabilitiesKHR &surfaceCapabilities, std::uint32_t width, std::uint32_t height);
 
+[[nodiscard]] std::optional<VulkanSwapchain>
+CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width, std::uint32_t height,
+                VulkanQueue<PresentationQueue> const &presentationQueue, VulkanQueue<GraphicsQueue> const &graphicsQueue,
+                TransferQueue transferQueue, VkCommandPool transferCommandPool);
 
-void CreateSwapChain(VulkanDevice const &device, VkSurfaceKHR surface, VkSwapchainKHR &swapChain, std::uint32_t width, std::uint32_t height,
-                     VulkanQueue<PresentationQueue> const &presentationQueue, VulkanQueue<GraphicsQueue> const &graphicsQueue);
-
-void CreateSwapChainImageAndViews(VulkanDevice const &device, std::vector<VkImage> &swapChainImages, std::vector<VkImageView> &swapChainImageViews);
-
-
-void CleanupSwapChain(VulkanDevice const &device, VkSwapchainKHR swapChain);
+void CleanupSwapchain(VulkanDevice const &device, VulkanSwapchain &swapchain) noexcept;
 
 
 [[nodiscard]] std::optional<VulkanTexture>
-CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool);
+CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, std::uint32_t width, std::uint32_t height);

@@ -54,6 +54,5 @@ VkApplicationInfo constexpr app_info{
     kVULKAN_VERSION
 };
 
-[[nodiscard]] VkImageView CreateImageView(VkDevice device, VkImage &image, VkFormat format, VkImageAspectFlags aspectFlags, std::uint32_t mipLevels);
 
 auto constexpr kREVERSED_DEPTH = true;
