@@ -3,6 +3,7 @@
 #include "main.h"
 #include "device.h"
 #include "buffer.h"
+#include "TARGA_loader.h"
 
 struct VulkanImage final {
     VkImage handle;
@@ -218,3 +219,5 @@ bool TransitionImageLayout(VulkanDevice const &device, Q &queue, VulkanImage con
     return true;
 }
 
+
+[[nodiscard]] std::pair<VkBuffer, std::shared_ptr<DeviceMemory>> StageImage(VulkanDevice &device, RawImage const &rawImage) noexcept;

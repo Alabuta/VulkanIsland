@@ -738,41 +738,6 @@ void CreateSemaphores(app_t &app, VkDevice device)
         throw std::runtime_error("failed to create render semaphore: "s + std::to_string(result));
 }
 
-
-[[nodiscard]] std::pair<VkBuffer, std::shared_ptr<DeviceMemory>> StageImage(VulkanDevice &device, RawImage const &rawImage) noexcept
-{
-    VkBuffer buffer;
-
-    auto memory = std::visit([&] (auto &&texels)
-    {
-        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-        using texel_t = typename std::decay_t<decltype(texels)>::value_type;
-
-        auto const bufferSize = static_cast<VkDeviceSize>(std::size(texels) * sizeof(texel_t));
-
-        auto memory = BufferPool::CreateBuffer(device, buffer, bufferSize, usageFlags, propertyFlags);
-
-        if (memory) {
-            void *data;
-
-            if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, &data); result != VK_SUCCESS)
-                std::cerr << "failed to map image buffer memory: "s << result << '\n';
-
-            else {
-                std::uninitialized_copy(std::begin(texels), std::end(texels), reinterpret_cast<texel_t *>(data));
-                vkUnmapMemory(device.handle(), memory->handle());
-            }
-        }
-
-        return memory;
-
-    }, rawImage.data);
-
-    return std::make_pair(buffer, memory);
-}
-
 std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
 {
     std::optional<VulkanTexture> texture;
