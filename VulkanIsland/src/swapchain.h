@@ -38,3 +38,7 @@ void CreateSwapChainImageAndViews(VulkanDevice const &device, std::vector<VkImag
 
 
 void CleanupSwapChain(VulkanDevice const &device, VkSwapchainKHR swapChain);
+
+
+[[nodiscard]] std::optional<VulkanTexture>
+CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool);

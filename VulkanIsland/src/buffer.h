@@ -85,7 +85,7 @@ private:
     template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
     [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties);
 
-    auto AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size) -> decltype(Pool::blocks)::iterator;
+    auto AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size) -> std::optional<decltype(Pool::blocks)::iterator>;
 
     void DeallocateMemory(DeviceMemory const &deviceMemory);
 };

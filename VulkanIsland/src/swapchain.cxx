@@ -193,7 +193,6 @@ void CreateSwapChainImageAndViews(VulkanDevice const &device, std::vector<VkImag
     }
 }
 
-
 void CleanupSwapChain(VulkanDevice const &device, VkSwapchainKHR swapChain)
 {
     for (auto &&swapChainFramebuffer : swapChainFramebuffers)
@@ -213,4 +212,33 @@ void CleanupSwapChain(VulkanDevice const &device, VkSwapchainKHR swapChain)
 
     swapChainImageViews.clear();
     swapChainImages.clear();
+}
+
+
+[[nodiscard]] std::optional<VulkanTexture>
+CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool)
+{
+    std::optional<VulkanTexture> texture;
+
+    if (auto const format = FindDepthImageFormat(device.physical_handle()); format) {
+        auto const width = static_cast<std::uint32_t>(swapChainExtent.width);
+        auto const height = static_cast<std::uint32_t>(swapChainExtent.height);
+
+        auto constexpr mipLevels = 1u;
+
+        auto constexpr usageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+        auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
+
+        texture = CreateTexture(device, *format, width, height, mipLevels, tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
+
+        if (texture)
+            TransitionImageLayout(device, transferQueue, texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
+                                  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, transferCommandPool);
+    }
+
+    else std::cerr << "failed to find format for depth attachement\n"s;
+
+    return texture;
 }

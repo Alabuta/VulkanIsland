@@ -4,7 +4,7 @@
 
 namespace {
 [[nodiscard]] std::optional<std::uint32_t>
-FindMemoryType(VulkanDevice const &vulkanDevice, std::uint32_t filter, VkMemoryPropertyFlags propertyFlags)
+FindMemoryType(VulkanDevice const &vulkanDevice, std::uint32_t filter, VkMemoryPropertyFlags propertyFlags) noexcept
 {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(vulkanDevice.physical_handle(), &memoryProperties);
@@ -59,12 +59,16 @@ MemoryManager::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags pro
     } (memoryRequirements2);
 
     if constexpr (kSUB_ALLOCATION) {
-        if (memoryRequirements.size > kBLOCK_ALLOCATION_SIZE)
-            throw std::runtime_error("requested allocation size is bigger than memory page size"s);
+        if (memoryRequirements.size > kBLOCK_ALLOCATION_SIZE) {
+            std::cerr << "requested allocation size is bigger than memory page size\n"s;
+            return { };
+        }
     }
 
-    if (auto index = FindMemoryType(vulkanDevice_, memoryRequirements.memoryTypeBits, properties); !index)
-        throw std::runtime_error("failed to find suitable memory type"s);
+    if (auto index = FindMemoryType(vulkanDevice_, memoryRequirements.memoryTypeBits, properties); !index) {
+        std::cerr << "failed to find suitable memory type\n"s;
+        return { };
+    }
 
     else memoryTypeIndex = index.value();
 
@@ -106,8 +110,15 @@ MemoryManager::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags pro
     });
 
     if (it_block == std::end(pool.blocks)) {
-        it_block = AllocateMemoryBlock(memoryTypeIndex, kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
+        if (auto result = AllocateMemoryBlock(memoryTypeIndex, kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size); !result)
+            return { };
+
+        else it_block = result.value();
+
         it_chunk = it_block->second.availableChunks.lower_bound(kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size);
+
+        if (it_chunk == std::end(it_block->second.availableChunks))
+            return { };
     }
 
     auto &&memoryBlock = it_block->second;
@@ -158,16 +169,18 @@ MemoryManager::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags pro
         };
     }
 
-    else throw std::runtime_error("failed to extract available memory block chunk"s);
+    else std::cerr << "failed to extract available memory block chunk\n"s;
 
     return { };
 }
 
 auto MemoryManager::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size)
--> decltype(Pool::blocks)::iterator
+-> std::optional<decltype(Pool::blocks)::iterator>
 {
-    if (pools_.count(memoryTypeIndex) < 1)
-        throw std::runtime_error("failed to find instantiated memory pool for type index: "s + std::to_string(memoryTypeIndex));
+    if (pools_.count(memoryTypeIndex) < 1) {
+        std::cerr << "failed to find instantiated memory pool for type index: "s << memoryTypeIndex << '\n';
+        return { };
+    }
 
     auto &&pool = pools_.at(memoryTypeIndex);
 
@@ -180,8 +193,10 @@ auto MemoryManager::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceS
 
     VkDeviceMemory handle;
 
-    if (auto result = vkAllocateMemory(vulkanDevice_.handle(), &memAllocInfo, nullptr, &handle); result != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate block from device memory pool"s);
+    if (auto result = vkAllocateMemory(vulkanDevice_.handle(), &memAllocInfo, nullptr, &handle); result != VK_SUCCESS) {
+        std::cerr << "failed to allocate block from device memory pool\n"s;
+        return { };
+    }
 
     totalAllocatedSize_ += size;
     pool.allocatedSize += size;
