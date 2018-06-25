@@ -223,11 +223,12 @@ void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descripto
 }
 
 
-void CreateRenderPass(app_t &app, VkPhysicalDevice physicalDevice, VkDevice device)
+[[nodiscard]] std::optional<VkRenderPass>
+CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain)
 {
     VkAttachmentDescription const colorAttachment{
         VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
-        app.swapchain.format,
+        swapchain.format,
         VK_SAMPLE_COUNT_1_BIT,
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -238,14 +239,9 @@ void CreateRenderPass(app_t &app, VkPhysicalDevice physicalDevice, VkDevice devi
         0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
     };
 
-    auto depthFormat = FindDepthImageFormat(physicalDevice);
-
-    if (!depthFormat)
-        throw std::runtime_error("failed to find format for depth attachement"s);
-
     VkAttachmentDescription const depthAttachement{
         VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
-        *depthFormat,
+        swapchain.depthTexture.image.format,
         VK_SAMPLE_COUNT_1_BIT,
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -296,8 +292,14 @@ void CreateRenderPass(app_t &app, VkPhysicalDevice physicalDevice, VkDevice devi
         1, &subpassDependency
     };
 
-    if (auto result = vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &app.renderPass); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create render pass: "s + std::to_string(result));
+    VkRenderPass handle;
+
+    if (auto result = vkCreateRenderPass(device.handle(), &renderPassCreateInfo, nullptr, &handle); result != VK_SUCCESS) {
+        std::cerr << "failed to create render pass: "s << result << '\n';
+        return { };
+    }
+
+    return handle;
 }
 
 void CreateGraphicsPipeline(app_t &app, VkDevice device)
@@ -476,9 +478,9 @@ void CreateFramebuffers(VulkanDevice const &device, VkRenderPass renderPass, Vul
 
     framebuffers.clear();
 
-    std::transform(std::cbegin(views), std::cend(views), std::back_inserter(framebuffers), [&device, renderPass, &swapchain] (auto &&imageView)
+    std::transform(std::cbegin(views), std::cend(views), std::back_inserter(framebuffers), [&device, renderPass, &swapchain] (auto &&view)
     {
-        auto const attachements = make_array(imageView, swapchain.depthTexture.view.handle);
+        auto const attachements = make_array(view, swapchain.depthTexture.view.handle);
 
         VkFramebufferCreateInfo const createInfo{
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -765,7 +767,11 @@ void RecreateSwapChain(app_t &app)
 
     else throw std::runtime_error("failed to create the swapchain"s);
 
-    CreateRenderPass(app, app.vulkanDevice->physical_handle(), app.vulkanDevice->handle());
+    if (auto renderPass = CreateRenderPass(*app.vulkanDevice, app.swapchain); !renderPass)
+        throw std::runtime_error("failed to create the render pass"s);
+
+    else app.renderPass = std::move(renderPass.value());
+
     CreateGraphicsPipeline(app, app.vulkanDevice->handle());
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
@@ -773,7 +779,7 @@ void RecreateSwapChain(app_t &app)
     CreateCommandBuffers(app, *app.vulkanDevice, app.renderPass, app.graphicsCommandPool, app.commandBuffers, app.swapchain.framebuffers);
 }
 
-void OnWindowResize([[maybe_unused]] GLFWwindow *window, int width, int height)
+void OnWindowResize(GLFWwindow *window, int width, int height)
 {
     WIDTH = width;
     HEIGHT = height;
@@ -887,7 +893,11 @@ void InitVulkan(GLFWwindow *window, app_t &app)
 
     CreateDescriptorSetLayout(app.vulkanDevice->handle(), app.descriptorSetLayout);
 
-    CreateRenderPass(app, app.vulkanDevice->physical_handle(), app.vulkanDevice->handle());
+    if (auto renderPass = CreateRenderPass(*app.vulkanDevice, app.swapchain); !renderPass)
+        throw std::runtime_error("failed to create the render pass"s);
+
+    else app.renderPass = std::move(renderPass.value());
+
     CreateGraphicsPipeline(app, app.vulkanDevice->handle());
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
