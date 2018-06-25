@@ -8,6 +8,7 @@
 #define USE_DEBUG_MARKERS 0
 
 class MemoryManager;
+class ResourceManager;
 
 
 auto constexpr deviceExtensions = make_array(
@@ -32,6 +33,9 @@ public:
 
     MemoryManager &memoryManager() noexcept { return *memoryManager_; }
     MemoryManager const &memoryManager() const noexcept { return *memoryManager_; }
+
+    ResourceManager &resourceManager() noexcept { return *resourceManager_; }
+    ResourceManager const &resourceManager() const noexcept { return *resourceManager_; }
 
 #if NOT_YET_IMPLEMENTED
     template<VkCommandBufferLevel L>
@@ -72,6 +76,7 @@ private:
     } queuePool_;
 
     std::unique_ptr<MemoryManager> memoryManager_;
+    std::unique_ptr<ResourceManager> resourceManager_;
 
     VulkanDevice() = delete;
     VulkanDevice(VulkanDevice const &) = delete;
@@ -121,6 +126,7 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
     vkGetPhysicalDeviceProperties(physicalDevice_, &properties);
 
     memoryManager_ = std::make_unique<MemoryManager>(*this, properties.limits.bufferImageGranularity);
+    resourceManager_ = std::make_unique<ResourceManager>(*this);
 }
 
 template<class Q, std::size_t I, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>

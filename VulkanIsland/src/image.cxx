@@ -1,6 +1,7 @@
 #define _SCL_SECURE_NO_WARNINGS
 
 #include "image.h"
+#include "resource.h"
 
 
 [[nodiscard]] std::optional<VkFormat> FindDepthImageFormat(VkPhysicalDevice physicalDevice) noexcept
@@ -60,7 +61,7 @@ CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::ui
     return image;
 }
 
-
+#if 0
 [[nodiscard]] std::optional<VulkanImage>
 CreateImage(VulkanDevice &device, VkFormat format, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
             VkImageTiling tiling, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags)
@@ -108,7 +109,7 @@ CreateImageView(VulkanDevice const &device, VulkanImage const &image, VkImageAsp
     return view;
 }
 
-[[nodiscard]] std::optional<VulkanSampler> CreateTextureSampler(VkDevice device, std::uint32_t mipLevels) noexcept
+[[nodiscard]] std::optional<VulkanSampler> CreateImageSampler(VkDevice device, std::uint32_t mipLevels) noexcept
 {
     std::optional<VulkanSampler> sampler;
 
@@ -137,7 +138,7 @@ CreateImageView(VulkanDevice const &device, VulkanImage const &image, VkImageAsp
 
     return sampler;
 }
-
+#endif
 
 [[nodiscard]] std::optional<VulkanTexture>
 CreateTexture(VulkanDevice &device, VkFormat format, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels, VkImageTiling tiling,
@@ -145,11 +146,11 @@ CreateTexture(VulkanDevice &device, VkFormat format, std::uint32_t width, std::u
 {
     std::optional<VulkanTexture> texture;
 
-    if (auto image = CreateImage(device, format, width, height, mipLevels, tiling, usageFlags, propertyFlags); image)
-        if (auto view = CreateImageView(device, *image, aspectFlags); view)
+    if (auto image = device.resourceManager().CreateImage(format, width, height, mipLevels, tiling, usageFlags, propertyFlags); image)
+        if (auto view = device.resourceManager().CreateImageView(*image, aspectFlags); view)
             texture.emplace(*image, *view);
 
-    /*auto sampler = CreateTextureSampler(app.vulkanDevice->handle(), image->mipLevels);
+    /*auto sampler = CreateImageSampler(app.vulkanDevice->handle(), image->mipLevels);
 
     if (!sampler)
         return { };*/

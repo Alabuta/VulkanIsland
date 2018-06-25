@@ -5,7 +5,26 @@
 #include "buffer.h"
 #include "TARGA_loader.h"
 
-struct VulkanImage final {
+class VulkanImage final {
+public:
+
+    VulkanImage(VkImage handle, std::shared_ptr<DeviceMemory> memory, VkFormat format, std::uint32_t mipLevels, std::uint16_t width, std::uint16_t height) noexcept :
+        handle{handle}, memory{memory}, format{format}, mipLevels{mipLevels}, width{width}, height{height} { }
+
+#if NOT_YET_IMPLEMENTED
+    VkImage handle() const noexcept { return handle_; }
+
+    std::shared_ptr<DeviceMemory> memory() const noexcept { return memory_; }
+    std::shared_ptr<DeviceMemory> &memory() noexcept { return memory_; }
+
+    VkFormat format() const noexcept { return format_; }
+
+    std::uint32_t mipLevels() const noexcept { return mipLevels_; }
+
+    std::uint16_t width() const noexcept { return width_; }
+    std::uint16_t height() const noexcept { return height_; }
+#endif
+
     VkImage handle;
     std::shared_ptr<DeviceMemory> memory;
 
@@ -15,9 +34,6 @@ struct VulkanImage final {
     std::uint16_t width{0}, height{0};
 
     VulkanImage() = default;
-
-    VulkanImage(VkImage handle, std::shared_ptr<DeviceMemory> memory, VkFormat format, std::uint32_t mipLevels, std::uint16_t width, std::uint16_t height) noexcept :
-        handle{handle}, memory{memory}, format{format}, mipLevels{mipLevels}, width{width}, height{height} { }
 };
 
 // template<VkImageViewType ImageViewType>
@@ -85,6 +101,7 @@ FindSupportedImageFormat(VkPhysicalDevice physicalDevice, T &&candidates, VkImag
 CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
                   VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage) noexcept;
 
+#if 0
 [[nodiscard]] std::optional<VulkanImage>
 CreateImage(VulkanDevice &device, VkFormat format, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
             VkImageTiling tiling, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags);
@@ -92,7 +109,8 @@ CreateImage(VulkanDevice &device, VkFormat format, std::uint32_t width, std::uin
 [[nodiscard]] std::optional<VulkanImageView>
 CreateImageView(VulkanDevice const &device, VulkanImage const &image, VkImageAspectFlags aspectFlags) noexcept;
 
-[[nodiscard]] std::optional<VulkanSampler> CreateTextureSampler(VkDevice device, std::uint32_t mipLevels) noexcept;
+[[nodiscard]] std::optional<VulkanSampler> CreateImageSampler(VkDevice device, std::uint32_t mipLevels) noexcept;
+#endif
 
 [[nodiscard]] std::optional<VulkanTexture>
 CreateTexture(VulkanDevice &device, VkFormat format, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels, VkImageTiling tiling,

@@ -23,6 +23,7 @@
 #include "program.h"
 #include "buffer.h"
 #include "image.h"
+#include "resource.h"
 #include "command_buffer.h"
 
 
@@ -224,10 +225,10 @@ void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descripto
 
 
 [[nodiscard]] std::optional<VkRenderPass>
-CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain)
+CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) noexcept
 {
     VkAttachmentDescription const colorAttachment{
-        VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
+        0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
         swapchain.format,
         VK_SAMPLE_COUNT_1_BIT,
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
@@ -240,7 +241,7 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain)
     };
 
     VkAttachmentDescription const depthAttachement{
-        VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
+        0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
         swapchain.depthTexture.image.format,
         VK_SAMPLE_COUNT_1_BIT,
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -741,7 +742,7 @@ std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::
 
     else std::cerr << "failed to load an image\n"s;
 
-    /*auto sampler = CreateTextureSampler(app.vulkanDevice->handle(), image->mipLevels);
+    /*auto sampler = CreateImageSampler(app.vulkanDevice->handle(), image->mipLevels);
 
     if (!sampler)
         return { };*/
@@ -909,7 +910,7 @@ void InitVulkan(GLFWwindow *window, app_t &app)
 
     else app.texture = std::move(result.value());
 
-    if (auto result = CreateTextureSampler(app.vulkanDevice->handle(), app.texture.image.mipLevels); !result)
+    if (auto result = app.vulkanDevice->resourceManager().CreateImageSampler(app.texture.image.mipLevels); !result)
         throw std::runtime_error("failed to create a texture sampler"s);
 
     else app.textureSampler = std::move(result.value());

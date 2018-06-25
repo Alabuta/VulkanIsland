@@ -6,6 +6,7 @@
 #include "device.h"
 #include "device_defaults.h"
 #include "buffer.h"
+#include "resource.h"
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;
@@ -129,6 +130,9 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 
 VulkanDevice::~VulkanDevice()
 {
+    if (resourceManager_)
+        resourceManager_.reset(nullptr);
+
     if (memoryManager_)
         memoryManager_.reset(nullptr);
 
