@@ -38,6 +38,9 @@
     <ClCompile Include="src\image.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\resource.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\helpers.h">
@@ -86,6 +89,10 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\isle_math.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h" />
+    <ClInclude Include="src\resource.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
