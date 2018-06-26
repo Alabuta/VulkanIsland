@@ -17,7 +17,12 @@ ResourceManager::CreateImage(VkFormat format, std::uint16_t width, std::uint16_t
 
             else image.reset(
                 new VulkanImage{*handle, memory, format, mipLevels, width, height},
-                *deleter_
+                [this] (VulkanImage *ptr_image)
+                {
+                    FreeImage(*ptr_image);
+
+                    delete ptr_image;
+                }
             );
         }
     }

@@ -175,6 +175,7 @@ struct Vertex {
     }
 };
 
+#define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #ifndef _MSC_VER
@@ -185,5 +186,4 @@ struct Vertex {
 #include <glm/gtc/type_ptr.hpp>
 
 
-#define GLM_ENABLE_EXPERIMENTAL
 #include <glm/gtx/hash.hpp>
