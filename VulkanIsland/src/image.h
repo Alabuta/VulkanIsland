@@ -9,9 +9,8 @@ class VulkanImage final {
 public:
 
     VulkanImage(VkImage handle, std::shared_ptr<DeviceMemory> memory, VkFormat format, std::uint32_t mipLevels, std::uint16_t width, std::uint16_t height) noexcept :
-        handle{handle}, memory{memory}, format{format}, mipLevels{mipLevels}, width{width}, height{height} { }
+        handle_{handle}, memory_{memory}, format_{format}, mipLevels_{mipLevels}, width_{width}, height_{height} { }
 
-#if NOT_YET_IMPLEMENTED
     VkImage handle() const noexcept { return handle_; }
 
     std::shared_ptr<DeviceMemory> memory() const noexcept { return memory_; }
@@ -23,24 +22,24 @@ public:
 
     std::uint16_t width() const noexcept { return width_; }
     std::uint16_t height() const noexcept { return height_; }
-#endif
 
-    VkImage handle;
-    std::shared_ptr<DeviceMemory> memory;
+private:
 
-    VkFormat format{VK_FORMAT_UNDEFINED};
+    VkImage handle_;
+    std::shared_ptr<DeviceMemory> memory_;
 
-    std::uint32_t mipLevels{1};
-    std::uint16_t width{0}, height{0};
+    VkFormat format_{VK_FORMAT_UNDEFINED};
+
+    std::uint32_t mipLevels_{1};
+    std::uint16_t width_{0}, height_{0};
 
     VulkanImage() = delete;
 };
 
-// template<VkImageViewType ImageViewType>
 struct VulkanImageView final {
-    // static auto constexpr kImageViewType{ImageViewType};
-
     VkImageView handle;
+
+    VkImageViewType type;
     VkFormat format{VK_FORMAT_UNDEFINED};
 
     VulkanImageView() = default;
@@ -48,10 +47,12 @@ struct VulkanImageView final {
     VulkanImageView(VkImageView handle, VkFormat format) noexcept : handle{handle}, format{format} { }
 };
 
-struct VulkanSampler final {
+class VulkanSampler final {
+public:
+
     VkSampler handle;
 
-    VulkanSampler() = default;
+    VulkanSampler() = delete;
 
     VulkanSampler(VkSampler handle) noexcept : handle{handle} { }
 };
@@ -59,11 +60,13 @@ struct VulkanSampler final {
 struct VulkanTexture final {
     std::shared_ptr<VulkanImage> image;
     VulkanImageView view;
-    //VulkanSampler sampler;
+
+    std::shared_ptr<VulkanSampler> sampler;
 
     VulkanTexture() = default;
 
-    VulkanTexture(std::shared_ptr<VulkanImage> image, VulkanImageView view) noexcept : image{image}, view{view} { }
+    VulkanTexture(std::shared_ptr<VulkanImage> image, VulkanImageView view, std::shared_ptr<VulkanSampler> sampler) noexcept
+        : image{image}, view{view}, sampler{sampler} { }
 };
 
 
@@ -111,8 +114,8 @@ void GenerateMipMaps(VulkanDevice const &device, Q &queue, VulkanImage const &im
 {
     auto commandBuffer = BeginSingleTimeCommand(device, queue, commandPool);
 
-    auto width = image.width;
-    auto height = image.height;
+    auto width = image.width();
+    auto height = image.height();
 
     VkImageMemoryBarrier barrier{
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -120,11 +123,11 @@ void GenerateMipMaps(VulkanDevice const &device, Q &queue, VulkanImage const &im
         0, 0,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_UNDEFINED,
         VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
-        image.handle,
+        image.handle(),
         { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
     };
 
-    for (auto i = 1u; i < image.mipLevels; ++i) {
+    for (auto i = 1u; i < image.mipLevels(); ++i) {
         barrier.subresourceRange.baseMipLevel = i - 1;
         barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -140,7 +143,7 @@ void GenerateMipMaps(VulkanDevice const &device, Q &queue, VulkanImage const &im
             {{ 0, 0, 0 }, {width / 2, height / 2, 1 }}
         };
 
-        vkCmdBlitImage(commandBuffer, image.handle, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image.handle, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
+        vkCmdBlitImage(commandBuffer, image.handle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image.handle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
 
         barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
@@ -153,7 +156,7 @@ void GenerateMipMaps(VulkanDevice const &device, Q &queue, VulkanImage const &im
         if (height > 1) height /= 2;
     }
 
-    barrier.subresourceRange.baseMipLevel = image.mipLevels - 1;
+    barrier.subresourceRange.baseMipLevel = image.mipLevels() - 1;
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -175,14 +178,14 @@ bool TransitionImageLayout(VulkanDevice const &device, Q &queue, VulkanImage con
         0, 0,
         srcLayout, dstLayout,
         VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
-        image.handle,
-        { VK_IMAGE_ASPECT_COLOR_BIT, 0, image.mipLevels, 0, 1 }
+        image.handle(),
+        { VK_IMAGE_ASPECT_COLOR_BIT, 0, image.mipLevels(), 0, 1 }
     };
 
     if (dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
-        if (image.format == VK_FORMAT_D32_SFLOAT_S8_UINT || image.format == VK_FORMAT_D24_UNORM_S8_UINT)
+        if (image.format() == VK_FORMAT_D32_SFLOAT_S8_UINT || image.format() == VK_FORMAT_D24_UNORM_S8_UINT)
             barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
     }
 

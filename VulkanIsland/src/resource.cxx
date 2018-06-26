@@ -38,11 +38,11 @@ ResourceManager::CreateImageView(VulkanImage const & image, VkImageAspectFlags a
     VkImageViewCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         nullptr, 0,
-        image.handle,
+        image.handle(),
         VK_IMAGE_VIEW_TYPE_2D,
-        image.format,
+        image.format(),
         { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
-        { aspectFlags, 0, image.mipLevels, 0, 1 }
+        { aspectFlags, 0, image.mipLevels(), 0, 1 }
     };
 
     VkImageView handle;
@@ -50,15 +50,15 @@ ResourceManager::CreateImageView(VulkanImage const & image, VkImageAspectFlags a
     if (auto result = vkCreateImageView(device_.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
         std::cerr << "failed to create image view: "s << result << '\n';
 
-    else view.emplace(handle, image.format);
+    else view.emplace(handle, image.format());
 
     return view;
 }
 
-[[nodiscard]] std::optional<VulkanSampler>
+[[nodiscard]] std::shared_ptr<VulkanSampler>
 ResourceManager::CreateImageSampler(std::uint32_t mipLevels) noexcept
 {
-    std::optional<VulkanSampler> sampler;
+    std::shared_ptr<VulkanSampler> sampler;
 
     VkSamplerCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -81,12 +81,26 @@ ResourceManager::CreateImageSampler(std::uint32_t mipLevels) noexcept
     if (auto result = vkCreateSampler(device_.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
         std::cerr << "failed to create sampler: "s << result << '\n';
 
-    else sampler.emplace(handle);
+    else sampler.reset(
+        new VulkanSampler{handle},
+        [this] (VulkanSampler *ptr_sampler)
+        {
+            FreeSampler(*ptr_sampler);
+
+            delete ptr_sampler;
+        }
+    );
 
     return sampler;
 }
 
 void ResourceManager::FreeImage(VulkanImage const &image) noexcept
 {
-    vkDestroyImage(device_.handle(), image.handle, nullptr);
+    vkDestroyImage(device_.handle(), image.handle(), nullptr);
+    image.memory().reset();
+}
+
+void ResourceManager::FreeSampler(VulkanSampler const &sampler) noexcept
+{
+    vkDestroySampler(device_.handle(), sampler.handle, nullptr);
 }

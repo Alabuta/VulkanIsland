@@ -231,13 +231,10 @@ void CleanupSwapchain(VulkanDevice const &device, VulkanSwapchain &swapchain) no
     for (auto &&view : swapchain.views)
         vkDestroyImageView(device.handle(), view, nullptr);
 
+    vkDestroySwapchainKHR(device.handle(), swapchain.handle, nullptr);
     swapchain.views.clear();
 
-    vkDestroySwapchainKHR(device.handle(), swapchain.handle, nullptr);
-
     vkDestroyImageView(device.handle(), swapchain.depthTexture.view.handle, nullptr);
-
-    swapchain.depthTexture.image->memory.reset();
     swapchain.depthTexture.image.reset();
 
     swapchain.images.clear();

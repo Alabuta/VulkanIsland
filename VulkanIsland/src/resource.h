@@ -20,7 +20,7 @@ public:
     [[nodiscard]] std::optional<VulkanImageView>
     CreateImageView(VulkanImage const &image, VkImageAspectFlags aspectFlags) noexcept;
 
-    [[nodiscard]] std::optional<VulkanSampler>
+    [[nodiscard]] std::shared_ptr<VulkanSampler>
     CreateImageSampler(std::uint32_t mipLevels) noexcept;
 
 private:
@@ -28,6 +28,7 @@ private:
     VulkanDevice &device_;
 
     void FreeImage(VulkanImage const &image) noexcept;
+    void FreeSampler(VulkanSampler const &sampler) noexcept;
 
     ResourceManager() = delete;
     ResourceManager(ResourceManager const &) = delete;

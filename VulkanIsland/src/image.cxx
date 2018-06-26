@@ -69,12 +69,13 @@ CreateTexture(VulkanDevice &device, VkFormat format, std::uint32_t width, std::u
 
     if (auto image = device.resourceManager().CreateImage(format, width, height, mipLevels, tiling, usageFlags, propertyFlags); image)
         if (auto view = device.resourceManager().CreateImageView(*image, aspectFlags); view)
-            texture.emplace(image, *view);
+#if NOT_YET_IMPLEMENTED
+            if (auto sampler = device.resourceManager().CreateImageSampler(image->mipLevels()); sampler)
+                texture.emplace(image, *view, sampler);
+#else
+            texture.emplace(image, *view, nullptr);
+#endif
 
-    /*auto sampler = CreateImageSampler(app.vulkanDevice->handle(), image->mipLevels);
-
-    if (!sampler)
-        return { };*/
 
     return texture;
 }

@@ -107,7 +107,6 @@ struct app_t {
     std::shared_ptr<DeviceMemory> vertexMemory, indexMemory, uboMemory;
 
     VulkanTexture texture;
-    VulkanSampler textureSampler;
 };
 
 
@@ -194,7 +193,7 @@ void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descripto
     };
 
     VkDescriptorImageInfo const imageInfo{
-        app.textureSampler.handle, app.texture.view.handle, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        app.texture.sampler->handle, app.texture.view.handle, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     };
 
     std::array<VkWriteDescriptorSet, 2> const writeDescriptorsSet{{
@@ -242,7 +241,7 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
 
     VkAttachmentDescription const depthAttachement{
         0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
-        swapchain.depthTexture.image->format,
+        swapchain.depthTexture.image->format(),
         VK_SAMPLE_COUNT_1_BIT,
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -727,7 +726,7 @@ std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::
                 TransitionImageLayout(device, app.transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, app.transferCommandPool);
 
-                CopyBufferToImage(device, app.transferQueue, stagingBuffer, texture->image->handle, width, height, app.transferCommandPool);
+                CopyBufferToImage(device, app.transferQueue, stagingBuffer, texture->image->handle(), width, height, app.transferCommandPool);
 
                 if (generateMipMaps)
                     GenerateMipMaps(device, app.transferQueue, *texture->image, app.transferCommandPool);
@@ -741,11 +740,6 @@ std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::
     }
 
     else std::cerr << "failed to load an image\n"s;
-
-    /*auto sampler = CreateImageSampler(app.vulkanDevice->handle(), image->mipLevels);
-
-    if (!sampler)
-        return { };*/
 
     return texture;
 }
@@ -910,10 +904,10 @@ void InitVulkan(GLFWwindow *window, app_t &app)
 
     else app.texture = std::move(result.value());
 
-    if (auto result = app.vulkanDevice->resourceManager().CreateImageSampler(app.texture.image->mipLevels); !result)
+    if (auto result = app.vulkanDevice->resourceManager().CreateImageSampler(app.texture.image->mipLevels()); !result)
         throw std::runtime_error("failed to create a texture sampler"s);
 
-    else app.textureSampler = std::move(result.value());
+    else app.texture.sampler = result;
 
     if (auto result = LoadGLTF("sponza"sv, app.vertices, app.indices); !result)
         throw std::runtime_error("failed to load a mesh"s);
@@ -946,10 +940,8 @@ void CleanUp(app_t &app)
     vkDestroyDescriptorSetLayout(app.vulkanDevice->handle(), app.descriptorSetLayout, nullptr);
     vkDestroyDescriptorPool(app.vulkanDevice->handle(), app.descriptorPool, nullptr);
 
-    vkDestroySampler(app.vulkanDevice->handle(), app.textureSampler.handle, nullptr);
+    app.texture.sampler.reset();
     vkDestroyImageView(app.vulkanDevice->handle(), app.texture.view.handle, nullptr);
-
-    app.texture.image->memory.reset();
     app.texture.image.reset();
 
     if (app.uboBuffer)
