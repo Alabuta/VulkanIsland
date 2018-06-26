@@ -1,10 +1,10 @@
 #include "resource.h"
 
-[[nodiscard]] std::optional<VulkanImage>
+[[nodiscard]] std::shared_ptr<VulkanImage>
 ResourceManager::CreateImage(VkFormat format, std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels,
                              VkImageTiling tiling, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags)
 {
-    std::optional<VulkanImage> image;
+    std::shared_ptr<VulkanImage> image;
 
     auto handle = CreateImageHandle(device_, width, height, mipLevels, format, tiling, usageFlags);
 
@@ -15,7 +15,10 @@ ResourceManager::CreateImage(VkFormat format, std::uint16_t width, std::uint16_t
             if (auto result = vkBindImageMemory(device_.handle(), *handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
                 std::cerr << "failed to bind image buffer memory: "s << result << '\n';
 
-            else image.emplace(*handle, memory, format, mipLevels, width, height);
+            else image.reset(
+                new VulkanImage{*handle, memory, format, mipLevels, width, height},
+                *deleter_
+            );
         }
     }
 
@@ -76,4 +79,9 @@ ResourceManager::CreateImageSampler(std::uint32_t mipLevels) noexcept
     else sampler.emplace(handle);
 
     return sampler;
+}
+
+void ResourceManager::FreeImage(VulkanImage const &image) noexcept
+{
+    vkDestroyImage(device_.handle(), image.handle, nullptr);
 }

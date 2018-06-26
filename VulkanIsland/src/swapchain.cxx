@@ -236,8 +236,8 @@ void CleanupSwapchain(VulkanDevice const &device, VulkanSwapchain &swapchain) no
     vkDestroySwapchainKHR(device.handle(), swapchain.handle, nullptr);
 
     vkDestroyImageView(device.handle(), swapchain.depthTexture.view.handle, nullptr);
-    vkDestroyImage(device.handle(), swapchain.depthTexture.image.handle, nullptr);
-    swapchain.depthTexture.image.memory.reset();
+    vkDestroyImage(device.handle(), swapchain.depthTexture.image->handle, nullptr);
+    swapchain.depthTexture.image->memory.reset();
 
     swapchain.images.clear();
 }
@@ -259,7 +259,7 @@ CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
         texture = CreateTexture(device, *format, width, height, mipLevels, tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
 
         if (texture)
-            TransitionImageLayout(device, transferQueue, texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
+            TransitionImageLayout(device, transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
                                   VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, transferCommandPool);
     }
 

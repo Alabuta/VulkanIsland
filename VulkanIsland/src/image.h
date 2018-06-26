@@ -33,7 +33,7 @@ public:
     std::uint32_t mipLevels{1};
     std::uint16_t width{0}, height{0};
 
-    VulkanImage() = default;
+    VulkanImage() = delete;
 };
 
 // template<VkImageViewType ImageViewType>
@@ -57,13 +57,13 @@ struct VulkanSampler final {
 };
 
 struct VulkanTexture final {
-    VulkanImage image;
+    std::shared_ptr<VulkanImage> image;
     VulkanImageView view;
     //VulkanSampler sampler;
 
     VulkanTexture() = default;
 
-    VulkanTexture(VulkanImage image, VulkanImageView view) noexcept : image{image}, view{view} { }
+    VulkanTexture(std::shared_ptr<VulkanImage> image, VulkanImageView view) noexcept : image{image}, view{view} { }
 };
 
 

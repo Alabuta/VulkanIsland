@@ -242,7 +242,7 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
 
     VkAttachmentDescription const depthAttachement{
         0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
-        swapchain.depthTexture.image.format,
+        swapchain.depthTexture.image->format,
         VK_SAMPLE_COUNT_1_BIT,
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -724,15 +724,15 @@ std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::
             texture = CreateTexture(device, rawImage->format, width, height, rawImage->mipLevels, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
             if (texture) {
-                TransitionImageLayout(device, app.transferQueue, texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
+                TransitionImageLayout(device, app.transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, app.transferCommandPool);
 
-                CopyBufferToImage(device, app.transferQueue, stagingBuffer, texture->image.handle, width, height, app.transferCommandPool);
+                CopyBufferToImage(device, app.transferQueue, stagingBuffer, texture->image->handle, width, height, app.transferCommandPool);
 
                 if (generateMipMaps)
-                    GenerateMipMaps(device, app.transferQueue, texture->image, app.transferCommandPool);
+                    GenerateMipMaps(device, app.transferQueue, *texture->image, app.transferCommandPool);
 
-                else TransitionImageLayout(device, app.transferQueue, texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                else TransitionImageLayout(device, app.transferQueue, *texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, app.transferCommandPool);
             }
         }
@@ -910,7 +910,7 @@ void InitVulkan(GLFWwindow *window, app_t &app)
 
     else app.texture = std::move(result.value());
 
-    if (auto result = app.vulkanDevice->resourceManager().CreateImageSampler(app.texture.image.mipLevels); !result)
+    if (auto result = app.vulkanDevice->resourceManager().CreateImageSampler(app.texture.image->mipLevels); !result)
         throw std::runtime_error("failed to create a texture sampler"s);
 
     else app.textureSampler = std::move(result.value());
@@ -949,8 +949,8 @@ void CleanUp(app_t &app)
     vkDestroySampler(app.vulkanDevice->handle(), app.textureSampler.handle, nullptr);
     vkDestroyImageView(app.vulkanDevice->handle(), app.texture.view.handle, nullptr);
 
-    vkDestroyImage(app.vulkanDevice->handle(), app.texture.image.handle, nullptr);
-    app.texture.image.memory.reset();
+    app.texture.image->memory.reset();
+    app.texture.image.reset();
 
     if (app.uboBuffer)
         vkDestroyBuffer(app.vulkanDevice->handle(), app.uboBuffer, nullptr);

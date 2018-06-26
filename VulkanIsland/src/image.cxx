@@ -69,7 +69,7 @@ CreateTexture(VulkanDevice &device, VkFormat format, std::uint32_t width, std::u
 
     if (auto image = device.resourceManager().CreateImage(format, width, height, mipLevels, tiling, usageFlags, propertyFlags); image)
         if (auto view = device.resourceManager().CreateImageView(*image, aspectFlags); view)
-            texture.emplace(*image, *view);
+            texture.emplace(image, *view);
 
     /*auto sampler = CreateImageSampler(app.vulkanDevice->handle(), image->mipLevels);
 
