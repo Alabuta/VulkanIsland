@@ -111,7 +111,7 @@ struct mat4 {
         std::uninitialized_copy_n(std::begin(tr.xyz), std::size(tr.xyz), std::begin(m) + 4 * 3);
     }
 
-    template<class... Ts, typename std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == 16>...>
+    template<class... Ts, typename std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == 16, int> = 0>
     constexpr mat4(Ts... values) : m({{ static_cast<std::decay_t<decltype(m)>::value_type>(values)... }}) { }
 };
 
