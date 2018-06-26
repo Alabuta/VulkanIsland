@@ -30,6 +30,7 @@ set(SOURCE_FILES
         src/program.h
         src/queue_builder.h
         src/queues.h
+        src/resource.cxx                        src/resource.h
         src/buffer.cxx                          src/buffer.h
         src/image.cxx                           src/image.h
         src/debug.cxx                           src/debug.h
