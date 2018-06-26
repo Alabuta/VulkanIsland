@@ -101,17 +101,6 @@ FindSupportedImageFormat(VkPhysicalDevice physicalDevice, T &&candidates, VkImag
 CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
                   VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage) noexcept;
 
-#if 0
-[[nodiscard]] std::optional<VulkanImage>
-CreateImage(VulkanDevice &device, VkFormat format, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
-            VkImageTiling tiling, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags);
-
-[[nodiscard]] std::optional<VulkanImageView>
-CreateImageView(VulkanDevice const &device, VulkanImage const &image, VkImageAspectFlags aspectFlags) noexcept;
-
-[[nodiscard]] std::optional<VulkanSampler> CreateImageSampler(VkDevice device, std::uint32_t mipLevels) noexcept;
-#endif
-
 [[nodiscard]] std::optional<VulkanTexture>
 CreateTexture(VulkanDevice &device, VkFormat format, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels, VkImageTiling tiling,
               VkImageAspectFlags aspectFlags, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags);
