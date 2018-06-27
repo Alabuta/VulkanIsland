@@ -193,7 +193,7 @@ void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descripto
     };
 
     VkDescriptorImageInfo const imageInfo{
-        app.texture.sampler->handle(), app.texture.view.handle, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        app.texture.sampler->handle(), app.texture.view.handle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     };
 
     std::array<VkWriteDescriptorSet, 2> const writeDescriptorsSet{{
@@ -480,7 +480,7 @@ void CreateFramebuffers(VulkanDevice const &device, VkRenderPass renderPass, Vul
 
     std::transform(std::cbegin(views), std::cend(views), std::back_inserter(framebuffers), [&device, renderPass, &swapchain] (auto &&view)
     {
-        auto const attachements = make_array(view, swapchain.depthTexture.view.handle);
+        auto const attachements = make_array(view, swapchain.depthTexture.view.handle());
 
         VkFramebufferCreateInfo const createInfo{
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -720,7 +720,7 @@ std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::
 
             auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
 
-            texture = CreateTexture(device, rawImage->format, width, height, rawImage->mipLevels, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
+            texture = CreateTexture(device, rawImage->format, rawImage->type, width, height, rawImage->mipLevels, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
             if (texture) {
                 TransitionImageLayout(device, app.transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
@@ -941,7 +941,7 @@ void CleanUp(app_t &app)
     vkDestroyDescriptorPool(app.vulkanDevice->handle(), app.descriptorPool, nullptr);
 
     app.texture.sampler.reset();
-    vkDestroyImageView(app.vulkanDevice->handle(), app.texture.view.handle, nullptr);
+    vkDestroyImageView(app.vulkanDevice->handle(), app.texture.view.handle(), nullptr);
     app.texture.image.reset();
 
     if (app.uboBuffer)

@@ -18,7 +18,7 @@ public:
                 VkImageTiling tiling, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags);
 
     [[nodiscard]] std::optional<VulkanImageView>
-    CreateImageView(VulkanImage const &image, VkImageAspectFlags aspectFlags) noexcept;
+    CreateImageView(VulkanImage const &image, VkImageViewType type, VkImageAspectFlags aspectFlags) noexcept;
 
     [[nodiscard]] std::shared_ptr<VulkanSampler>
     CreateImageSampler(std::uint32_t mipLevels) noexcept;
@@ -29,6 +29,7 @@ private:
 
     void FreeImage(VulkanImage const &image) noexcept;
     void FreeSampler(VulkanSampler const &sampler) noexcept;
+    void FreeImageView(VulkanImageView const &view) noexcept;
 
     ResourceManager() = delete;
     ResourceManager(ResourceManager const &) = delete;

@@ -62,13 +62,14 @@ CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::ui
 }
 
 [[nodiscard]] std::optional<VulkanTexture>
-CreateTexture(VulkanDevice &device, VkFormat format, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels, VkImageTiling tiling,
+CreateTexture(VulkanDevice &device, VkFormat format, VkImageViewType type,
+              std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels, VkImageTiling tiling,
               VkImageAspectFlags aspectFlags, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags)
 {
     std::optional<VulkanTexture> texture;
 
     if (auto image = device.resourceManager().CreateImage(format, width, height, mipLevels, tiling, usageFlags, propertyFlags); image)
-        if (auto view = device.resourceManager().CreateImageView(*image, aspectFlags); view)
+        if (auto view = device.resourceManager().CreateImageView(*image, type, aspectFlags); view)
 #if NOT_YET_IMPLEMENTED
             if (auto sampler = device.resourceManager().CreateImageSampler(image->mipLevels()); sampler)
                 texture.emplace(image, *view, sampler);

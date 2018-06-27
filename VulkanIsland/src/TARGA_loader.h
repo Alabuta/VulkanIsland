@@ -36,9 +36,10 @@ using texel_buffer_t = wrap_variant_by_vector<texel_t>::type;
 
 struct RawImage {
     VkFormat format{VK_FORMAT_UNDEFINED};
+    VkImageViewType type;
 
     std::int16_t width{0}, height{0};
-    std::uint32_t mipLevels;
+    std::uint32_t mipLevels{1};
 
     texel_buffer_t data;
 };

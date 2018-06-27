@@ -5,17 +5,19 @@
 #include "buffer.h"
 #include "TARGA_loader.h"
 
+class VulkanImageView;
+
 class VulkanImage final {
 public:
 
-    VulkanImage(VkImage handle, std::shared_ptr<DeviceMemory> memory, VkFormat format, std::uint32_t mipLevels, std::uint16_t width, std::uint16_t height) noexcept :
-        handle_{handle}, memory_{memory}, format_{format}, mipLevels_{mipLevels}, width_{width}, height_{height} { }
-
-    VkImage handle() const noexcept { return handle_; }
+    VulkanImage(std::shared_ptr<DeviceMemory> memory, VkImage handle, VkFormat format,
+                std::uint32_t mipLevels, std::uint16_t width, std::uint16_t height) noexcept :
+        memory_{memory}, handle_{handle}, format_{format}, mipLevels_{mipLevels}, width_{width}, height_{height} { }
 
     std::shared_ptr<DeviceMemory> memory() const noexcept { return memory_; }
     std::shared_ptr<DeviceMemory> &memory() noexcept { return memory_; }
 
+    VkImage handle() const noexcept { return handle_; }
     VkFormat format() const noexcept { return format_; }
 
     std::uint32_t mipLevels() const noexcept { return mipLevels_; }
@@ -24,9 +26,9 @@ public:
     std::uint16_t height() const noexcept { return height_; }
 
 private:
-    VkImage handle_;
     std::shared_ptr<DeviceMemory> memory_;
 
+    VkImage handle_;
     VkFormat format_{VK_FORMAT_UNDEFINED};
 
     std::uint32_t mipLevels_{1};
@@ -37,15 +39,19 @@ private:
     VulkanImage(VulkanImage &&) = delete;
 };
 
-struct VulkanImageView final {
-    VkImageView handle;
-
-    VkImageViewType type;
-    VkFormat format{VK_FORMAT_UNDEFINED};
+class VulkanImageView final {
+public:
+    VkImageView handle_;
+    VkImageViewType type_;
 
     VulkanImageView() = default;
+    VulkanImageView(VkImageView handle, VkImageViewType type) noexcept : handle_{handle}, type_{type} { }
 
-    VulkanImageView(VkImageView handle, VkFormat format) noexcept : handle{handle}, format{format} { }
+    VkImageView handle() const noexcept { return handle_; }
+    VkImageViewType type() const noexcept { return type_; }
+
+private:
+    //VulkanImageView() = delete;
 };
 
 class VulkanSampler final {
@@ -111,7 +117,8 @@ CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::ui
                   VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage) noexcept;
 
 [[nodiscard]] std::optional<VulkanTexture>
-CreateTexture(VulkanDevice &device, VkFormat format, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels, VkImageTiling tiling,
+CreateTexture(VulkanDevice &device, VkFormat format, VkImageViewType type,
+              std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels, VkImageTiling tiling,
               VkImageAspectFlags aspectFlags, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags);
 
 

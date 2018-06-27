@@ -16,7 +16,7 @@ ResourceManager::CreateImage(VkFormat format, std::uint16_t width, std::uint16_t
                 std::cerr << "failed to bind image buffer memory: "s << result << '\n';
 
             else image.reset(
-                new VulkanImage{*handle, memory, format, mipLevels, width, height},
+                new VulkanImage{memory, *handle, format, mipLevels, width, height},
                 [this] (VulkanImage *ptr_image)
                 {
                     FreeImage(*ptr_image);
@@ -31,7 +31,7 @@ ResourceManager::CreateImage(VkFormat format, std::uint16_t width, std::uint16_t
 }
 
 [[nodiscard]] std::optional<VulkanImageView>
-ResourceManager::CreateImageView(VulkanImage const & image, VkImageAspectFlags aspectFlags) noexcept
+ResourceManager::CreateImageView(VulkanImage const &image, VkImageViewType type, VkImageAspectFlags aspectFlags) noexcept
 {
     std::optional<VulkanImageView> view;
 
@@ -39,7 +39,7 @@ ResourceManager::CreateImageView(VulkanImage const & image, VkImageAspectFlags a
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         nullptr, 0,
         image.handle(),
-        VK_IMAGE_VIEW_TYPE_2D,
+        type,
         image.format(),
         { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
         { aspectFlags, 0, image.mipLevels(), 0, 1 }
@@ -50,7 +50,7 @@ ResourceManager::CreateImageView(VulkanImage const & image, VkImageAspectFlags a
     if (auto result = vkCreateImageView(device_.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
         std::cerr << "failed to create image view: "s << result << '\n';
 
-    else view.emplace(handle, image.format());
+    else view.emplace(handle, type);
 
     return view;
 }
@@ -103,4 +103,9 @@ void ResourceManager::FreeImage(VulkanImage const &image) noexcept
 void ResourceManager::FreeSampler(VulkanSampler const &sampler) noexcept
 {
     vkDestroySampler(device_.handle(), sampler.handle(), nullptr);
+}
+
+void ResourceManager::FreeImageView(VulkanImageView const &view) noexcept
+{
+    vkDestroyImageView(device_.handle(), view.handle(), nullptr);
 }
