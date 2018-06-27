@@ -75,7 +75,7 @@ auto HEIGHT = 600u;
 
 
 
-struct app_t {
+struct app_t final {
     std::vector<Vertex> vertices;
     std::vector<std::uint32_t> indices;
 
@@ -193,7 +193,7 @@ void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descripto
     };
 
     VkDescriptorImageInfo const imageInfo{
-        app.texture.sampler->handle, app.texture.view.handle, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
+        app.texture.sampler->handle(), app.texture.view.handle, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
     };
 
     std::array<VkWriteDescriptorSet, 2> const writeDescriptorsSet{{

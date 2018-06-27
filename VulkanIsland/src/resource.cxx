@@ -102,5 +102,5 @@ void ResourceManager::FreeImage(VulkanImage const &image) noexcept
 
 void ResourceManager::FreeSampler(VulkanSampler const &sampler) noexcept
 {
-    vkDestroySampler(device_.handle(), sampler.handle, nullptr);
+    vkDestroySampler(device_.handle(), sampler.handle(), nullptr);
 }

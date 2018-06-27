@@ -24,7 +24,6 @@ public:
     std::uint16_t height() const noexcept { return height_; }
 
 private:
-
     VkImage handle_;
     std::shared_ptr<DeviceMemory> memory_;
 
@@ -34,6 +33,8 @@ private:
     std::uint16_t width_{0}, height_{0};
 
     VulkanImage() = delete;
+    VulkanImage(VulkanImage const &) = delete;
+    VulkanImage(VulkanImage &&) = delete;
 };
 
 struct VulkanImageView final {
@@ -50,11 +51,16 @@ struct VulkanImageView final {
 class VulkanSampler final {
 public:
 
-    VkSampler handle;
+    VulkanSampler(VkSampler handle) noexcept : handle_{handle} { }
+
+    VkSampler handle() const noexcept { return handle_; }
+
+private:
+    VkSampler handle_;
 
     VulkanSampler() = delete;
-
-    VulkanSampler(VkSampler handle) noexcept : handle{handle} { }
+    VulkanSampler(VulkanSampler const &) = delete;
+    VulkanSampler(VulkanSampler &&) = delete;
 };
 
 struct VulkanTexture final {
