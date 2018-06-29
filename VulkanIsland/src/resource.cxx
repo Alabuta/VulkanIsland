@@ -1,6 +1,6 @@
 #include "resource.h"
 
-[[nodiscard]] std::shared_ptr<VulkanImage>
+std::shared_ptr<VulkanImage>
 ResourceManager::CreateImage(VkFormat format, std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels,
                              VkImageTiling tiling, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags)
 {
@@ -30,7 +30,7 @@ ResourceManager::CreateImage(VkFormat format, std::uint16_t width, std::uint16_t
     return image;
 }
 
-[[nodiscard]] std::optional<VulkanImageView>
+std::optional<VulkanImageView>
 ResourceManager::CreateImageView(VulkanImage const &image, VkImageViewType type, VkImageAspectFlags aspectFlags) noexcept
 {
     std::optional<VulkanImageView> view;
@@ -55,7 +55,7 @@ ResourceManager::CreateImageView(VulkanImage const &image, VkImageViewType type,
     return view;
 }
 
-[[nodiscard]] std::shared_ptr<VulkanSampler>
+std::shared_ptr<VulkanSampler>
 ResourceManager::CreateImageSampler(std::uint32_t mipLevels) noexcept
 {
     std::shared_ptr<VulkanSampler> sampler;
@@ -94,6 +94,37 @@ ResourceManager::CreateImageSampler(std::uint32_t mipLevels) noexcept
     return sampler;
 }
 
+
+std::shared_ptr<VulkanBuffer>
+ResourceManager::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) noexcept
+{
+    std::shared_ptr<VulkanBuffer> buffer;
+
+    auto handle = CreateBufferHandle(device_, size, usage, properties);
+
+    if (handle) {
+        auto memory = device_.memoryManager().AllocateMemory(*handle, properties, false);
+
+        if (memory) {
+            if (auto result = vkBindBufferMemory(device_.handle(), *handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
+                std::cerr << "failed to bind buffer memory: "s << result << '\n';
+
+            else buffer.reset(
+                new VulkanBuffer{memory, *handle},
+                [this] (VulkanBuffer *ptr_buffer)
+                {
+                    FreeBuffer(*ptr_buffer);
+
+                    delete ptr_buffer;
+                }
+            );
+        }
+    }
+
+    return buffer;
+}
+
+
 void ResourceManager::FreeImage(VulkanImage const &image) noexcept
 {
     vkDestroyImage(device_.handle(), image.handle(), nullptr);
@@ -108,4 +139,11 @@ void ResourceManager::FreeSampler(VulkanSampler const &sampler) noexcept
 void ResourceManager::FreeImageView(VulkanImageView const &view) noexcept
 {
     vkDestroyImageView(device_.handle(), view.handle(), nullptr);
+}
+
+
+void ResourceManager::FreeBuffer(VulkanBuffer const &buffer) noexcept
+{
+    vkDestroyBuffer(device_.handle(), buffer.handle(), nullptr);
+    buffer.memory().reset();
 }

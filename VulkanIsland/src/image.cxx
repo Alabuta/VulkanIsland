@@ -14,7 +14,7 @@
     );
 }
 
-[[nodiscard]] std::optional<VkImage>
+std::optional<VkImage>
 CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
                               VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage) noexcept
 {
@@ -61,7 +61,7 @@ CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::ui
     return image;
 }
 
-[[nodiscard]] std::optional<VulkanTexture>
+std::optional<VulkanTexture>
 CreateTexture(VulkanDevice &device, VkFormat format, VkImageViewType type,
               std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels, VkImageTiling tiling,
               VkImageAspectFlags aspectFlags, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags)
@@ -82,7 +82,7 @@ CreateTexture(VulkanDevice &device, VkFormat format, VkImageViewType type,
 }
 
 
-[[nodiscard]] std::pair<VkBuffer, std::shared_ptr<DeviceMemory>> StageImage(VulkanDevice &device, RawImage const &rawImage) noexcept
+std::pair<VkBuffer, std::shared_ptr<DeviceMemory>> StageImage(VulkanDevice &device, RawImage const &rawImage) noexcept
 {
     VkBuffer buffer;
 

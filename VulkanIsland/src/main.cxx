@@ -552,7 +552,7 @@ auto CreateVertexBuffer(app_t &app, VulkanDevice &device, VkBuffer &vertexBuffer
 
         if (memory) {
             auto copyRegions = make_array(
-                VkBufferCopy{ /*stagingMemory->offset(), memory->offset()*/0, 0, stagingMemory->size()}
+                VkBufferCopy{/*stagingMemory->offset(), memory->offset()*/0, 0, stagingMemory->size()}
             );
 
             CopyBufferToBuffer(device, app.transferQueue, stagingBuffer, vertexBuffer, std::move(copyRegions), app.transferCommandPool);

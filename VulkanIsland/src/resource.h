@@ -5,6 +5,7 @@
 
 #include "main.h"
 #include "device.h"
+#include "buffer.h"
 #include "image.h"
 #include "command_buffer.h"
 
@@ -23,6 +24,9 @@ public:
     [[nodiscard]] std::shared_ptr<VulkanSampler>
     CreateImageSampler(std::uint32_t mipLevels) noexcept;
 
+    [[nodiscard]] std::shared_ptr<VulkanBuffer>
+    CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) noexcept;
+
 private:
 
     VulkanDevice &device_;
@@ -30,6 +34,8 @@ private:
     void FreeImage(VulkanImage const &image) noexcept;
     void FreeSampler(VulkanSampler const &sampler) noexcept;
     void FreeImageView(VulkanImageView const &view) noexcept;
+
+    void FreeBuffer(VulkanBuffer const &buffer) noexcept;
 
     ResourceManager() = delete;
     ResourceManager(ResourceManager const &) = delete;

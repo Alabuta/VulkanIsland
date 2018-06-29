@@ -42,7 +42,7 @@ MemoryManager::~MemoryManager()
 
 
 template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
-[[nodiscard]] std::shared_ptr<DeviceMemory>
+std::shared_ptr<DeviceMemory>
 MemoryManager::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags properties)
 {
     std::uint32_t memoryTypeIndex{0};
@@ -257,8 +257,8 @@ void MemoryManager::DeallocateMemory(DeviceMemory const &memory)
 
 
 
-[[nodiscard]] auto BufferPool::CreateBuffer(VulkanDevice &device, VkBuffer &buffer,
-                                            VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
+auto BufferPool::CreateBuffer(VulkanDevice &device, VkBuffer &buffer,
+                              VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
     -> std::shared_ptr<DeviceMemory>
 {
     VkBufferCreateInfo const bufferCreateInfo{
@@ -286,11 +286,38 @@ void MemoryManager::DeallocateMemory(DeviceMemory const &memory)
     return { };
 }
 
-[[nodiscard]] auto BufferPool::CreateUniformBuffer(VulkanDevice &device, VkBuffer &uboBuffer, std::size_t size)
+auto BufferPool::CreateUniformBuffer(VulkanDevice &device, VkBuffer &uboBuffer, std::size_t size)
     -> std::shared_ptr<DeviceMemory>
 {
     auto constexpr usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
     return CreateBuffer(device, uboBuffer, size, usageFlags, propertyFlags);
+}
+
+
+
+
+std::optional<VkBuffer>
+CreateBufferHandle(VulkanDevice const &device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) noexcept
+{
+    std::optional<VkBuffer> buffer;
+
+    VkBufferCreateInfo const bufferCreateInfo{
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        nullptr, 0,
+        size,
+        usage,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0, nullptr
+    };
+
+    VkBuffer handle;
+
+    if (auto result = vkCreateBuffer(device.handle(), &bufferCreateInfo, nullptr, &handle); result != VK_SUCCESS)
+        std::cerr << "failed to create buffer: "s << result << '\n';
+
+    else buffer.emplace(handle);
+
+    return buffer;
 }
