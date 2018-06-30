@@ -103,8 +103,7 @@ struct app_t final {
 
     VkSemaphore imageAvailableSemaphore, renderFinishedSemaphore;
 
-    VkBuffer vertexBuffer, indexBuffer, uboBuffer;
-    std::shared_ptr<DeviceMemory> vertexMemory, indexMemory, uboMemory;
+    std::shared_ptr<VulkanBuffer> vertexBuffer, indexBuffer, uboBuffer;
 
     VulkanTexture texture;
 };
@@ -189,7 +188,7 @@ void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descripto
         throw std::runtime_error("failed to allocate descriptor sets: "s + std::to_string(result));
 
     VkDescriptorBufferInfo const bufferInfo{
-        app.uboBuffer, 0, sizeof(TRANSFORMS)
+        app.uboBuffer->handle(), 0, sizeof(TRANSFORMS)
     };
 
     VkDescriptorImageInfo const imageInfo{
@@ -516,106 +515,111 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
 }
 
 
-auto CreateVertexBuffer(app_t &app, VulkanDevice &device, VkBuffer &vertexBuffer)
--> std::shared_ptr<DeviceMemory>
+[[nodiscard]] std::shared_ptr<VulkanBuffer>
+CreateVertexBuffer(app_t &app, VulkanDevice &device)
 {
-    VkBuffer stagingBuffer;
+    std::shared_ptr<VulkanBuffer> buffer;
 
-    auto stagingMemory = [&] ()
+    auto stagingBuffer = [&device, &vertices = app.vertices] ()
     {
         auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-        auto const bufferSize = static_cast<VkDeviceSize>(sizeof(decltype(app.vertices)::value_type) * std::size(app.vertices));
+        using vertex_type = typename std::decay_t<decltype(vertices)>::value_type;
 
-        auto memory = BufferPool::CreateBuffer(device, stagingBuffer, bufferSize, usageFlags, propertyFlags);
+        auto const bufferSize = static_cast<VkDeviceSize>(sizeof(vertex_type) * std::size(vertices));
 
-        if (memory) {
+        auto buffer = device.resourceManager().CreateBuffer(bufferSize, usageFlags, propertyFlags);
+
+        if (buffer) {
             void *data;
 
-            if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, &data); result != VK_SUCCESS)
-                throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
+            if (auto result = vkMapMemory(device.handle(), buffer->memory()->handle(), buffer->memory()->offset(), buffer->memory()->size(), 0, &data); result != VK_SUCCESS)
+                std::cerr << "failed to map vertex staging buffer memory: "s << result << '\n';
 
-            std::uninitialized_copy(std::begin(app.vertices), std::end(app.vertices), reinterpret_cast<decltype(app.vertices)::value_type*>(data));
+            std::uninitialized_copy(std::begin(vertices), std::end(vertices), reinterpret_cast<vertex_type *>(data));
 
-            vkUnmapMemory(device.handle(), memory->handle());
+            vkUnmapMemory(device.handle(), buffer->memory()->handle());
         }
 
-        return memory;
+        return buffer;
     } ();
 
-    if (stagingMemory) {
+    if (stagingBuffer) {
         auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-        auto memory = BufferPool::CreateBuffer(device, vertexBuffer, stagingMemory->size(), usageFlags, propertyFlags);
+        buffer = device.resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
 
-        if (memory) {
+        if (buffer) {
             auto copyRegions = make_array(
-                VkBufferCopy{/*stagingMemory->offset(), memory->offset()*/0, 0, stagingMemory->size()}
+                VkBufferCopy{/*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/0, 0, stagingBuffer->memory()->size()}
             );
 
-            CopyBufferToBuffer(device, app.transferQueue, stagingBuffer, vertexBuffer, std::move(copyRegions), app.transferCommandPool);
+            CopyBufferToBuffer(device, app.transferQueue, stagingBuffer->handle(), buffer->handle(), std::move(copyRegions), app.transferCommandPool);
         }
-
-        vkDestroyBuffer(device.handle(), stagingBuffer, nullptr);
-
-        return memory;
     }
 
-    return { };
+    return buffer;
 }
 
-auto CreateIndexBuffer(app_t &app, VulkanDevice &device, VkBuffer &indexBuffer)
--> std::shared_ptr<DeviceMemory>
+[[nodiscard]] std::shared_ptr<VulkanBuffer>
+CreateIndexBuffer(app_t &app, VulkanDevice &device)
 {
-    VkBuffer stagingBuffer;
+    std::shared_ptr<VulkanBuffer> buffer;
 
-    auto stagingMemory = [&] ()
+    auto stagingBuffer = [&device, &indices = app.indices] ()
     {
         auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-        auto const bufferSize = static_cast<VkDeviceSize>(sizeof(decltype(app.indices)::value_type) * std::size(app.indices));
+        using index_type = typename std::decay_t<decltype(indices)>::value_type;
 
-        auto memory = BufferPool::CreateBuffer(device, stagingBuffer, bufferSize, usageFlags, propertyFlags);
+        auto const bufferSize = static_cast<VkDeviceSize>(sizeof(index_type) * std::size(indices));
 
-        if (memory) {
-            decltype(app.indices)::value_type *data;
+        auto buffer = device.resourceManager().CreateBuffer(bufferSize, usageFlags, propertyFlags);
 
-            if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, reinterpret_cast<void**>(&data)); result != VK_SUCCESS)
-                throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
+        if (buffer) {
+            void *data;
 
-            std::uninitialized_copy(std::begin(app.indices), std::end(app.indices), data);
+            if (auto result = vkMapMemory(device.handle(), buffer->memory()->handle(), buffer->memory()->offset(), buffer->memory()->size(), 0, &data); result != VK_SUCCESS)
+                std::cerr << "failed to map index staging buffer memory: "s << result << '\n';
 
-            vkUnmapMemory(device.handle(), memory->handle());
+            std::uninitialized_copy(std::begin(indices), std::end(indices), reinterpret_cast<index_type *>(data));
+
+            vkUnmapMemory(device.handle(), buffer->memory()->handle());
         }
 
-        return memory;
+        return buffer;
     } ();
 
-    if (stagingMemory) {
+    if (stagingBuffer) {
         auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-        auto memory = BufferPool::CreateBuffer(device, indexBuffer, stagingMemory->size(), usageFlags, propertyFlags);
+        buffer = device.resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
 
-        if (memory) {
+        if (buffer) {
             auto copyRegions = make_array(
-                VkBufferCopy{ /*stagingMemory->offset(), memory->offset()*/0, 0, stagingMemory->size()}
+                VkBufferCopy{ /*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/0, 0, stagingBuffer->memory()->size()}
             );
 
-            CopyBufferToBuffer(device, app.transferQueue, stagingBuffer, indexBuffer, std::move(copyRegions), app.transferCommandPool);
+            CopyBufferToBuffer(device, app.transferQueue, stagingBuffer->handle(), buffer->handle(), std::move(copyRegions), app.transferCommandPool);
         }
-
-        vkDestroyBuffer(device.handle(), stagingBuffer, nullptr);
-
-        return memory;
     }
 
-    return { };
+    return buffer;
 }
 
+
+[[nodiscard]] std::shared_ptr<VulkanBuffer>
+CreateUniformBuffer(VulkanDevice &device, std::size_t size)
+{
+    auto constexpr usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    return device.resourceManager().CreateBuffer(size, usageFlags, propertyFlags);
+}
 
 template<class T, class U, typename std::enable_if_t<is_iterable_v<std::decay_t<T>> && is_iterable_v<std::decay_t<U>>>...>
 void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass renderPass, VkCommandPool commandPool, T &commandBuffers, U &framebuffers)
@@ -669,7 +673,7 @@ void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass r
 
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayout, 0, 1, &app.descriptorSet, 0, nullptr);
 
-        auto const vertexBuffers = make_array(app.vertexBuffer);
+        auto const vertexBuffers = make_array(app.vertexBuffer->handle());
         auto const offsets = make_array(VkDeviceSize{0});
 
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, std::data(vertexBuffers), std::data(offsets));
@@ -677,7 +681,7 @@ void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass r
         auto constexpr index_type = std::is_same_v<typename decltype(app.indices)::value_type, std::uint32_t> ?
                                     VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
 
-        vkCmdBindIndexBuffer(commandBuffer, app.indexBuffer, 0, index_type);
+        vkCmdBindIndexBuffer(commandBuffer, app.indexBuffer->handle(), 0, index_type);
 
         vkCmdDrawIndexed(commandBuffer, static_cast<std::uint32_t>(std::size(app.indices)), 1, 0, 0, 0);
 
@@ -910,10 +914,14 @@ void InitVulkan(GLFWwindow *window, app_t &app)
     if (auto result = LoadGLTF("sponza"sv, app.vertices, app.indices); !result)
         throw std::runtime_error("failed to load a mesh"s);
 
-    app.vertexMemory = CreateVertexBuffer(app, *app.vulkanDevice, app.vertexBuffer);
-    app.indexMemory = CreateIndexBuffer(app, *app.vulkanDevice, app.indexBuffer);
+    if (app.vertexBuffer = CreateVertexBuffer(app, *app.vulkanDevice); !app.vertexBuffer)
+        throw std::runtime_error("failed to init vertex buffer"s);
 
-    app.uboMemory = BufferPool::CreateUniformBuffer(*app.vulkanDevice, app.uboBuffer, sizeof(TRANSFORMS));
+    if (app.indexBuffer = CreateIndexBuffer(app, *app.vulkanDevice); !app.indexBuffer)
+        throw std::runtime_error("failed to init index buffer"s);
+
+    if (app.uboBuffer = CreateUniformBuffer(*app.vulkanDevice, sizeof(TRANSFORMS)); !app.uboBuffer)
+        throw std::runtime_error("failed to init uniform buffer"s);
 
     CreateDescriptorPool(app.vulkanDevice->handle(), app.descriptorPool);
     CreateDescriptorSet(app, app.vulkanDevice->handle(), app.descriptorSet);
@@ -942,18 +950,9 @@ void CleanUp(app_t &app)
     vkDestroyImageView(app.vulkanDevice->handle(), app.texture.view.handle(), nullptr);
     app.texture.image.reset();
 
-    if (app.uboBuffer)
-        vkDestroyBuffer(app.vulkanDevice->handle(), app.uboBuffer, nullptr);
-
-    if (app.indexBuffer)
-        vkDestroyBuffer(app.vulkanDevice->handle(), app.indexBuffer, nullptr);
-
-    if (app.vertexBuffer)
-        vkDestroyBuffer(app.vulkanDevice->handle(), app.vertexBuffer, nullptr);
-
-    app.vertexMemory.reset();
-    app.indexMemory.reset();
-    app.uboMemory.reset();
+    app.uboBuffer.reset();
+    app.indexBuffer.reset();
+    app.vertexBuffer.reset();
 
     if (app.transferCommandPool)
         vkDestroyCommandPool(app.vulkanDevice->handle(), app.transferCommandPool, nullptr);
@@ -968,7 +967,7 @@ void CleanUp(app_t &app)
     app.vulkanInstance.reset(nullptr);
 }
 
-void UpdateUniformBuffer(VulkanDevice const &device, DeviceMemory const &memory, std::uint32_t width, std::uint32_t height)
+void UpdateUniformBuffer(VulkanDevice const &device, VulkanBuffer const &uboBuffer, std::uint32_t width, std::uint32_t height)
 {
     if (width * height < 1) return;
 
@@ -1041,13 +1040,13 @@ void UpdateUniformBuffer(VulkanDevice const &device, DeviceMemory const &memory,
     //transforms.proj = glm::perspective(glm::radians(kFOV), aspect, zNear, zFar);
 
     void *data;
-    if (auto result = vkMapMemory(device.handle(), memory.handle(), memory.offset(), memory.size(), 0, &data); result != VK_SUCCESS)
+    if (auto result = vkMapMemory(device.handle(), uboBuffer.memory()->handle(), uboBuffer.memory()->offset(), uboBuffer.memory()->size(), 0, &data); result != VK_SUCCESS)
         throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
 
     auto const array = make_array(transforms);
     std::uninitialized_copy(std::begin(array), std::end(array), reinterpret_cast<decltype(transforms) *>(data));
 
-    vkUnmapMemory(device.handle(), memory.handle());
+    vkUnmapMemory(device.handle(), uboBuffer.memory()->handle());
 }
 
 /* void CursorCallback(GLFWwindow *window, double x, double y)
@@ -1081,7 +1080,7 @@ try {
 
     while (!glfwWindowShouldClose(window) && glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS) {
         glfwPollEvents();
-        UpdateUniformBuffer(*app.vulkanDevice.get(), *app.uboMemory, WIDTH, HEIGHT);
+        UpdateUniformBuffer(*app.vulkanDevice.get(), *app.uboBuffer, WIDTH, HEIGHT);
         DrawFrame(*app.vulkanDevice, app);
     }
 

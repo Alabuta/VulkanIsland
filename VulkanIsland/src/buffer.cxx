@@ -257,7 +257,7 @@ void MemoryManager::DeallocateMemory(DeviceMemory const &memory)
 
 
 
-auto BufferPool::CreateBuffer(VulkanDevice &device, VkBuffer &buffer,
+auto CreateBuffer(VulkanDevice &device, VkBuffer &buffer,
                               VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
     -> std::shared_ptr<DeviceMemory>
 {
@@ -284,15 +284,6 @@ auto BufferPool::CreateBuffer(VulkanDevice &device, VkBuffer &buffer,
     }
 
     return { };
-}
-
-auto BufferPool::CreateUniformBuffer(VulkanDevice &device, VkBuffer &uboBuffer, std::size_t size)
-    -> std::shared_ptr<DeviceMemory>
-{
-    auto constexpr usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
-    auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-    return CreateBuffer(device, uboBuffer, size, usageFlags, propertyFlags);
 }
 
 

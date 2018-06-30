@@ -182,17 +182,6 @@ private:
 };
 
 
-class BufferPool {
-public:
-
-    [[nodiscard]] static auto CreateBuffer(VulkanDevice &device, VkBuffer &buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
-        ->std::shared_ptr<DeviceMemory>;
-
-    [[nodiscard]] static auto CreateUniformBuffer(VulkanDevice &device, VkBuffer &uboBuffer, std::size_t size)
-        ->std::shared_ptr<DeviceMemory>;
-};
-
-
 
 [[nodiscard]] std::optional<VkBuffer>
 CreateBufferHandle(VulkanDevice const &device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) noexcept;
