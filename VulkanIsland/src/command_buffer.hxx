@@ -1,7 +1,7 @@
 #pragma once
 
-#include "main.h"
-#include "device.h"
+#include "main.hxx"
+#include "device.hxx"
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
 [[nodiscard]] VkCommandBuffer BeginSingleTimeCommand(VulkanDevice const &device, [[maybe_unused]] Q &queue, VkCommandPool commandPool)

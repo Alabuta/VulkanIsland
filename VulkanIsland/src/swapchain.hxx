@@ -1,9 +1,9 @@
 #pragma once
 
-#include "main.h"
-#include "device.h"
-#include "buffer.h"
-#include "image.h"
+#include "main.hxx"
+#include "device.hxx"
+#include "buffer.hxx"
+#include "image.hxx"
 
 struct VulkanSwapchain final {
     VkSwapchainKHR handle;

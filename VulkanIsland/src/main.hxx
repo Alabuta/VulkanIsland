@@ -20,7 +20,7 @@ namespace fs = std::experimental::filesystem;
 namespace fs = boost::filesystem;
 #endif
 
-#include "helpers.h"
+#include "helpers.hxx"
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;

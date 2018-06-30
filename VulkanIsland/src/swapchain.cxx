@@ -1,4 +1,4 @@
-#include "swapchain.h"
+#include "swapchain.hxx"
 
 
 #if USE_WIN32

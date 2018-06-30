@@ -1,7 +1,7 @@
 #define _SCL_SECURE_NO_WARNINGS
 
-#include "image.h"
-#include "resource.h"
+#include "image.hxx"
+#include "resource.hxx"
 
 
 [[nodiscard]] std::optional<VkFormat> FindDepthImageFormat(VkPhysicalDevice physicalDevice) noexcept

@@ -7,9 +7,9 @@
 #include <map>
 #include <unordered_map>
 
-#include "main.h"
-#include "device.h"
-#include "command_buffer.h"
+#include "main.hxx"
+#include "device.hxx"
+#include "command_buffer.hxx"
 
 class DeviceMemory;
 

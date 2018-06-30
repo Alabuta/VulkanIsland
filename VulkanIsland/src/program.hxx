@@ -1,6 +1,6 @@
 #pragma once
 
-#include "main.h"
+#include "main.hxx"
 
 [[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view _name)
 {

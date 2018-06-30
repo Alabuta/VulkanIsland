@@ -1,9 +1,9 @@
 #pragma once
 
-#include "main.h"
-#include "device.h"
-#include "buffer.h"
-#include "TARGA_loader.h"
+#include "main.hxx"
+#include "device.hxx"
+#include "buffer.hxx"
+#include "TARGA_loader.hxx"
 
 class VulkanImageView;
 

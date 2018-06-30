@@ -1,8 +1,8 @@
 
 #include <istream>
 
-#include "main.h"
-#include "TARGA_loader.h"
+#include "main.hxx"
+#include "TARGA_loader.hxx"
 
 
 

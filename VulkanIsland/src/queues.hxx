@@ -1,8 +1,8 @@
 #pragma once
 #include <variant>
 
-#include "main.h"
-#include "device.h"
+#include "main.hxx"
+#include "device.hxx"
 
 class VulkanDevice;
 

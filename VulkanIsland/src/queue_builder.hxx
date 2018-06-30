@@ -1,9 +1,9 @@
 #pragma once
 #include <map>
 
-#include "main.h"
-#include "device.h"
-#include "queues.h"
+#include "main.hxx"
+#include "device.hxx"
+#include "queues.hxx"
 
 
 class QueueHelper final {

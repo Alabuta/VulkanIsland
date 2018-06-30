@@ -219,23 +219,23 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="resource.h" />
-    <ClInclude Include="src\buffer.h" />
-    <ClInclude Include="src\command_buffer.h" />
-    <ClInclude Include="src\debug.h" />
-    <ClInclude Include="src\device.h" />
-    <ClInclude Include="src\device_defaults.h" />
-    <ClInclude Include="src\image.h" />
-    <ClInclude Include="src\helpers.h" />
-    <ClInclude Include="src\instance.h" />
-    <ClInclude Include="src\isle_math.h" />
-    <ClInclude Include="src\main.h" />
-    <ClInclude Include="src\mesh_loader.h" />
-    <ClInclude Include="src\program.h" />
-    <ClInclude Include="src\queues.h" />
-    <ClInclude Include="src\queue_builder.h" />
-    <ClInclude Include="src\resource.h" />
-    <ClInclude Include="src\swapchain.h" />
-    <ClInclude Include="src\TARGA_loader.h" />
+    <ClInclude Include="src\buffer.hxx" />
+    <ClInclude Include="src\command_buffer.hxx" />
+    <ClInclude Include="src\debug.hxx" />
+    <ClInclude Include="src\device.hxx" />
+    <ClInclude Include="src\device_defaults.hxx" />
+    <ClInclude Include="src\image.hxx" />
+    <ClInclude Include="src\helpers.hxx" />
+    <ClInclude Include="src\instance.hxx" />
+    <ClInclude Include="src\isle_math.hxx" />
+    <ClInclude Include="src\main.hxx" />
+    <ClInclude Include="src\mesh_loader.hxx" />
+    <ClInclude Include="src\program.hxx" />
+    <ClInclude Include="src\queues.hxx" />
+    <ClInclude Include="src\queue_builder.hxx" />
+    <ClInclude Include="src\resource.hxx" />
+    <ClInclude Include="src\swapchain.hxx" />
+    <ClInclude Include="src\TARGA_loader.hxx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag" />

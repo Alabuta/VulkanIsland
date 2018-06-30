@@ -1,9 +1,9 @@
 #pragma once
 
-#include "instance.h"
-#include "device_defaults.h"
-#include "queues.h"
-#include "queue_builder.h"
+#include "instance.hxx"
+#include "device_defaults.hxx"
+#include "queues.hxx"
+#include "queue_builder.hxx"
 
 #define USE_DEBUG_MARKERS 0
 

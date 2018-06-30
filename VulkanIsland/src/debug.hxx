@@ -1,6 +1,6 @@
 #pragma once
 
-#include "debug.h"
+#include "debug.hxx"
 
 
 [[nodiscard]] inline VKAPI_ATTR VkBool32 VKAPI_CALL

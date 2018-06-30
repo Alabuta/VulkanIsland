@@ -1,12 +1,12 @@
 #include <type_traits>
 #include <functional>
 
-#include "main.h"
-#include "swapchain.h"
-#include "device.h"
-#include "device_defaults.h"
-#include "buffer.h"
-#include "resource.h"
+#include "main.hxx"
+#include "swapchain.hxx"
+#include "device.hxx"
+#include "device_defaults.hxx"
+#include "buffer.hxx"
+#include "resource.hxx"
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;

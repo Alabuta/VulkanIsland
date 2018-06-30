@@ -1,7 +1,7 @@
 #pragma once
 
 #include <array>
-#include "helpers.h"
+#include "helpers.hxx"
 
 struct vec2 {
     std::array<float, 2> xy;

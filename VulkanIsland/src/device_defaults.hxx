@@ -1,6 +1,6 @@
 #pragma once
 
-#include "instance.h"
+#include "instance.hxx"
 
 VkPhysicalDeviceFeatures constexpr kDEVICE_FEATURES{
     VkBool32(VK_FALSE), // robustBufferAccess,

@@ -15,21 +15,21 @@
 #include <cmath>
 #include <unordered_map>
 
-#include "main.h"
-#include "isle_math.h"
-#include "instance.h"
-#include "device.h"
-#include "swapchain.h"
-#include "program.h"
-#include "buffer.h"
-#include "image.h"
-#include "resource.h"
-#include "command_buffer.h"
+#include "main.hxx"
+#include "isle_math.hxx"
+#include "instance.hxx"
+#include "device.hxx"
+#include "swapchain.hxx"
+#include "program.hxx"
+#include "buffer.hxx"
+#include "image.hxx"
+#include "resource.hxx"
+#include "command_buffer.hxx"
 
 
 
-#include "mesh_loader.h"
-#include "TARGA_loader.h"
+#include "mesh_loader.hxx"
+#include "TARGA_loader.hxx"
 
 
 #if 0

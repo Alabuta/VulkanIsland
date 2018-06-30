@@ -1,4 +1,4 @@
-#include "resource.h"
+#include "resource.hxx"
 
 std::shared_ptr<VulkanImage>
 ResourceManager::CreateImage(VkFormat format, std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels,
@@ -19,7 +19,7 @@ ResourceManager::CreateImage(VkFormat format, std::uint16_t width, std::uint16_t
                 new VulkanImage{memory, *handle, format, mipLevels, width, height},
                 [this] (VulkanImage *ptr_image)
                 {
-                    FreeImage(*ptr_image);
+                    ReleaseResource(*ptr_image);
 
                     delete ptr_image;
                 }
@@ -85,7 +85,7 @@ ResourceManager::CreateImageSampler(std::uint32_t mipLevels) noexcept
         new VulkanSampler{handle},
         [this] (VulkanSampler *ptr_sampler)
         {
-            FreeSampler(*ptr_sampler);
+            ReleaseResource(*ptr_sampler);
 
             delete ptr_sampler;
         }
@@ -113,7 +113,7 @@ ResourceManager::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMem
                 new VulkanBuffer{memory, *handle},
                 [this] (VulkanBuffer *ptr_buffer)
                 {
-                    FreeBuffer(*ptr_buffer);
+                    ReleaseResource(*ptr_buffer);
 
                     delete ptr_buffer;
                 }
@@ -124,26 +124,30 @@ ResourceManager::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMem
     return buffer;
 }
 
-
-void ResourceManager::FreeImage(VulkanImage const &image) noexcept
+template<class T, std::enable_if_t<is_one_of_v<std::decay_t<T>, VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer>> ...>
+void ResourceManager::ReleaseResource(T &&resource) noexcept
 {
-    vkDestroyImage(device_.handle(), image.handle(), nullptr);
-    image.memory().reset();
-}
+    using R = std::decay_t<T>;
 
-void ResourceManager::FreeSampler(VulkanSampler const &sampler) noexcept
-{
-    vkDestroySampler(device_.handle(), sampler.handle(), nullptr);
-}
+    if constexpr (std::is_same_v<R, VulkanImage>)
+    {
+        vkDestroyImage(device_.handle(), resource.handle(), nullptr);
+        resource.memory().reset();
+    }
 
-void ResourceManager::FreeImageView(VulkanImageView const &view) noexcept
-{
-    vkDestroyImageView(device_.handle(), view.handle(), nullptr);
-}
+    else if constexpr (std::is_same_v<R, VulkanSampler>)
+    {
+        vkDestroySampler(device_.handle(), resource.handle(), nullptr);
+    }
 
+    else if constexpr (std::is_same_v<R, VulkanImageView>)
+    {
+        vkDestroyImageView(device_.handle(), resource.handle(), nullptr);
+    }
 
-void ResourceManager::FreeBuffer(VulkanBuffer const &buffer) noexcept
-{
-    vkDestroyBuffer(device_.handle(), buffer.handle(), nullptr);
-    buffer.memory().reset();
+    else if constexpr (std::is_same_v<R, VulkanBuffer>)
+    {
+        vkDestroyBuffer(device_.handle(), resource.handle(), nullptr);
+        resource.memory().reset();
+    }
 }

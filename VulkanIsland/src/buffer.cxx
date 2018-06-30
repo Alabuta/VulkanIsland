@@ -1,6 +1,6 @@
-#include "device.h"
-#include "buffer.h"
-#include "image.h"
+#include "device.hxx"
+#include "buffer.hxx"
+#include "image.hxx"
 
 namespace {
 [[nodiscard]] std::optional<std::uint32_t>

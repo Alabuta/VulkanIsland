@@ -1,7 +1,7 @@
 
-#include "main.h"
-#include "instance.h"
-#include "device.h"
+#include "main.hxx"
+#include "instance.hxx"
+#include "device.hxx"
 
 namespace {
 

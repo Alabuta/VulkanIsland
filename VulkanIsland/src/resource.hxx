@@ -3,11 +3,11 @@
 #include <optional>
 #include <memory>
 
-#include "main.h"
-#include "device.h"
-#include "buffer.h"
-#include "image.h"
-#include "command_buffer.h"
+#include "main.hxx"
+#include "device.hxx"
+#include "buffer.hxx"
+#include "image.hxx"
+#include "command_buffer.hxx"
 
 class ResourceManager final {
 public:
@@ -31,11 +31,8 @@ private:
 
     VulkanDevice &device_;
 
-    void FreeImage(VulkanImage const &image) noexcept;
-    void FreeSampler(VulkanSampler const &sampler) noexcept;
-    void FreeImageView(VulkanImageView const &view) noexcept;
-
-    void FreeBuffer(VulkanBuffer const &buffer) noexcept;
+    template<class T, std::enable_if_t<is_one_of_v<std::decay_t<T>, VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer>> ...>
+    void ReleaseResource(T &&resource) noexcept;
 
     ResourceManager() = delete;
     ResourceManager(ResourceManager const &) = delete;

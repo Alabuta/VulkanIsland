@@ -12,8 +12,8 @@
 
 #include "nlohmann/json.hpp"
 
-#include "helpers.h"
-#include "mesh_loader.h"
+#include "helpers.hxx"
+#include "mesh_loader.hxx"
 
 bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec3> &normals, std::vector<vec2> &uvs, std::vector<index_t> &indices)
 {
