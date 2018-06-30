@@ -23,23 +23,23 @@ find_package(glfw3 3.3 REQUIRED)
 include_directories(include)
 
 set(SOURCE_FILES
-        src/command_buffer.h
-        src/device_defaults.h
-        src/helpers.h
-        src/isle_math.h
-        src/program.h
-        src/queue_builder.h
-        src/queues.h
-        src/resource.cxx                        src/resource.h
-        src/buffer.cxx                          src/buffer.h
-        src/image.cxx                           src/image.h
-        src/debug.cxx                           src/debug.h
-        src/device.cxx                          src/device.h
-        src/instance.cxx                        src/instance.h
-        src/mesh_loader.cxx                     src/mesh_loader.h
-        src/swapchain.cxx                       src/swapchain.h
-        src/TARGA_loader.cxx                    src/TARGA_loader.h
-        src/main.cxx                            src/main.h
+        src/command_buffer.hxx
+        src/device_defaults.hxx
+        src/helpers.hxx
+        src/isle_math.hxx
+        src/program.hxx
+        src/queue_builder.hxx
+        src/queues.hxx
+        src/resource.cxx                        src/resource.hxx
+        src/buffer.cxx                          src/buffer.hxx
+        src/image.cxx                           src/image.hxx
+        src/debug.cxx                           src/debug.hxx
+        src/device.cxx                          src/device.hxx
+        src/instance.cxx                        src/instance.hxx
+        src/mesh_loader.cxx                     src/mesh_loader.hxx
+        src/swapchain.cxx                       src/swapchain.hxx
+        src/TARGA_loader.cxx                    src/TARGA_loader.hxx
+        src/main.cxx                            src/main.hxx
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
