@@ -516,36 +516,11 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
 
 
 [[nodiscard]] std::shared_ptr<VulkanBuffer>
-CreateVertexBuffer(app_t &app, VulkanDevice &device)
+InitVertexBuffer(app_t &app, VulkanDevice &device)
 {
     std::shared_ptr<VulkanBuffer> buffer;
 
-    auto stagingBuffer = [&device, &vertices = app.vertices] ()
-    {
-        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-        using vertex_type = typename std::decay_t<decltype(vertices)>::value_type;
-
-        auto const bufferSize = static_cast<VkDeviceSize>(sizeof(vertex_type) * std::size(vertices));
-
-        auto buffer = device.resourceManager().CreateBuffer(bufferSize, usageFlags, propertyFlags);
-
-        if (buffer) {
-            void *data;
-
-            if (auto result = vkMapMemory(device.handle(), buffer->memory()->handle(), buffer->memory()->offset(), buffer->memory()->size(), 0, &data); result != VK_SUCCESS)
-                std::cerr << "failed to map vertex staging buffer memory: "s << result << '\n';
-
-            std::uninitialized_copy(std::begin(vertices), std::end(vertices), reinterpret_cast<vertex_type *>(data));
-
-            vkUnmapMemory(device.handle(), buffer->memory()->handle());
-        }
-
-        return buffer;
-    } ();
-
-    if (stagingBuffer) {
+    if (auto stagingBuffer = CreateStagingBuffer(device, app.vertices); stagingBuffer) {
         auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
@@ -564,36 +539,11 @@ CreateVertexBuffer(app_t &app, VulkanDevice &device)
 }
 
 [[nodiscard]] std::shared_ptr<VulkanBuffer>
-CreateIndexBuffer(app_t &app, VulkanDevice &device)
+InitIndexBuffer(app_t &app, VulkanDevice &device)
 {
     std::shared_ptr<VulkanBuffer> buffer;
 
-    auto stagingBuffer = [&device, &indices = app.indices] ()
-    {
-        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-        using index_type = typename std::decay_t<decltype(indices)>::value_type;
-
-        auto const bufferSize = static_cast<VkDeviceSize>(sizeof(index_type) * std::size(indices));
-
-        auto buffer = device.resourceManager().CreateBuffer(bufferSize, usageFlags, propertyFlags);
-
-        if (buffer) {
-            void *data;
-
-            if (auto result = vkMapMemory(device.handle(), buffer->memory()->handle(), buffer->memory()->offset(), buffer->memory()->size(), 0, &data); result != VK_SUCCESS)
-                std::cerr << "failed to map index staging buffer memory: "s << result << '\n';
-
-            std::uninitialized_copy(std::begin(indices), std::end(indices), reinterpret_cast<index_type *>(data));
-
-            vkUnmapMemory(device.handle(), buffer->memory()->handle());
-        }
-
-        return buffer;
-    } ();
-
-    if (stagingBuffer) {
+    if (auto stagingBuffer = CreateStagingBuffer(device, app.indices); stagingBuffer) {
         auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
@@ -713,7 +663,10 @@ std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::
     auto constexpr generateMipMaps = true;
 
     if (auto rawImage = LoadTARGA(name); rawImage) {
-        auto stagingBuffer = StageImage(device, *rawImage);
+        auto stagingBuffer = std::visit([&device] (auto &&data)
+        {
+            return CreateStagingBuffer(device, std::forward<decltype(data)>(data));
+        }, std::move(rawImage->data));
 
         if (stagingBuffer) {
             auto const width = static_cast<std::uint32_t>(rawImage->width);
@@ -914,10 +867,10 @@ void InitVulkan(GLFWwindow *window, app_t &app)
     if (auto result = LoadGLTF("sponza"sv, app.vertices, app.indices); !result)
         throw std::runtime_error("failed to load a mesh"s);
 
-    if (app.vertexBuffer = CreateVertexBuffer(app, *app.vulkanDevice); !app.vertexBuffer)
+    if (app.vertexBuffer = InitVertexBuffer(app, *app.vulkanDevice); !app.vertexBuffer)
         throw std::runtime_error("failed to init vertex buffer"s);
 
-    if (app.indexBuffer = CreateIndexBuffer(app, *app.vulkanDevice); !app.indexBuffer)
+    if (app.indexBuffer = InitIndexBuffer(app, *app.vulkanDevice); !app.indexBuffer)
         throw std::runtime_error("failed to init index buffer"s);
 
     if (app.uboBuffer = CreateUniformBuffer(*app.vulkanDevice, sizeof(TRANSFORMS)); !app.uboBuffer)

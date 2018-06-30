@@ -81,36 +81,3 @@ CreateTexture(VulkanDevice &device, VkFormat format, VkImageViewType type,
     return texture;
 }
 
-
-std::shared_ptr<VulkanBuffer> StageImage(VulkanDevice &device, RawImage const &rawImage) noexcept
-{
-    return std::visit([&device] (auto &&texels) -> std::shared_ptr<VulkanBuffer>
-    {
-        std::shared_ptr<VulkanBuffer> buffer;
-
-        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-        using texel_t = typename std::decay_t<decltype(texels)>::value_type;
-
-        auto const bufferSize = static_cast<VkDeviceSize>(std::size(texels) * sizeof(texel_t));
-
-        if (auto buffer = device.resourceManager().CreateBuffer(bufferSize, usageFlags, propertyFlags); buffer) {
-            void *data;
-
-            if (auto result = vkMapMemory(device.handle(), buffer->memory()->handle(), buffer->memory()->offset(), buffer->memory()->size(), 0, &data); result != VK_SUCCESS)
-                std::cerr << "failed to map image buffer memory: "s << result << '\n';
-
-            else {
-                std::uninitialized_copy(std::begin(texels), std::end(texels), reinterpret_cast<texel_t *>(data));
-                vkUnmapMemory(device.handle(), buffer->memory()->handle());
-
-                return buffer;
-            }
-        }
-
-        return { };
-
-    }, rawImage.data);
-}
-
