@@ -243,4 +243,4 @@ bool TransitionImageLayout(VulkanDevice const &device, Q &queue, VulkanImage con
 }
 
 
-[[nodiscard]] std::pair<VkBuffer, std::shared_ptr<DeviceMemory>> StageImage(VulkanDevice &device, RawImage const &rawImage) noexcept;
+[[nodiscard]] std::shared_ptr<VulkanBuffer> StageImage(VulkanDevice &device, RawImage const &rawImage) noexcept;

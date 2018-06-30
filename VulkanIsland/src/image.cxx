@@ -82,12 +82,12 @@ CreateTexture(VulkanDevice &device, VkFormat format, VkImageViewType type,
 }
 
 
-std::pair<VkBuffer, std::shared_ptr<DeviceMemory>> StageImage(VulkanDevice &device, RawImage const &rawImage) noexcept
+std::shared_ptr<VulkanBuffer> StageImage(VulkanDevice &device, RawImage const &rawImage) noexcept
 {
-    VkBuffer buffer;
-
-    auto memory = std::visit([&] (auto &&texels)
+    return std::visit([&device] (auto &&texels) -> std::shared_ptr<VulkanBuffer>
     {
+        std::shared_ptr<VulkanBuffer> buffer;
+
         auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
@@ -95,24 +95,22 @@ std::pair<VkBuffer, std::shared_ptr<DeviceMemory>> StageImage(VulkanDevice &devi
 
         auto const bufferSize = static_cast<VkDeviceSize>(std::size(texels) * sizeof(texel_t));
 
-        auto memory = BufferPool::CreateBuffer(device, buffer, bufferSize, usageFlags, propertyFlags);
-
-        if (memory) {
+        if (auto buffer = device.resourceManager().CreateBuffer(bufferSize, usageFlags, propertyFlags); buffer) {
             void *data;
 
-            if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, &data); result != VK_SUCCESS)
+            if (auto result = vkMapMemory(device.handle(), buffer->memory()->handle(), buffer->memory()->offset(), buffer->memory()->size(), 0, &data); result != VK_SUCCESS)
                 std::cerr << "failed to map image buffer memory: "s << result << '\n';
 
             else {
                 std::uninitialized_copy(std::begin(texels), std::end(texels), reinterpret_cast<texel_t *>(data));
-                vkUnmapMemory(device.handle(), memory->handle());
+                vkUnmapMemory(device.handle(), buffer->memory()->handle());
+
+                return buffer;
             }
         }
 
-        return memory;
+        return { };
 
     }, rawImage.data);
-
-    return std::make_pair(buffer, memory);
 }
 

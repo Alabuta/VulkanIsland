@@ -709,9 +709,9 @@ std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::
     auto constexpr generateMipMaps = true;
 
     if (auto rawImage = LoadTARGA(name); rawImage) {
-        auto [stagingBuffer, stagingMemory] = StageImage(device, *rawImage);
+        auto stagingBuffer = StageImage(device, *rawImage);
 
-        if (stagingMemory) {
+        if (stagingBuffer) {
             auto const width = static_cast<std::uint32_t>(rawImage->width);
             auto const height = static_cast<std::uint32_t>(rawImage->height);
 
@@ -726,7 +726,7 @@ std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::
                 TransitionImageLayout(device, app.transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, app.transferCommandPool);
 
-                CopyBufferToImage(device, app.transferQueue, stagingBuffer, texture->image->handle(), width, height, app.transferCommandPool);
+                CopyBufferToImage(device, app.transferQueue, stagingBuffer->handle(), texture->image->handle(), width, height, app.transferCommandPool);
 
                 if (generateMipMaps)
                     GenerateMipMaps(device, app.transferQueue, *texture->image, app.transferCommandPool);
@@ -735,8 +735,6 @@ std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::
                                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, app.transferCommandPool);
             }
         }
-
-        vkDestroyBuffer(device.handle(), stagingBuffer, nullptr);
     }
 
     else std::cerr << "failed to load an image\n"s;
