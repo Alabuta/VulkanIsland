@@ -100,7 +100,7 @@ ResourceManager::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMem
 {
     std::shared_ptr<VulkanBuffer> buffer;
 
-    auto handle = CreateBufferHandle(device_, size, usage, properties);
+    auto handle = CreateBufferHandle(device_, size, usage);
 
     if (handle) {
         auto memory = device_.memoryManager().AllocateMemory(*handle, properties, false);

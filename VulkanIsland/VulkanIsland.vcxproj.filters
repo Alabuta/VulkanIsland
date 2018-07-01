@@ -71,9 +71,6 @@
     <ClInclude Include="src\instance.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\isle_math.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\main.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -93,6 +90,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\TARGA_loader.hxx">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\math.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

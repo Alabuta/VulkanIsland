@@ -39,4 +39,4 @@ void CleanupSwapchain(VulkanDevice const &device, VulkanSwapchain &swapchain) no
 
 
 [[nodiscard]] std::optional<VulkanTexture>
-CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, std::uint32_t width, std::uint32_t height);
+CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, std::uint16_t width, std::uint16_t height);

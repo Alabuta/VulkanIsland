@@ -23,7 +23,7 @@
 #include "debug.hxx"
 
 
-
+namespace config {
 auto constexpr extensions = make_array(
     VK_KHR_SURFACE_EXTENSION_NAME,
 #ifdef _MSC_VER
@@ -51,6 +51,7 @@ auto constexpr layers = make_array(
     "VK_LAYER_GOOGLE_threading",
     "VK_LAYER_GOOGLE_unique_objects"
 );
+}
 
 class VulkanInstance final {
 public:

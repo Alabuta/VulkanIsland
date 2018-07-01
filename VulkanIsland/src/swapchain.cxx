@@ -211,7 +211,10 @@ CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width,
         swapchain.views.emplace_back(std::move(imageView));
     }
 
-    if (auto result = CreateDepthAttachement(device, transferQueue, transferCommandPool, swapchain.extent.width, swapchain.extent.height); !result) {
+    auto const swapchainWidth = static_cast<std::uint16_t>(swapchain.extent.width);
+    auto const swapchainHeight = static_cast<std::uint16_t>(swapchain.extent.height);
+
+    if (auto result = CreateDepthAttachement(device, transferQueue, transferCommandPool, swapchainWidth, swapchainHeight); !result) {
         std::cerr << "failed to create depth texture\n"s;
         return { };
     }
@@ -242,7 +245,7 @@ void CleanupSwapchain(VulkanDevice const &device, VulkanSwapchain &swapchain) no
 
 
 [[nodiscard]] std::optional<VulkanTexture>
-CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, std::uint32_t width, std::uint32_t height)
+CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, std::uint16_t width, std::uint16_t height)
 {
     std::optional<VulkanTexture> texture;
 

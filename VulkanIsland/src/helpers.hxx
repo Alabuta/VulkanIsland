@@ -97,7 +97,7 @@ constexpr std::size_t get_type_instances_number()
     else if constexpr (I + 1 < std::tuple_size_v<Tuple>)
         return get_type_instances_number<T, Tuple, I + 1>();
 
-    return 0;
+    else return 0;
 }
 
 template<class V, class S = std::make_index_sequence<std::variant_size_v<V>>>

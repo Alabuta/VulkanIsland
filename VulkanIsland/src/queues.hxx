@@ -40,7 +40,7 @@ protected:
 
 private:
     VkQueue handle_{nullptr};
-    std::uint32_t family_, index_;
+    std::uint32_t family_{0}, index_{0};
 
     friend VulkanDevice;
     friend QueueHelper;
@@ -63,4 +63,4 @@ public:
 
 class PresentationQueue final : public VulkanQueue<PresentationQueue> {};
 
-using Queues = std::variant<GraphicsQueue, ComputeQueue, TransferQueue, PresentationQueue>;
+using queues_t = std::variant<GraphicsQueue, ComputeQueue, TransferQueue, PresentationQueue>;

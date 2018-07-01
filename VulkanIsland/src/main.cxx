@@ -16,7 +16,7 @@
 #include <unordered_map>
 
 #include "main.hxx"
-#include "isle_math.hxx"
+#include "math.hxx"
 #include "instance.hxx"
 #include "device.hxx"
 #include "swapchain.hxx"
@@ -647,8 +647,8 @@ std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::
         }, std::move(rawImage->data));
 
         if (stagingBuffer) {
-            auto const width = static_cast<std::uint32_t>(rawImage->width);
-            auto const height = static_cast<std::uint32_t>(rawImage->height);
+            auto const width = static_cast<std::uint16_t>(rawImage->width);
+            auto const height = static_cast<std::uint16_t>(rawImage->height);
 
             auto constexpr usageFlags = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
             auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
@@ -780,7 +780,7 @@ void DrawFrame(VulkanDevice const &vulkanDevice, app_t &app)
 
 void InitVulkan(GLFWwindow *window, app_t &app)
 {
-    app.vulkanInstance = std::make_unique<VulkanInstance>(extensions, layers);
+    app.vulkanInstance = std::make_unique<VulkanInstance>(config::extensions, config::layers);
 
 #if USE_WIN32
     VkWin32SurfaceCreateInfoKHR const win32CreateInfo = {
@@ -802,7 +802,7 @@ void InitVulkan(GLFWwindow *window, app_t &app)
         instances_number<PresentationQueue>
     > qpool;
 
-    app.vulkanDevice = std::make_unique<VulkanDevice>(*app.vulkanInstance, app.surface, deviceExtensions, std::move(qpool));
+    app.vulkanDevice = std::make_unique<VulkanDevice>(*app.vulkanInstance, app.surface, config::deviceExtensions, std::move(qpool));
 
     app.graphicsQueue = app.vulkanDevice->queue<GraphicsQueue>();
     app.transferQueue = app.vulkanDevice->queue<TransferQueue>();

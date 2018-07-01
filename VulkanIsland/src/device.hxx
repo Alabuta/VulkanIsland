@@ -11,12 +11,14 @@ class MemoryManager;
 class ResourceManager;
 
 
+namespace config {
 auto constexpr deviceExtensions = make_array(
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
     VK_KHR_MAINTENANCE1_EXTENSION_NAME,
     VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
     VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME
 );
+}
 
 class VulkanDevice final {
 public:

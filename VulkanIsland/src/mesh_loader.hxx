@@ -16,7 +16,7 @@ namespace fs = boost::filesystem;
 
 #include "main.hxx"
 #include "helpers.hxx"
-#include "isle_math.hxx"
+#include "math.hxx"
 
 struct index_t {
     std::size_t p, n, t;

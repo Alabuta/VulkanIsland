@@ -99,15 +99,15 @@ void LoadUncompressedTrueColorImage(TARGA &targa, std::ifstream &file)
     {
         buffer.resize(targa.width * targa.height);
 
-        using texel_t = typename std::decay_t<decltype(buffer)>::value_type;
+        using texel_type = typename std::decay_t<decltype(buffer)>::value_type;
 
-        file.read(reinterpret_cast<char *>(std::data(buffer)), std::size(buffer) * sizeof(texel_t));
+        file.read(reinterpret_cast<char *>(std::data(buffer)), std::size(buffer) * sizeof(texel_type));
 
-        if constexpr (texel_t::size == 3)
+        if constexpr (texel_type::size == 3)
         {
             targa.pixelLayout = targa.pixelLayout == ePIXEL_LAYOUT::nRGB ? ePIXEL_LAYOUT::nRGBA : ePIXEL_LAYOUT::nBGRA;
 
-            using vec_type = vec<4, typename texel_t::value_type>;
+            using vec_type = vec<4, typename texel_type::value_type>;
 
             std::vector<vec_type> intermidiateBuffer(std::size(buffer));
 
@@ -148,15 +148,15 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
     {
         palette.resize(colorMapLength);
 
-        using texel_t = typename std::decay_t<decltype(palette)>::value_type;
+        using texel_type = typename std::decay_t<decltype(palette)>::value_type;
 
-        file.read(reinterpret_cast<char *>(std::data(palette)), std::size(palette) * sizeof(texel_t));
+        file.read(reinterpret_cast<char *>(std::data(palette)), std::size(palette) * sizeof(texel_type));
 
-        if constexpr (texel_t::size == 3)
+        if constexpr (texel_type::size == 3)
         {
             targa.pixelLayout = targa.pixelLayout == ePIXEL_LAYOUT::nRGB ? ePIXEL_LAYOUT::nRGBA : ePIXEL_LAYOUT::nBGRA;
 
-            using vec_type = vec<4, typename texel_t::value_type>;
+            using vec_type = vec<4, typename texel_type::value_type>;
 
             std::vector<vec_type> intermidiateBuffer(std::size(palette));
 

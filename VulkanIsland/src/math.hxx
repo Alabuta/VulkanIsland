@@ -9,8 +9,8 @@ struct vec2 {
     vec2() = default;
 
     template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 2>>>...>
-    constexpr vec2(T &&xy) : xy(std::forward<T>(xy)) {}
-    constexpr vec2(float x, float y) : xy({ x, y }) {}
+    constexpr vec2(T &&xy) noexcept : xy(std::forward<T>(xy)) {}
+    constexpr vec2(float x, float y) noexcept : xy({ x, y }) {}
 };
 
 struct vec3 {
@@ -19,8 +19,8 @@ struct vec3 {
     vec3() = default;
 
     template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 3>>>...>
-    constexpr vec3(T &&xyz) : xyz(std::forward<T>(xyz)) {}
-    constexpr vec3(float x, float y, float z = 0) : xyz({ x, y, z }) {}
+    constexpr vec3(T &&xyz) noexcept : xyz(std::forward<T>(xyz)) {}
+    constexpr vec3(float x, float y, float z = 0) noexcept : xyz({ x, y, z }) {}
 
     float length() const
     {
@@ -85,8 +85,8 @@ struct vec4 {
     vec4() = default;
 
     template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::array<float, 4>>>...>
-    constexpr vec4(T &&xyzw) : xyzw(std::forward<T>(xyzw)) { }
-    constexpr vec4(float x, float y, float z, float w) : xyzw({x, y, z, w}) { }
+    constexpr vec4(T &&xyzw) noexcept : xyzw(std::forward<T>(xyzw)) { }
+    constexpr vec4(float x, float y, float z, float w) noexcept : xyzw({x, y, z, w}) { }
 };
 
 struct mat4 {
@@ -95,7 +95,7 @@ struct mat4 {
     mat4() = default;
 
     template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, std::decay_t<decltype(m)>>>...>
-    constexpr mat4(T &&array) : m(std::forward<T>(array)) { }
+    constexpr mat4(T &&array) noexcept : m(std::forward<T>(array)) { }
 
     template<class T0, class T1, class T2, class T3, typename std::enable_if_t<are_same_v<vec3, T0, T1, T2, T3>>* = 0>
     constexpr mat4(T0 &&xAxis, T1 &&yAxis, T2 &&zAxis, T3 &&translation)
@@ -112,7 +112,7 @@ struct mat4 {
     }
 
     template<class... Ts, typename std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == 16, int> = 0>
-    constexpr mat4(Ts... values) : m({{ static_cast<std::decay_t<decltype(m)>::value_type>(values)... }}) { }
+    constexpr mat4(Ts... values) noexcept : m({{ static_cast<std::decay_t<decltype(m)>::value_type>(values)... }}) { }
 };
 
 template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, vec3>>...>

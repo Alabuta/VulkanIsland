@@ -290,7 +290,7 @@ auto CreateBuffer(VulkanDevice &device, VkBuffer &buffer,
 
 
 std::optional<VkBuffer>
-CreateBufferHandle(VulkanDevice const &device, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) noexcept
+CreateBufferHandle(VulkanDevice const &device, VkDeviceSize size, VkBufferUsageFlags usage) noexcept
 {
     std::optional<VkBuffer> buffer;
 

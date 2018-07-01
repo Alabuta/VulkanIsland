@@ -118,7 +118,7 @@ CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::ui
 
 [[nodiscard]] std::optional<VulkanTexture>
 CreateTexture(VulkanDevice &device, VkFormat format, VkImageViewType type,
-              std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels, VkImageTiling tiling,
+              std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, VkImageTiling tiling,
               VkImageAspectFlags aspectFlags, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags);
 
 
