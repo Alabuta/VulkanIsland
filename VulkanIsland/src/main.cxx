@@ -26,34 +26,12 @@
 #include "resource.hxx"
 #include "command_buffer.hxx"
 
-
-
 #include "mesh_loader.hxx"
 #include "TARGA_loader.hxx"
 
 
-#if 0
-auto vertices = make_array(
-    Vertex{{+2, +1, 0}, {1, 0, 0}, {1, 1}},
-    Vertex{{+2, -1, 0}, {0, 1, 0}, {1, 0}},
-    Vertex{{-2, +1, 0}, {0, 0, 1}, {0, 1}},
-    Vertex{{-2, -1, 0}, {0, 1, 1}, {0, 0}},
-
-    Vertex{{+1, +2, -1}, {1, 0, 0}, {1, 1}},
-    Vertex{{+1, -2, -1}, {0, 1, 0}, {1, 0}},
-    Vertex{{-1, +2, -1}, {0, 0, 1}, {0, 1}},
-    Vertex{{-1, -2, -1}, {0, 1, 1}, {0, 0}}
-);
-
-auto indices = make_array(
-    0_ui16, 1_ui16, 2_ui16, 2_ui16, 1_ui16, 3_ui16,
-    4_ui16, 5_ui16, 6_ui16, 6_ui16, 5_ui16, 7_ui16
-);
-#endif
-
-auto mouseX = 0.f, mouseY = 0.f;
-
 #define USE_GLM 1
+
 
 struct TRANSFORMS {
 #if !USE_GLM
@@ -66,16 +44,16 @@ struct TRANSFORMS {
     glm::mat4 proj;
     glm::mat4 modelView;
 #endif
-} transforms;
-
-
-auto WIDTH = 800u;
-auto HEIGHT = 600u;
-
+};
 
 
 
 struct app_t final {
+    TRANSFORMS transforms;
+
+    std::uint32_t width{800u};
+    std::uint32_t height{600u};
+
     std::vector<Vertex> vertices;
     std::vector<std::uint32_t> indices;
 
@@ -703,13 +681,13 @@ std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::
 
 void RecreateSwapChain(app_t &app)
 {
-    if (WIDTH < 1 || HEIGHT < 1) return;
+    if (app.width < 1 || app.height < 1) return;
 
     vkDeviceWaitIdle(app.vulkanDevice->handle());
 
     CleanupFrameData(app, *app.vulkanDevice, app.graphicsPipeline, app.pipelineLayout, app.renderPass);
 
-    auto swapchain = CreateSwapchain(*app.vulkanDevice, app.surface, WIDTH, HEIGHT,
+    auto swapchain = CreateSwapchain(*app.vulkanDevice, app.surface, app.width, app.height,
                                      app.presentationQueue, app.graphicsQueue, app.transferQueue, app.transferCommandPool);
 
     if (swapchain)
@@ -731,10 +709,10 @@ void RecreateSwapChain(app_t &app)
 
 void OnWindowResize(GLFWwindow *window, int width, int height)
 {
-    WIDTH = width;
-    HEIGHT = height;
-
     auto app = reinterpret_cast<app_t *>(glfwGetWindowUserPointer(window));
+
+    app->width = width;
+    app->height = height;
 
     RecreateSwapChain(*app);
 }
@@ -819,9 +797,9 @@ void InitVulkan(GLFWwindow *window, app_t &app)
 #endif
 
     QueuePool<
-        type_instances_number<GraphicsQueue>,
-        type_instances_number<TransferQueue>,
-        type_instances_number<PresentationQueue>
+        instances_number<GraphicsQueue>,
+        instances_number<TransferQueue>,
+        instances_number<PresentationQueue>
     > qpool;
 
     app.vulkanDevice = std::make_unique<VulkanDevice>(*app.vulkanInstance, app.surface, deviceExtensions, std::move(qpool));
@@ -833,7 +811,7 @@ void InitVulkan(GLFWwindow *window, app_t &app)
     CreateCommandPool(app.vulkanDevice->handle(), app.transferQueue, app.transferCommandPool, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT);
     CreateCommandPool(app.vulkanDevice->handle(), app.graphicsQueue, app.graphicsCommandPool, 0);
 
-    auto swapchain = CreateSwapchain(*app.vulkanDevice, app.surface, WIDTH, HEIGHT,
+    auto swapchain = CreateSwapchain(*app.vulkanDevice, app.surface, app.width, app.height,
                                      app.presentationQueue, app.graphicsQueue, app.transferQueue, app.transferCommandPool);
 
     if (swapchain)
@@ -920,26 +898,26 @@ void CleanUp(app_t &app)
     app.vulkanInstance.reset(nullptr);
 }
 
-void UpdateUniformBuffer(VulkanDevice const &device, VulkanBuffer const &uboBuffer, std::uint32_t width, std::uint32_t height)
+void UpdateUniformBuffer(VulkanDevice const &device, app_t &app, VulkanBuffer const &uboBuffer, std::uint32_t width, std::uint32_t height)
 {
     if (width * height < 1) return;
 
 #if !USE_GLM
-    transforms.model = mat4{
+    app.transforms.model = mat4{
         1, 0, 0, 0,
         0, 1, 0, 0,
         0, 0, 1, 0,
         0, 0, 0, 1
     };
 
-    transforms.view = mat4(
+    app.transforms.view = mat4(
         1, 0, 0, 0,
         0, 0.707106709, 0.707106709, 0,
         0, -0.707106709, 0.707106709, 0,
         0, 0, -1.41421354, 1
     );
 
-    transforms.view = lookAt(vec3{0, 1, 1}, vec3{0, 0, 0}, vec3{0, 1, 0});
+    app.transforms.view = lookAt(vec3{0, 1, 1}, vec3{0, 0, 0}, vec3{0, 1, 0});
 
     auto view = glm::lookAt(glm::vec3{0, 1, 1}, glm::vec3{0, 0, 0}, glm::vec3{0, 1, 0});
 #else
@@ -948,22 +926,22 @@ void UpdateUniformBuffer(VulkanDevice const &device, VulkanBuffer const &uboBuff
     auto currentTime = std::chrono::high_resolution_clock::now();
     auto time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
-    transforms.model = glm::mat4(1.f);
-    //transforms.model = glm::rotate(transforms.model, .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});
-    transforms.model = glm::rotate(transforms.model, glm::radians(90.f), glm::vec3{1, 0, 0});
-    transforms.model = glm::rotate(transforms.model, glm::radians(90.f), glm::vec3{0, 0, 1});
-    //transforms.model = glm::scale(transforms.model, glm::vec3{.1f, .1f, .1f});
-    //transforms.model = glm::translate(transforms.model, {0, 0, -250});
-    //transforms.model = glm::rotate(glm::mat4(1.f), .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});// *glm::scale(glm::mat4(1.f), {.0f, .0f, .0f});
+    app.transforms.model = glm::mat4(1.f);
+    //app.transforms.model = glm::rotate(app.transforms.model, .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});
+    app.transforms.model = glm::rotate(app.transforms.model, glm::radians(90.f), glm::vec3{1, 0, 0});
+    app.transforms.model = glm::rotate(app.transforms.model, glm::radians(90.f), glm::vec3{0, 0, 1});
+    //app.transforms.model = glm::scale(app.transforms.model, glm::vec3{.1f, .1f, .1f});
+    //app.transforms.model = glm::translate(app.transforms.model, {0, 0, -250});
+    //app.transforms.model = glm::rotate(glm::mat4(1.f), .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});// *glm::scale(glm::mat4(1.f), {.0f, .0f, .0f});
 
     /*auto translate = glm::vec3{0.f, 4.f, 0.f + 0*std::sin(time) * 40.f};
 
-    transforms.view = glm::mat4(1.f);
-    transforms.view = glm::translate(transforms.view, translate);*/
-    transforms.view = glm::lookAt(glm::vec3{10.f, 20.f, 0.f + std::sin(time * .4f) * 64.f}, glm::vec3{0, 10.f, 0}, glm::vec3{0, 1, 0});
+    app.transforms.view = glm::mat4(1.f);
+    app.transforms.view = glm::translate(app.transforms.view, translate);*/
+    app.transforms.view = glm::lookAt(glm::vec3{10.f, 20.f, 0.f + std::sin(time * .4f) * 64.f}, glm::vec3{0, 10.f, 0}, glm::vec3{0, 1, 0});
 
 
-    transforms.modelView = transforms.view * transforms.model;
+    app.transforms.modelView = app.transforms.view * app.transforms.model;
 #endif
     auto const aspect = static_cast<float>(width) / static_cast<float>(height);
 
@@ -989,23 +967,23 @@ void UpdateUniformBuffer(VulkanDevice const &device, VulkanBuffer const &uboBuff
         0, 0, kB, 0
     );
 
-    transforms.proj = glm::make_mat4(std::data(proj.m));
-    //transforms.proj = glm::perspective(glm::radians(kFOV), aspect, zNear, zFar);
+    app.transforms.proj = glm::make_mat4(std::data(proj.m));
+    //app.transforms.proj = glm::perspective(glm::radians(kFOV), aspect, zNear, zFar);
 
     void *data;
     if (auto result = vkMapMemory(device.handle(), uboBuffer.memory()->handle(), uboBuffer.memory()->offset(), uboBuffer.memory()->size(), 0, &data); result != VK_SUCCESS)
         throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
 
-    auto const array = make_array(transforms);
-    std::uninitialized_copy(std::begin(array), std::end(array), reinterpret_cast<decltype(transforms) *>(data));
+    auto const array = make_array(app.transforms);
+    std::uninitialized_copy(std::begin(array), std::end(array), reinterpret_cast<decltype(app.transforms) *>(data));
 
     vkUnmapMemory(device.handle(), uboBuffer.memory()->handle());
 }
 
 /* void CursorCallback(GLFWwindow *window, double x, double y)
 {
-    mouseX = WIDTH * .5f - static_cast<float>(x);
-    mouseY = HEIGHT * .5f - static_cast<float>(y);
+    mouseX = app.width * .5f - static_cast<float>(x);
+    mouseY = app.height * .5f - static_cast<float>(y);
 }*/
 
 
@@ -1019,9 +997,11 @@ try {
     glfwInit();
 
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
-    auto window = glfwCreateWindow(WIDTH, HEIGHT, "VulkanIsland", nullptr, nullptr);
 
     app_t app;
+
+    auto window = glfwCreateWindow(app.width, app.height, "VulkanIsland", nullptr, nullptr);
+
     glfwSetWindowUserPointer(window, &app);
 
     glfwSetWindowSizeCallback(window, OnWindowResize);
@@ -1033,7 +1013,7 @@ try {
 
     while (!glfwWindowShouldClose(window) && glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS) {
         glfwPollEvents();
-        UpdateUniformBuffer(*app.vulkanDevice.get(), *app.uboBuffer, WIDTH, HEIGHT);
+        UpdateUniformBuffer(*app.vulkanDevice.get(), app, *app.uboBuffer, app.width, app.height);
         DrawFrame(*app.vulkanDevice, app);
     }
 
