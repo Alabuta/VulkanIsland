@@ -801,7 +801,7 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
     fs::path folder{std::data(name)};
 
     if (!fs::exists(current_path / contents))
-        contents = current_path / fs::path{"../../VulkanIsland"s} / contents;
+        contents = current_path / fs::path{"../VulkanIsland"s} / contents;
 
     folder = contents / folder;
 

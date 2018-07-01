@@ -132,7 +132,7 @@ bool LoadModel(std::string_view _name, std::vector<T> &vertices, std::vector<std
     fs::path name{std::data(_name)};
 
     if (!fs::exists(current_path / directory))
-        directory = current_path / fs::path{"../../VulkanIsland"s} / directory;
+        directory = current_path / fs::path{"../VulkanIsland"s} / directory;
 
     auto const path = directory / name;
 

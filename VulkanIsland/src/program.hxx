@@ -10,7 +10,7 @@
     fs::path name{std::data(_name)};
 
     if (!fs::exists(current_path / directory))
-        directory = current_path / fs::path{"../../VulkanIsland"s} / directory;
+        directory = current_path / fs::path{"../VulkanIsland"s} / directory;
 
     std::ifstream file((directory / name).native(), std::ios::binary);
 
