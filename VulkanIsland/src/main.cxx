@@ -33,7 +33,7 @@
 #define USE_GLM 1
 
 
-struct TRANSFORMS {
+struct transforms_t {
 #if !USE_GLM
     mat4 model;
     mat4 view;
@@ -46,10 +46,74 @@ struct TRANSFORMS {
 #endif
 };
 
+struct SceneNode final {
+    glm::mat4 localMatrix{1.f};
+    glm::mat4 worldMatrix{1.f};
+
+    std::size_t begin{0}, end{0};
+    std::uint16_t layer{0};
+
+    template<class T1, class T2, typename std::enable_if_t<are_same_v<glm::mat4, T1, T2>>...>
+    SceneNode(T1 &&localMatrix, T2 &&worldMatrix, std::uint16_t layer) noexcept
+        : localMatrix{std::forward<T1>(localMatrix)}, worldMatrix{std::forward<T2>(worldMatrix)}, layer{layer} { }
+};
+
+struct SceneNodeComponent final {
+    std::size_t index;
+};
+
+struct SceneLayer final {
+    std::vector<SceneNode> nodes;
+    std::multimap<std::uint16_t, std::size_t> chunks;
+};
+
+struct SceneGraph final {
+    std::unordered_map<std::uint16_t, SceneLayer> layers;
+
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, glm::mat4>>...>
+    void AddNode(SceneNode &parent, T &&localMatrix)
+    {
+        auto worldMatrix = localMatrix * parent.worldMatrix;
+
+        auto const range = parent.end - parent.begin;
+        auto const hasChildren = range > 0;
+
+        if (range + 1 > std::numeric_limits<std::uint16_t>::max())
+            throw std::runtime_error("children's count is higher than maximum children's number"s);
+
+        auto &&layer = layers[parent.layer];
+        auto &&nodes = layer.nodes;
+
+        if (hasChildren) {
+            auto &&chunks = layer.chunks;
+
+            auto it = chunks.lower_bound(static_cast<std::uint16_t>(range + 1));
+
+            if (it == std::end(chunks)) {
+                ;
+            }
+
+            /*if (chunks.empty()) {
+                nodes.emplace_back(std::forward<T>(localMatrix), std::move(worldMatrix));
+                ++parent.end;
+            }
+
+            else {
+                auto it = chunks.lower_bound();
+            }*/
+        }
+
+        else {
+            nodes.emplace_back(std::forward<T>(localMatrix), std::move(worldMatrix), parent.layer + 1);
+            parent.begin = 0;
+            parent.end = 1;
+        }
+    }
+};
 
 
 struct app_t final {
-    TRANSFORMS transforms;
+    transforms_t transforms;
 
     std::uint32_t width{800u};
     std::uint32_t height{600u};
@@ -166,7 +230,7 @@ void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descripto
         throw std::runtime_error("failed to allocate descriptor sets: "s + std::to_string(result));
 
     VkDescriptorBufferInfo const bufferInfo{
-        app.uboBuffer->handle(), 0, sizeof(TRANSFORMS)
+        app.uboBuffer->handle(), 0, sizeof(transforms_t)
     };
 
     VkDescriptorImageInfo const imageInfo{
@@ -851,7 +915,7 @@ void InitVulkan(GLFWwindow *window, app_t &app)
     if (app.indexBuffer = InitIndexBuffer(app, *app.vulkanDevice); !app.indexBuffer)
         throw std::runtime_error("failed to init index buffer"s);
 
-    if (app.uboBuffer = CreateUniformBuffer(*app.vulkanDevice, sizeof(TRANSFORMS)); !app.uboBuffer)
+    if (app.uboBuffer = CreateUniformBuffer(*app.vulkanDevice, sizeof(transforms_t)); !app.uboBuffer)
         throw std::runtime_error("failed to init uniform buffer"s);
 
     CreateDescriptorPool(app.vulkanDevice->handle(), app.descriptorPool);
