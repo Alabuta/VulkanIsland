@@ -10,7 +10,14 @@
 #include <functional>
 
 
+#ifdef _MSC_VER
+#pragma warning(push, 3)
+#pragma warning(disable: 4127)
+#endif
 #include "nlohmann/json.hpp"
+#ifdef _MSC_VER
+#pragma warning(pop)
+#endif
 
 #include "helpers.hxx"
 #include "mesh_loader.hxx"
