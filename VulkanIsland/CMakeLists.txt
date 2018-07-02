@@ -26,7 +26,7 @@ set(SOURCE_FILES
         src/command_buffer.hxx
         src/device_defaults.hxx
         src/helpers.hxx
-        src/isle_math.hxx
+        src/math.hxx
         src/program.hxx
         src/queue_builder.hxx
         src/queues.hxx
