@@ -75,10 +75,10 @@ struct SceneGraph final {
     {
         auto worldMatrix = localMatrix * parent.worldMatrix;
 
-        auto const range = parent.end - parent.begin;
-        auto const hasChildren = range > 0;
+        auto const childrenCount = parent.end - parent.begin;
+        auto const hasChildren = childrenCount > 0;
 
-        if (range + 1 > std::numeric_limits<std::uint16_t>::max())
+        if (childrenCount > std::numeric_limits<std::uint16_t>::max() - 1)
             throw std::runtime_error("children's count is higher than maximum children's number"s);
 
         auto &&layer = layers[parent.layer];
@@ -87,26 +87,43 @@ struct SceneGraph final {
         if (hasChildren) {
             auto &&chunks = layer.chunks;
 
-            auto it = chunks.lower_bound(static_cast<std::uint16_t>(range + 1));
+            auto it_chunk = chunks.lower_bound(static_cast<std::uint16_t>(childrenCount + 1));
 
-            if (it == std::end(chunks)) {
-                ;
-            }
+            if (it_chunk == std::end(chunks)) {
+                parent.begin = std::size(nodes);
+                parent.end = parent.begin + 1;
 
-            /*if (chunks.empty()) {
-                nodes.emplace_back(std::forward<T>(localMatrix), std::move(worldMatrix));
-                ++parent.end;
+                nodes.emplace_back(std::forward<T>(localMatrix), std::move(worldMatrix), parent.layer + 1);
             }
 
             else {
-                auto it = chunks.lower_bound();
-            }*/
+                auto chunk = chunks.extract(it_chunk);
+
+                if (chunk) {
+                    auto &&range = chunk.key();
+                    auto &&begin = chunk.mapped();
+
+                    if (range > childrenCount + 1) {
+                        range -= childrenCount + 1;
+                        begin += childrenCount + 1;
+
+                        if (range != 0)
+                            chunks.insert(std::move(chunk));
+                    }
+
+                    parent.begin = begin;
+                    parent.end = parent.begin + 1;
+
+                    nodes.emplace_back(std::forward<T>(localMatrix), std::move(worldMatrix), parent.layer + 1);
+                }
+            }
         }
 
         else {
-            nodes.emplace_back(std::forward<T>(localMatrix), std::move(worldMatrix), parent.layer + 1);
             parent.begin = 0;
-            parent.end = 1;
+            parent.end = parent.begin + 1;
+
+            nodes.emplace_back(std::forward<T>(localMatrix), std::move(worldMatrix), parent.layer + 1);
         }
     }
 };
