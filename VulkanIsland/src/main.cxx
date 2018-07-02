@@ -46,88 +46,6 @@ struct transforms_t {
 #endif
 };
 
-struct SceneNode final {
-    glm::mat4 localMatrix{1.f};
-    glm::mat4 worldMatrix{1.f};
-
-    std::size_t begin{0}, end{0};
-    std::uint16_t layer{0};
-
-    template<class T1, class T2, typename std::enable_if_t<are_same_v<glm::mat4, T1, T2>>...>
-    SceneNode(T1 &&localMatrix, T2 &&worldMatrix, std::uint16_t layer) noexcept
-        : localMatrix{std::forward<T1>(localMatrix)}, worldMatrix{std::forward<T2>(worldMatrix)}, layer{layer} { }
-};
-
-struct SceneNodeComponent final {
-    std::size_t index;
-};
-
-struct SceneLayer final {
-    std::vector<SceneNode> nodes;
-    std::multimap<std::uint16_t, std::size_t> chunks;
-};
-
-struct SceneGraph final {
-    std::unordered_map<std::uint16_t, SceneLayer> layers;
-
-    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, glm::mat4>>...>
-    void AddNode(SceneNode &parent, T &&localMatrix)
-    {
-        auto worldMatrix = localMatrix * parent.worldMatrix;
-
-        auto const childrenCount = parent.end - parent.begin;
-        auto const hasChildren = childrenCount > 0;
-
-        if (childrenCount > std::numeric_limits<std::uint16_t>::max() - 1)
-            throw std::runtime_error("children's count is higher than maximum children's number"s);
-
-        auto &&layer = layers[parent.layer];
-        auto &&nodes = layer.nodes;
-
-        if (hasChildren) {
-            auto &&chunks = layer.chunks;
-
-            auto it_chunk = chunks.lower_bound(static_cast<std::uint16_t>(childrenCount + 1));
-
-            if (it_chunk == std::end(chunks)) {
-                parent.begin = std::size(nodes);
-                parent.end = parent.begin + 1;
-
-                nodes.emplace_back(std::forward<T>(localMatrix), std::move(worldMatrix), parent.layer + 1);
-            }
-
-            else {
-                auto chunk = chunks.extract(it_chunk);
-
-                if (chunk) {
-                    auto &&range = chunk.key();
-                    auto &&begin = chunk.mapped();
-
-                    if (range > childrenCount + 1) {
-                        range -= childrenCount + 1;
-                        begin += childrenCount + 1;
-
-                        if (range != 0)
-                            chunks.insert(std::move(chunk));
-                    }
-
-                    parent.begin = begin;
-                    parent.end = parent.begin + 1;
-
-                    nodes.emplace_back(std::forward<T>(localMatrix), std::move(worldMatrix), parent.layer + 1);
-                }
-            }
-        }
-
-        else {
-            parent.begin = 0;
-            parent.end = parent.begin + 1;
-
-            nodes.emplace_back(std::forward<T>(localMatrix), std::move(worldMatrix), parent.layer + 1);
-        }
-    }
-};
-
 
 struct app_t final {
     transforms_t transforms;
@@ -1068,12 +986,114 @@ void UpdateUniformBuffer(VulkanDevice const &device, app_t &app, VulkanBuffer co
 }*/
 
 
+
+struct SceneNode final {
+    glm::mat4 localMatrix{1.f};
+    glm::mat4 worldMatrix{1.f};
+
+    std::size_t begin{0}, end{0};
+    std::uint16_t layer{0};
+
+    template<class T1, class T2, typename std::enable_if_t<are_same_v<glm::mat4, T1, T2>>...>
+    SceneNode(T1 &&localMatrix, T2 &&worldMatrix, std::uint16_t layer) noexcept
+        : localMatrix{std::forward<T1>(localMatrix)}, worldMatrix{std::forward<T2>(worldMatrix)}, layer{layer} { }
+};
+
+struct SceneNodeComponent final {
+    std::size_t index;
+};
+
+struct SceneLayer final {
+    std::vector<SceneNode> nodes;
+    std::multimap<std::uint16_t, std::size_t> chunks;
+};
+
+struct SceneGraph final {
+    std::unordered_map<std::uint16_t, SceneLayer> layers;
+
+    std::unique_ptr<SceneNode> root_;
+
+    SceneNode &root() noexcept { return *root_; }
+
+    SceneGraph() noexcept
+    {
+        root_ = std::make_unique<SceneNode>(glm::mat4{1.f}, glm::mat4{1.f}, 0u);
+    }
+
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, glm::mat4>>...>
+    std::optional<SceneNode &> AddNode(SceneNode &parent, T &&localMatrix)
+    {
+        auto worldMatrix = localMatrix * parent.worldMatrix;
+
+        auto const exisitngRange = parent.end - parent.begin;
+        auto const hasChildren = exisitngRange > 0;
+
+        auto const requestedRange = static_cast<std::uint16_t>(exisitngRange + 1);
+
+        if (requestedRange > std::numeric_limits<std::uint16_t>::max())
+            throw std::runtime_error("children's count is higher than maximum children's number"s);
+
+        auto &&layer = layers[parent.layer];
+        auto &&nodes = layer.nodes;
+
+        if (hasChildren) {
+            auto &&chunks = layer.chunks;
+
+            auto it_chunk = chunks.lower_bound(requestedRange);
+
+            if (it_chunk == std::end(chunks)) {
+                parent.begin = std::size(nodes);
+                parent.end = parent.begin + 1;
+
+                return nodes.emplace_back(std::forward<T>(localMatrix), std::move(worldMatrix), parent.layer + 1);
+            }
+
+            else {
+                auto chunk = chunks.extract(it_chunk);
+
+                if (chunk) {
+                    auto &&range = chunk.key();
+                    auto &&begin = chunk.mapped();
+
+                    if (range > requestedRange) {
+                        range -= requestedRange;
+                        begin += requestedRange;
+
+                        if (range != 0)
+                            chunks.insert(std::move(chunk));
+                    }
+
+                    parent.begin = begin;
+                    parent.end = parent.begin + 1;
+
+                    return nodes.emplace_back(std::forward<T>(localMatrix), std::move(worldMatrix), parent.layer + 1);
+                }
+            }
+        }
+
+        else {
+            parent.begin = 0;
+            parent.end = parent.begin + 1;
+
+            return nodes.emplace_back(std::forward<T>(localMatrix), std::move(worldMatrix), parent.layer + 1);
+        }
+
+        return { };
+    }
+};
+
 int main()
 try {
 #ifdef _MSC_VER
     _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     //_CrtSetBreakAlloc(84);
 #endif
+
+    SceneGraph sceneGraph;
+
+    auto a = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});
+    auto b = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});
+    auto c = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});
 
     glfwInit();
 
