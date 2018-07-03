@@ -87,6 +87,36 @@ struct app_t final {
 
 
 
+template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
+std::shared_ptr<VulkanBuffer> StageData(VulkanDevice &device, T &&container)
+{
+    return [&device] (auto &&container)
+    {
+        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+        using vertex_type = typename std::decay_t<T>::value_type;
+
+        auto const bufferSize = static_cast<VkDeviceSize>(sizeof(vertex_type) * std::size(container));
+
+        auto buffer = device.resourceManager().CreateBuffer(bufferSize, usageFlags, propertyFlags);
+
+        if (buffer) {
+            void *data;
+
+            if (auto result = vkMapMemory(device.handle(), buffer->memory()->handle(), buffer->memory()->offset(), buffer->memory()->size(), 0, &data); result != VK_SUCCESS)
+                std::cerr << "failed to map staging buffer memory: "s << result << '\n';
+
+            std::uninitialized_copy(std::begin(container), std::end(container), reinterpret_cast<vertex_type *>(data));
+
+            vkUnmapMemory(device.handle(), buffer->memory()->handle());
+        }
+
+        return buffer;
+    } (std::forward<T>(container));
+}
+
+
 void CleanupFrameData(app_t &app, VulkanDevice &device, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
 {
     if (app.graphicsCommandPool)
@@ -497,7 +527,7 @@ InitVertexBuffer(app_t &app, VulkanDevice &device)
 {
     std::shared_ptr<VulkanBuffer> buffer;
 
-    if (auto stagingBuffer = CreateStagingBuffer(device, app.vertices); stagingBuffer) {
+    if (auto stagingBuffer = StageData(device, app.vertices); stagingBuffer) {
         auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
@@ -520,7 +550,7 @@ InitIndexBuffer(app_t &app, VulkanDevice &device)
 {
     std::shared_ptr<VulkanBuffer> buffer;
 
-    if (auto stagingBuffer = CreateStagingBuffer(device, app.indices); stagingBuffer) {
+    if (auto stagingBuffer = StageData(device, app.indices); stagingBuffer) {
         auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
@@ -642,7 +672,7 @@ std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::
     if (auto rawImage = LoadTARGA(name); rawImage) {
         auto stagingBuffer = std::visit([&device] (auto &&data)
         {
-            return CreateStagingBuffer(device, std::forward<decltype(data)>(data));
+            return StageData(device, std::forward<decltype(data)>(data));
         }, std::move(rawImage->data));
 
         if (stagingBuffer) {

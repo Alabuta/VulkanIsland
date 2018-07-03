@@ -5,9 +5,12 @@
 
 #include "main.hxx"
 #include "device.hxx"
-#include "buffer.hxx"
-#include "image.hxx"
 #include "command_buffer.hxx"
+
+class VulkanImage;
+class VulkanImageView;
+class VulkanSampler;
+class VulkanBuffer;
 
 class ResourceManager final {
 public:

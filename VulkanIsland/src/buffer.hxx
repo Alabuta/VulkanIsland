@@ -216,33 +216,3 @@ void CopyBufferToImage(VulkanDevice const &device, Q &queue, VkBuffer srcBuffer,
 
     EndSingleTimeCommand(device, queue, commandBuffer, commandPool);
 }
-
-
-template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
-std::shared_ptr<VulkanBuffer> CreateStagingBuffer(VulkanDevice &device, T &&container)
-{
-    return [&device] (auto &&container)
-    {
-        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-        using vertex_type = typename std::decay_t<T>::value_type;
-
-        auto const bufferSize = static_cast<VkDeviceSize>(sizeof(vertex_type) * std::size(container));
-
-        auto buffer = device.resourceManager().CreateBuffer(bufferSize, usageFlags, propertyFlags);
-
-        if (buffer) {
-            void *data;
-
-            if (auto result = vkMapMemory(device.handle(), buffer->memory()->handle(), buffer->memory()->offset(), buffer->memory()->size(), 0, &data); result != VK_SUCCESS)
-                std::cerr << "failed to map staging buffer memory: "s << result << '\n';
-
-            std::uninitialized_copy(std::begin(container), std::end(container), reinterpret_cast<vertex_type *>(data));
-
-            vkUnmapMemory(device.handle(), buffer->memory()->handle());
-        }
-
-        return buffer;
-    } (std::forward<T>(container));
-}

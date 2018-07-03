@@ -1,3 +1,5 @@
+#include "buffer.hxx"
+#include "image.hxx"
 #include "resource.hxx"
 
 std::shared_ptr<VulkanImage>
