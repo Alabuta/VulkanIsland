@@ -1015,8 +1015,27 @@ void UpdateUniformBuffer(VulkanDevice const &device, app_t &app, VulkanBuffer co
     mouseY = app.height * .5f - static_cast<float>(y);
 }*/
 
+struct SceneNode final {
+    std::size_t parent;
+    std::size_t index;
+    std::size_t layer;
+};
 
+class SceneTree final {
+public:
 
+    SceneNode AddNode(SceneNode &parent);
+    void RemoveNode(SceneNode &&node);
+
+private:
+
+    using layer_t = std::vector<SceneNode>;
+
+    std::vector<layer_t> layers;
+
+};
+
+#if 0
 struct SceneNode final {
     glm::mat4 localMatrix{1.f};
     glm::mat4 worldMatrix{1.f};
@@ -1111,6 +1130,7 @@ struct SceneGraph final {
         return { };
     }
 };
+#endif
 
 int main()
 try {
@@ -1119,11 +1139,11 @@ try {
     //_CrtSetBreakAlloc(84);
 #endif
 
-    SceneGraph sceneGraph;
+    /*SceneGraph sceneGraph;
 
     auto a = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});
     auto b = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});
-    auto c = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});
+    auto c = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});*/
 
     glfwInit();
 
