@@ -1016,24 +1016,83 @@ void UpdateUniformBuffer(VulkanDevice const &device, app_t &app, VulkanBuffer co
 }*/
 
 struct SceneNode final {
-    std::size_t parent;
-    std::size_t index;
-    std::size_t layer;
+    std::size_t parent{0};
+    std::size_t index{0};
+
+    SceneNode() = default;
+
+    SceneNode(std::size_t parent, std::size_t index) : parent{parent}, index{index} { }
 };
 
 class SceneTree final {
 public:
 
-    SceneNode AddNode(SceneNode &parent);
-    void RemoveNode(SceneNode &&node);
+    SceneTree()
+    {
+        ;
+    }
+
+    std::optional<SceneNode> AddNode(SceneNode &parent);
+    // void RemoveNode(SceneNode &&node);
 
 private:
 
     using layer_t = std::vector<SceneNode>;
-
     std::vector<layer_t> layers;
 
+    struct node_index_t final {
+        std::size_t depth{0}, index{0};
+    };
+
+    std::vector<node_index_t> indices;
+
+    struct node_children_t final {
+        std::size_t begin{0}, end{0};
+
+        node_children_t() = default;
+
+        node_children_t(std::size_t begin, std::size_t end) : begin{begin}, end{end} { }
+    };
+
+    std::vector<node_children_t> children;
+
+    struct chunk_t final {
+        std::size_t begin, end;
+    };
+
+    using chunks_t = std::vector<chunk_t>;
+    std::vector<chunks_t> layersChunks;
+
+    SceneNode root_{0, 0};
+
 };
+
+std::optional<SceneNode> SceneTree::AddNode(SceneNode &parent)
+{
+    std::optional<SceneNode> node;
+
+    auto [depth, index] = indices.at(parent.index);
+
+    if (std::size(layers) < depth)
+        layers.resize(depth);
+
+    auto &&layer = layers.at(depth);
+
+    auto &&nodeChildren = children.at(parent.index);
+
+    auto childrenRange = nodeChildren.end - nodeChildren.end;
+
+    if (childrenRange > 0) {
+        ;
+    }
+
+    else {
+        node = layer.emplace_back(parent.index, std::size(layer));
+        children.emplace_back(0, 0);
+    }
+
+    return node;
+}
 
 #if 0
 struct SceneNode final {
@@ -1139,9 +1198,9 @@ try {
     //_CrtSetBreakAlloc(84);
 #endif
 
-    /*SceneGraph sceneGraph;
+    SceneTree sceneTree;
 
-    auto a = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});
+    /*auto a = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});
     auto b = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});
     auto c = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});*/
 
