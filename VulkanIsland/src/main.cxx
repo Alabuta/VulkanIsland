@@ -1016,8 +1016,10 @@ void UpdateUniformBuffer(VulkanDevice const &device, app_t &app, VulkanBuffer co
 }*/
 
 struct SceneNode final {
-    std::size_t parent{0};
-    std::size_t index{0};
+    static auto constexpr kINVALID_INDEX{std::numeric_limits<std::size_t>::max()};
+
+    std::size_t parent{kINVALID_INDEX};
+    std::size_t index{kINVALID_INDEX};
 
     SceneNode() = default;
 
@@ -1032,7 +1034,7 @@ public:
         ;
     }
 
-    std::optional<SceneNode> AddNode(SceneNode &parent);
+    std::optional<SceneNode> AddNode(SceneNode const &parent);
     // void RemoveNode(SceneNode &&node);
 
 private:
@@ -1041,7 +1043,9 @@ private:
     std::vector<layer_t> layers;
 
     struct node_index_t final {
-        std::size_t depth{0}, index{0};
+        static auto constexpr kINVALID_INDEX{std::numeric_limits<std::size_t>::max()};
+
+        std::size_t depth{kINVALID_INDEX}, index{kINVALID_INDEX};
     };
 
     std::vector<node_index_t> indices;
@@ -1057,33 +1061,65 @@ private:
     std::vector<node_children_t> children;
 
     struct chunk_t final {
-        std::size_t begin, end;
+        std::size_t begin{0}, end{0};
+        std::size_t size{0};
+
+        struct comparator final {
+            using is_transparent = void;
+
+            template<class L, class R>
+            std::enable_if_t<are_same_v<chunk_t, L, R>, bool>
+            operator() (L &&lhs, R &&rhs) const noexcept
+            {
+                return lhs.size < rhs.size;
+            }
+
+            template<class T, class S, typename std::enable_if_t<std::is_same_v<chunk_t, std::decay_t<T>> && std::is_integral_v<S>>...>
+            auto operator() (T &&chunk, S size) const noexcept
+            {
+                return chunk.size < size;
+            }
+
+            template<class S, class T, typename std::enable_if_t<std::is_same_v<chunk_t, std::decay_t<T>> && std::is_integral_v<S>>...>
+            auto operator() (S size, T &&chunk) const noexcept
+            {
+                return chunk.size < size;
+            }
+        };
     };
 
-    using chunks_t = std::vector<chunk_t>;
+    using chunks_t = std::multiset<chunk_t, chunk_t::comparator>;
     std::vector<chunks_t> layersChunks;
 
     SceneNode root_{0, 0};
 
 };
 
-std::optional<SceneNode> SceneTree::AddNode(SceneNode &parent)
+std::optional<SceneNode> SceneTree::AddNode(SceneNode const &parent)
 {
     std::optional<SceneNode> node;
+
+    if (parent.index == SceneNode::kINVALID_INDEX)
+        return { };
 
     auto [depth, index] = indices.at(parent.index);
 
     if (std::size(layers) < depth)
-        layers.resize(depth);
+        return { };
 
     auto &&layer = layers.at(depth);
 
     auto &&nodeChildren = children.at(parent.index);
 
+    if (std::size(layers) < depth)
+        layers.resize(depth);
+
     auto childrenRange = nodeChildren.end - nodeChildren.end;
 
     if (childrenRange > 0) {
-        ;
+        auto requestedRange = childrenRange + 1;
+
+        if (nodeChildren.end == std::size())
     }
 
     else {
