@@ -194,32 +194,36 @@ void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descripto
     if (auto result = vkAllocateDescriptorSets(device, &allocateInfo, &descriptorSet); result != VK_SUCCESS)
         throw std::runtime_error("failed to allocate descriptor sets: "s + std::to_string(result));
 
-    VkDescriptorBufferInfo const bufferInfo{
-        app.uboBuffer->handle(), 0, sizeof(transforms_t)
-    };
+    // TODO: descriptor info typed by VkDescriptorType.
+    auto const buffers = make_array(
+        VkDescriptorBufferInfo{app.uboBuffer->handle(), 0, sizeof(transforms_t)}
+    );
 
-    VkDescriptorImageInfo const imageInfo{
-        app.texture.sampler->handle(), app.texture.view.handle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL
-    };
+    // TODO: descriptor info typed by VkDescriptorType.
+    auto const images = make_array(
+        VkDescriptorImageInfo{app.texture.sampler->handle(), app.texture.view.handle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}
+    );
 
     std::array<VkWriteDescriptorSet, 2> const writeDescriptorsSet{{
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,
             descriptorSet,
-            0, 0,
-            1, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            0,
+            0, static_cast<std::uint32_t>(std::size(buffers)),
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             nullptr,
-            &bufferInfo,
+            std::data(buffers),
             nullptr
         },
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,
             descriptorSet,
-            1, 0,
-            1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            &imageInfo,
+            1,
+            0, static_cast<std::uint32_t>(std::size(images)),
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            std::data(images),
             nullptr,
             nullptr
         }
@@ -628,7 +632,10 @@ void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass r
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipeline);
 
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayout, 0, 1, &app.descriptorSet, 0, nullptr);
+        auto const descriptorSets = make_array(app.descriptorSet);
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayout,
+                                0, static_cast<std::uint32_t>(std::size(descriptorSets)), std::data(descriptorSets), 0, nullptr);
 
         auto const vertexBuffers = make_array(app.vertexBuffer->handle());
         auto const offsets = make_array(VkDeviceSize{0});
