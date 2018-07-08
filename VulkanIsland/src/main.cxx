@@ -1049,23 +1049,20 @@ private:
     using layer_t = std::vector<SceneNode>;
     std::vector<layer_t> layers;
 
-    struct node_index_t final {
+    struct node_children_range_t final {
+        std::size_t begin{0}, end{0};
+    };
+
+    struct node_info_t final {
         static auto constexpr kINVALID_INDEX{std::numeric_limits<std::size_t>::max()};
 
-        std::size_t depth{kINVALID_INDEX}, index{kINVALID_INDEX};
+        std::size_t depth{kINVALID_INDEX};
+        std::size_t index{kINVALID_INDEX};
+        
+        node_children_range_t children;
     };
 
-    std::vector<node_index_t> indices;
-
-    struct node_children_t final {
-        std::size_t begin{0}, end{0};
-
-        node_children_t() = default;
-
-        node_children_t(std::size_t begin, std::size_t end) : begin{begin}, end{end} { }
-    };
-
-    std::vector<node_children_t> children;
+    std::vector<node_info_t> nodes;
 
     struct chunk_t final {
         std::size_t begin{0}, end{0};
@@ -1109,29 +1106,31 @@ std::optional<SceneNode> SceneTree::AddNode(SceneNode const &parent)
     if (parent.index == SceneNode::kINVALID_INDEX)
         return { };
 
-    auto [depth, index] = indices.at(parent.index);
+    auto &&parentInfo = nodes.at(parent.index);
 
-    if (std::size(layers) < depth)
+    if (std::size(layers) < parentInfo.depth)
         return { };
 
-    auto &&layer = layers.at(depth);
+    auto childrenDepth = parentInfo.depth + 1;
+
+    if (std::size(layers) < childrenDepth)
+        layers.resize(childrenDepth);
+
+    auto &&layer = layers.at(childrenDepth);
 
     auto &&nodeChildren = children.at(parent.index);
-
-    if (std::size(layers) < depth)
-        layers.resize(depth);
 
     auto childrenRange = nodeChildren.end - nodeChildren.end;
 
     if (childrenRange > 0) {
         auto requestedRange = childrenRange + 1;
 
-        if (nodeChildren.end == std::size())
+        //if (nodeChildren.end == std::size())
     }
 
     else {
-        node = layer.emplace_back(parent.index, std::size(layer));
-        children.emplace_back(0, 0);
+        /*node = layer.emplace_back(parent.index, std::size(layer));
+        children.emplace_back(0, 0);*/
     }
 
     return node;
