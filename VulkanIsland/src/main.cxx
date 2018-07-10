@@ -1022,15 +1022,17 @@ void UpdateUniformBuffer(VulkanDevice const &device, app_t &app, VulkanBuffer co
     mouseY = app.height * .5f - static_cast<float>(y);
 }*/
 
-struct SceneNode final {
-    static auto constexpr kINVALID_INDEX{std::numeric_limits<std::size_t>::max()};
+using node_index_t = std::size_t;
 
-    std::size_t parent{kINVALID_INDEX};
-    std::size_t index{kINVALID_INDEX};
+struct SceneNode final {
+    static auto constexpr kINVALID_INDEX{std::numeric_limits<node_index_t>::max()};
+
+    node_index_t parent{kINVALID_INDEX};
+    node_index_t index{kINVALID_INDEX};
 
     SceneNode() = default;
 
-    SceneNode(std::size_t parent, std::size_t index) : parent{parent}, index{index} { }
+    SceneNode(node_index_t parent, node_index_t index) : parent{parent}, index{index} { }
 };
 
 class SceneTree final {
@@ -1045,28 +1047,25 @@ public:
     // void RemoveNode(SceneNode &&node);
 
 private:
-
-    using layer_t = std::vector<SceneNode>;
-    std::vector<layer_t> layers;
+    static auto constexpr kINVALID_INDEX{std::numeric_limits<node_index_t>::max()};
 
     struct node_children_range_t final {
-        std::size_t begin{0}, end{0};
+        node_index_t begin{0}, end{0};
     };
 
     struct node_info_t final {
-        static auto constexpr kINVALID_INDEX{std::numeric_limits<std::size_t>::max()};
-
-        std::size_t depth{kINVALID_INDEX};
-        std::size_t index{kINVALID_INDEX};
+        node_index_t depth{kINVALID_INDEX};
+        node_index_t index{kINVALID_INDEX};
         
         node_children_range_t children;
     };
 
-    std::vector<node_info_t> nodes;
+    using layer_t = std::vector<node_info_t>;
+    std::vector<layer_t> layers;
 
     struct chunk_t final {
-        std::size_t begin{0}, end{0};
-        std::size_t size{0};
+        node_index_t begin{0}, end{0};
+        node_index_t size{0};
 
         struct comparator final {
             using is_transparent = void;
@@ -1103,21 +1102,32 @@ std::optional<SceneNode> SceneTree::AddNode(SceneNode const &parent)
 {
     std::optional<SceneNode> node;
 
-    if (parent.index == SceneNode::kINVALID_INDEX)
+    if (parent.depth == SceneNode::kINVALID_INDEX || parent.index == SceneNode::kINVALID_INDEX)
         return { };
 
-    auto &&parentInfo = nodes.at(parent.index);
-
-    if (std::size(layers) < parentInfo.depth)
+    if (std::size(layers) < parent.depth)
         return { };
 
-    auto childrenDepth = parentInfo.depth + 1;
+    auto &&parentLayer = layers.at(parent.depth);
+
+    if (std::size(parentLayer) < parent.index)
+        return { };
+
+    auto &&parentInfo = parentLayer.at(parent.index);
+
+    auto childrenDepth = parent.depth + 1;
+
+    if (childrenDepth == std::numeric_limits<node_index_t>::max()) {
+        std::cerr << "requested scene tree depth is higher than maximum number\n"s;
+        return { };
+    }
 
     if (std::size(layers) < childrenDepth)
         layers.resize(childrenDepth);
 
-    auto &&layer = layers.at(childrenDepth);
+    auto &&childrenLayer = layers.at(childrenDepth);
 
+#if 0
     auto &&nodeChildren = children.at(parent.index);
 
     auto childrenRange = nodeChildren.end - nodeChildren.end;
@@ -1132,6 +1142,7 @@ std::optional<SceneNode> SceneTree::AddNode(SceneNode const &parent)
         /*node = layer.emplace_back(parent.index, std::size(layer));
         children.emplace_back(0, 0);*/
     }
+#endif
 
     return node;
 }
