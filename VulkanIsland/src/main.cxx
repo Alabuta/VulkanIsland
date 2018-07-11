@@ -1071,6 +1071,7 @@ public:
     NodeHandle root() const noexcept { return NodeHandle{0, 0}; }
 
     std::optional<NodeHandle> AddChild(NodeHandle parent);
+    void DestroyNode(NodeHandle node);
 
 private:
 
@@ -1091,14 +1092,16 @@ private:
                 return lhs.size < rhs.size;
             }
 
-            template<class T, class S, typename std::enable_if_t<std::is_same_v<chunk_t, std::decay_t<T>> && std::is_integral_v<S>>...>
-            auto operator() (T &&chunk, S size) const noexcept
+            template<class T, class S>
+            std::enable_if_t<std::is_same_v<chunk_t, std::decay_t<T>> && std::is_integral_v<S>, bool>
+            operator() (T &&chunk, S size) const noexcept
             {
                 return chunk.size < size;
             }
 
-            template<class S, class T, typename std::enable_if_t<std::is_same_v<chunk_t, std::decay_t<T>> && std::is_integral_v<S>>...>
-            auto operator() (S size, T &&chunk) const noexcept
+            template<class S, class T>
+            std::enable_if_t<std::is_same_v<chunk_t, std::decay_t<T>> && std::is_integral_v<S>, bool>
+            operator() (S size, T &&chunk) const noexcept
             {
                 return chunk.size < size;
             }
@@ -1122,26 +1125,54 @@ std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parent)
 
     auto childrenDepth = parent.depth + 1;
 
-    if (childrenDepth == std::numeric_limits<node_index_t>::max()) {
+    if (childrenDepth > std::numeric_limits<node_index_t>::max() + 1) {
         std::cerr << "requested scene tree depth is higher than maximum number\n"s;
         return { };
     }
 
-    if (std::size(layers) < childrenDepth)
-        layers.resize(childrenDepth);
+    if (std::size(layers) < childrenDepth + 1)
+        layers.resize(childrenDepth + 1);
 
     auto &&childrenLayer = layers.at(childrenDepth);
 
-    auto childrenRange = children.end - children.begin;
+    if (std::size(layersChunks) < childrenDepth + 1)
+        layersChunks.resize(childrenDepth + 1);
 
-    /*if (childrenRange == 0) {
-        childrenLayer.emplace_back(parent);
-        ++children.end;
+    auto &&chunks = layersChunks.at(childrenDepth);
 
-        node.emplace(childrenDepth, std::size(childrenLayer));
-    }*/
+    auto childrenCount = children.end - children.begin;
+
+    if (chunks.empty()) {
+        if (childrenCount == 0) {
+            children.begin = std::size(childrenLayer);
+            children.end = children.begin + 1;
+
+            childrenLayer.emplace_back(parent);
+            node.emplace(childrenDepth, children.begin);
+        }
+
+        else {
+            if (children.end == std::size(childrenLayer)) {
+                childrenLayer.emplace_back(parent);
+                node.emplace(childrenDepth, children.end);
+
+                ++children.end;
+            }
+        }
+    }
 
     return node;
+}
+
+void SceneTree::DestroyNode(NodeHandle node)
+{
+    if (!isValid(node))
+        return;
+
+    auto &&nodeInfo = layers.at(node.depth).at(node.offset);
+
+    //auto &&parentNode = layers.at(parent.depth).at(parent.offset);
+    //auto &&children = parentNode.children;
 }
 
 
@@ -1301,7 +1332,18 @@ try {
 
     SceneTree sceneTree;
 
-    sceneTree.AddChild(sceneTree.root());
+    if (auto node = sceneTree.AddChild(sceneTree.root()); node)
+        sceneTree.AddChild(*node);
+
+    if (auto node = sceneTree.AddChild(sceneTree.root()); node) {
+        sceneTree.AddChild(*node);
+        sceneTree.AddChild(*node);
+
+        if (auto child = sceneTree.AddChild(*node); child)
+            sceneTree.DestroyNode(*child);
+
+        sceneTree.AddChild(*node);
+    }
 
     /*auto a = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});
     auto b = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});
