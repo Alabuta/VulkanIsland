@@ -1023,8 +1023,175 @@ void UpdateUniformBuffer(VulkanDevice const &device, app_t &app, VulkanBuffer co
 }*/
 
 using node_index_t = std::size_t;
-static auto constexpr kINVALID_INDEX{std::numeric_limits<node_index_t>::max()};
+auto constexpr kINVALID_INDEX{std::numeric_limits<node_index_t>::max()};
 
+enum class NodeHandle : node_index_t {
+    nINVALID_HANDLE = kINVALID_INDEX
+};
+
+struct Node final {
+    node_index_t depth{kINVALID_INDEX};
+    node_index_t offset{kINVALID_INDEX};
+
+    constexpr Node(node_index_t depth, node_index_t offset) : depth{depth}, offset{offset} { }
+
+    Node() = default;
+};
+
+struct NodeInfo final {
+    NodeHandle parent{NodeHandle::nINVALID_HANDLE};
+    NodeHandle handle{NodeHandle::nINVALID_HANDLE};
+
+    struct ChildrenRange final {
+        node_index_t begin{0}, end{0};
+    } children;
+
+    constexpr NodeInfo(NodeHandle parent, NodeHandle handle) : parent{parent}, handle{handle} { }
+
+    NodeInfo() = default;
+};
+
+class SceneTree final {
+public:
+
+    SceneTree()
+    {
+        nodes.emplace_back(0, 0);
+        layers.emplace_back(1, NodeInfo{NodeHandle::nINVALID_HANDLE, root()});
+    }
+
+    bool isNodeHandleValid(NodeHandle handle) const noexcept { return handle != NodeHandle::nINVALID_HANDLE; }
+
+    constexpr NodeHandle root() const noexcept { return static_cast<NodeHandle>(0); }
+
+    std::optional<NodeHandle> AddChild(NodeHandle parentHandle);
+    void DestroyNode(NodeHandle handle);
+
+private:
+
+    std::vector<Node> nodes;
+
+    using layer_t = std::vector<NodeInfo>;
+    std::vector<layer_t> layers;
+
+    bool isNodeValid(Node node) const noexcept { return node.depth != kINVALID_INDEX && node.offset != kINVALID_INDEX; }
+
+    struct chunk_t final {
+        node_index_t size{0};
+        node_index_t begin{0}, end{0};
+
+        struct comparator final {
+            using is_transparent = void;
+
+            template<class L, class R>
+            std::enable_if_t<are_same_v<chunk_t, L, R>, bool>
+            operator() (L &&lhs, R &&rhs) const noexcept
+            {
+                return lhs.size < rhs.size;
+            }
+
+            template<class T, class S>
+            std::enable_if_t<std::is_same_v<chunk_t, std::decay_t<T>> && std::is_integral_v<S>, bool>
+            operator() (T &&chunk, S size) const noexcept
+            {
+                return chunk.size < size;
+            }
+
+            template<class S, class T>
+            std::enable_if_t<std::is_same_v<chunk_t, std::decay_t<T>> && std::is_integral_v<S>, bool>
+            operator() (S size, T &&chunk) const noexcept
+            {
+                return chunk.size < size;
+            }
+        };
+    };
+
+    using chunks_t = std::multiset<chunk_t, chunk_t::comparator>;
+    std::vector<chunks_t> layersChunks;
+};
+
+std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parentHandle)
+{
+    std::optional<NodeHandle> handle;
+
+    if (!isNodeHandleValid(parentHandle))
+        return { };
+
+    auto parentNode = nodes.at(static_cast<std::size_t>(parentHandle));
+
+    if (!isNodeValid(parentNode))
+        return { };
+
+    auto &&parentInfo = layers.at(parentNode.depth).at(parentNode.offset);
+    auto &&children = parentInfo.children;
+
+    auto childrenDepth = parentNode.depth + 1;
+
+    if (childrenDepth > std::numeric_limits<node_index_t>::max() - 1) {
+        std::cerr << "requested scene tree depth is higher than maximum number\n"s;
+        return { };
+    }
+
+    if (std::size(layers) < childrenDepth + 1)
+        layers.resize(childrenDepth + 1);
+
+    auto &&childrenLayer = layers.at(childrenDepth);
+
+     if (std::size(layersChunks) < childrenDepth + 1)
+         layersChunks.resize(childrenDepth + 1);
+
+    auto &&chunks = layersChunks.at(childrenDepth);
+
+    auto childrenCount = children.end - children.begin;
+
+    if (chunks.empty()) {
+        handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
+
+        if (childrenCount == 0) {
+            children.begin = std::size(childrenLayer);
+            children.end = children.begin + 1;
+
+            nodes.emplace_back(childrenDepth, children.begin);
+
+            childrenLayer.emplace_back(parentHandle, *handle);
+        }
+
+        else {
+            if (children.end == std::size(childrenLayer)) {
+                nodes.emplace_back(childrenDepth, children.end);
+
+                childrenLayer.emplace_back(parentHandle, *handle);
+
+                ++children.end;
+            }
+
+            else {
+                // TODO: find gap for new child
+                ;
+            }
+        }
+    }
+
+    else {
+        ;
+    }
+
+    return handle;
+}
+
+void SceneTree::DestroyNode(NodeHandle handle)
+{
+    if (!isNodeHandleValid(handle))
+        return;
+
+    auto node = nodes.at(static_cast<std::size_t>(handle));
+
+    if (!isNodeValid(node))
+        return;
+}
+
+
+#if 0
 struct SceneNode final {
     node_index_t parent{kINVALID_INDEX};
     node_index_t index{kINVALID_INDEX};
@@ -1161,6 +1328,10 @@ std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parent)
         }
     }
 
+    else {
+        ;
+    }
+
     return node;
 }
 
@@ -1174,6 +1345,8 @@ void SceneTree::DestroyNode(NodeHandle node)
     //auto &&parentNode = layers.at(parent.depth).at(parent.offset);
     //auto &&children = parentNode.children;
 }
+
+#endif
 
 
 #if 0
@@ -1344,10 +1517,6 @@ try {
 
         sceneTree.AddChild(*node);
     }
-
-    /*auto a = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});
-    auto b = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});
-    auto c = sceneGraph.AddNode(sceneGraph.root(), glm::mat4{1.f});*/
 
     glfwInit();
 
