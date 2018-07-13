@@ -1149,7 +1149,7 @@ std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parentHandle)
 
         if (childrenCount == 0) {
             children.begin = std::size(childrenLayer);
-            children.end = children.begin + 1;
+            children.end = children.begin + childrenCount + 1;
 
             nodes.emplace_back(childrenDepth, children.begin);
 
@@ -1162,12 +1162,30 @@ std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parentHandle)
 
                 childrenLayer.emplace_back(parentHandle, *handle);
 
-                ++children.end;
+                children.end = children.begin + childrenCount + 1;
             }
 
             else {
-                // TODO: find gap for new child
-                ;
+                auto it_begin = std::next(std::begin(childrenLayer), children.begin);
+                auto it_end = std::next(std::begin(childrenLayer), children.end);
+
+                children.begin = std::size(childrenLayer);
+                children.end = children.begin + childrenCount;
+
+                std::transform(it_begin, it_end, std::back_inserter(childrenLayer), [] (auto &&nodeInfo)
+                {
+                    nodeInfo.handle = ;
+                    return nodeInfo;
+                });
+
+                std::copy(it_begin, it_end, std::back_inserter(childrenLayer));
+                std::fill(it_begin, it_end, NodeInfo{});
+
+                childrenLayer.emplace_back(parentHandle, *handle);
+
+                nodes.emplace_back(childrenDepth, children.end);
+
+                ++children.end;
             }
         }
     }
