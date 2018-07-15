@@ -90,7 +90,9 @@ MemoryManager::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags pro
         auto &&availableChunks = memoryBlock.availableChunks;
 
         if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>) {
-            auto [it_chunk_begin, it_chunk_end] = availableChunks.equal_range(memoryRequirements.size);
+            //auto [it_chunk_begin, it_chunk_end] = availableChunks.equal_range(memoryRequirements.size);
+            auto it_chunk_begin = availableChunks.lower_bound(memoryRequirements.size);
+            auto it_chunk_end = availableChunks.upper_bound(memoryRequirements.size);
 
             it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [&memoryRequirements] (auto &&chunk)
             {
