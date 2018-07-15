@@ -1168,16 +1168,18 @@ std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parentHandle)
                 auto it_begin = std::next(std::begin(childrenLayer), children.begin);
                 auto it_end = std::next(std::begin(childrenLayer), children.end);
 
+				auto childrenOffset = std::size(childrenLayer) - children.begin;
+
                 children.begin = std::size(childrenLayer);
                 children.end = children.begin + childrenCount;
 
-                std::transform(it_begin, it_end, std::back_inserter(childrenLayer), [] (auto &&nodeInfo)
+                std::transform(it_begin, it_end, std::back_inserter(childrenLayer), [childrenOffset] (auto &&nodeInfo)
                 {
-                    nodeInfo.handle = ;
+                    nodeInfo.handle = static_cast<NodeHandle>(static_cast<std::size_t>(nodeInfo.handle) + childrenOffset);
                     return nodeInfo;
                 });
 
-                std::copy(it_begin, it_end, std::back_inserter(childrenLayer));
+                //std::copy(it_begin, it_end, std::back_inserter(childrenLayer));
                 std::fill(it_begin, it_end, NodeInfo{});
 
                 childrenLayer.emplace_back(parentHandle, *handle);
@@ -1205,6 +1207,27 @@ void SceneTree::DestroyNode(NodeHandle handle)
 
     if (!isNodeValid(node))
         return;
+
+	auto &&info = layers.at(node.depth).at(node.offset);
+
+	if (!isNodeHandleValid(info.parent))
+		return;
+
+	auto &&parentNode = nodes.at(static_cast<std::size_t>(info.parent));
+
+	if (!isNodeValid(parentNode))
+		return;
+
+	auto &&parentInfo = layers.at(parentNode.depth).at(parentNode.offset);
+
+	auto [childrenBegin, childrenEnd] = parentInfo.children;
+
+	auto &&childrenLayer = layers.at(parentNode.depth + 1);
+
+	auto it_begin = std::next(std::begin(layers), childrenBegin);
+	auto it_end = std::next(std::begin(layers), childrenEnd);
+
+
 }
 
 
