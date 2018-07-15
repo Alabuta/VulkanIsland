@@ -1203,7 +1203,7 @@ void SceneTree::DestroyNode(NodeHandle handle)
     if (!isNodeHandleValid(handle))
         return;
 
-    auto node = nodes.at(static_cast<std::size_t>(handle));
+    auto &&node = nodes.at(static_cast<std::size_t>(handle));
 
     if (!isNodeValid(node))
         return;
@@ -1220,14 +1220,30 @@ void SceneTree::DestroyNode(NodeHandle handle)
 
 	auto &&parentInfo = layers.at(parentNode.depth).at(parentNode.offset);
 
-	auto [childrenBegin, childrenEnd] = parentInfo.children;
+	//auto [childrenBegin, childrenEnd] = parentInfo.children;
 
 	auto &&childrenLayer = layers.at(parentNode.depth + 1);
 
-	auto it_begin = std::next(std::begin(layers), childrenBegin);
-	auto it_end = std::next(std::begin(layers), childrenEnd);
+	auto it_node = std::next(std::begin(childrenLayer), node.offset);
+	auto it_end = std::next(std::begin(childrenLayer), parentInfo.children.end);
 
+	std::for_each(it_node, it_node, [] (auto handle)
+	{
+		auto &&child = nodes.at(static_cast<std::size_t>(handle));
+	});
 
+	for (auto it = it_node; it < it_end; ++it) {
+		auto &&child = nodes.at(static_cast<std::size_t>(it->handle));
+
+		handle;
+	}
+
+	--parentInfo.children.end;
+
+	//childrenLayer.at(node.offset) = { };
+
+	node.depth = kINVALID_INDEX;
+	node.offset= kINVALID_INDEX;
 }
 
 
