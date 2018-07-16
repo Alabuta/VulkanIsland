@@ -13,6 +13,7 @@
 #include <chrono>
 #include <cmath>
 #include <unordered_map>
+#include <execution>
 
 #include "main.hxx"
 #include "math.hxx"
@@ -1076,8 +1077,12 @@ private:
     bool isNodeValid(Node node) const noexcept { return node.depth != kINVALID_INDEX && node.offset != kINVALID_INDEX; }
 
     struct chunk_t final {
-        node_index_t size{0};
         node_index_t begin{0}, end{0};
+        node_index_t size{0};
+
+		chunk_t() = default;
+
+		chunk_t(node_index_t begin, node_index_t end) : begin{begin}, end{end}, size{end - begin} { }
 
         struct comparator final {
             using is_transparent = void;
@@ -1208,7 +1213,8 @@ void SceneTree::DestroyNode(NodeHandle handle)
     if (!isNodeValid(node))
         return;
 
-	auto &&info = layers.at(node.depth).at(node.offset);
+	auto &&layer = layers.at(node.depth);
+	auto &&info = layer.at(node.offset);
 
 	if (!isNodeHandleValid(info.parent))
 		return;
@@ -1219,28 +1225,23 @@ void SceneTree::DestroyNode(NodeHandle handle)
 		return;
 
 	auto &&parentInfo = layers.at(parentNode.depth).at(parentNode.offset);
+	auto &&parentChildren = parentInfo.children;
 
-	//auto [childrenBegin, childrenEnd] = parentInfo.children;
+	auto it_node = std::next(std::begin(layer), node.offset);
+	auto it_end = std::next(std::begin(layer), parentChildren.end);
 
-	auto &&childrenLayer = layers.at(parentNode.depth + 1);
-
-	auto it_node = std::next(std::begin(childrenLayer), node.offset);
-	auto it_end = std::next(std::begin(childrenLayer), parentInfo.children.end);
-
-	std::for_each(it_node, it_node, [] (auto handle)
+	std::for_each(std::execution::par_unseq, it_node, std::prev(it_end), [this] (auto info)
 	{
-		auto &&child = nodes.at(static_cast<std::size_t>(handle));
+		auto &&child = nodes.at(static_cast<std::size_t>(info.handle));
+		--child.offset;
 	});
 
-	for (auto it = it_node; it < it_end; ++it) {
-		auto &&child = nodes.at(static_cast<std::size_t>(it->handle));
+	if (std::size(layersChunks) < node.depth + 1)
+		layersChunks.resize(node.depth);
 
-		handle;
-	}
+	layersChunks.at(node.depth).emplace(parentChildren.end - 1, parentChildren.end);
 
-	--parentInfo.children.end;
-
-	//childrenLayer.at(node.offset) = { };
+	--parentChildren.end;
 
 	node.depth = kINVALID_INDEX;
 	node.offset= kINVALID_INDEX;
