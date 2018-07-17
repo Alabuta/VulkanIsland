@@ -1130,6 +1130,7 @@ std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parentHandle)
     auto &&children = parentInfo.children;
 
     auto childrenDepth = parentNode.depth + 1;
+    auto childrenCount = children.end - children.begin;
 
     if (childrenDepth > std::numeric_limits<node_index_t>::max() - 1) {
         std::cerr << "requested scene tree depth is higher than maximum number\n"s;
@@ -1145,10 +1146,9 @@ std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parentHandle)
         layersChunks.resize(childrenDepth + 1);
 
     auto &&chunks = layersChunks.at(childrenDepth);
+    auto it_chunk = chunks.lower_bound(childrenCount + 1);
 
-    auto childrenCount = children.end - children.begin;
-
-    if (chunks.empty()) {
+    if (it_chunk == std::end(chunks)) {
         handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
 
         if (childrenCount == 0) {
@@ -1170,21 +1170,23 @@ std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parentHandle)
             }
 
             else {
+                throw std::logic_error("unhandled case"s);
+#if TEMPORIRLY_DISABLED
                 auto it_begin = std::next(std::begin(childrenLayer), children.begin);
                 auto it_end = std::next(std::begin(childrenLayer), children.end);
 
-				auto childrenOffset = std::size(childrenLayer) - children.begin;
+                auto offset = std::distance(std::end(childrenLayer), it_begin);
+                //auto childrenOffset = std::size(childrenLayer) - children.begin;
 
                 children.begin = std::size(childrenLayer);
                 children.end = children.begin + childrenCount;
 
-                std::transform(it_begin, it_end, std::back_inserter(childrenLayer), [childrenOffset] (auto &&nodeInfo)
-                {
-                    nodeInfo.handle = static_cast<NodeHandle>(static_cast<std::size_t>(nodeInfo.handle) + childrenOffset);
-                    return nodeInfo;
+                std::for_each(std::execution::par_unseq, it_begin, it_end, [this, offset] (auto &&info) {
+                    auto &&child = nodes.at(static_cast<std::size_t>(info.handle));
+                    child.offset += offset;
                 });
 
-                //std::copy(it_begin, it_end, std::back_inserter(childrenLayer));
+                std::move(it_begin, it_end, std::back_inserter(childrenLayer));
                 std::fill(it_begin, it_end, NodeInfo{});
 
                 childrenLayer.emplace_back(parentHandle, *handle);
@@ -1192,12 +1194,30 @@ std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parentHandle)
                 nodes.emplace_back(childrenDepth, children.end);
 
                 ++children.end;
+#endif
             }
         }
     }
 
     else {
-        ;
+        if (auto chunk = chunks.extract(it_chunk); chunk) {
+            auto &&[begin, end, size] = chunk.value();
+
+            auto it_begin = std::next(std::begin(childrenLayer), children.begin);
+            auto it_end = std::next(std::begin(childrenLayer), children.end);
+
+            auto offset = std::distance(std::end(childrenLayer), it_begin);
+
+            std::for_each(std::execution::par_unseq, it_begin, it_end, [this, offset] (auto &&info) {
+                auto &&child = nodes.at(static_cast<std::size_t>(info.handle));
+                child.offset += offset;
+            });
+
+            children.begin = begin;
+            children.end = children.begin + childrenCount;
+
+            ++children.end;
+        }
     }
 
     return handle;
@@ -1235,15 +1255,41 @@ void SceneTree::DestroyNode(NodeHandle handle)
         --child.offset;
     });
 
-	if (std::size(layersChunks) < node.depth + 1)
-		layersChunks.resize(node.depth);
+    *it_node = { };
 
-	layersChunks.at(node.depth).emplace(parentChildren.end - 1, parentChildren.end);
+    if (std::size(layersChunks) < node.depth + 1)
+        layersChunks.resize(node.depth);
 
-	--parentChildren.end;
+    auto &&layerChunks = layersChunks.at(node.depth);
+    auto it_chunk = layerChunks.emplace(parentChildren.end - 1, parentChildren.end);
 
-	node.depth = kINVALID_INDEX;
-	node.offset= kINVALID_INDEX;
+    auto FindAdjacent = [] (auto begin, auto end, auto it_chunk) {
+        return std::find_if(begin, end, [it_chunk] (auto &&chunk) {
+            return chunk.begin == it_chunk->end;
+        });
+    };
+
+    auto it_adjacentChunk = FindAdjacent(std::begin(layerChunks), std::end(layerChunks), it_chunk);
+
+    while (it_adjacentChunk != std::end(layerChunks)) {
+        auto [beginA, endA, sizeA] = *it_chunk;
+        auto [beginB, endB, sizeB] = *it_adjacentChunk;
+
+        layerChunks.erase(it_chunk);
+        layerChunks.erase(it_adjacentChunk);
+
+        auto begin = std::min(beginA, beginB);
+        auto size = sizeA + sizeB;
+
+        it_chunk = layerChunks.emplace(begin, begin + size);
+
+        it_adjacentChunk = FindAdjacent(std::begin(layerChunks), std::end(layerChunks), it_chunk);
+    }
+
+    --parentChildren.end;
+
+    node.depth = kINVALID_INDEX;
+    node.offset = kINVALID_INDEX;
 }
 
 
@@ -1262,7 +1308,11 @@ try {
 
     if (auto node = sceneTree.AddChild(sceneTree.root()); node) {
         sceneTree.AddChild(*node);
-        sceneTree.AddChild(*node);
+		auto middle = sceneTree.AddChild(*node);
+		sceneTree.AddChild(*node);
+
+		if (middle)
+			sceneTree.DestroyNode(*middle);
 
         if (auto child = sceneTree.AddChild(*node); child)
             sceneTree.DestroyNode(*child);
