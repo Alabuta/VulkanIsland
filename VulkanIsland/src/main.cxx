@@ -1080,9 +1080,9 @@ private:
         node_index_t begin{0}, end{0};
         node_index_t size{0};
 
-		chunk_t() = default;
+        chunk_t() = default;
 
-		chunk_t(node_index_t begin, node_index_t end) : begin{begin}, end{end}, size{end - begin} { }
+        chunk_t(node_index_t begin, node_index_t end) : begin{begin}, end{end}, size{end - begin} { }
 
         struct comparator final {
             using is_transparent = void;
@@ -1141,8 +1141,8 @@ std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parentHandle)
 
     auto &&childrenLayer = layers.at(childrenDepth);
 
-     if (std::size(layersChunks) < childrenDepth + 1)
-         layersChunks.resize(childrenDepth + 1);
+    if (std::size(layersChunks) < childrenDepth + 1)
+        layersChunks.resize(childrenDepth + 1);
 
     auto &&chunks = layersChunks.at(childrenDepth);
 
@@ -1213,28 +1213,27 @@ void SceneTree::DestroyNode(NodeHandle handle)
     if (!isNodeValid(node))
         return;
 
-	auto &&layer = layers.at(node.depth);
-	auto &&info = layer.at(node.offset);
+    auto &&layer = layers.at(node.depth);
+    auto &&info = layer.at(node.offset);
 
-	if (!isNodeHandleValid(info.parent))
-		return;
+    if (!isNodeHandleValid(info.parent))
+        return;
 
-	auto &&parentNode = nodes.at(static_cast<std::size_t>(info.parent));
+    auto &&parentNode = nodes.at(static_cast<std::size_t>(info.parent));
 
-	if (!isNodeValid(parentNode))
-		return;
+    if (!isNodeValid(parentNode))
+        return;
 
-	auto &&parentInfo = layers.at(parentNode.depth).at(parentNode.offset);
-	auto &&parentChildren = parentInfo.children;
+    auto &&parentInfo = layers.at(parentNode.depth).at(parentNode.offset);
+    auto &&parentChildren = parentInfo.children;
 
-	auto it_node = std::next(std::begin(layer), node.offset);
-	auto it_end = std::next(std::begin(layer), parentChildren.end);
+    auto it_node = std::next(std::begin(layer), node.offset);
+    auto it_end = std::next(std::begin(layer), parentChildren.end);
 
-	std::for_each(std::execution::par_unseq, it_node, std::prev(it_end), [this] (auto info)
-	{
-		auto &&child = nodes.at(static_cast<std::size_t>(info.handle));
-		--child.offset;
-	});
+    std::for_each(std::execution::par_unseq, it_node, it_end, [this] (auto &&info) {
+        auto &&child = nodes.at(static_cast<std::size_t>(info.handle));
+        --child.offset;
+    });
 
 	if (std::size(layersChunks) < node.depth + 1)
 		layersChunks.resize(node.depth);
