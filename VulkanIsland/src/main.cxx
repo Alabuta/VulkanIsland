@@ -1147,40 +1147,80 @@ std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parentHandle)
 
     auto &&chunks = layersChunks.at(childrenDepth);
 
-    auto [it_lower, it_upper] = chunks.equal_range(childrenCount + 1);
-
-    auto it_chunk = std::find_if(it_lower, it_upper, [end = children.end] (auto &&chunk)
+    auto it_chunk = std::find_if(std::execution::par_unseq, std::begin(chunks), std::end(chunks), [children] (auto &&chunk)
     {
-        return chunk.begin == end;
+        return chunk.begin == children.end;
     });
 
     if (it_chunk != std::end(chunks)) {
+        if (auto chunk = chunks.extract(it_chunk); chunk) {
+            auto &&[begin, end, size] = chunk.value();
+
+            handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
+
+            ++children.end;
+
+            ++begin;
+            --size;
+
+            if (size > 0)
+                chunks.emplace(std::move(chunk));
+        }
     }
 
-    it_chunk = chunks.lower_bound(childrenCount + 1);
+    else {
 
-    if (it_chunk == std::end(chunks)) {
-        handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
+        it_chunk = chunks.lower_bound(childrenCount + 1);
 
-        if (childrenCount == 0) {
-            children.begin = std::size(childrenLayer);
-            children.end = children.begin + childrenCount + 1;
+        if (it_chunk == std::end(chunks)) {
+            handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
 
-            nodes.emplace_back(childrenDepth, children.begin);
+            if (childrenCount == 0) {
+                children.begin = std::size(childrenLayer);
+                children.end = children.begin + childrenCount + 1;
 
-            childrenLayer.emplace_back(parentHandle, *handle);
-        }
-
-        else {
-            if (children.end == std::size(childrenLayer)) {
-                nodes.emplace_back(childrenDepth, children.end);
+                nodes.emplace_back(childrenDepth, children.begin);
 
                 childrenLayer.emplace_back(parentHandle, *handle);
-
-                children.end = children.begin + childrenCount + 1;
             }
 
             else {
+                if (children.end == std::size(childrenLayer)) {
+                    nodes.emplace_back(childrenDepth, children.end);
+
+                    childrenLayer.emplace_back(parentHandle, *handle);
+
+                    children.end = children.begin + childrenCount + 1;
+                }
+
+                else {
+                    auto it_begin = std::next(std::begin(childrenLayer), children.begin);
+                    auto it_end = std::next(std::begin(childrenLayer), children.end);
+
+                    auto offset = std::distance(it_begin, std::end(childrenLayer));
+
+                    std::for_each(std::execution::par_unseq, it_begin, it_end, [this, offset] (auto &&info) {
+                        auto &&child = nodes.at(static_cast<std::size_t>(info.handle));
+                        child.offset += offset;
+                    });
+
+                    std::move(it_begin, it_end, std::back_inserter(childrenLayer));
+
+                    it_begin = std::next(std::begin(childrenLayer), children.begin);
+                    it_end = std::next(std::begin(childrenLayer), children.end);
+
+                    std::fill(it_begin, it_end, NodeInfo{ });
+
+                    children.begin += offset;
+                    children.end = children.begin + childrenCount + 1;
+                }
+            }
+        }
+
+        else {
+            if (auto chunk = chunks.extract(it_chunk); chunk) {
+                auto &&[begin, end, size] = chunk.value();
+
                 auto it_begin = std::next(std::begin(childrenLayer), children.begin);
                 auto it_end = std::next(std::begin(childrenLayer), children.end);
 
@@ -1196,48 +1236,21 @@ std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parentHandle)
                 it_begin = std::next(std::begin(childrenLayer), children.begin);
                 it_end = std::next(std::begin(childrenLayer), children.end);
 
-                std::fill(it_begin, it_end, NodeInfo{ });
+                std::fill(it_begin, it_end, NodeInfo{});
 
-                children.begin += offset;
+                children.begin = begin;
                 children.end = children.begin + childrenCount + 1;
+
+                begin = children.end;
+                size -= begin;
+                end = begin + size;
+
+                if (size > 0)
+                    chunks.insert(std::move(chunk));
             }
+
+            else std::runtime_error("failed to extract chunk node"s);
         }
-    }
-
-    else {
-        if (auto chunk = chunks.extract(it_chunk); chunk) {
-            auto &&[begin, end, size] = chunk.value();
-
-            auto it_begin = std::next(std::begin(childrenLayer), children.begin);
-            auto it_end = std::next(std::begin(childrenLayer), children.end);
-
-            auto offset = std::distance(it_begin, std::end(childrenLayer));
-
-            std::for_each(std::execution::par_unseq, it_begin, it_end, [this, offset] (auto &&info)
-            {
-                auto &&child = nodes.at(static_cast<std::size_t>(info.handle));
-                child.offset += offset;
-            });
-
-            std::move(it_begin, it_end, std::back_inserter(childrenLayer));
-
-            it_begin = std::next(std::begin(childrenLayer), children.begin);
-            it_end = std::next(std::begin(childrenLayer), children.end);
-
-            std::fill(it_begin, it_end, NodeInfo{});
-
-            children.begin = begin;
-            children.end = children.begin + childrenCount + 1;
-
-            begin = children.end;
-            size -= begin;
-            end = begin + size;
-
-            if (size > 0)
-                chunks.insert(std::move(chunk));
-        }
-
-        else std::runtime_error("failed to extract chunk node"s);
     }
 
     return handle;
