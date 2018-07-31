@@ -1067,6 +1067,8 @@ public:
     std::optional<NodeHandle> AddChild(NodeHandle parentHandle);
     void DestroyNode(NodeHandle handle);
 
+    std::optional<NodeHandle> AttachNode(NodeHandle parentHandle);
+
 private:
 
     std::vector<Node> nodes;
@@ -1327,6 +1329,51 @@ void SceneTree::DestroyNode(NodeHandle handle)
 
 
 
+std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
+{
+    std::optional<NodeHandle> handle;
+
+    if (!isNodeHandleValid(parentHandle))
+        return { };
+
+    auto parentNode = nodes.at(static_cast<std::size_t>(parentHandle));
+
+    if (!isNodeValid(parentNode))
+        return { };
+
+    auto &&parentInfo = layers.at(parentNode.depth).at(parentNode.offset);
+    auto &&parentChildren = parentInfo.children;
+
+    auto const childrenDepth = parentNode.depth + 1;
+    auto const childrenCount = parentChildren.end - parentChildren.begin;
+
+    if (childrenDepth > std::numeric_limits<node_index_t>::max() - 1) {
+        std::cerr << "requested scene tree depth is higher than maximum number\n"s;
+        return { };
+    }
+
+    if (std::size(layers) < childrenDepth + 1)
+        layers.resize(childrenDepth + 1);
+
+    auto &&childrenLayer = layers.at(childrenDepth);
+
+    if (std::size(layersChunks) < childrenDepth + 1)
+        layersChunks.resize(childrenDepth + 1);
+
+    auto &&layerChunks = layersChunks.at(childrenDepth);
+
+    if (childrenCount > 0) {
+        ;
+    }
+
+    else {
+        auto it_chunk = layerChunks.lower_bound(1);
+    }
+
+    return handle;
+}
+
+
 int main()
 try {
 #if defined(_MSC_VER) && defined(DEBUG)
@@ -1352,6 +1399,69 @@ try {
 
         sceneTree.AddChild(*node);
     }
+
+    /*
+    AttachNode(parent node handle)
+        Calculate the child depth index
+        Get children layer at the child depth index (create if there isn't)
+
+        1. Parent does have children
+            Find a chunk range adjacent to the children range end
+
+            1. 1. If there is the requsted chunk
+                Emplace a new child node at chunk position
+                Create a node handle to newly emplaced the child node
+
+                Extent the children range end by one index
+
+                Update the chunk range
+                
+            1. 2. If there is not
+                Find a range of continius chunks for all children plus one
+
+                1. 2. 1. If there is such a range
+                    Move all children nodes plus one to available chunks
+                    Create a node handle to newly emplaced the child node
+                    Update children node handles
+
+                    Recalculate the parent children range
+
+                    Update available chunks' ranges
+
+                1. 2. 2. If there isn't
+                    Append to the children layer end all children nodes plus one
+                    Create a node handle to newly emplaced the child node
+                    Update children node handles
+
+                    Recalculate the parent children range
+
+                    Put the empty nodes to a chunk range
+
+
+        2. Parent doesn't have children
+            Find a chunk range inside the children layer for child node emplacement
+
+            2. 1. If there is chunk range
+                Emplace a new child node at chunk position
+
+                Update the chunk range
+
+            2. 2. If there is not
+                Append to the children layer end a new child node
+
+            Create a node handle to newly emplaced the child node
+
+            Update the parent children range
+
+        return node handle
+
+    DestroyNode(node handle)
+        1. Node does have children
+
+        2. Node doesn't have children
+
+        return nothing
+    */
 
     glfwInit();
 
