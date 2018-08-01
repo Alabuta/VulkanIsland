@@ -1078,6 +1078,7 @@ private:
 
     bool isNodeValid(Node node) const noexcept { return node.depth != kINVALID_INDEX && node.offset != kINVALID_INDEX; }
 
+#if 0
     struct chunk_t final {
         node_index_t begin{0}, end{0};
         node_index_t size{0};
@@ -1111,15 +1112,16 @@ private:
             }
         };
     };
+#endif
 
-    using chunks_t = std::multiset<chunk_t, chunk_t::comparator>;
+    using chunks_t = std::set<node_index_t>;
     std::vector<chunks_t> layersChunks;
 };
 
 std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parentHandle)
 {
     std::optional<NodeHandle> handle;
-
+#if 0
     if (!isNodeHandleValid(parentHandle))
         return { };
 
@@ -1255,11 +1257,13 @@ std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parentHandle)
         }
     }
 
+#endif
     return handle;
 }
 
 void SceneTree::DestroyNode(NodeHandle handle)
 {
+#if 0
     if (!isNodeHandleValid(handle))
         return;
 
@@ -1325,6 +1329,7 @@ void SceneTree::DestroyNode(NodeHandle handle)
     }
 
     --parentChildren.end;
+#endif
 }
 
 
@@ -1367,7 +1372,31 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
     }
 
     else {
-        auto it_chunk = layerChunks.lower_bound(1);
+        auto it_chunk = std::begin(layerChunks);
+
+        if (it_chunk != std::end(layerChunks)) {
+            auto index = *it_chunk;
+
+            auto it = std::next(std::begin(childrenLayer), index);
+
+            handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
+            nodes.emplace_back(childrenDepth, index);
+            childrenLayer.emplace(it, parentHandle, *handle);
+
+            parentChildren.begin = index;
+            parentChildren.end = parentChildren.begin + 1;
+
+            layerChunks.erase(it_chunk);
+        }
+
+        else {
+            handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
+            auto &&node = nodes.emplace_back(childrenDepth, std::size(childrenLayer));
+            childrenLayer.emplace_back(parentHandle, *handle);
+
+            parentChildren.begin = node.offset;
+            parentChildren.end = parentChildren.begin + 1;
+        }
     }
 
     return handle;
@@ -1383,8 +1412,8 @@ try {
 
     SceneTree sceneTree;
 
-    if (auto node = sceneTree.AddChild(sceneTree.root()); node)
-        sceneTree.AddChild(*node);
+    if (auto node = sceneTree.AttachNode(sceneTree.root()); node)
+        sceneTree.AttachNode(*node);
 
     if (auto node = sceneTree.AddChild(sceneTree.root()); node) {
         sceneTree.AddChild(*node);
@@ -1456,9 +1485,30 @@ try {
         return node handle
 
     DestroyNode(node handle)
-        1. Node does have children
+        Validate node handle
 
-        2. Node doesn't have children
+        Get and validate node
+        Get and validate node info
+
+        Get node chidren range
+
+        Get and validate parent handle
+        Get and validate parent node
+        Get and validate parent node info
+
+        Get parent children range
+
+        1. If parent has children more than one
+            .
+
+        2. If it hasn't
+            .
+
+        3. Node does have children
+            .
+
+        4. Node doesn't have children
+            .
 
         return nothing
     */
