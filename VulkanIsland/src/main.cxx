@@ -1556,9 +1556,25 @@ try {
             Add new empty node to available chunks
 
         3. Node does have children
-            Call DestroyChildren(node).
+            Call DestroyChildren(node handle).
 
         Invalidate node handle
+
+        return nothing
+
+    DestroyChildren(node handle)
+        Validate node handle
+
+        Get and validate node
+        Get and validate node info
+
+        Get node chidren range
+        
+        ...
+
+        Traverse vector of child nodes handles copies and invalidate them
+
+        Reset parent's children range
 
         return nothing
     */
