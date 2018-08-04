@@ -1068,6 +1068,7 @@ public:
     void DestroyNode(NodeHandle handle);
 
     std::optional<NodeHandle> AttachNode(NodeHandle parentHandle);
+    void RemoveNode(NodeHandle handle);
 
 private:
 
@@ -1402,6 +1403,44 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
     return handle;
 }
 
+void SceneTree::RemoveNode(NodeHandle handle)
+{
+    if (!isNodeHandleValid(handle))
+        return;
+
+    auto node = nodes.at(static_cast<std::size_t>(handle));
+
+    if (!isNodeValid(node))
+        return;
+
+    auto &&info = layers.at(node.depth).at(node.offset);
+    auto &&children = info.children;
+
+    auto &&parentHandle = info.parent;
+
+    if (!isNodeHandleValid(parentHandle))
+        return;
+
+    auto parentNode = nodes.at(static_cast<std::size_t>(parentHandle));
+
+    if (!isNodeValid(parentNode))
+        return;
+
+    auto &&parentInfo = layers.at(parentNode.depth).at(parentNode.offset);
+    auto &&parentChildren = parentInfo.children;
+
+    auto const childrenDepth = parentNode.depth + 1;
+    auto const childrenCount = parentChildren.end - parentChildren.begin;
+
+    if (childrenCount > 1) {
+        ;
+    }
+
+    else {
+        ;
+    }
+}
+
 
 int main()
 try {
@@ -1499,16 +1538,27 @@ try {
         Get parent children range
 
         1. If parent has children more than one
-            .
+            1. 1. If node placed at the begining of parent's children range
+                Increment parent's children range begin index
+
+            1. 2. If node placed at the end of parent's children range
+                Decrement parent's children range end index
+
+            1. 3. Else
+                Move following nodes by one index back
+                Update moved nodes handles
+
+                Decrement parent's children range end index
 
         2. If it hasn't
-            .
+            Reset parent's children range
+
+            Add new empty node to available chunks
 
         3. Node does have children
-            .
+            Call DestroyChildren(node).
 
-        4. Node doesn't have children
-            .
+        Invalidate node handle
 
         return nothing
     */
