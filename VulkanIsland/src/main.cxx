@@ -5,6 +5,7 @@
 #pragma comment(lib, "vulkan-1.lib")
 #pragma comment(lib, "glfw3.lib")
 #endif
+
 #if defined(_MSC_VER) && defined(DEBUG)
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
