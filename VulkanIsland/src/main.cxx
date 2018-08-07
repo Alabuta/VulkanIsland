@@ -1370,7 +1370,33 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
     auto &&layerChunks = layersChunks.at(childrenDepth);
 
     if (childrenCount > 0) {
-        ;
+        auto it_chunk = layerChunks.find(parentChildren.end);
+
+        if (it_chunk != std::end(layerChunks)) {
+            auto index = *it_chunk;
+
+            handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
+            nodes.emplace_back(childrenDepth, index);
+
+            auto it = std::next(std::begin(childrenLayer), index);
+            childrenLayer.emplace(it, parentHandle, *handle);
+
+            ++parentChildren.end;
+
+            layerChunks.erase(it_chunk);
+        }
+
+        else {
+            /*it_chunk = std::search_n(std::begin(layerChunks), std::end(layerChunks), childrenCount + 1, 0, [] (auto lhs, auto rhs)
+            {
+                ;
+            });*/
+
+            it_chunk = std::adjacent_find(std::begin(layerChunks), std::end(layerChunks), [] (auto lhs, auto rhs)
+            {
+                return ;
+            });
+        }
     }
 
     else {
@@ -1379,10 +1405,10 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
         if (it_chunk != std::end(layerChunks)) {
             auto index = *it_chunk;
 
-            auto it = std::next(std::begin(childrenLayer), index);
-
             handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
             nodes.emplace_back(childrenDepth, index);
+
+            auto it = std::next(std::begin(childrenLayer), index);
             childrenLayer.emplace(it, parentHandle, *handle);
 
             parentChildren.begin = index;
