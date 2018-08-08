@@ -1387,15 +1387,35 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
         }
 
         else {
-            /*it_chunk = std::search_n(std::begin(layerChunks), std::end(layerChunks), childrenCount + 1, 0, [] (auto lhs, auto rhs)
-            {
-                ;
-            });*/
+            auto it_begin = std::begin(layerChunks);
 
-            it_chunk = std::adjacent_find(std::begin(layerChunks), std::end(layerChunks), [] (auto lhs, auto rhs)
+            auto FindGapInChunks = [] (auto begin, auto end)
             {
-                return ;
-            });
+                return std::adjacent_find(begin, end, [] (auto lhs, auto rhs)
+                {
+                    return rhs - lhs != 1;
+                });
+            };
+
+            it_chunk = FindGapInChunks(it_begin, std::end(layerChunks));
+
+            while (it_chunk != std::end(layerChunks)) {
+                auto const distance = std::distance(it_begin, it_chunk) + 1;
+
+                if (distance >= childrenCount + 1)
+                    break;
+
+                it_begin = std::next(it_chunk);
+                it_chunk = FindGapInChunks(it_begin, std::end(layerChunks));
+            }
+
+            if (it_chunk != std::end(layerChunks)) {
+                ;
+            }
+
+            else {
+                ;
+            }
         }
     }
 
