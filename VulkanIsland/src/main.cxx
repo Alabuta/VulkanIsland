@@ -1387,8 +1387,6 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
         }
 
         else {
-            auto it_begin = std::begin(layerChunks);
-
             auto FindGapInChunks = [] (auto begin, auto end)
             {
                 return std::adjacent_find(begin, end, [] (auto lhs, auto rhs)
@@ -1397,19 +1395,24 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
                 });
             };
 
-            it_chunk = FindGapInChunks(it_begin, std::end(layerChunks));
+            auto it_begin = std::begin(layerChunks);
+            auto it_end= std::end(layerChunks);
 
-            while (it_chunk != std::end(layerChunks)) {
-                auto const distance = std::distance(it_begin, it_chunk) + 1;
+            while (it_begin != std::end(layerChunks)) {
+                it_end = FindGapInChunks(it_begin, std::end(layerChunks));
 
-                if (distance >= childrenCount + 1)
+                if (it_end != std::end(layerChunks))
+                    it_end = std::next(it_end);
+
+                if (std::distance(it_begin, it_end) >= childrenCount + 1)
                     break;
 
-                it_begin = std::next(it_chunk);
-                it_chunk = FindGapInChunks(it_begin, std::end(layerChunks));
+                it_begin = it_end;
             }
 
-            if (it_chunk != std::end(layerChunks)) {
+            auto const range = std::distance(it_begin, it_end);
+
+            if (range != 0) {
                 ;
             }
 
