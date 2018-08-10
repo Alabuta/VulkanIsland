@@ -14,7 +14,11 @@
 #include <chrono>
 #include <cmath>
 #include <unordered_map>
+
+#ifdef _MSC_VER
+#define USE_EXECUTION_POLICIES
 #include <execution>
+#endif
 
 #include "main.hxx"
 #include "math.hxx"
@@ -1120,7 +1124,7 @@ private:
     std::vector<chunks_t> layersChunks;
 };
 
-std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parentHandle)
+std::optional<NodeHandle> SceneTree::AddChild([[maybe_unused]] NodeHandle parentHandle)
 {
     std::optional<NodeHandle> handle;
 #if 0
@@ -1263,7 +1267,7 @@ std::optional<NodeHandle> SceneTree::AddChild(NodeHandle parentHandle)
     return handle;
 }
 
-void SceneTree::DestroyNode(NodeHandle handle)
+void SceneTree::DestroyNode([[maybe_unused]] NodeHandle handle)
 {
 #if 0
     if (!isNodeHandleValid(handle))
@@ -1395,25 +1399,58 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
                 });
             };
 
-            auto it_begin = std::begin(layerChunks);
-            auto it_end= std::end(layerChunks);
+            auto it_range_begin = std::begin(layerChunks);
+            auto it_range_end = std::end(layerChunks);
 
-            while (it_begin != std::end(layerChunks)) {
-                it_end = FindGapInChunks(it_begin, std::end(layerChunks));
+            std::iterator_traits<decltype(it_range_end)>::difference_type const requestedSize = childrenCount + 1;
 
-                if (it_end != std::end(layerChunks))
-                    it_end = std::next(it_end);
+            while (it_range_begin != std::end(layerChunks)) {
+                it_range_end = FindGapInChunks(it_range_begin, std::end(layerChunks));
 
-                if (std::distance(it_begin, it_end) >= childrenCount + 1)
+                if (it_range_end != std::end(layerChunks))
+                    it_range_end = std::next(it_range_end);
+
+                if (std::distance(it_range_begin, it_range_end) >= requestedSize)
                     break;
 
-                it_begin = it_end;
+                it_range_begin = it_range_end;
             }
 
-            auto const range = std::distance(it_begin, it_end);
+            auto const range = std::distance(it_range_begin, it_range_end);
 
-            if (range != 0) {
-                ;
+            if (range > 0) {
+                auto it_range_edge = std::next(it_range_begin, requestedSize);
+
+                auto const offset = std::distance(std::begin(layerChunks), it_range_begin) - parentChildren.begin;
+
+                handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
+                nodes.emplace_back(childrenDepth, *it_range_edge);
+
+                auto it_begin = std::next(std::begin(childrenLayer), parentChildren.begin);
+                auto it_end = std::next(std::begin(childrenLayer), parentChildren.end);
+
+                std::for_each(it_begin, it_end, [&nodes = nodes, offset] (auto &&nodeInfo)
+                {
+                    auto &&node = nodes.at(static_cast<std::size_t>(nodeInfo.handle));
+
+                    node.offset += offset;
+                });
+
+                auto it_new_begin = std::next(std::begin(childrenLayer), *it_range_begin);
+                auto it_new_end = std::next(std::begin(childrenLayer), *it_range_edge);
+
+                std::vector<std::decay_t<decltype(layerChunks)>::value_type> newChunks(childrenCount);
+                std::iota(std::begin(newChunks), std::end(newChunks), parentChildren.begin);
+
+                parentChildren.begin = *it_range_begin;
+                parentChildren.end = parentChildren.begin + requestedSize;
+
+                std::move(it_begin, it_end, it_new_begin);
+
+                childrenLayer.emplace(it_new_end, parentHandle, *handle);
+
+                layerChunks.erase(it_range_begin, std::next(it_range_edge));
+                layerChunks.insert(std::begin(newChunks), std::end(newChunks));
             }
 
             else {
@@ -1421,6 +1458,16 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
             }
         }
     }
+
+    /*
+                1. 2. 2. If there isn't
+                    Append to the children layer end all children nodes plus one
+                    Create a node handle to newly emplaced the child node
+                    Update children node handles
+
+                    Recalculate the parent children range
+
+                    Put the empty nodes to a chunk range*/
 
     else {
         auto it_chunk = std::begin(layerChunks);
@@ -1453,8 +1500,9 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
     return handle;
 }
 
-void SceneTree::RemoveNode(NodeHandle handle)
+void SceneTree::RemoveNode([[maybe_unused]] NodeHandle handle)
 {
+#if NOT_YET_IMPLEMENTED
     if (!isNodeHandleValid(handle))
         return;
 
@@ -1489,6 +1537,7 @@ void SceneTree::RemoveNode(NodeHandle handle)
     else {
         ;
     }
+#endif
 }
 
 
@@ -1535,7 +1584,7 @@ try {
                 Update the chunk range
                 
             1. 2. If there is not
-                Find a range of continius chunks for all children plus one
+                Find a range of continuous chunks for all children plus one
 
                 1. 2. 1. If there is such a range
                     Move all children nodes plus one to available chunks
