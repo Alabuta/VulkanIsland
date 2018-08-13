@@ -1418,10 +1418,54 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
 
             auto const range = std::distance(it_range_begin, it_range_end);
 
+            //auto offset = *it_range_begin - parentChildren.begin;
+            std::decay_t<decltype(layerChunks)>::difference_type offset = 0;
+
+            //std::decay_t<decltype(layerChunks)>::iterator it_begin
+
+            std::size_t new_begin_index = 0, new_end_index = 0;
+
+
             if (range > 0) {
                 auto it_range_edge = std::next(it_range_begin, requestedSize);
 
-                auto const offset = std::distance(std::begin(layerChunks), it_range_begin) - parentChildren.begin;
+                layerChunks.erase(it_range_begin, std::next(it_range_edge));
+            }
+
+            else {
+                childrenLayer.resize(std::size(childrenLayer) + requestedSize);
+
+                it_range_begin = std::prev(std::end(childrenLayer), requestedSize);
+            }
+
+            auto it_range_edge = std::next(it_range_begin, requestedSize);
+
+            handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
+            nodes.emplace_back(childrenDepth, *it_range_edge);
+
+            auto it_begin = std::next(std::begin(childrenLayer), parentChildren.begin);
+            auto it_end = std::next(std::begin(childrenLayer), parentChildren.end);
+
+            std::for_each(it_begin, it_end, [&nodes = nodes, offset] (auto &&nodeInfo)
+            {
+                auto &&node = nodes.at(static_cast<std::size_t>(nodeInfo.handle));
+
+                node.offset += offset;
+            });
+
+            std::vector<std::decay_t<decltype(layerChunks)>::value_type> newChunks(childrenCount);
+            std::iota(std::begin(newChunks), std::end(newChunks), parentChildren.begin);
+
+
+            // ...
+            layerChunks.insert(std::begin(newChunks), std::end(newChunks));
+
+
+
+            if (range > 0) {
+                auto it_range_edge = std::next(it_range_begin, requestedSize);
+
+                auto const offset = *it_range_begin - parentChildren.begin;
 
                 handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
                 nodes.emplace_back(childrenDepth, *it_range_edge);
@@ -1447,6 +1491,8 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
 
                 std::move(it_begin, it_end, it_new_begin);
 
+                //std::fill(it_begin, it_end, layer_t{ });
+
                 childrenLayer.emplace(it_new_end, parentHandle, *handle);
 
                 layerChunks.erase(it_range_begin, std::next(it_range_edge));
@@ -1454,7 +1500,34 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
             }
 
             else {
-                ;
+                childrenLayer.resize(std::size(childrenLayer) + requestedSize);
+
+                auto it_range_edge = std::next(it_range_begin, requestedSize);
+
+                auto const offset = std::size(childrenLayer) - parentChildren.begin;
+
+                handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
+                nodes.emplace_back(childrenDepth, std::size(childrenLayer) + requestedSize - 1);
+
+                auto it_begin = std::next(std::begin(childrenLayer), parentChildren.begin);
+                auto it_end = std::next(std::begin(childrenLayer), parentChildren.end);
+
+                std::for_each(it_begin, it_end, [&nodes = nodes, offset] (auto &&nodeInfo)
+                {
+                    auto &&node = nodes.at(static_cast<std::size_t>(nodeInfo.handle));
+
+                    node.offset += offset;
+                });
+
+                std::vector<std::decay_t<decltype(layerChunks)>::value_type> newChunks(childrenCount);
+                std::iota(std::begin(newChunks), std::end(newChunks), parentChildren.begin);
+
+                parentChildren.begin = std::size(childrenLayer);
+                parentChildren.end = parentChildren.begin + requestedSize;
+
+                std::move(it_begin, it_end, std::back_inserter(childrenLayer));
+
+                //std::fill(it_begin, it_end, layer_t{ });
             }
         }
     }
