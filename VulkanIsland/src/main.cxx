@@ -1434,25 +1434,6 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
                 childrenLayer.resize(std::size(childrenLayer) + requestedSize);
             }
 
-            /*
-                1. 2. 1. If there is such a range
-                    Move all children nodes plus one to available chunks
-                    Create a node handle to newly emplaced the child node
-                    Update children node handles
-
-                    Recalculate the parent children range
-
-                    Update available chunks' ranges
-
-                1. 2. 2. If there isn't
-                    Append to the children layer end all children nodes plus one
-                    Create a node handle to newly emplaced the child node
-                    Update children node handles
-
-                    Recalculate the parent children range
-
-                    Put the empty nodes to a chunk range*/
-
             std::ptrdiff_t const offset = new_begin_index - parentChildren.begin;
 
             handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
@@ -1517,9 +1498,8 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle)
     return handle;
 }
 
-void SceneTree::RemoveNode([[maybe_unused]] NodeHandle handle)
+void SceneTree::RemoveNode(NodeHandle handle)
 {
-#if NOT_YET_IMPLEMENTED
     if (!isNodeHandleValid(handle))
         return;
 
@@ -1554,7 +1534,6 @@ void SceneTree::RemoveNode([[maybe_unused]] NodeHandle handle)
     else {
         ;
     }
-#endif
 }
 
 
@@ -1639,6 +1618,10 @@ try {
 
         return node handle
 
+        */
+
+    /*
+
     DestroyNode(node handle)
         Validate node handle
 
@@ -1677,18 +1660,22 @@ try {
         Invalidate node handle
 
         return nothing
+        */
 
-    DestroyChildren(node handle)
+    /*DestroyChildren(node handle)
         Validate node handle
 
         Get and validate node
         Get and validate node info
 
         Get node chidren range
+
         
         ...
 
-        Traverse vector of child nodes handles copies and invalidate them
+        Collect child's node hadle indices
+
+        Traverse vector of child nodes handle indexes and invalidate them
 
         Reset parent's children range
 
