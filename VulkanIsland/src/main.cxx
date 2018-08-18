@@ -1073,7 +1073,9 @@ public:
     void DestroyNode(NodeHandle handle);
 
     std::optional<NodeHandle> AttachNode(NodeHandle parentHandle);
+
     void RemoveNode(NodeHandle handle);
+    void DestroyChildren(NodeHandle handle);
 
 private:
 
@@ -1503,13 +1505,16 @@ void SceneTree::RemoveNode(NodeHandle handle)
     if (!isNodeHandleValid(handle))
         return;
 
-    auto node = nodes.at(static_cast<std::size_t>(handle));
+    auto &&node = nodes.at(static_cast<std::size_t>(handle));
 
     if (!isNodeValid(node))
         return;
 
-    auto &&info = layers.at(node.depth).at(node.offset);
+    auto &&layer = layers.at(node.depth);
+    auto &&info = layer.at(node.offset);
     auto &&children = info.children;
+
+    auto const childrenCount = children.end - children.begin;
 
     auto &&parentHandle = info.parent;
 
@@ -1524,16 +1529,29 @@ void SceneTree::RemoveNode(NodeHandle handle)
     auto &&parentInfo = layers.at(parentNode.depth).at(parentNode.offset);
     auto &&parentChildren = parentInfo.children;
 
-    auto const childrenDepth = parentNode.depth + 1;
-    auto const childrenCount = parentChildren.end - parentChildren.begin;
+    auto const parentChildrenDepth = parentNode.depth + 1;
+    auto const parentChildrenCount = parentChildren.end - parentChildren.begin;
 
-    if (childrenCount > 1) {
+    if (parentChildrenCount > 1) {
         ;
     }
 
     else {
-        ;
+        parentChildren = { };
     }
+
+    if (childrenCount > 0)
+        DestroyChildren(handle);
+
+    auto &&layerChunks = layersChunks.at(node.depth);
+    layerChunks.emplace(node.offset);
+
+    node = { };
+}
+
+void SceneTree::DestroyChildren(NodeHandle handle)
+{
+    ;
 }
 
 
