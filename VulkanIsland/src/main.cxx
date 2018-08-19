@@ -1551,7 +1551,24 @@ void SceneTree::RemoveNode(NodeHandle handle)
 
 void SceneTree::DestroyChildren(NodeHandle handle)
 {
-    ;
+    if (!isNodeHandleValid(handle))
+        return;
+
+    auto &&node = nodes.at(static_cast<std::size_t>(handle));
+
+    if (!isNodeValid(node))
+        return;
+
+    auto &&layer = layers.at(node.depth);
+    auto &&info = layer.at(node.offset);
+    auto &&children = info.children;
+
+    if (children.end - children.begin < 1)
+        return;
+
+    for (auto depth = node.depth + 1; depth < std::size(layers); ++depth) {
+        ;
+    }
 }
 
 
