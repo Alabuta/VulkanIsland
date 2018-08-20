@@ -1566,6 +1566,11 @@ void SceneTree::DestroyChildren(NodeHandle handle)
     if (children.end - children.begin < 1)
         return;
 
+    while (children.end - children.begin > 0) {
+        auto depth = node.depth + 1;
+        auto offset = children.end;
+    }
+
     for (auto depth = node.depth + 1; depth < std::size(layers); ++depth) {
         ;
     }
