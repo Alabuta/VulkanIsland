@@ -41,6 +41,12 @@
     <ClCompile Include="src\resource.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\glTFLoader.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\scene_tree.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\queues.hxx">
@@ -92,6 +98,12 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\math.hxx">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\glTFLoader.h">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\scene_tree.h">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

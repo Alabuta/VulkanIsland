@@ -223,11 +223,13 @@
     <ClCompile Include="src\buffer.cxx" />
     <ClCompile Include="src\debug.cxx" />
     <ClCompile Include="src\device.cxx" />
+    <ClCompile Include="src\glTFLoader.cxx" />
     <ClCompile Include="src\image.cxx" />
     <ClCompile Include="src\instance.cxx" />
     <ClCompile Include="src\main.cxx" />
     <ClCompile Include="src\mesh_loader.cxx" />
     <ClCompile Include="src\resource.cxx" />
+    <ClCompile Include="src\scene_tree.cxx" />
     <ClCompile Include="src\swapchain.cxx" />
     <ClCompile Include="src\TARGA_loader.cxx" />
   </ItemGroup>
@@ -237,6 +239,7 @@
     <ClInclude Include="src\debug.hxx" />
     <ClInclude Include="src\device.hxx" />
     <ClInclude Include="src\device_defaults.hxx" />
+    <ClInclude Include="src\glTFLoader.h" />
     <ClInclude Include="src\image.hxx" />
     <ClInclude Include="src\helpers.hxx" />
     <ClInclude Include="src\instance.hxx" />
@@ -247,6 +250,7 @@
     <ClInclude Include="src\queues.hxx" />
     <ClInclude Include="src\queue_builder.hxx" />
     <ClInclude Include="src\resource.hxx" />
+    <ClInclude Include="src\scene_tree.h" />
     <ClInclude Include="src\swapchain.hxx" />
     <ClInclude Include="src\TARGA_loader.hxx" />
   </ItemGroup>
