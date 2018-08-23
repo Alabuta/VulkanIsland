@@ -18,6 +18,7 @@ namespace fs = boost::filesystem;
 #endif
 
 #include "glTFLoader.h"
+#include "scene_tree.h"
 
 namespace glTF {
 auto constexpr kBYTE                 = 0x1400; // 5120
@@ -746,6 +747,17 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
     auto scenes = json.at("scenes"s).get<std::vector<glTF::scene_t>>();
     auto nodes = json.at("nodes"s).get<std::vector<glTF::node_t>>();
+
+    std::vector<SceneTree> sceneTrees;
+
+    std::transform(std::begin(scenes), std::end(scenes), std::back_inserter(sceneTrees), [&nodes] (auto &&scene)
+    {
+        SceneTree sceneTree;
+
+        ;
+
+        return sceneTree;
+    });
 
     auto meshes = json.at("meshes"s).get<std::vector<glTF::mesh_t>>();
 
