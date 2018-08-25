@@ -698,7 +698,8 @@ std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::
 
             auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
 
-            texture = CreateTexture(device, rawImage->format, rawImage->type, width, height, rawImage->mipLevels, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
+            texture = CreateTexture(device, rawImage->format, rawImage->type, width, height, rawImage->mipLevels,
+                                    VK_SAMPLE_COUNT_1_BIT, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
             if (texture) {
                 TransitionImageLayout(device, app.transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,

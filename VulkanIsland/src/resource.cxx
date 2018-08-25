@@ -4,11 +4,11 @@
 
 std::shared_ptr<VulkanImage>
 ResourceManager::CreateImage(VkFormat format, std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels,
-                             VkImageTiling tiling, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags)
+                             VkSampleCountFlagBits samplesCount, VkImageTiling tiling, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags)
 {
     std::shared_ptr<VulkanImage> image;
 
-    auto handle = CreateImageHandle(device_, width, height, mipLevels, format, tiling, usageFlags);
+    auto handle = CreateImageHandle(device_, width, height, mipLevels, samplesCount, format, tiling, usageFlags);
 
     if (handle) {
         auto memory = device_.memoryManager().AllocateMemory(*handle, propertyFlags, tiling == VK_IMAGE_TILING_LINEAR);

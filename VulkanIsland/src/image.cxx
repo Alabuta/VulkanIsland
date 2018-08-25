@@ -16,7 +16,7 @@
 
 std::optional<VkImage>
 CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
-                              VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage) noexcept
+                  VkSampleCountFlagBits samplesCount, VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage) noexcept
 {
     VkImageCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -26,7 +26,7 @@ CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::ui
         { width, height, 1 },
         mipLevels,
         1,
-        VK_SAMPLE_COUNT_1_BIT,
+        samplesCount,
         tiling,
         usage,
         VK_SHARING_MODE_EXCLUSIVE,
@@ -63,12 +63,12 @@ CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::ui
 
 std::optional<VulkanTexture>
 CreateTexture(VulkanDevice &device, VkFormat format, VkImageViewType type,
-              std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, VkImageTiling tiling,
+              std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, VkSampleCountFlagBits samplesCount, VkImageTiling tiling,
               VkImageAspectFlags aspectFlags, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags)
 {
     std::optional<VulkanTexture> texture;
 
-    if (auto image = device.resourceManager().CreateImage(format, width, height, mipLevels, tiling, usageFlags, propertyFlags); image)
+    if (auto image = device.resourceManager().CreateImage(format, width, height, mipLevels, samplesCount, tiling, usageFlags, propertyFlags); image)
         if (auto view = device.resourceManager().CreateImageView(*image, type, aspectFlags); view)
 #if NOT_YET_IMPLEMENTED
             if (auto sampler = device.resourceManager().CreateImageSampler(image->mipLevels()); sampler)

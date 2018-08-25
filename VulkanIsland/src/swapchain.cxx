@@ -257,7 +257,8 @@ CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
 
         auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
 
-        texture = CreateTexture(device, *format, VK_IMAGE_VIEW_TYPE_2D, width, height, mipLevels, tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
+        texture = CreateTexture(device, *format, VK_IMAGE_VIEW_TYPE_2D, width, height, mipLevels, VK_SAMPLE_COUNT_1_BIT,
+                                tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
 
         if (texture)
             TransitionImageLayout(device, transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,

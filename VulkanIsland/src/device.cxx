@@ -1,5 +1,7 @@
 #include <type_traits>
 #include <functional>
+#include <algorithm>
+#include <bitset>
 
 #include "main.hxx"
 #include "swapchain.hxx"
@@ -260,6 +262,23 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
 
 void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<char const *> &&extensions)
 {
+    VkPhysicalDeviceProperties properties;
+    vkGetPhysicalDeviceProperties(physicalDevice_, &properties);
+
+    auto samplesCount = std::min(properties.limits.framebufferColorSampleCounts, properties.limits.framebufferDepthSampleCounts);
+
+    auto constexpr bitsCount = std::numeric_limits<VkSampleCountFlags>::digits;
+
+    std::bitset<bitsCount> samplesCountBits{samplesCount};
+
+    auto samplesCountBitsString = samplesCountBits.to_string();
+
+    auto it = std::find(std::cbegin(samplesCountBitsString), std::cend(samplesCountBitsString), '1');
+
+    auto index = bitsCount - std::distance(std::cbegin(samplesCountBitsString), it);
+
+    samplesCount_ = static_cast<VkSampleCountFlagBits>(1 << index);
+
     QueueHelper queueHelper;
 
     for (auto &&queue : queuePool_.computeQueues_)
