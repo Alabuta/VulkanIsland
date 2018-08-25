@@ -11,7 +11,7 @@ struct VulkanSwapchain final {
     VkFormat format{VK_FORMAT_UNDEFINED};
     VkExtent2D extent;
 
-    VulkanTexture depthTexture;
+    VulkanTexture colorTexture, depthTexture;
 
     std::vector<VkImage> images;
     std::vector<VkImageView> views;

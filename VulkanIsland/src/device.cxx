@@ -265,19 +265,11 @@ void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<char const *> 
     VkPhysicalDeviceProperties properties;
     vkGetPhysicalDeviceProperties(physicalDevice_, &properties);
 
-    auto samplesCount = std::min(properties.limits.framebufferColorSampleCounts, properties.limits.framebufferDepthSampleCounts);
+    auto samplesCountBits = std::min(properties.limits.framebufferColorSampleCounts, properties.limits.framebufferDepthSampleCounts);
 
-    auto constexpr bitsCount = std::numeric_limits<VkSampleCountFlags>::digits;
+    auto samplesCount = static_cast<VkFlags>(std::pow(2.0, std::floor(std::log2(samplesCountBits))));
 
-    std::bitset<bitsCount> samplesCountBits{samplesCount};
-
-    auto samplesCountBitsString = samplesCountBits.to_string();
-
-    auto it = std::find(std::cbegin(samplesCountBitsString), std::cend(samplesCountBitsString), '1');
-
-    auto index = bitsCount - std::distance(std::cbegin(samplesCountBitsString), it);
-
-    samplesCount_ = static_cast<VkSampleCountFlagBits>(1 << index);
+    samplesCount_ = static_cast<VkSampleCountFlagBits>(samplesCount);
 
     QueueHelper queueHelper;
 

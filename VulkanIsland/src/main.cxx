@@ -246,10 +246,10 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
     VkAttachmentDescription const colorAttachment{
         0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
         swapchain.format,
-        VK_SAMPLE_COUNT_1_BIT,
+        device.samplesCount(),
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
-        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
     };
 
     VkAttachmentReference constexpr colorAttachmentReference{
@@ -259,7 +259,7 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
     VkAttachmentDescription const depthAttachement{
         0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
         swapchain.depthTexture.image->format(),
-        VK_SAMPLE_COUNT_1_BIT,
+        device.samplesCount(),
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
@@ -269,12 +269,25 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
         1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL
     };
 
+    VkAttachmentDescription const colorAttachmentResolve{
+        0,
+        swapchain.format,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE,
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+        VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_PRESENT_SRC_KHR
+    };
+
+    VkAttachmentReference constexpr colorAttachmentResolveReference{
+        2, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
+    };
+
     VkSubpassDescription const subpassDescription{
         0,
         VK_PIPELINE_BIND_POINT_GRAPHICS,
         0, nullptr,
         1, &colorAttachmentReference,
-        nullptr,
+        &colorAttachmentResolveReference,
         &depthAttachementReference,
         0, nullptr
     };
@@ -286,7 +299,7 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
         0
     };
 
-    auto const attachments = make_array(colorAttachment, depthAttachement);
+    auto const attachments = make_array(colorAttachment, depthAttachement, colorAttachmentResolve);
 
 #if NOT_YET_IMPLEMENTED
     VkInputAttachmentAspectReference const depthAttachmentAspectReference{
@@ -410,10 +423,10 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         1
     };
 
-    VkPipelineMultisampleStateCreateInfo constexpr multisampleCreateInfo{
+    VkPipelineMultisampleStateCreateInfo const multisampleCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         nullptr, 0,
-        VK_SAMPLE_COUNT_1_BIT,
+        app.vulkanDevice->samplesCount(),//VK_SAMPLE_COUNT_1_BIT
         VK_FALSE, 1,
         nullptr,
         VK_FALSE,
@@ -497,7 +510,7 @@ void CreateFramebuffers(VulkanDevice const &device, VkRenderPass renderPass, Vul
 
     std::transform(std::cbegin(views), std::cend(views), std::back_inserter(framebuffers), [&device, renderPass, &swapchain] (auto &&view)
     {
-        auto const attachements = make_array(view, swapchain.depthTexture.view.handle());
+        auto const attachements = make_array(swapchain.colorTexture.view.handle(), swapchain.depthTexture.view.handle(), view);
 
         VkFramebufferCreateInfo const createInfo{
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,

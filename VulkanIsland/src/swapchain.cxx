@@ -100,6 +100,27 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
+[[nodiscard]] std::optional<VulkanTexture>
+CreateColorAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, VkFormat format, std::uint16_t width, std::uint16_t height)
+{
+    std::optional<VulkanTexture> texture;
+
+    auto constexpr mipLevels = 1u;
+
+    auto constexpr usageFlags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+    auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
+
+    texture = CreateTexture(device, format, VK_IMAGE_VIEW_TYPE_2D, width, height, mipLevels, device.samplesCount(),
+                            tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
+
+    if (texture)
+        TransitionImageLayout(device, transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
+                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, transferCommandPool);
+
+    return texture;
+}
 
 [[nodiscard]] std::optional<VulkanTexture>
 CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, std::uint16_t width, std::uint16_t height)
@@ -240,6 +261,13 @@ CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width,
     auto const swapchainWidth = static_cast<std::uint16_t>(swapchain.extent.width);
     auto const swapchainHeight = static_cast<std::uint16_t>(swapchain.extent.height);
 
+    if (auto result = CreateColorAttachement(device, transferQueue, transferCommandPool, swapchain.format, swapchainWidth, swapchainHeight); !result) {
+        std::cerr << "failed to create color texture\n"s;
+        return { };
+    }
+
+    else swapchain.colorTexture = std::move(result.value());
+
     if (auto result = CreateDepthAttachement(device, transferQueue, transferCommandPool, swapchainWidth, swapchainHeight); !result) {
         std::cerr << "failed to create depth texture\n"s;
         return { };
@@ -262,6 +290,9 @@ void CleanupSwapchain(VulkanDevice const &device, VulkanSwapchain &swapchain) no
 
     vkDestroySwapchainKHR(device.handle(), swapchain.handle, nullptr);
     swapchain.views.clear();
+
+    vkDestroyImageView(device.handle(), swapchain.colorTexture.view.handle(), nullptr);
+    swapchain.colorTexture.image.reset();
 
     vkDestroyImageView(device.handle(), swapchain.depthTexture.view.handle(), nullptr);
     swapchain.depthTexture.image.reset();
