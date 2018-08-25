@@ -100,6 +100,33 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     return VK_PRESENT_MODE_FIFO_KHR;
 }
 
+
+[[nodiscard]] std::optional<VulkanTexture>
+CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, std::uint16_t width, std::uint16_t height)
+{
+    std::optional<VulkanTexture> texture;
+
+    if (auto const format = FindDepthImageFormat(device.physical_handle()); format) {
+        auto constexpr mipLevels = 1u;
+
+        auto constexpr usageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+        auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
+
+        texture = CreateTexture(device, *format, VK_IMAGE_VIEW_TYPE_2D, width, height, mipLevels, device.samplesCount(),
+                                tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
+
+        if (texture)
+            TransitionImageLayout(device, transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
+                                  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, transferCommandPool);
+    }
+
+    else std::cerr << "failed to find format for depth attachement\n"s;
+
+    return texture;
+}
+
 }
 
 
@@ -134,7 +161,6 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
 
     return details;
 }
-
 
 
 [[nodiscard]] std::optional<VulkanSwapchain>
@@ -241,31 +267,4 @@ void CleanupSwapchain(VulkanDevice const &device, VulkanSwapchain &swapchain) no
     swapchain.depthTexture.image.reset();
 
     swapchain.images.clear();
-}
-
-
-[[nodiscard]] std::optional<VulkanTexture>
-CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, std::uint16_t width, std::uint16_t height)
-{
-    std::optional<VulkanTexture> texture;
-
-    if (auto const format = FindDepthImageFormat(device.physical_handle()); format) {
-        auto constexpr mipLevels = 1u;
-
-        auto constexpr usageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-        auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
-
-        texture = CreateTexture(device, *format, VK_IMAGE_VIEW_TYPE_2D, width, height, mipLevels, VK_SAMPLE_COUNT_1_BIT,
-                                tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
-
-        if (texture)
-            TransitionImageLayout(device, transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
-                                  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, transferCommandPool);
-    }
-
-    else std::cerr << "failed to find format for depth attachement\n"s;
-
-    return texture;
 }
