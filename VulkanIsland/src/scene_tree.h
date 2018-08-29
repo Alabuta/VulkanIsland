@@ -1,5 +1,7 @@
 #pragma once
 
+#include <string>
+#include <string_view>
 #include <optional>
 
 #include "main.hxx"
@@ -25,11 +27,13 @@ struct NodeInfo final {
     NodeHandle parent{NodeHandle::nINVALID_HANDLE};
     NodeHandle handle{NodeHandle::nINVALID_HANDLE};
 
+    std::string name;
+
     struct ChildrenRange final {
         node_index_t begin{0}, end{0};
     } children;
 
-    constexpr NodeInfo(NodeHandle parent, NodeHandle handle) : parent{parent}, handle{handle} { }
+    NodeInfo(NodeHandle parent, NodeHandle handle, std::string_view name) : parent{parent}, handle{handle}, name{name} { }
 
     NodeInfo() = default;
 };
@@ -37,10 +41,10 @@ struct NodeInfo final {
 class SceneTree final {
 public:
 
-    SceneTree()
+    SceneTree(std::string_view name = "noname"sv) : name{name}
     {
         nodes.emplace_back(0, 0);
-        layers.emplace_back(1, NodeInfo{NodeHandle::nINVALID_HANDLE, root()});
+        layers.emplace_back(1, NodeInfo{NodeHandle::nINVALID_HANDLE, root(), name});
     }
 
     bool isNodeHandleValid(NodeHandle handle) const noexcept { return handle != NodeHandle::nINVALID_HANDLE; }
@@ -50,12 +54,15 @@ public:
     std::optional<NodeHandle> AddChild(NodeHandle parentHandle);
     void DestroyNode(NodeHandle handle);
 
-    std::optional<NodeHandle> AttachNode(NodeHandle parentHandle);
+    std::optional<NodeHandle> AttachNode(NodeHandle parentHandle, std::string_view name = "noname"sv);
 
     void RemoveNode(NodeHandle handle);
     void DestroyChildren(NodeHandle handle);
 
+    void SetName(NodeHandle handle, std::string_view name);
+
 private:
+    std::string name;
 
     std::vector<Node> nodes;
 
