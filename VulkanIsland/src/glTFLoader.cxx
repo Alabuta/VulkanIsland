@@ -238,7 +238,8 @@ struct node_t {
 
     std::variant<mat4, std::tuple<vec3, quat, vec3>> transform;
 
-    std::size_t mesh, camera;
+    std::optional<std::size_t> mesh;
+    std::optional<std::size_t> camera;
 
     std::vector<std::size_t> children;
 };
@@ -410,6 +411,7 @@ void from_json(nlohmann::json const &j, scene_t &scene)
 
 void from_json(nlohmann::json const &j, node_t &node)
 {
+    std::cout << std::setw(4) << j << '\n';
     if (j.count("name"s))
         node.name = j.at("name"s).get<decltype(node_t::name)>();
 
@@ -448,10 +450,10 @@ void from_json(nlohmann::json const &j, node_t &node)
         node.children = j.at("children"s).get<std::decay_t<decltype(node.children)>>();
 
     if (j.count("mesh"s))
-        node.mesh = j.at("mesh"s).get<std::decay_t<decltype(node.mesh)>>();
+        node.mesh = j.at("mesh"s).get<std::decay_t<decltype(node.mesh)::value_type>>();
 
     if (j.count("camera"s))
-        node.camera = j.at("camera"s).get<std::decay_t<decltype(node.camera)>>();
+        node.camera = j.at("camera"s).get<std::decay_t<decltype(node.camera)::value_type>>();
 }
 
 void from_json(nlohmann::json const &j, mesh_t &mesh)
@@ -752,9 +754,35 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
     std::transform(std::begin(scenes), std::end(scenes), std::back_inserter(sceneTrees), [&nodes] (auto &&scene)
     {
-        SceneTree sceneTree;
+        SceneTree sceneTree{scene.name};
 
-        ;
+        /*if (std::size(scene.nodes) > 1)
+            throw std::runtime_error(""s);
+
+        auto &&sceneRoot = 
+
+        sceneTree.SetName(sceneTree.root(), );*/
+
+        NodeHandle parent;
+
+        std::vector<NodeHandle> handles;
+        std::vector<std::size_t> indices;
+
+        parent = sceneTree.root();
+        indices = scene.nodes;
+
+        for (auto &&nodeIndex : indices) {
+            auto &&node = nodes.at(nodeIndex);
+
+            if (auto handle = sceneTree.AttachNode(parent, node.name); handle)
+                handles.emplace_back(*handle);
+        }
+
+        /*if (auto node = sceneTree.AttachNode(sceneTree.root()); node) {
+            for (auto &&node : nodes) {
+                ;
+            }
+        }*/
 
         return sceneTree;
     });

@@ -822,6 +822,9 @@
     {
       "mesh": 4,
       "name": "pCone1_orange_0"
+    },
+    {
+      "name": "Temp"
     }
   ],
   "scene": 0,
@@ -829,7 +832,7 @@
     {
       "name": "OSG_Scene",
       "nodes": [
-        0
+        0, 14
       ]
     }
   ]
