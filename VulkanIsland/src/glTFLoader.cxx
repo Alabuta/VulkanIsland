@@ -723,6 +723,11 @@ std::optional<attribute::buffer_t> instantiate_attribute_buffer(std::string_view
 }
 }
 
+void IterateSubtree()
+{
+    ;
+}
+
 bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &_indices)
 {
     auto current_path = fs::current_path();
@@ -756,55 +761,58 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
     {
         SceneTree sceneTree{scene.name};
 
-        NodeHandle parent;
-
-        std::vector<NodeHandle> handles;
-        std::vector<std::size_t> indices;
-
-        parent = sceneTree.root();
-        indices = scene.nodes;
+        auto parent = sceneTree.root();
 
         std::size_t offset = 0;
 
         bool reachedBottom = false;
 
-        while (!reachedBottom) {
-            reachedBottom = true;
+        std::vector<std::vector<NodeHandle>> handlesStack;
+        //handlesStack.emplace_back(1, parent);
 
-            if (offset == 0) {
-                for (auto &&nodeIndex : indices) {
-                    auto &&node = nodes.at(nodeIndex);
+        std::vector<NodeHandle> handles;
+
+        std::vector<std::vector<std::size_t>> indicesStack;
+        indicesStack.emplace_back(scene.nodes);
+
+        while (!indicesStack.empty()) {
+            auto &&indices = indicesStack.back();
+
+            if (indices.empty()) {
+                handlesStack.pop_back();
+
+                if (!handlesStack.empty() && !handlesStack.back().empty())
+                    parent = handlesStack.back().back();
+
+                indicesStack.pop_back();
+
+                continue;
+            }
+
+            if (std::size(indicesStack) != std::size(handlesStack)) {
+                for (auto index : indices) {
+                    auto &&node = nodes.at(index);
 
                     if (auto handle = sceneTree.AttachNode(parent, node.name); handle)
                         handles.emplace_back(*handle);
-
-                    if (!node.nodes.empty()) reachedBottom = false;
                 }
+
+                handlesStack.emplace_back(std::move(handles));
             }
 
-            if (offset < std::size(indices)) {
-                auto &&node = nodes.at(indices.at(offset++));
-                indices = node.nodes;
+            auto index = indices.back();
+            indices.pop_back();
+
+            auto &&node = nodes.at(index);
+
+            if (!node.children.empty()) {
+                indicesStack.emplace_back(node.children);
+
+                parent = handlesStack.back().back();
             }
 
-            else {
-                handles.clear();
-                offset = 0;
-            }
+            handlesStack.back().pop_back();
         }
-
-        /*for (auto &&nodeIndex : indices) {
-            auto &&node = nodes.at(nodeIndex);
-
-            if (auto handle = sceneTree.AttachNode(parent, node.name); handle)
-                handles.emplace_back(*handle);
-        }*/
-
-        /*if (auto node = sceneTree.AttachNode(sceneTree.root()); node) {
-            for (auto &&node : nodes) {
-                ;
-            }
-        }*/
 
         return sceneTree;
     });
