@@ -756,13 +756,6 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
     {
         SceneTree sceneTree{scene.name};
 
-        /*if (std::size(scene.nodes) > 1)
-            throw std::runtime_error(""s);
-
-        auto &&sceneRoot = 
-
-        sceneTree.SetName(sceneTree.root(), );*/
-
         NodeHandle parent;
 
         std::vector<NodeHandle> handles;
@@ -771,12 +764,41 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
         parent = sceneTree.root();
         indices = scene.nodes;
 
-        for (auto &&nodeIndex : indices) {
+        std::size_t offset = 0;
+
+        bool reachedBottom = false;
+
+        while (!reachedBottom) {
+            reachedBottom = true;
+
+            if (offset == 0) {
+                for (auto &&nodeIndex : indices) {
+                    auto &&node = nodes.at(nodeIndex);
+
+                    if (auto handle = sceneTree.AttachNode(parent, node.name); handle)
+                        handles.emplace_back(*handle);
+
+                    if (!node.nodes.empty()) reachedBottom = false;
+                }
+            }
+
+            if (offset < std::size(indices)) {
+                auto &&node = nodes.at(indices.at(offset++));
+                indices = node.nodes;
+            }
+
+            else {
+                handles.clear();
+                offset = 0;
+            }
+        }
+
+        /*for (auto &&nodeIndex : indices) {
             auto &&node = nodes.at(nodeIndex);
 
             if (auto handle = sceneTree.AttachNode(parent, node.name); handle)
                 handles.emplace_back(*handle);
-        }
+        }*/
 
         /*if (auto node = sceneTree.AttachNode(sceneTree.root()); node) {
             for (auto &&node : nodes) {
