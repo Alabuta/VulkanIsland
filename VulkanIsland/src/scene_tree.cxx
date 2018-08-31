@@ -249,7 +249,18 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle, std::st
 
     auto &&layerChunks = layersChunks.at(childrenDepth);
 
-    if (childrenCount > 0) {
+    if (std::size(childrenLayer) == parentChildren.end) {
+        auto index = parentChildren.end;
+
+        handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
+        nodes.emplace_back(childrenDepth, index);
+
+        childrenLayer.emplace_back(parentHandle, *handle, name);
+
+        ++parentChildren.end;
+    }
+
+    else if (childrenCount > 0) {
         auto it_chunk = layerChunks.find(parentChildren.end);
 
         if (it_chunk != std::end(layerChunks)) {

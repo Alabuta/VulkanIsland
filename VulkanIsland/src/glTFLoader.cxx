@@ -411,7 +411,6 @@ void from_json(nlohmann::json const &j, scene_t &scene)
 
 void from_json(nlohmann::json const &j, node_t &node)
 {
-    std::cout << std::setw(4) << j << '\n';
     if (j.count("name"s))
         node.name = j.at("name"s).get<decltype(node_t::name)>();
 
@@ -792,6 +791,10 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
             if (std::size(indicesStack) != std::size(handlesStack)) {
                 for (auto index : indices) {
                     auto &&node = nodes.at(index);
+
+                    // TODO: add mesh component
+                    /*if (node.mesh)
+                        continue;*/
 
                     if (auto handle = sceneTree.AttachNode(parent, node.name); handle)
                         handles.emplace_back(*handle);
