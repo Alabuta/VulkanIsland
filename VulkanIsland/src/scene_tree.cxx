@@ -260,7 +260,7 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle, std::st
         handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
         nodes.emplace_back(childrenDepth, index);
 
-        childrenLayer.emplace_back(parentHandle, *handle, name);
+        childrenLayer.emplace_back(parentHandle, *handle, entityX->entities.create(), name);
 
         ++parentChildren.end;
     }
@@ -275,7 +275,7 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle, std::st
             nodes.emplace_back(childrenDepth, index);
 
             auto it = std::next(std::begin(childrenLayer), index);
-            childrenLayer.emplace(it, parentHandle, *handle, name);
+            childrenLayer.emplace(it, parentHandle, *handle, entityX->entities.create(), name);
 
             ++parentChildren.end;
 
@@ -349,8 +349,8 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle, std::st
 
             std::move(it_begin, it_end, it_new_begin);
 
-            *std::prev(it_new_end) = NodeInfo{parentHandle, *handle, name};
-            //childrenLayer.emplace(it_new_end, parentHandle, *handle, name);
+            *std::prev(it_new_end) = NodeInfo{parentHandle, *handle, entityX->entities.create(), name};
+            //childrenLayer.emplace(it_new_end, parentHandle, *handle, entityX->entities.create(), name);
 
             layerChunks.insert(std::begin(newChunks), std::end(newChunks));
             //std::move(std::begin(newChunks), std::end(newChunks), std::back_inserter(layerChunks));
@@ -367,7 +367,7 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle, std::st
             nodes.emplace_back(childrenDepth, index);
 
             auto it = std::next(std::begin(childrenLayer), index);
-            childrenLayer.emplace(it, parentHandle, *handle, name);
+            childrenLayer.emplace(it, parentHandle, *handle, entityX->entities.create(), name);
 
             parentChildren.begin = index;
             parentChildren.end = parentChildren.begin + 1;
@@ -378,7 +378,7 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle, std::st
         else {
             handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
             auto &&node = nodes.emplace_back(childrenDepth, std::size(childrenLayer));
-            childrenLayer.emplace_back(parentHandle, *handle, name);
+            childrenLayer.emplace_back(parentHandle, *handle, entityX->entities.create(), name);
 
             parentChildren.begin = node.offset;
             parentChildren.end = parentChildren.begin + 1;
@@ -430,6 +430,8 @@ void SceneTree::RemoveNode(NodeHandle handle)
 
     if (childrenCount > 0)
         DestroyChildren(handle);
+
+    info.entity.destroy();
 
     auto &&layerChunks = layersChunks.at(node.depth);
     layerChunks.emplace(node.offset);

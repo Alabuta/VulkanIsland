@@ -722,11 +722,6 @@ std::optional<attribute::buffer_t> instantiate_attribute_buffer(std::string_view
 }
 }
 
-void IterateSubtree()
-{
-    ;
-}
-
 bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &_indices)
 {
     auto current_path = fs::current_path();
@@ -796,8 +791,28 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
                     /*if (node.mesh)
                         continue;*/
 
-                    if (auto handle = sceneTree.AttachNode(parent, node.name); handle)
+                    if (auto handle = sceneTree.AttachNode(parent, node.name); handle) {
                         handles.emplace_back(*handle);
+
+                        std::visit([&sceneTree, handle] (auto &&transform)
+                        {
+                            using T = std::decay_t<decltype(transform)>;
+
+                            if constexpr (std::is_same_v<T, mat4>)
+                                sceneTree.AddComponent<Transform>(*handle, glm::make_mat4(std::data(transform.m)), glm::mat4{1.f});
+
+                            else {
+                                auto &&[position, rotation, scale] = transform;
+
+                                auto matrix = glm::translate(glm::mat4{1.f}, glm::make_vec3(std::data(position.xyz)));
+                                matrix = matrix * glm::mat4_cast(glm::make_quat(std::data(rotation.xyzw)));
+                                matrix = glm::scale(matrix, glm::make_vec3(std::data(scale.xyz)));
+
+                                sceneTree.AddComponent<Transform>(*handle, std::move(matrix), glm::mat4{1.f});
+                            }
+
+                        }, node.transform);
+                    }
                 }
 
                 handlesStack.emplace_back(std::move(handles));
@@ -817,6 +832,7 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
             handlesStack.back().pop_back();
         }
 
+        sceneTree.update();
         return sceneTree;
     });
 

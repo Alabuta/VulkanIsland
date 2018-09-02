@@ -4,8 +4,30 @@
 #include <string_view>
 #include <optional>
 
+#include "entityx/entityx.h"
+namespace ex = entityx;
+
 #include "main.hxx"
 #include "helpers.hxx"
+#include "math.hxx"
+
+struct Transform final {
+    glm::mat4 localMatrix;
+    glm::mat4 worldMatrix;
+
+    template<class T1, class T2, std::enable_if_t<are_same_v<glm::mat4, T1, T2>>...>
+    Transform(T1 &&localMatrix, T2 &&worldMatrix) : localMatrix{std::forward<T1>(localMatrix)}, worldMatrix{std::forward<T2>(worldMatrix)} {}
+};
+
+struct TransformSytem final : public ex::System<Transform> {
+    void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) final
+    {
+        es.each<Transform>([] (auto &&entity, auto &&transform)
+        {
+            std::cout << entity << '\t' << transform.localMatrix << '\n';
+        });
+    }
+};
 
 using node_index_t = std::size_t;
 auto constexpr kINVALID_INDEX{std::numeric_limits<node_index_t>::max()};
@@ -27,13 +49,15 @@ struct NodeInfo final {
     NodeHandle parent{NodeHandle::nINVALID_HANDLE};
     NodeHandle handle{NodeHandle::nINVALID_HANDLE};
 
+    ex::Entity entity;
+
     std::string name;
 
     struct ChildrenRange final {
         node_index_t begin{0}, end{0};
     } children;
 
-    NodeInfo(NodeHandle parent, NodeHandle handle, std::string_view name) : parent{parent}, handle{handle}, name{name} { }
+    NodeInfo(NodeHandle parent, NodeHandle handle, ex::Entity entity, std::string_view name) : parent{parent}, handle{handle}, entity{entity}, name{name} { }
 
     NodeInfo() = default;
 };
@@ -43,8 +67,13 @@ public:
 
     SceneTree(std::string_view name = "noname"sv) : name{name}
     {
+        entityX = std::make_unique<ex::EntityX>();
+
+        entityX->systems.add<TransformSytem>();
+        entityX->systems.configure();
+
         nodes.emplace_back(0, 0);
-        layers.emplace_back(1, NodeInfo{NodeHandle::nINVALID_HANDLE, root(), name});
+        layers.emplace_back(1, NodeInfo{NodeHandle::nINVALID_HANDLE, root(), entityX->entities.create(), name});
     }
 
     bool isNodeHandleValid(NodeHandle handle) const noexcept { return handle != NodeHandle::nINVALID_HANDLE; }
@@ -61,7 +90,31 @@ public:
 
     void SetName(NodeHandle handle, std::string_view name);
 
+    template<class T, class... Ts>
+    void AddComponent(NodeHandle handle, Ts &&...args)
+    {
+        if (!isNodeHandleValid(handle))
+            return;
+
+        auto &&node = nodes.at(static_cast<std::size_t>(handle));
+
+        if (!isNodeValid(node))
+            return;
+
+        auto &&layer = layers.at(node.depth);
+        auto &&info = layer.at(node.offset);
+
+        info.entity.assign<T>(std::forward<Ts>(args)...);
+    }
+
+    void update()
+    {
+        entityX->systems.update_all(0.f);
+    }
+
 private:
+    std::unique_ptr<ex::EntityX> entityX;
+
     std::string name;
 
     std::vector<Node> nodes;
