@@ -1,5 +1,10 @@
 #include "scene_tree.h"
 
+#ifdef _DEBUG
+#pragma comment(lib, "entityx-d.lib")
+#else
+#pragma comment(lib, "entityx.lib")
+#endif
 
 
 std::optional<NodeHandle> SceneTree::AddChild([[maybe_unused]] NodeHandle parentHandle)
