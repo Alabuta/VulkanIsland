@@ -24,7 +24,7 @@ struct TransformSytem final : public ex::System<Transform> {
     {
         es.each<Transform>([] (auto &&entity, auto &&transform)
         {
-            std::cout << entity << '\t' << transform.localMatrix << '\n';
+            std::cout << entity << '\n';// << transform.localMatrix << '\n';
         });
     }
 };

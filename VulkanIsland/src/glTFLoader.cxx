@@ -17,8 +17,8 @@ namespace fs = boost::filesystem;
 #pragma warning(pop)
 #endif
 
-#include "glTFLoader.h"
-#include "scene_tree.h"
+#include "glTFLoader.hxx"
+#include "scene_tree.hxx"
 
 namespace glTF {
 auto constexpr kBYTE                 = 0x1400; // 5120

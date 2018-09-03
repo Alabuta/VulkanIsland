@@ -34,7 +34,7 @@
 #include "mesh_loader.hxx"
 #include "TARGA_loader.hxx"
 
-#include "scene_tree.h"
+#include "scene_tree.hxx"
 
 
 #define USE_GLM 1

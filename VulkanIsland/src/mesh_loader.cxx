@@ -13,7 +13,7 @@
 
 #include "helpers.hxx"
 #include "mesh_loader.hxx"
-#include "glTFLoader.h"
+#include "glTFLoader.hxx"
 
 bool LoadOBJ(fs::path const &path, std::vector<vec3> &positions, std::vector<vec3> &normals, std::vector<vec2> &uvs, std::vector<index_t> &indices)
 {

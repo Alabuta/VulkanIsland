@@ -39,6 +39,8 @@ set(SOURCE_FILES
         src/mesh_loader.cxx                     src/mesh_loader.hxx
         src/swapchain.cxx                       src/swapchain.hxx
         src/TARGA_loader.cxx                    src/TARGA_loader.hxx
+        src/glTFLoader.cxx                      src/glTFLoader.hxx
+        src/scene_tree.cxx                      src/scene_tree.hxx
         src/main.cxx                            src/main.hxx
 )
 
@@ -96,4 +98,5 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
         glm
         glfw3
+        entityx
 )

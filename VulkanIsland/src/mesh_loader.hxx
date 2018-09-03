@@ -18,7 +18,7 @@ namespace fs = boost::filesystem;
 #include "helpers.hxx"
 #include "math.hxx"
 
-#include "glTFLoader.h"
+#include "glTFLoader.hxx"
 
 struct index_t {
     std::size_t p, n, t;

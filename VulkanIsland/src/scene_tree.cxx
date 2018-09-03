@@ -1,4 +1,4 @@
-#include "scene_tree.h"
+#include "scene_tree.hxx"
 
 #ifdef _DEBUG
 #pragma comment(lib, "entityx-d.lib")
