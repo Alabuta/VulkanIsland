@@ -250,7 +250,7 @@
     <ClInclude Include="src\queues.hxx" />
     <ClInclude Include="src\queue_builder.hxx" />
     <ClInclude Include="src\resource.hxx" />
-    <ClInclude Include="src\scene_tree.h" />
+    <ClInclude Include="src\scene_tree.hxx" />
     <ClInclude Include="src\swapchain.hxx" />
     <ClInclude Include="src\TARGA_loader.hxx" />
   </ItemGroup>

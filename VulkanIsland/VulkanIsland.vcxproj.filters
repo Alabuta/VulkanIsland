@@ -103,7 +103,7 @@
     <ClInclude Include="src\glTFLoader.h">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\scene_tree.h">
+    <ClInclude Include="src\scene_tree.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
