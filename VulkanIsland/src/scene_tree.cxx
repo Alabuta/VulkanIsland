@@ -1,3 +1,8 @@
+#ifdef _MSC_VER
+#define USE_EXECUTION_POLICIES
+#include <execution>
+#endif
+
 #include "scene_tree.hxx"
 
 #ifdef _DEBUG
@@ -479,4 +484,39 @@ void SceneTree::SetName(NodeHandle handle, std::string_view name)
     auto &&info = layers.at(node.depth).at(node.offset);
 
     info.name = name;
+}
+
+void SceneTree::Update()
+{
+    for (auto &&layer : layers) {
+        auto it_begin = std::find_if(std::begin(layer), std::end(layer), [this] (auto &&nodeInfo)
+        {
+            return isNodeHandleValid(nodeInfo.handle) && isNodeHandleValid(nodeInfo.parent);
+        });
+
+        while (it_begin != std::end(layer)) {
+            auto parentTransformHandle = it_begin->entity.component<Transform>();
+
+            auto it = std::adjacent_find(it_begin, std::end(layer), [] (auto &&lhs, auto &&rhs)
+            {
+                return lhs.parent != rhs.parent;
+            });
+
+            if (it != std::end(layer))
+                it = std::next(it);
+
+            std::for_each(std::execution::par_unseq, it_begin, it, [parentTransformHandle] (auto &&nodeInfo)
+            {
+                auto transformHandle = nodeInfo.entity.component<Transform>();
+                transformHandle->worldMatrix = parentTransformHandle->worldMatrix * transformHandle->localMatrix;
+            });
+
+            it_begin = std::find_if(it, std::end(layer), [this] (auto &&nodeInfo)
+            {
+                return isNodeHandleValid(nodeInfo.handle) && isNodeHandleValid(nodeInfo.parent);
+            });
+        }
+    }
+
+    entityX->systems.update_all(0.f);
 }
