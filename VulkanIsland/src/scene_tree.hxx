@@ -19,12 +19,25 @@ struct Transform final {
     Transform(T1 &&localMatrix, T2 &&worldMatrix) : localMatrix{std::forward<T1>(localMatrix)}, worldMatrix{std::forward<T2>(worldMatrix)} {}
 };
 
+template<class T, std::enable_if_t<std::is_same_v<std::decay_t<T>, glm::mat4>>...>
+inline std::ostream &operator<< (std::ostream &stream, T &&m)
+{
+    stream << std::setprecision(4) << std::fixed;
+
+    stream << m[0][0] << ' ' << m[0][1] << ' ' << m[0][2] << ' ' << m[0][3] << '\n';
+    stream << m[1][0] << ' ' << m[1][1] << ' ' << m[1][2] << ' ' << m[1][3] << '\n';
+    stream << m[2][0] << ' ' << m[2][1] << ' ' << m[2][2] << ' ' << m[2][3] << '\n';
+    stream << m[3][0] << ' ' << m[3][1] << ' ' << m[3][2] << ' ' << m[3][3];
+
+    return stream;
+}
+
 struct TransformSytem final : public ex::System<Transform> {
     void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) final
     {
         es.each<Transform>([] (auto &&entity, auto &&transform)
         {
-            std::cout << entity << '\n';// << transform.localMatrix << '\n';
+            std::cout << entity << "\n" << transform.localMatrix << "\n\n" << transform.worldMatrix << "\n\n";
         });
     }
 };
@@ -107,10 +120,7 @@ public:
         info.entity.assign<T>(std::forward<Ts>(args)...);
     }
 
-    void update()
-    {
-        entityX->systems.update_all(0.f);
-    }
+    void Update();
 
 private:
     std::unique_ptr<ex::EntityX> entityX;

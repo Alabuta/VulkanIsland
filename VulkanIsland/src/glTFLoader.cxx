@@ -832,7 +832,7 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
             handlesStack.back().pop_back();
         }
 
-        sceneTree.update();
+        sceneTree.Update();
         return sceneTree;
     });
 
