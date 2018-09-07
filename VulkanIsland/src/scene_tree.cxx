@@ -5,10 +5,12 @@
 
 #include "scene_tree.hxx"
 
+#ifdef _MSC_VER
 #ifdef _DEBUG
 #pragma comment(lib, "entityx-d.lib")
 #else
 #pragma comment(lib, "entityx.lib")
+#endif
 #endif
 
 
@@ -505,11 +507,19 @@ void SceneTree::Update()
             if (it != std::end(layer))
                 it = std::next(it);
 
+#ifdef _MSC_VER
             std::for_each(std::execution::par_unseq, it_begin, it, [parentTransformHandle] (auto &&nodeInfo)
             {
                 auto transformHandle = nodeInfo.entity.component<Transform>();
                 transformHandle->worldMatrix = parentTransformHandle->worldMatrix * transformHandle->localMatrix;
             });
+#else
+            std::for_each(it_begin, it, [parentTransformHandle] (auto &&nodeInfo)
+            {
+                auto transformHandle = nodeInfo.entity.component<Transform>();
+                transformHandle->worldMatrix = parentTransformHandle->worldMatrix * transformHandle->localMatrix;
+            });
+#endif
 
             it_begin = std::find_if(it, std::end(layer), [this] (auto &&nodeInfo)
             {

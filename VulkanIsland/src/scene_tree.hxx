@@ -3,6 +3,7 @@
 #include <string>
 #include <string_view>
 #include <optional>
+#include <iomanip>
 
 #include "entityx/entityx.h"
 namespace ex = entityx;
