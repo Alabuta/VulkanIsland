@@ -1,9 +1,8 @@
 #pragma once
 
+#include <optional>
 #include <string>
 #include <string_view>
-#include <optional>
-#include <iomanip>
 
 #include "entityx/entityx.h"
 namespace ex = entityx;
@@ -11,24 +10,7 @@ namespace ex = entityx;
 #include "main.hxx"
 #include "helpers.hxx"
 #include "math.hxx"
-
-struct Transform final {
-    glm::mat4 localMatrix;
-    glm::mat4 worldMatrix;
-
-    template<class T1, class T2, std::enable_if_t<are_same_v<glm::mat4, T1, T2>>...>
-    Transform(T1 &&localMatrix, T2 &&worldMatrix) : localMatrix{std::forward<T1>(localMatrix)}, worldMatrix{std::forward<T2>(worldMatrix)} {}
-};
-
-struct TransformSytem final : public ex::System<Transform> {
-    void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) final
-    {
-        es.each<Transform>([] (auto &&entity, auto &&transform)
-        {
-            std::cout << entity << "\n" << transform.localMatrix << "\n\n" << transform.worldMatrix << "\n\n";
-        });
-    }
-};
+#include "transform.hxx"
 
 using node_index_t = std::size_t;
 auto constexpr kINVALID_INDEX{std::numeric_limits<node_index_t>::max()};

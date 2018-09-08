@@ -253,6 +253,7 @@
     <ClInclude Include="src\scene_tree.hxx" />
     <ClInclude Include="src\swapchain.hxx" />
     <ClInclude Include="src\TARGA_loader.hxx" />
+    <ClInclude Include="src\transform.hxx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag" />

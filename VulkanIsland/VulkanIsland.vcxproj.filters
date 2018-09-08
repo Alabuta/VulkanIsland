@@ -106,6 +106,9 @@
     <ClInclude Include="src\scene_tree.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\transform.hxx">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="shaders\shader.frag">
