@@ -605,8 +605,8 @@ CreateUniformBuffer(VulkanDevice &device, std::size_t size)
 template<class T, class U, typename std::enable_if_t<is_iterable_v<std::decay_t<T>> && is_iterable_v<std::decay_t<U>>>...>
 void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass renderPass, VkCommandPool commandPool, T &commandBuffers, U &framebuffers)
 {
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkCommandBuffer>, "iterable object does not contain VkCommandBuffer elements");
-    static_assert(std::is_same_v<typename std::decay_t<U>::value_type, VkFramebuffer>, "iterable object does not contain VkFramebuffer elements");
+    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkCommandBuffer>, "iterable object has to contain VkCommandBuffer elements");
+    static_assert(std::is_same_v<typename std::decay_t<U>::value_type, VkFramebuffer>, "iterable object has to contain VkFramebuffer elements");
 
     commandBuffers.resize(framebuffers.size());
 
@@ -634,7 +634,7 @@ void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass r
         if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
             throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
 
-        auto const clearColors = make_array(
+        auto constexpr clearColors = make_array(
             VkClearValue{{{0.64f, 0.64f, 0.64f, 1.f}}},
             VkClearValue{{{kREVERSED_DEPTH ? 0 : 1, 0}}}
         );
