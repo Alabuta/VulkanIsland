@@ -245,6 +245,7 @@
     <ClInclude Include="src\instance.hxx" />
     <ClInclude Include="src\math.hxx" />
     <ClInclude Include="src\main.hxx" />
+    <ClInclude Include="src\mesh.hxx" />
     <ClInclude Include="src\mesh_loader.hxx" />
     <ClInclude Include="src\program.hxx" />
     <ClInclude Include="src\queues.hxx" />

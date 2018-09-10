@@ -19,6 +19,7 @@ namespace fs = boost::filesystem;
 
 #include "glTFLoader.hxx"
 #include "scene_tree.hxx"
+#include "mesh.hxx"
 
 namespace glTF {
 auto constexpr kBYTE                 = 0x1400; // 5120
@@ -73,48 +74,6 @@ using attribute_t = std::variant<
 using buffer_t = wrap_variant_by_vector<attribute_t>::type;
 
 
-enum class eSEMANTIC : std::size_t {
-    nPOSITION = 0,
-    nNORMAL,
-    nTEXCOORD_0,
-    nTEXCOORD_1,
-    nTANGENT,
-    nCOLOR_0,
-    nJOINTS_0,
-    nWEIGHTS_0
-};
-
-namespace semantic {
-template<eSEMANTIC S>
-struct attribute {
-    static auto constexpr semantic{S};
-
-    auto constexpr operator< (attribute rhs) const noexcept
-    {
-        return semantic < rhs.semantic;
-    }
-};
-
-struct position : attribute<eSEMANTIC::nPOSITION> {};
-struct normal : attribute<eSEMANTIC::nNORMAL> {};
-struct tex_coord_0 : attribute<eSEMANTIC::nTEXCOORD_0> {};
-struct tex_coord_1 : attribute<eSEMANTIC::nTEXCOORD_1> {};
-struct tangent : attribute<eSEMANTIC::nTANGENT> {};
-struct color_0 : attribute<eSEMANTIC::nCOLOR_0> {};
-struct joints_0 : attribute<eSEMANTIC::nJOINTS_0> {};
-struct weights_0 : attribute<eSEMANTIC::nWEIGHTS_0> {};
-}
-
-using semantic_t = std::variant<
-    semantic::position,
-    semantic::normal,
-    semantic::tex_coord_0,
-    semantic::tex_coord_1,
-    semantic::tangent,
-    semantic::color_0,
-    semantic::joints_0,
-    semantic::weights_0
->;
 
 using vertex_attribute_t = std::variant<
     std::pair<semantic::position, attribute_t>,
@@ -136,6 +95,33 @@ using accessor_t = std::variant<
     std::pair<semantic::color_0, std::size_t>,
     std::pair<semantic::joints_0, std::size_t>,
     std::pair<semantic::weights_0, std::size_t>
+>;
+
+using vertex_format_t = std::variant<
+    std::pair<
+        std::tuple<semantic::position>,
+        std::tuple<vec<3, std::float_t>>
+    >,
+    std::pair<
+        std::tuple<semantic::position, semantic::normal>,
+        std::tuple<vec<3, std::float_t>, vec<3, std::float_t>>
+    >,
+    std::pair<
+        std::tuple<semantic::position, semantic::tex_coord_0>,
+        std::tuple<vec<3, std::float_t>, vec<2, std::float_t>>
+    >,
+    std::pair<
+        std::tuple<semantic::position, semantic::normal, semantic::tex_coord_0>,
+        std::tuple<vec<3, std::float_t>, vec<3, std::float_t>, vec<2, std::float_t>>
+    >,
+    std::pair<
+        std::tuple<semantic::position, semantic::normal, semantic::tangent>,
+        std::tuple<vec<3, std::float_t>, vec<3, std::float_t>, vec<4, std::float_t>>
+    >,
+    std::pair<
+        std::tuple<semantic::position, semantic::normal, semantic::tex_coord_0, semantic::tangent>,
+        std::tuple<vec<3, std::float_t>, vec<3, std::float_t>, vec<2, std::float_t>, vec<4, std::float_t>>
+    >
 >;
 
 using vertex_buffer_t = std::variant<
@@ -165,6 +151,7 @@ using vertex_buffer_t = std::variant<
     >
 >;
 
+#if NOT_YET_IMPLEMENTED
 using vertexx_t = std::variant<
     std::tuple<
         std::pair<semantic::position, vec<3, std::float_t>>
@@ -194,6 +181,7 @@ using vertexx_t = std::variant<
         std::pair<semantic::tangent, vec<4, std::float_t>>
     >
 >;
+#endif
 
 std::optional<semantic_t> get_semantic(std::string_view name)
 {
