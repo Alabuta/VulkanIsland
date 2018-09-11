@@ -4,13 +4,16 @@
 #include <string>
 #include <string_view>
 
-#include "entityx/entityx.h"
+#include "entityx/entityx.hh"
 namespace ex = entityx;
 
 #include "main.hxx"
 #include "helpers.hxx"
 #include "math.hxx"
 #include "transform.hxx"
+
+using EntityManager = entityx::EntityX<entityx::DefaultStorage, 0, Transform>;
+using Entity = EntityManager::Entity;
 
 using node_index_t = std::size_t;
 auto constexpr kINVALID_INDEX{std::numeric_limits<node_index_t>::max()};
@@ -32,7 +35,7 @@ struct NodeInfo final {
     NodeHandle parent{NodeHandle::nINVALID_HANDLE};
     NodeHandle handle{NodeHandle::nINVALID_HANDLE};
 
-    ex::Entity entity;
+    Entity entity;
 
     std::string name;
 
@@ -40,7 +43,7 @@ struct NodeInfo final {
         node_index_t begin{0}, end{0};
     } children;
 
-    NodeInfo(NodeHandle parent, NodeHandle handle, ex::Entity entity, std::string_view name) : parent{parent}, handle{handle}, entity{entity}, name{name} { }
+    NodeInfo(NodeHandle parent, NodeHandle handle, Entity entity, std::string_view name) : parent{parent}, handle{handle}, entity{entity}, name{name} { }
 
     NodeInfo() = default;
 };
@@ -50,13 +53,16 @@ public:
 
     SceneTree(std::string_view name = "noname"sv) : name{name}
     {
-        entityX = std::make_unique<ex::EntityX>();
+        //entities = std::make_unique<EntityManager>();
 
-        entityX->systems.add<TransformSytem>();
-        entityX->systems.configure();
+        //entityX->systems.add<TransformSytem>();
+        //entityX->systems.configure();
+
+        auto rootEntity = entities.create();
+        rootEntity.assign<Transform>(glm::mat4{1.f}, glm::mat4{1.f});
 
         nodes.emplace_back(0, 0);
-        layers.emplace_back(1, NodeInfo{NodeHandle::nINVALID_HANDLE, root(), entityX->entities.create(), name});
+        layers.emplace_back(1, NodeInfo{NodeHandle::nINVALID_HANDLE, root(), rootEntity, name});
     }
 
     bool isNodeHandleValid(NodeHandle handle) const noexcept { return handle != NodeHandle::nINVALID_HANDLE; }
@@ -90,7 +96,8 @@ public:
     void Update();
 
 private:
-    std::unique_ptr<ex::EntityX> entityX;
+    //std::unique_ptr<EntityManager> entities;
+    EntityManager entities;
 
     std::string name;
 

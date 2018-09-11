@@ -2,7 +2,7 @@
 
 #include <iomanip>
 
-#include "entityx/entityx.h"
+#include "entityx/entityx.hh"
 namespace ex = entityx;
 
 #include "main.hxx"
@@ -17,7 +17,7 @@ struct Transform final {
     Transform(T1 &&localMatrix, T2 &&worldMatrix) : localMatrix{std::forward<T1>(localMatrix)}, worldMatrix{std::forward<T2>(worldMatrix)} {}
 };
 
-struct TransformSytem final : public ex::System<Transform> {
+/*struct TransformSytem final : public ex::System<Transform> {
     void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) final
     {
         es.each<Transform>([] (auto &&entity, auto &&transform)
@@ -25,4 +25,4 @@ struct TransformSytem final : public ex::System<Transform> {
             std::cout << entity << "\n" << transform.localMatrix << "\n\n" << transform.worldMatrix << "\n\n";
         });
     }
-};
+};*/

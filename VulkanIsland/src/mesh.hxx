@@ -2,7 +2,7 @@
 
 #include <iomanip>
 
-#include "entityx/entityx.h"
+#include "entityx/entityx.hh"
 namespace ex = entityx;
 
 #include "main.hxx"
@@ -55,7 +55,7 @@ using semantic_t = std::variant<
     semantic::weights_0
 >;
 
-struct Mesh final {
+/*struct Mesh final {
     glm::mat4 localMatrix;
     glm::mat4 worldMatrix;
 
@@ -71,4 +71,4 @@ struct MeshSytem final : public ex::System<Mesh> {
             ;
         });
     }
-};
+};*/
