@@ -63,9 +63,6 @@ public:
 
     constexpr NodeHandle root() const noexcept { return static_cast<NodeHandle>(0); }
 
-    std::optional<NodeHandle> AddChild(NodeHandle parentHandle);
-    void DestroyNode(NodeHandle handle);
-
     std::optional<NodeHandle> AttachNode(NodeHandle parentHandle, std::string_view name = "noname"sv);
 
     void RemoveNode(NodeHandle handle);

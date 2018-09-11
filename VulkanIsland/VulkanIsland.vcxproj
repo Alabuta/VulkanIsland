@@ -239,7 +239,7 @@
     <ClInclude Include="src\debug.hxx" />
     <ClInclude Include="src\device.hxx" />
     <ClInclude Include="src\device_defaults.hxx" />
-    <ClInclude Include="src\glTFLoader.h" />
+    <ClInclude Include="src\glTFLoader.hxx" />
     <ClInclude Include="src\image.hxx" />
     <ClInclude Include="src\helpers.hxx" />
     <ClInclude Include="src\instance.hxx" />
