@@ -58,7 +58,7 @@ public:
         //entityX->systems.add<TransformSytem>();
         //entityX->systems.configure();
 
-        auto rootEntity = entities.create();
+        auto rootEntity = entities->create();
         rootEntity.assign<Transform>(glm::mat4{1.f}, glm::mat4{1.f});
 
         nodes.emplace_back(0, 0);
@@ -96,8 +96,8 @@ public:
     void Update();
 
 private:
-    //std::unique_ptr<EntityManager> entities;
-    EntityManager entities;
+    std::unique_ptr<EntityManager> entities;
+    //EntityManager entities;
 
     std::string name;
 

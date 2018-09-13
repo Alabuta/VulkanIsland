@@ -1054,6 +1054,7 @@ try {
     //_CrtSetBreakAlloc(84);
 #endif
 
+#if 0
     SceneTree sceneTree;
 
     if (auto node = sceneTree.AttachNode(sceneTree.root()); node)
@@ -1072,6 +1073,7 @@ try {
 
         sceneTree.AddChild(*node);
     }
+#endif
 
     /*
     AttachNode(parent node handle)
