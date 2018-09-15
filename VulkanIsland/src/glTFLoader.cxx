@@ -97,60 +97,6 @@ using accessor_t = std::variant<
     std::pair<semantic::weights_0, std::size_t>
 >;
 
-using vertex_format_t = std::variant<
-    std::pair<
-        std::tuple<semantic::position>,
-        std::tuple<vec<3, std::float_t>>
-    >,
-    std::pair<
-        std::tuple<semantic::position, semantic::normal>,
-        std::tuple<vec<3, std::float_t>, vec<3, std::float_t>>
-    >,
-    std::pair<
-        std::tuple<semantic::position, semantic::tex_coord_0>,
-        std::tuple<vec<3, std::float_t>, vec<2, std::float_t>>
-    >,
-    std::pair<
-        std::tuple<semantic::position, semantic::normal, semantic::tex_coord_0>,
-        std::tuple<vec<3, std::float_t>, vec<3, std::float_t>, vec<2, std::float_t>>
-    >,
-    std::pair<
-        std::tuple<semantic::position, semantic::normal, semantic::tangent>,
-        std::tuple<vec<3, std::float_t>, vec<3, std::float_t>, vec<4, std::float_t>>
-    >,
-    std::pair<
-        std::tuple<semantic::position, semantic::normal, semantic::tex_coord_0, semantic::tangent>,
-        std::tuple<vec<3, std::float_t>, vec<3, std::float_t>, vec<2, std::float_t>, vec<4, std::float_t>>
-    >
->;
-
-using vertex_buffer_t = std::variant<
-    std::pair<
-        std::tuple<semantic::position>,
-        std::vector<std::tuple<vec<3, std::float_t>>>
-    >,
-    std::pair<
-        std::tuple<semantic::position, semantic::normal>,
-        std::vector<std::tuple<vec<3, std::float_t>, vec<3, std::float_t>>>
-    >,
-    std::pair<
-        std::tuple<semantic::position, semantic::tex_coord_0>,
-        std::vector<std::tuple<vec<3, std::float_t>, vec<2, std::float_t>>>
-    >,
-    std::pair<
-        std::tuple<semantic::position, semantic::normal, semantic::tex_coord_0>,
-        std::vector<std::tuple<vec<3, std::float_t>, vec<3, std::float_t>, vec<2, std::float_t>>>
-    >,
-    std::pair<
-        std::tuple<semantic::position, semantic::normal, semantic::tangent>,
-        std::vector<std::tuple<vec<3, std::float_t>, vec<3, std::float_t>, vec<4, std::float_t>>>
-    >,
-    std::pair<
-        std::tuple<semantic::position, semantic::normal, semantic::tex_coord_0, semantic::tangent>,
-        std::vector<std::tuple<vec<3, std::float_t>, vec<3, std::float_t>, vec<2, std::float_t>, vec<4, std::float_t>>>
-    >
->;
-
 #if NOT_YET_IMPLEMENTED
 using vertexx_t = std::variant<
     std::tuple<
@@ -892,7 +838,7 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
         }
     }
 
-    glTF::attribute::vertex_buffer_t vertexBuffer;
+    vertex_buffer_t vertexBuffer;
 
     std::vector<glTF::attribute::vertex_attribute_t> vertexAttributes;
 
