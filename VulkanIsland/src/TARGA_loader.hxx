@@ -5,25 +5,13 @@
 #include <string_view>
 #include <variant>
 
+#include "math.hxx"
 
 enum class ePIXEL_LAYOUT {
     nUNDEFINED = 0, nRED, nRG, nRGB, nBGR, nRGBA, nBGRA
 };
 
 using byte_t = std::uint8_t;
-
-template<std::size_t N, class T>
-struct vec {
-    static auto constexpr size = N;
-    using value_type = T;
-
-    std::array<T, N> array;
-
-    vec() = default;
-
-    template<class... Ts, typename = std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == size>>
-    constexpr vec(Ts... values) noexcept : array{static_cast<typename std::decay_t<decltype(array)>::value_type>(values)...} { }
-};
 
 using texel_t = std::variant<
     vec<1, std::uint8_t>,

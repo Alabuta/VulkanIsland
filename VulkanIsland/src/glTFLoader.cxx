@@ -667,25 +667,25 @@ std::optional<attribute::buffer_t> instantiate_attribute_buffer(std::int32_t com
 {
     switch (componentType) {
         case glTF::kBYTE:
-            return std::vector<glTF::vec<N, std::int8_t>>();
+            return std::vector<vec<N, std::int8_t>>();
 
         case glTF::kUNSIGNED_BYTE:
-            return std::vector<glTF::vec<N, std::uint8_t>>();
+            return std::vector<vec<N, std::uint8_t>>();
 
         case glTF::kSHORT:
-            return std::vector<glTF::vec<N, std::int16_t>>();
+            return std::vector<vec<N, std::int16_t>>();
 
         case glTF::kUNSIGNED_SHORT:
-            return std::vector<glTF::vec<N, std::uint16_t>>();
+            return std::vector<vec<N, std::uint16_t>>();
 
         case glTF::kINT:
-            return std::vector<glTF::vec<N, std::int32_t>>();
+            return std::vector<vec<N, std::int32_t>>();
 
         case glTF::kUNSIGNED_INT:
-            return std::vector<glTF::vec<N, std::uint32_t>>();
+            return std::vector<vec<N, std::uint32_t>>();
 
         case glTF::kFLOAT:
-            return std::vector<glTF::vec<N, std::float_t>>();
+            return std::vector<vec<N, std::float_t>>();
 
         default:
             return { };
@@ -708,9 +708,9 @@ std::optional<attribute::buffer_t> instantiate_attribute_buffer(std::string_view
 
     return std::nullopt;
 }
-}
 
-bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &_indices)
+
+bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &_indices)
 {
     auto current_path = fs::current_path();
 
@@ -929,10 +929,10 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
             }
 #endif
 
-            auto &&positions = std::get<std::vector<glTF::vec<3, std::float_t>>>(attributeBuffers.at(*primitive.attributes.position));
-            auto &&normals = std::get<std::vector<glTF::vec<3, std::float_t>>>(attributeBuffers.at(*primitive.attributes.normal));
-            auto &&uvs = std::get<std::vector<glTF::vec<2, std::float_t>>>(attributeBuffers.at(*primitive.attributes.texCoord0));
-            //std::vector<glTF::vec<2, std::float_t>> uvs(normals.size());
+            auto &&positions = std::get<std::vector<vec<3, std::float_t>>>(attributeBuffers.at(*primitive.attributes.position));
+            auto &&normals = std::get<std::vector<vec<3, std::float_t>>>(attributeBuffers.at(*primitive.attributes.normal));
+            auto &&uvs = std::get<std::vector<vec<2, std::float_t>>>(attributeBuffers.at(*primitive.attributes.texCoord0));
+            //std::vector<vec<2, std::float_t>> uvs(normals.size());
 
             vertices.reserve(std::size(positions));
 
@@ -943,4 +943,4 @@ bool LoadGLTF(std::string_view name, std::vector<Vertex> &vertices, std::vector<
 
     return true;
 }
-
+}

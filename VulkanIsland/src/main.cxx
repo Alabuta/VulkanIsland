@@ -899,7 +899,7 @@ void InitVulkan(GLFWwindow *window, app_t &app)
 
     else app.texture.sampler = result;
 
-    if (auto result = LoadGLTF("inheritance"sv, app.vertices, app.indices); !result)
+    if (auto result = glTF::LoadScene("sponza"sv, app.vertices, app.indices); !result)
         throw std::runtime_error("failed to load a mesh"s);
 
     if (app.vertexBuffer = InitVertexBuffer(app, *app.vulkanDevice); !app.vertexBuffer)
