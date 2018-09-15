@@ -53,10 +53,7 @@ public:
 
     SceneTree(std::string_view name = "noname"sv) : name{name}
     {
-        //entities = std::make_unique<EntityManager>();
-
-        //entityX->systems.add<TransformSytem>();
-        //entityX->systems.configure();
+        entities = std::make_unique<EntityManager>();
 
         auto rootEntity = entities->create();
         rootEntity.assign<Transform>(glm::mat4{1.f}, glm::mat4{1.f});
@@ -97,7 +94,6 @@ public:
 
 private:
     std::unique_ptr<EntityManager> entities;
-    //EntityManager entities;
 
     std::string name;
 
