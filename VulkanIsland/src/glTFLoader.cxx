@@ -129,6 +129,8 @@ using vertexx_t = std::variant<
 >;
 #endif
 
+
+
 std::optional<semantic_t> get_semantic(std::string_view name)
 {
     if (name == "POSITION"sv)
@@ -158,7 +160,11 @@ std::optional<semantic_t> get_semantic(std::string_view name)
     return { };
 }
 
-
+template<class S, class>
+constexpr auto get_vertex_format_index()
+{
+    return 0;
+}
 
 }
 
@@ -454,7 +460,7 @@ void from_json(nlohmann::json const &j, mesh_t &mesh)
 
 void from_json(nlohmann::json const &j, material_t &material)
 {
-    auto const json_pbrMetallicRoughness = j.at("pbrMetallicRoughness"s);
+    auto &&json_pbrMetallicRoughness = j.at("pbrMetallicRoughness"s);
 
     if (json_pbrMetallicRoughness.count("baseColorTexture"s)) {
         auto const json_baseColorTexture = json_pbrMetallicRoughness.at("baseColorTexture"s);
@@ -518,7 +524,7 @@ void from_json(nlohmann::json const &j, camera_t &camera)
 {
     camera.type = j.at("type"s).get<decltype(camera_t::type)>();
 
-    auto const json_camera = j.at(camera.type);
+    auto &&json_camera = j.at(camera.type);
 
     if (camera.type == "perspective"s) {
         camera_t::perspective_t instance;
@@ -673,7 +679,7 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
     std::ifstream glTFFile(glTF_path.native(), std::ios::in);
 
     if (glTFFile.bad() || glTFFile.fail()) {
-        std::cerr << "can't open file: "s << glTF_path << std::endl;
+        std::cerr << "failed to open file: "s << glTF_path << std::endl;
         return false;
     }
 
@@ -691,17 +697,12 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
 
         auto parent = sceneTree.root();
 
-        std::size_t offset = 0;
+        using handles_t = std::vector<NodeHandle>;
 
-        bool reachedBottom = false;
+        handles_t handles;
+        std::vector<handles_t> handlesStack;
 
-        std::vector<std::vector<NodeHandle>> handlesStack;
-        //handlesStack.emplace_back(1, parent);
-
-        std::vector<NodeHandle> handles;
-
-        std::vector<std::vector<std::size_t>> indicesStack;
-        indicesStack.emplace_back(scene.nodes);
+        std::vector<std::vector<std::size_t>> indicesStack{scene.nodes};
 
         while (!indicesStack.empty()) {
             auto &&indices = indicesStack.back();
@@ -840,7 +841,9 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
 
     vertex_buffer_t vertexBuffer;
 
+#if NOT_YET_IMPLEMENTED
     std::vector<glTF::attribute::vertex_attribute_t> vertexAttributes;
+#endif
 
     for (auto &&mesh : meshes) {
         for (auto &&primitive : mesh.primitives) {
@@ -852,6 +855,16 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
                 });
 
             }, attributeBuffers.at(primitive.indices));
+
+            for (auto &&attributeAccessor : primitive.attributeAccessors) {
+                std::visit([&accessors] (auto attributeAccessor)
+                {
+                    auto [semantic, index] = attributeAccessor;
+
+                    auto &&accessor = accessors.at(index);
+
+                }, attributeAccessor);
+            }
 
 #if NOT_YET_IMPLEMENTED
             for (auto &&accessor : primitive.attributeAccessors) {
