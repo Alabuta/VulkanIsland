@@ -872,7 +872,7 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
                 {
                     auto [semantic, index] = attributeAccessor;
 
-                    auto &&accessor = accessors.at(index);
+                    [[maybe_unused]] auto &&accessor = accessors.at(index);
 
                     using vf_t = std::pair<std::tuple<decltype(semantic)>, std::tuple<int>>;
 

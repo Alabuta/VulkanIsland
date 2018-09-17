@@ -634,10 +634,15 @@ void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass r
         if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
             throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
 
-        auto constexpr clearColors = make_array(
+//        auto constexpr clearColors2 = make_array(
+//            VkClearValue{{{0.64f, 0.64f, 0.64f, 1.f}}},
+//            VkClearValue{{{kREVERSED_DEPTH ? 0 : 1, 0}}}
+//        );
+
+        std::array<VkClearValue, 2> clearColors = {{
             VkClearValue{{{0.64f, 0.64f, 0.64f, 1.f}}},
-            VkClearValue{{{kREVERSED_DEPTH ? 0 : 1, 0}}}
-        );
+            VkClearValue{{kREVERSED_DEPTH ? 0.f : 1.f, 0}}
+        }};
 
         VkRenderPassBeginInfo const renderPassInfo{
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -981,7 +986,7 @@ void UpdateUniformBuffer(VulkanDevice const &device, app_t &app, VulkanBuffer co
     static auto startTime = std::chrono::high_resolution_clock::now();
 
     auto currentTime = std::chrono::high_resolution_clock::now();
-    auto time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
+    [[maybe_unused]] auto time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
 
     app.transforms.model = glm::mat4(1.f);
     //app.transforms.model = glm::rotate(app.transforms.model, .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});

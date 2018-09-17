@@ -1,6 +1,8 @@
 #pragma once
 
 #include <array>
+#include <iomanip>
+
 #include "helpers.hxx"
 
 template<std::size_t N, class T>

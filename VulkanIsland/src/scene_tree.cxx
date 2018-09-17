@@ -212,7 +212,7 @@ void SceneTree::RemoveNode(NodeHandle handle)
     auto &&parentInfo = layers.at(parentNode.depth).at(parentNode.offset);
     auto &&parentChildren = parentInfo.children;
 
-    auto const parentChildrenDepth = parentNode.depth + 1;
+    [[maybe_unused]] auto const parentChildrenDepth = parentNode.depth + 1;
     auto const parentChildrenCount = parentChildren.end - parentChildren.begin;
 
     if (parentChildrenCount > 1) {
@@ -252,8 +252,8 @@ void SceneTree::DestroyChildren(NodeHandle handle)
         return;
 
     while (children.end - children.begin > 0) {
-        auto depth = node.depth + 1;
-        auto offset = children.end;
+        [[maybe_unused]] auto depth = node.depth + 1;
+        [[maybe_unused]] auto offset = children.end;
     }
 
     for (auto depth = node.depth + 1; depth < std::size(layers); ++depth) {
@@ -304,13 +304,13 @@ void SceneTree::Update()
 #ifdef _MSC_VER
             std::for_each(std::execution::par_unseq, it_begin, it, [parentTransformHandle] (auto &&nodeInfo)
             {
-                auto transformHandle = nodeInfo.entity.component<Transform>();
+                auto transformHandle = nodeInfo.entity.template component<Transform>();
                 transformHandle->worldMatrix = parentTransformHandle->worldMatrix * transformHandle->localMatrix;
             });
 #else
             std::for_each(it_begin, it, [parentTransformHandle] (auto &&nodeInfo)
             {
-                auto transformHandle = nodeInfo.entity.component<Transform>();
+                auto transformHandle = nodeInfo.entity.template component<Transform>();
                 transformHandle->worldMatrix = parentTransformHandle->worldMatrix * transformHandle->localMatrix;
             });
 #endif
