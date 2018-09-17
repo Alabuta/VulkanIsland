@@ -97,6 +97,9 @@ using accessor_t = std::variant<
     std::pair<semantic::weights_0, std::size_t>
 >;
 
+//using attribute_accessor_t = std::pair<semantic_t, std::size_t>;
+using attribute_accessor_set_t = std::set<accessor_t>;
+
 #if NOT_YET_IMPLEMENTED
 using vertexx_t = std::variant<
     std::tuple<
@@ -160,10 +163,18 @@ std::optional<semantic_t> get_semantic(std::string_view name)
     return { };
 }
 
-template<class S, class>
+template<class VF, std::size_t I = 0>
 constexpr auto get_vertex_format_index()
 {
-    return 0;
+    using vf_t = std::variant_alternative_t<I, vertex_format_t>;
+
+    if constexpr (std::is_same_v<VF, vf_t>)
+        return I;
+
+    else if constexpr (I + 1 < std::variant_size_v<vertex_format_t>)
+        return get_vertex_format_index<VF, I + 1>();
+
+    else return -1;
 }
 
 }
@@ -839,7 +850,7 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
         }
     }
 
-    vertex_buffer_t vertexBuffer;
+    //vertex_buffer_t vertexBuffer;
 
 #if NOT_YET_IMPLEMENTED
     std::vector<glTF::attribute::vertex_attribute_t> vertexAttributes;
@@ -862,6 +873,13 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
                     auto [semantic, index] = attributeAccessor;
 
                     auto &&accessor = accessors.at(index);
+
+                    using vf_t = std::pair<std::tuple<decltype(semantic)>, std::tuple<int>>;
+
+                    auto vertex_format_index = attribute::get_vertex_format_index<vf_t>();
+
+                    if (vertex_format_index == -1)
+                        throw std::runtime_error("unsupported vertex format"s);
 
                 }, attributeAccessor);
             }
