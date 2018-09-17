@@ -23,24 +23,27 @@ find_package(glfw3 3.3 REQUIRED)
 include_directories(include)
 
 set(SOURCE_FILES
+        src/buffer.hxx                          src/buffer.cxx
         src/command_buffer.hxx
+        src/debug.hxx                           src/debug.cxx
+        src/device.hxx                          src/device.cxx
         src/device_defaults.hxx
+        src/glTFLoader.hxx                      src/glTFLoader.cxx
         src/helpers.hxx
+        src/image.hxx                           src/image.cxx
+        src/instance.hxx                        src/instance.cxx
         src/math.hxx
+        src/mesh.hxx
+        src/mesh_loader.hxx                     src/mesh_loader.cxx
         src/program.hxx
         src/queue_builder.hxx
         src/queues.hxx
-        src/resource.cxx                        src/resource.hxx
-        src/buffer.cxx                          src/buffer.hxx
-        src/image.cxx                           src/image.hxx
-        src/debug.cxx                           src/debug.hxx
-        src/device.cxx                          src/device.hxx
-        src/instance.cxx                        src/instance.hxx
-        src/mesh_loader.cxx                     src/mesh_loader.hxx
-        src/swapchain.cxx                       src/swapchain.hxx
-        src/TARGA_loader.cxx                    src/TARGA_loader.hxx
-        src/glTFLoader.cxx                      src/glTFLoader.hxx
-        src/scene_tree.cxx                      src/scene_tree.hxx
+        src/resource.hxx                        src/resource.cxx
+        src/scene_tree.hxx                      src/scene_tree.cxx
+        src/swapchain.hxx                       src/swapchain.cxx
+        src/TARGA_loader.hxx                    src/TARGA_loader.cxx
+        src/transform.hxx
+
         src/main.cxx                            src/main.hxx
 )
 
@@ -98,5 +101,4 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
         glm
         glfw3
-        entityx
 )
