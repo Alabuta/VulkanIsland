@@ -137,7 +137,7 @@ struct ComponentHelper {
 
 private:
     template <typename Storage, typename Fn>
-    static void apply_inner(Storage &storage, const std::bitset<component_count> &mask, std::uint32_t index, Fn fn)
+    static void apply_inner(Storage &, const std::bitset<component_count> &, std::uint32_t, Fn)
     { }
 
     template <typename Storage, typename Fn, typename C0, typename ... Cn>
