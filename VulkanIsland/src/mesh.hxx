@@ -100,6 +100,18 @@ struct to_vertex_format_buffer<V, std::index_sequence<I...>> {
 
 using vertex_buffer_t = to_vertex_format_buffer<vertex_format_t>;
 
+
+template<class V, class S = std::make_index_sequence<std::variant_size_v<vertex_format_t>>>
+struct is_vertex_format;
+
+template<class V, std::size_t... I>
+struct is_vertex_format<V, std::index_sequence<I...>> {
+    static auto constexpr value = is_one_of_v<V, std::variant_alternative_t<I, vertex_format_t>...>;
+};
+
+template<class V>
+constexpr bool is_vertex_format_v = is_vertex_format<V>::value;
+
 /*struct Mesh final {
     glm::mat4 localMatrix;
     glm::mat4 worldMatrix;

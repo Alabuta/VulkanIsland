@@ -98,7 +98,7 @@ using accessor_t = std::variant<
 >;
 
 //using attribute_accessor_t = std::pair<semantic_t, std::size_t>;
-using attribute_accessor_set_t = std::set<accessor_t>;
+using accessors_set_t = std::set<accessor_t>;
 
 #if NOT_YET_IMPLEMENTED
 using vertexx_t = std::variant<
@@ -131,7 +131,6 @@ using vertexx_t = std::variant<
     >
 >;
 #endif
-
 
 
 std::optional<semantic_t> get_semantic(std::string_view name)
@@ -214,7 +213,7 @@ struct mesh_t {
         std::optional<std::size_t> material;
         std::size_t indices;
 
-        std::set<glTF::attribute::accessor_t> attributeAccessors;
+        attribute::accessors_set_t attributeAccessors;
 
         struct attributes_t {
             std::optional<std::size_t> position;
@@ -883,6 +882,10 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
 
                 }, attributeAccessor);
             }
+
+            static_assert(is_vertex_format_v<std::variant_alternative_t<0, vertex_format_t>>, "11111");
+            static_assert(is_vertex_format_v<std::pair<std::tuple<semantic::position>, std::tuple<vec<3, std::float_t>>>>, "22222");
+            //static_assert(attribute::is_vertex_format_v<std::pair<std::tuple<semantic::position, semantic::normal>, std::tuple<vec<3, std::float_t>, vec<2, std::float_t>>>>, "33333");
 
 #if NOT_YET_IMPLEMENTED
             for (auto &&accessor : primitive.attributeAccessors) {
