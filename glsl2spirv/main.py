@@ -10,7 +10,7 @@ if vulkanSDKPath is None:
 
 glslangValidatorPath = 'glslangValidator'
 
-shadersDirectory = "{}/../{}".format(os.path.dirname(os.path.realpath(__file__)), "VulkanIsland/shaders/")
+shadersDirectory = "{}/../{}".format(os.path.dirname(os.path.realpath(__file__)), "shaders/")
 
 vertPath = "{}shader.vert".format(shadersDirectory)
 fragPath = "{}shader.frag".format(shadersDirectory)

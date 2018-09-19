@@ -202,11 +202,11 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
 {
     auto current_path = fs::current_path();
 
-    fs::path directory{"contents"s};
+    fs::path directory{"../contents"s};
     fs::path name{std::data(_name)};
 
-    if (!fs::exists(current_path / directory))
-        directory = current_path / fs::path{"../VulkanIsland"s} / directory;
+    /*if (!fs::exists(current_path / directory))
+        directory = current_path / fs::path{"../VulkanIsland"s} / directory;*/
 
     std::ifstream file((directory / name).native(), std::ios::binary);
 
