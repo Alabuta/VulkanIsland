@@ -6,11 +6,11 @@
 {
     auto current_path = fs::current_path();
 
-    fs::path directory{"../shaders"s};
+    fs::path directory{"shaders"s};
     fs::path name{std::data(_name)};
 
-    /*if (!fs::exists(current_path / directory))
-        directory = current_path / fs::path{"../VulkanIsland"s} / directory;*/
+    if (!fs::exists(current_path / directory))
+        directory = current_path / fs::path{"../"s} / directory;
 
     std::ifstream file((directory / name).native(), std::ios::binary);
 

@@ -1000,8 +1000,8 @@ void UpdateUniformBuffer(VulkanDevice const &device, app_t &app, VulkanBuffer co
 
     app.transforms.view = glm::mat4(1.f);
     app.transforms.view = glm::translate(app.transforms.view, translate);*/
-    app.transforms.view = glm::lookAt(glm::vec3{1.f, 2.f, 0.f}, glm::vec3{0, 1.f, 0}, glm::vec3{0, 1, 0});
-    //app.transforms.view = glm::lookAt(glm::vec3{10.f, 20.f, 0.f + std::sin(time * .4f) * 64.f}, glm::vec3{0, 10.f, 0}, glm::vec3{0, 1, 0});
+    // app.transforms.view = glm::lookAt(glm::vec3{1.f, 2.f, 0.f}, glm::vec3{0, 1.f, 0}, glm::vec3{0, 1, 0});
+    app.transforms.view = glm::lookAt(glm::vec3{10.f, 20.f, 0.f + std::sin(time * .4f) * 64.f}, glm::vec3{0, 10.f, 0}, glm::vec3{0, 1, 0});
 
 
     app.transforms.modelView = app.transforms.view * app.transforms.model;

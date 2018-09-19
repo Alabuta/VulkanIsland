@@ -676,11 +676,11 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
 {
     auto current_path = fs::current_path();
 
-    fs::path contents{"../contents"s};
+    fs::path contents{"contents"s};
     fs::path folder{std::data(name)};
 
-    /*if (!fs::exists(current_path / contents))
-        contents = current_path / fs::path{"../VulkanIsland"s} / contents;*/
+    if (!fs::exists(current_path / contents))
+        contents = current_path / fs::path{"../"s} / contents;
 
     folder = contents / folder;
 
