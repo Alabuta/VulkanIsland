@@ -671,6 +671,53 @@ std::optional<attribute::buffer_t> instantiate_attribute_buffer(std::string_view
     return std::nullopt;
 }
 
+template<std::size_t N>
+std::optional<attribute::attribute_t> try_to_get_attribute_type(std::int32_t componentType)
+{
+    switch (componentType) {
+        case glTF::kBYTE:
+            return vec<N, std::int8_t>{};
+
+        case glTF::kUNSIGNED_BYTE:
+            return vec<N, std::uint8_t>{};
+
+        case glTF::kSHORT:
+            return vec<N, std::int16_t>{};
+
+        case glTF::kUNSIGNED_SHORT:
+            return vec<N, std::uint16_t>{};
+
+        case glTF::kINT:
+            return vec<N, std::int32_t>{};
+
+        case glTF::kUNSIGNED_INT:
+            return vec<N, std::uint32_t>{};
+
+        case glTF::kFLOAT:
+            return vec<N, std::float_t>{};
+
+        default:
+            return { };
+    }
+}
+
+std::optional<attribute::attribute_t> try_to_get_attribute_type(std::string_view type, std::int32_t componentType)
+{
+    if (type == "SCALAR"sv)
+        return glTF::try_to_get_attribute_type<1>(componentType);
+
+    else if (type == "VEC2"sv)
+        return glTF::try_to_get_attribute_type<2>(componentType);
+
+    else if (type == "VEC3"sv)
+        return glTF::try_to_get_attribute_type<3>(componentType);
+
+    else if (type == "VEC4"sv)
+        return glTF::try_to_get_attribute_type<4>(componentType);
+
+    return std::nullopt;
+}
+
 
 bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &_indices)
 {
@@ -866,25 +913,44 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
 
             }, attributeBuffers.at(primitive.indices));
 
+            std::vector<attribute::vertex_attribute_t> xxxx;
+
             for (auto &&attributeAccessor : primitive.attributeAccessors) {
-                std::visit([&accessors] (auto attributeAccessor)
+                std::visit([&attributeBuffers, &xxxx] (auto attributeAccessor)
                 {
-                    auto [semantic, index] = attributeAccessor;
+                    auto [semantic1, index] = attributeAccessor;
 
-                    [[maybe_unused]] auto &&accessor = accessors.at(index);
+                    //using semantic_t = decltype(semantic);
 
-                    using vf_t = std::pair<std::tuple<decltype(semantic)>, std::tuple<int>>;
+                    //semantics = std::tuple_cat(semantics, std::make_tuple(semantic));
 
-                    auto vertex_format_index = attribute::get_vertex_format_index<vf_t>();
+                    std::visit([&xxxx, semantic = semantic1] (auto attributeBuffer)
+                    {
+                        using attribute_t = std::decay_t<decltype(attributeBuffer)>::value_type;
 
-                    if (vertex_format_index == -1)
-                        throw std::runtime_error("unsupported vertex format"s);
+                        //using vf_t = std::pair<std::tuple<semantic_t>, std::tuple<attribute_t>>;
+
+                        //xxxx.emplace_back(std::make_pair(semantic, attribute_t{}));
+
+                        /*auto vertex_format_index = attribute::get_vertex_format_index<vf_t>();
+
+                        if (vertex_format_index == -1)
+                            throw std::runtime_error("unsupported vertex format"s);*/
+
+                    }, attributeBuffers.at(index));
+
+                    //[[maybe_unused]] auto &&accessor = accessors.at(index);
+
+                    /*[[maybe_unused]] auto attribyte_type = std::get<>(glTF::try_to_get_attribute_type(accessor.type, accessor.componentType));
+
+                    if (attribyte_type) {
+                    }
+
+                    else throw std::runtime_error("unsupported attribute type"s);*/
 
                 }, attributeAccessor);
             }
 
-            static_assert(is_vertex_format_v<std::variant_alternative_t<0, vertex_format_t>>, "11111");
-            static_assert(is_vertex_format_v<std::pair<std::tuple<semantic::position>, std::tuple<vec<3, std::float_t>>>>, "22222");
             //static_assert(attribute::is_vertex_format_v<std::pair<std::tuple<semantic::position, semantic::normal>, std::tuple<vec<3, std::float_t>, vec<2, std::float_t>>>>, "33333");
 
 #if NOT_YET_IMPLEMENTED
