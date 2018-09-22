@@ -86,6 +86,66 @@ using vertex_attribute_t = std::variant<
     std::pair<semantic::weights_0, attribute_t>
 >;
 
+/*template<class S, class A>
+struct cross_pairs {
+    using type = std::tuple<
+        std::pair<
+            S, std::variant_alternative_t<0, A>
+        >
+    >;
+};*/
+
+template<class S, class A, class Sequence = std::make_index_sequence<std::variant_size_v<A>>>
+struct expand;
+
+template<class S, class A, std::size_t... I>
+struct expand<S, A, std::index_sequence<I...>> {
+    using type = std::tuple<
+        std::pair<
+            S,
+            std::variant_alternative_t<I, A>
+        >...
+    >;
+};
+
+template<class... Ts>
+struct concat_tuples_types {
+    static auto constexpr value = std::tuple_cat(Ts{}...);
+    using type = std::decay_t<decltype(value)>;
+};
+
+template<class T, class S = std::make_index_sequence<std::tuple_size_v<T>>>
+struct tuple_to_variant;
+
+template<class T, std::size_t... I>
+struct tuple_to_variant<T, std::index_sequence<I...>> {
+    using type = std::variant<std::tuple_element<I, T>...>;
+};
+
+using vertex_attribute1_t = tuple_to_variant<concat_tuples_types<
+    expand<semantic::position, attribute_t>::type,
+    expand<semantic::normal, attribute_t>::type
+>::type>::type;
+
+using z = concat_tuples_types<
+    expand<semantic::position, attribute_t>::type,
+    expand<semantic::normal, attribute_t>::type
+>::type;
+
+static_assert(std::is_same_v<std::tuple_element_t<0, z>, std::pair<semantic::position, std::variant_alternative_t<0, attribute_t>>>, "!!!!");
+static_assert(std::is_same_v<std::tuple_element_t<27, z>, std::pair<semantic::position, std::variant_alternative_t<27, attribute_t>>>, "!!!!");
+static_assert(std::is_same_v<std::tuple_element_t<28, z>, std::pair<semantic::normal, std::variant_alternative_t<0, attribute_t>>>, "!!!!");
+static_assert(std::is_same_v<std::tuple_element_t<55, z>, std::pair<semantic::normal, std::variant_alternative_t<27, attribute_t>>>, "!!!!");
+
+static_assert(std::is_same_v<std::variant_alternative_t<0, vertex_attribute1_t>, std::pair<semantic::position, std::variant_alternative_t<0, attribute_t>>>, "!!!!");
+
+
+//auto xxxx = std::pair<semantic::normal, std::variant_alternative_t<27, attribute_t>>{};
+//vertex_attribute1_t yyyy = xxxx;
+
+//vertex_attribute1_t aaaa;
+//using uuuu = std::variant_alternative_t<0, vertex_attribute1_t>;
+
 using accessor_t = std::variant<
     std::pair<semantic::position, std::size_t>,
     std::pair<semantic::normal, std::size_t>,
