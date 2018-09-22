@@ -808,7 +808,7 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
         std::ifstream bin_file(bin_path.native(), std::ios::in | std::ios::binary);
 
         if (!bin_file.is_open()) {
-            std::cerr << "can't open file: "s << bin_path << std::endl;
+            std::cerr << "failed to open file: "s << bin_path << std::endl;
             return false;
         }
 

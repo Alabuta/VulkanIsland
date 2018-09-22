@@ -88,7 +88,7 @@ using vertex_format_t = std::variant<
 template<class V, class S = std::make_index_sequence<std::variant_size_v<V>>>
 struct to_vertex_format_buffer;
 
-template<class V, size_t... I>
+template<class V, std::size_t... I>
 struct to_vertex_format_buffer<V, std::index_sequence<I...>> {
     using type = std::variant<
         std::pair<
