@@ -108,6 +108,18 @@ struct expand<S, A, std::index_sequence<I...>> {
     >;
 };
 
+template<class T1, class T2, class Sequence = std::make_index_sequence<std::tuple_size_v<T1>>>
+struct xxxx;
+
+template<class T1, class T2, std::size_t... I>
+struct xxxx<T1, T2, std::index_sequence<I...>> {
+    using type = std::tuple<
+        std::tuple_element_t<I, T1>...,
+        std::tuple_element_t<I, T2>...
+    >;
+};
+
+
 template<class... Ts>
 struct concat_tuples_types {
     static auto constexpr value = std::tuple_cat(Ts{}...);
@@ -122,22 +134,25 @@ struct tuple_to_variant<T, std::index_sequence<I...>> {
     using type = std::variant<std::tuple_element<I, T>...>;
 };
 
-using vertex_attribute1_t = tuple_to_variant<concat_tuples_types<
-    expand<semantic::position, attribute_t>::type,
-    expand<semantic::normal, attribute_t>::type
->::type>::type;
-
 using z = concat_tuples_types<
     expand<semantic::position, attribute_t>::type,
     expand<semantic::normal, attribute_t>::type
 >::type;
+
+//using vertex_attribute1_t = tuple_to_variant<z>::type;
+using vertex_attribute1_t = tuple_to_variant<expand<semantic::position, attribute_t>::type>::type;
+std::pair<semantic::position, vec<1, std::int8_t>> q{};
+//vertex_attribute1_t xyzw = q<semantic::position>;
 
 static_assert(std::is_same_v<std::tuple_element_t<0, z>, std::pair<semantic::position, std::variant_alternative_t<0, attribute_t>>>, "!!!!");
 static_assert(std::is_same_v<std::tuple_element_t<27, z>, std::pair<semantic::position, std::variant_alternative_t<27, attribute_t>>>, "!!!!");
 static_assert(std::is_same_v<std::tuple_element_t<28, z>, std::pair<semantic::normal, std::variant_alternative_t<0, attribute_t>>>, "!!!!");
 static_assert(std::is_same_v<std::tuple_element_t<55, z>, std::pair<semantic::normal, std::variant_alternative_t<27, attribute_t>>>, "!!!!");
 
-static_assert(std::is_same_v<std::variant_alternative_t<0, vertex_attribute1_t>, std::pair<semantic::position, std::variant_alternative_t<0, attribute_t>>>, "!!!!");
+using xxxxxxx = std::decay_t<std::variant_alternative_t<0, vertex_attribute1_t>>;
+using yyyyyyy = std::tuple_element_t<0, z>;
+
+//static_assert(std::is_same_v<xxxxxxx, yyyyyyy>, "!!!!");
 
 
 //auto xxxx = std::pair<semantic::normal, std::variant_alternative_t<27, attribute_t>>{};
