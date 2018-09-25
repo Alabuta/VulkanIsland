@@ -131,7 +131,7 @@ struct tuple_to_variant;
 
 template<class T, std::size_t... I>
 struct tuple_to_variant<T, std::index_sequence<I...>> {
-    using type = std::variant<std::tuple_element<I, T>...>;
+    using type = std::variant<std::tuple_element_t<I, T>...>;
 };
 
 using z = concat_tuples_types<
@@ -142,7 +142,7 @@ using z = concat_tuples_types<
 //using vertex_attribute1_t = tuple_to_variant<z>::type;
 using vertex_attribute1_t = tuple_to_variant<expand<semantic::position, attribute_t>::type>::type;
 std::pair<semantic::position, vec<1, std::int8_t>> q{};
-//vertex_attribute1_t xyzw = q<semantic::position>;
+vertex_attribute1_t xyzw = q;
 
 static_assert(std::is_same_v<std::tuple_element_t<0, z>, std::pair<semantic::position, std::variant_alternative_t<0, attribute_t>>>, "!!!!");
 static_assert(std::is_same_v<std::tuple_element_t<27, z>, std::pair<semantic::position, std::variant_alternative_t<27, attribute_t>>>, "!!!!");
@@ -1001,7 +1001,7 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
 
                     std::visit([&xxxx, semantic = semantic1] (auto attributeBuffer)
                     {
-                        using attribute_t = std::decay_t<decltype(attributeBuffer)>::value_type;
+                        using attribute_t = typename std::decay_t<decltype(attributeBuffer)>::value_type;
 
                         //using vf_t = std::pair<std::tuple<semantic_t>, std::tuple<attribute_t>>;
 

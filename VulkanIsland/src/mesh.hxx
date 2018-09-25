@@ -28,9 +28,10 @@ template<eSEMANTIC_INDEX SI>
 struct attribute {
     static auto constexpr semantic{SI};
 
-    auto constexpr operator< (attribute rhs) const noexcept
+    template<eSEMANTIC_INDEX si>
+    auto constexpr operator< (attribute<si> rhs) const noexcept
     {
-        return semantic < rhs.semantic;
+        return SI < si;
     }
 };
 
