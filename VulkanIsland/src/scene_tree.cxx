@@ -5,13 +5,6 @@
 
 #include "scene_tree.hxx"
 
-#ifdef _MSC_VER
-#ifdef _DEBUG
-#pragma comment(lib, "entityx-d.lib")
-#else
-#pragma comment(lib, "entityx.lib")
-#endif
-#endif
 
 
 
