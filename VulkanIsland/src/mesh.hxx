@@ -26,10 +26,8 @@ enum class eSEMANTIC_INDEX : std::size_t {
 
 template<eSEMANTIC_INDEX SI>
 struct attribute {
-    static auto constexpr semantic{SI};
-
     template<eSEMANTIC_INDEX si>
-    auto constexpr operator< (attribute<si> rhs) const noexcept
+    auto constexpr operator< (attribute<si>) const noexcept
     {
         return SI < si;
     }

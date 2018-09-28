@@ -122,6 +122,12 @@ using vertex_attribute1_t = tuple_to_variant<
     concat_tuples_types<
         expand<semantic::position, attribute_t>::type,
         expand<semantic::normal, attribute_t>::type
+        //expand<semantic::tex_coord_0, attribute_t>::type,
+        //expand<semantic::tex_coord_1, attribute_t>::type,
+        //expand<semantic::tangent, attribute_t>::type,
+        //expand<semantic::color_0, attribute_t>::type,
+        //expand<semantic::joints_0, attribute_t>::type,
+        //expand<semantic::weights_0, attribute_t>::type
     >::type
 >::type;
 
@@ -130,10 +136,10 @@ using vertex_attribute1_t = tuple_to_variant<
 //static_assert(std::is_same_v<std::tuple_element_t<28, z>, std::pair<semantic::normal, std::variant_alternative_t<0, attribute_t>>>, "!!!!");
 //static_assert(std::is_same_v<std::tuple_element_t<55, z>, std::pair<semantic::normal, std::variant_alternative_t<27, attribute_t>>>, "!!!!");
 
-using xxxxxxx = std::decay_t<std::variant_alternative_t<0, vertex_attribute1_t>>;
-using yyyyyyy = std::pair<semantic::position, std::variant_alternative_t<0, attribute_t>>;
-
-static_assert(std::is_same_v<xxxxxxx, yyyyyyy>, "!!!!");
+//using xxxxxxx = std::decay_t<std::variant_alternative_t<28 * 8, vertex_attribute1_t>>;
+//using yyyyyyy = std::pair<semantic::weights_0, std::variant_alternative_t<0, attribute_t>>;
+//
+//static_assert(std::is_same_v<xxxxxxx, yyyyyyy>, "!!!!");
 
 
 using accessor_t = std::variant<
@@ -149,6 +155,21 @@ using accessor_t = std::variant<
 
 //using attribute_accessor_t = std::pair<semantic_t, std::size_t>;
 using accessors_set_t = std::set<accessor_t>;
+
+template<class V, class S = std::make_index_sequence<std::variant_size_v<V>>>
+struct semantics_aggregation;
+
+template<class V, std::size_t... I>
+struct semantics_aggregation<V, std::index_sequence<I...>> {
+    using type = std::variant<
+        std::tuple_element_t<0, std::variant_alternative_t<I, V>>...
+    >;
+};
+
+using semantics_aggregation_t = semantics_aggregation<vertex_format_t>::type;
+
+static_assert(std::is_same_v<std::variant_alternative_t<5, semantics_aggregation_t>, std::tuple<semantic::position, semantic::normal, semantic::tex_coord_0, semantic::tangent>>, "!!!!");
+
 
 #if NOT_YET_IMPLEMENTED
 using vertexx_t = std::variant<
