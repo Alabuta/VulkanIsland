@@ -88,7 +88,7 @@ using vertex_attribute_t = std::variant<
 
 
 
-template<class S, class A, class Sequence = std::make_index_sequence<std::variant_size_v<A>>>
+/*template<class S, class A, class Sequence = std::make_index_sequence<std::variant_size_v<A>>>
 struct expand;
 
 template<class S, class A, std::size_t... I>
@@ -129,7 +129,7 @@ using vertex_attribute1_t = tuple_to_variant<
         //expand<semantic::joints_0, attribute_t>::type,
         //expand<semantic::weights_0, attribute_t>::type
     >::type
->::type;
+>::type;*/
 
 //static_assert(std::is_same_v<std::tuple_element_t<0, z>, std::pair<semantic::position, std::variant_alternative_t<0, attribute_t>>>, "!!!!");
 //static_assert(std::is_same_v<std::tuple_element_t<27, z>, std::pair<semantic::position, std::variant_alternative_t<27, attribute_t>>>, "!!!!");
@@ -142,7 +142,7 @@ using vertex_attribute1_t = tuple_to_variant<
 //static_assert(std::is_same_v<xxxxxxx, yyyyyyy>, "!!!!");
 
 
-using accessor_t = std::variant<
+/*using accessor_t = std::variant<
     std::pair<semantic::position, std::size_t>,
     std::pair<semantic::normal, std::size_t>,
     std::pair<semantic::tex_coord_0, std::size_t>,
@@ -151,60 +151,83 @@ using accessor_t = std::variant<
     std::pair<semantic::color_0, std::size_t>,
     std::pair<semantic::joints_0, std::size_t>,
     std::pair<semantic::weights_0, std::size_t>
->;
+>;*/
+
+using accessor_t = std::pair<semantics_t, std::size_t>;
 
 //using attribute_accessor_t = std::pair<semantic_t, std::size_t>;
 using accessors_set_t = std::set<accessor_t>;
 
-template<class V, class S = std::make_index_sequence<std::variant_size_v<V>>>
-struct semantics_aggregation;
+template<std::size_t N, class V, class S = std::make_index_sequence<std::variant_size_v<V>>>
+struct aggregation;
 
-template<class V, std::size_t... I>
-struct semantics_aggregation<V, std::index_sequence<I...>> {
+template<std::size_t N, class V, std::size_t... I>
+struct aggregation<N, V, std::index_sequence<I...>> {
     using type = std::variant<
-        std::tuple_element_t<0, std::variant_alternative_t<I, V>>...
+        std::tuple_element_t<N, std::variant_alternative_t<I, V>>...
     >;
 };
 
-using semantics_aggregation_t = semantics_aggregation<vertex_format_t>::type;
+using semantics_aggregated_t = aggregation<0, vertex_format_t>::type;
+using types_aggregated_t = aggregation<1, vertex_format_t>::type;
 
-static_assert(std::is_same_v<std::variant_alternative_t<5, semantics_aggregation_t>, std::tuple<semantic::position, semantic::normal, semantic::tex_coord_0, semantic::tangent>>, "!!!!");
+using semantics_aggregated_buffer_t = wrap_variant_by_vector<semantics_aggregated_t>::type;
+using types_aggregated_buffer_t = wrap_variant_by_vector<types_aggregated_t>::type;
 
 
-#if NOT_YET_IMPLEMENTED
-using vertexx_t = std::variant<
-    std::tuple<
-        std::pair<semantic::position, vec<3, std::float_t>>
-    >,
-    std::tuple<
-        std::pair<semantic::position, vec<3, std::float_t>>,
-        std::pair<semantic::normal, vec<3, std::float_t>>
-    >,
-    std::tuple<
-        std::pair<semantic::position, vec<3, std::float_t>>,
-        std::pair<semantic::normal, vec<3, std::float_t>>,
-        std::pair<semantic::tex_coord_0, vec<2, std::float_t>>
-    >,
-    std::tuple<
-        std::pair<semantic::position, vec<3, std::float_t>>,
-        std::pair<semantic::tex_coord_0, vec<2, std::float_t>>
-    >,
-    std::tuple<
-        std::pair<semantic::position, vec<3, std::float_t>>,
-        std::pair<semantic::normal, vec<3, std::float_t>>,
-        std::pair<semantic::tangent, vec<4, std::float_t>>
-    >,
-    std::tuple<
-        std::pair<semantic::position, vec<3, std::float_t>>,
-        std::pair<semantic::normal, vec<3, std::float_t>>,
-        std::pair<semantic::tex_coord_0, vec<2, std::float_t>>,
-        std::pair<semantic::tangent, vec<4, std::float_t>>
-    >
->;
+template<class It>
+semantics_aggregated_t foo(It it, It end)
+{
+    if (std::next(it) < end) {
+        return std::visit([it] (auto tuple)
+        {
+            return std::tuple_cat(std::make_tuple(*it), tuple);
+
+        }, foo(std::next(it), end));
+    }
+
+    return std::make_tuple(*it);
+}
+
+std::optional<semantics_aggregated_t> aggregate_semantics(std::vector<semantics_t> semantics)
+{
+    if (semantics.empty())
+        return { };
+
+    auto s = foo(std::begin(semantics), std::end(semantics));
+
+    return { };
+}
+
+#if 0
+std::optional<semantics_aggregated_t> aggregate_semantics(std::vector<semantics_t> semantics)
+{
+    if (semantics.empty())
+        return { };
+
+    //std::reverse(std::begin(semantics), std::end(semantics));
+
+    auto tuple = std::make_tuple(std::visit([] (auto semantic) { return semantic; }, semantics.front()));
+
+    while (!semantics.empty()) {
+        auto semantic = semantics.back();
+
+        ;
+
+        semantics.pop_back();
+    }
+
+    auto aggregate = [] (auto it, auto end)
+    {
+        ;
+    };
+
+    return { };
+}
 #endif
 
 
-std::optional<semantic_t> get_semantic(std::string_view name)
+std::optional<semantics_t> get_semantic(std::string_view name)
 {
     if (name == "POSITION"sv)
         return semantic::position{ };
@@ -297,7 +320,7 @@ struct mesh_t {
             std::optional<std::size_t> weights0;
         } attributes;
 
-        std::uint32_t mode;
+        std::uint32_t mode{4};
     };
 
     std::vector<primitive_t> primitives;
@@ -495,13 +518,7 @@ void from_json(nlohmann::json const &j, mesh_t &mesh)
             if (auto semantic = attribute::get_semantic(it.key()); semantic) {
                 auto index = it->get<std::size_t>();
 
-                std::visit([index, &primitive] (auto semantic)
-                {
-                    attribute::accessor_t accessor = std::make_pair(semantic, index);
-
-                    primitive.attributeAccessors.emplace(std::move(accessor));
-
-                }, semantic.value());
+                primitive.attributeAccessors.emplace(semantic.value(), index);
             }
         }
 
@@ -984,13 +1001,15 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
 
             }, attributeBuffers.at(primitive.indices));
 
+            std::vector<semantics_t> semantics;
+
             std::vector<attribute::vertex_attribute_t> xxxx;
 
             for (auto &&attributeAccessor : primitive.attributeAccessors) {
-                std::visit([&attributeBuffers, &xxxx] (auto attributeAccessor)
-                {
-                    auto [semantic1, index] = attributeAccessor;
+                auto [semantic1, index] = attributeAccessor;
 
+                std::visit([&attributeBuffers, &xxxx, index] (auto semantic1)
+                {
                     //using semantic_t = decltype(semantic);
 
                     //semantics = std::tuple_cat(semantics, std::make_tuple(semantic));
@@ -1019,7 +1038,7 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
 
                     else throw std::runtime_error("unsupported attribute type"s);*/
 
-                }, attributeAccessor);
+                }, semantic1);
             }
 
             //static_assert(attribute::is_vertex_format_v<std::pair<std::tuple<semantic::position, semantic::normal>, std::tuple<vec<3, std::float_t>, vec<2, std::float_t>>>>, "33333");

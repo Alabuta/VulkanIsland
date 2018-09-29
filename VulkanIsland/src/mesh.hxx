@@ -43,7 +43,7 @@ struct joints_0 : attribute<eSEMANTIC_INDEX::nJOINTS_0> { };
 struct weights_0 : attribute<eSEMANTIC_INDEX::nWEIGHTS_0> { };
 }
 
-using semantic_t = std::variant<
+using semantics_t = std::variant<
     semantic::position,
     semantic::normal,
     semantic::tex_coord_0,
