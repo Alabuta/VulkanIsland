@@ -229,7 +229,6 @@
     <ClCompile Include="src\image.cxx" />
     <ClCompile Include="src\instance.cxx" />
     <ClCompile Include="src\main.cxx" />
-    <ClCompile Include="src\mesh_loader.cxx" />
     <ClCompile Include="src\resource.cxx" />
     <ClCompile Include="src\scene_tree.cxx" />
     <ClCompile Include="src\swapchain.cxx" />
@@ -248,7 +247,6 @@
     <ClInclude Include="src\math.hxx" />
     <ClInclude Include="src\main.hxx" />
     <ClInclude Include="src\mesh.hxx" />
-    <ClInclude Include="src\mesh_loader.hxx" />
     <ClInclude Include="src\program.hxx" />
     <ClInclude Include="src\queues.hxx" />
     <ClInclude Include="src\queue_builder.hxx" />
