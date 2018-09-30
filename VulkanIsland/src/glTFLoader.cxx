@@ -175,6 +175,7 @@ using semantics_aggregated_buffer_t = wrap_variant_by_vector<semantics_aggregate
 using types_aggregated_buffer_t = wrap_variant_by_vector<types_aggregated_t>::type;
 
 
+#if 0
 template<class It>
 semantics_aggregated_t foo(It it, It end)
 {
@@ -198,6 +199,7 @@ std::optional<semantics_aggregated_t> aggregate_semantics(std::vector<semantics_
 
     return { };
 }
+#endif
 
 #if 0
 std::optional<semantics_aggregated_t> aggregate_semantics(std::vector<semantics_t> semantics)

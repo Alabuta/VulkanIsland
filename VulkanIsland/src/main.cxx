@@ -31,7 +31,7 @@
 #include "resource.hxx"
 #include "command_buffer.hxx"
 
-#include "mesh_loader.hxx"
+#include "glTFLoader.hxx"
 #include "TARGA_loader.hxx"
 
 #include "scene_tree.hxx"
