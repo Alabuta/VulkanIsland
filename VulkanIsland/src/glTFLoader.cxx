@@ -88,15 +88,15 @@ using vertex_attribute_t = std::variant<
 
 
 
-/*template<class S, class A, class Sequence = std::make_index_sequence<std::variant_size_v<A>>>
+template<class S, class V>
 struct expand;
 
-template<class S, class A, std::size_t... I>
-struct expand<S, A, std::index_sequence<I...>> {
+template<class S, class... Ts>
+struct expand<S, std::variant<Ts...>> {
     using type = std::tuple<
         std::pair<
             S,
-            std::variant_alternative_t<I, A>
+            Ts
         >...
     >;
 };
@@ -105,53 +105,44 @@ struct expand<S, A, std::index_sequence<I...>> {
 
 template<class... Ts>
 struct concat_tuples_types {
-    static auto constexpr value = std::tuple_cat(Ts{}...);
-    using type = std::decay_t<decltype(value)>;
+    using type = decltype(std::tuple_cat(std::declval<Ts>()...));
 };
 
-template<class T, class S = std::make_index_sequence<std::tuple_size_v<T>>>
+template<class T>
 struct tuple_to_variant;
 
-template<class T, std::size_t... I>
-struct tuple_to_variant<T, std::index_sequence<I...>> {
-    using type = std::variant<std::tuple_element_t<I, T>...>;
+template<class... Ts>
+struct tuple_to_variant<std::tuple<Ts...>> {
+    using type = std::variant<Ts...>;
 };
 
 
 using vertex_attribute1_t = tuple_to_variant<
     concat_tuples_types<
         expand<semantic::position, attribute_t>::type,
-        expand<semantic::normal, attribute_t>::type
-        //expand<semantic::tex_coord_0, attribute_t>::type,
-        //expand<semantic::tex_coord_1, attribute_t>::type,
-        //expand<semantic::tangent, attribute_t>::type,
-        //expand<semantic::color_0, attribute_t>::type,
-        //expand<semantic::joints_0, attribute_t>::type,
-        //expand<semantic::weights_0, attribute_t>::type
+        expand<semantic::normal, attribute_t>::type,
+        expand<semantic::tex_coord_0, attribute_t>::type,
+        expand<semantic::tex_coord_1, attribute_t>::type,
+        expand<semantic::tangent, attribute_t>::type,
+        expand<semantic::color_0, attribute_t>::type,
+        expand<semantic::joints_0, attribute_t>::type,
+        expand<semantic::weights_0, attribute_t>::type
     >::type
->::type;*/
+>::type;
+
+vertex_attribute1_t zzzz = std::pair<semantic::weights_0, vec<4, std::float_t>>{};
 
 //static_assert(std::is_same_v<std::tuple_element_t<0, z>, std::pair<semantic::position, std::variant_alternative_t<0, attribute_t>>>, "!!!!");
 //static_assert(std::is_same_v<std::tuple_element_t<27, z>, std::pair<semantic::position, std::variant_alternative_t<27, attribute_t>>>, "!!!!");
 //static_assert(std::is_same_v<std::tuple_element_t<28, z>, std::pair<semantic::normal, std::variant_alternative_t<0, attribute_t>>>, "!!!!");
 //static_assert(std::is_same_v<std::tuple_element_t<55, z>, std::pair<semantic::normal, std::variant_alternative_t<27, attribute_t>>>, "!!!!");
 
-//using xxxxxxx = std::decay_t<std::variant_alternative_t<28 * 8, vertex_attribute1_t>>;
-//using yyyyyyy = std::pair<semantic::weights_0, std::variant_alternative_t<0, attribute_t>>;
-//
-//static_assert(std::is_same_v<xxxxxxx, yyyyyyy>, "!!!!");
+using xxxxxxx = std::variant_alternative_t<7 * 28 + 27, vertex_attribute1_t>;
+using yyyyyyy = std::pair<semantic::weights_0, vec<4, std::float_t>>;
+
+static_assert(std::is_same_v<xxxxxxx, yyyyyyy>, "!!!!");
 
 
-/*using accessor_t = std::variant<
-    std::pair<semantic::position, std::size_t>,
-    std::pair<semantic::normal, std::size_t>,
-    std::pair<semantic::tex_coord_0, std::size_t>,
-    std::pair<semantic::tex_coord_1, std::size_t>,
-    std::pair<semantic::tangent, std::size_t>,
-    std::pair<semantic::color_0, std::size_t>,
-    std::pair<semantic::joints_0, std::size_t>,
-    std::pair<semantic::weights_0, std::size_t>
->;*/
 
 using accessor_t = std::pair<semantics_t, std::size_t>;
 
@@ -1007,6 +998,7 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
 
             std::vector<attribute::vertex_attribute_t> xxxx;
 
+#if 0
             for (auto &&attributeAccessor : primitive.attributeAccessors) {
                 auto [semantic1, index] = attributeAccessor;
 
@@ -1042,6 +1034,7 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
 
                 }, semantic1);
             }
+#endif
 
             //static_assert(attribute::is_vertex_format_v<std::pair<std::tuple<semantic::position, semantic::normal>, std::tuple<vec<3, std::float_t>, vec<2, std::float_t>>>>, "33333");
 
