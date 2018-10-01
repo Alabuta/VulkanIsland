@@ -34,7 +34,6 @@ set(SOURCE_FILES
         src/instance.hxx                        src/instance.cxx
         src/math.hxx
         src/mesh.hxx
-        src/mesh_loader.hxx                     src/mesh_loader.cxx
         src/program.hxx
         src/queue_builder.hxx
         src/queues.hxx
