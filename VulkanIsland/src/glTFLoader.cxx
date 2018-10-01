@@ -104,9 +104,7 @@ struct expand<S, std::variant<Ts...>> {
 
 
 template<class... Ts>
-struct concat_tuples_types {
-    using type = decltype(std::tuple_cat(std::declval<Ts>()...));
-};
+using concat_tuples_types = decltype(std::tuple_cat(std::declval<Ts>()...));
 
 template<class T>
 struct tuple_to_variant;
@@ -127,7 +125,7 @@ using vertex_attribute1_t = tuple_to_variant<
         expand<semantic::color_0, attribute_t>::type,
         expand<semantic::joints_0, attribute_t>::type,
         expand<semantic::weights_0, attribute_t>::type
-    >::type
+    >
 >::type;
 
 vertex_attribute1_t zzzz = std::pair<semantic::weights_0, vec<4, std::float_t>>{};
@@ -149,14 +147,12 @@ using accessor_t = std::pair<semantics_t, std::size_t>;
 //using attribute_accessor_t = std::pair<semantic_t, std::size_t>;
 using accessors_set_t = std::set<accessor_t>;
 
-template<std::size_t N, class V, class S = std::make_index_sequence<std::variant_size_v<V>>>
+template<std::size_t N, class V>
 struct aggregation;
 
-template<std::size_t N, class V, std::size_t... I>
-struct aggregation<N, V, std::index_sequence<I...>> {
-    using type = std::variant<
-        std::tuple_element_t<N, std::variant_alternative_t<I, V>>...
-    >;
+template<std::size_t N, class... Ts>
+struct aggregation<N, std::variant<Ts...>> {
+    using type = std::variant<std::tuple_element_t<N, Ts>...>;
 };
 
 using semantics_aggregated_t = aggregation<0, vertex_format_t>::type;

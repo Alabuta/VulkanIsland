@@ -100,12 +100,12 @@ constexpr std::size_t get_type_instances_number()
     else return 0;
 }
 
-template<class V, class S = std::make_index_sequence<std::variant_size_v<V>>>
+template<class V>
 struct wrap_variant_by_vector;
 
-template<class V, std::size_t... I>
-struct wrap_variant_by_vector<V, std::index_sequence<I...>> {
-    using type = std::variant<std::vector<std::variant_alternative_t<I, V>>...>;
+template<class... Ts>
+struct wrap_variant_by_vector<std::variant<Ts...>> {
+    using type = std::variant<std::vector<Ts>...>;
 };
 
 

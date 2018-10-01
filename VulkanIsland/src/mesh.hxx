@@ -84,15 +84,15 @@ using vertex_format_t = std::variant<
 >;
 
 
-template<class V, class S = std::make_index_sequence<std::variant_size_v<V>>>
+template<class V>
 struct to_vertex_format_buffer;
 
-template<class V, std::size_t... I>
-struct to_vertex_format_buffer<V, std::index_sequence<I...>> {
+template<class... Ts>
+struct to_vertex_format_buffer<std::variant<Ts...>> {
     using type = std::variant<
         std::pair<
-            std::tuple_element_t<0, std::variant_alternative_t<I, V>>,
-            std::vector<std::tuple_element_t<1, std::variant_alternative_t<I, V>>>
+            std::tuple_element_t<0, Ts>,
+            std::vector<std::tuple_element_t<1, Ts>>
         >...
     >;
 };
@@ -100,16 +100,16 @@ struct to_vertex_format_buffer<V, std::index_sequence<I...>> {
 using vertex_buffer_t = to_vertex_format_buffer<vertex_format_t>;
 
 
-template<class V, class S = std::make_index_sequence<std::variant_size_v<vertex_format_t>>>
+template<class T, class V>
 struct is_vertex_format;
 
-template<class V, std::size_t... I>
-struct is_vertex_format<V, std::index_sequence<I...>> {
-    static auto constexpr value = is_one_of_v<V, std::variant_alternative_t<I, vertex_format_t>...>;
+template<class T, class... Ts>
+struct is_vertex_format<T, std::variant<Ts...>> {
+    static auto constexpr value = is_one_of_v<T, Ts...>;
 };
 
-template<class V>
-constexpr bool is_vertex_format_v = is_vertex_format<V>::value;
+template<class T>
+constexpr bool is_vertex_format_v = is_vertex_format<T, vertex_format_t>::value;
 
 /*struct Mesh final {
     glm::mat4 localMatrix;
