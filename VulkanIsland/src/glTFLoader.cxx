@@ -93,14 +93,8 @@ struct expand;
 
 template<class S, class... Ts>
 struct expand<S, std::variant<Ts...>> {
-    using type = std::tuple<
-        std::pair<
-            S,
-            Ts
-        >...
-    >;
+    using type = std::tuple<std::pair<S, Ts>...>;
 };
-
 
 
 template<class... Ts>
@@ -144,7 +138,6 @@ static_assert(std::is_same_v<xxxxxxx, yyyyyyy>, "!!!!");
 
 using accessor_t = std::pair<semantics_t, std::size_t>;
 
-//using attribute_accessor_t = std::pair<semantic_t, std::size_t>;
 using accessors_set_t = std::set<accessor_t>;
 
 template<std::size_t N, class V>
@@ -163,7 +156,27 @@ using types_aggregated_buffer_t = wrap_variant_by_vector<types_aggregated_t>::ty
 
 
 #if 0
-template<class It>
+template<class T>
+struct cross_product;
+
+template<class... Ts>
+struct cross_product<std::variant<Ts...>> {
+    using type = std::variant<Ts>;
+};
+
+using www = cross_product<semantics_t>::type;
+
+template<std::size_t... I>
+constexpr auto fooooo(std::vector<semantics_t> const &semantics, std::index_sequence<I...>)
+{
+    return std::make_tuple(semantics.at(I)...);
+}
+#endif
+
+
+
+#if 0
+/*template<class It>
 semantics_aggregated_t foo(It it, It end)
 {
     if (std::next(it) < end) {
@@ -175,14 +188,16 @@ semantics_aggregated_t foo(It it, It end)
     }
 
     return std::make_tuple(*it);
-}
+}*/
 
 std::optional<semantics_aggregated_t> aggregate_semantics(std::vector<semantics_t> semantics)
 {
     if (semantics.empty())
         return { };
 
-    auto s = foo(std::begin(semantics), std::end(semantics));
+    //auto s = foo(std::begin(semantics), std::end(semantics));
+
+    fooooo(semantics, std::make_index_sequence<std::size(semantics)>{});
 
     return { };
 }
@@ -257,6 +272,34 @@ constexpr auto get_vertex_format_index()
         return get_vertex_format_index<VF, I + 1>();
 
     else return -1;
+}
+
+
+template<class T, class V, std::size_t O, class S = std::make_index_sequence<std::variant_size_v<V - O>>>
+struct pick;
+
+template<class T, class V, std::size_t O, std::size_t... I>
+struct pick<T, V, O, std::index_sequence<I...>> {
+    using candidates_t = std::tuple<std::variant_alternative_t<I, V>...>;
+};
+
+std::optional<std::size_t> foo(std::set<semantics_t> const &semantics_set)
+{
+    using candidates_t = float;
+
+    std::size_t offset = 0;
+
+    for (auto semantic : semantics_set) {
+        std::visit([] (auto semantic)
+        {
+            using type = std::decay_t<decltype(semantic)>;
+
+        }, semantic);
+
+        ++offset;
+    }
+
+    return { };
 }
 
 }
