@@ -277,10 +277,13 @@ constexpr auto get_vertex_format_index()
 
 
 
-template<class S, class V, std::size_t I>
-auto constexpr has_type_at_index = std::is_same_v<std::tuple_element_t<I, V>, S>;
+template<class T, class V, std::size_t I>
+auto constexpr has_type_at_index = std::is_same_v<std::tuple_element_t<I, V>, T>;
 
-static_assert(has_type_at_index<semantic::tex_coord_0, std::tuple_element_t<0, std::variant_alternative_t<3, vertex_format_t>>, 2>, "tex_coord_0");
+template<class S, class V, std::size_t I>
+auto constexpr has_semantic_at_index = has_type_at_index<S, std::tuple_element_t<0, V>, I>;
+
+static_assert(has_semantic_at_index<semantic::tex_coord_0, std::variant_alternative_t<3, vertex_format_t>, 2>, "tex_coord_0");
 
 
 
