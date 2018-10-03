@@ -275,25 +275,13 @@ constexpr auto get_vertex_format_index()
 }
 
 
-template<class S, class T, std::size_t O, typename = std::make_index_sequence<std::tuple_size_v<T>>>
-struct traverse;
 
-template<class S, class T, std::size_t O, std::size_t... I>
-struct traverse<S, T, O, std::index_sequence<I...>> {
-    ;
-};
 
-template<class S, class T, std::size_t I, class = void>
-struct has : std::false_type { };
+template<class S, class V, std::size_t I>
+auto constexpr has_type_at_index = std::is_same_v<std::tuple_element_t<I, V>, S>;
 
-template<class S, class T, std::size_t I>
-struct has<S, T, I, std::is_same<std::tuple_element_t<I, T>, S>> : std::true_type { };
+static_assert(has_type_at_index<semantic::tex_coord_0, std::tuple_element_t<0, std::variant_alternative_t<3, vertex_format_t>>, 2>, "tex_coord_0");
 
-template<class S, class T, std::size_t I>
-constexpr bool has_v = has<S, T, I>::value;
-
-auto constexpr g = has_v<semantic::position, std::tuple_element_t<0, std::variant_alternative_t<0, vertex_format_t>>, 0>;
-static_assert(g, "!!!!");
 
 
 template<class T, class V, std::size_t O, typename = std::make_index_sequence<std::variant_size_v<V>>>
@@ -306,16 +294,16 @@ struct pick<T, V, O, std::index_sequence<I...>> {
 
 std::optional<std::size_t> foo(std::set<semantics_t> const &semantics_set)
 {
-    using candidates_t = float;
+//    using candidates_t = float;
 
     std::size_t offset = 0;
 
     for (auto semantic : semantics_set) {
-        std::visit([] (auto semantic)
+        /*std::visit([] (auto semantic)
         {
             using type = std::decay_t<decltype(semantic)>;
 
-        }, semantic);
+        }, semantic);*/
 
         ++offset;
     }
