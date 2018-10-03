@@ -275,7 +275,28 @@ constexpr auto get_vertex_format_index()
 }
 
 
-template<class T, class V, std::size_t O, class S = std::make_index_sequence<std::variant_size_v<V - O>>>
+template<class S, class T, std::size_t O, typename = std::make_index_sequence<std::tuple_size_v<T>>>
+struct traverse;
+
+template<class S, class T, std::size_t O, std::size_t... I>
+struct traverse<S, T, O, std::index_sequence<I...>> {
+    ;
+};
+
+template<class S, class T, std::size_t I, class = void>
+struct has : std::false_type { };
+
+template<class S, class T, std::size_t I>
+struct has<S, T, I, std::is_same<std::tuple_element_t<I, T>, S>> : std::true_type { };
+
+template<class S, class T, std::size_t I>
+constexpr bool has_v = has<S, T, I>::value;
+
+auto constexpr g = has_v<semantic::position, std::tuple_element_t<0, std::variant_alternative_t<0, vertex_format_t>>, 0>;
+static_assert(g, "!!!!");
+
+
+template<class T, class V, std::size_t O, typename = std::make_index_sequence<std::variant_size_v<V>>>
 struct pick;
 
 template<class T, class V, std::size_t O, std::size_t... I>
