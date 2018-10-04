@@ -711,7 +711,12 @@ void from_json(nlohmann::json const &j, sampler_t &sampler)
 void from_json(nlohmann::json const &j, buffer_view_t &bufferView)
 {
     bufferView.buffer = j.at("buffer"s).get<decltype(buffer_view_t::buffer)>();
-    bufferView.byteOffset = j.at("byteOffset"s).get<decltype(buffer_view_t::byteOffset)>();
+
+    if (j.count("byteOffset"s))
+        bufferView.byteOffset = j.at("byteOffset"s).get<decltype(buffer_view_t::byteOffset)>();
+
+    else bufferView.byteOffset = 0;
+
     bufferView.byteLength = j.at("byteLength"s).get<decltype(buffer_view_t::byteLength)>();
 
     if (j.count("byteStride"s))
@@ -749,8 +754,8 @@ void from_json(nlohmann::json const &j, accessor_t &accessor)
         accessor.sparse = sparse;
     }
 
-    accessor.min = j.at("min"s).get<decltype(accessor_t::min)>();
-    accessor.max = j.at("max"s).get<decltype(accessor_t::max)>();
+    if (j.count("min"s)) accessor.min = j.at("min"s).get<decltype(accessor_t::min)>();
+    if (j.count("max"s)) accessor.max = j.at("max"s).get<decltype(accessor_t::max)>();
 
     accessor.type = j.at("type"s).get<decltype(accessor_t::type)>();
     accessor.componentType = j.at("componentType"s).get<decltype(accessor_t::componentType)>();
