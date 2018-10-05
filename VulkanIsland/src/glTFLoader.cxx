@@ -280,10 +280,10 @@ constexpr auto get_vertex_format_index()
 template<class T, class V, std::size_t I>
 auto constexpr has_type_at_index = std::is_same_v<std::tuple_element_t<I, V>, T>;
 
-template<class S, class V, std::size_t I>
-auto constexpr has_semantic_at_index = has_type_at_index<S, std::tuple_element_t<0, V>, I>;
-
-static_assert(has_semantic_at_index<semantic::tex_coord_0, std::variant_alternative_t<3, vertex_format_t>, 2>, "tex_coord_0");
+//template<class S, class V, std::size_t I>
+//auto constexpr has_semantic_at_index = has_type_at_index<S, std::tuple_element_t<0, V>, I>;
+//
+//static_assert(has_semantic_at_index<semantic::tex_coord_0, std::variant_alternative_t<3, vertex_format_t>, 2>, "tex_coord_0");
 
 
 
@@ -295,7 +295,18 @@ struct pick<T, V, O, std::index_sequence<I...>> {
     using candidates_t = std::tuple<std::variant_alternative_t<I, V>...>;
 };
 
+template<class S, class T>
+struct tuple_has_type;
 
+template<class S, class... Ts>
+struct tuple_has_type<S, std::tuple<Ts...>> {
+    static auto constexpr value = is_one_of_v<S, Ts...>;
+};
+
+template<class S, class V, std::size_t I>
+auto constexpr has_semantic_at_index = tuple_has_type<S, std::tuple_element_t<0, std::variant_alternative_t<I, V>>>::value;
+
+static_assert(has_semantic_at_index<semantic::tex_coord_0, vertex_format_t, 3>, "tex_coord_0");
 
 /*template<class It>
 semantics_aggregated_t foo(It it, It end)
@@ -314,36 +325,37 @@ semantics_aggregated_t foo(It it, It end)
 template<class S, class V, std::size_t I = 0>
 constexpr std::optional<std::size_t> get_semantic_index()
 {
-    if constexpr (I + 1 < std::variant_size_v<V>) {
-        auto constexpr N = std::variant_size_v<V>;
+    if constexpr (has_semantic_at_index<S, V, I>)
+        return I;
 
-        if constexpr (get_semantic_index<S, std::variant_alternative_t<I, V>, 0>)
-            return I;
-
-        else return get<S, V, I + 1>();
-    }
+    else if constexpr (I + 1 < std::variant_size_v<V>)
+        return get_semantic_index<S, V, I + 1>();
 
     return { };
 }
 
 
-std::optional<std::size_t> foo(std::set<semantics_t> const &semantics_set)
+std::optional<std::size_t> check(std::vector<semantics_t> const &semantics)
 {
-//    using candidates_t = float;
+//    std::size_t index = 0;
+//    std::size_t offset = 0;
 
-    std::size_t index = 0;
-    std::size_t offset = 0;
-
-    for (auto semantic : semantics_set) {
-        std::visit([index, offset] (auto semantic)
+    for (auto semantic : semantics) {
+        auto semanticIndex = std::visit([] (auto semantic)
         {
             using semantic_t = std::decay_t<decltype(semantic)>;
 
-            //if constexpr (has_semantic_at_index<semantic_t, std::variant_alternative_t<index, vertex_format_t>, offset>)
+            if constexpr (!get_semantic_index<semantic_t, vertex_format_t>())
+                std::cout << "OOOOO\n";
+
+            return get_semantic_index<semantic_t, vertex_format_t>();
 
         }, semantic);
 
-        ++offset;
+        if (!semanticIndex)
+            throw std::runtime_error("failed to match semantic type to vertex format.");
+
+        else std::cout << *semanticIndex << '\n';
     }
 
     return { };
@@ -1085,11 +1097,20 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
 
             }, attributeBuffers.at(primitive.indices));
 
+            auto &&attributeAccessors = primitive.attributeAccessors;
+
             std::vector<semantics_t> semantics;
 
-            std::vector<attribute::vertex_attribute_t> xxxx;
+            std::transform(std::begin(attributeAccessors), std::end(attributeAccessors), std::back_inserter(semantics), [] (auto accessor)
+            {
+                return accessor.first;
+            });
+
+            attribute::check(semantics);
 
 #if 0
+            std::vector<attribute::vertex_attribute_t> xxxx;
+
             for (auto &&attributeAccessor : primitive.attributeAccessors) {
                 auto [semantic1, index] = attributeAccessor;
 
