@@ -295,18 +295,53 @@ struct pick<T, V, O, std::index_sequence<I...>> {
     using candidates_t = std::tuple<std::variant_alternative_t<I, V>...>;
 };
 
+
+
+/*template<class It>
+semantics_aggregated_t foo(It it, It end)
+{
+    if (std::next(it) < end) {
+        return std::visit([it] (auto tuple)
+        {
+            return std::tuple_cat(std::make_tuple(*it), tuple);
+
+        }, foo(std::next(it), end));
+    }
+
+    return std::make_tuple(*it);
+}*/
+
+template<class S, class V, std::size_t I = 0>
+constexpr std::optional<std::size_t> get_semantic_index()
+{
+    if constexpr (I + 1 < std::variant_size_v<V>) {
+        auto constexpr N = std::variant_size_v<V>;
+
+        if constexpr (get_semantic_index<S, std::variant_alternative_t<I, V>, 0>)
+            return I;
+
+        else return get<S, V, I + 1>();
+    }
+
+    return { };
+}
+
+
 std::optional<std::size_t> foo(std::set<semantics_t> const &semantics_set)
 {
 //    using candidates_t = float;
 
+    std::size_t index = 0;
     std::size_t offset = 0;
 
     for (auto semantic : semantics_set) {
-        /*std::visit([] (auto semantic)
+        std::visit([index, offset] (auto semantic)
         {
-            using type = std::decay_t<decltype(semantic)>;
+            using semantic_t = std::decay_t<decltype(semantic)>;
 
-        }, semantic);*/
+            //if constexpr (has_semantic_at_index<semantic_t, std::variant_alternative_t<index, vertex_format_t>, offset>)
+
+        }, semantic);
 
         ++offset;
     }
