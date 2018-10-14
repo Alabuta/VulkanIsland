@@ -125,9 +125,6 @@ using vertex_attribute1_t = tuple_to_variant<
 vertex_attribute1_t zzzz = std::pair<semantic::weights_0, vec<4, std::float_t>>{};
 
 //static_assert(std::is_same_v<std::tuple_element_t<0, z>, std::pair<semantic::position, std::variant_alternative_t<0, attribute_t>>>, "!!!!");
-//static_assert(std::is_same_v<std::tuple_element_t<27, z>, std::pair<semantic::position, std::variant_alternative_t<27, attribute_t>>>, "!!!!");
-//static_assert(std::is_same_v<std::tuple_element_t<28, z>, std::pair<semantic::normal, std::variant_alternative_t<0, attribute_t>>>, "!!!!");
-//static_assert(std::is_same_v<std::tuple_element_t<55, z>, std::pair<semantic::normal, std::variant_alternative_t<27, attribute_t>>>, "!!!!");
 
 using xxxxxxx = std::variant_alternative_t<7 * 28 + 27, vertex_attribute1_t>;
 using yyyyyyy = std::pair<semantic::weights_0, vec<4, std::float_t>>;
@@ -155,80 +152,6 @@ using semantics_aggregated_buffer_t = wrap_variant_by_vector<semantics_aggregate
 using types_aggregated_buffer_t = wrap_variant_by_vector<types_aggregated_t>::type;
 
 
-#if 0
-template<class T>
-struct cross_product;
-
-template<class... Ts>
-struct cross_product<std::variant<Ts...>> {
-    using type = std::variant<Ts>;
-};
-
-using www = cross_product<semantics_t>::type;
-
-template<std::size_t... I>
-constexpr auto fooooo(std::vector<semantics_t> const &semantics, std::index_sequence<I...>)
-{
-    return std::make_tuple(semantics.at(I)...);
-}
-#endif
-
-
-
-#if 0
-/*template<class It>
-semantics_aggregated_t foo(It it, It end)
-{
-    if (std::next(it) < end) {
-        return std::visit([it] (auto tuple)
-        {
-            return std::tuple_cat(std::make_tuple(*it), tuple);
-
-        }, foo(std::next(it), end));
-    }
-
-    return std::make_tuple(*it);
-}*/
-
-std::optional<semantics_aggregated_t> aggregate_semantics(std::vector<semantics_t> semantics)
-{
-    if (semantics.empty())
-        return { };
-
-    //auto s = foo(std::begin(semantics), std::end(semantics));
-
-    fooooo(semantics, std::make_index_sequence<std::size(semantics)>{});
-
-    return { };
-}
-#endif
-
-#if 0
-std::optional<semantics_aggregated_t> aggregate_semantics(std::vector<semantics_t> semantics)
-{
-    if (semantics.empty())
-        return { };
-
-    //std::reverse(std::begin(semantics), std::end(semantics));
-
-    auto tuple = std::make_tuple(std::visit([] (auto semantic) { return semantic; }, semantics.front()));
-
-    while (!semantics.empty()) {
-        auto semantic = semantics.back();
-
-        ;
-
-        semantics.pop_back();
-    }
-
-    auto aggregate = [] (auto it, auto end)
-    {
-        ;
-    };
-
-    return { };
-}
-#endif
 
 
 std::optional<semantics_t> get_semantic(std::string_view name)
@@ -308,19 +231,7 @@ auto constexpr has_semantic_at_index = tuple_has_type<S, std::tuple_element_t<0,
 
 static_assert(has_semantic_at_index<semantic::tex_coord_0, vertex_format_t, 3>, "tex_coord_0");
 
-/*template<class It>
-semantics_aggregated_t foo(It it, It end)
-{
-    if (std::next(it) < end) {
-        return std::visit([it] (auto tuple)
-        {
-            return std::tuple_cat(std::make_tuple(*it), tuple);
 
-        }, foo(std::next(it), end));
-    }
-
-    return std::make_tuple(*it);
-}*/
 
 template<class S, class V, std::size_t I = 0>
 constexpr std::optional<std::size_t> get_semantic_index()
@@ -337,16 +248,13 @@ constexpr std::optional<std::size_t> get_semantic_index()
 
 std::optional<std::size_t> check(std::vector<semantics_t> const &semantics)
 {
-//    std::size_t index = 0;
-//    std::size_t offset = 0;
-
     for (auto semantic : semantics) {
         auto semanticIndex = std::visit([] (auto semantic)
         {
             using semantic_t = std::decay_t<decltype(semantic)>;
 
             if constexpr (!get_semantic_index<semantic_t, vertex_format_t>())
-                std::cout << "OOOOO\n";
+                std::cout << "!!!!\n";
 
             return get_semantic_index<semantic_t, vertex_format_t>();
 
