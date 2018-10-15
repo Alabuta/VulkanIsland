@@ -26,6 +26,7 @@ set(SOURCE_FILES
         src/buffer.hxx                          src/buffer.cxx
         src/command_buffer.hxx
         src/debug.hxx                           src/debug.cxx
+        src/descriptor.hxx                      src/descriptor.cxx
         src/device.hxx                          src/device.cxx
         src/device_defaults.hxx
         src/glTFLoader.hxx                      src/glTFLoader.cxx
