@@ -224,6 +224,7 @@
   <ItemGroup>
     <ClCompile Include="src\buffer.cxx" />
     <ClCompile Include="src\debug.cxx" />
+    <ClCompile Include="src\descriptor.cxx" />
     <ClCompile Include="src\device.cxx" />
     <ClCompile Include="src\glTFLoader.cxx" />
     <ClCompile Include="src\image.cxx" />
@@ -238,6 +239,7 @@
     <ClInclude Include="src\buffer.hxx" />
     <ClInclude Include="src\command_buffer.hxx" />
     <ClInclude Include="src\debug.hxx" />
+    <ClInclude Include="src\descriptor.hxx" />
     <ClInclude Include="src\device.hxx" />
     <ClInclude Include="src\device_defaults.hxx" />
     <ClInclude Include="src\glTFLoader.hxx" />

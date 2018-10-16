@@ -44,6 +44,9 @@
     <ClCompile Include="src\scene_tree.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\descriptor.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\queues.hxx">
@@ -104,6 +107,9 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\glTFLoader.hxx">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\descriptor.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
