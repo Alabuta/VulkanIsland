@@ -31,7 +31,7 @@ public:
 
     DescriptorsManager(VulkanDevice &device) noexcept : device_{device} { }
 
-    [[nodiscard]] std::shared_ptr<VulkanDescriptorPool> CreateDescriptorPool();
+    [[nodiscard]] std::optional<VulkanDescriptorPool> CreateDescriptorPool();
 
 private:
 
@@ -51,3 +51,29 @@ private:
     VkDescriptorSet handle_;
 };
 #endif
+
+std::optional<VkDescriptorPool> CreateDescriptorPool(VulkanDevice const &device);
+
+std::optional<VkDescriptorSetLayout> CreateDescriptorSetLayout(VulkanDevice const &device);
+
+template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
+std::optional<VkDescriptorSet> CreateDescriptorSet(VulkanDevice const &device, VkDescriptorPool descriptorPool, T &&descriptorSetLayouts)
+{
+    std::optional<VkDescriptorSet> descriptorSet;
+
+    VkDescriptorSetAllocateInfo const allocateInfo{
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+        nullptr,
+        descriptorPool,
+        static_cast<std::uint32_t>(std::size(descriptorSetLayouts)), std::data(descriptorSetLayouts)
+    };
+
+    VkDescriptorSet handle;
+
+    if (auto result = vkAllocateDescriptorSets(device.handle(), &allocateInfo, &handle); result != VK_SUCCESS)
+        std::cerr << "failed to allocate descriptor set(s): "s << result << '\n';
+
+    else descriptorSet.emplace(handle);
+
+    return descriptorSet;
+}

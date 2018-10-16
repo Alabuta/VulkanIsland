@@ -29,6 +29,7 @@
 #include "buffer.hxx"
 #include "image.hxx"
 #include "resource.hxx"
+#include "descriptor.hxx"
 #include "command_buffer.hxx"
 
 #include "glTFLoader.hxx"
@@ -144,63 +145,9 @@ void CleanupFrameData(app_t &app, VulkanDevice &device, VkPipeline graphicsPipel
 }
 
 
-void CreateDescriptorSetLayout(VkDevice device, VkDescriptorSetLayout &descriptorSetLayout)
+
+void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet &descriptorSet)
 {
-    std::array<VkDescriptorSetLayoutBinding, 2> constexpr layoutBindings{{
-        {
-            0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            nullptr
-        },
-        {
-            1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            1, VK_SHADER_STAGE_FRAGMENT_BIT,
-            nullptr
-        }
-    }};
-
-    VkDescriptorSetLayoutCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        nullptr, 0,
-        static_cast<std::uint32_t>(std::size(layoutBindings)), std::data(layoutBindings)
-    };
-
-    if (auto result = vkCreateDescriptorSetLayout(device, &createInfo, nullptr, &descriptorSetLayout); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor set layout: "s + std::to_string(result));
-}
-
-void CreateDescriptorPool(VkDevice device, VkDescriptorPool &descriptorPool)
-{
-    std::array<VkDescriptorPoolSize, 2> constexpr poolSizes{{
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
-        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
-    }};
-
-    VkDescriptorPoolCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
-        nullptr, 0,
-        1,
-        static_cast<std::uint32_t>(std::size(poolSizes)), std::data(poolSizes)
-    };
-
-    if (auto result = vkCreateDescriptorPool(device, &createInfo, nullptr, &descriptorPool); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create descriptor pool: "s + std::to_string(result));
-}
-
-void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descriptorSet)
-{
-    auto layouts = make_array(app.descriptorSetLayout);
-
-    VkDescriptorSetAllocateInfo const allocateInfo{
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-        nullptr,
-        app.descriptorPool,
-        static_cast<std::uint32_t>(std::size(layouts)), std::data(layouts)
-    };
-
-    if (auto result = vkAllocateDescriptorSets(device, &allocateInfo, &descriptorSet); result != VK_SUCCESS)
-        throw std::runtime_error("failed to allocate descriptor sets: "s + std::to_string(result));
-
     // TODO: descriptor info typed by VkDescriptorType.
     auto const buffers = make_array(
         VkDescriptorBufferInfo{app.uboBuffer->handle(), 0, sizeof(transforms_t)}
@@ -236,7 +183,7 @@ void CreateDescriptorSet(app_t &app, VkDevice device, VkDescriptorSet &descripto
         }
     }};
 
-    vkUpdateDescriptorSets(device, static_cast<std::uint32_t>(std::size(writeDescriptorsSet)), std::data(writeDescriptorsSet), 0, nullptr);
+    vkUpdateDescriptorSets(device.handle(), static_cast<std::uint32_t>(std::size(writeDescriptorsSet)), std::data(writeDescriptorsSet), 0, nullptr);
 }
 
 
@@ -881,7 +828,10 @@ void InitVulkan(GLFWwindow *window, app_t &app)
 
     else throw std::runtime_error("failed to create the swapchain"s);
 
-    CreateDescriptorSetLayout(app.vulkanDevice->handle(), app.descriptorSetLayout);
+    if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkanDevice); !descriptorSetLayout)
+        throw std::runtime_error("failed to create the descriptor set layout"s);
+
+    else app.descriptorSetLayout = std::move(descriptorSetLayout.value());
 
     if (auto renderPass = CreateRenderPass(*app.vulkanDevice, app.swapchain); !renderPass)
         throw std::runtime_error("failed to create the render pass"s);
@@ -916,8 +866,17 @@ void InitVulkan(GLFWwindow *window, app_t &app)
     if (app.uboBuffer = CreateUniformBuffer(*app.vulkanDevice, sizeof(transforms_t)); !app.uboBuffer)
         throw std::runtime_error("failed to init uniform buffer"s);
 
-    CreateDescriptorPool(app.vulkanDevice->handle(), app.descriptorPool);
-    CreateDescriptorSet(app, app.vulkanDevice->handle(), app.descriptorSet);
+    if (auto descriptorPool = CreateDescriptorPool(*app.vulkanDevice); !descriptorPool)
+        throw std::runtime_error("failed to create the descriptor pool"s);
+
+    else app.descriptorPool = std::move(descriptorPool.value());
+
+    if (auto descriptorSet = CreateDescriptorSet(*app.vulkanDevice, app.descriptorPool, make_array(app.descriptorSetLayout)); !descriptorSet)
+        throw std::runtime_error("failed to create the descriptor pool"s);
+
+    else app.descriptorSet = std::move(descriptorSet.value());
+
+    UpdateDescriptorSet(app, *app.vulkanDevice, app.descriptorSet);
 
     CreateCommandBuffers(app, *app.vulkanDevice, app.renderPass, app.graphicsCommandPool, app.commandBuffers, app.swapchain.framebuffers);
 
