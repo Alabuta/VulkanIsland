@@ -31,8 +31,7 @@ public:
 
     DescriptorsManager(VulkanDevice &device) noexcept : device_{device} { }
 
-    [[nodiscard]] std::shared_ptr<VulkanDescriptorPool>
-    CreateDescriptorPool() noexcept;
+    [[nodiscard]] std::shared_ptr<VulkanDescriptorPool> CreateDescriptorPool();
 
 private:
 

@@ -1,7 +1,6 @@
 #include "descriptor.hxx"
 
-std::shared_ptr<VulkanDescriptorPool>
-DescriptorsManager::CreateDescriptorPool() noexcept
+std::shared_ptr<VulkanDescriptorPool> DescriptorsManager::CreateDescriptorPool()
 {
     std::shared_ptr<VulkanDescriptorPool> descriptorPool;
 
@@ -22,7 +21,7 @@ DescriptorsManager::CreateDescriptorPool() noexcept
     if (auto result = vkCreateDescriptorPool(device_.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
         std::cerr << "failed to create descriptor pool: "s  << result << '\n';
 
-    else descriptorPool = std::make_shared(new VulkanDescriptorPool{handle});
+    else descriptorPool = std::make_shared<VulkanDescriptorPool>(handle);
 
     return descriptorPool;
 }
