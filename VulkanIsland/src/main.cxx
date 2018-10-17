@@ -586,7 +586,7 @@ void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass r
 //            VkClearValue{{{kREVERSED_DEPTH ? 0 : 1, 0}}}
 //        );
 
-        std::array<VkClearValue, 2> clearColors = {{
+        std::array<VkClearValue, 2> constexpr clearColors = {{
             VkClearValue{{{0.64f, 0.64f, 0.64f, 1.f}}},
             VkClearValue{{kREVERSED_DEPTH ? 0.f : 1.f, 0}}
         }};
@@ -641,6 +641,7 @@ void CreateSemaphores(app_t &app, VkDevice device)
     if (auto result = vkCreateSemaphore(device, &createInfo, nullptr, &app.renderFinishedSemaphore); result != VK_SUCCESS)
         throw std::runtime_error("failed to create render semaphore: "s + std::to_string(result));
 }
+
 
 std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
 {

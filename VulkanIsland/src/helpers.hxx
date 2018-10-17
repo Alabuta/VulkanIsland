@@ -59,9 +59,17 @@ constexpr void set_tuple(T &&tuple, V value)
         set_tuple<i + 1>(std::forward<T>(tuple), value);
 }
 
+namespace detail
+{
+template<class T, class... Ts> struct return_type_helper { using type = T; };
+template<class... Ts> struct return_type_helper<void, Ts...> : std::common_type<Ts...> { };
 
-template<class... Ts>
-constexpr std::array<std::decay_t<std::tuple_element_t<0, std::tuple<Ts...>>>, sizeof...(Ts)> make_array(Ts &&...t)
+template<class T, class... Ts>
+using return_type_helper_t = typename return_type_helper<T, Ts...>::type;
+}
+
+template<class T = void, class... Ts>
+constexpr std::array<detail::return_type_helper_t<T, Ts...>, sizeof...(Ts)> make_array(Ts &&...t)
 {
     return {{ std::forward<Ts>(t)... }};
 }
