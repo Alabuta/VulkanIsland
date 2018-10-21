@@ -13,34 +13,34 @@ namespace ex = entityx;
 
 namespace semantic
 {
-enum class eSEMANTIC_INDEX : std::size_t {
-    nPOSITION = 0,
-    nNORMAL,
-    nTEXCOORD_0,
-    nTEXCOORD_1,
-    nTANGENT,
-    nCOLOR_0,
-    nJOINTS_0,
-    nWEIGHTS_0
-};
+    enum class eSEMANTIC_INDEX : std::size_t {
+        nPOSITION = 0,
+        nNORMAL,
+        nTEXCOORD_0,
+        nTEXCOORD_1,
+        nTANGENT,
+        nCOLOR_0,
+        nJOINTS_0,
+        nWEIGHTS_0
+    };
 
-template<eSEMANTIC_INDEX SI>
-struct attribute {
-    template<eSEMANTIC_INDEX si>
-    auto constexpr operator< (attribute<si>) const noexcept
-    {
-        return SI < si;
-    }
-};
+    template<eSEMANTIC_INDEX SI>
+    struct attribute {
+        template<eSEMANTIC_INDEX si>
+        auto constexpr operator< (attribute<si>) const noexcept
+        {
+            return SI < si;
+        }
+    };
 
-struct position : attribute<eSEMANTIC_INDEX::nPOSITION> { };
-struct normal : attribute<eSEMANTIC_INDEX::nNORMAL> { };
-struct tex_coord_0 : attribute<eSEMANTIC_INDEX::nTEXCOORD_0> { };
-struct tex_coord_1 : attribute<eSEMANTIC_INDEX::nTEXCOORD_1> { };
-struct tangent : attribute<eSEMANTIC_INDEX::nTANGENT> { };
-struct color_0 : attribute<eSEMANTIC_INDEX::nCOLOR_0> { };
-struct joints_0 : attribute<eSEMANTIC_INDEX::nJOINTS_0> { };
-struct weights_0 : attribute<eSEMANTIC_INDEX::nWEIGHTS_0> { };
+    struct position : attribute<eSEMANTIC_INDEX::nPOSITION> { };
+    struct normal : attribute<eSEMANTIC_INDEX::nNORMAL> { };
+    struct tex_coord_0 : attribute<eSEMANTIC_INDEX::nTEXCOORD_0> { };
+    struct tex_coord_1 : attribute<eSEMANTIC_INDEX::nTEXCOORD_1> { };
+    struct tangent : attribute<eSEMANTIC_INDEX::nTANGENT> { };
+    struct color_0 : attribute<eSEMANTIC_INDEX::nCOLOR_0> { };
+    struct joints_0 : attribute<eSEMANTIC_INDEX::nJOINTS_0> { };
+    struct weights_0 : attribute<eSEMANTIC_INDEX::nWEIGHTS_0> { };
 }
 
 using semantics_t = std::variant<
