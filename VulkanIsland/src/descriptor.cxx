@@ -1,3 +1,5 @@
+#include <string>
+#include <string_view>
 #include "descriptor.hxx"
 
 #if 0
@@ -27,6 +29,22 @@ std::optional<VulkanDescriptorPool> DescriptorsManager::CreateDescriptorPool()
     return descriptorPool;
 }
 #endif
+
+struct DescriptorPoolDescription {
+
+};
+
+class DescriptorPoolManager {
+public:
+
+    DescriptorPoolManager(VulkanDevice &device, std::vector<VkDescriptorPoolSize> &&poolSizes)
+        : device_{device}, poolSizes_{poolSizes} { };
+
+private:
+
+    VulkanDevice &device_;
+    std::vector<VkDescriptorPoolSize> poolSizes_;
+};
 
 std::optional<VkDescriptorPool> CreateDescriptorPool(VulkanDevice const &device)
 {
