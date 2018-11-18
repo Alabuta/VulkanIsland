@@ -63,9 +63,23 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(${PROJECT_NAME} PRIVATE
-            -pedantic
+            -Wpedantic
             -Wall
             -Wextra
+			-Wold-style-cast
+			-Wnon-virtual-dtor
+			-Wcast-align
+			-Wunused
+			-Wconversions
+			-Wsign-conversion
+			-Wnull-dereference
+			-Wdouble-promotion
+			-Wformat=2
+			-Wduplicated-cond
+			-Wduplicated-branches
+			-Wlogical-op
+			-Wuseless-cast
+			-Wlifetime
             #-fsanitize=thread -fsanitize=address
 )
 
