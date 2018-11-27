@@ -11,10 +11,10 @@ namespace fs = boost::filesystem;
 #ifdef _MSC_VER
 #pragma warning(push, 3)
 #pragma warning(disable: 4127)
-#endif
 #include "nlohmann/json.hpp"
-#ifdef _MSC_VER
 #pragma warning(pop)
+#else
+#include "nlohmann/json.hpp"
 #endif
 
 #include "glTFLoader.hxx"
