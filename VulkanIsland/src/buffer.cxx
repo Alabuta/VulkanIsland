@@ -77,8 +77,8 @@ MemoryManager::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags pro
 
     auto &&pool = pools_.at(memoryTypeIndex);
 
-    decltype(Pool::blocks)::iterator it_block;
-    decltype(Pool::Block::availableChunks)::iterator it_chunk;
+    typename decltype(Pool::blocks)::iterator it_block;
+    typename decltype(Pool::Block::availableChunks)::iterator it_chunk;
 
     it_block = std::find_if(std::begin(pool.blocks), std::end(pool.blocks), [&it_chunk, &memoryRequirements] (auto &&pair)
     {
