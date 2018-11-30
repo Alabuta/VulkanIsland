@@ -2,11 +2,6 @@ import sys
 import os
 from subprocess import call
 
-vulkanSDKPath = os.environ.get('VULKAN_SDK')
-
-if vulkanSDKPath is None:
-    print("Failed to find 'VULKAN_SDK' enviroment variable.")
-    sys.exit()
 
 glslangValidatorPath = 'glslangValidator'
 
