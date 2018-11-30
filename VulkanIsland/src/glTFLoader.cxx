@@ -76,8 +76,7 @@ using attribute_t = std::variant <
     vec<4, std::float_t>
 > ;
 
-using buffer_t = wrap_variant_by_vector<attribute_t>::type;
-
+using attribute_buffer_t = wrap_variant_by_vector<attribute_t>::type;
 
 
 using vertex_attribute_t = std::variant<
@@ -723,7 +722,7 @@ void from_json(nlohmann::json const &j, accessor_t &accessor)
 }
 
 template<std::size_t N>
-std::optional<attribute::buffer_t> instantiate_attribute_buffer(GL componentType)
+std::optional<attribute::attribute_buffer_t> instantiate_attribute_buffer(GL componentType)
 {
     switch (componentType) {
         case GL::BYTE:
@@ -752,7 +751,7 @@ std::optional<attribute::buffer_t> instantiate_attribute_buffer(GL componentType
     }
 }
 
-std::optional<attribute::buffer_t> instantiate_attribute_buffer(std::string_view type, GL componentType)
+std::optional<attribute::attribute_buffer_t> instantiate_attribute_buffer(std::string_view type, GL componentType)
 {
     if (type == "SCALAR"sv)
         return glTF::instantiate_attribute_buffer<1>(componentType);
@@ -967,7 +966,7 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
         binBuffers.emplace_back(std::move(byteCode));
     }
 
-    std::vector<glTF::attribute::buffer_t> attributeBuffers;
+    std::vector<glTF::attribute::attribute_buffer_t> attributeBuffers;
     attributeBuffers.reserve(std::size(accessors));
     
     for (auto &&accessor : accessors) {
