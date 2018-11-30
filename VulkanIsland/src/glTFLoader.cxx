@@ -11,30 +11,35 @@ namespace fs = boost::filesystem;
 #ifdef _MSC_VER
 #pragma warning(push, 3)
 #pragma warning(disable: 4127)
-#endif
 #include "nlohmann/json.hpp"
-#ifdef _MSC_VER
 #pragma warning(pop)
+#else
+#include "nlohmann/json.hpp"
 #endif
 
 #include "glTFLoader.hxx"
 #include "scene_tree.hxx"
 #include "mesh.hxx"
 
-namespace glTF {
-auto constexpr kBYTE                 = 0x1400; // 5120
-auto constexpr kUNSIGNED_BYTE        = 0x1401;
-auto constexpr kSHORT                = 0x1402;
-auto constexpr kUNSIGNED_SHORT       = 0x1403; // 5123
-auto constexpr kINT                  = 0x1404;
-auto constexpr kUNSIGNED_INT         = 0x1405;
-auto constexpr kFLOAT                = 0x1406; // 5126
 
-//auto constexpr kARRAY_BUFFER         = 0x8892;
-//auto constexpr kELEMENT_ARRAY_BUFFER = 0x8893;
+namespace
+{
+enum class GL {
+    BYTE = 0x1400, UNSIGNED_BYTE,
+    SHORT, UNSIGNED_SHORT,
+    INT, UNSIGNED_INT,
+    FLOAT,
 
-namespace attribute {
-using attribute_t = std::variant<
+    ARRAY_BUFFER = 0x8892,
+    ELEMENT_ARRAY_BUFFER
+};
+}
+
+namespace glTF
+{
+namespace attribute
+{
+using attribute_t = std::variant <
     vec<1, std::int8_t>,
     vec<2, std::int8_t>,
     vec<3, std::int8_t>,
@@ -69,7 +74,7 @@ using attribute_t = std::variant<
     vec<2, std::float_t>,
     vec<3, std::float_t>,
     vec<4, std::float_t>
->;
+> ;
 
 using buffer_t = wrap_variant_by_vector<attribute_t>::type;
 
@@ -111,14 +116,14 @@ struct tuple_to_variant<std::tuple<Ts...>> {
 
 using vertex_attribute1_t = tuple_to_variant<
     concat_tuples_types<
-        expand<semantic::position, attribute_t>::type,
-        expand<semantic::normal, attribute_t>::type,
-        expand<semantic::tex_coord_0, attribute_t>::type,
-        expand<semantic::tex_coord_1, attribute_t>::type,
-        expand<semantic::tangent, attribute_t>::type,
-        expand<semantic::color_0, attribute_t>::type,
-        expand<semantic::joints_0, attribute_t>::type,
-        expand<semantic::weights_0, attribute_t>::type
+    expand<semantic::position, attribute_t>::type,
+    expand<semantic::normal, attribute_t>::type,
+    expand<semantic::tex_coord_0, attribute_t>::type,
+    expand<semantic::tex_coord_1, attribute_t>::type,
+    expand<semantic::tangent, attribute_t>::type,
+    expand<semantic::color_0, attribute_t>::type,
+    expand<semantic::joints_0, attribute_t>::type,
+    expand<semantic::weights_0, attribute_t>::type
     >
 >::type;
 
@@ -249,8 +254,7 @@ constexpr std::optional<std::size_t> get_semantic_index()
 std::optional<std::size_t> check(std::vector<semantics_t> const &semantics)
 {
     for (auto semantic : semantics) {
-        auto semanticIndex = std::visit([] (auto semantic)
-        {
+        auto semanticIndex = std::visit([] (auto semantic) {
             using semantic_t = std::decay_t<decltype(semantic)>;
 
             if constexpr (!get_semantic_index<semantic_t, vertex_format_t>())
@@ -270,7 +274,10 @@ std::optional<std::size_t> check(std::vector<semantics_t> const &semantics)
 }
 
 }
+}
 
+namespace glTF
+{
 struct scene_t {
     std::string name;
     std::vector<std::size_t> nodes;
@@ -420,7 +427,7 @@ struct accessor_t {
 
     std::vector<float> min, max;
 
-    std::uint32_t componentType;
+    GL componentType;
 
     std::string type;
 };
@@ -502,8 +509,7 @@ void from_json(nlohmann::json const &j, mesh_t &mesh)
 {
     auto const json = j.at("primitives"s);
 
-    std::transform(std::cbegin(json), std::cend(json), std::back_inserter(mesh.primitives), [] (nlohmann::json const &json_primitive)
-    {
+    std::transform(std::cbegin(json), std::cend(json), std::back_inserter(mesh.primitives), [] (nlohmann::json const &json_primitive) {
         mesh_t::primitive_t primitive;
 
         if (json_primitive.count("material"s))
@@ -717,28 +723,28 @@ void from_json(nlohmann::json const &j, accessor_t &accessor)
 }
 
 template<std::size_t N>
-std::optional<attribute::buffer_t> instantiate_attribute_buffer(std::int32_t componentType)
+std::optional<attribute::buffer_t> instantiate_attribute_buffer(GL componentType)
 {
     switch (componentType) {
-        case glTF::kBYTE:
+        case GL::BYTE:
             return std::vector<vec<N, std::int8_t>>();
 
-        case glTF::kUNSIGNED_BYTE:
+        case GL::UNSIGNED_BYTE:
             return std::vector<vec<N, std::uint8_t>>();
 
-        case glTF::kSHORT:
+        case GL::SHORT:
             return std::vector<vec<N, std::int16_t>>();
 
-        case glTF::kUNSIGNED_SHORT:
+        case GL::UNSIGNED_SHORT:
             return std::vector<vec<N, std::uint16_t>>();
 
-        case glTF::kINT:
+        case GL::INT:
             return std::vector<vec<N, std::int32_t>>();
 
-        case glTF::kUNSIGNED_INT:
+        case GL::UNSIGNED_INT:
             return std::vector<vec<N, std::uint32_t>>();
 
-        case glTF::kFLOAT:
+        case GL::FLOAT:
             return std::vector<vec<N, std::float_t>>();
 
         default:
@@ -746,7 +752,7 @@ std::optional<attribute::buffer_t> instantiate_attribute_buffer(std::int32_t com
     }
 }
 
-std::optional<attribute::buffer_t> instantiate_attribute_buffer(std::string_view type, std::int32_t componentType)
+std::optional<attribute::buffer_t> instantiate_attribute_buffer(std::string_view type, GL componentType)
 {
     if (type == "SCALAR"sv)
         return glTF::instantiate_attribute_buffer<1>(componentType);
@@ -764,28 +770,28 @@ std::optional<attribute::buffer_t> instantiate_attribute_buffer(std::string_view
 }
 
 template<std::size_t N>
-std::optional<attribute::attribute_t> try_to_get_attribute_type(std::int32_t componentType)
+std::optional<attribute::attribute_t> try_to_get_attribute_type(GL componentType)
 {
     switch (componentType) {
-        case glTF::kBYTE:
+        case GL::BYTE:
             return vec<N, std::int8_t>{};
 
-        case glTF::kUNSIGNED_BYTE:
+        case GL::UNSIGNED_BYTE:
             return vec<N, std::uint8_t>{};
 
-        case glTF::kSHORT:
+        case GL::SHORT:
             return vec<N, std::int16_t>{};
 
-        case glTF::kUNSIGNED_SHORT:
+        case GL::UNSIGNED_SHORT:
             return vec<N, std::uint16_t>{};
 
-        case glTF::kINT:
+        case GL::INT:
             return vec<N, std::int32_t>{};
 
-        case glTF::kUNSIGNED_INT:
+        case GL::UNSIGNED_INT:
             return vec<N, std::uint32_t>{};
 
-        case glTF::kFLOAT:
+        case GL::FLOAT:
             return vec<N, std::float_t>{};
 
         default:
@@ -793,7 +799,7 @@ std::optional<attribute::attribute_t> try_to_get_attribute_type(std::int32_t com
     }
 }
 
-std::optional<attribute::attribute_t> try_to_get_attribute_type(std::string_view type, std::int32_t componentType)
+std::optional<attribute::attribute_t> try_to_get_attribute_type(std::string_view type, GL componentType)
 {
     if (type == "SCALAR"sv)
         return glTF::try_to_get_attribute_type<1>(componentType);
@@ -809,8 +815,10 @@ std::optional<attribute::attribute_t> try_to_get_attribute_type(std::string_view
 
     return std::nullopt;
 }
+}
 
-
+namespace glTF
+{
 bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &_indices)
 {
     auto current_path = fs::current_path();

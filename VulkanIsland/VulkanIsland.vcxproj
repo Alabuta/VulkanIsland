@@ -124,7 +124,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)src;$(VK_SDK_PATH)\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BOOST_ROOT);$(ProjectDir)include;$(ProjectDir)src;$(VK_SDK_PATH)\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <EnablePREfast>false</EnablePREfast>
       <AdditionalOptions> /bigobj %(AdditionalOptions)</AdditionalOptions>
@@ -191,7 +191,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)src;$(VK_SDK_PATH)\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(BOOST_ROOT);$(ProjectDir)include;$(ProjectDir)src;$(VK_SDK_PATH)\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <EnablePREfast>false</EnablePREfast>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
@@ -230,6 +230,8 @@
     <ClCompile Include="src\device.cxx" />
     <ClCompile Include="src\glTFLoader.cxx" />
     <ClCompile Include="src\image.cxx" />
+    <ClCompile Include="src\input\InputManager.cxx" />
+    <ClCompile Include="src\input\MouseInput.cxx" />
     <ClCompile Include="src\instance.cxx" />
     <ClCompile Include="src\main.cxx" />
     <ClCompile Include="src\resource.cxx" />
@@ -247,6 +249,8 @@
     <ClInclude Include="src\glTFLoader.hxx" />
     <ClInclude Include="src\image.hxx" />
     <ClInclude Include="src\helpers.hxx" />
+    <ClInclude Include="src\input\InputManager.hxx" />
+    <ClInclude Include="src\input\MouseInput.hxx" />
     <ClInclude Include="src\instance.hxx" />
     <ClInclude Include="src\math.hxx" />
     <ClInclude Include="src\main.hxx" />

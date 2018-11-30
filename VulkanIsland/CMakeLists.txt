@@ -7,15 +7,15 @@ endif()
 project(VulkanIsland VERSION ${PROJECT_VERSION})
 
 configure_file(
-        "${PROJECT_SOURCE_DIR}/config.h.in"
-        "${PROJECT_SOURCE_DIR}/include/config.h"
+    "${PROJECT_SOURCE_DIR}/config.h.in"
+    "${PROJECT_SOURCE_DIR}/include/config.h"
 )
 
 find_package(Vulkan REQUIRED)
 
 if(NOT WIN32)
-find_package(glm REQUIRED)
-find_package(X11 REQUIRED)
+	find_package(glm REQUIRED)
+	find_package(X11 REQUIRED)
 endif()
 
 find_package(glfw3 3.3 REQUIRED)
@@ -23,61 +23,76 @@ find_package(glfw3 3.3 REQUIRED)
 include_directories(include)
 
 set(SOURCE_FILES
-        src/buffer.hxx                          src/buffer.cxx
-        src/command_buffer.hxx
-        src/debug.hxx                           src/debug.cxx
-        src/descriptor.hxx                      src/descriptor.cxx
-        src/device.hxx                          src/device.cxx
-        src/device_defaults.hxx
-        src/glTFLoader.hxx                      src/glTFLoader.cxx
-        src/helpers.hxx
-        src/image.hxx                           src/image.cxx
-        src/instance.hxx                        src/instance.cxx
-        src/math.hxx
-        src/mesh.hxx
-        src/program.hxx
-        src/queue_builder.hxx
-        src/queues.hxx
-        src/resource.hxx                        src/resource.cxx
-        src/scene_tree.hxx                      src/scene_tree.cxx
-        src/swapchain.hxx                       src/swapchain.cxx
-        src/TARGA_loader.hxx                    src/TARGA_loader.cxx
-        src/transform.hxx
+    src/buffer.hxx                          src/buffer.cxx
+    src/command_buffer.hxx
+    src/debug.hxx                           src/debug.cxx
+    src/descriptor.hxx                      src/descriptor.cxx
+    src/device.hxx                          src/device.cxx
+    src/device_defaults.hxx
+    src/glTFLoader.hxx                      src/glTFLoader.cxx
+    src/helpers.hxx
+    src/image.hxx                           src/image.cxx
+    src/instance.hxx                        src/instance.cxx
+    src/math.hxx
+    src/mesh.hxx
+    src/program.hxx
+    src/queue_builder.hxx
+    src/queues.hxx
+    src/resource.hxx                        src/resource.cxx
+    src/scene_tree.hxx                      src/scene_tree.cxx
+    src/swapchain.hxx                       src/swapchain.cxx
+    src/TARGA_loader.hxx                    src/TARGA_loader.cxx
+    src/transform.hxx
 
-        src/main.cxx                            src/main.hxx
+    src/main.hxx                            src/main.cxx
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
-        VERSION ${PROJECT_VERSION}
+    VERSION ${PROJECT_VERSION}
 
-        CXX_STANDARD 17
-        CXX_STANDARD_REQUIRED YES
-        CXX_EXTENSIONS OFF
+    CXX_STANDARD 17
+    CXX_STANDARD_REQUIRED YES
+    CXX_EXTENSIONS OFF
 
-        POSITION_INDEPENDENT_CODE YES
+    POSITION_INDEPENDENT_CODE YES
 
-        DEBUG_POSTFIX _d
+    DEBUG_POSTFIX _d
 )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(${PROJECT_NAME} PRIVATE
-            -pedantic
-            -Wall
-            -Wextra
-            #-fsanitize=thread -fsanitize=address
+        -Wpedantic
+        -Wall
+        -Wextra
+		-Wold-style-cast
+		-Wnon-virtual-dtor
+		-Wcast-align
+		-Wunused
+		-Wconversions
+		-Wsign-conversion
+		-Wnull-dereference
+		-Wdouble-promotion
+		-Wformat=2
+		-Wduplicated-cond
+		-Wduplicated-branches
+		-Wlogical-op
+		-Wuseless-cast
+		-Wlifetime
+
+        #-fsanitize=thread -fsanitize=address
 )
 
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${PROJECT_NAME} PRIVATE
-            /Wall
+        /Wall
 )
 
 endif()
 
 find_package(Boost REQUIRED COMPONENTS
-        filesystem
+    filesystem
 )
 
 target_include_directories(${PROJECT_NAME} PRIVATE
@@ -85,20 +100,20 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-        -Wl,-no-undefined
-        -Wl,-no-allow-shlib-undefined
-        -Wl,-unresolved-symbols=report-all
+    -Wl,-no-undefined
+    -Wl,-no-allow-shlib-undefined
+    -Wl,-unresolved-symbols=report-all
 
-        dl
-        X11
+    dl
+    X11
 
-        pthread
+    pthread
 
-        Boost::boost
-        Boost::filesystem
+    Boost::boost
+    Boost::filesystem
 
-        Vulkan::Vulkan
+    Vulkan::Vulkan
 
-        glm
-        glfw3
+    glm
+    glfw3
 )

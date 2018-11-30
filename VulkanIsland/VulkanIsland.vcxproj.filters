@@ -9,6 +9,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Source Files\input">
+      <UniqueIdentifier>{01e6d63c-1f6c-4677-bd33-aa044ed7b313}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cxx">
@@ -46,6 +49,12 @@
     </ClCompile>
     <ClCompile Include="src\descriptor.cxx">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\input\MouseInput.cxx">
+      <Filter>Source Files\input</Filter>
+    </ClCompile>
+    <ClCompile Include="src\input\InputManager.cxx">
+      <Filter>Source Files\input</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -111,6 +120,12 @@
     </ClInclude>
     <ClInclude Include="src\descriptor.hxx">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\input\InputManager.hxx">
+      <Filter>Source Files\input</Filter>
+    </ClInclude>
+    <ClInclude Include="src\input\MouseInput.hxx">
+      <Filter>Source Files\input</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

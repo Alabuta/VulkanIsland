@@ -97,7 +97,7 @@ struct to_vertex_format_buffer<std::variant<Ts...>> {
     >;
 };
 
-using vertex_buffer_t = to_vertex_format_buffer<vertex_format_t>;
+using vertex_buffer_t = to_vertex_format_buffer<vertex_format_t>::type;
 
 
 template<class T, class V>
