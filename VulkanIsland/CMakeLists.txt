@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 if(NOT DEFINED PROJECT_VERSION)
     set(PROJECT_VERSION 1.0.0)
@@ -11,6 +11,7 @@ configure_file(
     "${PROJECT_SOURCE_DIR}/include/config.h"
 )
 
+
 find_package(Vulkan REQUIRED)
 
 if(NOT WIN32)
@@ -18,9 +19,9 @@ if(NOT WIN32)
 	find_package(X11 REQUIRED)
 endif()
 
-find_package(glfw3 3.3 REQUIRED)
+find_package(glfw3 3.2.1 REQUIRED)
 
-include_directories(include)
+include_directories(SYSTEM include)
 
 set(SOURCE_FILES
     src/buffer.hxx                          src/buffer.cxx
@@ -70,8 +71,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 		-Wnon-virtual-dtor
 		-Wcast-align
 		-Wunused
-		-Wconversions
-		-Wsign-conversion
+#		-Wconversion
+#		-Wsign-conversion
 		-Wnull-dereference
 		-Wdouble-promotion
 		-Wformat=2
@@ -79,7 +80,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 		-Wduplicated-branches
 		-Wlogical-op
 		-Wuseless-cast
-		-Wlifetime
+#        -Wlifetime
 
         #-fsanitize=thread -fsanitize=address
 )
