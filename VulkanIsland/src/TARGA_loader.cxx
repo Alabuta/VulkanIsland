@@ -198,19 +198,18 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
     }, std::move(palette));
 }
 
-[[nodiscard]] std::optional<RawImage> LoadTARGA(std::string_view _name)
+[[nodiscard]] std::optional<RawImage> LoadTARGA(std::string_view name)
 {
-    auto current_path = fs::current_path();
+    fs::path contents{"contents/scenes"sv};
 
-    fs::path directory{"contents"s};
-    fs::path name{std::data(_name)};
+    if (!fs::exists(fs::current_path() / contents))
+        contents = fs::current_path() / "../"sv / contents;
 
-    if (!fs::exists(current_path / directory))
-        directory = current_path / fs::path{"../"s} / directory;
+    auto path = contents / name;
 
-    std::ifstream file((directory / name).native(), std::ios::binary);
+    std::ifstream file{path.native(), std::ios::in | std::ios::binary};
 
-    if (!file.is_open())
+    if (file.bad() || file.fail())
         return { };
 
     TARGA targa;

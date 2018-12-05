@@ -110,8 +110,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
     pthread
 
-    Boost::boost
-    Boost::filesystem
+    stdc++fs
 
     Vulkan::Vulkan
 

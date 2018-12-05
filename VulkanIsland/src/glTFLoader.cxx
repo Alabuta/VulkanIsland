@@ -1,12 +1,7 @@
 #include <variant>
 
-#ifdef _MSC_VER
 #include <filesystem>
 namespace fs = std::filesystem;
-#else
-#include <boost/filesystem.hpp>
-namespace fs = boost::filesystem;
-#endif
 
 #ifdef _MSC_VER
 #pragma warning(push, 3)
@@ -818,29 +813,29 @@ std::optional<attribute::attribute_t> try_to_get_attribute_type(std::string_view
 
 namespace glTF
 {
-bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &_indices)
+bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &_indices, [[maybe_unused]] index_buffer_t &inds)
 {
-    auto current_path = fs::current_path();
+    fs::path contents{"contents/scenes"sv};
 
-    fs::path contents{"contents"s};
-    fs::path folder{std::data(name)};
+    if (!fs::exists(fs::current_path() / contents))
+        contents = fs::current_path() / "../"sv / contents;
 
-    if (!fs::exists(current_path / contents))
-        contents = current_path / fs::path{"../"s} / contents;
-
-    folder = contents / folder;
-
-    auto glTF_path = folder / fs::path{"scene.gltf"s};
-
-    std::ifstream glTFFile(glTF_path.native(), std::ios::in);
-
-    if (glTFFile.bad() || glTFFile.fail()) {
-        std::cerr << "failed to open file: "s << glTF_path << std::endl;
-        return false;
-    }
+    auto folder = contents / name;
 
     nlohmann::json json;
-    glTFFile >> json;
+
+    {
+        auto path = folder / "scene.gltf"sv;
+
+        std::ifstream file{path.native(), std::ios::in};
+
+        if (file.bad() || file.fail()) {
+            std::cerr << "failed to open file: "s << path << std::endl;
+            return false;
+        }
+
+        file >> json;
+    }
 
     auto scenes = json.at("scenes"s).get<std::vector<glTF::scene_t>>();
     auto nodes = json.at("nodes"s).get<std::vector<glTF::node_t>>();
@@ -949,19 +944,19 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
     binBuffers.reserve(std::size(buffers));
 
     for (auto &&buffer : buffers) {
-        auto bin_path = folder / fs::path{buffer.uri};
+        auto path = folder / buffer.uri;
 
-        std::ifstream bin_file(bin_path.native(), std::ios::in | std::ios::binary);
+        std::ifstream file{path.native(), std::ios::in | std::ios::binary};
 
-        if (!bin_file.is_open()) {
-            std::cerr << "failed to open file: "s << bin_path << std::endl;
+        if (file.bad() || file.fail()) {
+            std::cerr << "failed to open file: "s << path << std::endl;
             return false;
         }
 
         std::vector<std::byte> byteCode(buffer.byteLength);
 
         if (!byteCode.empty())
-            bin_file.read(reinterpret_cast<char *>(std::data(byteCode)), std::size(byteCode));
+            file.read(reinterpret_cast<char *>(std::data(byteCode)), std::size(byteCode));
 
         binBuffers.emplace_back(std::move(byteCode));
     }
