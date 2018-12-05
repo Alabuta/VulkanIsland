@@ -107,6 +107,13 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
     dl
     X11
+	Xxf86vm
+	Xcursor
+	Xi
+	Xrandr
+	Xinerama
+	rt
+	m
 
     pthread
 
