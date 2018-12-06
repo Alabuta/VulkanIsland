@@ -3,8 +3,9 @@
 #include "main.hxx"
 #include "helpers.hxx"
 #include "math.hxx"
+#include "mesh.hxx"
 
 namespace glTF
 {
-bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &indices);
+bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector<std::uint32_t> &indices, index_buffer_t &inds);
 }

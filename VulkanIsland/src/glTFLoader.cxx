@@ -793,7 +793,7 @@ std::optional<attribute::attribute_t> try_to_get_attribute_type(GL componentType
     }
 }
 
-std::optional<attribute::attribute_t> try_to_get_attribute_type(std::string_view type, GL componentType)
+[[maybe_unused]] std::optional<attribute::attribute_t> try_to_get_attribute_type(std::string_view type, GL componentType)
 {
     if (type == "SCALAR"sv)
         return glTF::try_to_get_attribute_type<1>(componentType);
@@ -956,7 +956,7 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
         std::vector<std::byte> byteCode(buffer.byteLength);
 
         if (!byteCode.empty())
-            file.read(reinterpret_cast<char *>(std::data(byteCode)), std::size(byteCode));
+            file.read(reinterpret_cast<char *>(std::data(byteCode)), static_cast<std::int64_t>(std::size(byteCode)));
 
         binBuffers.emplace_back(std::move(byteCode));
     }
@@ -1002,7 +1002,11 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
             {
                 std::transform(std::begin(indices), std::end(indices), std::back_inserter(_indices), [offset] (auto index)
                 {
-                    return static_cast<std::uint32_t>(offset + index.array.at(0));
+#ifdef __GNUC__
+#pragma GCC diagnostic ignored "-Wsign-conversion"
+                    return static_cast<std::uint32_t>(offset + static_cast<std::size_t>(index.array.at(0)));
+#pragma GCC diagnostic pop
+#endif
                 });
 
             }, attributeBuffers.at(primitive.indices));

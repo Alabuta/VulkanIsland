@@ -42,6 +42,8 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle, std::st
 
     auto &&layerChunks = layersChunks.at(childrenDepth);
 
+    using difference_type_t = decltype(layersChunks)::difference_type;
+
     if (std::size(childrenLayer) == parentChildren.end) {
         auto index = parentChildren.end;
 
@@ -62,7 +64,7 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle, std::st
             handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
             nodes.emplace_back(childrenDepth, index);
 
-            auto it = std::next(std::begin(childrenLayer), index);
+            auto it = std::next(std::begin(childrenLayer), static_cast<difference_type_t>(index));
             childrenLayer.emplace(it, parentHandle, *handle, entities->create(), name);
 
             ++parentChildren.end;
@@ -80,7 +82,7 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle, std::st
             auto it_range_begin = std::begin(layerChunks);
             auto it_range_end = std::end(layerChunks);
 
-            std::iterator_traits<decltype(it_range_end)>::difference_type const requestedSize = childrenCount + 1;
+            auto const requestedSize = static_cast<difference_type_t>(childrenCount + 1);
 
             while (it_range_begin != std::end(layerChunks)) {
                 it_range_end = FindGapInChunks(it_range_begin, std::end(layerChunks));
@@ -94,36 +96,37 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle, std::st
                 it_range_begin = it_range_end;
             }
 
-            std::size_t new_begin_index = 0, new_node_index = 0;
+            difference_type_t new_begin_index = 0, new_node_index = 0;
 
             if (std::distance(it_range_begin, it_range_end) > 0) {
                 auto it_range_edge = std::next(it_range_begin, requestedSize);
 
-                new_begin_index = *it_range_begin;
-                new_node_index = *std::prev(it_range_edge);
+                new_begin_index = static_cast<difference_type_t>(*it_range_begin);
+                new_node_index = static_cast<difference_type_t>(*std::prev(it_range_edge));
 
                 layerChunks.erase(it_range_begin, it_range_edge);
             }
 
             else {
-                new_begin_index = std::size(childrenLayer);
+                new_begin_index = static_cast<difference_type_t>(std::size(childrenLayer));
                 new_node_index = new_begin_index + requestedSize - 1;
 
-                childrenLayer.resize(std::size(childrenLayer) + requestedSize);
+                childrenLayer.resize(std::size(childrenLayer) + static_cast<std::size_t>(requestedSize));
             }
 
-            std::ptrdiff_t const offset = new_begin_index - parentChildren.begin;
+            auto const offset = new_begin_index - static_cast<difference_type_t>(parentChildren.begin);
 
             handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
-            nodes.emplace_back(childrenDepth, new_node_index);
+            nodes.emplace_back(childrenDepth, static_cast<std::size_t>(new_node_index));
 
-            auto it_begin = std::next(std::begin(childrenLayer), parentChildren.begin);
-            auto it_end = std::next(std::begin(childrenLayer), parentChildren.end);
+            auto it_begin = std::next(std::begin(childrenLayer), static_cast<difference_type_t>(parentChildren.begin));
+            auto it_end = std::next(std::begin(childrenLayer), static_cast<difference_type_t>(parentChildren.end));
 
-            std::for_each(it_begin, it_end, [&nodes = nodes, offset] (auto &&nodeInfo) {
+            std::for_each(it_begin, it_end, [&nodes = nodes, offset] (auto &&nodeInfo)
+            {
                 auto &&node = nodes.at(static_cast<std::size_t>(nodeInfo.handle));
 
-                node.offset += offset;
+                node.offset += static_cast<std::size_t>(offset);
             });
 
             auto it_new_begin = std::next(std::begin(childrenLayer), new_begin_index);
@@ -132,8 +135,8 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle, std::st
             std::vector<std::decay_t<decltype(layerChunks)>::value_type> newChunks(childrenCount);
             std::iota(std::begin(newChunks), std::end(newChunks), parentChildren.begin);
 
-            parentChildren.begin = new_begin_index;
-            parentChildren.end = parentChildren.begin + requestedSize;
+            parentChildren.begin = static_cast<std::size_t>(new_begin_index);
+            parentChildren.end = parentChildren.begin + static_cast<std::size_t>(requestedSize);
 
             std::move(it_begin, it_end, it_new_begin);
 
@@ -150,11 +153,12 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle, std::st
 
         if (it_chunk != std::end(layerChunks)) {
             auto index = *it_chunk;
+            auto index_it_type = static_cast<difference_type_t>(index);
 
             handle.emplace(static_cast<NodeHandle>(std::size(nodes)));
             nodes.emplace_back(childrenDepth, index);
 
-            auto it = std::next(std::begin(childrenLayer), index);
+            auto it = std::next(std::begin(childrenLayer), index_it_type);
             childrenLayer.emplace(it, parentHandle, *handle, entities->create(), name);
 
             parentChildren.begin = index;

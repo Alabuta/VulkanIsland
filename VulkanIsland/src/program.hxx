@@ -19,12 +19,12 @@
     auto const start_pos = file.tellg();
     file.ignore(std::numeric_limits<std::streamsize>::max());
 
-    std::vector<std::byte> shaderByteCode(file.gcount());
+    std::vector<std::byte> shaderByteCode(static_cast<std::size_t>(file.gcount()));
 
     file.seekg(start_pos);
 
     if (!shaderByteCode.empty())
-        file.read(reinterpret_cast<char *>(std::data(shaderByteCode)), shaderByteCode.size());
+        file.read(reinterpret_cast<char *>(std::data(shaderByteCode)), static_cast<std::streamsize>(std::size(shaderByteCode)));
 
     return shaderByteCode;
 }

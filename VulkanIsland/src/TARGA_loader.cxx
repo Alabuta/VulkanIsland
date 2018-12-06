@@ -97,11 +97,11 @@ void LoadUncompressedTrueColorImage(TARGA &targa, std::ifstream &file)
 
     std::visit([&targa, &file] (auto &&buffer)
     {
-        buffer.resize(targa.width * targa.height);
+        buffer.resize(static_cast<std::size_t>(targa.width * targa.height));
 
         using texel_type = typename std::decay_t<decltype(buffer)>::value_type;
 
-        file.read(reinterpret_cast<char *>(std::data(buffer)), std::size(buffer) * sizeof(texel_type));
+        file.read(reinterpret_cast<char *>(std::data(buffer)), static_cast<std::int64_t>(std::size(buffer) * sizeof(texel_type)));
 
         if constexpr (texel_type::size == 3)
         {
@@ -139,7 +139,9 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
 
     targa.pixelLayout = GetPixelLayout(targa.colorMapDepth);
 
-    auto colorMapStart = static_cast<std::size_t>((targa.header.colorMapSpec.at(1) << 8) + targa.header.colorMapSpec.at(0));
+    using pos_type_t = std::decay_t<decltype(file)>::pos_type;
+
+    auto colorMapStart = static_cast<pos_type_t>((targa.header.colorMapSpec.at(1) << 8) + targa.header.colorMapSpec.at(0));
     auto colorMapLength = static_cast<std::size_t>((targa.header.colorMapSpec.at(3) << 8) + targa.header.colorMapSpec.at(2));
 
     file.seekg(colorMapStart, std::ios::cur);
@@ -150,7 +152,7 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
 
         using texel_type = typename std::decay_t<decltype(palette)>::value_type;
 
-        file.read(reinterpret_cast<char *>(std::data(palette)), std::size(palette) * sizeof(texel_type));
+        file.read(reinterpret_cast<char *>(std::data(palette)), static_cast<std::streamsize>(std::size(palette) * sizeof(texel_type)));
 
         if constexpr (texel_type::size == 3)
         {
@@ -173,10 +175,10 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
 
     std::visit([&targa, &file] (auto &&palette)
     {
-        std::vector<std::size_t> indices(targa.width * targa.height);
-        file.read(reinterpret_cast<char *>(std::data(indices)), std::size(indices) * sizeof(std::byte));
+        std::vector<std::size_t> indices(static_cast<std::size_t>(targa.width * targa.height));
+        file.read(reinterpret_cast<char *>(std::data(indices)), static_cast<std::streamsize>(std::size(indices) * sizeof(std::byte)));
 
-        std::decay_t<decltype(palette)> buffer(targa.width * targa.height);
+        std::decay_t<decltype(palette)> buffer(static_cast<std::size_t>(targa.width * targa.height));
 
         std::ptrdiff_t begin, end;
         std::size_t colorIndex;

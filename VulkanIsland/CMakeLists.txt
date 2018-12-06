@@ -71,8 +71,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 		-Wnon-virtual-dtor
 		-Wcast-align
 		-Wunused
-#		-Wconversion
-#		-Wsign-conversion
+		-Wconversion
+		-Wsign-conversion
 		-Wnull-dereference
 		-Wdouble-promotion
 		-Wformat=2
