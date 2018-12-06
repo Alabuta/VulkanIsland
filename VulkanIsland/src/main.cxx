@@ -115,9 +115,11 @@ std::shared_ptr<VulkanBuffer> StageData(VulkanDevice &device, T &&container)
             if (auto result = vkMapMemory(device.handle(), buffer->memory()->handle(), buffer->memory()->offset(), buffer->memory()->size(), 0, &data); result != VK_SUCCESS)
                 std::cerr << "failed to map staging buffer memory: "s << result << '\n';
 
-            std::uninitialized_copy(std::begin(container), std::end(container), reinterpret_cast<vertex_type *>(data));
+            else {
+                std::uninitialized_copy(std::begin(container), std::end(container), reinterpret_cast<vertex_type *>(data));
 
-            vkUnmapMemory(device.handle(), buffer->memory()->handle());
+                vkUnmapMemory(device.handle(), buffer->memory()->handle());
+            }
         }
 
         return buffer;
