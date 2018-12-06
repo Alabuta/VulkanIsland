@@ -53,8 +53,8 @@ add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
 
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED YES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED NO
     CXX_EXTENSIONS OFF
 
     POSITION_INDEPENDENT_CODE YES
@@ -62,7 +62,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     DEBUG_POSTFIX _d
 )
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     target_compile_options(${PROJECT_NAME} PRIVATE
         -Wpedantic
         -Wall
@@ -81,6 +81,24 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 		-Wlogical-op
 		-Wuseless-cast
 #        -Wlifetime
+
+        #-fsanitize=thread -fsanitize=address
+)
+
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        -Wpedantic
+        -Wall
+        -Wextra
+		-Wold-style-cast
+		-Wnon-virtual-dtor
+		-Wcast-align
+		-Wunused
+		-Wconversion
+		-Wsign-conversion
+		-Wnull-dereference
+		-Wdouble-promotion
+		-Wformat=2
 
         #-fsanitize=thread -fsanitize=address
 )

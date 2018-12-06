@@ -63,6 +63,7 @@ struct app_t final {
 
     std::vector<Vertex> vertices;
     std::vector<std::uint32_t> indices;
+    index_buffer_t inds;
 
     std::unique_ptr<VulkanInstance> vulkanInstance;
     std::unique_ptr<VulkanDevice> vulkanDevice;
@@ -581,15 +582,10 @@ void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass r
         if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
             throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
 
-//        auto constexpr clearColors2 = make_array(
-//            VkClearValue{{{0.64f, 0.64f, 0.64f, 1.f}}},
-//            VkClearValue{{{kREVERSED_DEPTH ? 0 : 1, 0}}}
-//        );
-
-        std::array<VkClearValue, 2> constexpr clearColors = {{
-            VkClearValue{{{0.64f, 0.64f, 0.64f, 1.f}}},
-            VkClearValue{{kREVERSED_DEPTH ? 0.f : 1.f, 0}}
-        }};
+        auto clearColors = std::array{
+            VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f } } },
+            VkClearValue{ .depthStencil = { kREVERSED_DEPTH ? 0.f : 1.f, 0 } }
+        };
 
         VkRenderPassBeginInfo const renderPassInfo{
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -721,8 +717,8 @@ void OnWindowResize(GLFWwindow *window, int width, int height)
 {
     auto app = reinterpret_cast<app_t *>(glfwGetWindowUserPointer(window));
 
-    app->width = width;
-    app->height = height;
+    app->width = static_cast<std::uint32_t>(width);
+    app->height = static_cast<std::uint32_t>(height);
 
     RecreateSwapChain(*app);
 }
@@ -855,7 +851,7 @@ void InitVulkan(GLFWwindow *window, app_t &app)
 
     else app.texture.sampler = result;
 
-    if (auto result = glTF::LoadScene("sponza"sv, app.vertices, app.indices); !result)
+    if (auto result = glTF::LoadScene("sponza"sv, app.vertices, app.indices, app.inds); !result)
         throw std::runtime_error("failed to load a mesh"s);
 
     if (app.vertexBuffer = InitVertexBuffer(app, *app.vulkanDevice); !app.vertexBuffer)
@@ -1165,7 +1161,7 @@ try {
 
     app_t app;
 
-    auto window = glfwCreateWindow(app.width, app.height, "VulkanIsland", nullptr, nullptr);
+    auto window = glfwCreateWindow(static_cast<std::int32_t>(app.width), static_cast<std::int32_t>(app.height), "VulkanIsland", nullptr, nullptr);
 
     glfwSetWindowUserPointer(window, &app);
 

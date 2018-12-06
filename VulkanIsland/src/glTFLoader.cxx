@@ -198,9 +198,10 @@ constexpr auto get_vertex_format_index()
 
 
 
-
+#if OBSOLETE
 template<class T, class V, std::size_t I>
 auto constexpr has_type_at_index = std::is_same_v<std::tuple_element_t<I, V>, T>;
+#endif
 
 //template<class S, class V, std::size_t I>
 //auto constexpr has_semantic_at_index = has_type_at_index<S, std::tuple_element_t<0, V>, I>;
@@ -1002,7 +1003,7 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
             {
                 std::transform(std::begin(indices), std::end(indices), std::back_inserter(_indices), [offset] (auto index)
                 {
-#ifdef __GNUC__
+#ifdef __GNUG__
 #pragma GCC diagnostic ignored "-Wsign-conversion"
                     return static_cast<std::uint32_t>(offset + static_cast<std::size_t>(index.array.at(0)));
 #pragma GCC diagnostic pop

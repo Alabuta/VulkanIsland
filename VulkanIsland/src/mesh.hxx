@@ -111,6 +111,10 @@ struct is_vertex_format<T, std::variant<Ts...>> {
 template<class T>
 constexpr bool is_vertex_format_v = is_vertex_format<T, vertex_format_t>::value;
 
+
+using indices_t = std::variant<std::uint8_t, std::uint16_t, std::uint32_t>;
+using index_buffer_t = wrap_variant_by_vector<indices_t>::type;
+
 /*struct Mesh final {
     glm::mat4 localMatrix;
     glm::mat4 worldMatrix;

@@ -42,7 +42,7 @@ public:
 
 private:
 
-    VulkanDevice &device_;
+    [[maybe_unused]] VulkanDevice &device_;
     std::vector<VkDescriptorPoolSize> poolSizes_;
 };
 
