@@ -2,30 +2,29 @@
 
 #include "main.hxx"
 
-[[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view _name)
+[[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view name)
 {
-    auto current_path = fs::current_path();
+    fs::path contents{"shaders"sv};
 
-    fs::path directory{"shaders"s};
-    fs::path name{std::data(_name)};
+    if (!fs::exists(fs::current_path() / contents))
+        contents = fs::current_path() / "../"sv / contents;
 
-    if (!fs::exists(current_path / directory))
-        directory = current_path / fs::path{"../"s} / directory;
+    auto path = contents / name;
 
-    std::ifstream file((directory / name).native(), std::ios::binary);
+    std::ifstream file{path.native(), std::ios::in | std::ios::binary};
 
-    if (!file.is_open())
+    if (file.bad() || file.fail())
         return { };
 
     auto const start_pos = file.tellg();
     file.ignore(std::numeric_limits<std::streamsize>::max());
 
-    std::vector<std::byte> shaderByteCode(file.gcount());
+    std::vector<std::byte> shaderByteCode(static_cast<std::size_t>(file.gcount()));
 
     file.seekg(start_pos);
 
     if (!shaderByteCode.empty())
-        file.read(reinterpret_cast<char *>(std::data(shaderByteCode)), shaderByteCode.size());
+        file.read(reinterpret_cast<char *>(std::data(shaderByteCode)), static_cast<std::streamsize>(std::size(shaderByteCode)));
 
     return shaderByteCode;
 }

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.11 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.13 FATAL_ERROR)
 
 if(NOT DEFINED PROJECT_VERSION)
     set(PROJECT_VERSION 1.0.0)
@@ -11,6 +11,7 @@ configure_file(
     "${PROJECT_SOURCE_DIR}/include/config.h"
 )
 
+
 find_package(Vulkan REQUIRED)
 
 if(NOT WIN32)
@@ -18,9 +19,9 @@ if(NOT WIN32)
 	find_package(X11 REQUIRED)
 endif()
 
-find_package(glfw3 3.3 REQUIRED)
+find_package(glfw3 3.2.1 REQUIRED)
 
-include_directories(include)
+include_directories(SYSTEM include)
 
 set(SOURCE_FILES
     src/buffer.hxx                          src/buffer.cxx
@@ -52,8 +53,8 @@ add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
 
-    CXX_STANDARD 17
-    CXX_STANDARD_REQUIRED YES
+    CXX_STANDARD 20
+    CXX_STANDARD_REQUIRED NO
     CXX_EXTENSIONS OFF
 
     POSITION_INDEPENDENT_CODE YES
@@ -61,7 +62,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     DEBUG_POSTFIX _d
 )
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     target_compile_options(${PROJECT_NAME} PRIVATE
         -Wpedantic
         -Wall
@@ -70,7 +71,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 		-Wnon-virtual-dtor
 		-Wcast-align
 		-Wunused
-		-Wconversions
+		-Wconversion
 		-Wsign-conversion
 		-Wnull-dereference
 		-Wdouble-promotion
@@ -79,7 +80,25 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
 		-Wduplicated-branches
 		-Wlogical-op
 		-Wuseless-cast
-		-Wlifetime
+#        -Wlifetime
+
+        #-fsanitize=thread -fsanitize=address
+)
+
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options(${PROJECT_NAME} PRIVATE
+        -Wpedantic
+        -Wall
+        -Wextra
+		-Wold-style-cast
+		-Wnon-virtual-dtor
+		-Wcast-align
+		-Wunused
+		-Wconversion
+		-Wsign-conversion
+		-Wnull-dereference
+		-Wdouble-promotion
+		-Wformat=2
 
         #-fsanitize=thread -fsanitize=address
 )
@@ -106,11 +125,17 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
     dl
     X11
+	Xxf86vm
+	Xcursor
+	Xi
+	Xrandr
+	Xinerama
+	rt
+	m
 
     pthread
 
-    Boost::boost
-    Boost::filesystem
+    stdc++fs
 
     Vulkan::Vulkan
 

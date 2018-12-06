@@ -13,7 +13,7 @@ FindMemoryType(VulkanDevice const &vulkanDevice, std::uint32_t filter, VkMemoryP
 
     auto it_type = std::find_if(std::cbegin(memoryTypes), std::cend(memoryTypes), [filter, propertyFlags, i = 0u] (auto type) mutable
     {
-        return (filter & (1 << i++)) && (type.propertyFlags & propertyFlags) == propertyFlags;
+        return (filter & (1u << i++)) && (type.propertyFlags & propertyFlags) == propertyFlags;
     });
 
     if (it_type < std::next(std::cbegin(memoryTypes), memoryProperties.memoryTypeCount))
@@ -147,7 +147,7 @@ MemoryManager::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags pro
         }
 
         else {
-            auto const wastedMemoryRatio = 100.f - memoryRequirements.size / static_cast<float>(memoryBlock.availableSize) * 100.f;
+            auto const wastedMemoryRatio = 100.f - static_cast<float>(memoryRequirements.size) / static_cast<float>(memoryBlock.availableSize) * 100.f;
 
             if (wastedMemoryRatio > 1.f)
                 std::cerr << "Memory pool: wasted memory ratio: "s << wastedMemoryRatio << "%\n"s;
@@ -158,7 +158,7 @@ MemoryManager::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags pro
 
         availableChunks.erase(Pool::Block::Chunk{0, 0});
 
-        std::cout << "Memory pool: ["s << memoryTypeIndex << "]: sub-allocation : "s << memoryRequirements.size / 1024.f << "KB\n"s;
+        std::cout << "Memory pool: ["s << memoryTypeIndex << "]: sub-allocation : "s << static_cast<float>(memoryRequirements.size) / 1024.f << "KB\n"s;
 
         return std::shared_ptr<DeviceMemory>{
             new DeviceMemory{it_block->first, memoryTypeIndex, memoryRequirements.size, memoryOffset},
@@ -206,7 +206,7 @@ auto MemoryManager::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceS
     auto it = pool.blocks.try_emplace(handle, size).first;
 
     std::cout << "Memory pool: ["s << memoryTypeIndex << "]: #"s << std::size(pool.blocks) << " page allocation: "s;
-    std::cout << size / 1024.f << " KB/"s << totalAllocatedSize_ / std::pow(2.f, 20.f) << "MB\n"s;
+    std::cout << static_cast<float>(size) / 1024.f << " KB/"s << static_cast<float>(totalAllocatedSize_) / std::pow(2.f, 20.f) << "MB\n"s;
 
     return it;
 }
@@ -228,7 +228,7 @@ void MemoryManager::DeallocateMemory(DeviceMemory const &memory)
     auto &&block = pool.blocks.at(memory.handle());
     auto &&availableChunks = block.availableChunks;
 
-    std::cout << "Memory pool: ["s << memory.typeIndex() << "]: releasing chunk: "s << memory.size() / 1024.f << "KB.\n"s;
+    std::cout << "Memory pool: ["s << memory.typeIndex() << "]: releasing chunk: "s << static_cast<float>(memory.size()) / 1024.f << "KB.\n"s;
 
     auto it_chunk = availableChunks.emplace(memory.offset(), memory.size());
 

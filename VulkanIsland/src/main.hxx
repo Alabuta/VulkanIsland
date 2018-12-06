@@ -12,13 +12,8 @@
 #include <string_view>
 #include <fstream>
 
-#ifdef _MSC_VER
 #include <filesystem>
 namespace fs = std::filesystem;
-#else
-#include <boost/filesystem.hpp>
-namespace fs = boost::filesystem;
-#endif
 
 #include "helpers.hxx"
 
