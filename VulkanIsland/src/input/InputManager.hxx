@@ -9,8 +9,6 @@
 #include "input/MouseInput.hxx"
 
 
-namespace isle
-{
 class InputManager final {
 public:
 
@@ -18,15 +16,15 @@ public:
 
     ~InputManager();
 
-    //void Process(WPARAM wParam, LPARAM lParam);
+    void Process();
 
     MouseInput &mouse() noexcept { return mouse_; }
 
 private:
     GLFWwindow *hTargetWnd_;
 
-    std::vector<std::byte> rawData_;
-
+    raw_mouse_t rawMouse_;
     MouseInput mouse_;
+
+    bool needsUpdateMouse{false};
 };
-}

@@ -37,6 +37,8 @@
 
 #include "scene_tree.hxx"
 
+#include "input/InputManager.hxx"
+
 
 #define USE_GLM 1
 
@@ -1175,6 +1177,8 @@ try {
     glfwSetWindowUserPointer(window, &app);
 
     glfwSetWindowSizeCallback(window, OnWindowResize);
+
+    InputManager inputManager{window};
 
     // glfwSetCursorPosCallback(window, CursorCallback);
 

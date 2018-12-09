@@ -18,10 +18,15 @@ using u32 = std::uint32_t;
 using u64 = std::uint64_t;
 
 
-namespace isle
-{
+template<class T>
+class IInputDevice {
+public:
+    virtual ~IInputDevice() = default;
+};
+
+
 struct raw_mouse_t {
-    ;
+    std::bitset<16> buttons{0};
 };
 
 class MouseInput final {
@@ -42,15 +47,14 @@ public:
 
     void connect(std::shared_ptr<IHandler> slot);
 
-    void update(raw_mouse_t &&data);
+    void update(raw_mouse_t &data);
 
 private:
 
-    IHandler::buttons_t buttons_;
+    IHandler::buttons_t buttons_{0};
 
     boost::signals2::signal<void(i32, i32)> onMove_;
     boost::signals2::signal<void(i32)> onWheel_;
     boost::signals2::signal<void(IHandler::buttons_t)> onDown_;
     boost::signals2::signal<void(IHandler::buttons_t)> onUp_;
 };
-}
