@@ -1005,7 +1005,9 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
                 {
 #ifdef __GNUG__
 #pragma GCC diagnostic ignored "-Wsign-conversion"
+#endif
                     return static_cast<std::uint32_t>(offset + static_cast<std::size_t>(index.array.at(0)));
+#ifdef __GNUG__
 #pragma GCC diagnostic pop
 #endif
                 });

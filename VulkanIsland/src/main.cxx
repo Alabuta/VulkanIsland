@@ -584,10 +584,17 @@ void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass r
         if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
             throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
 
-        auto clearColors = std::array{
+#ifdef _MSC_VER
+        auto const clearColors = std::array{
+            VkClearValue{{{ 0.64f, 0.64f, 0.64f, 1.f }}},
+            VkClearValue{{ kREVERSED_DEPTH ? 0.f : 1.f, 0 }}
+        };
+#else
+        auto const clearColors = std::array{
             VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f } } },
             VkClearValue{ .depthStencil = { kREVERSED_DEPTH ? 0.f : 1.f, 0 } }
         };
+#endif
 
         VkRenderPassBeginInfo const renderPassInfo{
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
