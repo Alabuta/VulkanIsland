@@ -9,6 +9,14 @@ std::bitset<16> constexpr kPRESSED_MASK{
 std::bitset<16> constexpr kDEPRESSED_MASK{
     0x02 | 0x08 | 0x20 | 0x80 | 0x200
 };
+
+template<class... Ts>
+struct overloaded : Ts... {
+    using Ts::operator()...;
+};
+
+template<class... Ts>
+overloaded(Ts...) -> overloaded<Ts...>;
 }
 
 void MouseInput::connect(std::shared_ptr<IHandler> slot)
@@ -22,7 +30,7 @@ void MouseInput::connect(std::shared_ptr<IHandler> slot)
     onUp_.connect(decltype(onUp_)::slot_type(&IHandler::onUp, slot.get(), _1).track_foreign(slot));
 }
 
-void MouseInput::update(raw_mouse_t &data)
+void MouseInput::update(InputData &data)
 {
     /*switch (data.usFlags) {
         case MOUSE_MOVE_RELATIVE:
@@ -31,22 +39,22 @@ void MouseInput::update(raw_mouse_t &data)
             break;
     }  */  
     
-    if (data.buttons.any()) {
-        auto const buttonsBitCount = kPRESSED_MASK.count();
+    // if (data.buttons.any()) {
+    //     auto const buttonsBitCount = kPRESSED_MASK.count();
 
-        for (std::size_t i = 0; i < buttonsBitCount; ++i) {
-            auto const pressed = data.buttons[i];
-            auto const depressed = data.buttons[++i];
+    //     for (std::size_t i = 0; i < buttonsBitCount; ++i) {
+    //         auto const pressed = data.buttons[i];
+    //         auto const depressed = data.buttons[++i];
 
-            buttons_[i / 2] = (buttons_[i / 2] | pressed) & ~depressed;
-        }
+    //         buttons_[i / 2] = (buttons_[i / 2] | pressed) & ~depressed;
+    //     }
 
-        if ((data.buttons & kPRESSED_MASK).any())
-            onDown_(buttons_);
+    //     if ((data.buttons & kPRESSED_MASK).any())
+    //         onDown_(buttons_);
 
-        if ((data.buttons & kDEPRESSED_MASK).any())
-            onUp_(buttons_);
-    }
+    //     if ((data.buttons & kDEPRESSED_MASK).any())
+    //         onUp_(buttons_);
+    // }
 
     /*switch (data.usButtonFlags) {
         case RI_MOUSE_WHEEL:
@@ -56,4 +64,12 @@ void MouseInput::update(raw_mouse_t &data)
         default:
             break;
     }*/
+
+    std::visit(overloaded{
+        [] (buttons_t &&buttons)
+        {
+            ;
+        },
+        [] (auto &&) { }
+    }, data);
 }

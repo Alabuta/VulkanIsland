@@ -45,8 +45,8 @@ InputManager::~InputManager()
 
 void InputManager::Process()
 {
-    if (needsUpdateMouse)
-        mouse_.update(rawMouse_);
+    // if (needsUpdateMouse)
+    //     mouse_.update(rawMouse_);
 
     needsUpdateMouse = false;
 }

@@ -1,7 +1,7 @@
 #pragma once
 
-#include <memory>
 #include <bitset>
+#include <tuple>
 
 #include <boost/signals2.hpp>
 
@@ -32,10 +32,18 @@ struct raw_mouse_t {
 class MouseInput final {
 public:
 
+    using buttons_t = std::bitset<8>;
+    using relative_pos_t = std::pair<std::float_t, std::float_t>;
+    using wheel_t = std::float_t;
+
+    using InputData = std::variant<
+        buttons_t,
+        relative_pos_t,
+        wheel_t
+    >;
+
     class IHandler {
     public:
-
-        using buttons_t = std::bitset<8>;
 
         virtual ~IHandler() = default;
 
@@ -47,14 +55,14 @@ public:
 
     void connect(std::shared_ptr<IHandler> slot);
 
-    void update(raw_mouse_t &data);
+    void update(InputData &data);
 
 private:
 
-    IHandler::buttons_t buttons_{0};
+    buttons_t buttons_{0};
 
     boost::signals2::signal<void(i32, i32)> onMove_;
     boost::signals2::signal<void(i32)> onWheel_;
-    boost::signals2::signal<void(IHandler::buttons_t)> onDown_;
-    boost::signals2::signal<void(IHandler::buttons_t)> onUp_;
+    boost::signals2::signal<void(buttons_t)> onDown_;
+    boost::signals2::signal<void(buttons_t)> onUp_;
 };
