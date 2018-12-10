@@ -45,6 +45,11 @@ set(SOURCE_FILES
     src/TARGA_loader.hxx                    src/TARGA_loader.cxx
     src/transform.hxx
 
+    src/platform/window.hxx                 src/platform/window.cxx
+
+    src/input/input_manager.hxx             src/input/input_manager.cxx
+    src/input/mouse_input.hxx               src/input/mouse_input.cxx
+
     src/main.hxx                            src/main.cxx
 )
 
@@ -80,7 +85,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 		-Wduplicated-branches
 		-Wlogical-op
 		-Wuseless-cast
-#        -Wlifetime
+        # -Wlifetime
 
         #-fsanitize=thread -fsanitize=address
 )

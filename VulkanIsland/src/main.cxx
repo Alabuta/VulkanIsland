@@ -37,7 +37,7 @@
 
 #include "scene_tree.hxx"
 
-#include "input/InputManager.hxx"
+#include "input/input_manager.hxx"
 
 
 #define USE_GLM 1
