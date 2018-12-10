@@ -15,6 +15,7 @@ class Window final {
 public:
 
     Window(std::string_view name, std::int32_t width, std::int32_t height);
+
     ~Window();
 
     class IEventHandler {
@@ -22,11 +23,13 @@ public:
 
         virtual ~IEventHandler() = default;
 
-        virtual void onResize(std::int32_t width, std::int32_t height) = 0;
-        virtual void onInputUpdate(InputManager::InputData &data) = 0;
+        virtual void onResize(std::int32_t width, std::int32_t height) { };
+        virtual void onInputUpdate(InputManager::InputData &data) { };
     };
 
     void connectEventHandler(std::shared_ptr<IEventHandler> handler);
+
+    GLFWwindow *handle() const noexcept { return handle_; }
 
 private:
     GLFWwindow *handle_;

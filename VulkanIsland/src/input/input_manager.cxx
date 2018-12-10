@@ -11,7 +11,8 @@
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 
-InputManager::InputManager(GLFWwindow *hTargetWnd) : hTargetWnd_{hTargetWnd}
+#if 0
+InputManager::InputManager(std::shared_ptr<Window> window) : window_{window}
 {
     // glfwSetMouseButtonCallback(hTargetWnd_, [&] (auto window, auto button, auto action, [[maybe_unused]] auto mods)
     // {
@@ -31,22 +32,15 @@ InputManager::InputManager(GLFWwindow *hTargetWnd) : hTargetWnd_{hTargetWnd}
 
     //     needsUpdateMouse = true;
     // });
-
-    glfwSetCursorPosCallback(hTargetWnd_, [] (auto window, auto x, auto y)
-    {
-        ;
-    });
 }
 
 InputManager::~InputManager()
 {
     ;
 }
+#endif
 
 void InputManager::Process()
 {
-    // if (needsUpdateMouse)
-    //     mouse_.update(rawMouse_);
-
-    needsUpdateMouse = false;
+    ;
 }

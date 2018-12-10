@@ -34,10 +34,12 @@ Window::Window(std::string_view name, std::int32_t width, std::int32_t height)
         auto instance = reinterpret_cast<Window *>(glfwGetWindowUserPointer(handle));
 
         if (instance) {
-            InputManager::MouseInputData mouse;
+            MouseInput::InputData mouse;
 
-            mouse.x = static_cast<decltype(mouse.x)>(x);
-            mouse.y = static_cast<decltype(mouse.y)>(y);
+            mouse = MouseInput::relative_coords_t{
+                static_cast<decltype(MouseInput::relative_coords_t::x)>(x),
+                static_cast<decltype(MouseInput::relative_coords_t::y)>(y)
+            };
 
             InputManager::InputData data = std::move(mouse);
 
@@ -68,6 +70,11 @@ Window::~Window()
 
 void Window::connectEventHandler(std::shared_ptr<IEventHandler> handler)
 {
-    resizeCallback_.connect(decltype(resizeCallback_)::slot_type(&IEventHandler::onResize, handler.get(), _1, _2).track_foreign(handler));
-    inputUpdateCallback_.connect(decltype(inputUpdateCallback_)::slot_type(&IEventHandler::onInputUpdate, handler.get(), _1).track_foreign(handler));
+    resizeCallback_.connect(decltype(resizeCallback_)::slot_type(
+        &IEventHandler::onResize, handler.get(), _1, _2
+    ).track_foreign(handler));
+
+    inputUpdateCallback_.connect(decltype(inputUpdateCallback_)::slot_type(
+        &IEventHandler::onInputUpdate, handler.get(), _1
+    ).track_foreign(handler));
 }

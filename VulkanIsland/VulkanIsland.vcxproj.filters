@@ -12,6 +12,9 @@
     <Filter Include="Source Files\input">
       <UniqueIdentifier>{01e6d63c-1f6c-4677-bd33-aa044ed7b313}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\platform">
+      <UniqueIdentifier>{b9beac29-519b-414c-802d-4ea3f20a7efa}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src\main.cxx">
@@ -50,11 +53,14 @@
     <ClCompile Include="src\descriptor.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\input\MouseInput.cxx">
+    <ClCompile Include="src\input\input_manager.cxx">
       <Filter>Source Files\input</Filter>
     </ClCompile>
-    <ClCompile Include="src\input\InputManager.cxx">
+    <ClCompile Include="src\input\mouse_input.cxx">
       <Filter>Source Files\input</Filter>
+    </ClCompile>
+    <ClCompile Include="src\platform\window.cxx">
+      <Filter>Source Files\platform</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -121,11 +127,14 @@
     <ClInclude Include="src\descriptor.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\input\InputManager.hxx">
+    <ClInclude Include="src\input\mouse_input.hxx">
       <Filter>Source Files\input</Filter>
     </ClInclude>
-    <ClInclude Include="src\input\MouseInput.hxx">
+    <ClInclude Include="src\input\input_manager.hxx">
       <Filter>Source Files\input</Filter>
+    </ClInclude>
+    <ClInclude Include="src\platform\window.hxx">
+      <Filter>Source Files\platform</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

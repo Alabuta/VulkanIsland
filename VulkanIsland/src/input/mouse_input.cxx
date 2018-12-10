@@ -21,54 +21,54 @@ overloaded(Ts...) -> overloaded<Ts...>;
 
 void MouseInput::connect(std::shared_ptr<IHandler> slot)
 {
-    onMove_.connect(decltype(onMove_)::slot_type(&IHandler::onMove, slot.get(), _1, _2).track_foreign(slot));
+    onMove_.connect(decltype(onMove_)::slot_type(
+        &IHandler::onMove, slot.get(), _1, _2
+    ).track_foreign(slot));
 
-    onWheel_.connect(decltype(onWheel_)::slot_type(&IHandler::onWheel, slot.get(), _1).track_foreign(slot));
+    onWheel_.connect(decltype(onWheel_)::slot_type(
+        &IHandler::onWheel, slot.get(), _1
+    ).track_foreign(slot));
 
-    onDown_.connect(decltype(onDown_)::slot_type(&IHandler::onDown, slot.get(), _1).track_foreign(slot));
+    onDown_.connect(decltype(onDown_)::slot_type(
+        &IHandler::onDown, slot.get(), _1
+    ).track_foreign(slot));
 
-    onUp_.connect(decltype(onUp_)::slot_type(&IHandler::onUp, slot.get(), _1).track_foreign(slot));
+    onUp_.connect(decltype(onUp_)::slot_type(
+        &IHandler::onUp, slot.get(), _1
+    ).track_foreign(slot));
 }
 
 void MouseInput::update(InputData &data)
 {
-    /*switch (data.usFlags) {
-        case MOUSE_MOVE_RELATIVE:
-            if (data.lLastX || data.lLastY)
-                onMove_(data.lLastX, data.lLastY);
-            break;
-    }  */  
-    
-    // if (data.buttons.any()) {
-    //     auto const buttonsBitCount = kPRESSED_MASK.count();
-
-    //     for (std::size_t i = 0; i < buttonsBitCount; ++i) {
-    //         auto const pressed = data.buttons[i];
-    //         auto const depressed = data.buttons[++i];
-
-    //         buttons_[i / 2] = (buttons_[i / 2] | pressed) & ~depressed;
-    //     }
-
-    //     if ((data.buttons & kPRESSED_MASK).any())
-    //         onDown_(buttons_);
-
-    //     if ((data.buttons & kDEPRESSED_MASK).any())
-    //         onUp_(buttons_);
-    // }
-
-    /*switch (data.usButtonFlags) {
-        case RI_MOUSE_WHEEL:
-            onWheel_(static_cast<i16>(data.usButtonData));
-            break;
-
-        default:
-            break;
-    }*/
-
     std::visit(overloaded{
-        [] (buttons_t &&buttons)
+        [this] (relative_coords_t &coords)
         {
-            ;
+            if (coords.x || coords.y)
+                onMove_(coords.x, coords.y);
+        },
+        [this] (wheel_t wheel)
+        {
+            if (wheel.delta != 0.f)
+                onWheel_(wheel.delta);
+        },
+        [this] (raw_buttons_t &buttons)
+        {
+            if (buttons.value.any()) {
+                auto const buttonsBitCount = kPRESSED_MASK.count();
+
+                for (std::size_t i = 0; i < buttonsBitCount; ++i) {
+                    auto const pressed = buttons.value[i];
+                    auto const depressed = buttons.value[++i];
+
+                    buttons_[i / 2] = (buttons_[i / 2] | pressed) & ~depressed;
+                }
+
+                if ((buttons.value & kPRESSED_MASK).any())
+                    onDown_(buttons_);
+
+                if ((buttons.value & kDEPRESSED_MASK).any())
+                    onUp_(buttons_);
+            }
         },
         [] (auto &&) { }
     }, data);
