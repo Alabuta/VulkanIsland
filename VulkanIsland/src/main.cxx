@@ -97,6 +97,22 @@ struct app_t final {
 };
 
 
+void RecreateSwapChain(app_t &app);
+
+struct ResizeHandler final : public Window::IEventHandler {
+    ResizeHandler(app_t &app) : app{app} { }
+
+    app_t &app;
+
+    void onResize(std::int32_t width, std::int32_t height) override
+    {
+        app.width = static_cast<std::uint32_t>(width);
+        app.height = static_cast<std::uint32_t>(height);
+
+        RecreateSwapChain(app);
+    }
+};
+
 
 template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
 std::shared_ptr<VulkanBuffer> StageData(VulkanDevice &device, T &&container)
@@ -724,15 +740,6 @@ void RecreateSwapChain(app_t &app)
     CreateCommandBuffers(app, *app.vulkanDevice, app.renderPass, app.graphicsCommandPool, app.commandBuffers, app.swapchain.framebuffers);
 }
 
-void OnWindowResize(GLFWwindow *window, int width, int height)
-{
-    auto app = reinterpret_cast<app_t *>(glfwGetWindowUserPointer(window));
-
-    app->width = static_cast<std::uint32_t>(width);
-    app->height = static_cast<std::uint32_t>(height);
-
-    RecreateSwapChain(*app);
-}
 
 void DrawFrame(VulkanDevice const &vulkanDevice, app_t &app)
 {
@@ -795,7 +802,7 @@ void DrawFrame(VulkanDevice const &vulkanDevice, app_t &app)
     }
 }
 
-void InitVulkan(GLFWwindow *window, app_t &app)
+void InitVulkan(Window &window, app_t &app)
 {
     app.vulkanInstance = std::make_unique<VulkanInstance>(config::extensions, config::layers);
 
@@ -809,7 +816,7 @@ void InitVulkan(GLFWwindow *window, app_t &app)
 
     vkCreateWin32SurfaceKHR(vkInstance, &win32CreateInfo, nullptr, &vkSurface);
 #else
-    if (auto result = glfwCreateWindowSurface(app.vulkanInstance->handle(), window, nullptr, &app.surface); result != VK_SUCCESS)
+    if (auto result = glfwCreateWindowSurface(app.vulkanInstance->handle(), window.handle(), nullptr, &app.surface); result != VK_SUCCESS)
         throw std::runtime_error("failed to create window surface: "s + std::to_string(result));
 #endif
 
@@ -1167,28 +1174,26 @@ try {
 
     app_t app;
 
-    auto window = glfwCreateWindow(static_cast<std::int32_t>(app.width), static_cast<std::int32_t>(app.height), "VulkanIsland", nullptr, nullptr);
+    Window window{"VulkanIsland", static_cast<std::int32_t>(app.width), static_cast<std::int32_t>(app.height)};
 
-    glfwSetWindowUserPointer(window, &app);
+    auto inputManager = std::make_shared<InputManager>();
+    window.connectInputHandler(inputManager);
 
-    glfwSetWindowSizeCallback(window, OnWindowResize);
-
-    InputManager inputManager;//{window};
-
-    // glfwSetCursorPosCallback(window, CursorCallback);
+    auto resizeHandler = std::make_shared<ResizeHandler>(app);
+    window.connectEventHandler(resizeHandler);
 
     std::cout << measure<>::execution(InitVulkan, window, std::ref(app)) << '\n';
     //InitVulkan(window);
 
-    while (!glfwWindowShouldClose(window) && glfwGetKey(window, GLFW_KEY_ESCAPE) != GLFW_PRESS) {
+    window.update([&app]
+    {
         glfwPollEvents();
+
         UpdateUniformBuffer(*app.vulkanDevice.get(), app, *app.uboBuffer, app.width, app.height);
         DrawFrame(*app.vulkanDevice, app);
-    }
+    });
 
     CleanUp(app);
-
-    glfwDestroyWindow(window);
 
     glfwTerminate();
 

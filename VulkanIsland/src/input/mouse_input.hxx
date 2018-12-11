@@ -4,6 +4,9 @@
 
 #include <boost/signals2.hpp>
 
+#include "input_data_types.hxx"
+
+
 
 template<class T>
 class IInputDevice {
@@ -14,24 +17,6 @@ public:
 
 class MouseInput final {
 public:
-
-    struct raw_buttons_t final {
-        std::bitset<16> value;
-    };
-
-    struct relative_coords_t final {
-        float x, y;
-    };
-
-    struct wheel_t final {
-        float delta;
-    };
-
-    using InputData = std::variant<
-        raw_buttons_t,
-        relative_coords_t,
-        wheel_t
-    >;
 
     class IHandler {
     public:
@@ -48,7 +33,7 @@ public:
 
     void connect(std::shared_ptr<IHandler> slot);
 
-    void update(InputData &data);
+    void update(input::mouse::RawData &data);
 
 private:
 

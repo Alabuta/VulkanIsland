@@ -9,7 +9,6 @@
 #include <GLFW/glfw3.h>
 
 #include "../input/input_data_types.hxx"
-#include "../input/input_manager.hxx"
 
 
 
@@ -20,11 +19,15 @@ public:
 
     ~Window();
 
+    void update(std::function<void()> &&callback);
+
+    GLFWwindow *const handle() noexcept { return handle_; }
+    GLFWwindow const *const handle() const noexcept { return handle_; }
+
     struct IEventHandler {
         virtual ~IEventHandler() = default;
 
-        virtual void onResize(std::int32_t width, std::int32_t height) { };
-        virtual void onInputUpdate(InputManager::InputData &data) { };
+        virtual void onResize(std::int32_t width, std::int32_t height) = 0;
     };
 
     void connectEventHandler(std::shared_ptr<IEventHandler> handler);
@@ -32,12 +35,10 @@ public:
     struct IInputHandler {
         virtual ~IInputHandler() = default;
 
-        virtual void onMouseUpdate(InputManager::InputData &data) = 0;
+        virtual void onUpdate(input::RawData &data) = 0;
     };
 
     void connectInputHandler(std::shared_ptr<IInputHandler> handler);
-
-    GLFWwindow *handle() const noexcept { return handle_; }
 
 private:
     GLFWwindow *handle_;
@@ -47,5 +48,6 @@ private:
     std::string name_;
 
     boost::signals2::signal<void(std::int32_t, std::int32_t)> resizeCallback_;
-    boost::signals2::signal<void(InputManager::InputData &)> inputUpdateCallback_;
+
+    boost::signals2::signal<void(input::RawData &)> inputUpdateCallback_;
 };

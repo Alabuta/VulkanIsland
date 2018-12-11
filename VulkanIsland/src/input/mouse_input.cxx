@@ -10,13 +10,8 @@ std::bitset<16> constexpr kDEPRESSED_MASK{
     0x02 | 0x08 | 0x20 | 0x80 | 0x200
 };
 
-template<class... Ts>
-struct overloaded : Ts... {
-    using Ts::operator()...;
-};
-
-template<class... Ts>
-overloaded(Ts...) -> overloaded<Ts...>;
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 }
 
 void MouseInput::connect(std::shared_ptr<IHandler> slot)
@@ -38,20 +33,20 @@ void MouseInput::connect(std::shared_ptr<IHandler> slot)
     ).track_foreign(slot));
 }
 
-void MouseInput::update(InputData &data)
+void MouseInput::update(input::mouse::RawData &data)
 {
     std::visit(overloaded{
-        [this] (relative_coords_t &coords)
+        [this] (input::mouse::RelativeCoords &coords)
         {
             if (coords.x || coords.y)
                 onMove_(coords.x, coords.y);
         },
-        [this] (wheel_t wheel)
+        [this] (input::mouse::Wheel wheel)
         {
             if (wheel.delta != 0.f)
                 onWheel_(wheel.delta);
         },
-        [this] (raw_buttons_t &buttons)
+        [this] (input::mouse::Buttons &buttons)
         {
             if (buttons.value.any()) {
                 auto const buttonsBitCount = kPRESSED_MASK.count();

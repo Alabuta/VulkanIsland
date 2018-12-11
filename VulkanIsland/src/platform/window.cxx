@@ -34,32 +34,29 @@ Window::Window(std::string_view name, std::int32_t width, std::int32_t height)
         auto instance = reinterpret_cast<Window *>(glfwGetWindowUserPointer(handle));
 
         if (instance) {
-            MouseInput::InputData mouse;
-
-            mouse = MouseInput::relative_coords_t{
-                static_cast<decltype(MouseInput::relative_coords_t::x)>(x),
-                static_cast<decltype(MouseInput::relative_coords_t::y)>(y)
+            auto mouse = input::mouse::RelativeCoords{
+                static_cast<decltype(input::mouse::RelativeCoords::x)>(x),
+                static_cast<decltype(input::mouse::RelativeCoords::y)>(y)
             };
 
-            InputManager::InputData data = std::move(mouse);
+            input::RawData data = input::mouse::RawData{std::move(mouse)};
 
             instance->inputUpdateCallback_(data);
         }
     });
 
-    // glfwSetMouseButtonCallback(handle_, [] (auto handle, auto button, auto action, auto)
-    // {
-    //     auto instance = reinterpret_cast<Window *>(glfwGetWindowUserPointer(handle));
+     glfwSetMouseButtonCallback(handle_, [] (auto handle, auto button, auto action, auto)
+     {
+         auto instance = reinterpret_cast<Window *>(glfwGetWindowUserPointer(handle));
 
-    //     if (instance) {
-    //         InputManager::MouseInputData data;
+         if (instance) {
+             auto mouse = input::mouse::Buttons{};
 
-    //         data.x = static_cast<decltype(data.x)>(x);
-    //         data.y = static_cast<decltype(data.y)>(y);
+             auto offset = action == GLFW_PRESS ? 0 : 1;
 
-    //         instance->inputProcessCallback(std::move(data));
-    //     }
-    // });
+             mouse.value[button * 2 + offset] = 1;
+         }
+     });
 }
 
 Window::~Window()
@@ -73,8 +70,18 @@ void Window::connectEventHandler(std::shared_ptr<IEventHandler> handler)
     resizeCallback_.connect(decltype(resizeCallback_)::slot_type(
         &IEventHandler::onResize, handler.get(), _1, _2
     ).track_foreign(handler));
+}
 
+void Window::connectInputHandler(std::shared_ptr<IInputHandler> handler)
+{
     inputUpdateCallback_.connect(decltype(inputUpdateCallback_)::slot_type(
-        &IEventHandler::onInputUpdate, handler.get(), _1
+        &IInputHandler::onUpdate, handler.get(), _1
     ).track_foreign(handler));
+}
+
+void Window::update(std::function<void()> &&callback)
+{
+    while (glfwWindowShouldClose(handle_) == GLFW_FALSE && glfwGetKey(handle_, GLFW_KEY_ESCAPE) != GLFW_PRESS) {
+        callback();
+    }
 }

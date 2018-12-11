@@ -7,40 +7,26 @@
 #include <boost/functional/hash_fwd.hpp>
 
 #include "input_manager.hxx"
+#include "../input/input_data_types.hxx"
+
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;
 
-#if 0
-InputManager::InputManager(std::shared_ptr<Window> window) : window_{window}
+namespace
 {
-    // glfwSetMouseButtonCallback(hTargetWnd_, [&] (auto window, auto button, auto action, [[maybe_unused]] auto mods)
-    // {
-    //     rawMouse_.buttons.reset();
-
-    //     auto offset = action == GLFW_PRESS ? 0 : 1;
-
-    //     rawMouse_[button * 2 + offset] = 1;
-
-    //     if (action == GLFW_PRESS) {
-    //         std::cout << "pressed"s << button << '\n';
-    //     }
-
-    //     if (action == GLFW_RELEASE) {
-    //         std::cout << "unpressed"s << button << '\n';
-    //     }
-
-    //     needsUpdateMouse = true;
-    // });
+template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 }
 
-InputManager::~InputManager()
-{
-    ;
-}
-#endif
 
-void InputManager::Process()
+void InputManager::onUpdate(input::RawData &data)
 {
-    ;
+    std::visit(overloaded{
+        [this] (input::mouse::RawData &coords)
+        {
+            ;
+        },
+        [] (auto &&) { }
+    }, data);
 }
