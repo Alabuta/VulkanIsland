@@ -8,7 +8,9 @@
 
 #include <GLFW/glfw3.h>
 
+#include "../input/input_data_types.hxx"
 #include "../input/input_manager.hxx"
+
 
 
 class Window final {
@@ -18,9 +20,7 @@ public:
 
     ~Window();
 
-    class IEventHandler {
-    public:
-
+    struct IEventHandler {
         virtual ~IEventHandler() = default;
 
         virtual void onResize(std::int32_t width, std::int32_t height) { };
@@ -28,6 +28,14 @@ public:
     };
 
     void connectEventHandler(std::shared_ptr<IEventHandler> handler);
+
+    struct IInputHandler {
+        virtual ~IInputHandler() = default;
+
+        virtual void onMouseUpdate(InputManager::InputData &data) = 0;
+    };
+
+    void connectInputHandler(std::shared_ptr<IInputHandler> handler);
 
     GLFWwindow *handle() const noexcept { return handle_; }
 

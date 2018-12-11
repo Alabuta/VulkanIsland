@@ -1178,7 +1178,7 @@ try {
 
     glfwSetWindowSizeCallback(window, OnWindowResize);
 
-    InputManager inputManager{window};
+    InputManager inputManager;//{window};
 
     // glfwSetCursorPosCallback(window, CursorCallback);
 

@@ -45,10 +45,11 @@ set(SOURCE_FILES
     src/TARGA_loader.hxx                    src/TARGA_loader.cxx
     src/transform.hxx
 
-    src/platform/window.hxx                 src/platform/window.cxx
-
+    src/input/input_data_types.hxx
     src/input/input_manager.hxx             src/input/input_manager.cxx
     src/input/mouse_input.hxx               src/input/mouse_input.cxx
+
+    src/platform/window.hxx                 src/platform/window.cxx
 
     src/main.hxx                            src/main.cxx
 )
