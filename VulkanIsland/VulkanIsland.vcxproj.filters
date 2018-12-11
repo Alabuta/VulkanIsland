@@ -136,6 +136,9 @@
     <ClInclude Include="src\platform\window.hxx">
       <Filter>Source Files\platform</Filter>
     </ClInclude>
+    <ClInclude Include="src\input\input_data_types.hxx">
+      <Filter>Source Files\input</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="..\shaders\shader.frag">

@@ -252,6 +252,7 @@
     <ClInclude Include="src\glTFLoader.hxx" />
     <ClInclude Include="src\image.hxx" />
     <ClInclude Include="src\helpers.hxx" />
+    <ClInclude Include="src\input\input_data_types.hxx" />
     <ClInclude Include="src\input\input_manager.hxx" />
     <ClInclude Include="src\input\mouse_input.hxx" />
     <ClInclude Include="src\instance.hxx" />

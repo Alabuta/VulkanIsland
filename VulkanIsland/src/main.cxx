@@ -1010,11 +1010,6 @@ void UpdateUniformBuffer(VulkanDevice const &device, app_t &app, VulkanBuffer co
     vkUnmapMemory(device.handle(), uboBuffer.memory()->handle());
 }
 
-/* void CursorCallback(GLFWwindow *window, double x, double y)
-{
-    mouseX = app.width * .5f - static_cast<float>(x);
-    mouseY = app.height * .5f - static_cast<float>(y);
-}*/
 
 
 

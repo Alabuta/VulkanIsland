@@ -1023,9 +1023,9 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
                 return accessor.first;
             });
 
+#if 0
             attribute::check(semantics);
 
-#if 0
             std::vector<attribute::vertex_attribute_t> xxxx;
 
             for (auto &&attributeAccessor : primitive.attributeAccessors) {
