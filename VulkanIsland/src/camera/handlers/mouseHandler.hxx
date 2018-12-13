@@ -1,0 +1,33 @@
+#pragma once
+
+#define GLM_FORCE_CXX17
+#include <glm/glm.hpp>
+
+
+#include "../../input/inputManager.hxx"
+#include "../../input/mouseInput.hxx"
+
+#include "../cameraController.hxx"
+
+
+class MouseHandler final : public MouseInput::IHandler {
+public:
+
+    MouseHandler(OrbitController &controller);
+
+private:
+
+    OrbitController &controller_;
+
+    std::function<void(MouseHandler &)> updateHandler_{[] (auto &&) { }};
+
+    glm::vec2 delta{0.f, 0.f};
+    glm::vec2 last{0.f, 0.f};
+
+    glm::vec2 dollyDirection{0, -1};
+
+    void onMove(float x, float y) override;
+    void onWheel(float delta) override;
+    void onDown(IHandler::buttons_t buttons) override;
+    void onUp(IHandler::buttons_t buttons) override;
+};

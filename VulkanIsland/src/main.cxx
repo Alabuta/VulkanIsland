@@ -38,6 +38,7 @@
 #include "sceneTree.hxx"
 
 #include "input/inputManager.hxx"
+#include "camera/cameraController.hxx"
 
 
 #define USE_GLM 1
@@ -62,6 +63,11 @@ struct app_t final {
 
     std::uint32_t width{800u};
     std::uint32_t height{600u};
+
+    CameraSystem cameraSystem;
+    std::shared_ptr<Camera> camera;
+
+    std::unique_ptr<OrbitController> cameraController;
 
     std::vector<Vertex> vertices;
     std::vector<std::uint32_t> indices;
@@ -110,6 +116,8 @@ struct ResizeHandler final : public Window::IEventHandler {
         app.height = static_cast<std::uint32_t>(height);
 
         RecreateSwapChain(app);
+
+        app.camera->aspect = static_cast<float>(width) / static_cast<float>(height);
     }
 };
 
@@ -1181,6 +1189,13 @@ try {
 
     auto resizeHandler = std::make_shared<ResizeHandler>(app);
     window.connectEventHandler(resizeHandler);
+
+    app.camera = app.cameraSystem.createCamera();
+    app.camera->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
+
+    app.cameraController = std::make_unique<OrbitController>(app.camera, inputManager);
+
+    app.cameraController->lookAt(glm::vec3{0, 4, 4}, {0, 2, 0});
 
     std::cout << measure<>::execution(InitVulkan, window, std::ref(app)) << '\n';
 
