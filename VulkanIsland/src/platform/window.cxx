@@ -45,18 +45,18 @@ Window::Window(std::string_view name, std::int32_t width, std::int32_t height)
         }
     });
 
-     glfwSetMouseButtonCallback(handle_, [] (auto handle, auto button, auto action, auto)
-     {
-         auto instance = reinterpret_cast<Window *>(glfwGetWindowUserPointer(handle));
+    glfwSetMouseButtonCallback(handle_, [] (auto handle, auto button, auto action, auto)
+    {
+        auto instance = reinterpret_cast<Window *>(glfwGetWindowUserPointer(handle));
 
-         if (instance) {
-             auto mouse = input::mouse::Buttons{};
+        if (instance) {
+            auto mouse = input::mouse::Buttons{};
 
-             auto offset = action == GLFW_PRESS ? 0 : 1;
+            std::size_t offset = action == GLFW_PRESS ? 0 : 1;
 
-             mouse.value[button * 2 + offset] = 1;
-         }
-     });
+            mouse.value[static_cast<std::size_t>(button) * 2 + offset] = 1;
+        }
+    });
 }
 
 Window::~Window()

@@ -23,7 +23,7 @@ template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 void InputManager::onUpdate(input::RawData &data)
 {
     std::visit(overloaded{
-        [this] (input::mouse::RawData &coords)
+        [/*this*/] (input::mouse::RawData &)//coords
         {
             ;
         },

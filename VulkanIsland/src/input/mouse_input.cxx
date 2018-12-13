@@ -38,7 +38,7 @@ void MouseInput::update(input::mouse::RawData &data)
     std::visit(overloaded{
         [this] (input::mouse::RelativeCoords &coords)
         {
-            if (coords.x || coords.y)
+            if (coords.x != 0.f || coords.y != 0.f)
                 onMove_(coords.x, coords.y);
         },
         [this] (input::mouse::Wheel wheel)

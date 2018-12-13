@@ -21,8 +21,7 @@ public:
 
     void update(std::function<void()> &&callback);
 
-    GLFWwindow *const handle() noexcept { return handle_; }
-    GLFWwindow const *const handle() const noexcept { return handle_; }
+    GLFWwindow *handle() noexcept { return handle_; }
 
     struct IEventHandler {
         virtual ~IEventHandler() = default;

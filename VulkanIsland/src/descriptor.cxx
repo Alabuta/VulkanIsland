@@ -37,12 +37,12 @@ struct DescriptorPoolDescription {
 class DescriptorPoolManager {
 public:
 
-    DescriptorPoolManager(VulkanDevice &device, std::vector<VkDescriptorPoolSize> &&poolSizes)
-        : device_{device}, poolSizes_{poolSizes} { };
+    DescriptorPoolManager(/*VulkanDevice &device, */std::vector<VkDescriptorPoolSize> &&poolSizes)
+        : /*device_{device}, */poolSizes_{poolSizes} { };
 
 private:
 
-    [[maybe_unused]] VulkanDevice &device_;
+    // VulkanDevice &device_;
     std::vector<VkDescriptorPoolSize> poolSizes_;
 };
 

@@ -275,9 +275,9 @@ void SceneTree::SetName(NodeHandle handle, std::string_view name)
 
 void SceneTree::Update()
 {
-    entities->for_each<Transform>([] (auto entity, auto &&transform) {
-        //std::cout << entity << "\n" << transform.localMatrix << "\n\n" << transform.worldMatrix << "\n\n";
-    });
+    // entities->for_each<Transform>([] (auto entity, auto &&transform) {
+    //     std::cout << entity << "\n" << transform.localMatrix << "\n\n" << transform.worldMatrix << "\n\n";
+    // });
 
     std::cout << "#############################\n\n";
 
@@ -319,9 +319,9 @@ void SceneTree::Update()
         }
     }
 
-    entities->for_each<Transform>([] (auto entity, auto &&transform) {
-        //std::cout << entity << "\n" << transform.localMatrix << "\n\n" << transform.worldMatrix << "\n\n";
-    });
+    // entities->for_each<Transform>([] (auto entity, auto &&transform) {
+    //     std::cout << entity << "\n" << transform.localMatrix << "\n\n" << transform.worldMatrix << "\n\n";
+    // });
 
     //entities->systems.update_all(0.f);
 }

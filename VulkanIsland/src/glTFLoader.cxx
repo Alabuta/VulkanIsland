@@ -1003,11 +1003,12 @@ bool LoadScene(std::string_view name, std::vector<Vertex> &vertices, std::vector
             {
                 std::transform(std::begin(indices), std::end(indices), std::back_inserter(_indices), [offset] (auto index)
                 {
-#ifdef __GNUG__
+#if !defined( __clang__) && !defined(_MSC_VER)
 #pragma GCC diagnostic ignored "-Wsign-conversion"
 #endif
                     return static_cast<std::uint32_t>(offset + static_cast<std::size_t>(index.array.at(0)));
-#ifdef __GNUG__
+
+#if !defined( __clang__) && !defined(_MSC_VER)
 #pragma GCC diagnostic pop
 #endif
                 });
