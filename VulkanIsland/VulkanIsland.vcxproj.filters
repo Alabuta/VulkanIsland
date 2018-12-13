@@ -15,137 +15,119 @@
     <Filter Include="Source Files\platform">
       <UniqueIdentifier>{b9beac29-519b-414c-802d-4ea3f20a7efa}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\camera">
+      <UniqueIdentifier>{fd489283-7909-497e-a557-d02b77a54cbb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\loaders">
+      <UniqueIdentifier>{b3c33407-998c-44b0-bc89-3299e60f8673}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\main.cxx">
+    <ClCompile Include="src/buffer.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\device.cxx">
+    <ClCompile Include="src/debug.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\instance.cxx">
+    <ClCompile Include="src/descriptor.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\debug.cxx">
+    <ClCompile Include="src/device.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\TARGA_loader.cxx">
+    <ClCompile Include="src/image.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\swapchain.cxx">
+    <ClCompile Include="src/instance.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\buffer.cxx">
+    <ClCompile Include="src/main.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\image.cxx">
+    <ClCompile Include="src/platform/window.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\resource.cxx">
+    <ClCompile Include="src/resource.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\glTFLoader.cxx">
+    <ClCompile Include="src/swapchain.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\scene_tree.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\descriptor.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\input\input_manager.cxx">
+    <ClCompile Include="src/input/inputManager.cxx">
       <Filter>Source Files\input</Filter>
     </ClCompile>
-    <ClCompile Include="src\input\mouse_input.cxx">
+    <ClCompile Include="src/input/mouseInput.cxx">
       <Filter>Source Files\input</Filter>
     </ClCompile>
-    <ClCompile Include="src\platform\window.cxx">
-      <Filter>Source Files\platform</Filter>
+    <ClCompile Include="src/camera/cameraController.cxx">
+      <Filter>Source Files\camera</Filter>
+    </ClCompile>
+    <ClCompile Include="src/camera/cameraController.hxx">
+      <Filter>Source Files\camera</Filter>
+    </ClCompile>
+    <ClCompile Include="src/camera/handlers/mouseHandler.cxx">
+      <Filter>Source Files\camera</Filter>
+    </ClCompile>
+    <ClCompile Include="src/camera/handlers/mouseHandler.hxx">
+      <Filter>Source Files\camera</Filter>
+    </ClCompile>
+    <ClCompile Include="src/loaderGLTF.cxx">
+      <Filter>Source Files\loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="src/loaderTARGA.cxx">
+      <Filter>Source Files\loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="src/sceneTree.cxx">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\queues.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\buffer.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\command_buffer.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\debug.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\device.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\device_defaults.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\helpers.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\image.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\instance.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\main.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\program.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\queue_builder.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\resource.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\swapchain.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\TARGA_loader.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\math.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\scene_tree.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\transform.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\mesh.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\glTFLoader.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\descriptor.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\input\mouse_input.hxx">
+    <ClInclude Include="src/buffer.hxx" />
+    <ClInclude Include="src/debug.hxx" />
+    <ClInclude Include="src/descriptor.hxx" />
+    <ClInclude Include="src/device.hxx" />
+    <ClInclude Include="src/image.hxx" />
+    <ClInclude Include="src/helpers.hxx" />
+    <ClInclude Include="src/instance.hxx" />
+    <ClInclude Include="src/math.hxx" />
+    <ClInclude Include="src/main.hxx" />
+    <ClInclude Include="src/mesh.hxx" />
+    <ClInclude Include="src/platform/window.hxx" />
+    <ClInclude Include="src/program.hxx" />
+    <ClInclude Include="src/queues.hxx" />
+    <ClInclude Include="src/resource.hxx" />
+    <ClInclude Include="src/swapchain.hxx" />
+    <ClInclude Include="src/transform.hxx" />
+    <ClInclude Include="src/input/inputDataTypes.hxx">
       <Filter>Source Files\input</Filter>
     </ClInclude>
-    <ClInclude Include="src\input\input_manager.hxx">
+    <ClInclude Include="src/input/inputManager.hxx">
       <Filter>Source Files\input</Filter>
     </ClInclude>
-    <ClInclude Include="src\platform\window.hxx">
-      <Filter>Source Files\platform</Filter>
-    </ClInclude>
-    <ClInclude Include="src\input\input_data_types.hxx">
+    <ClInclude Include="src/input/mouseInput.hxx">
       <Filter>Source Files\input</Filter>
+    </ClInclude>
+    <ClInclude Include="src/loaderGLTF.hxx">
+      <Filter>Source Files\loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="src/loaderTARGA.hxx">
+      <Filter>Source Files\loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="src/commandBuffer.hxx">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/deviceDefaults.hxx">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/queueBuilder.hxx">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/sceneTree.hxx">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\shaders\shader.frag">
-      <Filter>Resource Files</Filter>
-    </None>
-    <None Include="..\shaders\shader.vert">
-      <Filter>Resource Files</Filter>
-    </None>
+    <None Include="../shaders/shader.frag" />
+    <None Include="../shaders/shader.vert" />
   </ItemGroup>
 </Project>

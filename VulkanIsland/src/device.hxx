@@ -3,7 +3,7 @@
 #include "instance.hxx"
 #include "deviceDefaults.hxx"
 #include "queues.hxx"
-#include "queue_builder.hxx"
+#include "queueBuilder.hxx"
 
 #define USE_DEBUG_MARKERS 0
 

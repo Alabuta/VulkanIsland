@@ -37,15 +37,16 @@ set(SOURCE_FILES
 	src/math.hxx
 	src/mesh.hxx
     src/program.hxx
-    src/queue_builder.hxx
+    src/queueBuilder.hxx
     src/queues.hxx
     src/resource.hxx                        src/resource.cxx
 	src/sceneTree.hxx 						src/sceneTree.cxx
     src/swapchain.hxx                       src/swapchain.cxx
 	src/loaderTARGA.hxx 					src/loaderTARGA.cxx
     src/transform.hxx
-
+	
     src/camera/cameraController.hxx         src/camera/cameraController.cxx
+    src/camera/handlers/mouseHandler.hxx	src/camera/handlers/mouseHandler.cxx
 
 	src/input/inputDataTypes.hxx
 	src/input/inputManager.hxx 				src/input/inputManager.cxx
