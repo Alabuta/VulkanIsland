@@ -23,7 +23,7 @@ auto constexpr kPI = 3.14159265358979323846f;
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/hash.hpp>
 
-#include "../input/input_manager.hxx"
+#include "../input/inputManager.hxx"
 
 
 struct Camera {

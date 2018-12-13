@@ -8,7 +8,7 @@
 
 #include <GLFW/glfw3.h>
 
-#include "../input/input_data_types.hxx"
+#include "../input/inputDataTypes.hxx"
 
 
 

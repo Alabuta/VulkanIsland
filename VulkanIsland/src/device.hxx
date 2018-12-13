@@ -1,7 +1,7 @@
 #pragma once
 
 #include "instance.hxx"
-#include "device_defaults.hxx"
+#include "deviceDefaults.hxx"
 #include "queues.hxx"
 #include "queue_builder.hxx"
 

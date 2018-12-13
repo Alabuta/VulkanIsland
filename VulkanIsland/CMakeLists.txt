@@ -24,32 +24,32 @@ find_package(glfw3 3.2.1 REQUIRED)
 include_directories(SYSTEM include)
 
 set(SOURCE_FILES
-    src/buffer.hxx                          src/buffer.cxx
-    src/command_buffer.hxx
-    src/debug.hxx                           src/debug.cxx
-    src/descriptor.hxx                      src/descriptor.cxx
-    src/device.hxx                          src/device.cxx
-    src/device_defaults.hxx
-    src/glTFLoader.hxx                      src/glTFLoader.cxx
-    src/helpers.hxx
-    src/image.hxx                           src/image.cxx
-    src/instance.hxx                        src/instance.cxx
-    src/math.hxx
-    src/mesh.hxx
+	src/buffer.hxx 							src/buffer.cxx
+	src/commandBuffer.hxx
+	src/debug.hxx 							src/debug.cxx
+	src/descriptor.hxx 						src/descriptor.cxx
+	src/device.hxx 							src/device.cxx
+	src/deviceDefaults.hxx
+	src/loaderGLTF.hxx 						src/loaderGLTF.cxx
+	src/helpers.hxx
+	src/image.hxx 							src/image.cxx
+	src/instance.hxx 						src/instance.cxx
+	src/math.hxx
+	src/mesh.hxx
     src/program.hxx
     src/queue_builder.hxx
     src/queues.hxx
     src/resource.hxx                        src/resource.cxx
-    src/scene_tree.hxx                      src/scene_tree.cxx
+	src/sceneTree.hxx 						src/sceneTree.cxx
     src/swapchain.hxx                       src/swapchain.cxx
-    src/TARGA_loader.hxx                    src/TARGA_loader.cxx
+	src/loaderTARGA.hxx 					src/loaderTARGA.cxx
     src/transform.hxx
 
     src/Camera/CameraController.hxx         src/Camera/CameraController.cxx
 
-    src/input/input_data_types.hxx
-    src/input/input_manager.hxx             src/input/input_manager.cxx
-    src/input/mouse_input.hxx               src/input/mouse_input.cxx
+	src/input/inputDataTypes.hxx
+	src/input/inputManager.hxx 				src/input/inputManager.cxx
+	src/input/mouseInput.hxx 				src/input/mouseInput.cxx
 
     src/platform/window.hxx                 src/platform/window.cxx
 

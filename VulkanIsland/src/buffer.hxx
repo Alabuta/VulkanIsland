@@ -9,7 +9,7 @@
 
 #include "main.hxx"
 #include "device.hxx"
-#include "command_buffer.hxx"
+#include "commandBuffer.hxx"
 
 class DeviceMemory;
 

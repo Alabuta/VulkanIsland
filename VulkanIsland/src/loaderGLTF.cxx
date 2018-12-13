@@ -12,8 +12,8 @@ namespace fs = std::filesystem;
 #include "nlohmann/json.hpp"
 #endif
 
-#include "glTFLoader.hxx"
-#include "scene_tree.hxx"
+#include "loaderGLTF.hxx"
+#include "sceneTree.hxx"
 #include "mesh.hxx"
 
 

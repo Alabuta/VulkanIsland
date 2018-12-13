@@ -6,8 +6,8 @@
 
 #include <boost/functional/hash_fwd.hpp>
 
-#include "input_data_types.hxx"
-#include "input_manager.hxx"
+#include "inputDataTypes.hxx"
+#include "inputManager.hxx"
 
 
 using namespace std::string_literals;

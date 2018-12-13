@@ -5,7 +5,7 @@
 #include <tuple>
 
 #include "../platform/window.hxx"
-#include "mouse_input.hxx"
+#include "mouseInput.hxx"
 
 
 class InputManager final : public Window::IInputHandler {

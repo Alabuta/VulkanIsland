@@ -30,14 +30,14 @@
 #include "image.hxx"
 #include "resource.hxx"
 #include "descriptor.hxx"
-#include "command_buffer.hxx"
+#include "commandBuffer.hxx"
 
-#include "glTFLoader.hxx"
-#include "TARGA_loader.hxx"
+#include "loaderGLTF.hxx"
+#include "loaderTARGA.hxx"
 
-#include "scene_tree.hxx"
+#include "sceneTree.hxx"
 
-#include "input/input_manager.hxx"
+#include "input/inputManager.hxx"
 
 
 #define USE_GLM 1
