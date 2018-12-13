@@ -45,7 +45,7 @@ set(SOURCE_FILES
 	src/loaderTARGA.hxx 					src/loaderTARGA.cxx
     src/transform.hxx
 
-    src/Camera/CameraController.hxx         src/Camera/CameraController.cxx
+    src/camera/cameraController.hxx         src/camera/cameraController.cxx
 
 	src/input/inputDataTypes.hxx
 	src/input/inputManager.hxx 				src/input/inputManager.cxx

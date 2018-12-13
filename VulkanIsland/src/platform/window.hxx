@@ -49,4 +49,6 @@ private:
     boost::signals2::signal<void(std::int32_t, std::int32_t)> resizeCallback_;
 
     boost::signals2::signal<void(input::RawData &)> inputUpdateCallback_;
+
+    void setCallbacks();
 };

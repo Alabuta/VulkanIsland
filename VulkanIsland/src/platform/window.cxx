@@ -17,6 +17,38 @@ Window::Window(std::string_view name, std::int32_t width, std::int32_t height)
 
     glfwSetWindowUserPointer(handle_, this);
 
+    setCallbacks();
+}
+
+Window::~Window()
+{
+    if (handle_)
+        glfwDestroyWindow(handle_);
+}
+
+void Window::connectEventHandler(std::shared_ptr<IEventHandler> handler)
+{
+    resizeCallback_.connect(decltype(resizeCallback_)::slot_type(
+        &IEventHandler::onResize, handler.get(), _1, _2
+    ).track_foreign(handler));
+}
+
+void Window::connectInputHandler(std::shared_ptr<IInputHandler> handler)
+{
+    inputUpdateCallback_.connect(decltype(inputUpdateCallback_)::slot_type(
+        &IInputHandler::onUpdate, handler.get(), _1
+    ).track_foreign(handler));
+}
+
+void Window::update(std::function<void()> &&callback)
+{
+    while (glfwWindowShouldClose(handle_) == GLFW_FALSE && glfwGetKey(handle_, GLFW_KEY_ESCAPE) != GLFW_PRESS) {
+        callback();
+    }
+}
+
+void Window::setCallbacks()
+{
     glfwSetWindowSizeCallback(handle_, [] (auto handle, auto width, auto height)
     {
         auto instance = reinterpret_cast<Window *>(glfwGetWindowUserPointer(handle));
@@ -78,31 +110,4 @@ Window::Window(std::string_view name, std::int32_t width, std::int32_t height)
             instance->inputUpdateCallback_(data);
         }
     });
-}
-
-Window::~Window()
-{
-    if (handle_)
-        glfwDestroyWindow(handle_);
-}
-
-void Window::connectEventHandler(std::shared_ptr<IEventHandler> handler)
-{
-    resizeCallback_.connect(decltype(resizeCallback_)::slot_type(
-        &IEventHandler::onResize, handler.get(), _1, _2
-    ).track_foreign(handler));
-}
-
-void Window::connectInputHandler(std::shared_ptr<IInputHandler> handler)
-{
-    inputUpdateCallback_.connect(decltype(inputUpdateCallback_)::slot_type(
-        &IInputHandler::onUpdate, handler.get(), _1
-    ).track_foreign(handler));
-}
-
-void Window::update(std::function<void()> &&callback)
-{
-    while (glfwWindowShouldClose(handle_) == GLFW_FALSE && glfwGetKey(handle_, GLFW_KEY_ESCAPE) != GLFW_PRESS) {
-        callback();
-    }
 }
