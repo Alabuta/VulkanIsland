@@ -17,7 +17,7 @@ namespace input
         };
 
         struct Wheel final {
-            float delta;
+            float xoffset, yoffset;
         };
 
         using RawData = std::variant<

@@ -1183,7 +1183,6 @@ try {
     window.connectEventHandler(resizeHandler);
 
     std::cout << measure<>::execution(InitVulkan, window, std::ref(app)) << '\n';
-    //InitVulkan(window);
 
     window.update([&app]
     {

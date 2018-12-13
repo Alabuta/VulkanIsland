@@ -43,8 +43,7 @@ void MouseInput::update(input::mouse::RawData &data)
         },
         [this] (input::mouse::Wheel wheel)
         {
-            if (wheel.delta != 0.f)
-                onWheel_(wheel.delta);
+            onWheel_(wheel.xoffset);
         },
         [this] (input::mouse::Buttons &buttons)
         {

@@ -34,12 +34,12 @@ Window::Window(std::string_view name, std::int32_t width, std::int32_t height)
         auto instance = reinterpret_cast<Window *>(glfwGetWindowUserPointer(handle));
 
         if (instance) {
-            auto mouse = input::mouse::RelativeCoords{
+            auto coords = input::mouse::RelativeCoords{
                 static_cast<decltype(input::mouse::RelativeCoords::x)>(x),
                 static_cast<decltype(input::mouse::RelativeCoords::y)>(y)
             };
 
-            input::RawData data = input::mouse::RawData{std::move(mouse)};
+            input::RawData data = input::mouse::RawData{std::move(coords)};
 
             instance->inputUpdateCallback_(data);
         }
@@ -50,11 +50,32 @@ Window::Window(std::string_view name, std::int32_t width, std::int32_t height)
         auto instance = reinterpret_cast<Window *>(glfwGetWindowUserPointer(handle));
 
         if (instance) {
-            auto mouse = input::mouse::Buttons{};
+            auto buttons = input::mouse::Buttons{};
 
             std::size_t offset = action == GLFW_PRESS ? 0 : 1;
 
-            mouse.value[static_cast<std::size_t>(button) * 2 + offset] = 1;
+            buttons.value[static_cast<std::size_t>(button) * 2 + offset] = 1;
+
+            input::RawData data = input::mouse::RawData{std::move(buttons)};
+
+            instance->inputUpdateCallback_(data);
+        }
+    });
+
+    // TODO: replace to 'glfwSetMouseWheelCallback'
+    glfwSetScrollCallback(handle_, [] (auto handle, auto xoffset, auto yoffset)
+    {
+        auto instance = reinterpret_cast<Window *>(glfwGetWindowUserPointer(handle));
+
+        if (instance) {
+            auto wheel = input::mouse::Wheel{
+                static_cast<decltype(input::mouse::Wheel::xoffset)>(xoffset),
+                static_cast<decltype(input::mouse::Wheel::yoffset)>(yoffset)
+            };
+
+            input::RawData data = input::mouse::RawData{std::move(wheel)};
+
+            instance->inputUpdateCallback_(data);
         }
     });
 }
