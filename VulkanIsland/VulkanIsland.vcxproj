@@ -270,8 +270,8 @@
     <ClInclude Include="src/swapchain.hxx" />
     <ClInclude Include="src/loaderTARGA.hxx" />
     <ClInclude Include="src/transform.hxx" />
-    <ClCompile Include="src/camera/cameraController.hxx" />
-    <ClCompile Include="src/camera/handlers/mouseHandler.hxx" />
+    <ClInclude Include="src/camera/cameraController.hxx" />
+    <ClInclude Include="src/camera/handlers/mouseHandler.hxx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../shaders/shader.frag" />
