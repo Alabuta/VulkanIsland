@@ -186,11 +186,6 @@ void CleanupFrameData(app_t &app, VulkanDevice &device, VkPipeline graphicsPipel
 void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet &descriptorSet)
 {
     // TODO: descriptor info typed by VkDescriptorType.
-    auto const buffers = make_array(
-        VkDescriptorBufferInfo{app.uboBuffer->handle(), 0, sizeof(transforms_t)}
-    );
-
-    // TODO: descriptor info typed by VkDescriptorType.
     auto const cameras = make_array(
         VkDescriptorBufferInfo{app.perCameraBuffer->handle(), 0, sizeof(Camera::data_t)}
     );
@@ -205,16 +200,16 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
         VkDescriptorImageInfo{app.texture.sampler->handle(), app.texture.view.handle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}
     );
 
-    std::array<VkWriteDescriptorSet, 4> const writeDescriptorsSet{{
+    std::array<VkWriteDescriptorSet, 3> const writeDescriptorsSet{{
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,
             descriptorSet,
             0,
-            0, static_cast<std::uint32_t>(std::size(buffers)),
+            0, static_cast<std::uint32_t>(std::size(cameras)),
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             nullptr,
-            std::data(buffers),
+            std::data(cameras),
             nullptr
         },
         {
@@ -233,17 +228,6 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
             nullptr,
             descriptorSet,
             2,
-            0, static_cast<std::uint32_t>(std::size(cameras)),
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            nullptr,
-            std::data(cameras),
-            nullptr
-        },
-        {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            nullptr,
-            descriptorSet,
-            3,
             0, static_cast<std::uint32_t>(std::size(objects)),
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             nullptr,

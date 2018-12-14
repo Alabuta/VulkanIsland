@@ -5,14 +5,7 @@ layout(location = 0) in vec3 inVertex;
 layout(location = 1) in vec3 inNormal;
 layout(location = 2) in vec2 inUV;
 
-layout(set = 0, binding = 0) uniform TRANSFORMS {
-    mat4 model;
-    mat4 view;
-    mat4 projection;
-    mat4 modelView;
-} transforms;
-
-layout(set = 0, binding = 2) uniform PER_CAMERA
+layout(set = 0, binding = 0, std430) readonly buffer PER_CAMERA
 {
     mat4 view;
     mat4 projection;
@@ -23,7 +16,7 @@ layout(set = 0, binding = 2) uniform PER_CAMERA
     mat4 invertedProjection;
 } camera;
 
-layout(set = 0, binding = 3) uniform PER_OBJECT
+layout(set = 0, binding = 2, std430) readonly buffer PER_OBJECT
 {
     mat4 world;
     mat4 normal;  // Transposed of the inversed of the upper left 3x3 sub-matrix of world matrix.
