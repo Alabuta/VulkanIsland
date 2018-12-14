@@ -50,7 +50,7 @@ void CameraSystem::update()
 OrbitController::OrbitController(std::shared_ptr<Camera> camera, InputManager &inputManager) : camera_{camera}
 {
     mouseHandler_ = std::make_shared<MouseHandler>(*this);
-    inputManager.mouse().connect(mouseHandler_);
+    inputManager.mouse().connectHandler(mouseHandler_);
 }
 
 void OrbitController::lookAt(glm::vec3 &&eye, glm::vec3 &&target)

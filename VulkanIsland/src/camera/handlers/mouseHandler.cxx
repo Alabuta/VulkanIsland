@@ -1,15 +1,10 @@
 #include "mouseHandler.hxx"
 
 
-MouseHandler::MouseHandler(OrbitController &controller) : controller_{controller}
-{
-    ;
-}
-
 void MouseHandler::onMove(float x, float y)
 {
     delta = glm::vec2{x, y};
-    //delta = last - delta;
+    delta = last - delta;
 
     updateHandler_(*this);
 

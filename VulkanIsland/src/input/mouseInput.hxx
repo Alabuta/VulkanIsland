@@ -31,7 +31,7 @@ public:
         virtual void onUp(buttons_t buttons) = 0;
     };
 
-    void connect(std::shared_ptr<IHandler> slot);
+    void connectHandler(std::shared_ptr<IHandler> slot);
 
     void update(input::mouse::RawData &data);
 

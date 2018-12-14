@@ -13,7 +13,7 @@
 class MouseHandler final : public MouseInput::IHandler {
 public:
 
-    MouseHandler(OrbitController &controller);
+    MouseHandler(OrbitController &controller) : controller_{controller} { }
 
 private:
 

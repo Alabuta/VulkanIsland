@@ -1177,18 +1177,17 @@ try {
     */
 
     glfwInit();
-
     glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     app_t app;
 
-    Window window{"VulkanIsland", static_cast<std::int32_t>(app.width), static_cast<std::int32_t>(app.height)};
-
-    auto inputManager = std::make_shared<InputManager>();
-    window.connectInputHandler(inputManager);
+    Window window{"VulkanIsland"sv, static_cast<std::int32_t>(app.width), static_cast<std::int32_t>(app.height)};
 
     auto resizeHandler = std::make_shared<ResizeHandler>(app);
     window.connectEventHandler(resizeHandler);
+
+    auto inputManager = std::make_shared<InputManager>();
+    window.connectInputHandler(inputManager);
 
     app.camera = app.cameraSystem.createCamera();
     app.camera->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
@@ -1196,7 +1195,7 @@ try {
     app.cameraController = std::make_unique<OrbitController>(app.camera, *inputManager);
     app.cameraController->lookAt(glm::vec3{0, 4, 4}, {0, 2, 0});
 
-    std::cout << measure<>::execution(InitVulkan, window, std::ref(app)) << '\n';
+    std::cout << measure<>::execution(InitVulkan, window, std::ref(app)) << " ms\n"s;
 
     window.update([&app]
     {
