@@ -30,7 +30,7 @@ void MouseHandler::onDown(IHandler::buttons_t buttons)
             updateHandler_ = [] (auto &handler)
             {
                 auto direction = glm::dot(handler.delta, handler.dollyDirection);
-                handler.controller_.dolly(glm::length(handler.delta) * direction);
+                handler.controller_.dolly(glm::length(handler.delta) * direction * .1f);
             }; break;
 
         case 0x01:

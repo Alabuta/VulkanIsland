@@ -80,7 +80,7 @@ void OrbitController::lookAt(glm::vec3 &&eye, glm::vec3 &&target)
 
 void OrbitController::rotate(float longitude, float latitude)
 {
-    auto speed = (1.f - damping_) * .008f;
+    auto speed = (1.f - damping_) * .0064f;
 
     polarDelta_.x -= latitude * speed;
     polarDelta_.y += longitude * speed;
@@ -88,7 +88,7 @@ void OrbitController::rotate(float longitude, float latitude)
 
 void OrbitController::pan(float x, float y)
 {
-    auto speed = (1.f - damping_) * .001f;
+    auto speed = (1.f - damping_) * .0024f;
 
     panDelta_.x += x * speed;
     panDelta_.y -= y * speed;
