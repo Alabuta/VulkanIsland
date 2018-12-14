@@ -12,6 +12,17 @@ layout(set = 0, binding = 0) uniform TRANSFORMS {
 
 layout(set = 0, binding = 1) uniform sampler2D textureSampler;
 
+layout(set = 0, binding = 2) uniform PER_CAMERA
+{
+    mat4 view;
+    mat4 projection;
+
+    mat4 projectionView;
+
+    mat4 invertedView;
+    mat4 invertedProjection;
+} camera;
+
 layout(location = 0) in vec3 viewSpaceNormal;
 layout(location = 1) in vec2 texCoord1;
 layout(location = 2) in vec3 viewSpacePosition;
@@ -49,7 +60,7 @@ void main()
     float dist = 0.0, luminosity = 0.0;
 
     for (int i = 0; i < kPOINT_LIGHTS; ++i) {
-        lightPos = transforms.view * vec4(pointLights[i].position * 2.0, 1.0);
+        lightPos = camera.view * vec4(pointLights[i].position * 2.0, 1.0);
 
         dist = distance(viewSpacePosition, lightPos.xyz);
         luminosity = 1.0 / (1.0 + dist * (0.09 + dist * 0.032));

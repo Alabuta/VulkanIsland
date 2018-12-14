@@ -8,7 +8,7 @@ layout(location = 2) in vec2 inUV;
 layout(set = 0, binding = 0) uniform TRANSFORMS {
     mat4 model;
     mat4 view;
-    mat4 proj;
+    mat4 projection;
     mat4 modelView;
 } transforms;
 
@@ -23,6 +23,12 @@ layout(set = 0, binding = 2) uniform PER_CAMERA
     mat4 invertedProjection;
 } camera;
 
+layout(set = 0, binding = 3) uniform PER_OBJECT
+{
+    mat4 world;
+    mat4 normal;  // Transposed of the inversed of the upper left 3x3 sub-matrix of world matrix.
+} object;
+
 layout(location = 0) out vec3 viewSpaceNormal;
 layout(location = 1) out vec2 texCoord;
 layout(location = 2) out vec3 viewSpacePosition;
@@ -33,12 +39,12 @@ out gl_PerVertex {
 
 void main()
 {
-    gl_Position = camera.view * transforms.model * vec4(inVertex, 1.0);
+    gl_Position = camera.view * object.world * vec4(inVertex, 1.0);
 
     viewSpacePosition = gl_Position.xyz;
 
     gl_Position = camera.projection * gl_Position;
 
-    viewSpaceNormal = normalize((transpose(inverse(transforms.modelView)) * vec4(inNormal, 0.0)).xyz);
+    viewSpaceNormal = normalize((object.normal * transpose(camera.invertedView) * vec4(inNormal, 0.0)).xyz);
     texCoord = vec2(inUV.x, inUV.y);
 }

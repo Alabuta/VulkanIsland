@@ -74,6 +74,8 @@ struct app_t final {
 
     std::unique_ptr<OrbitController> cameraController;
 
+    per_object_t object;
+
     std::vector<Vertex> vertices;
     std::vector<std::uint32_t> indices;
     index_buffer_t inds;
@@ -194,11 +196,16 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
     );
 
     // TODO: descriptor info typed by VkDescriptorType.
+    auto const objects = make_array(
+        VkDescriptorBufferInfo{app.perObjectBuffer->handle(), 0, sizeof(per_object_t)}
+    );
+
+    // TODO: descriptor info typed by VkDescriptorType.
     auto const images = make_array(
         VkDescriptorImageInfo{app.texture.sampler->handle(), app.texture.view.handle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}
     );
 
-    std::array<VkWriteDescriptorSet, 3> const writeDescriptorsSet{{
+    std::array<VkWriteDescriptorSet, 4> const writeDescriptorsSet{{
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,
@@ -230,6 +237,17 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
             VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             nullptr,
             std::data(cameras),
+            nullptr
+        },
+        {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            nullptr,
+            descriptorSet,
+            3,
+            0, static_cast<std::uint32_t>(std::size(objects)),
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            nullptr,
+            std::data(objects),
             nullptr
         },
     }};
@@ -1063,19 +1081,43 @@ void Update(app_t &app)
     app.cameraSystem.update();
 
     auto &&device = *app.vulkanDevice;
-    auto &&buffer = *app.perCameraBuffer;
 
-    auto offset = buffer.memory()->offset();
-    auto size = buffer.memory()->size();
+    {
+        auto &&buffer = *app.perCameraBuffer;
 
-    void *data;
+        auto offset = buffer.memory()->offset();
+        auto size = buffer.memory()->size();
 
-    if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
-        throw std::runtime_error("failed to map per camera uniform buffer memory: "s + std::to_string(result));
+        void *data;
 
-    std::uninitialized_copy_n(&app.camera->data, 1, reinterpret_cast<Camera::data_t *>(data));
+        if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
+            throw std::runtime_error("failed to map per camera uniform buffer memory: "s + std::to_string(result));
 
-    vkUnmapMemory(device.handle(), buffer.memory()->handle());
+        std::uninitialized_copy_n(&app.camera->data, 1, reinterpret_cast<Camera::data_t *>(data));
+
+        vkUnmapMemory(device.handle(), buffer.memory()->handle());
+    }
+
+    {
+        app.object.world = glm::rotate(glm::mat4{1}, glm::radians(90.f), glm::vec3{1, 0, 0});
+        app.object.world = glm::rotate(app.object.world, glm::radians(90.f), glm::vec3{0, 0, 1});
+
+        app.object.normal = glm::inverseTranspose(app.object.world);
+
+        auto &&buffer = *app.perObjectBuffer;
+
+        auto offset = buffer.memory()->offset();
+        auto size = buffer.memory()->size();
+
+        void *data;
+
+        if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
+            throw std::runtime_error("failed to map per object uniform buffer memory: "s + std::to_string(result));
+
+        std::uninitialized_copy_n(&app.object, 1, reinterpret_cast<per_object_t *>(data));
+
+        vkUnmapMemory(device.handle(), buffer.memory()->handle());
+    }
 }
 
 
