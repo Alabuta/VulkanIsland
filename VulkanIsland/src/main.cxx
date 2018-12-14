@@ -58,6 +58,11 @@ struct transforms_t {
 };
 
 
+struct per_object_t {
+    glm::mat4 world{1};
+    glm::mat4 normal{1};  // Transposed of the inversed of the upper left 3x3 sub-matrix of model(world)-view matrix.
+};
+
 struct app_t final {
     transforms_t transforms;
 
@@ -98,6 +103,7 @@ struct app_t final {
     VkSemaphore imageAvailableSemaphore, renderFinishedSemaphore;
 
     std::shared_ptr<VulkanBuffer> vertexBuffer, indexBuffer, uboBuffer;
+    std::shared_ptr<VulkanBuffer> perObjectBuffer, perCameraBuffer;
 
     VulkanTexture texture;
 };
@@ -183,11 +189,16 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
     );
 
     // TODO: descriptor info typed by VkDescriptorType.
+    auto const cameras = make_array(
+        VkDescriptorBufferInfo{app.perCameraBuffer->handle(), 0, sizeof(Camera::data_t)}
+    );
+
+    // TODO: descriptor info typed by VkDescriptorType.
     auto const images = make_array(
         VkDescriptorImageInfo{app.texture.sampler->handle(), app.texture.view.handle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}
     );
 
-    std::array<VkWriteDescriptorSet, 2> const writeDescriptorsSet{{
+    std::array<VkWriteDescriptorSet, 3> const writeDescriptorsSet{{
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,
@@ -209,10 +220,22 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
             std::data(images),
             nullptr,
             nullptr
-        }
+        },
+        {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            nullptr,
+            descriptorSet,
+            2,
+            0, static_cast<std::uint32_t>(std::size(cameras)),
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            nullptr,
+            std::data(cameras),
+            nullptr
+        },
     }};
 
-    vkUpdateDescriptorSets(device.handle(), static_cast<std::uint32_t>(std::size(writeDescriptorsSet)), std::data(writeDescriptorsSet), 0, nullptr);
+    vkUpdateDescriptorSets(device.handle(), static_cast<std::uint32_t>(std::size(writeDescriptorsSet)),
+                           std::data(writeDescriptorsSet), 0, nullptr);
 }
 
 
@@ -889,6 +912,12 @@ void InitVulkan(Window &window, app_t &app)
     if (app.uboBuffer = CreateUniformBuffer(*app.vulkanDevice, sizeof(transforms_t)); !app.uboBuffer)
         throw std::runtime_error("failed to init uniform buffer"s);
 
+    if (app.perObjectBuffer = CreateUniformBuffer(*app.vulkanDevice, sizeof(per_object_t)); !app.perObjectBuffer)
+        throw std::runtime_error("failed to init per object uniform buffer"s);
+
+    if (app.perCameraBuffer = CreateUniformBuffer(*app.vulkanDevice, sizeof(Camera::data_t)); !app.perCameraBuffer)
+        throw std::runtime_error("failed to init per camera uniform buffer"s);
+
     if (auto descriptorPool = CreateDescriptorPool(*app.vulkanDevice); !descriptorPool)
         throw std::runtime_error("failed to create the descriptor pool"s);
 
@@ -924,6 +953,9 @@ void CleanUp(app_t &app)
     app.texture.sampler.reset();
     vkDestroyImageView(app.vulkanDevice->handle(), app.texture.view.handle(), nullptr);
     app.texture.image.reset();
+
+    app.perCameraBuffer.reset();
+    app.perObjectBuffer.reset();
 
     app.uboBuffer.reset();
     app.indexBuffer.reset();
@@ -1025,6 +1057,26 @@ void UpdateUniformBuffer(VulkanDevice const &device, app_t &app, VulkanBuffer co
     vkUnmapMemory(device.handle(), uboBuffer.memory()->handle());
 }
 
+void Update(app_t &app)
+{
+    app.cameraController->update();
+    app.cameraSystem.update();
+
+    auto &&device = *app.vulkanDevice;
+    auto &&buffer = *app.perCameraBuffer;
+
+    auto offset = buffer.memory()->offset();
+    auto size = buffer.memory()->size();
+
+    void *data;
+
+    if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
+        throw std::runtime_error("failed to map per camera uniform buffer memory: "s + std::to_string(result));
+
+    std::uninitialized_copy_n(&app.camera->data, 1, reinterpret_cast<Camera::data_t *>(data));
+
+    vkUnmapMemory(device.handle(), buffer.memory()->handle());
+}
 
 
 
@@ -1200,6 +1252,8 @@ try {
     window.update([&app]
     {
         glfwPollEvents();
+
+        Update(app);
 
         UpdateUniformBuffer(*app.vulkanDevice.get(), app, *app.uboBuffer, app.width, app.height);
         DrawFrame(*app.vulkanDevice, app);
