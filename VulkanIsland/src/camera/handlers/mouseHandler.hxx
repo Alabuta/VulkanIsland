@@ -4,10 +4,10 @@
 #include <glm/glm.hpp>
 
 
-#include "../../input/inputManager.hxx"
-#include "../../input/mouseInput.hxx"
+#include "input/inputManager.hxx"
+#include "input/mouseInput.hxx"
 
-#include "../cameraController.hxx"
+#include "camera/cameraController.hxx"
 
 
 class MouseHandler final : public MouseInput::IHandler {

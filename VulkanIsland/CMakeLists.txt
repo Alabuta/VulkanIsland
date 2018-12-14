@@ -21,43 +21,43 @@ endif()
 
 find_package(glfw3 3.2.1 REQUIRED)
 
+find_package(Boost REQUIRED COMPONENTS filesystem)
+
+
 include_directories(SYSTEM include)
+include_directories(src)
+
 
 set(SOURCE_FILES
-	src/buffer.hxx 							src/buffer.cxx
-	src/commandBuffer.hxx
-	src/debug.hxx 							src/debug.cxx
-	src/descriptor.hxx 						src/descriptor.cxx
-	src/device.hxx 							src/device.cxx
-	src/deviceDefaults.hxx
-	src/loaderGLTF.hxx 						src/loaderGLTF.cxx
-	src/helpers.hxx
-	src/image.hxx 							src/image.cxx
-	src/instance.hxx 						src/instance.cxx
-	src/math.hxx
-	src/mesh.hxx
-    src/program.hxx
-    src/queueBuilder.hxx
-    src/queues.hxx
-    src/resource.hxx                        src/resource.cxx
-	src/sceneTree.hxx 						src/sceneTree.cxx
-    src/swapchain.hxx                       src/swapchain.cxx
-	src/loaderTARGA.hxx 					src/loaderTARGA.cxx
-    src/transform.hxx
+	src/buffer.cxx
 	
-    src/camera/cameraController.hxx         src/camera/cameraController.cxx
-    src/camera/handlers/mouseHandler.hxx	src/camera/handlers/mouseHandler.cxx
+	src/debug.cxx
+	src/descriptor.cxx
+	src/device.cxx
+	
+	src/loaderGLTF.cxx
+	
+	src/image.cxx
+	src/instance.cxx
+    
+    src/resource.cxx
+	src/sceneTree.cxx
+    src/swapchain.cxx
+	src/loaderTARGA.cxx
+    
+    src/camera/cameraController.cxx
+    src/camera/handlers/mouseHandler.cxx
+	
+	src/input/inputManager.cxx
+	src/input/mouseInput.cxx
 
-	src/input/inputDataTypes.hxx
-	src/input/inputManager.hxx 				src/input/inputManager.cxx
-	src/input/mouseInput.hxx 				src/input/mouseInput.cxx
+    src/platform/window.cxx
 
-    src/platform/window.hxx                 src/platform/window.cxx
-
-    src/main.hxx                            src/main.cxx
+    src/main.cxx
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
@@ -116,12 +116,8 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${PROJECT_NAME} PRIVATE
         /Wall
 )
-
 endif()
 
-find_package(Boost REQUIRED COMPONENTS
-    filesystem
-)
 
 target_include_directories(${PROJECT_NAME} PRIVATE
 	Vulkan::Vulkan
@@ -131,6 +127,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     -Wl,-no-undefined
     -Wl,-no-allow-shlib-undefined
     -Wl,-unresolved-symbols=report-all
+
+    pthread
+
+    stdc++fs
 
     dl
     X11
@@ -142,12 +142,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 	rt
 	m
 
-    pthread
-
-    stdc++fs
-
-    Vulkan::Vulkan
-
     glm
     glfw3
+
+    Vulkan::Vulkan
 )

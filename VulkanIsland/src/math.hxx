@@ -190,25 +190,21 @@ struct Vertex {
     }
 };
 
-#ifndef _MSC_VER
-#define GLM_FORCE_CXX17
-#endif
 
+#define GLM_FORCE_CXX17
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 
-#ifdef _MSC_VER
-#pragma warning(push, 3)
-#pragma warning(disable: 4201)
-#endif
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
+#include <glm/gtc/matrix_inverse.hpp>
+#include <glm/gtx/polar_coordinates.hpp> 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/hash.hpp>
-#ifdef _MSC_VER
-#pragma warning(pop)
-#endif
+
+
 
 template<class T, std::enable_if_t<std::is_same_v<std::decay_t<T>, glm::mat4>>...>
 inline std::ostream &operator<< (std::ostream &stream, T &&m)

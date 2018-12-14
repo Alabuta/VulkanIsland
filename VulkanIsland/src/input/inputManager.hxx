@@ -4,7 +4,7 @@
 #include <variant>
 #include <tuple>
 
-#include "../platform/window.hxx"
+#include "platform/window.hxx"
 #include "mouseInput.hxx"
 
 
