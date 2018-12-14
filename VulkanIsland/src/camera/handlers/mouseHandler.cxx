@@ -11,9 +11,9 @@ void MouseHandler::onMove(float x, float y)
     last = glm::vec2{x, y};
 }
 
-void MouseHandler::onWheel(float delta)
+void MouseHandler::onWheel(float xoffset, float yoffset)
 {
-    controller_.dolly(std::signbit(static_cast<float>(delta)) ? -1.f : 1.f);
+    controller_.dolly(std::signbit(yoffset) ? -1.f : 1.f);
 }
 
 void MouseHandler::onDown(IHandler::buttons_t buttons)

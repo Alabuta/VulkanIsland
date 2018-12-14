@@ -28,7 +28,7 @@ auto constexpr kPI = 3.14159265358979323846f;
 
 struct Camera {
     float yFOV{glm::radians(75.f)};
-    float znear{.01f}, zfar{100.f};
+    float znear{.01f}, zfar{1000.f};
     float aspect{1.f};
 
     glm::vec3 up{0, 1, 0};

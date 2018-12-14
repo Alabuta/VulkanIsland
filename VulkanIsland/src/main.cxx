@@ -790,8 +790,10 @@ void RecreateSwapChain(app_t &app)
 }
 
 
-void DrawFrame(VulkanDevice const &vulkanDevice, app_t &app)
+void DrawFrame(app_t &app)
 {
+    auto &&vulkanDevice = *app.vulkanDevice;
+
     vkQueueWaitIdle(app.presentationQueue.handle());
 
     std::uint32_t imageIndex;
@@ -992,6 +994,7 @@ void CleanUp(app_t &app)
     app.vulkanInstance.reset(nullptr);
 }
 
+#if OBSOLETE
 void UpdateUniformBuffer(VulkanDevice const &device, app_t &app, VulkanBuffer const &uboBuffer, std::uint32_t width, std::uint32_t height)
 {
     if (width * height < 1) return;
@@ -1074,6 +1077,7 @@ void UpdateUniformBuffer(VulkanDevice const &device, app_t &app, VulkanBuffer co
 
     vkUnmapMemory(device.handle(), uboBuffer.memory()->handle());
 }
+#endif
 
 void Update(app_t &app)
 {
@@ -1287,7 +1291,7 @@ try {
     app.camera->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
 
     app.cameraController = std::make_unique<OrbitController>(app.camera, *inputManager);
-    app.cameraController->lookAt(glm::vec3{0, 4, 4}, {0, 2, 0});
+    app.cameraController->lookAt(glm::vec3{8, 24, 24}, {0, 8, 0});
 
     std::cout << measure<>::execution(InitVulkan, window, std::ref(app)) << " ms\n"s;
 
@@ -1297,8 +1301,7 @@ try {
 
         Update(app);
 
-        UpdateUniformBuffer(*app.vulkanDevice.get(), app, *app.uboBuffer, app.width, app.height);
-        DrawFrame(*app.vulkanDevice, app);
+        DrawFrame(app);
     });
 
     CleanUp(app);

@@ -21,7 +21,7 @@ void MouseInput::connectHandler(std::shared_ptr<IHandler> slot)
     ).track_foreign(slot));
 
     onWheel_.connect(decltype(onWheel_)::slot_type(
-        &IHandler::onWheel, slot.get(), _1
+        &IHandler::onWheel, slot.get(), _1, _2
     ).track_foreign(slot));
 
     onDown_.connect(decltype(onDown_)::slot_type(
@@ -43,7 +43,7 @@ void MouseInput::update(input::mouse::RawData &data)
         },
         [this] (input::mouse::Wheel wheel)
         {
-            onWheel_(wheel.xoffset);
+            onWheel_(wheel.xoffset, wheel.yoffset);
         },
         [this] (input::mouse::Buttons &buttons)
         {

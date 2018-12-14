@@ -29,6 +29,21 @@ glm::quat fromTwoVec3(U &&u, V &&v)
 }
 
 
+glm::mat4 reversedPerspective(float yFOV, float aspect, float znear, float zfar)
+{
+    auto const f = 1.f / std::tan(yFOV * .5f);
+
+    auto const kA = zfar / (zfar - znear)  - 1.f;
+    auto const kB = zfar * znear / (zfar - znear);
+
+    return glm::mat4{
+        f / aspect, 0, 0, 0,
+        0, f, 0, 0,
+        0, 0, kA, -1,
+        0, 0, kB, 0
+    };
+}
+
 void CameraSystem::update()
 {
 #ifdef _MSC_VER
@@ -37,7 +52,7 @@ void CameraSystem::update()
     std::for_each(std::begin(cameras_), std::end(cameras_), [] (auto &&camera)
 #endif
     {
-        camera->data.projection = glm::infinitePerspective(camera->yFOV, camera->aspect, camera->znear);
+        camera->data.projection = reversedPerspective(camera->yFOV, camera->aspect, camera->znear, camera->zfar);
         camera->data.invertedProjection = glm::inverse(camera->data.projection);
 
         camera->data.view = glm::inverse(camera->world);
@@ -67,16 +82,16 @@ void OrbitController::rotate(float longitude, float latitude)
 {
     auto speed = (1.f - damping_) * .008f;
 
-    polarDelta_.x += latitude * speed;
-    polarDelta_.y -= longitude * speed;
+    polarDelta_.x -= latitude * speed;
+    polarDelta_.y += longitude * speed;
 }
 
 void OrbitController::pan(float x, float y)
 {
     auto speed = (1.f - damping_) * .001f;
 
-    panDelta_.x -= x * speed;
-    panDelta_.y += y * speed;
+    panDelta_.x += x * speed;
+    panDelta_.y -= y * speed;
 }
 
 void OrbitController::dolly(float delta)
