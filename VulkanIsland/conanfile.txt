@@ -11,8 +11,7 @@ glfw/3.2.1@bincrafters/stable
 cmake
 
 [options]
-boost:shared=True
-glfw:shared=True
+*:shared=True
 
 [imports]
 bin, *.dll -> ./bin

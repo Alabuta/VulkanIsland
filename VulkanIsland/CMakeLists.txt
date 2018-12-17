@@ -9,13 +9,13 @@ project(VulkanIsland
 	LANGUAGES CXX
 )
 
+include(build/conanbuildinfo.cmake)
+conan_basic_setup()
+
 configure_file(
     "${PROJECT_SOURCE_DIR}/config.h.in"
     "${PROJECT_SOURCE_DIR}/include/config.h"
 )
-
-include(build/conanbuildinfo.cmake)
-conan_basic_setup()
 
 find_package(Vulkan REQUIRED)
 
@@ -73,8 +73,6 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 	target_compile_options(${PROJECT_NAME} PRIVATE
-		-fvisibility=hidden
-	
         -Wpedantic
         -Wall
         -Wextra
@@ -134,7 +132,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
     stdc++fs
 
-    ${CONAN_LIBS}
-
     Vulkan::Vulkan
+
+    ${CONAN_LIBS}
 )
