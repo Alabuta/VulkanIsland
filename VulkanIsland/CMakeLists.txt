@@ -10,7 +10,7 @@ project(VulkanIsland
 )
 
 include(build/conanbuildinfo.cmake)
-conan_basic_setup()
+conan_basic_setup(TARGETS)
 
 configure_file(
     "${PROJECT_SOURCE_DIR}/config.h.in"
@@ -134,5 +134,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
     Vulkan::Vulkan
 
-    ${CONAN_LIBS}
+	CONAN_PKG::glm
+	CONAN_PKG::boost
+	CONAN_PKG::glfw
 )

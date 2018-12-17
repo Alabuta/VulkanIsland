@@ -207,7 +207,7 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
             descriptorSet,
             0,
             0, static_cast<std::uint32_t>(std::size(cameras)),
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             nullptr,
             std::data(cameras),
             nullptr
@@ -229,7 +229,7 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
             descriptorSet,
             2,
             0, static_cast<std::uint32_t>(std::size(objects)),
-            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             nullptr,
             std::data(objects),
             nullptr
@@ -603,6 +603,15 @@ CreateUniformBuffer(VulkanDevice &device, std::size_t size)
     return device.resourceManager().CreateBuffer(size, usageFlags, propertyFlags);
 }
 
+[[nodiscard]] std::shared_ptr<VulkanBuffer>
+CreateStorageBuffer(VulkanDevice &device, std::size_t size)
+{
+    auto constexpr usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    return device.resourceManager().CreateBuffer(size, usageFlags, propertyFlags);
+}
+
 template<class T, class U, typename std::enable_if_t<is_iterable_v<std::decay_t<T>> && is_iterable_v<std::decay_t<U>>>...>
 void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass renderPass, VkCommandPool commandPool, T &commandBuffers, U &framebuffers)
 {
@@ -913,13 +922,13 @@ void InitVulkan(Window &window, app_t &app)
     if (app.indexBuffer = InitIndexBuffer(app, *app.vulkanDevice); !app.indexBuffer)
         throw std::runtime_error("failed to init index buffer"s);
 
-    if (app.uboBuffer = CreateUniformBuffer(*app.vulkanDevice, sizeof(transforms_t)); !app.uboBuffer)
-        throw std::runtime_error("failed to init uniform buffer"s);
+    /*if (app.uboBuffer = CreateUniformBuffer(*app.vulkanDevice, sizeof(transforms_t)); !app.uboBuffer)
+        throw std::runtime_error("failed to init uniform buffer"s);*/
 
-    if (app.perObjectBuffer = CreateUniformBuffer(*app.vulkanDevice, sizeof(per_object_t)); !app.perObjectBuffer)
+    if (app.perObjectBuffer = CreateStorageBuffer(*app.vulkanDevice, sizeof(per_object_t)); !app.perObjectBuffer)
         throw std::runtime_error("failed to init per object uniform buffer"s);
 
-    if (app.perCameraBuffer = CreateUniformBuffer(*app.vulkanDevice, sizeof(Camera::data_t)); !app.perCameraBuffer)
+    if (app.perCameraBuffer = CreateStorageBuffer(*app.vulkanDevice, sizeof(Camera::data_t)); !app.perCameraBuffer)
         throw std::runtime_error("failed to init per camera uniform buffer"s);
 
     if (auto descriptorPool = CreateDescriptorPool(*app.vulkanDevice); !descriptorPool)
