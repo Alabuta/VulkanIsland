@@ -5,7 +5,7 @@ layout(early_fragment_tests) in;
 
 layout(set = 0, binding = 1) uniform sampler2D textureSampler;
 
-layout(set = 0, binding = 0) uniform PER_CAMERA
+layout(set = 0, binding = 0, std430) readonly buffer PER_CAMERA
 {
     mat4 view;
     mat4 projection;
