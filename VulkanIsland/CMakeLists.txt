@@ -4,24 +4,24 @@ if(NOT DEFINED PROJECT_VERSION)
     set(PROJECT_VERSION 1.0.0)
 endif()
 
-project(VulkanIsland VERSION ${PROJECT_VERSION})
+project(VulkanIsland
+	VERSION ${PROJECT_VERSION}
+	LANGUAGES CXX
+)
 
 configure_file(
     "${PROJECT_SOURCE_DIR}/config.h.in"
     "${PROJECT_SOURCE_DIR}/include/config.h"
 )
 
+include(build/conanbuildinfo.cmake)
+conan_basic_setup()
 
 find_package(Vulkan REQUIRED)
 
 if(NOT WIN32)
-	find_package(glm REQUIRED)
 	find_package(X11 REQUIRED)
 endif()
-
-find_package(glfw3 3.2.1 REQUIRED)
-
-find_package(Boost REQUIRED COMPONENTS filesystem)
 
 
 include_directories(SYSTEM include)
@@ -68,11 +68,13 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
     POSITION_INDEPENDENT_CODE YES
 
-    DEBUG_POSTFIX _d
+    DEBUG_POSTFIX .d
 )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    target_compile_options(${PROJECT_NAME} PRIVATE
+	target_compile_options(${PROJECT_NAME} PRIVATE
+		-fvisibility=hidden
+	
         -Wpedantic
         -Wall
         -Wextra
@@ -128,22 +130,11 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     -Wl,-no-allow-shlib-undefined
     -Wl,-unresolved-symbols=report-all
 
-    pthread
+    #pthread
 
     stdc++fs
 
-    dl
-    X11
-	Xxf86vm
-	Xcursor
-	Xi
-	Xrandr
-	Xinerama
-	rt
-	m
-
-    glm
-    glfw3
+    ${CONAN_LIBS}
 
     Vulkan::Vulkan
 )
