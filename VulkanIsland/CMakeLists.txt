@@ -135,6 +135,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Vulkan::Vulkan
 
 	CONAN_PKG::glm
-	CONAN_PKG::boost
+	# CONAN_PKG::boost
 	CONAN_PKG::glfw
 )
