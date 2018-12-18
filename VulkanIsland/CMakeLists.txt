@@ -17,6 +17,9 @@ configure_file(
     "${PROJECT_SOURCE_DIR}/include/config.h"
 )
 
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${PROJECT_SOURCE_DIR}/../bin")
+set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${PROJECT_SOURCE_DIR}/../bin")
+
 find_package(Vulkan REQUIRED)
 
 if(NOT WIN32)
@@ -135,6 +138,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     Vulkan::Vulkan
 
 	CONAN_PKG::glm
-	# CONAN_PKG::boost
+	CONAN_PKG::boost
 	CONAN_PKG::glfw
 )
