@@ -6,7 +6,7 @@
 #include "main.hxx"
 #include "device.hxx"
 
-class DescriptorsManager;
+class DescriptorManager;
 
 class VulkanDescriptorPool final {
 public:
@@ -22,14 +22,14 @@ private:
     VulkanDescriptorPool(VulkanDescriptorPool const &) = delete;
     VulkanDescriptorPool(VulkanDescriptorPool &&) = delete;
 
-    friend DescriptorsManager;
+    friend DescriptorManager;
 };
 
-class DescriptorsManager final {
+class DescriptorManager final {
 public:
 
 
-    DescriptorsManager(VulkanDevice &device) noexcept : device_{device} { }
+    DescriptorManager(VulkanDevice &device) noexcept : device_{device} { }
 
     [[nodiscard]] std::optional<VulkanDescriptorPool> CreateDescriptorPool();
 
