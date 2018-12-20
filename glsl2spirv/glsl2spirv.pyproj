@@ -12,6 +12,8 @@
     <OutputPath>.</OutputPath>
     <Name>glsl2spirv</Name>
     <RootNamespace>glslSeparater</RootNamespace>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
