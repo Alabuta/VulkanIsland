@@ -3,14 +3,7 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 
-#ifdef _MSC_VER
-#pragma warning(push, 3)
-#pragma warning(disable: 4127)
 #include "nlohmann/json.hpp"
-#pragma warning(pop)
-#else
-#include "nlohmann/json.hpp"
-#endif
 
 #include "loaderGLTF.hxx"
 #include "sceneTree.hxx"

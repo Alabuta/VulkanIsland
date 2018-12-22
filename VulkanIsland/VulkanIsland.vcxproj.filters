@@ -9,26 +9,29 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Source Files\input">
-      <UniqueIdentifier>{01e6d63c-1f6c-4677-bd33-aa044ed7b313}</UniqueIdentifier>
+    <Filter Include="Source Files\Resources">
+      <UniqueIdentifier>{c96cf9de-9e4c-427a-bba6-ca9adb7fcc22}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\platform">
+    <Filter Include="Source Files\Platform">
       <UniqueIdentifier>{b9beac29-519b-414c-802d-4ea3f20a7efa}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\camera">
-      <UniqueIdentifier>{fd489283-7909-497e-a557-d02b77a54cbb}</UniqueIdentifier>
-    </Filter>
-    <Filter Include="Source Files\loaders">
+    <Filter Include="Source Files\Loaders">
       <UniqueIdentifier>{b3c33407-998c-44b0-bc89-3299e60f8673}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\camera\inputHandlers">
+    <Filter Include="Source Files\Input">
+      <UniqueIdentifier>{01e6d63c-1f6c-4677-bd33-aa044ed7b313}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Camera">
+      <UniqueIdentifier>{fd489283-7909-497e-a557-d02b77a54cbb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\Camera\inputHandlers">
       <UniqueIdentifier>{33823af6-bf96-4abd-ba1d-a2132e20f205}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\ECS">
+      <UniqueIdentifier>{8223f4da-e7ea-423b-bbfb-837960d6c9c7}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src/buffer.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src/debug.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -38,67 +41,70 @@
     <ClCompile Include="src/device.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src/image.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src/instance.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src/main.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src/resource.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src/swapchain.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src/input/inputManager.cxx">
-      <Filter>Source Files\input</Filter>
+      <Filter>Source Files\Input</Filter>
     </ClCompile>
     <ClCompile Include="src/input/mouseInput.cxx">
-      <Filter>Source Files\input</Filter>
+      <Filter>Source Files\Input</Filter>
     </ClCompile>
     <ClCompile Include="src/camera/cameraController.cxx">
-      <Filter>Source Files\camera</Filter>
+      <Filter>Source Files\Camera</Filter>
     </ClCompile>
     <ClCompile Include="src/loaderGLTF.cxx">
-      <Filter>Source Files\loaders</Filter>
+      <Filter>Source Files\Loaders</Filter>
     </ClCompile>
     <ClCompile Include="src/loaderTARGA.cxx">
-      <Filter>Source Files\loaders</Filter>
-    </ClCompile>
-    <ClCompile Include="src/sceneTree.cxx">
-      <Filter>Source Files</Filter>
+      <Filter>Source Files\Loaders</Filter>
     </ClCompile>
     <ClCompile Include="src/platform/window.cxx">
-      <Filter>Source Files\platform</Filter>
+      <Filter>Source Files\Platform</Filter>
     </ClCompile>
     <ClCompile Include="src/camera/handlers/mouseHandler.cxx">
-      <Filter>Source Files\camera\inputHandlers</Filter>
+      <Filter>Source Files\Camera\inputHandlers</Filter>
+    </ClCompile>
+    <ClCompile Include="src/buffer.cxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="src/resource.cxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="src/image.cxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="src/sceneTree.cxx">
+      <Filter>Source Files\ECS</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/input/inputDataTypes.hxx">
-      <Filter>Source Files\input</Filter>
+      <Filter>Source Files\Input</Filter>
     </ClInclude>
     <ClInclude Include="src/input/inputManager.hxx">
-      <Filter>Source Files\input</Filter>
+      <Filter>Source Files\Input</Filter>
     </ClInclude>
     <ClInclude Include="src/input/mouseInput.hxx">
-      <Filter>Source Files\input</Filter>
+      <Filter>Source Files\Input</Filter>
     </ClInclude>
     <ClInclude Include="src/camera/cameraController.hxx">
-      <Filter>Source Files\camera</Filter>
+      <Filter>Source Files\Camera</Filter>
     </ClInclude>
     <ClInclude Include="src/camera/handlers/mouseHandler.hxx">
-      <Filter>Source Files\camera\inputHandlers</Filter>
+      <Filter>Source Files\Camera\inputHandlers</Filter>
     </ClInclude>
     <ClInclude Include="src/loaderGLTF.hxx">
-      <Filter>Source Files\loaders</Filter>
+      <Filter>Source Files\Loaders</Filter>
     </ClInclude>
     <ClInclude Include="src/loaderTARGA.hxx">
-      <Filter>Source Files\loaders</Filter>
+      <Filter>Source Files\Loaders</Filter>
     </ClInclude>
     <ClInclude Include="src/commandBuffer.hxx">
       <Filter>Source Files</Filter>
@@ -107,12 +113,6 @@
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src/queueBuilder.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src/sceneTree.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src/buffer.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src/debug.hxx">
@@ -127,9 +127,6 @@
     <ClInclude Include="src/helpers.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src/image.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src/instance.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -139,26 +136,35 @@
     <ClInclude Include="src/math.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src/mesh.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src/program.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src/queues.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src/resource.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src/swapchain.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src/transform.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src/platform/window.hxx">
-      <Filter>Source Files\platform</Filter>
+      <Filter>Source Files\Platform</Filter>
+    </ClInclude>
+    <ClInclude Include="src/buffer.hxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="src/resource.hxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="src/image.hxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="src/sceneTree.hxx">
+      <Filter>Source Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="src/transform.hxx">
+      <Filter>Source Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="src/mesh.hxx">
+      <Filter>Source Files\ECS</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

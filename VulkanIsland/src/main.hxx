@@ -10,15 +10,15 @@
 #include <optional>
 #include <string>
 #include <string_view>
-#include <fstream>
 
+using namespace std::string_literals;
+using namespace std::string_view_literals;
+
+#include <fstream>
 #include <filesystem>
 namespace fs = std::filesystem;
 
 #include "helpers.hxx"
-
-using namespace std::string_literals;
-using namespace std::string_view_literals;
 
 #ifdef _MSC_VER
 #define GLFW_EXPOSE_NATIVE_WIN32

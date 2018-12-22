@@ -124,7 +124,7 @@
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(BOOST_ROOT);$(ProjectDir)include;$(ProjectDir)src;$(VULKAN_SDK)\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:/.conan/7mrg_p83/1/include;C:/Users/auqol/.conan/data/glfw/3.2.1/bincrafters/stable/package/ff82a1e70ba8430648a79986385b20a3648f8c19/include;C:/Users/auqol/.conan/data/bzip2/1.0.6/conan/stable/package/8cf01e2f50fcd6b63525e70584df0326550364e1/include;C:/Users/auqol/.conan/data/glm/0.9.9.1/g-truc/stable/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9/include;C:/Users/auqol/.conan/data/zlib/1.2.11/conan/stable/package/8cf01e2f50fcd6b63525e70584df0326550364e1/include;$(ProjectDir)include;$(ProjectDir)src;$(VULKAN_SDK)\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <EnablePREfast>false</EnablePREfast>
       <AdditionalOptions> /bigobj /Zm2000 %(AdditionalOptions)</AdditionalOptions>
@@ -132,7 +132,7 @@
       <EnableModules>false</EnableModules>
     </ClCompile>
     <Link>
-      <AdditionalLibraryDirectories>$(ProjectDir)lib;$(VULKAN_SDK)\Lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:/.conan/7mrg_p83/1/lib;C:/Users/auqol/.conan/data/glfw/3.2.1/bincrafters/stable/package/ff82a1e70ba8430648a79986385b20a3648f8c19/lib;C:/Users/auqol/.conan/data/bzip2/1.0.6/conan/stable/package/8cf01e2f50fcd6b63525e70584df0326550364e1/lib;C:/Users/auqol/.conan/data/zlib/1.2.11/conan/stable/package/8cf01e2f50fcd6b63525e70584df0326550364e1/lib;$(ProjectDir)lib;$(VULKAN_SDK)\Lib</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
       <ProfileGuidedDatabase>$(IntDir)$(TargetName).pgd</ProfileGuidedDatabase>
       <AdditionalOptions> /NODEFAULTLIB:library %(AdditionalOptions)</AdditionalOptions>
@@ -193,18 +193,19 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(BOOST_ROOT);$(ProjectDir)include;$(ProjectDir)src;$(VULKAN_SDK)\Include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:/.conan/7mrg_p83/1/include;C:/Users/auqol/.conan/data/glfw/3.2.1/bincrafters/stable/package/ff82a1e70ba8430648a79986385b20a3648f8c19/include;C:/Users/auqol/.conan/data/bzip2/1.0.6/conan/stable/package/8cf01e2f50fcd6b63525e70584df0326550364e1/include;C:/Users/auqol/.conan/data/glm/0.9.9.1/g-truc/stable/package/5ab84d6acfe1f23c4fae0ab88f26e3a396351ac9/include;C:/Users/auqol/.conan/data/zlib/1.2.11/conan/stable/package/8cf01e2f50fcd6b63525e70584df0326550364e1/include;$(ProjectDir)include;$(ProjectDir)src;$(VULKAN_SDK)\Include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <EnablePREfast>false</EnablePREfast>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions> /bigobj /Zm2000 %(AdditionalOptions)</AdditionalOptions>
+      <EnableModules>false</EnableModules>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
-      <AdditionalLibraryDirectories>$(ProjectDir)lib;$(VULKAN_SDK)\Lib</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:/.conan/7mrg_p83/1/lib;C:/Users/auqol/.conan/data/glfw/3.2.1/bincrafters/stable/package/ff82a1e70ba8430648a79986385b20a3648f8c19/lib;C:/Users/auqol/.conan/data/bzip2/1.0.6/conan/stable/package/8cf01e2f50fcd6b63525e70584df0326550364e1/lib;C:/Users/auqol/.conan/data/zlib/1.2.11/conan/stable/package/8cf01e2f50fcd6b63525e70584df0326550364e1/lib;$(ProjectDir)lib;$(VULKAN_SDK)\Lib</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(IntDir)$(TargetName).pdb</ProgramDatabaseFile>
       <ProfileGuidedDatabase>$(IntDir)$(TargetName).pgd</ProfileGuidedDatabase>
       <IgnoreAllDefaultLibraries>true</IgnoreAllDefaultLibraries>

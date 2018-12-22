@@ -35,7 +35,7 @@ template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, std::byte>, "iterable object does not contain std::byte elements");
 
     if (shaderByteCode.size() % sizeof(std::uint32_t) != 0)
-        throw std::runtime_error("invalid byte code buffer size");
+        throw std::runtime_error("invalid byte code buffer size"s);
 
     VkShaderModuleCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
