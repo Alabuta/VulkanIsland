@@ -243,6 +243,7 @@
     <ClCompile Include="src/loaderTARGA.cxx" />
     <ClCompile Include="src/camera/cameraController.cxx" />
     <ClCompile Include="src/camera/handlers/mouseHandler.cxx" />
+    <ClCompile Include="src\loaders\loaderGLTF.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/buffer.hxx" />
@@ -271,6 +272,8 @@
     <ClInclude Include="src/transform.hxx" />
     <ClInclude Include="src/camera/cameraController.hxx" />
     <ClInclude Include="src/camera/handlers/mouseHandler.hxx" />
+    <ClInclude Include="src\loaders\loaderGLTF.hxx" />
+    <ClInclude Include="src\vertexFormat.hxx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../shaders/shader.frag" />

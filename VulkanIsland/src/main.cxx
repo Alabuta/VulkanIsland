@@ -32,7 +32,7 @@
 #include "descriptor.hxx"
 #include "commandBuffer.hxx"
 
-#include "loaderGLTF.hxx"
+#include "loaders/loaderGLTF.hxx"
 #include "loaderTARGA.hxx"
 
 #include "sceneTree.hxx"

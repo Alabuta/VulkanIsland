@@ -80,6 +80,9 @@
     <ClCompile Include="src/sceneTree.cxx">
       <Filter>Source Files\ECS</Filter>
     </ClCompile>
+    <ClCompile Include="src\loaders\loaderGLTF.cxx">
+      <Filter>Source Files\Loaders</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/input/inputDataTypes.hxx">
@@ -156,6 +159,15 @@
     </ClInclude>
     <ClInclude Include="src/mesh.hxx">
       <Filter>Source Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="src\vertexFormat.hxx">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src/input/mouseInput.hxx">
+      <Filter>Source Files\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="src\loaders\loaderGLTF.hxx">
+      <Filter>Source Files\Loaders</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
