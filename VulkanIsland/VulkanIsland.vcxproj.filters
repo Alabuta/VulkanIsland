@@ -59,9 +59,6 @@
     <ClCompile Include="src/camera/cameraController.cxx">
       <Filter>Source Files\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="src/loaderGLTF.cxx">
-      <Filter>Source Files\Loaders</Filter>
-    </ClCompile>
     <ClCompile Include="src/loaderTARGA.cxx">
       <Filter>Source Files\Loaders</Filter>
     </ClCompile>
@@ -91,17 +88,11 @@
     <ClInclude Include="src/input/inputManager.hxx">
       <Filter>Source Files\Input</Filter>
     </ClInclude>
-    <ClInclude Include="src/input/mouseInput.hxx">
-      <Filter>Source Files\Input</Filter>
-    </ClInclude>
     <ClInclude Include="src/camera/cameraController.hxx">
       <Filter>Source Files\Camera</Filter>
     </ClInclude>
     <ClInclude Include="src/camera/handlers/mouseHandler.hxx">
       <Filter>Source Files\Camera\inputHandlers</Filter>
-    </ClInclude>
-    <ClInclude Include="src/loaderGLTF.hxx">
-      <Filter>Source Files\Loaders</Filter>
     </ClInclude>
     <ClInclude Include="src/loaderTARGA.hxx">
       <Filter>Source Files\Loaders</Filter>

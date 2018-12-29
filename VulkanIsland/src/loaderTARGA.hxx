@@ -14,10 +14,10 @@ enum class ePIXEL_LAYOUT {
 using byte_t = std::uint8_t;
 
 using texel_t = std::variant<
-    vec<1, std::uint8_t>,
-    vec<2, std::uint8_t>,
-    vec<3, std::uint8_t>,
-    vec<4, std::uint8_t>
+    math::vec<1, std::uint8_t>,
+    math::vec<2, std::uint8_t>,
+    math::vec<3, std::uint8_t>,
+    math::vec<4, std::uint8_t>
 >;
 
 using texel_buffer_t = wrap_variant_by_vector<texel_t>::type;

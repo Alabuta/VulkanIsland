@@ -9,7 +9,7 @@
 template<std::size_t N>
 std::optional<texel_buffer_t> instantiate_texel_buffer()
 {
-    return std::make_optional<std::vector<vec<N, std::uint8_t>>>();
+    return std::make_optional<std::vector<math::vec<N, std::uint8_t>>>();
 }
 
 std::optional<texel_buffer_t> instantiate_texel_buffer(std::uint8_t pixelDepth) noexcept
@@ -107,7 +107,7 @@ void LoadUncompressedTrueColorImage(TARGA &targa, std::ifstream &file)
         {
             targa.pixelLayout = targa.pixelLayout == ePIXEL_LAYOUT::nRGB ? ePIXEL_LAYOUT::nRGBA : ePIXEL_LAYOUT::nBGRA;
 
-            using vec_type = vec<4, typename texel_type::value_type>;
+            using vec_type = math::vec<4, typename texel_type::value_type>;
 
             std::vector<vec_type> intermidiateBuffer(std::size(buffer));
 
@@ -158,7 +158,7 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
         {
             targa.pixelLayout = targa.pixelLayout == ePIXEL_LAYOUT::nRGB ? ePIXEL_LAYOUT::nRGBA : ePIXEL_LAYOUT::nBGRA;
 
-            using vec_type = vec<4, typename texel_type::value_type>;
+            using vec_type = math::vec<4, typename texel_type::value_type>;
 
             std::vector<vec_type> intermidiateBuffer(std::size(palette));
 
