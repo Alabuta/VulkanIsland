@@ -204,9 +204,6 @@ std::optional<attribute_t> instantiate_attribute(std::string_view type, GL compo
 std::optional<index_buffer_t> instantiate_index_buffer(GL componentType)
 {
     switch (componentType) {
-        case GL::UNSIGNED_BYTE:
-            return std::vector<std::uint8_t>{};
-
         case GL::UNSIGNED_SHORT:
             return std::vector<std::uint16_t>{};
 
@@ -221,9 +218,6 @@ std::optional<index_buffer_t> instantiate_index_buffer(GL componentType)
 std::optional<indices_t> instantiate_index(GL componentType)
 {
     switch (componentType) {
-        case GL::UNSIGNED_BYTE:
-            return std::uint8_t{};
-
         case GL::UNSIGNED_SHORT:
             return std::uint16_t{};
 
@@ -867,6 +861,6 @@ bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indi
         }
     }
 
-    return false;
+    return true;
 }
 }

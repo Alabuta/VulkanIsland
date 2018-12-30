@@ -76,9 +76,8 @@ struct app_t final {
 
     per_object_t object;
 
-    std::vector<Vertex> vertices;
-    std::vector<std::uint32_t> indices;
-    index_buffer_t inds;
+    vertex_buffer_t vertices;
+    index_buffer_t indices;
 
     std::unique_ptr<VulkanInstance> vulkanInstance;
     std::unique_ptr<VulkanDevice> vulkanDevice;
@@ -129,36 +128,34 @@ struct ResizeHandler final : public Window::IEventHandler {
     }
 };
 
-
 template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
-std::shared_ptr<VulkanBuffer> StageData(VulkanDevice &device, T &&container)
+[[nodiscard]] std::shared_ptr<VulkanBuffer> StageData(VulkanDevice &device, T &&container)
 {
-    return [&device] (auto &&container)
-    {
-        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-        using vertex_type = typename std::decay_t<T>::value_type;
+    using type = typename std::decay_t<T>::value_type;
 
-        auto const bufferSize = static_cast<VkDeviceSize>(sizeof(vertex_type) * std::size(container));
+    auto const bufferSize = static_cast<VkDeviceSize>(sizeof(type) * std::size(container));
 
-        auto buffer = device.resourceManager().CreateBuffer(bufferSize, usageFlags, propertyFlags);
+    auto buffer = device.resourceManager().CreateBuffer(bufferSize, usageFlags, propertyFlags);
 
-        if (buffer) {
-            void *data;
+    if (buffer) {
+        void *data;
 
-            if (auto result = vkMapMemory(device.handle(), buffer->memory()->handle(), buffer->memory()->offset(), buffer->memory()->size(), 0, &data); result != VK_SUCCESS)
-                std::cerr << "failed to map staging buffer memory: "s << result << '\n';
+        auto &&memory = buffer->memory();
 
-            else {
-                std::uninitialized_copy(std::begin(container), std::end(container), reinterpret_cast<vertex_type *>(data));
+        if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, &data); result != VK_SUCCESS)
+            std::cerr << "failed to map staging buffer memory: "s << result << '\n';
 
-                vkUnmapMemory(device.handle(), buffer->memory()->handle());
-            }
+        else {
+            std::uninitialized_copy(std::begin(container), std::end(container), reinterpret_cast<type *>(data));
+
+            vkUnmapMemory(device.handle(), buffer->memory()->handle());
         }
+    }
 
-        return buffer;
-    } (std::forward<T>(container));
+    return buffer;
 }
 
 
@@ -547,50 +544,60 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
 }
 
 
-[[nodiscard]] std::shared_ptr<VulkanBuffer>
-InitVertexBuffer(app_t &app, VulkanDevice &device)
+[[nodiscard]] std::shared_ptr<VulkanBuffer> InitVertexBuffer(app_t &app)
 {
     std::shared_ptr<VulkanBuffer> buffer;
 
-    if (auto stagingBuffer = StageData(device, app.vertices); stagingBuffer) {
+    auto &&vertices = app.vertices.buffer;
+
+    if (auto stagingBuffer = StageData(*app.vulkanDevice, vertices); stagingBuffer) {
         auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-        buffer = device.resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
+        buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
 
         if (buffer) {
             auto copyRegions = make_array(
-                VkBufferCopy{/*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/0, 0, stagingBuffer->memory()->size()}
+                VkBufferCopy{
+                    /*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/
+                    0, 0, stagingBuffer->memory()->size()
+                }
             );
 
-            CopyBufferToBuffer(device, app.transferQueue, stagingBuffer->handle(), buffer->handle(), std::move(copyRegions), app.transferCommandPool);
+            CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
+                                buffer->handle(), std::move(copyRegions), app.transferCommandPool);
         }
     }
 
     return buffer;
 }
 
-[[nodiscard]] std::shared_ptr<VulkanBuffer>
-InitIndexBuffer(app_t &app, VulkanDevice &device)
+[[nodiscard]] std::shared_ptr<VulkanBuffer> InitIndexBuffer(app_t &app)
 {
-    std::shared_ptr<VulkanBuffer> buffer;
+    return std::visit([&app] (auto &&indices) {
+        std::shared_ptr<VulkanBuffer> buffer;
 
-    if (auto stagingBuffer = StageData(device, app.indices); stagingBuffer) {
-        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+        if (auto stagingBuffer = StageData(*app.vulkanDevice, indices); stagingBuffer) {
+            auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+            auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-        buffer = device.resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
+            buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
 
-        if (buffer) {
-            auto copyRegions = make_array(
-                VkBufferCopy{ /*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/0, 0, stagingBuffer->memory()->size()}
-            );
+            if (buffer) {
+                auto copyRegions = make_array(
+                    VkBufferCopy{
+                        /*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/
+                        0, 0, stagingBuffer->memory()->size()
+                    }
+                );
 
-            CopyBufferToBuffer(device, app.transferQueue, stagingBuffer->handle(), buffer->handle(), std::move(copyRegions), app.transferCommandPool);
+                CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
+                                   buffer->handle(), std::move(copyRegions), app.transferCommandPool);
+            }
         }
-    }
 
-    return buffer;
+        return buffer;
+    }, app.indices);
 }
 
 
@@ -679,12 +686,16 @@ void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass r
 
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, std::data(vertexBuffers), std::data(offsets));
 
-        auto constexpr index_type = std::is_same_v<typename decltype(app.indices)::value_type, std::uint32_t> ?
-                                    VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
+        std::visit([commandBuffer, &indexBuffer = app.indexBuffer] (auto &&indices)
+        {
+            using T = typename std::decay_t<decltype(indices)>::value_type;
+            auto constexpr index_type = std::is_same_v<T, std::uint32_t> ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
 
-        vkCmdBindIndexBuffer(commandBuffer, app.indexBuffer->handle(), 0, index_type);
+            vkCmdBindIndexBuffer(commandBuffer, indexBuffer->handle(), 0, index_type);
 
-        vkCmdDrawIndexed(commandBuffer, static_cast<std::uint32_t>(std::size(app.indices)), 1, 0, 0, 0);
+            vkCmdDrawIndexed(commandBuffer, static_cast<std::uint32_t>(std::size(indices)), 1, 0, 0, 0);
+
+        }, app.indices);
 
         vkCmdEndRenderPass(commandBuffer);
 
@@ -708,6 +719,7 @@ void CreateSemaphores(app_t &app, VkDevice device)
 }
 
 
+[[nodiscard]]
 std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
 {
     std::optional<VulkanTexture> texture;
@@ -913,13 +925,13 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.texture.sampler = result;
 
-    /*if (auto result = glTF::load("sponza"sv, app.vertices, app.indices, app.inds); !result)
-        throw std::runtime_error("failed to load a mesh"s);*/
+    if (auto result = glTF::load("Hebe"sv, app.vertices, app.indices); !result)
+        throw std::runtime_error("failed to load a mesh"s);
 
-    if (app.vertexBuffer = InitVertexBuffer(app, *app.vulkanDevice); !app.vertexBuffer)
+    if (app.vertexBuffer = InitVertexBuffer(app); !app.vertexBuffer)
         throw std::runtime_error("failed to init vertex buffer"s);
 
-    if (app.indexBuffer = InitIndexBuffer(app, *app.vulkanDevice); !app.indexBuffer)
+    if (app.indexBuffer = InitIndexBuffer(app); !app.indexBuffer)
         throw std::runtime_error("failed to init index buffer"s);
 
     /*if (app.uboBuffer = CreateUniformBuffer(*app.vulkanDevice, sizeof(transforms_t)); !app.uboBuffer)

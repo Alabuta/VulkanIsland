@@ -116,14 +116,13 @@ struct attribute_description_t {
 using vertex_layout_t = std::vector<attribute_description_t>;
 
 struct vertex_buffer_t {
-
     vertex_layout_t layout;
 
     std::vector<std::byte> buffer;
 };
 
 
-using indices_t = std::variant<std::uint8_t, std::uint16_t, std::uint32_t>;
+using indices_t = std::variant<std::uint16_t, std::uint32_t>;
 using index_buffer_t = wrap_variant_by_vector<indices_t>::type;
 
 struct indices_t_ {
