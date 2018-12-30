@@ -1,11 +1,6 @@
 #define _SCL_SECURE_NO_WARNINGS
 
 
-#ifdef _MSC_VER
-#pragma comment(lib, "vulkan-1.lib")
-#pragma comment(lib, "glfw3dll.lib")
-#endif
-
 #if defined(_MSC_VER) && defined(_DEBUG)
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
