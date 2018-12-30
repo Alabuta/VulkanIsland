@@ -368,15 +368,42 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         vertShaderCreateInfo, fragShaderCreateInfo
     );
 
-    auto constexpr vertexInputBindingDescriptions = make_array(
-        VkVertexInputBindingDescription{0, sizeof(Vertex), VK_VERTEX_INPUT_RATE_VERTEX}
+    auto const vertexSize = std::accumulate(std::cbegin(app.vertices.layout),
+                                            std::cend(app.vertices.layout), 0u, [] (std::uint32_t size, auto &&description)
+    {
+        return size + std::visit([] (auto &&attribute)
+        {
+            using T = std::decay_t<decltype(attribute)>;
+            return static_cast<std::uint32_t>(sizeof(T));
+
+        }, description.attribute);
+    });
+
+    auto const vertexInputBindingDescriptions = make_array(
+        VkVertexInputBindingDescription{0, vertexSize, VK_VERTEX_INPUT_RATE_VERTEX}
     );
 
-    auto constexpr attributeDescriptions = make_array(
-        VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, pos)},
-        VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32B32_SFLOAT, offsetof(Vertex, normal)},
-        VkVertexInputAttributeDescription{2, 0, VK_FORMAT_R32G32_SFLOAT, offsetof(Vertex, uv)}
-    );
+    std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+
+    std::transform(std::cbegin(app.vertices.layout), std::cend(app.vertices.layout),
+                   std::back_inserter(attributeDescriptions), [binding = 0u] (auto &&description)
+    {
+        /*return size + std::visit([] (auto &&attribute)
+        {
+            using T = std::decay_t<decltype(attribute)>;
+            return static_cast<std::uint32_t>(sizeof(T));
+
+        }, description.attribute);*/
+
+        return VkVertexInputAttributeDescription{0, binding, VK_FORMAT_R32G32B32_SFLOAT, static_cast<std::uint32_t>(description.offset)};
+    });
+
+    //auto constexpr attributeDescriptions = make_array(
+    //    VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0},
+    //    VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32B32_SFLOAT, 12},
+    //    VkVertexInputAttributeDescription{2, 0, VK_FORMAT_R32G32_SFLOAT, 24},
+    //    VkVertexInputAttributeDescription{3, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 32}
+    //);
 
     VkPipelineVertexInputStateCreateInfo const vertexInputCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -574,7 +601,8 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
 
 [[nodiscard]] std::shared_ptr<VulkanBuffer> InitIndexBuffer(app_t &app)
 {
-    return std::visit([&app] (auto &&indices) {
+    return std::visit([&app] (auto &&indices)
+    {
         std::shared_ptr<VulkanBuffer> buffer;
 
         if (auto stagingBuffer = StageData(*app.vulkanDevice, indices); stagingBuffer) {
@@ -909,6 +937,15 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.renderPass = std::move(renderPass.value());
 
+    if (auto result = glTF::load("cube"sv, app.vertices, app.indices); !result)
+        throw std::runtime_error("failed to load a mesh"s);
+
+    if (app.vertexBuffer = InitVertexBuffer(app); !app.vertexBuffer)
+        throw std::runtime_error("failed to init vertex buffer"s);
+
+    if (app.indexBuffer = InitIndexBuffer(app); !app.indexBuffer)
+        throw std::runtime_error("failed to init index buffer"s);
+
     CreateGraphicsPipeline(app, app.vulkanDevice->handle());
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
@@ -924,15 +961,6 @@ void InitVulkan(Window &window, app_t &app)
         throw std::runtime_error("failed to create a texture sampler"s);
 
     else app.texture.sampler = result;
-
-    if (auto result = glTF::load("Hebe"sv, app.vertices, app.indices); !result)
-        throw std::runtime_error("failed to load a mesh"s);
-
-    if (app.vertexBuffer = InitVertexBuffer(app); !app.vertexBuffer)
-        throw std::runtime_error("failed to init vertex buffer"s);
-
-    if (app.indexBuffer = InitIndexBuffer(app); !app.indexBuffer)
-        throw std::runtime_error("failed to init index buffer"s);
 
     /*if (app.uboBuffer = CreateUniformBuffer(*app.vulkanDevice, sizeof(transforms_t)); !app.uboBuffer)
         throw std::runtime_error("failed to init uniform buffer"s);*/

@@ -17,7 +17,7 @@ layout(set = 0, binding = 0, std430) readonly buffer PER_CAMERA
 } camera;
 
 layout(location = 0) in vec3 viewSpaceNormal;
-layout(location = 1) in vec2 texCoord1;
+//layout(location = 1) in vec2 texCoord1;
 layout(location = 2) in vec3 viewSpacePosition;
 
 layout(location = 0) out vec4 fragColor;
@@ -40,14 +40,15 @@ void main()
 {
     //fragColor = vec4(vec3(viewSpaceNormal * 0.5 + 0.5), 1.0);
     //fragColor = vec4(texCoord, texCoord.y / texCoord.x, 1.0);
-    vec2 texCoord = texCoord1 * vec2(1, -1);
-    fragColor = texture(textureSampler, texCoord);
+    /*vec2 texCoord = texCoord1 * vec2(1, -1);
+    fragColor = texture(textureSampler, texCoord);*/
 
     //fragColor.rgb = viewSpacePosition / 100.0;
     //fragColor.a = 1.0;
 
-    //fragColor = vec4(vec3(0.08), 1);
+    fragColor = vec4(0., .6, .8, 1.);
 
+#if 0
     vec4 lightPos;
 
     float dist = 0.0, luminosity = 0.0;
@@ -60,4 +61,5 @@ void main()
 
         fragColor.rgb += pointLights[i].color * luminosity;
     }
+#endif
 }

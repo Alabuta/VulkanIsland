@@ -58,3 +58,82 @@ struct MeshSytem final : public ex::System<Mesh> {
         });
     }
 };*/
+
+
+auto constexpr get_primitive_topology(PRIMITIVE_TOPOLOGY mode)
+{
+    switch (mode) {
+        case PRIMITIVE_TOPOLOGY::POINTS:
+            return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
+
+        case PRIMITIVE_TOPOLOGY::LINES:
+            return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
+
+        case PRIMITIVE_TOPOLOGY::LINE_STRIP:
+            return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
+
+        case PRIMITIVE_TOPOLOGY::TRIANGLES:
+            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+        case PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+
+        case PRIMITIVE_TOPOLOGY::TRIANGLE_FAN:
+            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
+
+        default:
+            return VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
+    }
+}
+
+template<std::size_t N, class T>
+auto constexpr get_type(bool normalized = false)
+{
+    if constexpr (std::is_same_v<T, std::int8_t>) return VK_FORMAT_UNDEFINED;
+
+    else if constexpr (std::is_same_v<T, std::uint8_t>) return VK_FORMAT_UNDEFINED;
+
+    else if constexpr (std::is_same_v<T, std::int16_t>) return VK_FORMAT_UNDEFINED;
+
+    else if constexpr (std::is_same_v<T, std::uint16_t>) {
+        switch (N) {
+            case 1: return VK_FORMAT_R16_UINT;
+            case 2: return VK_FORMAT_R16G16_UINT;
+            case 3: return VK_FORMAT_R16G16B16_UINT;
+            case 4: return VK_FORMAT_R16G16B16A16_UINT;
+            default: return VK_FORMAT_UNDEFINED;
+        }
+    }
+
+    else if constexpr (std::is_same_v<T, std::int32_t>) {
+        switch (N) {
+            case 1: return VK_FORMAT_R32_SINT;
+            case 2: return VK_FORMAT_R32G32_SINT;
+            case 3: return VK_FORMAT_R32G32B32_SINT;
+            case 4: return VK_FORMAT_R32G32B32A32_SINT;
+            default: return VK_FORMAT_UNDEFINED;
+        }
+    }
+
+    else if constexpr (std::is_same_v<T, std::uint32_t>) {
+        switch (N) {
+            case 1: return VK_FORMAT_R32_UINT;
+            case 2: return VK_FORMAT_R32G32_UINT;
+            case 3: return VK_FORMAT_R32G32B32_UINT;
+            case 4: return VK_FORMAT_R32G32B32A32_UINT;
+            default: return VK_FORMAT_UNDEFINED;
+        }
+    }
+
+    else if constexpr (std::is_same_v<T, std::float_t>) {
+        switch (N) {
+            case 1: return VK_FORMAT_R32_SFLOAT;
+            case 2: return VK_FORMAT_R32G32_SFLOAT;
+            case 3: return VK_FORMAT_R32G32B32_SFLOAT;
+            case 4: return VK_FORMAT_R32G32B32A32_SFLOAT;
+            default: return VK_FORMAT_UNDEFINED;
+        }
+    }
+
+    else return VK_FORMAT_UNDEFINED;
+}
