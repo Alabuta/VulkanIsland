@@ -840,24 +840,17 @@ bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indi
 
                     auto srcIndex = begin, dstIndex = dstOffset;
 
-                    auto start = std::chrono::system_clock::now();
-
                     for (; srcIndex < end; srcIndex += step, dstIndex += vertexSize)
                         std::uninitialized_copy_n(&binBuffer.at(srcIndex), attributeSize,
                                                   reinterpret_cast<std::byte *>(&buffer.at(dstIndex)));
                         //memcpy(&buffer.at(dstIndex), &binBuffer.at(srcIndex), attributeSize);
 
-                    auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - start);
-                    std::cout << duration.count() << '\n';
-
                     dstOffset += attributeSize;
                 }
             }
 
-            std::cout << vertexSize << ' ' << verticesNumber << '\n';
-
-            /*std::vector<float> xxxxx(std::size(vertices.buffer) / 4);
-            std::uninitialized_copy(std::begin(vertices.buffer), std::end(vertices.buffer), reinterpret_cast<std::byte *>(std::data(xxxxx)));*/
+            std::vector<float> xxxxx(std::size(vertices.buffer) / 4);
+            std::uninitialized_copy(std::begin(vertices.buffer), std::end(vertices.buffer), reinterpret_cast<std::byte *>(std::data(xxxxx)));
         }
     }
 

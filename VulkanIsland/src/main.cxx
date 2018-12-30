@@ -6,7 +6,7 @@
 #pragma comment(lib, "glfw3dll.lib")
 #endif
 
-#if defined(_MSC_VER) && defined(DEBUG)
+#if defined(_MSC_VER) && defined(_DEBUG)
 #define _CRTDBG_MAP_ALLOC
 #include <crtdbg.h>
 #endif
@@ -747,8 +747,8 @@ void CreateSemaphores(app_t &app, VkDevice device)
 }
 
 
-[[nodiscard]]
-std::optional<VulkanTexture> LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
+[[nodiscard]] std::optional<VulkanTexture>
+LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
 {
     std::optional<VulkanTexture> texture;
 
@@ -1162,7 +1162,7 @@ void Update(app_t &app)
 
 int main()
 try {
-#if defined(_MSC_VER) && defined(DEBUG)
+#if defined(_MSC_VER) && defined(_DEBUG)
     _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     //_CrtSetBreakAlloc(84);
 #endif
@@ -1308,7 +1308,6 @@ try {
     */
 
     glfwInit();
-    glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
     app_t app;
 
