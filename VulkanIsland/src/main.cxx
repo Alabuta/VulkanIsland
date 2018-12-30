@@ -183,19 +183,19 @@ void CleanupFrameData(app_t &app, VulkanDevice &device, VkPipeline graphicsPipel
 void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet &descriptorSet)
 {
     // TODO: descriptor info typed by VkDescriptorType.
-    auto const cameras = make_array(
+    auto const cameras = std::array{
         VkDescriptorBufferInfo{app.perCameraBuffer->handle(), 0, sizeof(Camera::data_t)}
-    );
+    };
 
     // TODO: descriptor info typed by VkDescriptorType.
-    auto const objects = make_array(
+    auto const objects = std::array{
         VkDescriptorBufferInfo{app.perObjectBuffer->handle(), 0, sizeof(per_object_t)}
-    );
+    };
 
     // TODO: descriptor info typed by VkDescriptorType.
-    auto const images = make_array(
+    auto const images = std::array{
         VkDescriptorImageInfo{app.texture.sampler->handle(), app.texture.view.handle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}
-    );
+    };
 
     std::array<VkWriteDescriptorSet, 3> const writeDescriptorsSet{{
         {
@@ -297,7 +297,7 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
         0
     };
 
-    auto const attachments = make_array(colorAttachment, depthAttachement, colorAttachmentResolve);
+    auto const attachments = std::array{colorAttachment, depthAttachement, colorAttachmentResolve};
 
 #if NOT_YET_IMPLEMENTED
     VkInputAttachmentAspectReference const depthAttachmentAspectReference{
@@ -364,9 +364,9 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         nullptr
     };
 
-    auto const shaderStages = make_array(
+    auto const shaderStages = std::array{
         vertShaderCreateInfo, fragShaderCreateInfo
-    );
+    };
 
     auto const vertexSize = std::accumulate(std::cbegin(app.vertices.layout),
                                             std::cend(app.vertices.layout), 0u, [] (std::uint32_t size, auto &&description)
@@ -379,31 +379,31 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         }, description.attribute);
     });
 
-    auto const vertexInputBindingDescriptions = make_array(
+    auto const vertexInputBindingDescriptions = std::array{
         VkVertexInputBindingDescription{0, vertexSize, VK_VERTEX_INPUT_RATE_VERTEX}
-    );
+    };
 
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+    //std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
 
-    std::transform(std::cbegin(app.vertices.layout), std::cend(app.vertices.layout),
-                   std::back_inserter(attributeDescriptions), [binding = 0u] (auto &&description)
-    {
-        /*return size + std::visit([] (auto &&attribute)
-        {
-            using T = std::decay_t<decltype(attribute)>;
-            return static_cast<std::uint32_t>(sizeof(T));
+    //std::transform(std::cbegin(app.vertices.layout), std::cend(app.vertices.layout),
+    //               std::back_inserter(attributeDescriptions), [binding = 0u] (auto &&description)
+    //{
+    //    /*return size + std::visit([] (auto &&attribute)
+    //    {
+    //        using T = std::decay_t<decltype(attribute)>;
+    //        return static_cast<std::uint32_t>(sizeof(T));
 
-        }, description.attribute);*/
+    //    }, description.attribute);*/
 
-        return VkVertexInputAttributeDescription{0, binding, VK_FORMAT_R32G32B32_SFLOAT, static_cast<std::uint32_t>(description.offset)};
-    });
+    //    return VkVertexInputAttributeDescription{0, binding, VK_FORMAT_R32G32B32_SFLOAT, static_cast<std::uint32_t>(description.offset)};
+    //});
 
-    //auto constexpr attributeDescriptions = make_array(
-    //    VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0},
-    //    VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32B32_SFLOAT, 12},
-    //    VkVertexInputAttributeDescription{2, 0, VK_FORMAT_R32G32_SFLOAT, 24},
-    //    VkVertexInputAttributeDescription{3, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 32}
-    //);
+    auto constexpr attributeDescriptions = std::array{
+        VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0},
+        VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32B32_SFLOAT, 12},
+        VkVertexInputAttributeDescription{2, 0, VK_FORMAT_R32G32_SFLOAT, 24},
+        VkVertexInputAttributeDescription{3, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 32}
+    };
 
     VkPipelineVertexInputStateCreateInfo const vertexInputCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
@@ -535,7 +535,7 @@ void CreateFramebuffers(VulkanDevice const &device, VkRenderPass renderPass, Vul
 
     std::transform(std::cbegin(views), std::cend(views), std::back_inserter(framebuffers), [&device, renderPass, &swapchain] (auto &&view)
     {
-        auto const attachements = make_array(swapchain.colorTexture.view.handle(), swapchain.depthTexture.view.handle(), view);
+        auto const attachements = std::array{swapchain.colorTexture.view.handle(), swapchain.depthTexture.view.handle(), view};
 
         VkFramebufferCreateInfo const createInfo{
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
@@ -584,12 +584,12 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
         buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
 
         if (buffer) {
-            auto copyRegions = make_array(
+            auto copyRegions = std::array{
                 VkBufferCopy{
                     /*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/
                     0, 0, stagingBuffer->memory()->size()
                 }
-            );
+            };
 
             CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
                                 buffer->handle(), std::move(copyRegions), app.transferCommandPool);
@@ -612,12 +612,12 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
             buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
 
             if (buffer) {
-                auto copyRegions = make_array(
+                auto copyRegions = std::array{
                     VkBufferCopy{
                         /*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/
                         0, 0, stagingBuffer->memory()->size()
                     }
-                );
+                };
 
                 CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
                                    buffer->handle(), std::move(copyRegions), app.transferCommandPool);
@@ -704,13 +704,13 @@ void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass r
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipeline);
 
-        auto const descriptorSets = make_array(app.descriptorSet);
+        auto const descriptorSets = std::array{app.descriptorSet};
 
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayout,
                                 0, static_cast<std::uint32_t>(std::size(descriptorSets)), std::data(descriptorSets), 0, nullptr);
 
-        auto const vertexBuffers = make_array(app.vertexBuffer->handle());
-        auto const offsets = make_array(VkDeviceSize{0});
+        auto const vertexBuffers = std::array{app.vertexBuffer->handle()};
+        auto const offsets = std::array{VkDeviceSize{0}};
 
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, std::data(vertexBuffers), std::data(offsets));
 
@@ -845,8 +845,8 @@ void DrawFrame(app_t &app)
             throw std::runtime_error("failed to acquire next image index: "s + std::to_string(result));
     }
 
-    auto const waitSemaphores = make_array(app.imageAvailableSemaphore);
-    auto const signalSemaphores = make_array(app.renderFinishedSemaphore);
+    auto const waitSemaphores = std::array{app.imageAvailableSemaphore};
+    auto const signalSemaphores = std::array{app.renderFinishedSemaphore};
 
     std::array<VkPipelineStageFlags, 1> constexpr waitStages{
         { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
@@ -937,7 +937,7 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.renderPass = std::move(renderPass.value());
 
-    if (auto result = glTF::load("cube"sv, app.vertices, app.indices); !result)
+    if (auto result = glTF::load("Hebe"sv, app.vertices, app.indices); !result)
         throw std::runtime_error("failed to load a mesh"s);
 
     if (app.vertexBuffer = InitVertexBuffer(app); !app.vertexBuffer)
@@ -976,7 +976,7 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.descriptorPool = std::move(descriptorPool.value());
 
-    if (auto descriptorSet = CreateDescriptorSet(*app.vulkanDevice, app.descriptorPool, make_array(app.descriptorSetLayout)); !descriptorSet)
+    if (auto descriptorSet = CreateDescriptorSet(*app.vulkanDevice, app.descriptorPool, std::array{app.descriptorSetLayout}); !descriptorSet)
         throw std::runtime_error("failed to create the descriptor pool"s);
 
     else app.descriptorSet = std::move(descriptorSet.value());
@@ -1027,90 +1027,6 @@ void CleanUp(app_t &app)
     app.vulkanInstance.reset(nullptr);
 }
 
-#if OBSOLETE
-void UpdateUniformBuffer(VulkanDevice const &device, app_t &app, VulkanBuffer const &uboBuffer, std::uint32_t width, std::uint32_t height)
-{
-    if (width * height < 1) return;
-
-#if !USE_GLM
-    app.transforms.model = mat4{
-        1, 0, 0, 0,
-        0, 1, 0, 0,
-        0, 0, 1, 0,
-        0, 0, 0, 1
-    };
-
-    app.transforms.view = mat4(
-        1, 0, 0, 0,
-        0, 0.707106709, 0.707106709, 0,
-        0, -0.707106709, 0.707106709, 0,
-        0, 0, -1.41421354, 1
-    );
-
-    app.transforms.view = lookAt(vec3{0, 1, 1}, vec3{0, 0, 0}, vec3{0, 1, 0});
-
-    auto view = glm::lookAt(glm::vec3{0, 1, 1}, glm::vec3{0, 0, 0}, glm::vec3{0, 1, 0});
-#else
-    static auto startTime = std::chrono::high_resolution_clock::now();
-
-    auto currentTime = std::chrono::high_resolution_clock::now();
-    [[maybe_unused]] auto time = std::chrono::duration<float, std::chrono::seconds::period>(currentTime - startTime).count();
-
-    app.transforms.model = glm::mat4(1.f);
-    //app.transforms.model = glm::rotate(app.transforms.model, .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});
-    app.transforms.model = glm::rotate(app.transforms.model, glm::radians(90.f), glm::vec3{1, 0, 0});
-    app.transforms.model = glm::rotate(app.transforms.model, glm::radians(90.f), glm::vec3{0, 0, 1});
-    //app.transforms.model = glm::scale(app.transforms.model, glm::vec3{.1f, .1f, .1f});
-    //app.transforms.model = glm::translate(app.transforms.model, {0, 0, -250});
-    //app.transforms.model = glm::rotate(glm::mat4(1.f), .24f * time * glm::radians(90.f), glm::vec3{0, 1, 0});// *glm::scale(glm::mat4(1.f), {.0f, .0f, .0f});
-
-    /*auto translate = glm::vec3{0.f, 4.f, 0.f + 0*std::sin(time) * 40.f};
-
-    app.transforms.view = glm::mat4(1.f);
-    app.transforms.view = glm::translate(app.transforms.view, translate);*/
-    // app.transforms.view = glm::lookAt(glm::vec3{1.f, 2.f, 0.f}, glm::vec3{0, 1.f, 0}, glm::vec3{0, 1, 0});
-    app.transforms.view = glm::lookAt(glm::vec3{10.f, 20.f, 0.f + std::sin(time * .4f) * 64.f}, glm::vec3{0, 10.f, 0}, glm::vec3{0, 1, 0});
-
-
-    app.transforms.modelView = app.transforms.view * app.transforms.model;
-#endif
-    auto const aspect = static_cast<float>(width) / static_cast<float>(height);
-
-    [[maybe_unused]] auto constexpr kPI = 3.14159265358979323846f;
-    [[maybe_unused]] auto constexpr kPI_DIV_180 = 0.01745329251994329576f;
-    [[maybe_unused]] auto constexpr kPI_DIV_180_INV = 57.2957795130823208767f;
-
-    auto constexpr kFOV = 72.f, zNear = .1f, zFar = 1000.f;
-    auto const f = 1.f / std::tan(kFOV * kPI_DIV_180 * .5f);
-
-    auto kA = -zFar / (zFar - zNear);
-    auto kB = -zFar * zNear / (zFar - zNear);
-
-    if constexpr (kREVERSED_DEPTH) {
-        kA = -kA - 1;
-        kB *= -1;
-    }
-
-    auto proj = mat4(
-        f / aspect, 0, 0, 0,
-        0, f, 0, 0,
-        0, 0, kA, -1,
-        0, 0, kB, 0
-    );
-
-    app.transforms.proj = glm::make_mat4(std::data(proj.m));
-    //app.transforms.proj = glm::perspective(glm::radians(kFOV), aspect, zNear, zFar);
-
-    void *data;
-    if (auto result = vkMapMemory(device.handle(), uboBuffer.memory()->handle(), uboBuffer.memory()->offset(), uboBuffer.memory()->size(), 0, &data); result != VK_SUCCESS)
-        throw std::runtime_error("failed to map vertex buffer memory: "s + std::to_string(result));
-
-    auto const array = make_array(app.transforms);
-    std::uninitialized_copy(std::begin(array), std::end(array), reinterpret_cast<decltype(app.transforms) *>(data));
-
-    vkUnmapMemory(device.handle(), uboBuffer.memory()->handle());
-}
-#endif
 
 void Update(app_t &app)
 {
@@ -1136,7 +1052,7 @@ void Update(app_t &app)
     }
 
     {
-        app.object.world = glm::rotate(glm::mat4{1}, glm::radians(90.f), glm::vec3{1, 0, 0});
+        app.object.world = glm::rotate(glm::mat4{.01f}, glm::radians(-90.f), glm::vec3{1, 0, 0});
         app.object.world = glm::rotate(app.object.world, glm::radians(90.f), glm::vec3{0, 0, 1});
 
         app.object.normal = glm::inverseTranspose(app.object.world);

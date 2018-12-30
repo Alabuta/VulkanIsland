@@ -3,7 +3,7 @@
 
 layout(location = 0) in vec3 inVertex;
 layout(location = 1) in vec3 inNormal;
-//layout(location = 2) in vec2 inUV;
+layout(location = 2) in vec2 inUV;
 layout(location = 3) in vec4 inTangent;
 
 layout(set = 0, binding = 0, std430) readonly buffer PER_CAMERA
@@ -23,9 +23,9 @@ layout(set = 0, binding = 2, std430) readonly buffer PER_OBJECT
     mat4 normal;  // Transposed of the inversed of the upper left 3x3 sub-matrix of world matrix.
 } object;
 
-layout(location = 0) out vec3 viewSpaceNormal;
-//layout(location = 1) out vec2 texCoord;
-layout(location = 2) out vec3 viewSpacePosition;
+layout(location = 0) out vec3 worldSpaceNormal;
+layout(location = 1) out vec2 texCoord;
+layout(location = 2) out vec3 worldSpacePosition;
 
 out gl_PerVertex {
     vec4 gl_Position;
@@ -35,10 +35,10 @@ void main()
 {
     gl_Position = camera.view * object.world * vec4(inVertex, 1.0);
 
-    viewSpacePosition = gl_Position.xyz;
+    worldSpacePosition = gl_Position.xyz;
 
     gl_Position = camera.projection * gl_Position;
 
-    viewSpaceNormal = normalize((object.normal * transpose(camera.invertedView) * vec4(inNormal, 0.0)).xyz);
-    //texCoord = vec2(inUV.x, inUV.y);
+    worldSpaceNormal = normalize((object.normal /* transpose(camera.invertedView)*/ * vec4(inNormal, 0.0)).xyz);
+    texCoord = vec2(inUV.x, inUV.y);
 }
