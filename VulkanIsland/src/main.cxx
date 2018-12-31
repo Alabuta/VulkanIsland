@@ -332,20 +332,20 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
     if (vertShaderByteCode.empty())
         throw std::runtime_error("failed to open vertex shader file"s);
 
-    auto const vertShaderModule = CreateShaderModule(device, vertShaderByteCode);
+    auto const vertShaderModule = app.vulkanDevice->resourceManager().CreateShaderModule(vertShaderByteCode);
 
     auto const fragShaderByteCode = ReadShaderFile(R"(frag.spv)"sv);
 
     if (fragShaderByteCode.empty())
         throw std::runtime_error("failed to open fragment shader file"s);
 
-    auto const fragShaderModule = CreateShaderModule(device, fragShaderByteCode);
+    auto const fragShaderModule = app.vulkanDevice->resourceManager().CreateShaderModule(fragShaderByteCode);
 
     VkPipelineShaderStageCreateInfo const vertShaderCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
         nullptr, 0,
         VK_SHADER_STAGE_VERTEX_BIT,
-        vertShaderModule,
+        vertShaderModule->handle(),
         "main",
         nullptr
     };
@@ -354,7 +354,7 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
         nullptr, 0,
         VK_SHADER_STAGE_FRAGMENT_BIT,
-        fragShaderModule,
+        fragShaderModule->handle(),
         "main",
         nullptr
     };
@@ -515,9 +515,6 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
 
     if (auto result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &app.graphicsPipeline); result != VK_SUCCESS)
         throw std::runtime_error("failed to create graphics pipeline: "s + std::to_string(result));
-
-    vkDestroyShaderModule(device, fragShaderModule, nullptr);
-    vkDestroyShaderModule(device, vertShaderModule, nullptr);
 }
 
 

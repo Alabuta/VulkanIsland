@@ -2,32 +2,24 @@
 
 #include "main.hxx"
 
-[[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view name)
-{
-    fs::path contents{"shaders"sv};
+class VulkanShaderModule final {
+public:
 
-    if (!fs::exists(fs::current_path() / contents))
-        contents = fs::current_path() / "../"sv / contents;
+    VulkanShaderModule(VkShaderModule handle) noexcept : handle_{handle} { }
 
-    auto path = contents / name;
+    VkShaderModule handle() const noexcept { return handle_; }
 
-    std::ifstream file{path.native(), std::ios::in | std::ios::binary};
+private:
 
-    if (file.bad() || file.fail())
-        return { };
+    VkShaderModule handle_;
 
-    auto const start_pos = file.tellg();
-    file.ignore(std::numeric_limits<std::streamsize>::max());
+    VulkanShaderModule() = delete;
+    VulkanShaderModule(VulkanShaderModule const &) = delete;
+    VulkanShaderModule(VulkanShaderModule &&) = delete;
+};
 
-    std::vector<std::byte> shaderByteCode(static_cast<std::size_t>(file.gcount()));
+[[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view name);
 
-    file.seekg(start_pos);
-
-    if (!shaderByteCode.empty())
-        file.read(reinterpret_cast<char *>(std::data(shaderByteCode)), static_cast<std::streamsize>(std::size(shaderByteCode)));
-
-    return shaderByteCode;
-}
 
 template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
 [[nodiscard]] VkShaderModule CreateShaderModule(VkDevice device, T &&shaderByteCode)

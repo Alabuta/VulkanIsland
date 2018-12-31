@@ -5,12 +5,14 @@
 
 #include "main.hxx"
 #include "device.hxx"
+#include "program.hxx"
 #include "commandBuffer.hxx"
 
 class VulkanImage;
 class VulkanImageView;
 class VulkanSampler;
 class VulkanBuffer;
+class VulkanShaderModule;
 
 class ResourceManager final {
 public:
@@ -26,15 +28,20 @@ public:
 
     [[nodiscard]] std::shared_ptr<VulkanSampler>
     CreateImageSampler(std::uint32_t mipLevels) noexcept;
-
+    
     [[nodiscard]] std::shared_ptr<VulkanBuffer>
     CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) noexcept;
+
+    [[nodiscard]] std::shared_ptr<VulkanShaderModule>
+    CreateShaderModule(std::vector<std::byte> const &shaderByteCode) noexcept;
 
 private:
 
     VulkanDevice &device_;
 
-    template<class T, std::enable_if_t<is_one_of_v<std::decay_t<T>, VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer>> ...>
+    template<class T, std::enable_if_t<is_one_of_v<std::decay_t<T>,
+        VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, VulkanShaderModule
+    >> ...>
     void ReleaseResource(T &&resource) noexcept;
 
     ResourceManager() = delete;

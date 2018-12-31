@@ -246,6 +246,7 @@
     <ClCompile Include="src/camera/cameraController.cxx" />
     <ClCompile Include="src/camera/handlers/mouseHandler.cxx" />
     <ClCompile Include="src\loaders\loaderGLTF.cxx" />
+    <ClCompile Include="src\program.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/buffer.hxx" />
