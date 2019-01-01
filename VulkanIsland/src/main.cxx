@@ -326,6 +326,34 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
     return handle;
 }
 
+template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
+[[nodiscard]] std::optional<VkPipelineLayout>
+CreatePipelineLayout(VulkanDevice const &vulkanDevice, T &&descriptorSetLayouts) noexcept
+{
+    static_assert(
+        std::is_same_v<typename std::decay_t<T>::value_type, VkDescriptorSetLayout>,
+        "container has to contain VkDescriptorSetLayout elements"
+    );
+
+    VkPipelineLayoutCreateInfo const layoutCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        nullptr, 0,
+        static_cast<std::uint32_t>(std::size(descriptorSetLayouts)), std::data(descriptorSetLayouts),
+        0, nullptr
+    };
+
+    std::optional<VkPipelineLayout> pipelineLayout;
+
+    VkPipelineLayout handle;
+
+    if (auto result = vkCreatePipelineLayout(vulkanDevice.handle(), &layoutCreateInfo, nullptr, &handle); result != VK_SUCCESS)
+        std::cerr << "failed to create pipeline layout: "s << result << '\n';
+
+    else pipelineLayout.emplace(handle);
+
+    return pipelineLayout;
+}
+
 void CreateGraphicsPipeline(app_t &app, VkDevice device)
 {
     auto const vertShaderByteCode = ReadShaderFile(R"(vert.spv)"sv);
@@ -360,12 +388,10 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         nullptr
     };
 
-    auto const shaderStages = std::array{
-        vertShaderCreateInfo, fragShaderCreateInfo
-    };
+    auto const shaderStages = std::array{ vertShaderCreateInfo, fragShaderCreateInfo };
 
-    auto const vertexSize = std::accumulate(std::cbegin(app.vertices.layout),
-                                            std::cend(app.vertices.layout), 0u, [] (std::uint32_t size, auto &&description)
+    auto const vertexSize = std::accumulate(std::cbegin(app.vertices.layout), std::cend(app.vertices.layout),
+                                            0u, [] (std::uint32_t size, auto &&description)
     {
         return size + std::visit([] (auto &&attribute)
         {
@@ -387,7 +413,7 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         auto const format = std::visit([normalized = description.normalized] (auto &&attribute)
         {
             using T = std::decay_t<decltype(attribute)>;
-            return get_type<T::number, T::type>(normalized);
+            return getFormat<T::number, T::type>(normalized);
 
         }, description.attribute);
 
@@ -487,15 +513,8 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         { 0, 0, 0, 0 }
     };
 
-    VkPipelineLayoutCreateInfo const layoutCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        nullptr, 0, 
-        1, &app.descriptorSetLayout,
-        0, nullptr
-    };
-
-    if (auto result = vkCreatePipelineLayout(device, &layoutCreateInfo, nullptr, &app.pipelineLayout); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create pipeline layout: "s + std::to_string(result));
+    if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{ app.descriptorSetLayout }); pipelineLayout)
+        app.pipelineLayout = *pipelineLayout;
 
     VkGraphicsPipelineCreateInfo const graphicsPipelineCreateInfo{
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,

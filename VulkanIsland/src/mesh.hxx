@@ -87,7 +87,7 @@ auto constexpr get_primitive_topology(PRIMITIVE_TOPOLOGY mode)
 }
 
 template<std::size_t N, class T>
-auto constexpr get_type(bool normalized = false)
+auto constexpr getFormat(bool normalized = false)
 {
     if constexpr (std::is_same_v<T, std::int8_t>) {
         if (normalized) {
