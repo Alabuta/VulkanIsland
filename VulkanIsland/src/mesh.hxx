@@ -89,19 +89,91 @@ auto constexpr get_primitive_topology(PRIMITIVE_TOPOLOGY mode)
 template<std::size_t N, class T>
 auto constexpr get_type(bool normalized = false)
 {
-    if constexpr (std::is_same_v<T, std::int8_t>) return VK_FORMAT_UNDEFINED;
+    if constexpr (std::is_same_v<T, std::int8_t>) {
+        if (normalized) {
+            switch (N) {
+                case 1: return VK_FORMAT_R8_SNORM;
+                case 2: return VK_FORMAT_R8G8_SNORM;
+                case 3: return VK_FORMAT_R8G8B8_SNORM;
+                case 4: return VK_FORMAT_R8G8B8A8_SNORM;
+                default: return VK_FORMAT_UNDEFINED;
+            }
+        }
 
-    else if constexpr (std::is_same_v<T, std::uint8_t>) return VK_FORMAT_UNDEFINED;
+        else {
+            switch (N) {
+                case 1: return VK_FORMAT_R8_SINT;
+                case 2: return VK_FORMAT_R8G8_SINT;
+                case 3: return VK_FORMAT_R8G8B8_SINT;
+                case 4: return VK_FORMAT_R8G8B8A8_SINT;
+                default: return VK_FORMAT_UNDEFINED;
+            }
+        }
+    }
 
-    else if constexpr (std::is_same_v<T, std::int16_t>) return VK_FORMAT_UNDEFINED;
+    else if constexpr (std::is_same_v<T, std::uint8_t>) {
+        if (normalized) {
+            switch (N) {
+                case 1: return VK_FORMAT_R8_UNORM;
+                case 2: return VK_FORMAT_R8G8_UNORM;
+                case 3: return VK_FORMAT_R8G8B8_UNORM;
+                case 4: return VK_FORMAT_R8G8B8A8_UNORM;
+                default: return VK_FORMAT_UNDEFINED;
+            }
+        }
+
+        else {
+            switch (N) {
+                case 1: return VK_FORMAT_R8_UINT;
+                case 2: return VK_FORMAT_R8G8_UINT;
+                case 3: return VK_FORMAT_R8G8B8_UINT;
+                case 4: return VK_FORMAT_R8G8B8A8_UINT;
+                default: return VK_FORMAT_UNDEFINED;
+            }
+        }
+    }
+
+    else if constexpr (std::is_same_v<T, std::int16_t>) {
+        if (normalized) {
+            switch (N) {
+                case 1: return VK_FORMAT_R16_SNORM;
+                case 2: return VK_FORMAT_R16G16_SNORM;
+                case 3: return VK_FORMAT_R16G16B16_SNORM;
+                case 4: return VK_FORMAT_R16G16B16A16_SNORM;
+                default: return VK_FORMAT_UNDEFINED;
+            }
+        }
+
+        else {
+            switch (N) {
+                case 1: return VK_FORMAT_R16_SINT;
+                case 2: return VK_FORMAT_R16G16_SINT;
+                case 3: return VK_FORMAT_R16G16B16_SINT;
+                case 4: return VK_FORMAT_R16G16B16A16_SINT;
+                default: return VK_FORMAT_UNDEFINED;
+            }
+        }
+    }
 
     else if constexpr (std::is_same_v<T, std::uint16_t>) {
-        switch (N) {
-            case 1: return VK_FORMAT_R16_UINT;
-            case 2: return VK_FORMAT_R16G16_UINT;
-            case 3: return VK_FORMAT_R16G16B16_UINT;
-            case 4: return VK_FORMAT_R16G16B16A16_UINT;
-            default: return VK_FORMAT_UNDEFINED;
+        if (normalized) {
+            switch (N) {
+                case 1: return VK_FORMAT_R16_UNORM;
+                case 2: return VK_FORMAT_R16G16_UNORM;
+                case 3: return VK_FORMAT_R16G16B16_UNORM;
+                case 4: return VK_FORMAT_R16G16B16A16_UNORM;
+                default: return VK_FORMAT_UNDEFINED;
+            }
+        }
+
+        else {
+            switch (N) {
+                case 1: return VK_FORMAT_R16_UINT;
+                case 2: return VK_FORMAT_R16G16_UINT;
+                case 3: return VK_FORMAT_R16G16B16_UINT;
+                case 4: return VK_FORMAT_R16G16B16A16_UINT;
+                default: return VK_FORMAT_UNDEFINED;
+            }
         }
     }
 

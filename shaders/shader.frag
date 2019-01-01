@@ -51,7 +51,7 @@ void main()
     fragColor = vec4(1.);
 
     vec3 worldSpaceLightDir = normalize((1. * lightDir).xyz);
-    fragColor.rgb *= dot(normalize(worldSpaceNormal), worldSpaceLightDir);
+    fragColor.rgb *= clamp(0., 1., dot(normalize(worldSpaceNormal), -worldSpaceLightDir));
 
     fragColor.rgb = fragColor.rgb + vec3(.24);
 

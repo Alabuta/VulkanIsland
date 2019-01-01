@@ -30,6 +30,7 @@
 #include "loaders/loaderGLTF.hxx"
 #include "loaderTARGA.hxx"
 
+#include "mesh.hxx"
 #include "sceneTree.hxx"
 
 #include "input/inputManager.hxx"
@@ -378,27 +379,29 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         VkVertexInputBindingDescription{0, vertexSize, VK_VERTEX_INPUT_RATE_VERTEX}
     };
 
-    //std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
+    std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
 
-    //std::transform(std::cbegin(app.vertices.layout), std::cend(app.vertices.layout),
-    //               std::back_inserter(attributeDescriptions), [binding = 0u] (auto &&description)
-    //{
-    //    /*return size + std::visit([] (auto &&attribute)
-    //    {
-    //        using T = std::decay_t<decltype(attribute)>;
-    //        return static_cast<std::uint32_t>(sizeof(T));
+    std::transform(std::cbegin(app.vertices.layout), std::cend(app.vertices.layout),
+                   std::back_inserter(attributeDescriptions), [binding = 0u] (auto &&description)
+    {
+        auto const format = std::visit([normalized = description.normalized] (auto &&attribute)
+        {
+            using T = std::decay_t<decltype(attribute)>;
+            return get_type<T::number, T::type>(normalized);
 
-    //    }, description.attribute);*/
+        }, description.attribute);
 
-    //    return VkVertexInputAttributeDescription{0, binding, VK_FORMAT_R32G32B32_SFLOAT, static_cast<std::uint32_t>(description.offset)};
-    //});
+        auto const location = std::visit([] (auto semantic)
+        {
+            using S = std::decay_t<decltype(semantic)>;
+            return S::index;
 
-    auto constexpr attributeDescriptions = std::array{
-        VkVertexInputAttributeDescription{0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0},
-        VkVertexInputAttributeDescription{1, 0, VK_FORMAT_R32G32B32_SFLOAT, 12},
-        VkVertexInputAttributeDescription{2, 0, VK_FORMAT_R32G32_SFLOAT, 24},
-        VkVertexInputAttributeDescription{3, 0, VK_FORMAT_R32G32B32A32_SFLOAT, 32}
-    };
+        }, description.semantic);
+
+        return VkVertexInputAttributeDescription{
+            location, binding, format, static_cast<std::uint32_t>(description.offset)
+        };
+    });
 
     VkPipelineVertexInputStateCreateInfo const vertexInputCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,

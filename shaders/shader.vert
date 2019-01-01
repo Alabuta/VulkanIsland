@@ -1,10 +1,10 @@
 #version 460
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(location = 0) in vec3 inVertex;
-layout(location = 1) in vec3 inNormal;
-layout(location = 2) in vec2 inUV;
-layout(location = 3) in vec4 inTangent;
+layout(location = 0) in vec3 POSITION;
+layout(location = 1) in vec3 NORMAL;
+layout(location = 2) in vec2 TEXCOORD_0;
+layout(location = 4) in vec4 TANGENT;
 
 layout(set = 0, binding = 0, std430) readonly buffer PER_CAMERA
 {
@@ -33,12 +33,12 @@ out gl_PerVertex {
 
 void main()
 {
-    gl_Position = camera.view * object.world * vec4(inVertex, 1.0);
+    gl_Position = camera.view * object.world * vec4(POSITION, 1.0);
 
     worldSpacePosition = gl_Position.xyz;
 
     gl_Position = camera.projection * gl_Position;
 
-    worldSpaceNormal = normalize((object.normal /* transpose(camera.invertedView)*/ * vec4(inNormal, 0.0)).xyz);
-    texCoord = vec2(inUV.x, inUV.y);
+    worldSpaceNormal = normalize((object.normal /* transpose(camera.invertedView)*/ * vec4(NORMAL, 0.0)).xyz);
+    texCoord = vec2(TEXCOORD_0.x, TEXCOORD_0.y);
 }
