@@ -2,6 +2,30 @@
 
 #include "main.hxx"
 
+
+namespace shader
+{
+    enum class eSHADER_STAGE {
+        nVERTEX = 0,
+        nTESS_CONTROL,
+        nTESS_EVAL,
+        nGEOMETRY,
+        nFRAGMENT,
+        nCOMPUTE
+    };
+
+    template<eSHADER_STAGE S>
+    struct stage {
+        template<eSHADER_STAGE s>
+        auto constexpr operator< (stage<s>) const noexcept
+        {
+            return S < s;
+        }
+    };
+
+    struct vertex : stage<eSHADER_STAGE::nVERTEX> { };
+}
+
 class VulkanShaderModule final {
 public:
 
@@ -20,6 +44,8 @@ private:
 
 [[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view name);
 
+[[nodiscard]] std::vector<VkPipelineShaderStageCreateInfo>
+JoinShaderStages(std::vector<std::string_view> &&names) noexcept;
 
 template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
 [[nodiscard]] VkShaderModule CreateShaderModule(VkDevice device, T &&shaderByteCode)
