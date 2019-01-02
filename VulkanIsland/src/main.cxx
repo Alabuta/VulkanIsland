@@ -26,6 +26,7 @@
 #include "resource.hxx"
 #include "descriptor.hxx"
 #include "commandBuffer.hxx"
+#include "pipeline.hxx"
 
 #include "loaders/loaderGLTF.hxx"
 #include "loaderTARGA.hxx"
@@ -326,33 +327,6 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
     return handle;
 }
 
-template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
-[[nodiscard]] std::optional<VkPipelineLayout>
-CreatePipelineLayout(VulkanDevice const &vulkanDevice, T &&descriptorSetLayouts) noexcept
-{
-    static_assert(
-        std::is_same_v<typename std::decay_t<T>::value_type, VkDescriptorSetLayout>,
-        "container has to contain VkDescriptorSetLayout elements"
-    );
-
-    VkPipelineLayoutCreateInfo const layoutCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        nullptr, 0,
-        static_cast<std::uint32_t>(std::size(descriptorSetLayouts)), std::data(descriptorSetLayouts),
-        0, nullptr
-    };
-
-    std::optional<VkPipelineLayout> pipelineLayout;
-
-    VkPipelineLayout handle;
-
-    if (auto result = vkCreatePipelineLayout(vulkanDevice.handle(), &layoutCreateInfo, nullptr, &handle); result != VK_SUCCESS)
-        std::cerr << "failed to create pipeline layout: "s << result << '\n';
-
-    else pipelineLayout.emplace(handle);
-
-    return pipelineLayout;
-}
 
 void CreateGraphicsPipeline(app_t &app, VkDevice device)
 {
@@ -388,53 +362,9 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         nullptr
     };
 
-    auto const shaderStages = std::array{ vertShaderCreateInfo, fragShaderCreateInfo };
+    auto shaderStages = std::array{ vertShaderCreateInfo, fragShaderCreateInfo };
 
-    auto const vertexSize = std::accumulate(std::cbegin(app.vertices.layout), std::cend(app.vertices.layout),
-                                            0u, [] (std::uint32_t size, auto &&description)
-    {
-        return size + std::visit([] (auto &&attribute)
-        {
-            using T = std::decay_t<decltype(attribute)>;
-            return static_cast<std::uint32_t>(sizeof(T));
-
-        }, description.attribute);
-    });
-
-    auto const vertexInputBindingDescriptions = std::array{
-        VkVertexInputBindingDescription{0, vertexSize, VK_VERTEX_INPUT_RATE_VERTEX}
-    };
-
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
-
-    std::transform(std::cbegin(app.vertices.layout), std::cend(app.vertices.layout),
-                   std::back_inserter(attributeDescriptions), [binding = 0u] (auto &&description)
-    {
-        auto const format = std::visit([normalized = description.normalized] (auto &&attribute)
-        {
-            using T = std::decay_t<decltype(attribute)>;
-            return getFormat<T::number, T::type>(normalized);
-
-        }, description.attribute);
-
-        auto const location = std::visit([] (auto semantic)
-        {
-            using S = std::decay_t<decltype(semantic)>;
-            return S::index;
-
-        }, description.semantic);
-
-        return VkVertexInputAttributeDescription{
-            location, binding, format, static_cast<std::uint32_t>(description.offset)
-        };
-    });
-
-    VkPipelineVertexInputStateCreateInfo const vertexInputCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-        nullptr, 0,
-        static_cast<std::uint32_t>(std::size(vertexInputBindingDescriptions)), std::data(vertexInputBindingDescriptions),
-        static_cast<std::uint32_t>(std::size(attributeDescriptions)), std::data(attributeDescriptions),
-    };
+    VertexInputStateInfo vertexInputStateCreateInfo{app.vertices.layout};
 
     VkPipelineInputAssemblyStateCreateInfo constexpr vertexAssemblyStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -468,8 +398,9 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         VK_POLYGON_MODE_FILL,
         VK_CULL_MODE_BACK_BIT,
         VK_FRONT_FACE_COUNTER_CLOCKWISE,
-        VK_FALSE, 0, VK_FALSE, 0,
-        1
+        VK_FALSE,
+        0.f, 0.f, 0.f,
+        1.f
     };
 
     VkPipelineMultisampleStateCreateInfo const multisampleCreateInfo{
@@ -513,15 +444,13 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         { 0, 0, 0, 0 }
     };
 
-    if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{ app.descriptorSetLayout }); pipelineLayout)
-        app.pipelineLayout = *pipelineLayout;
-
     VkGraphicsPipelineCreateInfo const graphicsPipelineCreateInfo{
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         nullptr,
         VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,
         static_cast<std::uint32_t>(std::size(shaderStages)), std::data(shaderStages),
-        &vertexInputCreateInfo, &vertexAssemblyStateCreateInfo,
+        &vertexInputStateCreateInfo.info(),
+        &vertexAssemblyStateCreateInfo,
         nullptr,
         &viewportStateCreateInfo,
         &rasterizer,
@@ -945,6 +874,9 @@ void InitVulkan(Window &window, app_t &app)
         throw std::runtime_error("failed to create the descriptor set layout"s);
 
     else app.descriptorSetLayout = std::move(descriptorSetLayout.value());
+
+    if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); pipelineLayout)
+        app.pipelineLayout = pipelineLayout.value();
 
     if (auto renderPass = CreateRenderPass(*app.vulkanDevice, app.swapchain); !renderPass)
         throw std::runtime_error("failed to create the render pass"s);

@@ -19,8 +19,12 @@ enum class eSEMANTIC_INDEX : std::uint32_t {
     nTANGENT,
     nCOLOR_0,
     nJOINTS_0,
-    nWEIGHTS_0
+    nWEIGHTS_0,
+
+    nMAX_NUMBER
 };
+
+auto constexpr kMAX_NUMBER = static_cast<std::size_t>(eSEMANTIC_INDEX::nMAX_NUMBER);
 
 template<eSEMANTIC_INDEX SI>
 struct attribute {

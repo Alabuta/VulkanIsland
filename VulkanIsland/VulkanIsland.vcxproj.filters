@@ -166,11 +166,14 @@
     <ClInclude Include="src\vertexFormat.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src/input/mouseInput.hxx">
-      <Filter>Source Files\Loaders</Filter>
-    </ClInclude>
     <ClInclude Include="src\loaders\loaderGLTF.hxx">
       <Filter>Source Files\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="src/input/mouseInput.hxx">
+      <Filter>Source Files\Input</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pipeline.hxx">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

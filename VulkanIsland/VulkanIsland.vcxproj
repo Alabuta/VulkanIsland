@@ -276,6 +276,7 @@
     <ClInclude Include="src/camera/cameraController.hxx" />
     <ClInclude Include="src/camera/handlers/mouseHandler.hxx" />
     <ClInclude Include="src\loaders\loaderGLTF.hxx" />
+    <ClInclude Include="src\pipeline.hxx" />
     <ClInclude Include="src\vertexFormat.hxx" />
   </ItemGroup>
   <ItemGroup>
