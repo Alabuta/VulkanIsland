@@ -1,68 +1,24 @@
 #pragma once
 
 #include <optional>
-#include <vector>
-#include <iostream>
-#include <algorithm>
 
 #include "main.hxx"
 #include "helpers.hxx"
+#include "device.hxx"
 #include "mesh.hxx"
-
 
 class VertexInputStateInfo final {
 public:
 
-    VertexInputStateInfo(vertex_layout_t const &layout) noexcept
-    {
-        auto vertexSize = std::accumulate(std::cbegin(layout), std::cend(layout), 0u,
-                                          [] (std::uint32_t size, auto &&description)
-        {
-            return size + std::visit([] (auto &&attribute)
-            {
-                using T = std::decay_t<decltype(attribute)>;
-                return static_cast<std::uint32_t>(sizeof(T));
-
-            }, description.attribute);
-        });
-
-        std::uint32_t binding = 0;
-
-        inputBindingDescriptions.push_back(
-            VkVertexInputBindingDescription{ binding, vertexSize, VK_VERTEX_INPUT_RATE_VERTEX }
-        );
-
-        std::transform(std::cbegin(layout), std::cend(layout),
-                       std::back_inserter(attributeDescriptions), [binding] (auto &&description)
-        {
-            auto format = std::visit([normalized = description.normalized] (auto &&attribute)
-            {
-                using T = std::decay_t<decltype(attribute)>;
-                return getFormat<T::number, T::type>(normalized);
-
-            }, description.attribute);
-
-            auto location = std::visit([] (auto semantic)
-            {
-                using S = std::decay_t<decltype(semantic)>;
-                return S::index;
-
-            }, description.semantic);
-
-            return VkVertexInputAttributeDescription{
-                location, binding, format, static_cast<std::uint32_t>(description.offset)
-            };
-        });
-
-        info_ = VkPipelineVertexInputStateCreateInfo{
-            VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-            nullptr, 0,
-            static_cast<std::uint32_t>(std::size(inputBindingDescriptions)), std::data(inputBindingDescriptions),
-            static_cast<std::uint32_t>(std::size(attributeDescriptions)), std::data(attributeDescriptions),
-        };
-    }
+    VertexInputStateInfo(vertex_layout_t const &layout) noexcept;
 
     VkPipelineVertexInputStateCreateInfo const &info() const noexcept { return info_; }
+
+    template<class T>
+    bool operator== (T &&rhs) const noexcept;
+
+    template<class T>
+    std::size_t hash_value(T &&rhs) const noexcept;
 
 private:
 
