@@ -837,14 +837,14 @@ void InitVulkan(Window &window, app_t &app)
     app.vulkanInstance = std::make_unique<VulkanInstance>(config::extensions, config::layers);
 
 #if USE_WIN32
-    VkWin32SurfaceCreateInfoKHR const win32CreateInfo = {
+    VkWin32SurfaceCreateInfoKHR const win32CreateInfo{
         VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
         nullptr, 0,
         GetModuleHandle(nullptr),
-        glfwGetWin32Window(window)
+        glfwGetWin32Window(window.handle())
     };
 
-    vkCreateWin32SurfaceKHR(vkInstance, &win32CreateInfo, nullptr, &vkSurface);
+    vkCreateWin32SurfaceKHR(app.vulkanInstance->handle(), &win32CreateInfo, nullptr, &app.surface);
 #else
     if (auto result = glfwCreateWindowSurface(app.vulkanInstance->handle(), window.handle(), nullptr, &app.surface); result != VK_SUCCESS)
         throw std::runtime_error("failed to create window surface: "s + std::to_string(result));

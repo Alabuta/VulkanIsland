@@ -5,6 +5,14 @@
 
 #include "helpers.hxx"
 
+#ifdef max
+#undef max
+#endif
+
+#ifdef min
+#undef min
+#endif
+
 namespace math
 {
     template<std::size_t N, class T>
