@@ -444,6 +444,9 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         { 0, 0, 0, 0 }
     };
 
+    if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); pipelineLayout)
+        app.pipelineLayout = pipelineLayout.value();
+
     VkGraphicsPipelineCreateInfo const graphicsPipelineCreateInfo{
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
         nullptr,
@@ -874,9 +877,6 @@ void InitVulkan(Window &window, app_t &app)
         throw std::runtime_error("failed to create the descriptor set layout"s);
 
     else app.descriptorSetLayout = std::move(descriptorSetLayout.value());
-
-    if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); pipelineLayout)
-        app.pipelineLayout = pipelineLayout.value();
 
     if (auto renderPass = CreateRenderPass(*app.vulkanDevice, app.swapchain); !renderPass)
         throw std::runtime_error("failed to create the render pass"s);
