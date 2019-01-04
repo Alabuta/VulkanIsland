@@ -789,7 +789,7 @@ bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indi
             }
 
             std::size_t vertexSize = 0;
-            std::size_t verticesNumber = 0;
+            std::size_t verticesCount = 0;
             std::size_t attributeOffset = 0;
 
             for (auto &&attribute : primitive.attribute_accessors) {
@@ -805,11 +805,13 @@ bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indi
                 }
 
                 vertexSize += attributeSize;
-                verticesNumber = std::max(verticesNumber, accessor.count);
+                verticesCount = std::max(verticesCount, accessor.count);
             }
 
             auto &&buffer = vertices.buffer;
-            buffer.resize(verticesNumber * vertexSize);
+            buffer.resize(verticesCount * vertexSize);
+
+            vertices.count = verticesCount;
 
             std::size_t dstOffset = 0;
 
@@ -849,8 +851,8 @@ bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indi
                 }
             }
 
-            std::vector<float> xxxxx(std::size(vertices.buffer) / 4);
-            std::uninitialized_copy(std::begin(vertices.buffer), std::end(vertices.buffer), reinterpret_cast<std::byte *>(std::data(xxxxx)));
+            /*std::vector<float> xxxxx(std::size(vertices.buffer) / 4);
+            std::uninitialized_copy(std::begin(vertices.buffer), std::end(vertices.buffer), reinterpret_cast<std::byte *>(std::data(xxxxx)));*/
         }
     }
 

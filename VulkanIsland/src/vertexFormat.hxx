@@ -120,6 +120,8 @@ struct attribute_description_t {
 using vertex_layout_t = std::vector<attribute_description_t>;
 
 struct vertex_buffer_t {
+    std::size_t count;
+
     vertex_layout_t layout;
 
     std::vector<std::byte> buffer;
