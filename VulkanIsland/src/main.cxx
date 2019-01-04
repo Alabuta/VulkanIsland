@@ -593,28 +593,24 @@ CreateStorageBuffer(VulkanDevice &device, std::size_t size)
     return device.resourceManager().CreateBuffer(size, usageFlags, propertyFlags);
 }
 
-template<class T, class U, typename std::enable_if_t<is_iterable_v<std::decay_t<T>> && is_iterable_v<std::decay_t<U>>>...>
-void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass renderPass, VkCommandPool commandPool, T &commandBuffers, U &framebuffers)
+void CreateGraphicsCommandBuffers(app_t &app)
 {
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkCommandBuffer>, "iterable object has to contain VkCommandBuffer elements");
-    static_assert(std::is_same_v<typename std::decay_t<U>::value_type, VkFramebuffer>, "iterable object has to contain VkFramebuffer elements");
-
-    commandBuffers.resize(framebuffers.size());
+    app.commandBuffers.resize(std::size(app.swapchain.framebuffers));
 
     VkCommandBufferAllocateInfo const allocateInfo{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         nullptr,
-        commandPool,
+        app.graphicsCommandPool,
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        static_cast<std::uint32_t>(std::size(commandBuffers))
+        static_cast<std::uint32_t>(std::size(app.commandBuffers))
     };
 
-    if (auto result = vkAllocateCommandBuffers(device.handle(), &allocateInfo, std::data(commandBuffers)); result != VK_SUCCESS)
+    if (auto result = vkAllocateCommandBuffers(app.vulkanDevice->handle(), &allocateInfo, std::data(app.commandBuffers)); result != VK_SUCCESS)
         throw std::runtime_error("failed to create allocate command buffers: "s + std::to_string(result));
 
     std::size_t i = 0;
 
-    for (auto &commandBuffer : commandBuffers) {
+    for (auto &commandBuffer : app.commandBuffers) {
         VkCommandBufferBeginInfo const beginInfo{
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             nullptr,
@@ -640,8 +636,8 @@ void CreateCommandBuffers(app_t &app, VulkanDevice const &device, VkRenderPass r
         VkRenderPassBeginInfo const renderPassInfo{
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             nullptr,
-            renderPass,
-            framebuffers.at(i++),
+            app.renderPass,
+            app.swapchain.framebuffers.at(i++),
             {{0, 0}, app.swapchain.extent},
             static_cast<std::uint32_t>(std::size(clearColors)), std::data(clearColors)
         };
@@ -765,7 +761,7 @@ void RecreateSwapChain(app_t &app)
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
-    CreateCommandBuffers(app, *app.vulkanDevice, app.renderPass, app.graphicsCommandPool, app.commandBuffers, app.swapchain.framebuffers);
+    CreateGraphicsCommandBuffers(app);
 }
 
 
@@ -929,7 +925,7 @@ void InitVulkan(Window &window, app_t &app)
 
     UpdateDescriptorSet(app, *app.vulkanDevice, app.descriptorSet);
 
-    CreateCommandBuffers(app, *app.vulkanDevice, app.renderPass, app.graphicsCommandPool, app.commandBuffers, app.swapchain.framebuffers);
+    CreateGraphicsCommandBuffers(app);
 
     CreateSemaphores(app, app.vulkanDevice->handle());
 }
@@ -998,7 +994,7 @@ void Update(app_t &app)
     }
 
     {
-        app.object.world = glm::rotate(glm::mat4{.01f}, glm::radians(-90.f), glm::vec3{1, 0, 0});
+        app.object.world = glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{1, 0, 0});
         app.object.world = glm::rotate(app.object.world, glm::radians(90.f), glm::vec3{0, 0, 1});
 
         app.object.normal = glm::inverseTranspose(app.object.world);
