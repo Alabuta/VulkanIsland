@@ -128,17 +128,19 @@ struct vertex_buffer_t {
 };
 
 
-using indices_t = std::variant<std::uint16_t, std::uint32_t>;
-using index_buffer_t = wrap_variant_by_vector<indices_t>::type;
+using indices2_t = std::variant<std::uint16_t, std::uint32_t>;
+using index_buffer_t = wrap_variant_by_vector<indices2_t>::type;
 
-struct indices_t_ {
-    std::size_t begin, count;
+struct indices_t {
+    std::size_t begin, end;
+    std::size_t count;
 
-    std::variant<std::uint8_t, std::uint16_t, std::uint32_t> type;
+    std::variant<std::uint16_t, std::uint32_t> type;
 };
 
 struct vertices_t {
-    std::size_t begin, count;
+    std::size_t begin, end;
+    std::size_t count;
 
     vertex_layout_t layout;
 };

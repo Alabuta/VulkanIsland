@@ -25,7 +25,7 @@ namespace staging
         PRIMITIVE_TOPOLOGY topology;
 
         vertices_t  vertices;
-        indices_t_ indices;
+        indices_t indices;
     };
 
     struct mesh_t {
@@ -35,7 +35,8 @@ namespace staging
     struct scene_t {
         std::vector<mesh_t> meshes;
 
-        std::vector<std::byte> buffer;
+        std::vector<std::byte> vertexBuffer;
+        std::vector<std::byte> indexBuffer;
     };
 }
 

@@ -4,5 +4,5 @@
 
 namespace glTF
 {
-bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indices);
+bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indices, staging::scene_t &scene);
 }

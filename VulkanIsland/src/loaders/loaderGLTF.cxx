@@ -215,7 +215,7 @@ std::optional<index_buffer_t> instantiate_index_buffer(GL componentType)
     }
 }
 
-std::optional<indices_t> instantiate_index(GL componentType)
+std::optional<indices2_t> instantiate_index(GL componentType)
 {
     switch (componentType) {
         case GL::UNSIGNED_SHORT:
@@ -226,6 +226,20 @@ std::optional<indices_t> instantiate_index(GL componentType)
 
         default:
             return { };
+    }
+}
+
+std::size_t constexpr index_size(GL componentType)
+{
+    switch (componentType) {
+        case GL::UNSIGNED_SHORT:
+            return sizeof std::uint16_t;
+
+        case GL::UNSIGNED_INT:
+            return sizeof std::uint32_t;
+
+        default:
+            return 0;
     }
 }
 }
@@ -486,13 +500,6 @@ void from_json(nlohmann::json const &j, mesh_t &mesh)
 
                 primitive.attributes.emplace_back(semantic.value(), index);
             }
-
-            /*std::visit([&primitive, index = it->get<std::size_t>()] (auto semantic)
-            {
-                using s_t = decltype(semantic);
-                if constexpr (!std::is_same_v<s_t, std::monostate>)
-                    primitive.attribute_accessors2[s_t::I] = std::make_pair(std::make_pair(semantic, index), std::monostate{});
-            }, get_semantic2(it.key()));*/
         }
 
         if (json_primitive.count("mode"s))
@@ -665,7 +672,7 @@ void from_json(nlohmann::json const &j, accessor_t &accessor)
 
 namespace glTF
 {
-bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indices)
+bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indices, staging::scene_t &scene)
 {
     fs::path contents{"contents/scenes"s};
 
@@ -753,11 +760,65 @@ bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indi
         binBuffers.emplace_back(std::move(byte_code));
     }
 
+    auto &&vertexBuffer = scene.vertexBuffer;
+    auto &&indexBuffer = scene.indexBuffer;
+
+    std::size_t vertexBufferWriteIndex = 0u;
+    std::size_t indexBufferWriteIndex = 0u;
+
     for (auto &&mesh : meshes) {
+        staging::mesh_t mesh_;
+
         for (auto &&primitive : mesh.primitives) {
+            staging::submesh_t submesh;
+
+            if (auto topology = get_primitive_topology(primitive.mode); topology)
+                submesh.topology = *topology;
+
+            else continue;
+
             if (primitive.indices) {
                 auto &&accessor = accessors.at(primitive.indices.value());
 
+                if (auto indexInstance = instantiate_index(accessor.componentType); indexInstance) {
+                    auto &&bufferView = bufferViews.at(accessor.bufferView);
+                    auto &&binBuffer = binBuffers.at(bufferView.buffer);
+
+                    auto count = accessor.count;
+                    auto byteStride = bufferView.byteStride;
+
+                    auto indexTypeSize = std::visit([] (auto indexInstance)
+                    {
+                        return sizeof std::decay_t<decltype(indexInstance)>;
+
+                    }, *indexInstance);
+
+                    submesh.indices.begin = indexBufferWriteIndex;
+                    submesh.indices.end = submesh.indices.begin + count * indexTypeSize;
+
+                    submesh.indices.count = count;
+                    submesh.indices.type = *indexInstance;
+
+                    std::size_t const readBeginIndex = accessor.byteOffset + bufferView.byteOffset;
+                    std::size_t const readEndIndex = readBeginIndex + count * indexTypeSize;
+
+                    indexBuffer.resize(std::size(indexBuffer) + count * indexTypeSize);
+
+                    if (byteStride) {
+                        std::size_t readIndexOffset = readBeginIndex, writeIndexOffset = indexBufferWriteIndex;
+
+                        for (; readIndexOffset < readEndIndex; readIndexOffset += *byteStride, writeIndexOffset += indexTypeSize)
+                            memcpy(&indexBuffer.at(writeIndexOffset), &binBuffer.at(readIndexOffset), indexTypeSize);
+                    }
+
+                    else memcpy(&indexBuffer.at(indexBufferWriteIndex), &binBuffer.at(readBeginIndex), readEndIndex - readBeginIndex);
+
+                    indexBufferWriteIndex += count * indexTypeSize;
+                }
+
+                else continue;
+
+#if 0
                 if (auto index_buffer = instantiate_index_buffer(accessor.componentType); index_buffer) {
                     auto &&bufferView = bufferViews.at(accessor.bufferView);
                     auto &&binBuffer = binBuffers.at(bufferView.buffer);
@@ -786,6 +847,7 @@ bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indi
 
                     }, indices);
                 }
+#endif
             }
 
             std::size_t vertexSize = 0;
@@ -808,10 +870,13 @@ bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indi
                 verticesCount = std::max(verticesCount, accessor.count);
             }
 
-            auto &&buffer = vertices.buffer;
-            buffer.resize(verticesCount * vertexSize);
+            submesh.vertices.begin = vertexBufferWriteIndex;
+            submesh.vertices.end = submesh.vertices.begin + verticesCount * vertexSize;
 
-            vertices.count = verticesCount;
+            submesh.vertices.count = verticesCount;
+
+            auto &&buffer = vertices.buffer;
+            buffer.resize(std::size(buffer) + verticesCount * vertexSize);
 
             std::size_t dstOffset = 0;
 
@@ -836,13 +901,13 @@ bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indi
 
                     }, std::move(attribute.value()));
 
-                    std::size_t const begin = accessor.byteOffset + bufferView.byteOffset;
-                    std::size_t const end = begin + accessor.count * attributeSize;
-                    std::size_t const step = bufferView.byteStride ? *bufferView.byteStride : attributeSize;
+                    std::size_t const readBeginIndex = accessor.byteOffset + bufferView.byteOffset;
+                    std::size_t const readEndIndex = readBeginIndex + accessor.count * attributeSize;
+                    std::size_t const readStep = bufferView.byteStride ? *bufferView.byteStride : attributeSize;
 
-                    auto srcIndex = begin, dstIndex = dstOffset;
+                    auto srcIndex = readBeginIndex, dstIndex = dstOffset;
 
-                    for (; srcIndex < end; srcIndex += step, dstIndex += vertexSize)
+                    for (; srcIndex < readEndIndex; srcIndex += readStep, dstIndex += vertexSize)
                         std::uninitialized_copy_n(&binBuffer.at(srcIndex), attributeSize,
                                                   reinterpret_cast<std::byte *>(&buffer.at(dstIndex)));
                         //memcpy(&buffer.at(dstIndex), &binBuffer.at(srcIndex), attributeSize);
@@ -850,6 +915,10 @@ bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indi
                     dstOffset += attributeSize;
                 }
             }
+
+            vertexBufferWriteIndex += verticesCount * vertexSize;
+
+            mesh_.submeshes.push_back(std::move(submesh));
 
             /*std::vector<float> xxxxx(std::size(vertices.buffer) / 4);
             std::uninitialized_copy(std::begin(vertices.buffer), std::end(vertices.buffer), reinterpret_cast<std::byte *>(std::data(xxxxx)));*/

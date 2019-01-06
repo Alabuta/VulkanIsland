@@ -76,6 +76,8 @@ struct app_t final {
     vertex_buffer_t vertices;
     index_buffer_t indices;
 
+    staging::scene_t scene;
+
     std::unique_ptr<VulkanInstance> vulkanInstance;
     std::unique_ptr<VulkanDevice> vulkanDevice;
 
@@ -666,9 +668,8 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
         std::visit([commandBuffer, verticesCount, &indexBuffer = app.indexBuffer] (auto &&indices)
         {
-            if (std::empty(indices)) {
+            if (std::empty(indices))
                 vkCmdDraw(commandBuffer, verticesCount, 1, 0, 0);
-            }
 
             else {
                 using T = typename std::decay_t<decltype(indices)>::value_type;
@@ -893,7 +894,7 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.renderPass = std::move(renderPass.value());
 
-    if (auto result = glTF::load("Hebe"sv, app.vertices, app.indices); !result)
+    if (auto result = glTF::load("Hebe"sv, app.vertices, app.indices, app.scene); !result)
         throw std::runtime_error("failed to load a mesh"s);
 
     if (app.vertexBuffer = InitVertexBuffer(app); !app.vertexBuffer)
