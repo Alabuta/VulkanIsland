@@ -67,7 +67,7 @@ struct vec {
     std::array<T, N> array;
 };
 
-using attribute_t = std::variant <
+using attribute_t = std::variant<
     vec<1, std::int8_t>,
     vec<2, std::int8_t>,
     vec<3, std::int8_t>,
@@ -133,14 +133,14 @@ using index_buffer_t = wrap_variant_by_vector<indices2_t>::type;
 
 struct indices_t {
     std::size_t begin, end;
-    std::size_t count;
+    std::uint32_t count;
 
     std::variant<std::uint16_t, std::uint32_t> type;
 };
 
 struct vertices_t {
     std::size_t begin, end;
-    std::size_t count;
+    std::uint32_t count;
 
     vertex_layout_t layout;
 };

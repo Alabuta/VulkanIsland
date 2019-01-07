@@ -73,9 +73,6 @@ struct app_t final {
 
     per_object_t object;
 
-    vertex_buffer_t vertices;
-    index_buffer_t indices;
-
     staging::scene_t scene;
 
     std::unique_ptr<VulkanInstance> vulkanInstance;
@@ -366,7 +363,7 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
 
     auto shaderStages = std::array{ vertShaderCreateInfo, fragShaderCreateInfo };
 
-    VertexInputStateInfo vertexInputStateCreateInfo{app.vertices.layout};
+    VertexInputStateInfo vertexInputStateCreateInfo{app.scene.meshes.front().submeshes.front().vertices.layout};
 
     VkPipelineInputAssemblyStateCreateInfo constexpr vertexAssemblyStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -521,12 +518,12 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
 
 [[nodiscard]] std::shared_ptr<VulkanBuffer> InitVertexBuffer(app_t &app)
 {
-    if (std::empty(app.vertices.buffer))
+    if (std::empty(app.scene.vertexBuffer))
         return { };
 
     std::shared_ptr<VulkanBuffer> buffer;
 
-    auto &&vertices = app.vertices.buffer;
+    auto &&vertices = app.scene.vertexBuffer;
 
     if (auto stagingBuffer = StageData(*app.vulkanDevice, vertices); stagingBuffer) {
         auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
@@ -552,34 +549,33 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
 
 [[nodiscard]] std::shared_ptr<VulkanBuffer> InitIndexBuffer(app_t &app)
 {
-    return std::visit([&app] (auto &&indices) -> std::shared_ptr<VulkanBuffer>
-    {
-        if (std::empty(indices))
-            return { };
+    auto &&indices = app.scene.indexBuffer;
 
-        std::shared_ptr<VulkanBuffer> buffer;
+    if (std::empty(indices))
+        return { };
 
-        if (auto stagingBuffer = StageData(*app.vulkanDevice, indices); stagingBuffer) {
-            auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-            auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+    std::shared_ptr<VulkanBuffer> buffer;
 
-            buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
+    if (auto stagingBuffer = StageData(*app.vulkanDevice, indices); stagingBuffer) {
+        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-            if (buffer) {
-                auto copyRegions = std::array{
-                    VkBufferCopy{
-                        /*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/
-                        0, 0, stagingBuffer->memory()->size()
-                    }
-                };
+        buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
 
-                CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
-                                   buffer->handle(), std::move(copyRegions), app.transferCommandPool);
-            }
+        if (buffer) {
+            auto copyRegions = std::array{
+                VkBufferCopy{
+                    /*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/
+                    0, 0, stagingBuffer->memory()->size()
+                }
+            };
+
+            CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
+                                buffer->handle(), std::move(copyRegions), app.transferCommandPool);
         }
+    }
 
-        return buffer;
-    }, app.indices);
+    return buffer;
 }
 
 
@@ -664,12 +660,17 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, std::data(vertexBuffers), std::data(offsets));
 
-        auto verticesCount = static_cast<std::uint32_t>(app.vertices.count);
+        //auto verticesCount = static_cast<std::uint32_t>(app.vertices.count);
 
-        std::visit([commandBuffer, verticesCount, &indexBuffer = app.indexBuffer] (auto &&indices)
+        for (auto &&mesh : app.scene.meshes) {
+            for (auto &&submesh : mesh.submeshes) {
+                if (submesh.indices.count == 0)
+                    vkCmdDraw(commandBuffer, submesh.vertices.count, 1, 0, 0);
+            }
+        }
+
+        /*std::visit([commandBuffer, verticesCount, &indexBuffer = app.indexBuffer] (auto &&indices)
         {
-            if (std::empty(indices))
-                vkCmdDraw(commandBuffer, verticesCount, 1, 0, 0);
 
             else {
                 using T = typename std::decay_t<decltype(indices)>::value_type;
@@ -680,7 +681,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
                 vkCmdDrawIndexed(commandBuffer, static_cast<std::uint32_t>(std::size(indices)), 1, 0, 0, 0);
             }
 
-        }, app.indices);
+        }, app.indices);*/
 
         vkCmdEndRenderPass(commandBuffer);
 
@@ -894,21 +895,16 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.renderPass = std::move(renderPass.value());
 
-    if (auto result = glTF::load("Hebe"sv, app.vertices, app.indices, app.scene); !result)
+    if (auto result = glTF::load("triangle-non-indexed"sv, app.scene); !result)
         throw std::runtime_error("failed to load a mesh"s);
 
     if (app.vertexBuffer = InitVertexBuffer(app); !app.vertexBuffer)
         throw std::runtime_error("failed to init vertex buffer"s);
 
-    std::visit([&app] (auto &&indices)
-    {
-        if (std::empty(indices))
-            return;
-
+    if (!std::empty(app.scene.indexBuffer)) {
         if (app.indexBuffer = InitIndexBuffer(app); !app.indexBuffer)
             throw std::runtime_error("failed to init index buffer"s);
-
-    }, app.indices);
+    }
 
     CreateGraphicsPipeline(app, app.vulkanDevice->handle());
 

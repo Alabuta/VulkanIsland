@@ -672,7 +672,7 @@ void from_json(nlohmann::json const &j, accessor_t &accessor)
 
 namespace glTF
 {
-bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indices, staging::scene_t &scene)
+bool load(std::string_view name, staging::scene_t &scene)
 {
     fs::path contents{"contents/scenes"s};
 
@@ -796,13 +796,13 @@ bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indi
                     submesh.indices.begin = indexBufferWriteIndex;
                     submesh.indices.end = submesh.indices.begin + count * indexTypeSize;
 
-                    submesh.indices.count = count;
+                    submesh.indices.count = static_cast<std::uint32_t>(count);
                     submesh.indices.type = *indexInstance;
 
                     std::size_t const readBeginIndex = accessor.byteOffset + bufferView.byteOffset;
                     std::size_t const readEndIndex = readBeginIndex + count * indexTypeSize;
 
-                    indexBuffer.resize(std::size(indexBuffer) + count * indexTypeSize);
+                    indexBuffer.resize(indexBufferWriteIndex + count * indexTypeSize);
 
                     if (byteStride) {
                         std::size_t readIndexOffset = readBeginIndex, writeIndexOffset = indexBufferWriteIndex;
@@ -850,7 +850,7 @@ bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indi
 #endif
             }
 
-            std::size_t vertexSize = 0;
+            std::size_t vertexTypeSize = 0;
             std::size_t verticesCount = 0;
             std::size_t attributeOffset = 0;
 
@@ -866,17 +866,16 @@ bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indi
                     continue;
                 }
 
-                vertexSize += attributeSize;
+                vertexTypeSize += attributeSize;
                 verticesCount = std::max(verticesCount, accessor.count);
             }
 
             submesh.vertices.begin = vertexBufferWriteIndex;
-            submesh.vertices.end = submesh.vertices.begin + verticesCount * vertexSize;
+            submesh.vertices.end = submesh.vertices.begin + verticesCount * vertexTypeSize;
 
-            submesh.vertices.count = verticesCount;
+            submesh.vertices.count = static_cast<std::uint32_t>(verticesCount);
 
-            auto &&buffer = vertices.buffer;
-            buffer.resize(std::size(buffer) + verticesCount * vertexSize);
+            vertexBuffer.resize(vertexBufferWriteIndex + verticesCount * vertexTypeSize);
 
             std::size_t dstOffset = 0;
 
@@ -889,15 +888,16 @@ bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indi
 
                 auto normalized = accessor.normalized;
 
+                auto &&vertices = submesh.vertices;
+
                 if (auto attribute = glTF::instantiate_attribute(accessor.type, accessor.componentType); attribute) {
                     auto attributeSize = std::visit([dstOffset, semantic, normalized, &vertices] (auto &&attribute)
                     {
                         using A = std::decay_t<decltype(attribute)>;
-                        auto size = sizeof(A);
 
                         vertices.layout.emplace_back(dstOffset, semantic, std::move(attribute), normalized);
 
-                        return size;
+                        return sizeof A;
 
                     }, std::move(attribute.value()));
 
@@ -905,24 +905,22 @@ bool load(std::string_view name, vertex_buffer_t &vertices, index_buffer_t &indi
                     std::size_t const readEndIndex = readBeginIndex + accessor.count * attributeSize;
                     std::size_t const readStep = bufferView.byteStride ? *bufferView.byteStride : attributeSize;
 
-                    auto srcIndex = readBeginIndex, dstIndex = dstOffset;
+                    auto srcIndex = readBeginIndex, dstIndex = dstOffset + vertexBufferWriteIndex;
 
-                    for (; srcIndex < readEndIndex; srcIndex += readStep, dstIndex += vertexSize)
-                        std::uninitialized_copy_n(&binBuffer.at(srcIndex), attributeSize,
-                                                  reinterpret_cast<std::byte *>(&buffer.at(dstIndex)));
+                    for (; srcIndex < readEndIndex; srcIndex += readStep, dstIndex += vertexTypeSize)
+                        std::uninitialized_copy_n(&binBuffer.at(srcIndex), attributeSize, &vertexBuffer.at(dstIndex));
                         //memcpy(&buffer.at(dstIndex), &binBuffer.at(srcIndex), attributeSize);
 
                     dstOffset += attributeSize;
                 }
             }
 
-            vertexBufferWriteIndex += verticesCount * vertexSize;
+            vertexBufferWriteIndex += verticesCount * vertexTypeSize;
 
             mesh_.submeshes.push_back(std::move(submesh));
-
-            /*std::vector<float> xxxxx(std::size(vertices.buffer) / 4);
-            std::uninitialized_copy(std::begin(vertices.buffer), std::end(vertices.buffer), reinterpret_cast<std::byte *>(std::data(xxxxx)));*/
         }
+
+        scene.meshes.push_back(std::move(mesh_));
     }
 
     return true;
