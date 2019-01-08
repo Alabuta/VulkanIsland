@@ -14,6 +14,19 @@ class VulkanSampler;
 class VulkanBuffer;
 class VulkanShaderModule;
 
+
+template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>...>
+struct IndexBuffer final {
+    using type = T;
+
+    std::shared_ptr<VulkanBuffer> buffer;
+};
+
+struct VertexBuffer final {
+    std::shared_ptr<VulkanBuffer> buffer;
+};
+
+
 class ResourceManager final {
 public:
 
@@ -35,6 +48,11 @@ public:
     [[nodiscard]] std::shared_ptr<VulkanShaderModule>
     CreateShaderModule(std::vector<std::byte> const &shaderByteCode) noexcept;
 
+    template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>...>
+    [[nodiscard]] std::optional<IndexBuffer<T>> CreateIndexBuffer(std::size_t sizeInBytes) noexcept;
+
+    [[nodiscard]] std::optional<VertexBuffer> CreateVertexBuffer(std::size_t sizeInBytes) noexcept;
+
 private:
 
     VulkanDevice &device_;
@@ -47,4 +65,14 @@ private:
     ResourceManager() = delete;
     ResourceManager(ResourceManager const &) = delete;
     ResourceManager(ResourceManager &&) = delete;
+
+    /*std::vector<IndexBuffer<std::uint16_t>> indexBufferU16_;
+    std::vector<IndexBuffer<std::uint32_t>> indexBufferU32_;*/
 };
+
+
+template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>...>
+std::optional<IndexBuffer<T>> ResourceManager::CreateIndexBuffer(std::size_t sizeInBytes) noexcept
+{
+    return std::optional<IndexBuffer<T>>();
+}

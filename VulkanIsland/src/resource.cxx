@@ -193,3 +193,8 @@ void ResourceManager::ReleaseResource(T &&resource) noexcept
         vkDestroyShaderModule(device_.handle(), resource.handle(), nullptr);
     }
 }
+
+std::optional<VertexBuffer> ResourceManager::CreateVertexBuffer(std::size_t sizeInBytes) noexcept
+{
+    return std::optional<VertexBuffer>();
+}
