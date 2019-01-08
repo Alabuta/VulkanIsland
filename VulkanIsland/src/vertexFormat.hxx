@@ -132,15 +132,15 @@ using indices2_t = std::variant<std::uint16_t, std::uint32_t>;
 using index_buffer_t = wrap_variant_by_vector<indices2_t>::type;
 
 struct indices_t {
-    std::size_t begin, end;
-    std::uint32_t count;
+    std::size_t begin{0}, end{0};
+    std::uint32_t count{0};
 
     std::variant<std::uint16_t, std::uint32_t> type;
 };
 
 struct vertices_t {
-    std::size_t begin, end;
-    std::uint32_t count;
+    std::size_t begin{0}, end{0};
+    std::uint32_t count{0};
 
     vertex_layout_t layout;
 };

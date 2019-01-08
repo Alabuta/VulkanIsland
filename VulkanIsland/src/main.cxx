@@ -971,6 +971,7 @@ void CleanUp(app_t &app)
     app.perObjectBuffer.reset();
 
     app.uboBuffer.reset();
+
     app.indexBuffer.reset();
     app.vertexBuffer.reset();
 
@@ -983,8 +984,8 @@ void CleanUp(app_t &app)
     if (app.surface)
         vkDestroySurfaceKHR(app.vulkanInstance->handle(), app.surface, nullptr);
 
-    app.vulkanDevice.reset(nullptr);
-    app.vulkanInstance.reset(nullptr);
+    app.vulkanDevice.reset();
+    app.vulkanInstance.reset();
 }
 
 
