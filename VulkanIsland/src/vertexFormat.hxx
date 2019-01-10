@@ -6,6 +6,8 @@
 #include <variant>
 #include <tuple>
 
+#include <boost/functional/hash.hpp>
+
 #include "helpers.hxx"
 
 
@@ -119,13 +121,32 @@ struct attribute_description_t {
 
 using vertex_layout_t = std::vector<attribute_description_t>;
 
-struct vertex_buffer_t {
-    std::size_t count;
 
-    vertex_layout_t layout;
 
-    std::vector<std::byte> buffer;
-};
+template<class L, class R, typename std::enable_if_t<are_same_v<vertex_layout_t, std::decay_t<L>, std::decay_t<R>>>...>
+constexpr bool operator== (L &&lhs, R &&rhs) noexcept
+{
+    if (std::size(lhs) != std::size(rhs))
+        return false;
+
+    return std::equal(std::cbegin(lhs), std::cend(lhs), std::cbegin(rhs), [] (auto &&lhs, auto &&rhs)
+    {
+        return lhs.semantic.index() == rhs.semantic.index() && lhs.attribute.index() == rhs.attribute.index();
+    });
+}
+
+template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout_t, std::decay_t<T>>>...>
+constexpr std::size_t hash_value(T &&layout) noexcept
+{
+    std::size_t seed = 0;
+
+    for (auto &&description : layout) {
+        boost::hash_combine(seed, description.semantic.index());
+        boost::hash_combine(seed, description.attribute.index());
+    }
+
+    return seed;
+}
 
 
 using indices2_t = std::variant<std::uint16_t, std::uint32_t>;

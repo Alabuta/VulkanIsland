@@ -21,6 +21,12 @@ enum class PRIMITIVE_TOPOLOGY {
 
 namespace staging
 {
+    struct vertex_buffer_t final {
+        vertex_layout_t layout;
+
+        ;
+    };
+
     struct submesh_t {
         PRIMITIVE_TOPOLOGY topology;
 
