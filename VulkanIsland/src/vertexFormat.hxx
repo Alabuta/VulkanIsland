@@ -121,8 +121,6 @@ struct attribute_description_t {
 
 using vertex_layout_t = std::vector<attribute_description_t>;
 
-
-
 template<class L, class R, typename std::enable_if_t<are_same_v<vertex_layout_t, std::decay_t<L>, std::decay_t<R>>>...>
 constexpr bool operator== (L &&lhs, R &&rhs) noexcept
 {

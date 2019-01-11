@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <iomanip>
+#include <unordered_map>
 
 #include "entityx/entityx.hh"
 namespace ex = entityx;
@@ -24,7 +25,13 @@ namespace staging
     struct vertex_buffer_t final {
         vertex_layout_t layout;
 
-        ;
+        std::vector<std::byte> buffer;
+
+        template<class T, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>>>...>
+        constexpr std::size_t operator() (T &&vertexBuffer) const noexcept
+        {
+            return hash_value(layout);
+        }
     };
 
     struct submesh_t {
@@ -43,6 +50,8 @@ namespace staging
 
         std::vector<std::byte> vertexBuffer;
         std::vector<std::byte> indexBuffer;
+
+        std::unordered_map<vertex_buffer_t, std::vector<std::byte>> vertexBuffers;
     };
 }
 

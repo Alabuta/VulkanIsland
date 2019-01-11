@@ -914,6 +914,8 @@ bool load(std::string_view name, staging::scene_t &scene)
                     dstOffset += attributeSize;
                 }
 
+                auto &&vertexBufferX = scene.vertexBuffers[vertices.layout];
+
                 std::cout << hash_value(vertices.layout) << '\n';
                 vertex_layout_t vl;
                 vl.emplace_back(0, std::variant_alternative_t<0, semantics_t>{}, std::variant_alternative_t<26, attribute_t>{}, true);
