@@ -4,6 +4,8 @@
 #include <iomanip>
 #include <unordered_map>
 
+#include <boost/functional/hash.hpp>
+
 #include "entityx/entityx.hh"
 namespace ex = entityx;
 
@@ -27,10 +29,33 @@ namespace staging
 
         std::vector<std::byte> buffer;
 
+        template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout_t, std::decay_t<T>>>...>
+        vertex_buffer_t(T &&layout) noexcept : layout{std::forward<T>(layout)} { }
+
+        struct hash_value final {
+            template<class T, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>>>...>
+            constexpr std::size_t operator() (T &&vertexBuffer) const noexcept
+            {
+                std::size_t seed = 0;
+
+                for (auto &&description : vertexBuffer.layout) {
+                    boost::hash_combine(seed, description.semantic.index());
+                    boost::hash_combine(seed, description.attribute.index());
+                }
+
+                return seed;
+            }
+        };
+
         template<class T, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>>>...>
-        constexpr std::size_t operator() (T &&vertexBuffer) const noexcept
+        constexpr bool operator== (T &&rhs) const noexcept
         {
-            return hash_value(layout);
+            if (std::size(buffer) != std::size(rhs.buffer))
+                return false;
+
+            return std::equal(std::cbegin(buffer), std::cend(buffer), std::cbegin(rhs.buffer), [] (auto &&lhs, auto &&rhs) {
+                return lhs.semantic.index() == rhs.semantic.index() && lhs.attribute.index() == rhs.attribute.index();
+            });
         }
     };
 
@@ -51,7 +76,8 @@ namespace staging
         std::vector<std::byte> vertexBuffer;
         std::vector<std::byte> indexBuffer;
 
-        std::unordered_map<vertex_buffer_t, std::vector<std::byte>> vertexBuffers;
+        std::vector<vertex_buffer_t> vertexBuffers;
+        //std::unordered_map<vertex_layout_t, std::vector<std::byte>, vertex_buffer_t::hash_value> vertexBuffers;
     };
 }
 

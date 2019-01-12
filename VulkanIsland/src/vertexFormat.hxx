@@ -133,6 +133,24 @@ constexpr bool operator== (L &&lhs, R &&rhs) noexcept
     });
 }
 
+namespace std
+{
+    template<> struct hash<vertex_layout_t> {
+        template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout_t, std::decay_t<T>>>...>
+        constexpr std::size_t operator() (T &&layout) const noexcept
+        {
+            std::size_t seed = 0;
+
+            for (auto &&description : layout) {
+                boost::hash_combine(seed, description.semantic.index());
+                boost::hash_combine(seed, description.attribute.index());
+            }
+
+            return seed;
+        }
+    };
+}
+
 template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout_t, std::decay_t<T>>>...>
 constexpr std::size_t hash_value(T &&layout) noexcept
 {

@@ -760,7 +760,6 @@ bool load(std::string_view name, staging::scene_t &scene)
         binBuffers.emplace_back(std::move(byte_code));
     }
 
-    auto &&vertexBuffer = scene.vertexBuffer;
     auto &&indexBuffer = scene.indexBuffer;
 
     std::size_t vertexBufferWriteIndex = 0u;
@@ -875,7 +874,7 @@ bool load(std::string_view name, staging::scene_t &scene)
 
             submesh.vertices.count = static_cast<std::uint32_t>(verticesCount);
 
-            vertexBuffer.resize(vertexBufferWriteIndex + verticesCount * vertexTypeSize);
+            //vertexBuffer.resize(vertexBufferWriteIndex + verticesCount * vertexTypeSize);
 
             std::size_t dstOffset = 0;
 
@@ -888,18 +887,28 @@ bool load(std::string_view name, staging::scene_t &scene)
 
                 auto normalized = accessor.normalized;
 
-                auto &&vertices = submesh.vertices;
+                vertex_layout_t layout;
 
                 if (auto attribute = glTF::instantiate_attribute(accessor.type, accessor.componentType); attribute) {
-                    auto attributeSize = std::visit([dstOffset, semantic, normalized, &vertices] (auto &&attribute)
+                    auto attributeSize = std::visit([dstOffset, semantic, normalized, &layout] (auto &&attribute)
                     {
                         using A = std::decay_t<decltype(attribute)>;
 
-                        vertices.layout.emplace_back(dstOffset, semantic, std::move(attribute), normalized);
+                        layout.emplace_back(dstOffset, semantic, std::move(attribute), normalized);
 
                         return sizeof A;
 
                     }, std::move(attribute.value()));
+
+                    auto it_vertexBuffer = std::find_if(std::begin(scene.vertexBuffers), std::end(scene.vertexBuffers), [&layout] (auto &&vertexBuffer) {
+                        return layout == vertexBuffer.layout;
+                    });
+
+                    if (it_vertexBuffer == std::end(scene.vertexBuffers))
+                        it_vertexBuffer = scene.vertexBuffers.emplace(std::end(scene.vertexBuffers), layout);
+
+                    auto &&vertexBuffer = *it_vertexBuffer;
+                    vertexBuffer.buffer.resize(vertexBufferWriteIndex + verticesCount * vertexTypeSize);
 
                     std::size_t const readBeginIndex = accessor.byteOffset + bufferView.byteOffset;
                     std::size_t const readEndIndex = readBeginIndex + accessor.count * attributeSize;
@@ -913,15 +922,6 @@ bool load(std::string_view name, staging::scene_t &scene)
 
                     dstOffset += attributeSize;
                 }
-
-                auto &&vertexBufferX = scene.vertexBuffers[vertices.layout];
-
-                std::cout << hash_value(vertices.layout) << '\n';
-                vertex_layout_t vl;
-                vl.emplace_back(0, std::variant_alternative_t<0, semantics_t>{}, std::variant_alternative_t<26, attribute_t>{}, true);
-                std::cout << std::boolalpha << (vertices.layout == vl) << '\n';
-                vl.emplace_back(0, std::variant_alternative_t<1, semantics_t>{}, std::variant_alternative_t<12, attribute_t>{}, true);
-                std::cout << std::boolalpha << (vertices.layout == vl) << '\n';
             }
 
             vertexBufferWriteIndex += verticesCount * vertexTypeSize;
