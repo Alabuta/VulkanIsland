@@ -343,6 +343,24 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
 
     auto const fragShaderModule = app.vulkanDevice->resourceManager().CreateShaderModule(fragShaderByteCode);
 
+#if NOT_YET_IMPLEMENTED
+    auto const vertexMapEntries = std::array{
+        VkSpecializationMapEntry{ 0, 0, sizeof std::int32_t },
+        VkSpecializationMapEntry{ 1, 4, sizeof std::int32_t }
+    };
+
+    std::array<std::int32_t, 2> const vertexConstants{
+        0, 1//, 2, 3
+    };
+
+    VkSpecializationInfo  const vertexSpeializationInfo{
+        static_cast<std::uint32_t>(std::size(vertexMapEntries)),
+        std::data(vertexMapEntries),
+        std::size(vertexConstants) * sizeof(decltype(vertexConstants)::value_type),
+        std::data(vertexConstants),
+    };
+#endif
+
     VkPipelineShaderStageCreateInfo const vertShaderCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
         nullptr, 0,
