@@ -27,6 +27,7 @@ namespace staging
     struct vertex_buffer_t final {
         vertex_layout_t layout;
 
+        std::size_t offset{0};
         std::vector<std::byte> buffer;
 
         template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout_t, std::decay_t<T>>>...>

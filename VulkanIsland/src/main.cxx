@@ -678,28 +678,34 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, std::data(vertexBuffers), std::data(offsets));
 
-        //auto verticesCount = static_cast<std::uint32_t>(app.vertices.count);
+        /*if (app.indexBuffer) {
+            auto index_type = std::visit([] (auto type)
+            {
+                return std::is_same_v<typename decltype(type), std::uint32_t> ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
+
+            }, app.scene.meshes.front().submeshes.front().indices.type);
+
+            vkCmdBindIndexBuffer(commandBuffer, app.indexBuffer->handle(), 0, index_type);
+        }*/
 
         for (auto &&mesh : app.scene.meshes) {
             for (auto &&submesh : mesh.submeshes) {
                 if (submesh.indices.count == 0)
                     vkCmdDraw(commandBuffer, submesh.vertices.count, 1, 0, 0);
+
+                else {
+                    auto index_type = std::visit([] (auto type)
+                    {
+                        return std::is_same_v<typename decltype(type), std::uint32_t> ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
+
+                    }, submesh.indices.type);
+
+                    vkCmdBindIndexBuffer(commandBuffer, app.indexBuffer->handle(), submesh.indices.begin, index_type);
+
+                    vkCmdDrawIndexed(commandBuffer, submesh.indices.count, 1, 0/*submesh.indices.begin / (2 + 2 * index_type)*/, 0, 0);
+                }
             }
         }
-
-        /*std::visit([commandBuffer, verticesCount, &indexBuffer = app.indexBuffer] (auto &&indices)
-        {
-
-            else {
-                using T = typename std::decay_t<decltype(indices)>::value_type;
-                auto constexpr index_type = std::is_same_v<T, std::uint32_t> ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
-
-                vkCmdBindIndexBuffer(commandBuffer, indexBuffer->handle(), 0, index_type);
-
-                vkCmdDrawIndexed(commandBuffer, static_cast<std::uint32_t>(std::size(indices)), 1, 0, 0, 0);
-            }
-
-        }, app.indices);*/
 
         vkCmdEndRenderPass(commandBuffer);
 
