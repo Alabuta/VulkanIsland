@@ -38,12 +38,15 @@ set(SOURCE_FILES
 	src/descriptor.cxx
 	src/device.cxx
 	
-	src/loaderGLTF.cxx
+	src/loaders/loaderGLTF.cxx
 	
 	src/image.cxx
 	src/instance.cxx
     
     src/resource.cxx
+    src/program.cxx
+    src/pipeline.cxx
+
 	src/sceneTree.cxx
     src/swapchain.cxx
 	src/loaderTARGA.cxx

@@ -6,18 +6,20 @@
 
 #include "pipeline.hxx"
 
+#if NOT_YET_IMPLEMENTED
 namespace
 {
-bool operator== (VkVertexInputBindingDescription const &lhs, VkVertexInputBindingDescription const &rhs) noexcept
-{
-    return lhs.binding == rhs.binding && lhs.stride == rhs.stride && lhs.inputRate == rhs.inputRate;
-}
+    bool operator== (VkVertexInputBindingDescription const &lhs, VkVertexInputBindingDescription const &rhs) noexcept
+    {
+        return lhs.binding == rhs.binding && lhs.stride == rhs.stride && lhs.inputRate == rhs.inputRate;
+    }
 
-bool operator== (VkVertexInputAttributeDescription const &lhs, VkVertexInputAttributeDescription const &rhs) noexcept
-{
-    return lhs.location == rhs.location && lhs.binding == rhs.binding && lhs.format == rhs.format && lhs.offset == rhs.offset;
+    bool operator== (VkVertexInputAttributeDescription const &lhs, VkVertexInputAttributeDescription const &rhs) noexcept
+    {
+        return lhs.location == rhs.location && lhs.binding == rhs.binding && lhs.format == rhs.format && lhs.offset == rhs.offset;
+    }
 }
-}
+#endif
 
 
 VertexInputStateInfo::VertexInputStateInfo(vertex_layout_t const &layout) noexcept
@@ -45,7 +47,7 @@ VertexInputStateInfo::VertexInputStateInfo(vertex_layout_t const &layout) noexce
         auto format = std::visit([normalized = description.normalized] (auto &&attribute)
         {
             using T = std::decay_t<decltype(attribute)>;
-            return getFormat<T::number, T::type>(normalized);
+            return getFormat<T::number, typename T::type>(normalized);
 
         }, description.attribute);
 

@@ -345,8 +345,8 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
 
 #if NOT_YET_IMPLEMENTED
     auto const vertexMapEntries = std::array{
-        VkSpecializationMapEntry{ 0, 0, sizeof std::int32_t },
-        VkSpecializationMapEntry{ 1, 4, sizeof std::int32_t }
+        VkSpecializationMapEntry{ 0, 0, sizeof(std::int32_t) },
+        VkSpecializationMapEntry{ 1, 4, sizeof(std::int32_t) }
     };
 
     std::array<std::int32_t, 2> const vertexConstants{
@@ -696,7 +696,10 @@ void CreateGraphicsCommandBuffers(app_t &app)
                 else {
                     auto index_type = std::visit([] (auto type)
                     {
-                        return std::is_same_v<typename decltype(type), std::uint32_t> ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
+                        if constexpr (std::is_same_v<typename std::decay_t<decltype(type)>, std::uint32_t>)
+                            return VK_INDEX_TYPE_UINT32;
+
+                        else return VK_INDEX_TYPE_UINT16;
 
                     }, submesh.indices.type);
 

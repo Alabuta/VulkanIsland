@@ -32,7 +32,7 @@ namespace fs = std::filesystem;
 #include <GLFW/glfw3.h>
 #endif
 
-#ifdef GLFW_EXPOSE_NATIVE_WIN32
+#if USE_WIN32
 #include <GLFW/glfw3native.h>
 #endif
 

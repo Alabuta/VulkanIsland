@@ -1,7 +1,10 @@
 #include <optional>
 #include <variant>
 #include <set>
-#include <execution>
+
+#ifdef _MSC_VER
+    #include <execution>
+#endif
 
 #include <string>
 using namespace std::string_literals;
@@ -154,7 +157,7 @@ std::size_t attribute_size(std::string_view type, GL componentType)
     return 0;
 }
 
-template<std::size_t N>
+template<std::uint32_t N>
 std::optional<attribute_t> constexpr instantiate_attribute(GL componentType)
 {
     switch (componentType) {
@@ -201,6 +204,7 @@ std::optional<attribute_t> instantiate_attribute(std::string_view type, GL compo
     return { };
 }
 
+#if OBSOLETE
 std::optional<index_buffer_t> instantiate_index_buffer(GL componentType)
 {
     switch (componentType) {
@@ -214,6 +218,7 @@ std::optional<index_buffer_t> instantiate_index_buffer(GL componentType)
             return { };
     }
 }
+#endif
 
 std::optional<indices2_t> instantiate_index(GL componentType)
 {
@@ -233,10 +238,10 @@ std::size_t constexpr index_size(GL componentType)
 {
     switch (componentType) {
         case GL::UNSIGNED_SHORT:
-            return sizeof std::uint16_t;
+            return sizeof(std::uint16_t);
 
         case GL::UNSIGNED_INT:
-            return sizeof std::uint32_t;
+            return sizeof(std::uint32_t);
 
         default:
             return 0;
@@ -755,7 +760,7 @@ bool load(std::string_view name, staging::scene_t &scene)
         std::vector<std::byte> byte_code(buffer.byteLength);
 
         if (!byte_code.empty())
-            file.read(reinterpret_cast<char *>(std::data(byte_code)), std::size(byte_code));
+            file.read(reinterpret_cast<char *>(std::data(byte_code)), static_cast<std::streamsize>(std::size(byte_code)));
 
         binBuffers.emplace_back(std::move(byte_code));
     }
@@ -788,7 +793,7 @@ bool load(std::string_view name, staging::scene_t &scene)
 
                     auto indexTypeSize = std::visit([] (auto indexInstance)
                     {
-                        return sizeof std::decay_t<decltype(indexInstance)>;
+                        return sizeof(std::decay_t<decltype(indexInstance)>);
 
                     }, *indexInstance);
 
@@ -851,7 +856,6 @@ bool load(std::string_view name, staging::scene_t &scene)
 
             std::size_t vertexTypeSize = 0;
             std::size_t verticesCount = 0;
-            std::size_t attributeOffset = 0;
 
             for (auto &&attribute : primitive.attribute_accessors) {
                 auto [semantic, accessorIndex] = attribute;
@@ -896,7 +900,7 @@ bool load(std::string_view name, staging::scene_t &scene)
 
                         layout.emplace_back(dstOffset, semantic, std::move(attribute), normalized);
 
-                        return sizeof A;
+                        return sizeof(A);
 
                     }, std::move(attribute.value()));
 
@@ -917,7 +921,7 @@ bool load(std::string_view name, staging::scene_t &scene)
                     auto srcIndex = readBeginIndex, dstIndex = dstOffset + vertexBufferWriteIndex;
 
                     for (; srcIndex < readEndIndex; srcIndex += readStep, dstIndex += vertexTypeSize)
-                        std::uninitialized_copy_n(&binBuffer.at(srcIndex), attributeSize, &vertexBuffer.at(dstIndex));
+                        std::uninitialized_copy_n(&binBuffer.at(srcIndex), attributeSize, &vertexBuffer.buffer.at(dstIndex));
                         //memcpy(&buffer.at(dstIndex), &binBuffer.at(srcIndex), attributeSize);
 
                     dstOffset += attributeSize;

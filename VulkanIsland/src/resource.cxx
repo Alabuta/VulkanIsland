@@ -194,7 +194,7 @@ void ResourceManager::ReleaseResource(T &&resource) noexcept
     }
 }
 
-std::optional<VertexBuffer> ResourceManager::CreateVertexBuffer(std::size_t sizeInBytes) noexcept
+std::optional<VertexBuffer> ResourceManager::CreateVertexBuffer(std::size_t /*sizeInBytes*/) noexcept
 {
     return std::optional<VertexBuffer>();
 }
