@@ -72,7 +72,7 @@ private:
 
 
 template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>...>
-std::optional<IndexBuffer<T>> ResourceManager::CreateIndexBuffer(std::size_t sizeInBytes) noexcept
+std::optional<IndexBuffer<T>> ResourceManager::CreateIndexBuffer(std::size_t /*sizeInBytes*/) noexcept
 {
     return std::optional<IndexBuffer<T>>();
 }

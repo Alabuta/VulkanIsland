@@ -87,7 +87,7 @@ bool VertexInputStateInfo::operator== (T &&rhs) const noexcept
 }
 
 template<class T>
-std::size_t VertexInputStateInfo::hash_value(T &&rhs) const noexcept
+std::size_t VertexInputStateInfo::hash_value() const noexcept
 {
     std::size_t seed = 0;
 

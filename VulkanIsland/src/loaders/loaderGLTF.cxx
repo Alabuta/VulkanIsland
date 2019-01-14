@@ -234,6 +234,7 @@ std::optional<indices2_t> instantiate_index(GL componentType)
     }
 }
 
+#if OBSOLETE
 std::size_t constexpr index_size(GL componentType)
 {
     switch (componentType) {
@@ -247,6 +248,7 @@ std::size_t constexpr index_size(GL componentType)
             return 0;
     }
 }
+#endif
 }
 
 namespace glTF
@@ -894,7 +896,7 @@ bool load(std::string_view name, staging::scene_t &scene)
                 vertex_layout_t layout;
 
                 if (auto attribute = glTF::instantiate_attribute(accessor.type, accessor.componentType); attribute) {
-                    auto attributeSize = std::visit([dstOffset, semantic, normalized, &layout] (auto &&attribute)
+                    auto attributeSize = std::visit([dstOffset, semantic = semantic, normalized, &layout] (auto &&attribute)
                     {
                         using A = std::decay_t<decltype(attribute)>;
 

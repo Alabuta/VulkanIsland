@@ -18,7 +18,7 @@ public:
     bool operator== (T &&rhs) const noexcept;
 
     template<class T>
-    std::size_t hash_value(T &&rhs) const noexcept;
+    std::size_t hash_value() const noexcept;
 
 private:
 
