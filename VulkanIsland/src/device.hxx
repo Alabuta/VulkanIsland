@@ -41,6 +41,8 @@ public:
 
     VkSampleCountFlagBits samplesCount() const noexcept { return samplesCount_; }
 
+    VkPhysicalDeviceProperties const &properties() const noexcept { return properties_; };
+
 #if NOT_YET_IMPLEMENTED
     template<VkCommandBufferLevel L>
     struct VulkanCmdBuffer {
@@ -83,6 +85,8 @@ private:
     std::unique_ptr<ResourceManager> resourceManager_;
 
     VkSampleCountFlagBits samplesCount_{VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT};
+
+    VkPhysicalDeviceProperties properties_;
 
     VulkanDevice() = delete;
     VulkanDevice(VulkanDevice const &) = delete;

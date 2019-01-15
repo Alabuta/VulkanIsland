@@ -262,10 +262,9 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
 
 void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<char const *> &&extensions)
 {
-    VkPhysicalDeviceProperties properties;
-    vkGetPhysicalDeviceProperties(physicalDevice_, &properties);
+    vkGetPhysicalDeviceProperties(physicalDevice_, &properties_);
 
-    auto samplesCountBits = std::min(properties.limits.framebufferColorSampleCounts, properties.limits.framebufferDepthSampleCounts);
+    auto samplesCountBits = std::min(properties_.limits.framebufferColorSampleCounts, properties_.limits.framebufferDepthSampleCounts);
 
     auto samplesCount = static_cast<VkFlags>(std::pow(2.0, std::floor(std::log2(samplesCountBits))));
 
