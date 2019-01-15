@@ -684,14 +684,14 @@ bool load(std::string_view name, staging::scene_t &scene)
     fs::path contents{"contents/scenes"s};
 
     if (!fs::exists(fs::current_path() / contents))
-        contents = fs::current_path() / fs::path{"../"s} / contents;
+        contents = fs::current_path() / "../"s / contents;
 
     auto folder = contents / name;
 
     nlohmann::json json;
 
     {
-        auto path = folder / fs::path{"scene.gltf"s};
+        auto path = folder / "scene.gltf"s;
 
         std::ifstream file{path.native(), std::ios::in};
 

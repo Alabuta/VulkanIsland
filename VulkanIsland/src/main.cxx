@@ -229,6 +229,7 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
         },
     }};
 
+    // WARN:: remember about potential race condition with the related executing command buffer
     vkUpdateDescriptorSets(device.handle(), static_cast<std::uint32_t>(std::size(writeDescriptorsSet)),
                            std::data(writeDescriptorsSet), 0, nullptr);
 }
