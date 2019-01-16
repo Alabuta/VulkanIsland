@@ -923,7 +923,7 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.renderPass = std::move(renderPass.value());
 
-    if (auto result = glTF::load("unlit-test"sv, app.scene); !result)
+    if (auto result = glTF::load("Hebe"sv, app.scene); !result)
         throw std::runtime_error("failed to load a mesh"s);
 
     if (app.vertexBuffer = InitVertexBuffer(app); !app.vertexBuffer)
@@ -950,11 +950,20 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.texture.sampler = result;
 
-    /*if (app.uboBuffer = CreateUniformBuffer(*app.vulkanDevice, sizeof(transforms_t)); !app.uboBuffer)
-        throw std::runtime_error("failed to init uniform buffer"s);*/
+#if USE_ALIGNMENT
+    auto alignment = static_cast<std::size_t>(app.vulkanDevice->properties().limits.minStorageBufferOffsetAlignment);
 
+    auto objectsNumber = 1;
+    auto alignedBufferSize = aligned_size(sizeof(per_object_t), alignment) * objectsNumber;
+
+    auto alignedBuffer = boost::alignment::aligned_alloc(alignment, alignedBufferSize);
+
+    if (app.perObjectBuffer = CreateStorageBuffer(*app.vulkanDevice, alignedBufferSize); !app.perObjectBuffer)
+        throw std::runtime_error("failed to init per object uniform buffer"s);
+#else
     if (app.perObjectBuffer = CreateStorageBuffer(*app.vulkanDevice, sizeof(per_object_t)); !app.perObjectBuffer)
         throw std::runtime_error("failed to init per object uniform buffer"s);
+#endif
 
     if (app.perCameraBuffer = CreateStorageBuffer(*app.vulkanDevice, sizeof(Camera::data_t)); !app.perCameraBuffer)
         throw std::runtime_error("failed to init per camera uniform buffer"s);
@@ -1017,6 +1026,34 @@ void CleanUp(app_t &app)
 }
 
 
+template<class T>
+struct Allocator final {
+    using value_type = T;
+
+    using pointer = T *;
+    using const_pointer = T const *;
+
+    using reference = T &;
+    using const_reference = T const &;
+
+    using size_type = std::size_t;
+    using difference_type = std::ptrdiff_t;
+
+    using propagate_on_container_move_assignment = std::true_type;
+    using is_always_equal = std::true_type;
+
+    Allocator() noexcept = default;
+
+    template <class U>
+    constexpr Allocator(Allocator<U> const &) noexcept { }
+
+    [[nodiscard]] T *allocate(std::size_t n)
+    {
+        return nullptr;
+    }
+};
+
+
 void Update(app_t &app)
 {
     app.cameraController->update();
@@ -1046,6 +1083,18 @@ void Update(app_t &app)
 
         app.object.normal = glm::inverseTranspose(app.object.world);
 
+#if USE_ALIGNMENT
+        auto alignment = static_cast<std::size_t>(app.vulkanDevice->properties().limits.minStorageBufferOffsetAlignment);
+
+        auto objectsNumber = 1;
+        auto alignedBufferSize = aligned_size(sizeof(per_object_t), alignment) * objectsNumber;
+
+        auto alignedBuffer = boost::alignment::aligned_alloc(alignment, alignedBufferSize);
+
+        std::uninitialized_copy_n(&app.object, 1, reinterpret_cast<per_object_t *>(alignedBuffer));
+        auto xxx = reinterpret_cast<per_object_t *>(alignedBuffer);
+#endif
+
         auto &&buffer = *app.perObjectBuffer;
 
         auto offset = buffer.memory()->offset();
@@ -1056,9 +1105,17 @@ void Update(app_t &app)
         if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
             throw std::runtime_error("failed to map per object uniform buffer memory: "s + std::to_string(result));
 
+#if USE_ALIGNMENT
+        memcpy(data, alignedBuffer, alignedBufferSize);
+#else
         std::uninitialized_copy_n(&app.object, 1, reinterpret_cast<per_object_t *>(data));
+#endif
 
         vkUnmapMemory(device.handle(), buffer.memory()->handle());
+
+#if USE_ALIGNMENT
+        boost::alignment::aligned_free(alignedBuffer);
+#endif
     }
 }
 
