@@ -1078,7 +1078,8 @@ void Update(app_t &app)
     }
 
     {
-        app.object.world = glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{1, 0, 0});
+        app.object.world = glm::scale(glm::mat4{1.f}, glm::vec3{.1f});
+        app.object.world = glm::rotate(app.object.world, glm::radians(-90.f), glm::vec3{1, 0, 0});
         app.object.world = glm::rotate(app.object.world, glm::radians(90.f), glm::vec3{0, 0, 1});
 
         app.object.normal = glm::inverseTranspose(app.object.world);
@@ -1092,7 +1093,7 @@ void Update(app_t &app)
         auto alignedBuffer = boost::alignment::aligned_alloc(alignment, alignedBufferSize);
 
         std::uninitialized_copy_n(&app.object, 1, reinterpret_cast<per_object_t *>(alignedBuffer));
-        auto xxx = reinterpret_cast<per_object_t *>(alignedBuffer);
+        // auto xxx = reinterpret_cast<per_object_t *>(alignedBuffer);
 #endif
 
         auto &&buffer = *app.perObjectBuffer;
