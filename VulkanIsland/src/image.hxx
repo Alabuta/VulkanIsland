@@ -28,7 +28,7 @@ public:
 private:
     std::shared_ptr<DeviceMemory> memory_;
 
-    VkImage handle_;
+    VkImage handle_{VK_NULL_HANDLE};
     VkFormat format_{VK_FORMAT_UNDEFINED};
 
     std::uint32_t mipLevels_{1};
@@ -41,7 +41,7 @@ private:
 
 class VulkanImageView final {
 public:
-    VkImageView handle_;
+    VkImageView handle_{VK_NULL_HANDLE};
     VkImageViewType type_;
 
     VulkanImageView() = default;
@@ -62,7 +62,7 @@ public:
     VkSampler handle() const noexcept { return handle_; }
 
 private:
-    VkSampler handle_;
+    VkSampler handle_{VK_NULL_HANDLE};
 
     VulkanSampler() = delete;
     VulkanSampler(VulkanSampler const &) = delete;

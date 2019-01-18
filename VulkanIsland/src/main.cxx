@@ -15,6 +15,8 @@
 #include <execution>
 #endif
 
+#include <boost/align/aligned_alloc.hpp>
+
 #include "main.hxx"
 #include "math.hxx"
 #include "instance.hxx"
@@ -39,20 +41,7 @@
 
 
 #define USE_GLM 1
-
-
-struct transforms_t {
-#if !USE_GLM
-    mat4 model;
-    mat4 view;
-    mat4 proj;
-#else
-    glm::mat4 model;
-    glm::mat4 view;
-    glm::mat4 proj;
-    glm::mat4 modelView;
-#endif
-};
+#define USE_ALIGNMENT 1
 
 
 struct per_object_t {
@@ -60,9 +49,10 @@ struct per_object_t {
     glm::mat4 normal{1};  // Transposed of the inversed of the upper left 3x3 sub-matrix of model(world)-view matrix.
 };
 
-struct app_t final {
-    transforms_t transforms;
 
+void CleanupFrameData(struct app_t &app);
+
+struct app_t final {
     std::uint32_t width{800u};
     std::uint32_t height{600u};
 
@@ -78,31 +68,81 @@ struct app_t final {
     std::unique_ptr<VulkanInstance> vulkanInstance;
     std::unique_ptr<VulkanDevice> vulkanDevice;
 
-    VkSurfaceKHR surface;
-    VulkanSwapchain swapchain;
+    VkSurfaceKHR surface{ VK_NULL_HANDLE };
+    VulkanSwapchain swapchain{ VK_NULL_HANDLE };
 
     GraphicsQueue graphicsQueue;
     TransferQueue transferQueue;
     PresentationQueue presentationQueue;
 
-    VkPipelineLayout pipelineLayout;
-    VkRenderPass renderPass;
-    VkPipeline graphicsPipeline;
+    VkPipelineLayout pipelineLayout{ VK_NULL_HANDLE };
+    VkRenderPass renderPass{ VK_NULL_HANDLE };
+    VkPipeline graphicsPipeline{ VK_NULL_HANDLE };
 
-    VkCommandPool graphicsCommandPool, transferCommandPool;
+    VkCommandPool graphicsCommandPool{ VK_NULL_HANDLE }, transferCommandPool{ VK_NULL_HANDLE };
 
-    VkDescriptorSetLayout descriptorSetLayout;
-    VkDescriptorPool descriptorPool;
-    VkDescriptorSet descriptorSet;
+    VkDescriptorSetLayout descriptorSetLayout{ VK_NULL_HANDLE };
+    VkDescriptorPool descriptorPool{ VK_NULL_HANDLE };
+    VkDescriptorSet descriptorSet{ VK_NULL_HANDLE };
 
     std::vector<VkCommandBuffer> commandBuffers;
 
-    VkSemaphore imageAvailableSemaphore, renderFinishedSemaphore;
+    VkSemaphore imageAvailableSemaphore{ VK_NULL_HANDLE }, renderFinishedSemaphore{ VK_NULL_HANDLE };
 
     std::shared_ptr<VulkanBuffer> vertexBuffer, indexBuffer, uboBuffer;
     std::shared_ptr<VulkanBuffer> perObjectBuffer, perCameraBuffer;
 
     VulkanTexture texture;
+
+
+    ~app_t()
+    {
+        cleanUp();
+    }
+
+    void cleanUp()
+    {
+        if (vulkanDevice == nullptr)
+            return;
+
+        vkDeviceWaitIdle(vulkanDevice->handle());
+
+        if (renderFinishedSemaphore)
+            vkDestroySemaphore(vulkanDevice->handle(), renderFinishedSemaphore, nullptr);
+
+        if (imageAvailableSemaphore)
+            vkDestroySemaphore(vulkanDevice->handle(), imageAvailableSemaphore, nullptr);
+
+        CleanupFrameData(*this);
+
+        vkDestroyDescriptorSetLayout(vulkanDevice->handle(), descriptorSetLayout, nullptr);
+        vkDestroyDescriptorPool(vulkanDevice->handle(), descriptorPool, nullptr);
+
+        texture.sampler.reset();
+        if (texture.view.handle() != VK_NULL_HANDLE)
+            vkDestroyImageView(vulkanDevice->handle(), texture.view.handle(), nullptr);
+        texture.image.reset();
+
+        perCameraBuffer.reset();
+        perObjectBuffer.reset();
+
+        uboBuffer.reset();
+
+        indexBuffer.reset();
+        vertexBuffer.reset();
+
+        if (transferCommandPool != VK_NULL_HANDLE)
+            vkDestroyCommandPool(vulkanDevice->handle(), transferCommandPool, nullptr);
+
+        if (graphicsCommandPool != VK_NULL_HANDLE)
+            vkDestroyCommandPool(vulkanDevice->handle(), graphicsCommandPool, nullptr);
+
+        if (surface != VK_NULL_HANDLE)
+            vkDestroySurfaceKHR(vulkanInstance->handle(), surface, nullptr);
+
+        vulkanDevice.reset();
+        vulkanInstance.reset();
+    }
 };
 
 
@@ -155,21 +195,23 @@ template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
 }
 
 
-void CleanupFrameData(app_t &app, VulkanDevice &device, VkPipeline graphicsPipeline, VkPipelineLayout pipelineLayout, VkRenderPass renderPass)
+void CleanupFrameData(app_t &app)
 {
+    auto &&device = *app.vulkanDevice;
+
     if (app.graphicsCommandPool)
         vkFreeCommandBuffers(device.handle(), app.graphicsCommandPool, static_cast<std::uint32_t>(std::size(app.commandBuffers)), std::data(app.commandBuffers));
 
     app.commandBuffers.clear();
 
-    if (graphicsPipeline)
-        vkDestroyPipeline(device.handle(), graphicsPipeline, nullptr);
+    if (app.graphicsPipeline != VK_NULL_HANDLE)
+        vkDestroyPipeline(device.handle(), app.graphicsPipeline, nullptr);
 
-    if (pipelineLayout)
-        vkDestroyPipelineLayout(device.handle(), pipelineLayout, nullptr);
+    if (app.pipelineLayout != VK_NULL_HANDLE)
+        vkDestroyPipelineLayout(device.handle(), app.pipelineLayout, nullptr);
 
-    if (renderPass)
-        vkDestroyRenderPass(device.handle(), renderPass, nullptr);
+    if (app.renderPass != VK_NULL_HANDLE)
+        vkDestroyRenderPass(device.handle(), app.renderPass, nullptr);
 
     CleanupSwapchain(device, app.swapchain);
 }
@@ -786,7 +828,7 @@ void RecreateSwapChain(app_t &app)
 
     vkDeviceWaitIdle(app.vulkanDevice->handle());
 
-    CleanupFrameData(app, *app.vulkanDevice, app.graphicsPipeline, app.pipelineLayout, app.renderPass);
+    CleanupFrameData(app);
 
     auto swapchain = CreateSwapchain(*app.vulkanDevice, app.surface, app.width, app.height,
                                      app.presentationQueue, app.graphicsQueue, app.transferQueue, app.transferCommandPool);
@@ -985,45 +1027,6 @@ void InitVulkan(Window &window, app_t &app)
     CreateSemaphores(app, app.vulkanDevice->handle());
 }
 
-void CleanUp(app_t &app)
-{
-    vkDeviceWaitIdle(app.vulkanDevice->handle());
-
-    if (app.renderFinishedSemaphore)
-        vkDestroySemaphore(app.vulkanDevice->handle(), app.renderFinishedSemaphore, nullptr);
-
-    if (app.imageAvailableSemaphore)
-        vkDestroySemaphore(app.vulkanDevice->handle(), app.imageAvailableSemaphore, nullptr);
-
-    CleanupFrameData(app, *app.vulkanDevice, app.graphicsPipeline, app.pipelineLayout, app.renderPass);
-
-    vkDestroyDescriptorSetLayout(app.vulkanDevice->handle(), app.descriptorSetLayout, nullptr);
-    vkDestroyDescriptorPool(app.vulkanDevice->handle(), app.descriptorPool, nullptr);
-
-    app.texture.sampler.reset();
-    vkDestroyImageView(app.vulkanDevice->handle(), app.texture.view.handle(), nullptr);
-    app.texture.image.reset();
-
-    app.perCameraBuffer.reset();
-    app.perObjectBuffer.reset();
-
-    app.uboBuffer.reset();
-
-    app.indexBuffer.reset();
-    app.vertexBuffer.reset();
-
-    if (app.transferCommandPool)
-        vkDestroyCommandPool(app.vulkanDevice->handle(), app.transferCommandPool, nullptr);
-
-    if (app.graphicsCommandPool)
-        vkDestroyCommandPool(app.vulkanDevice->handle(), app.graphicsCommandPool, nullptr);
-
-    if (app.surface)
-        vkDestroySurfaceKHR(app.vulkanInstance->handle(), app.surface, nullptr);
-
-    app.vulkanDevice.reset();
-    app.vulkanInstance.reset();
-}
 
 
 template<class T>
@@ -1078,9 +1081,9 @@ void Update(app_t &app)
     }
 
     {
-        app.object.world = glm::scale(glm::mat4{1.f}, glm::vec3{.1f});
+        app.object.world = glm::scale(glm::mat4{1.f}, glm::vec3{.01f});
         app.object.world = glm::rotate(app.object.world, glm::radians(-90.f), glm::vec3{1, 0, 0});
-        app.object.world = glm::rotate(app.object.world, glm::radians(90.f), glm::vec3{0, 0, 1});
+        //app.object.world = glm::rotate(app.object.world, glm::radians(90.f), glm::vec3{0, 0, 1});
 
         app.object.normal = glm::inverseTranspose(app.object.world);
 
@@ -1286,7 +1289,7 @@ try {
     app.camera->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
 
     app.cameraController = std::make_unique<OrbitController>(app.camera, *inputManager);
-    app.cameraController->lookAt(glm::vec3{8, 24, 24}, {0, 8, 0});
+    app.cameraController->lookAt(glm::vec3{.8, 2.4, 2.4}, {0, .8, 0});
 
     std::cout << measure<>::execution(InitVulkan, window, std::ref(app)) << " ms\n"s;
 
@@ -1299,7 +1302,7 @@ try {
         DrawFrame(app);
     });
 
-    CleanUp(app);
+    app.cleanUp();
 
     glfwTerminate();
 
