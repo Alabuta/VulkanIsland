@@ -450,7 +450,21 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         1, &scissor
     };
 
-    VkPipelineRasterizationStateCreateInfo constexpr rasterizer{
+#if NOT_YET_IMPLEMENTED
+    auto const dynamicStates = std::array{
+        VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT,
+        VkDynamicState::VK_DYNAMIC_STATE_SCISSOR,
+    };
+
+    VkPipelineDynamicStateCreateInfo const dynamicStateCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr, 0,
+        static_cast<std::uint32_t>(std::size(dynamicStates)),
+        std::data(dynamicStates)
+    };
+#endif
+
+    VkPipelineRasterizationStateCreateInfo constexpr rasterizerState{
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         nullptr, 0,
         VK_TRUE,
@@ -516,7 +530,7 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         &vertexAssemblyStateCreateInfo,
         nullptr,
         &viewportStateCreateInfo,
-        &rasterizer,
+        &rasterizerState,
         &multisampleCreateInfo,
         &depthStencilStateCreateInfo,
         &colorBlendStateCreateInfo,
@@ -708,6 +722,21 @@ void CreateGraphicsCommandBuffers(app_t &app)
         };
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+    #if NOT_YET_IMPLEMENTED
+        VkViewport const viewport{
+            0, static_cast<float>(app.swapchain.extent.height),
+            static_cast<float>(app.swapchain.extent.width), -static_cast<float>(app.swapchain.extent.height),
+            0, 1
+        };
+
+        VkRect2D const scissor{
+            {0, 0}, app.swapchain.extent
+        };
+
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+    #endif
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipeline);
 
