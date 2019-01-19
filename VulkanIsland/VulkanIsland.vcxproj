@@ -99,6 +99,8 @@
       <AdditionalIncludeDirectories>include/;src/;%VULKAN_SDK%\Include;C:\Users\Almaz\Documents\Visual Studio 2017\glfw-3.2.1\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <EnablePREfast>false</EnablePREfast>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>%VULKAN_SDK%\Lib32;C:\Users\Almaz\Documents\Visual Studio 2017\glfw-3.2.1\build\src\Debug</AdditionalLibraryDirectories>
@@ -130,6 +132,8 @@
       <AdditionalOptions> /bigobj /Zm2000 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableModules>false</EnableModules>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>C:/.conan/ckrpt6zq/1/lib;C:/Users/User/.conan/data/glfw/3.2.1/bincrafters/stable/package/ff82a1e70ba8430648a79986385b20a3648f8c19/lib;C:/Users/User/.conan/data/bzip2/1.0.6/conan/stable/package/8cf01e2f50fcd6b63525e70584df0326550364e1/lib;C:/Users/User/.conan/data/zlib/1.2.11/conan/stable/package/8cf01e2f50fcd6b63525e70584df0326550364e1/lib;$(ProjectDir)lib;$(VULKAN_SDK)\Lib</AdditionalLibraryDirectories>
@@ -164,6 +168,8 @@
       <AdditionalIncludeDirectories>include/;src/;%VULKAN_SDK%\Include;C:\Users\Almaz\Documents\Visual Studio 2017\glfw-3.2.1\include</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <EnablePREfast>false</EnablePREfast>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -202,6 +208,8 @@
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <AdditionalOptions> /bigobj /Zm2000 %(AdditionalOptions)</AdditionalOptions>
       <EnableModules>false</EnableModules>
+      <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
+      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>

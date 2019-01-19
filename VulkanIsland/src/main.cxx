@@ -711,7 +711,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
 #if defined( __clang__) || defined(_MSC_VER)
         auto const clearColors = std::array{
-            VkClearValue{{{ 0.64f, 0.64f, 0.64f, 1.f }}},
+            VkClearValue{{{ .64f, .64f, .64f, 1.f }}},
             VkClearValue{{{ kREVERSED_DEPTH ? 0.f : 1.f, 0 }}}
         };
 #else
