@@ -42,6 +42,7 @@
 
 #define USE_GLM 1
 #define USE_ALIGNMENT 1
+#define USE_DYNAMIC_PIPELINE_STATE 0
 
 
 struct per_object_t {
@@ -433,6 +434,21 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         VK_FALSE
     };
 
+#if USE_DYNAMIC_PIPELINE_STATE
+    auto const dynamicStates = std::array{
+        VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT,
+        VkDynamicState::VK_DYNAMIC_STATE_SCISSOR,
+    };
+
+    VkPipelineDynamicStateCreateInfo const dynamicStateCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr, 0,
+        static_cast<std::uint32_t>(std::size(dynamicStates)),
+        std::data(dynamicStates)
+    };
+
+    auto constexpr rasterizerDiscardEnable = VK_TRUE;
+#else
     VkViewport const viewport{
         0, static_cast<float>(app.swapchain.extent.height),
         static_cast<float>(app.swapchain.extent.width), -static_cast<float>(app.swapchain.extent.height),
@@ -450,25 +466,14 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         1, &scissor
     };
 
-#if NOT_YET_IMPLEMENTED
-    auto const dynamicStates = std::array{
-        VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT,
-        VkDynamicState::VK_DYNAMIC_STATE_SCISSOR,
-    };
-
-    VkPipelineDynamicStateCreateInfo const dynamicStateCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
-        nullptr, 0,
-        static_cast<std::uint32_t>(std::size(dynamicStates)),
-        std::data(dynamicStates)
-    };
+    auto constexpr rasterizerDiscardEnable = VK_FALSE;
 #endif
 
     VkPipelineRasterizationStateCreateInfo constexpr rasterizerState{
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         nullptr, 0,
         VK_TRUE,
-        VK_FALSE,
+        rasterizerDiscardEnable,
         VK_POLYGON_MODE_FILL,
         VK_CULL_MODE_BACK_BIT,
         VK_FRONT_FACE_COUNTER_CLOCKWISE,
@@ -529,7 +534,11 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         &vertexInputStateCreateInfo.info(),
         &vertexAssemblyStateCreateInfo,
         nullptr,
+#if USE_DYNAMIC_PIPELINE_STATE
+        nullptr,
+#else
         &viewportStateCreateInfo,
+#endif
         &rasterizerState,
         &multisampleCreateInfo,
         &depthStencilStateCreateInfo,
@@ -723,7 +732,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-    #if NOT_YET_IMPLEMENTED
+    #if USE_DYNAMIC_PIPELINE_STATE
         VkViewport const viewport{
             0, static_cast<float>(app.swapchain.extent.height),
             static_cast<float>(app.swapchain.extent.width), -static_cast<float>(app.swapchain.extent.height),
@@ -872,7 +881,9 @@ void RecreateSwapChain(app_t &app)
 
     else app.renderPass = std::move(renderPass.value());
 
+#if !USE_DYNAMIC_PIPELINE_STATE
     CreateGraphicsPipeline(app, app.vulkanDevice->handle());
+#endif
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
