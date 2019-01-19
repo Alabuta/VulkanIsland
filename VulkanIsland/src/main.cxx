@@ -92,6 +92,11 @@ struct app_t final {
 
     std::shared_ptr<VulkanBuffer> vertexBuffer, indexBuffer, uboBuffer;
     std::shared_ptr<VulkanBuffer> perObjectBuffer, perCameraBuffer;
+    void *perObjectMappedPtr{nullptr};
+    void *alignedBuffer{nullptr};
+
+    std::size_t objectsNumber{1u};
+    std::size_t alignedBufferSize{0u};
 
     VulkanTexture texture;
 
@@ -123,6 +128,14 @@ struct app_t final {
         if (texture.view.handle() != VK_NULL_HANDLE)
             vkDestroyImageView(vulkanDevice->handle(), texture.view.handle(), nullptr);
         texture.image.reset();
+
+        if (perObjectMappedPtr)
+            vkUnmapMemory(vulkanDevice->handle(), perObjectBuffer->memory()->handle());
+
+#if USE_ALIGNMENT
+        if (alignedBuffer)
+            boost::alignment::aligned_free(alignedBuffer);
+#endif
 
         perCameraBuffer.reset();
         perObjectBuffer.reset();
@@ -673,10 +686,19 @@ CreateUniformBuffer(VulkanDevice &device, std::size_t size)
 }
 
 [[nodiscard]] std::shared_ptr<VulkanBuffer>
-CreateStorageBuffer(VulkanDevice &device, std::size_t size)
+CreateCoherentStorageBuffer(VulkanDevice &device, std::size_t size)
 {
     auto constexpr usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    return device.resourceManager().CreateBuffer(size, usageFlags, propertyFlags);
+}
+
+[[nodiscard]] std::shared_ptr<VulkanBuffer>
+CreateStorageBuffer(VulkanDevice &device, std::size_t size)
+{
+    auto constexpr usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 
     return device.resourceManager().CreateBuffer(size, usageFlags, propertyFlags);
 }
@@ -1035,19 +1057,29 @@ void InitVulkan(Window &window, app_t &app)
 #if USE_ALIGNMENT
     auto alignment = static_cast<std::size_t>(app.vulkanDevice->properties().limits.minStorageBufferOffsetAlignment);
 
-    auto objectsNumber = 1;
-    auto alignedBufferSize = aligned_size(sizeof(per_object_t), alignment) * objectsNumber;
+    app.alignedBufferSize = aligned_size(sizeof(per_object_t), alignment) * app.objectsNumber;
 
-    auto alignedBuffer = boost::alignment::aligned_alloc(alignment, alignedBufferSize);
+    app.alignedBuffer = boost::alignment::aligned_alloc(alignment, app.alignedBufferSize);
 
-    if (app.perObjectBuffer = CreateStorageBuffer(*app.vulkanDevice, alignedBufferSize); !app.perObjectBuffer)
+    if (app.perObjectBuffer = CreateStorageBuffer(*app.vulkanDevice, app.alignedBufferSize); !app.perObjectBuffer)
         throw std::runtime_error("failed to init per object uniform buffer"s);
+
+    else {
+        auto &&buffer = *app.perObjectBuffer;
+
+        auto offset = buffer.memory()->offset();
+        auto size = buffer.memory()->size();
+
+        if (auto result = vkMapMemory(app.vulkanDevice->handle(), buffer.memory()->handle(), offset, size, 0, &app.perObjectMappedPtr); result != VK_SUCCESS)
+            throw std::runtime_error("failed to map per object uniform buffer memory: "s + std::to_string(result));
+    }
+
 #else
     if (app.perObjectBuffer = CreateStorageBuffer(*app.vulkanDevice, sizeof(per_object_t)); !app.perObjectBuffer)
         throw std::runtime_error("failed to init per object uniform buffer"s);
 #endif
 
-    if (app.perCameraBuffer = CreateStorageBuffer(*app.vulkanDevice, sizeof(Camera::data_t)); !app.perCameraBuffer)
+    if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.vulkanDevice, sizeof(Camera::data_t)); !app.perCameraBuffer)
         throw std::runtime_error("failed to init per camera uniform buffer"s);
 
     if (auto descriptorPool = CreateDescriptorPool(*app.vulkanDevice); !descriptorPool)
@@ -1128,37 +1160,49 @@ void Update(app_t &app)
         app.object.normal = glm::inverseTranspose(app.object.world);
 
 #if USE_ALIGNMENT
-        auto alignment = static_cast<std::size_t>(app.vulkanDevice->properties().limits.minStorageBufferOffsetAlignment);
+        /*auto alignment = static_cast<std::size_t>(app.vulkanDevice->properties().limits.minStorageBufferOffsetAlignment);
 
         auto objectsNumber = 1;
         auto alignedBufferSize = aligned_size(sizeof(per_object_t), alignment) * objectsNumber;
 
-        auto alignedBuffer = boost::alignment::aligned_alloc(alignment, alignedBufferSize);
+        auto alignedBuffer = boost::alignment::aligned_alloc(alignment, alignedBufferSize);*/
 
-        std::uninitialized_copy_n(&app.object, 1, reinterpret_cast<per_object_t *>(alignedBuffer));
+        std::uninitialized_copy_n(&app.object, 1, reinterpret_cast<per_object_t *>(app.alignedBuffer));
         // auto xxx = reinterpret_cast<per_object_t *>(alignedBuffer);
 #endif
 
         auto &&buffer = *app.perObjectBuffer;
 
-        auto offset = buffer.memory()->offset();
+        /*auto offset = buffer.memory()->offset();
         auto size = buffer.memory()->size();
 
         void *data;
 
         if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
-            throw std::runtime_error("failed to map per object uniform buffer memory: "s + std::to_string(result));
+            throw std::runtime_error("failed to map per object uniform buffer memory: "s + std::to_string(result));*/
 
 #if USE_ALIGNMENT
-        memcpy(data, alignedBuffer, alignedBufferSize);
+        memcpy(app.perObjectMappedPtr, app.alignedBuffer, app.alignedBufferSize);
 #else
-        std::uninitialized_copy_n(&app.object, 1, reinterpret_cast<per_object_t *>(data));
+        std::uninitialized_copy_n(&app.object, 1, reinterpret_cast<per_object_t *>(app.alignedBufferSize));
 #endif
 
-        vkUnmapMemory(device.handle(), buffer.memory()->handle());
+        auto const mappedRanges = std::array{
+            VkMappedMemoryRange{
+                VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+                nullptr,
+                buffer.memory()->handle(),
+                buffer.memory()->offset(),
+                sizeof(per_object_t)
+            }
+        };
+
+        vkFlushMappedMemoryRanges(app.vulkanDevice->handle(), static_cast<std::uint32_t>(std::size(mappedRanges)), std::data(mappedRanges));
+
+        //vkUnmapMemory(device.handle(), buffer.memory()->handle());
 
 #if USE_ALIGNMENT
-        boost::alignment::aligned_free(alignedBuffer);
+        //boost::alignment::aligned_free(alignedBuffer);
 #endif
     }
 }
