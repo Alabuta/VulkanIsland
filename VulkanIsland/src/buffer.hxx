@@ -7,6 +7,8 @@
 #include <map>
 #include <unordered_map>
 
+#include <boost/functional/hash.hpp>
+
 #include "main.hxx"
 #include "device.hxx"
 #include "commandBuffer.hxx"
@@ -34,6 +36,26 @@ private:
     struct Pool final {
         std::uint32_t memoryTypeIndex{0};
         VkDeviceSize allocatedSize{0};
+        VkMemoryPropertyFlags properties{0};
+
+        struct hash_value final {
+            template<class T, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>>>...>
+            constexpr std::size_t operator() (T &&pool) const noexcept
+            {
+                std::size_t seed = 0;
+
+                boost::hash_combine(seed, pool.memoryTypeIndex);
+                boost::hash_combine(seed, pool.properties);
+
+                return seed;
+            }
+        };
+
+        template<class T, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>>>...>
+        constexpr bool operator== (T &&rhs) const noexcept
+        {
+            return memoryTypeIndex == rhs.memoryTypeIndex && properties == rhs.properties;
+        }
 
         struct Block final {
             VkDeviceSize availableSize{0};
@@ -74,10 +96,10 @@ private:
 
         std::unordered_map<VkDeviceMemory, Block> blocks;
 
-        Pool(std::uint32_t memoryTypeIndex) noexcept : memoryTypeIndex{memoryTypeIndex} { }
+        Pool(std::uint32_t memoryTypeIndex, VkMemoryPropertyFlags properties) noexcept : memoryTypeIndex{memoryTypeIndex}, properties{properties} { }
     };
 
-    std::unordered_map<std::uint32_t, Pool> pools_;
+    std::unordered_map<std::size_t, Pool> pools_;
 
     template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
     [[nodiscard]] std::shared_ptr<DeviceMemory> CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, bool linear);
@@ -85,7 +107,7 @@ private:
     template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
     [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(R &&memoryRequirements, VkMemoryPropertyFlags properties);
 
-    auto AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size) -> std::optional<decltype(Pool::blocks)::iterator>;
+    auto AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size, VkMemoryPropertyFlags properties) -> std::optional<decltype(Pool::blocks)::iterator>;
 
     void DeallocateMemory(DeviceMemory const &deviceMemory);
 };
@@ -141,15 +163,25 @@ public:
     VkDeviceSize offset() const noexcept { return offset_; }
 
     std::uint32_t typeIndex() const noexcept { return typeIndex_; }
+    VkMemoryPropertyFlags properties() const noexcept { return properties_; }
+
+    std::size_t seed() const noexcept { return seed_; }
 
 private:
     VkDeviceMemory handle_;
     VkDeviceSize size_, offset_;
 
     std::uint32_t typeIndex_;
+    VkMemoryPropertyFlags properties_;
 
-    DeviceMemory(VkDeviceMemory handle, std::uint32_t typeIndex, VkDeviceSize size, VkDeviceSize offset) noexcept
-        : handle_{handle}, size_{size}, offset_{offset}, typeIndex_{typeIndex} { }
+    std::size_t seed_{0};
+
+    DeviceMemory(VkDeviceMemory handle, std::uint32_t typeIndex, VkMemoryPropertyFlags properties, VkDeviceSize size, VkDeviceSize offset) noexcept
+        : handle_{handle}, size_{size}, offset_{offset}, typeIndex_{typeIndex}, properties_{properties}
+    {
+        boost::hash_combine(seed_, typeIndex_);
+        boost::hash_combine(seed_, properties_); 
+    }
 
     DeviceMemory() = delete;
 

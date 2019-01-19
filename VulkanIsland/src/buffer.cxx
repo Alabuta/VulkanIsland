@@ -72,10 +72,15 @@ MemoryManager::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags pro
 
     else memoryTypeIndex = index.value();
 
-    if (pools_.count(memoryTypeIndex) < 1)
-        pools_.emplace(memoryTypeIndex, memoryTypeIndex);
+    std::size_t seed = 0;
 
-    auto &&pool = pools_.at(memoryTypeIndex);
+    boost::hash_combine(seed, memoryTypeIndex);
+    boost::hash_combine(seed, properties);
+
+    if (pools_.count(seed) < 1)
+        pools_.try_emplace(seed, memoryTypeIndex, properties);
+
+    auto &&pool = pools_.at(seed);
 
     typename decltype(Pool::blocks)::iterator it_block;
     typename decltype(Pool::Block::availableChunks)::iterator it_chunk;
@@ -112,7 +117,7 @@ MemoryManager::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags pro
     });
 
     if (it_block == std::end(pool.blocks)) {
-        if (auto result = AllocateMemoryBlock(memoryTypeIndex, kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size); !result)
+        if (auto result = AllocateMemoryBlock(memoryTypeIndex, kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size, properties); !result)
             return { };
 
         else it_block = result.value();
@@ -161,7 +166,7 @@ MemoryManager::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags pro
         std::cout << "Memory pool: ["s << memoryTypeIndex << "]: sub-allocation : "s << static_cast<float>(memoryRequirements.size) / 1024.f << "KB\n"s;
 
         return std::shared_ptr<DeviceMemory>{
-            new DeviceMemory{it_block->first, memoryTypeIndex, memoryRequirements.size, memoryOffset},
+            new DeviceMemory{it_block->first, memoryTypeIndex, properties, memoryRequirements.size, memoryOffset},
             [this] (DeviceMemory *const ptr_memory)
             {
                 DeallocateMemory(*ptr_memory);
@@ -176,15 +181,20 @@ MemoryManager::AllocateMemory(R &&memoryRequirements2, VkMemoryPropertyFlags pro
     return { };
 }
 
-auto MemoryManager::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size)
+auto MemoryManager::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size, VkMemoryPropertyFlags properties)
 -> std::optional<decltype(Pool::blocks)::iterator>
 {
-    if (pools_.count(memoryTypeIndex) < 1) {
+    std::size_t seed = 0;
+
+    boost::hash_combine(seed, memoryTypeIndex);
+    boost::hash_combine(seed, properties);
+
+    if (pools_.count(seed) < 1) {
         std::cerr << "failed to find instantiated memory pool for type index: "s << memoryTypeIndex << '\n';
         return { };
     }
 
-    auto &&pool = pools_.at(memoryTypeIndex);
+    auto &&pool = pools_.at(seed);
 
     VkMemoryAllocateInfo const memAllocInfo{
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
@@ -213,12 +223,12 @@ auto MemoryManager::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceS
 
 void MemoryManager::DeallocateMemory(DeviceMemory const &memory)
 {
-    if (pools_.count(memory.typeIndex()) < 1) {
+    if (pools_.count(memory.seed()) < 1) {
         std::cerr << "Memory pool: dead chunk encountered.\n"s;
         return;
     }
 
-    auto &&pool = pools_.at(memory.typeIndex());
+    auto &&pool = pools_.at(memory.seed());
 
     if (pool.blocks.count(memory.handle()) < 1) {
         std::cerr << "Memory pool: dead chunk encountered.\n"s;
