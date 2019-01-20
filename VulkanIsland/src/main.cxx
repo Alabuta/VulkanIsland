@@ -51,6 +51,51 @@ struct per_object_t {
 };
 
 
+
+
+template<class T>
+class aligned_iterator {
+public:
+
+    //aligned_iterator(aligned_iterator const &);
+    //~aligned_iterator();
+
+    //aligned_iterator& operator= (const aligned_iterator &);
+    aligned_iterator &operator++ ()
+    {
+        ++current;
+        return;
+    }
+
+    T &operator* () noexcept { return *current; }
+
+private:
+
+    T *current;
+};
+
+template<class T>
+class aligned_forward_iterator {
+public:
+
+    ;
+
+private:
+};
+
+
+namespace std
+{
+    template<typename T>
+    struct iterator_traits<aligned_forward_iterator<T>> {
+        using difference_type = std::ptrdiff_t;
+        using value_type = std::remove_cv_t<T>;
+        using pointer = T * ;
+        using reference = T & ;
+        using iterator_category = forward_iterator_tag;
+    };
+}
+
 void CleanupFrameData(struct app_t &app);
 
 struct app_t final {
