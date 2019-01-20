@@ -107,7 +107,7 @@ struct app_t final {
 
     std::unique_ptr<OrbitController> cameraController;
 
-    per_object_t object;
+    std::vector<per_object_t> objects;
 
     staging::scene_t scene;
 
@@ -137,10 +137,10 @@ struct app_t final {
 
     std::shared_ptr<VulkanBuffer> vertexBuffer, indexBuffer, uboBuffer;
     std::shared_ptr<VulkanBuffer> perObjectBuffer, perCameraBuffer;
-    void *perObjectMappedPtr{nullptr};
+    void *perObjectsMappedPtr{nullptr};
     void *alignedBuffer{nullptr};
 
-    std::size_t objectsNumber{1u};
+    std::size_t objectsNumber{2u};
     std::size_t alignedBufferSize{0u};
 
     VulkanTexture texture;
@@ -174,7 +174,7 @@ struct app_t final {
             vkDestroyImageView(vulkanDevice->handle(), texture.view.handle(), nullptr);
         texture.image.reset();
 
-        if (perObjectMappedPtr)
+        if (perObjectsMappedPtr)
             vkUnmapMemory(vulkanDevice->handle(), perObjectBuffer->memory()->handle());
 
 #if USE_ALIGNMENT
@@ -323,7 +323,7 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
             descriptorSet,
             2,
             0, static_cast<std::uint32_t>(std::size(objects)),
-            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
             nullptr,
             std::data(objects),
             nullptr
@@ -816,10 +816,10 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipeline);
 
-        auto const descriptorSets = std::array{app.descriptorSet};
+        //auto const descriptorSets = std::array{app.descriptorSet};
 
-        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayout,
-                                0, static_cast<std::uint32_t>(std::size(descriptorSets)), std::data(descriptorSets), 0, nullptr);
+        /*vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayout,
+                                0, static_cast<std::uint32_t>(std::size(descriptorSets)), std::data(descriptorSets), 0, nullptr);*/
 
         auto const vertexBuffers = std::array{app.vertexBuffer->handle()};
         auto const offsets = std::array{VkDeviceSize{0}};
@@ -836,8 +836,16 @@ void CreateGraphicsCommandBuffers(app_t &app)
             vkCmdBindIndexBuffer(commandBuffer, app.indexBuffer->handle(), 0, index_type);
         }*/
 
+        std::size_t const stride = app.alignedBufferSize / app.objectsNumber;
+        std::size_t instanceIndex = 0;
+
         for (auto &&mesh : app.scene.meshes) {
             for (auto &&submesh : mesh.submeshes) {
+                auto const dynamicOffset = static_cast<uint32_t>(instanceIndex * stride);
+
+                vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayout,
+                                        0, 1, &app.descriptorSet, 1, &dynamicOffset);
+
                 if (submesh.indices.count == 0)
                     vkCmdDraw(commandBuffer, submesh.vertices.count, 1, 0, 0);
 
@@ -855,6 +863,8 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
                     vkCmdDrawIndexed(commandBuffer, submesh.indices.count, 1, 0/*submesh.indices.begin / (2 + 2 * index_type)*/, 0, 0);
                 }
+
+                ++instanceIndex;
             }
         }
 
@@ -1072,7 +1082,7 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.renderPass = std::move(renderPass.value());
 
-    if (auto result = glTF::load("Hebe"sv, app.scene); !result)
+    if (auto result = glTF::load("unlit-test"sv, app.scene); !result)
         throw std::runtime_error("failed to load a mesh"s);
 
     if (app.vertexBuffer = InitVertexBuffer(app); !app.vertexBuffer)
@@ -1106,6 +1116,8 @@ void InitVulkan(Window &window, app_t &app)
 
     app.alignedBuffer = boost::alignment::aligned_alloc(alignment, app.alignedBufferSize);
 
+    app.objects.resize(app.objectsNumber);
+
     if (app.perObjectBuffer = CreateStorageBuffer(*app.vulkanDevice, app.alignedBufferSize); !app.perObjectBuffer)
         throw std::runtime_error("failed to init per object uniform buffer"s);
 
@@ -1115,7 +1127,7 @@ void InitVulkan(Window &window, app_t &app)
         auto offset = buffer.memory()->offset();
         auto size = buffer.memory()->size();
 
-        if (auto result = vkMapMemory(app.vulkanDevice->handle(), buffer.memory()->handle(), offset, size, 0, &app.perObjectMappedPtr); result != VK_SUCCESS)
+        if (auto result = vkMapMemory(app.vulkanDevice->handle(), buffer.memory()->handle(), offset, size, 0, &app.perObjectsMappedPtr); result != VK_SUCCESS)
             throw std::runtime_error("failed to map per object uniform buffer memory: "s + std::to_string(result));
     }
 
@@ -1197,59 +1209,41 @@ void Update(app_t &app)
         vkUnmapMemory(device.handle(), buffer.memory()->handle());
     }
 
-    {
-        app.object.world = glm::scale(glm::mat4{1.f}, glm::vec3{.01f});
-        app.object.world = glm::rotate(app.object.world, glm::radians(-90.f), glm::vec3{1, 0, 0});
-        //app.object.world = glm::rotate(app.object.world, glm::radians(90.f), glm::vec3{0, 0, 1});
+    std::size_t const stride = app.alignedBufferSize / app.objectsNumber;
+    std::size_t instanceIndex = 0;
 
-        app.object.normal = glm::inverseTranspose(app.object.world);
+    for (auto &&object : app.objects) {
+        object.world = glm::translate(glm::mat4{ 1.f }, glm::vec3{ 1 * instanceIndex, 0, 0 });
+        object.world = glm::rotate(object.world, glm::radians(-90.f), glm::vec3{ 1, 0, 0 });
+        //object.world = glm::scale(object.world, glm::vec3{.01f});
 
-#if USE_ALIGNMENT
-        /*auto alignment = static_cast<std::size_t>(app.vulkanDevice->properties().limits.minStorageBufferOffsetAlignment);
+        object.normal = glm::inverseTranspose(object.world);
 
-        auto objectsNumber = 1;
-        auto alignedBufferSize = aligned_size(sizeof(per_object_t), alignment) * objectsNumber;
+        auto dstPtr = reinterpret_cast<std::byte *>(app.alignedBuffer) + stride * instanceIndex;
 
-        auto alignedBuffer = boost::alignment::aligned_alloc(alignment, alignedBufferSize);*/
+        //std::uninitialized_copy_n(&object, 1, reinterpret_cast<per_object_t *>(app.alignedBuffer));
+        memcpy(dstPtr, &object, sizeof(std::decay_t<decltype(object)>));
 
-        std::uninitialized_copy_n(&app.object, 1, reinterpret_cast<per_object_t *>(app.alignedBuffer));
-        // auto xxx = reinterpret_cast<per_object_t *>(alignedBuffer);
-#endif
-
-        auto &&buffer = *app.perObjectBuffer;
-
-        /*auto offset = buffer.memory()->offset();
-        auto size = buffer.memory()->size();
-
-        void *data;
-
-        if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
-            throw std::runtime_error("failed to map per object uniform buffer memory: "s + std::to_string(result));*/
-
-#if USE_ALIGNMENT
-        memcpy(app.perObjectMappedPtr, app.alignedBuffer, app.alignedBufferSize);
-#else
+    #if USE_ALIGNMENT
+        memcpy(app.perObjectsMappedPtr, app.alignedBuffer, stride);
+    #else
         std::uninitialized_copy_n(&app.object, 1, reinterpret_cast<per_object_t *>(app.alignedBufferSize));
-#endif
+    #endif
 
-        auto const mappedRanges = std::array{
-            VkMappedMemoryRange{
-                VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
-                nullptr,
-                buffer.memory()->handle(),
-                buffer.memory()->offset(),
-                sizeof(per_object_t)
-            }
-        };
-
-        vkFlushMappedMemoryRanges(app.vulkanDevice->handle(), static_cast<std::uint32_t>(std::size(mappedRanges)), std::data(mappedRanges));
-
-        //vkUnmapMemory(device.handle(), buffer.memory()->handle());
-
-#if USE_ALIGNMENT
-        //boost::alignment::aligned_free(alignedBuffer);
-#endif
+        ++instanceIndex;
     }
+
+    auto const mappedRanges = std::array{
+        VkMappedMemoryRange{
+            VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
+            nullptr,
+            app.perObjectBuffer->memory()->handle(),
+            app.perObjectBuffer->memory()->offset(),
+            app.alignedBufferSize
+        }
+    };
+
+    vkFlushMappedMemoryRanges(app.vulkanDevice->handle(), static_cast<std::uint32_t>(std::size(mappedRanges)), std::data(mappedRanges));
 }
 
 
