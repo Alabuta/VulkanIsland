@@ -77,7 +77,7 @@ namespace staging
         std::vector<std::byte> vertexBuffer;
         std::vector<std::byte> indexBuffer;
 
-        std::vector<vertex_buffer_t> vertexBuffers;
+        //std::vector<vertex_buffer_t> vertexBuffers;
         //std::unordered_map<vertex_layout_t, std::vector<std::byte>, vertex_buffer_t::hash_value> vertexBuffers;
     };
 }

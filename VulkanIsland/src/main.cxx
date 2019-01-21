@@ -1213,7 +1213,7 @@ void Update(app_t &app)
     std::size_t instanceIndex = 0;
 
     for (auto &&object : app.objects) {
-        object.world = glm::translate(glm::mat4{ 1.f }, glm::vec3{ 1 * instanceIndex, 0, 0 });
+        object.world = glm::translate(glm::mat4{ 1.f }, glm::vec3{ 2 * instanceIndex, 0, 0 });
         object.world = glm::rotate(object.world, glm::radians(-90.f), glm::vec3{ 1, 0, 0 });
         //object.world = glm::scale(object.world, glm::vec3{.01f});
 
@@ -1224,14 +1224,16 @@ void Update(app_t &app)
         //std::uninitialized_copy_n(&object, 1, reinterpret_cast<per_object_t *>(app.alignedBuffer));
         memcpy(dstPtr, &object, sizeof(std::decay_t<decltype(object)>));
 
-    #if USE_ALIGNMENT
-        memcpy(app.perObjectsMappedPtr, app.alignedBuffer, stride);
+    /*#if USE_ALIGNMENT
+        memcpy(app.perObjectsMappedPtr, dstPtr, stride);
     #else
         std::uninitialized_copy_n(&app.object, 1, reinterpret_cast<per_object_t *>(app.alignedBufferSize));
-    #endif
+    #endif*/
 
         ++instanceIndex;
     }
+
+    memcpy(app.perObjectsMappedPtr, app.alignedBuffer, app.alignedBufferSize);
 
     auto const mappedRanges = std::array{
         VkMappedMemoryRange{
