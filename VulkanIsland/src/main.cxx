@@ -41,7 +41,6 @@
 
 
 #define USE_GLM 1
-#define USE_ALIGNMENT 1
 #define USE_DYNAMIC_PIPELINE_STATE 0
 
 
@@ -50,88 +49,6 @@ struct per_object_t {
     glm::mat4 normal{1};  // Transposed of the inversed of the upper left 3x3 sub-matrix of model(world)-view matrix.
 };
 
-
-
-
-template<class T>
-class aligned_iterator {
-public:
-
-    using difference_type = std::ptrdiff_t;
-    using value_type = std::remove_cv_t<T>;
-    using pointer = T *;
-    using reference = T &;
-    using iterator_category = forward_iterator_tag;
-
-    aligned_iterator(std::size_t stride) : stride{stride} { };
-    aligned_iterator(aligned_iterator<T> const &) = default
-
-    ~aligned_iterator() = default;
-
-    reference operator++ () noexcept
-    {
-        ++current;
-        return *this;
-    }
-
-    value_type operator++ (int) noexcept
-    {
-        auto copy = *this;
-
-        ++current;
-        
-        return copy;
-    }
-
-    reference operator* () noexcept { return *current; }
-    pointer operator-> () noexcept { return current; }
-
-    bool operator== (aligned_iterator<T> const &rhs) const noexcept
-    {
-        return current == rhs.current;
-    }
-
-    bool operator!= (aligned_iterator<T> const &rhs) const noexcept
-    {
-        return !(*this == rhs);
-    }
-
-private:
-
-    std::size_t stride{0};
-    pointer current{nullptr};
-    // pointer begin{nullptr};
-    // pointer end{nullptr};
-};
-
-template<class T>
-class aligned_input_iterator {
-public:
-
-
-private:
-};
-
-template<class T>
-class aligned_forward_iterator {
-public:
-
-
-private:
-};
-
-
-namespace std
-{
-    template<typename T>
-    struct iterator_traits<aligned_forward_iterator<T>> {
-        using difference_type = std::ptrdiff_t;
-        using value_type = std::remove_cv_t<T>;
-        using pointer = T * ;
-        using reference = T & ;
-        using iterator_category = forward_iterator_tag;
-    };
-}
 
 void CleanupFrameData(struct app_t &app);
 
@@ -214,10 +131,8 @@ struct app_t final {
         if (perObjectsMappedPtr)
             vkUnmapMemory(vulkanDevice->handle(), perObjectBuffer->memory()->handle());
 
-#if USE_ALIGNMENT
         if (alignedBuffer)
             boost::alignment::aligned_free(alignedBuffer);
-#endif
 
         perCameraBuffer.reset();
         perObjectBuffer.reset();
@@ -1146,7 +1061,6 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.texture.sampler = result;
 
-#if USE_ALIGNMENT
     auto alignment = static_cast<std::size_t>(app.vulkanDevice->properties().limits.minStorageBufferOffsetAlignment);
 
     app.alignedBufferSize = aligned_size(sizeof(per_object_t), alignment) * app.objectsNumber;
@@ -1167,11 +1081,6 @@ void InitVulkan(Window &window, app_t &app)
         if (auto result = vkMapMemory(app.vulkanDevice->handle(), buffer.memory()->handle(), offset, size, 0, &app.perObjectsMappedPtr); result != VK_SUCCESS)
             throw std::runtime_error("failed to map per object uniform buffer memory: "s + std::to_string(result));
     }
-
-#else
-    if (app.perObjectBuffer = CreateStorageBuffer(*app.vulkanDevice, sizeof(per_object_t)); !app.perObjectBuffer)
-        throw std::runtime_error("failed to init per object uniform buffer"s);
-#endif
 
     if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.vulkanDevice, sizeof(Camera::data_t)); !app.perCameraBuffer)
         throw std::runtime_error("failed to init per camera uniform buffer"s);
@@ -1196,7 +1105,7 @@ void InitVulkan(Window &window, app_t &app)
 
 
 template<class T>
-struct Allocator final {
+struct aligned_allocator final {
     using value_type = T;
 
     using pointer = T *;
@@ -1211,10 +1120,10 @@ struct Allocator final {
     using propagate_on_container_move_assignment = std::true_type;
     using is_always_equal = std::true_type;
 
-    Allocator() noexcept = default;
+    aligned_allocator() noexcept = default;
 
     template <class U>
-    constexpr Allocator(Allocator<U> const &) noexcept { }
+    constexpr aligned_allocator(aligned_allocator<U> const &) noexcept { }
 
     [[nodiscard]] T *allocate(std::size_t n)
     {
@@ -1250,25 +1159,22 @@ void Update(app_t &app)
     std::size_t instanceIndex = 0;
 
     for (auto &&object : app.objects) {
-        object.world = glm::translate(glm::mat4{ 1.f }, glm::vec3{ 2 * instanceIndex, 0, 0 });
-        object.world = glm::rotate(object.world, glm::radians(-90.f), glm::vec3{ 1, 0, 0 });
+        object.world = glm::translate(glm::mat4{1.f}, glm::vec3{2 * instanceIndex, 0, 0});
+        object.world = glm::rotate(object.world, glm::radians(-90.f), glm::vec3{1, 0, 0});
         //object.world = glm::scale(object.world, glm::vec3{.01f});
 
         object.normal = glm::inverseTranspose(object.world);
 
-        auto dstPtr = reinterpret_cast<std::byte *>(app.alignedBuffer) + stride * instanceIndex;
-
-        //std::uninitialized_copy_n(&object, 1, reinterpret_cast<per_object_t *>(app.alignedBuffer));
-        memcpy(dstPtr, &object, sizeof(std::decay_t<decltype(object)>));
-
-    /*#if USE_ALIGNMENT
-        memcpy(app.perObjectsMappedPtr, dstPtr, stride);
-    #else
-        std::uninitialized_copy_n(&app.object, 1, reinterpret_cast<per_object_t *>(app.alignedBufferSize));
-    #endif*/
-
         ++instanceIndex;
     }
+
+    auto it_begin = reinterpret_cast<decltype(app.objects)::value_type *>(app.alignedBuffer);
+
+#ifdef _MSC_VER
+    std::copy(std::execution::par_unseq, std::cbegin(app.objects), std::cend(app.objects), aligned_forward_iterator{it_begin, stride});
+#else
+    std::copy(std::cbegin(app.objects), std::cend(app.objects), aligned_iterator{it_begin, stride});
+#endif
 
     memcpy(app.perObjectsMappedPtr, app.alignedBuffer, app.alignedBufferSize);
 

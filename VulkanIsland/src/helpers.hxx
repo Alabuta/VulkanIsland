@@ -144,3 +144,54 @@ template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
     return size;
 }
+
+template<class T>
+class aligned_forward_iterator {
+public:
+
+    using difference_type = std::ptrdiff_t;
+    using value_type = std::remove_cv_t<T>;
+    using pointer = T *;
+    using reference = T &;
+    using iterator_category = std::forward_iterator_tag;
+
+    aligned_forward_iterator() noexcept = default;
+    ~aligned_forward_iterator() = default;
+
+    aligned_forward_iterator(pointer data, std::size_t stride) noexcept : stride{stride}, position{reinterpret_cast<std::byte *>(data)} { };
+    aligned_forward_iterator(aligned_forward_iterator<T> const &) noexcept = default;
+
+    aligned_forward_iterator<T> &operator++ () noexcept
+    {
+        position += stride;
+
+        return *this;
+    }
+
+    aligned_forward_iterator<T> operator++ (int) noexcept
+    {
+        auto copy = *this;
+
+        position += stride;
+        
+        return copy;
+    }
+
+    reference operator* () noexcept { return *reinterpret_cast<pointer>(position); }
+    pointer operator-> () noexcept { return reinterpret_cast<pointer>(position); }
+
+    bool operator== (aligned_forward_iterator<T> const &rhs) const noexcept
+    {
+        return stride == rhs.stride && position == rhs.position;
+    }
+
+    bool operator!= (aligned_forward_iterator<T> const &rhs) const noexcept
+    {
+        return !(*this == rhs);
+    }
+
+private:
+
+    std::size_t stride{sizeof(T)};
+    std::byte *position{nullptr};
+};
