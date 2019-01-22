@@ -57,21 +57,59 @@ template<class T>
 class aligned_iterator {
 public:
 
-    //aligned_iterator(aligned_iterator const &);
-    //~aligned_iterator();
+    using difference_type = std::ptrdiff_t;
+    using value_type = std::remove_cv_t<T>;
+    using pointer = T *;
+    using reference = T &;
+    using iterator_category = forward_iterator_tag;
 
-    //aligned_iterator& operator= (const aligned_iterator &);
-    aligned_iterator &operator++ ()
+    aligned_iterator(std::size_t stride) : stride{stride} { };
+    aligned_iterator(aligned_iterator<T> const &) = default
+
+    ~aligned_iterator() = default;
+
+    reference operator++ () noexcept
     {
         ++current;
         return *this;
     }
 
-    T &operator* () noexcept { return *current; }
+    value_type operator++ (int) noexcept
+    {
+        auto copy = *this;
+
+        ++current;
+        
+        return copy;
+    }
+
+    reference operator* () noexcept { return *current; }
+    pointer operator-> () noexcept { return current; }
+
+    bool operator== (aligned_iterator<T> const &rhs) const noexcept
+    {
+        return current == rhs.current;
+    }
+
+    bool operator!= (aligned_iterator<T> const &rhs) const noexcept
+    {
+        return !(*this == rhs);
+    }
 
 private:
 
-    T *current;
+    std::size_t stride{0};
+    pointer current{nullptr};
+    // pointer begin{nullptr};
+    // pointer end{nullptr};
+};
+
+template<class T>
+class aligned_input_iterator {
+public:
+
+
+private:
 };
 
 template<class T>
