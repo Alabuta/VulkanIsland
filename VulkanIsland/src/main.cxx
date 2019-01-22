@@ -64,7 +64,7 @@ public:
     aligned_iterator &operator++ ()
     {
         ++current;
-        return;
+        return *this;
     }
 
     T &operator* () noexcept { return *current; }
@@ -78,7 +78,6 @@ template<class T>
 class aligned_forward_iterator {
 public:
 
-    ;
 
 private:
 };
@@ -115,7 +114,7 @@ struct app_t final {
     std::unique_ptr<VulkanDevice> vulkanDevice;
 
     VkSurfaceKHR surface{ VK_NULL_HANDLE };
-    VulkanSwapchain swapchain{ VK_NULL_HANDLE };
+    VulkanSwapchain swapchain;
 
     GraphicsQueue graphicsQueue;
     TransferQueue transferQueue;
