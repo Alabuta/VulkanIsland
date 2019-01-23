@@ -1173,7 +1173,7 @@ void Update(app_t &app)
 #ifdef _MSC_VER
     std::copy(std::execution::par_unseq, std::cbegin(app.objects), std::cend(app.objects), aligned_forward_iterator{it_begin, stride});
 #else
-    std::copy(std::cbegin(app.objects), std::cend(app.objects), aligned_iterator{it_begin, stride});
+    std::copy(std::cbegin(app.objects), std::cend(app.objects), aligned_forward_iterator{it_begin, stride});
 #endif
 
     memcpy(app.perObjectsMappedPtr, app.alignedBuffer, app.alignedBufferSize);
