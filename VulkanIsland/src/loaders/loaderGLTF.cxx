@@ -677,6 +677,101 @@ void from_json(nlohmann::json const &j, accessor_t &accessor)
 }
 
 
+namespace
+{
+std::vector<SceneTree> initSceneTree(std::vector<glTF::scene_t> const &scenes, std::vector<glTF::node_t> const &nodes)
+{
+    std::vector<SceneTree> sceneTrees;
+
+    std::transform(std::begin(scenes), std::end(scenes), std::back_inserter(sceneTrees), [&nodes] (auto &&scene) {
+        SceneTree sceneTree{scene.name};
+
+        auto parent = sceneTree.root();
+
+        using handles_t = std::vector<NodeHandle>;
+
+        handles_t handles;
+        std::vector<handles_t> handlesStack;
+
+        std::vector<std::vector<std::size_t>> indicesStack{scene.nodes};
+
+        while (!indicesStack.empty())
+        {
+            auto &&indices = indicesStack.back();
+
+            if (indices.empty())
+            {
+                handlesStack.pop_back();
+
+                if (!handlesStack.empty() && !handlesStack.back().empty())
+                    parent = handlesStack.back().back();
+
+                indicesStack.pop_back();
+
+                continue;
+            }
+
+            if (std::size(indicesStack) != std::size(handlesStack))
+            {
+                for (auto index : indices)
+                {
+                    auto &&node = nodes.at(index);
+
+                    // TODO: add mesh component
+                    /*if (node.mesh)
+                        continue;*/
+
+                    if (auto handle = sceneTree.AttachNode(parent, node.name); handle)
+                    {
+                        handles.emplace_back(*handle);
+
+                        std::visit([&sceneTree, handle] (auto &&transform) {
+                            using T = std::decay_t<decltype(transform)>;
+
+                            if constexpr (std::is_same_v<T, glm::mat4>)
+                                sceneTree.AddComponent<Transform>(*handle, transform, glm::mat4{1.f});
+
+                            else {
+                                auto &&[position, rotation, scale] = transform;
+
+                                auto matrix = glm::translate(glm::mat4{1.f}, position);
+                                matrix = matrix * glm::mat4_cast(rotation);
+                                matrix = glm::scale(matrix, scale);
+
+                                sceneTree.AddComponent<Transform>(*handle, std::move(matrix), glm::mat4{1.f});
+                            }
+
+                        }, node.transform);
+                    }
+                }
+
+                handlesStack.emplace_back(std::move(handles));
+            }
+
+            auto index = indices.back();
+            indices.pop_back();
+
+            auto &&node = nodes.at(index);
+
+            if (!node.children.empty())
+            {
+                indicesStack.emplace_back(node.children);
+
+                parent = handlesStack.back().back();
+            }
+
+            handlesStack.back().pop_back();
+        }
+
+        sceneTree.Update();
+        return sceneTree;
+    });
+
+    return sceneTrees;
+}
+}
+
+
 namespace glTF
 {
 bool load(std::string_view name, staging::scene_t &scene)
@@ -706,7 +801,7 @@ bool load(std::string_view name, staging::scene_t &scene)
     auto scenes = json.at("scenes"s).get<std::vector<glTF::scene_t>>();
     auto nodes = json.at("nodes"s).get<std::vector<glTF::node_t>>();
 
-    ;
+    auto sceneTree = initSceneTree(scenes, nodes);
 
     auto meshes = json.at("meshes"s).get<std::vector<glTF::mesh_t>>();
 
