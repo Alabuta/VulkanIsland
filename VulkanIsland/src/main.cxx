@@ -43,6 +43,7 @@
 #define USE_GLM 1
 #define USE_DYNAMIC_PIPELINE_STATE 0
 
+auto constexpr sceneName{"unlit-test"sv};
 
 struct per_object_t {
     glm::mat4 world{1};
@@ -1034,7 +1035,7 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.renderPass = std::move(renderPass.value());
 
-    if (auto result = glTF::load("unlit-test"sv, app.scene); !result)
+    if (auto result = glTF::load(sceneName, app.scene); !result)
         throw std::runtime_error("failed to load a mesh"s);
 
     if (app.vertexBuffer = InitVertexBuffer(app); !app.vertexBuffer)
@@ -1171,7 +1172,7 @@ void Update(app_t &app)
     auto it_begin = reinterpret_cast<decltype(app.objects)::value_type *>(app.alignedBuffer);
 
 #ifdef _MSC_VER
-    std::copy(std::execution::par_unseq, std::cbegin(app.objects), std::cend(app.objects), aligned_forward_iterator{it_begin, stride});
+    std::copy(std::execution::par_unseq, std::cbegin(app.objects), std::cend(app.objects), strided_forward_iterator{it_begin, stride});
 #else
     std::copy(std::cbegin(app.objects), std::cend(app.objects), aligned_iterator{it_begin, stride});
 #endif

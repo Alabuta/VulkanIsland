@@ -146,7 +146,7 @@ template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 }
 
 template<class T>
-class aligned_forward_iterator {
+class strided_forward_iterator {
 public:
 
     using difference_type = std::ptrdiff_t;
@@ -155,20 +155,20 @@ public:
     using reference = T &;
     using iterator_category = std::forward_iterator_tag;
 
-    aligned_forward_iterator() noexcept = default;
-    ~aligned_forward_iterator() = default;
+    strided_forward_iterator() noexcept = default;
+    ~strided_forward_iterator() = default;
 
-    aligned_forward_iterator(pointer data, std::size_t stride) noexcept : stride{stride}, position{reinterpret_cast<std::byte *>(data)} { };
-    aligned_forward_iterator(aligned_forward_iterator<T> const &) noexcept = default;
+    strided_forward_iterator(pointer data, std::size_t stride) noexcept : stride{stride}, position{reinterpret_cast<std::byte *>(data)} { };
+    strided_forward_iterator(strided_forward_iterator<T> const &) noexcept = default;
 
-    aligned_forward_iterator<T> &operator++ () noexcept
+    strided_forward_iterator<T> &operator++ () noexcept
     {
         position += stride;
 
         return *this;
     }
 
-    aligned_forward_iterator<T> operator++ (int) noexcept
+    strided_forward_iterator<T> operator++ (int) noexcept
     {
         auto copy = *this;
 
@@ -180,12 +180,12 @@ public:
     reference operator* () noexcept { return *reinterpret_cast<pointer>(position); }
     pointer operator-> () noexcept { return reinterpret_cast<pointer>(position); }
 
-    bool operator== (aligned_forward_iterator<T> const &rhs) const noexcept
+    bool operator== (strided_forward_iterator<T> const &rhs) const noexcept
     {
         return stride == rhs.stride && position == rhs.position;
     }
 
-    bool operator!= (aligned_forward_iterator<T> const &rhs) const noexcept
+    bool operator!= (strided_forward_iterator<T> const &rhs) const noexcept
     {
         return !(*this == rhs);
     }
