@@ -279,43 +279,45 @@ void SceneTree::Update()
     //     std::cout << entity << "\n" << transform.localMatrix << "\n\n" << transform.worldMatrix << "\n\n";
     // });
 
-    std::cout << "#############################\n\n";
+    // std::cout << "#############################\n\n";
 
-    for (auto &&layer : layers) {
-        auto it_begin = std::find_if(std::begin(layer), std::end(layer), [this] (auto &&nodeInfo)
+    auto find_sublings = [this] (auto begin, auto end)
+    {
+    #ifdef _MSC_VER
+        return std::find_if(std::execution::par_unseq, begin, end, [this] (auto &&nodeInfo)
+    #else
+        return std::find_if(begin, end, [this] (auto &&nodeInfo)
+    #endif
         {
             return isNodeHandleValid(nodeInfo.handle) && isNodeHandleValid(nodeInfo.parent);
         });
+    };
 
-        while (it_begin != std::end(layer)) {
-            auto parentTransformHandle = it_begin->entity.component<Transform>();
+    for (auto &&layer : layers) {
+        auto it_sublings_begin = find_sublings(std::begin(layer), std::end(layer));
 
-            auto it = std::adjacent_find(it_begin, std::end(layer), [] (auto &&lhs, auto &&rhs)
+        while (it_sublings_begin != std::end(layer)) {
+            auto parentTransformHandle = it_sublings_begin->entity.component<Transform>();
+
+            auto it_sublings_end = std::adjacent_find(it_sublings_begin, std::end(layer), [] (auto &&lhs, auto &&rhs)
             {
                 return lhs.parent != rhs.parent;
             });
 
-            if (it != std::end(layer))
-                it = std::next(it);
+            if (it_sublings_end != std::end(layer))
+                it_sublings_end = std::next(it_sublings_end);
 
 #ifdef _MSC_VER
-            std::for_each(std::execution::par_unseq, it_begin, it, [parentTransformHandle] (auto &&nodeInfo)
-            {
-                auto transformHandle = nodeInfo.entity.template component<Transform>();
-                transformHandle->worldMatrix = parentTransformHandle->worldMatrix * transformHandle->localMatrix;
-            });
+            std::for_each(std::execution::par_unseq, it_sublings_begin, it_sublings_end, [parentTransformHandle] (auto &&nodeInfo)
 #else
             std::for_each(it_begin, it, [parentTransformHandle] (auto &&nodeInfo)
+#endif
             {
                 auto transformHandle = nodeInfo.entity.template component<Transform>();
                 transformHandle->worldMatrix = parentTransformHandle->worldMatrix * transformHandle->localMatrix;
             });
-#endif
 
-            it_begin = std::find_if(it, std::end(layer), [this] (auto &&nodeInfo)
-            {
-                return isNodeHandleValid(nodeInfo.handle) && isNodeHandleValid(nodeInfo.parent);
-            });
+            it_sublings_begin = find_sublings(it_sublings_end, std::end(layer));
         }
     }
 

@@ -764,11 +764,6 @@ bool load(std::string_view name, staging::scene_t &scene)
         file >> json;
     }
 
-    auto scenes = json.at("scenes"s).get<std::vector<glTF::scene_t>>();
-    auto nodes = json.at("nodes"s).get<std::vector<glTF::node_t>>();
-
-    auto sceneTree = initSceneTree(scenes, nodes);
-
     auto meshes = json.at("meshes"s).get<std::vector<glTF::mesh_t>>();
 
     auto buffers = json.at("buffers"s).get<std::vector<glTF::buffer_t>>();
@@ -998,6 +993,11 @@ bool load(std::string_view name, staging::scene_t &scene)
 
         scene.meshes.push_back(std::move(mesh_));
     }
+
+    auto scenes = json.at("scenes"s).get<std::vector<glTF::scene_t>>();
+    auto nodes = json.at("nodes"s).get<std::vector<glTF::node_t>>();
+
+    auto sceneTree = initSceneTree(scenes, nodes);
 
     return true;
 }
