@@ -42,7 +42,6 @@ enum class PRIMITIVE_MODE {
 };
 }
 
-
 namespace
 {
 using accessor_t = std::pair<semantics_t, std::size_t>;
@@ -77,7 +76,6 @@ std::optional<semantics_t> get_semantic(std::string_view name)
     return { };
 }
 }
-
 
 namespace glTF
 {
@@ -204,22 +202,6 @@ std::optional<attribute_t> instantiate_attribute(std::string_view type, GL compo
     return { };
 }
 
-#if OBSOLETE
-std::optional<index_buffer_t> instantiate_index_buffer(GL componentType)
-{
-    switch (componentType) {
-        case GL::UNSIGNED_SHORT:
-            return std::vector<std::uint16_t>{};
-
-        case GL::UNSIGNED_INT:
-            return std::vector<std::uint32_t>{};
-
-        default:
-            return { };
-    }
-}
-#endif
-
 std::optional<indices2_t> instantiate_index(GL componentType)
 {
     switch (componentType) {
@@ -233,22 +215,6 @@ std::optional<indices2_t> instantiate_index(GL componentType)
             return { };
     }
 }
-
-#if OBSOLETE
-std::size_t constexpr index_size(GL componentType)
-{
-    switch (componentType) {
-        case GL::UNSIGNED_SHORT:
-            return sizeof(std::uint16_t);
-
-        case GL::UNSIGNED_INT:
-            return sizeof(std::uint32_t);
-
-        default:
-            return 0;
-    }
-}
-#endif
 }
 
 namespace glTF

@@ -104,7 +104,7 @@ private:
 
     bool isNodeValid(Node node) const noexcept { return node.depth != kINVALID_INDEX && node.offset != kINVALID_INDEX; }
 
-#if 0
+#if OBSOLETE
     struct chunk_t final {
         node_index_t begin{0}, end{0};
         node_index_t size{0};
