@@ -649,7 +649,8 @@ std::vector<SceneTree> initSceneTree(std::vector<glTF::scene_t> const &scenes, s
 {
     std::vector<SceneTree> sceneTrees;
 
-    std::transform(std::begin(scenes), std::end(scenes), std::back_inserter(sceneTrees), [&nodes] (auto &&scene) {
+    std::transform(std::begin(scenes), std::end(scenes), std::back_inserter(sceneTrees), [&nodes] (auto &&scene)
+    {
         SceneTree sceneTree{scene.name};
 
         auto parent = sceneTree.root();
@@ -661,12 +662,10 @@ std::vector<SceneTree> initSceneTree(std::vector<glTF::scene_t> const &scenes, s
 
         std::vector<std::vector<std::size_t>> indicesStack{scene.nodes};
 
-        while (!indicesStack.empty())
-        {
+        while (!indicesStack.empty()) {
             auto &&indices = indicesStack.back();
 
-            if (indices.empty())
-            {
+            if (indices.empty()) {
                 handlesStack.pop_back();
 
                 if (!handlesStack.empty() && !handlesStack.back().empty())
@@ -677,21 +676,19 @@ std::vector<SceneTree> initSceneTree(std::vector<glTF::scene_t> const &scenes, s
                 continue;
             }
 
-            if (std::size(indicesStack) != std::size(handlesStack))
-            {
-                for (auto index : indices)
-                {
+            if (std::size(indicesStack) != std::size(handlesStack)) {
+                for (auto index : indices) {
                     auto &&node = nodes.at(index);
 
                     // TODO: add mesh component
                     /*if (node.mesh)
                         continue;*/
 
-                    if (auto handle = sceneTree.AttachNode(parent, node.name); handle)
-                    {
+                    if (auto handle = sceneTree.AttachNode(parent, node.name); handle) {
                         handles.emplace_back(*handle);
 
-                        std::visit([&sceneTree, handle] (auto &&transform) {
+                        std::visit([&sceneTree, handle] (auto &&transform)
+                        {
                             using T = std::decay_t<decltype(transform)>;
 
                             if constexpr (std::is_same_v<T, glm::mat4>)
@@ -719,8 +716,7 @@ std::vector<SceneTree> initSceneTree(std::vector<glTF::scene_t> const &scenes, s
 
             auto &&node = nodes.at(index);
 
-            if (!node.children.empty())
-            {
+            if (!node.children.empty()) {
                 indicesStack.emplace_back(node.children);
 
                 parent = handlesStack.back().back();
