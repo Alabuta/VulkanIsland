@@ -1104,35 +1104,6 @@ void InitVulkan(Window &window, app_t &app)
 }
 
 
-
-template<class T>
-struct aligned_allocator final {
-    using value_type = T;
-
-    using pointer = T *;
-    using const_pointer = T const *;
-
-    using reference = T &;
-    using const_reference = T const &;
-
-    using size_type = std::size_t;
-    using difference_type = std::ptrdiff_t;
-
-    using propagate_on_container_move_assignment = std::true_type;
-    using is_always_equal = std::true_type;
-
-    aligned_allocator() noexcept = default;
-
-    template <class U>
-    constexpr aligned_allocator(aligned_allocator<U> const &) noexcept { }
-
-    [[nodiscard]] T *allocate(std::size_t n)
-    {
-        return nullptr;
-    }
-};
-
-
 void Update(app_t &app)
 {
     app.cameraController->update();
