@@ -310,7 +310,7 @@ void SceneTree::Update()
 #ifdef _MSC_VER
             std::for_each(std::execution::par_unseq, it_sublings_begin, it_sublings_end, [parentTransformHandle] (auto &&nodeInfo)
 #else
-            std::for_each(it_begin, it, [parentTransformHandle] (auto &&nodeInfo)
+            std::for_each(it_sublings_begin, it_sublings_end, [parentTransformHandle] (auto &&nodeInfo)
 #endif
             {
                 auto transformHandle = nodeInfo.entity.template component<Transform>();
