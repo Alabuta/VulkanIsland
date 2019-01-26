@@ -1163,7 +1163,87 @@ void Update(app_t &app)
     vkFlushMappedMemoryRanges(app.vulkanDevice->handle(), static_cast<std::uint32_t>(std::size(mappedRanges)), std::data(mappedRanges));
 }
 
+namespace ecs
+{
+using entity_registry = typename entt::registry<>;
+using entity_type = entity_registry::entity_type;
+auto constexpr kINVALID_ENTITY_VALUE{std::numeric_limits<entity_type>::max()};
 
+enum class NodeHandle : entity_type {
+    nINVALID_HANDLE = kINVALID_ENTITY_VALUE
+};
+}
+
+
+namespace ecs
+{
+struct Mover final {
+    glm::vec3 direction;
+
+    template<class T, std::enable_if_t<std::is_same_v<glm::vec3, T>>...>
+    Mover(T &&direction) noexcept : direction{std::forward<T>(direction)} { }
+};
+
+class MoverSystem final : public System<Mover> {
+public:
+
+    ~MoverSystem() = default;
+
+    void update(entity_registry &registry) override
+    {
+        registry.view<Transform, Mover>().each([] (auto &&transform, auto &&mover)
+        {
+            auto &&worldMatrix = transform.worldMatrix;
+
+            worldMatrix = glm::translate(worldMatrix, mover.direction);
+        });
+    }
+
+private:
+
+    ;
+};
+}
+
+
+namespace ecs
+{
+struct Node final {
+    NodeHandle parent;
+
+    Node() noexcept = default;
+
+    Node(NodeHandle parent) noexcept : parent{parent} { }
+};
+
+class NodeSystem final : public System<Node> {
+public:
+
+    ~NodeSystem() = default;
+
+    void update(entity_registry &registry) override
+    {
+        auto view = registry.view<Transform, Node>();
+
+        view.each([&view] (auto &&transform, auto &&node)
+        {
+            if (node.parent == NodeHandle::nINVALID_HANDLE)
+                return;
+
+            auto parentEntity = static_cast<entity_type>(node.parent);
+            auto &&parentTransform = view.get<Transform>(parentEntity);
+
+            auto &&[localMatrix, worldMatrix] = transform;
+
+            worldMatrix = parentTransform.worldMatrix * localMatrix;
+        });
+    }
+
+private:
+
+    ;
+};
+}
 
 
 int main()
@@ -1332,6 +1412,20 @@ try {
     app.cameraController->lookAt(glm::vec3{.8, 2.4, 2.4}, {0, .8, 0});
 
     std::cout << measure<>::execution(InitVulkan, window, std::ref(app)) << " ms\n"s;
+
+    ecs::entity_registry registry;
+
+    auto entity = registry.create();
+
+    registry.assign<Transform>(entity, glm::mat4{1.f}, glm::mat4{1.f});
+    registry.assign<ecs::Mover>(entity, glm::vec3{0, 0, 1});
+    registry.assign<ecs::Node>(entity, ecs::NodeHandle::nINVALID_HANDLE);
+
+    ecs::MoverSystem moverSystem;
+    ecs::NodeSystem nodeSystem;
+
+    moverSystem.update(registry);
+    nodeSystem.update(registry);
 
     window.update([&app]
     {
