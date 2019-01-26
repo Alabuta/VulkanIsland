@@ -1167,11 +1167,6 @@ namespace ecs
 {
 using entity_registry = typename entt::registry<>;
 using entity_type = entity_registry::entity_type;
-auto constexpr kINVALID_ENTITY_VALUE{std::numeric_limits<entity_type>::max()};
-
-enum class NodeHandle : entity_type {
-    nINVALID_HANDLE = kINVALID_ENTITY_VALUE
-};
 }
 
 
@@ -1198,22 +1193,16 @@ public:
             worldMatrix = glm::translate(worldMatrix, mover.direction);
         });
     }
-
-private:
-
-    ;
 };
-}
 
 
-namespace ecs
-{
 struct Node final {
-    NodeHandle parent;
+    entity_type parent;
+    std::uint32_t depth;
 
     Node() noexcept = default;
 
-    Node(NodeHandle parent) noexcept : parent{parent} { }
+    Node(entity_type parent, std::uint32_t depth) noexcept : parent{parent}, depth{depth} { }
 };
 
 class NodeSystem final : public System<Node> {
@@ -1223,25 +1212,21 @@ public:
 
     void update(entity_registry &registry) override
     {
-        auto view = registry.view<Transform, Node>();
+        auto view = registry.view<Node, Transform>();
 
-        view.each([&view] (auto &&transform, auto &&node)
+        view.each([&registry, &view] (auto &&node, auto &&transform)
         {
-            if (node.parent == NodeHandle::nINVALID_HANDLE)
+            // TODO: revalidate scene graph.
+            if (!registry.valid(node.parent))
                 return;
 
-            auto parentEntity = static_cast<entity_type>(node.parent);
-            auto &&parentTransform = view.get<Transform>(parentEntity);
+            auto &&parentTransform = view.get<Transform>(node.parent);
 
             auto &&[localMatrix, worldMatrix] = transform;
 
-            worldMatrix = parentTransform.worldMatrix * localMatrix;
+            localMatrix = worldMatrix * glm::inverse(parentTransform.worldMatrix);
         });
     }
-
-private:
-
-    ;
 };
 }
 
@@ -1415,14 +1400,25 @@ try {
 
     ecs::entity_registry registry;
 
-    auto entity = registry.create();
+    auto entityA = registry.create();
 
-    registry.assign<Transform>(entity, glm::mat4{1.f}, glm::mat4{1.f});
-    registry.assign<ecs::Mover>(entity, glm::vec3{0, 0, 1});
-    registry.assign<ecs::Node>(entity, ecs::NodeHandle::nINVALID_HANDLE);
+    registry.assign<Transform>(entityA, glm::mat4{1}, glm::mat4{1});
+    registry.assign<ecs::Mover>(entityA, glm::vec3{0, 0, 4});
+    registry.assign<ecs::Node>(entityA, entityA, 0);
+
+    auto entityB = registry.create();
+
+    registry.assign<Transform>(entityB, glm::mat4{1}, glm::mat4{1});
+    registry.assign<ecs::Mover>(entityB, glm::vec3{2, 0, 0});
+    registry.assign<ecs::Node>(entityB, entityA, 1);
+
+    registry.sort<ecs::Node>([] (auto &&lhs, auto &&rhs) { return lhs.depth < rhs.depth; });
 
     ecs::MoverSystem moverSystem;
     ecs::NodeSystem nodeSystem;
+
+    moverSystem.update(registry);
+    nodeSystem.update(registry);
 
     moverSystem.update(registry);
     nodeSystem.update(registry);
