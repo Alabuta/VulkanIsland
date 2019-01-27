@@ -30,6 +30,10 @@
 #include "commandBuffer.hxx"
 #include "pipeline.hxx"
 
+#include "ecs.hxx"
+#include "node.hxx"
+#include "transform.hxx"
+
 #include "loaders/loaderGLTF.hxx"
 #include "loaderTARGA.hxx"
 
@@ -1163,72 +1167,8 @@ void Update(app_t &app)
     vkFlushMappedMemoryRanges(app.vulkanDevice->handle(), static_cast<std::uint32_t>(std::size(mappedRanges)), std::data(mappedRanges));
 }
 
-namespace ecs
-{
-using entity_registry = typename entt::registry<>;
-using entity_type = entity_registry::entity_type;
-}
 
 
-namespace ecs
-{
-struct Mover final {
-    glm::vec3 direction;
-
-    template<class T, std::enable_if_t<std::is_same_v<glm::vec3, T>>...>
-    Mover(T &&direction) noexcept : direction{std::forward<T>(direction)} { }
-};
-
-class MoverSystem final : public System<Mover> {
-public:
-
-    ~MoverSystem() = default;
-
-    void update(entity_registry &registry) override
-    {
-        registry.view<Transform, Mover>().each([] (auto &&transform, auto &&mover)
-        {
-            auto &&worldMatrix = transform.worldMatrix;
-
-            worldMatrix = glm::translate(worldMatrix, mover.direction);
-        });
-    }
-};
-
-
-struct Node final {
-    entity_type parent;
-    std::uint32_t depth;
-
-    Node() noexcept = default;
-
-    Node(entity_type parent, std::uint32_t depth) noexcept : parent{parent}, depth{depth} { }
-};
-
-class NodeSystem final : public System<Node> {
-public:
-
-    ~NodeSystem() = default;
-
-    void update(entity_registry &registry) override
-    {
-        auto view = registry.view<Node, Transform>();
-
-        view.each([&registry, &view] (auto &&node, auto &&transform)
-        {
-            // TODO: revalidate scene graph.
-            if (!registry.valid(node.parent))
-                return;
-
-            auto &&parentTransform = view.get<Transform>(node.parent);
-
-            auto &&[localMatrix, worldMatrix] = transform;
-
-            localMatrix = worldMatrix * glm::inverse(parentTransform.worldMatrix);
-        });
-    }
-};
-}
 
 
 int main()
@@ -1400,28 +1340,42 @@ try {
 
     ecs::entity_registry registry;
 
+    ecs::NodeSystem nodeSystem{registry};
+
+    auto root = registry.create();
+
+    registry.assign<Transform>(root, glm::mat4{1}, glm::mat4{1});
+    nodeSystem.attachNode(root, root, "root"sv);
+
     auto entityA = registry.create();
 
     registry.assign<Transform>(entityA, glm::mat4{1}, glm::mat4{1});
-    registry.assign<ecs::Mover>(entityA, glm::vec3{0, 0, 4});
-    registry.assign<ecs::Node>(entityA, entityA, 0);
+    nodeSystem.attachNode(root, entityA, "entityA"sv);
 
     auto entityB = registry.create();
 
     registry.assign<Transform>(entityB, glm::mat4{1}, glm::mat4{1});
-    registry.assign<ecs::Mover>(entityB, glm::vec3{2, 0, 0});
-    registry.assign<ecs::Node>(entityB, entityA, 1);
+    nodeSystem.attachNode(root, entityB, "entityB"sv);
 
-    registry.sort<ecs::Node>([] (auto &&lhs, auto &&rhs) { return lhs.depth < rhs.depth; });
+    auto entityC = registry.create();
 
-    ecs::MoverSystem moverSystem;
-    ecs::NodeSystem nodeSystem;
+    registry.assign<Transform>(entityC, glm::mat4{1}, glm::mat4{1});
+    nodeSystem.attachNode(entityA, entityC, "entityC"sv);
 
-    moverSystem.update(registry);
-    nodeSystem.update(registry);
+    auto entityD = registry.create();
 
-    moverSystem.update(registry);
-    nodeSystem.update(registry);
+    registry.assign<Transform>(entityD, glm::mat4{1}, glm::mat4{1});
+    nodeSystem.attachNode(entityB, entityD, "entityD"sv);
+
+    registry.sort<ecs::Node>([] (auto &&lhs, auto &&rhs)
+    {
+        if (lhs.depth == rhs.depth)
+            return lhs.parent < rhs.parent;
+
+        return lhs.depth < rhs.depth;
+    });
+
+    nodeSystem.update();
 
     window.update([&app]
     {

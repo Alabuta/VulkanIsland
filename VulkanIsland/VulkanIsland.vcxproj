@@ -254,6 +254,7 @@
     <ClCompile Include="src/camera/cameraController.cxx" />
     <ClCompile Include="src/camera/handlers/mouseHandler.cxx" />
     <ClCompile Include="src\loaders\loaderGLTF.cxx" />
+    <ClCompile Include="src\node.cxx" />
     <ClCompile Include="src\pipeline.cxx" />
     <ClCompile Include="src\program.cxx" />
   </ItemGroup>
@@ -284,7 +285,9 @@
     <ClInclude Include="src/transform.hxx" />
     <ClInclude Include="src/camera/cameraController.hxx" />
     <ClInclude Include="src/camera/handlers/mouseHandler.hxx" />
+    <ClInclude Include="src\ecs.hxx" />
     <ClInclude Include="src\loaders\loaderGLTF.hxx" />
+    <ClInclude Include="src\node.hxx" />
     <ClInclude Include="src\pipeline.hxx" />
     <ClInclude Include="src\vertexFormat.hxx" />
   </ItemGroup>

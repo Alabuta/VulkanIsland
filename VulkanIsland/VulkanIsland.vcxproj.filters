@@ -89,6 +89,9 @@
     <ClCompile Include="src\pipeline.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\node.cxx">
+      <Filter>Source Files\ECS</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/input/inputDataTypes.hxx">
@@ -177,6 +180,12 @@
     </ClInclude>
     <ClInclude Include="src\pipeline.hxx">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs.hxx">
+      <Filter>Source Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="src\node.hxx">
+      <Filter>Source Files\ECS</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

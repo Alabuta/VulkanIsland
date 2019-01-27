@@ -21,16 +21,7 @@ struct Transform final {
     Transform(T1 &&localMatrix, T2 &&worldMatrix) noexcept : localMatrix{std::forward<T1>(localMatrix)}, worldMatrix{std::forward<T2>(worldMatrix)} { }
 };
 
-template<class... Ts>
-class System {
-public:
-
-    virtual void update(entt::registry<> &registry) = 0;
-
-    virtual ~System() = default;
-};
-
-class TransformSystem final : public System<Transform> {
+/*class TransformSystem final : public System {
 public:
 
     ~TransformSystem() = default;
@@ -46,7 +37,7 @@ public:
 private:
 
     std::vector<Transform> transforms;
-};
+};*/
 
 /*struct TransformSytem final : public ex::System<Transform> {
     void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) final
