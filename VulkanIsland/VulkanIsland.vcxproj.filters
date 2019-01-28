@@ -59,23 +59,11 @@
     <ClCompile Include="src/camera/cameraController.cxx">
       <Filter>Source Files\Camera</Filter>
     </ClCompile>
-    <ClCompile Include="src/loaderTARGA.cxx">
-      <Filter>Source Files\Loaders</Filter>
-    </ClCompile>
     <ClCompile Include="src/platform/window.cxx">
       <Filter>Source Files\Platform</Filter>
     </ClCompile>
     <ClCompile Include="src/camera/handlers/mouseHandler.cxx">
       <Filter>Source Files\Camera\inputHandlers</Filter>
-    </ClCompile>
-    <ClCompile Include="src/buffer.cxx">
-      <Filter>Source Files\Resources</Filter>
-    </ClCompile>
-    <ClCompile Include="src/resource.cxx">
-      <Filter>Source Files\Resources</Filter>
-    </ClCompile>
-    <ClCompile Include="src/image.cxx">
-      <Filter>Source Files\Resources</Filter>
     </ClCompile>
     <ClCompile Include="src/sceneTree.cxx">
       <Filter>Source Files\ECS</Filter>
@@ -83,13 +71,25 @@
     <ClCompile Include="src\loaders\loaderGLTF.cxx">
       <Filter>Source Files\Loaders</Filter>
     </ClCompile>
-    <ClCompile Include="src\program.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\pipeline.cxx">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\node.cxx">
+    <ClCompile Include="src\resources\resource.cxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\resources\buffer.cxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\resources\image.cxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\resources\program.cxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\loaders\loaderTARGA.cxx">
+      <Filter>Source Files\Loaders</Filter>
+    </ClCompile>
+    <ClCompile Include="src\ecs\node.cxx">
       <Filter>Source Files\ECS</Filter>
     </ClCompile>
   </ItemGroup>
@@ -105,9 +105,6 @@
     </ClInclude>
     <ClInclude Include="src/camera/handlers/mouseHandler.hxx">
       <Filter>Source Files\Camera\inputHandlers</Filter>
-    </ClInclude>
-    <ClInclude Include="src/loaderTARGA.hxx">
-      <Filter>Source Files\Loaders</Filter>
     </ClInclude>
     <ClInclude Include="src/commandBuffer.hxx">
       <Filter>Source Files</Filter>
@@ -139,9 +136,6 @@
     <ClInclude Include="src/math.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src/program.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src/queues.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -150,15 +144,6 @@
     </ClInclude>
     <ClInclude Include="src/platform/window.hxx">
       <Filter>Source Files\Platform</Filter>
-    </ClInclude>
-    <ClInclude Include="src/buffer.hxx">
-      <Filter>Source Files\Resources</Filter>
-    </ClInclude>
-    <ClInclude Include="src/resource.hxx">
-      <Filter>Source Files\Resources</Filter>
-    </ClInclude>
-    <ClInclude Include="src/image.hxx">
-      <Filter>Source Files\Resources</Filter>
     </ClInclude>
     <ClInclude Include="src/sceneTree.hxx">
       <Filter>Source Files\ECS</Filter>
@@ -184,7 +169,22 @@
     <ClInclude Include="src\ecs.hxx">
       <Filter>Source Files\ECS</Filter>
     </ClInclude>
-    <ClInclude Include="src\node.hxx">
+    <ClInclude Include="src\resources\buffer.hxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\image.hxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\program.hxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\resource.hxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\loaders\loaderTARGA.hxx">
+      <Filter>Source Files\Loaders</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\node.hxx">
       <Filter>Source Files\ECS</Filter>
     </ClInclude>
   </ItemGroup>

@@ -237,35 +237,33 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src/buffer.cxx" />
     <ClCompile Include="src/debug.cxx" />
     <ClCompile Include="src/descriptor.cxx" />
     <ClCompile Include="src/device.cxx" />
-    <ClCompile Include="src/image.cxx" />
     <ClCompile Include="src/input/inputManager.cxx" />
     <ClCompile Include="src/input/mouseInput.cxx" />
     <ClCompile Include="src/instance.cxx" />
     <ClCompile Include="src/main.cxx" />
     <ClCompile Include="src/platform/window.cxx" />
-    <ClCompile Include="src/resource.cxx" />
     <ClCompile Include="src/sceneTree.cxx" />
     <ClCompile Include="src/swapchain.cxx" />
-    <ClCompile Include="src/loaderTARGA.cxx" />
     <ClCompile Include="src/camera/cameraController.cxx" />
     <ClCompile Include="src/camera/handlers/mouseHandler.cxx" />
+    <ClCompile Include="src\ecs\node.cxx" />
     <ClCompile Include="src\loaders\loaderGLTF.cxx" />
-    <ClCompile Include="src\node.cxx" />
+    <ClCompile Include="src\loaders\loaderTARGA.cxx" />
     <ClCompile Include="src\pipeline.cxx" />
-    <ClCompile Include="src\program.cxx" />
+    <ClCompile Include="src\resources\buffer.cxx" />
+    <ClCompile Include="src\resources\image.cxx" />
+    <ClCompile Include="src\resources\program.cxx" />
+    <ClCompile Include="src\resources\resource.cxx" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src/buffer.hxx" />
     <ClInclude Include="src/commandBuffer.hxx" />
     <ClInclude Include="src/debug.hxx" />
     <ClInclude Include="src/descriptor.hxx" />
     <ClInclude Include="src/device.hxx" />
     <ClInclude Include="src/deviceDefaults.hxx" />
-    <ClInclude Include="src/image.hxx" />
     <ClInclude Include="src/helpers.hxx" />
     <ClInclude Include="src/input/inputDataTypes.hxx" />
     <ClInclude Include="src/input/inputManager.hxx" />
@@ -275,20 +273,22 @@
     <ClInclude Include="src/main.hxx" />
     <ClInclude Include="src/mesh.hxx" />
     <ClInclude Include="src/platform/window.hxx" />
-    <ClInclude Include="src/program.hxx" />
     <ClInclude Include="src/queues.hxx" />
     <ClInclude Include="src/queueBuilder.hxx" />
-    <ClInclude Include="src/resource.hxx" />
     <ClInclude Include="src/sceneTree.hxx" />
     <ClInclude Include="src/swapchain.hxx" />
-    <ClInclude Include="src/loaderTARGA.hxx" />
     <ClInclude Include="src/transform.hxx" />
     <ClInclude Include="src/camera/cameraController.hxx" />
     <ClInclude Include="src/camera/handlers/mouseHandler.hxx" />
     <ClInclude Include="src\ecs.hxx" />
+    <ClInclude Include="src\ecs\node.hxx" />
     <ClInclude Include="src\loaders\loaderGLTF.hxx" />
-    <ClInclude Include="src\node.hxx" />
+    <ClInclude Include="src\loaders\loaderTARGA.hxx" />
     <ClInclude Include="src\pipeline.hxx" />
+    <ClInclude Include="src\resources\buffer.hxx" />
+    <ClInclude Include="src\resources\image.hxx" />
+    <ClInclude Include="src\resources\program.hxx" />
+    <ClInclude Include="src\resources\resource.hxx" />
     <ClInclude Include="src\vertexFormat.hxx" />
   </ItemGroup>
   <ItemGroup>
