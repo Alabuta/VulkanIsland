@@ -32,6 +32,7 @@
 
 #include "ecs/ecs.hxx"
 #include "ecs/node.hxx"
+#include "ecs/mesh.hxx"
 #include "ecs/transform.hxx"
 
 #include "loaders/loaderGLTF.hxx"
@@ -1341,6 +1342,7 @@ try {
     ecs::entity_registry registry;
 
     ecs::NodeSystem nodeSystem{registry};
+    ecs::MeshSystem meshSystem{registry};
 
     auto root = registry.create();
 
@@ -1375,7 +1377,16 @@ try {
         return lhs.depth < rhs.depth;
     });
 
+    registry.sort<ecs::mesh>([] (auto &&lhs, auto &&rhs)
+    {
+        if (lhs.vertexBuffer == rhs.vertexBuffer)
+            return lhs.firstIndex < rhs.firstIndex;
+
+        return lhs.vertexBuffer < rhs.vertexBuffer;
+    });
+
     nodeSystem.update();
+    meshSystem.update();
 
     window.update([&app]
     {

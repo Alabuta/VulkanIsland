@@ -281,6 +281,7 @@
     <ClInclude Include="src/camera/cameraController.hxx" />
     <ClInclude Include="src/camera/handlers/mouseHandler.hxx" />
     <ClInclude Include="src\ecs.hxx" />
+    <ClInclude Include="src\ecs\mesh.hxx" />
     <ClInclude Include="src\ecs\node.hxx" />
     <ClInclude Include="src\loaders\loaderGLTF.hxx" />
     <ClInclude Include="src\loaders\loaderTARGA.hxx" />

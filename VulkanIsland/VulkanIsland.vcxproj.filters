@@ -151,9 +151,6 @@
     <ClInclude Include="src/transform.hxx">
       <Filter>Source Files\ECS</Filter>
     </ClInclude>
-    <ClInclude Include="src/mesh.hxx">
-      <Filter>Source Files\ECS</Filter>
-    </ClInclude>
     <ClInclude Include="src\vertexFormat.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -185,6 +182,12 @@
       <Filter>Source Files\Loaders</Filter>
     </ClInclude>
     <ClInclude Include="src\ecs\node.hxx">
+      <Filter>Source Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="src/mesh.hxx">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\mesh.hxx">
       <Filter>Source Files\ECS</Filter>
     </ClInclude>
   </ItemGroup>
