@@ -3,7 +3,7 @@
 #include "main.hxx"
 #include "device.hxx"
 #include "buffer.hxx"
-#include "loaderTARGA.hxx"
+#include "loaders/loaderTARGA.hxx"
 
 class VulkanImageView;
 

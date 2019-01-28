@@ -32,24 +32,24 @@ include_directories(src)
 
 
 set(SOURCE_FILES
-	src/buffer.cxx
+	src/resources/buffer.cxx
+	src/resources/image.cxx
+    src/resources/resource.cxx
+    src/resources/program.cxx
 	
 	src/debug.cxx
 	src/descriptor.cxx
 	src/device.cxx
 	
 	src/loaders/loaderGLTF.cxx
+	src/loaders/loaderTARGA.cxx
 	
-	src/image.cxx
 	src/instance.cxx
     
-    src/resource.cxx
-    src/program.cxx
     src/pipeline.cxx
 
 	src/sceneTree.cxx
     src/swapchain.cxx
-	src/loaderTARGA.cxx
     
     src/camera/cameraController.cxx
     src/camera/handlers/mouseHandler.cxx
@@ -58,6 +58,8 @@ set(SOURCE_FILES
 	src/input/mouseInput.cxx
 
     src/platform/window.cxx
+
+    src/ecs/node.cxx
 
     src/main.cxx
 )

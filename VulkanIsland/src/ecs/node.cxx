@@ -3,7 +3,7 @@
 
 namespace ecs
 {
-std::optional<Node *const> NodeSystem::attachNode(entity_type parent, entity_type entity, std::string_view name)
+std::optional<Node *const> NodeSystem::attachNode(entity_type parent, entity_type entity, [[maybe_unused]] std::string_view name)
 {
     if (parent == entity)
         return &registry.assign<ecs::Node>(entity, parent, 0);

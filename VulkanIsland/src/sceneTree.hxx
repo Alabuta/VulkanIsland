@@ -10,7 +10,7 @@ namespace ex = entityx;
 #include "main.hxx"
 #include "helpers.hxx"
 #include "math.hxx"
-#include "transform.hxx"
+#include "ecs/transform.hxx"
 
 using EntityManager = entityx::EntityX<entityx::DefaultStorage, 0, Transform>;
 using Entity = EntityManager::Entity;

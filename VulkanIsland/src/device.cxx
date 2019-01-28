@@ -7,8 +7,8 @@
 #include "swapchain.hxx"
 #include "device.hxx"
 #include "deviceDefaults.hxx"
-#include "buffer.hxx"
-#include "resource.hxx"
+#include "resources/buffer.hxx"
+#include "resources/resource.hxx"
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;

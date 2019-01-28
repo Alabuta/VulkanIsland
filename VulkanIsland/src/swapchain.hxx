@@ -2,8 +2,8 @@
 
 #include "main.hxx"
 #include "device.hxx"
-#include "buffer.hxx"
-#include "image.hxx"
+#include "resources/buffer.hxx"
+#include "resources/image.hxx"
 
 struct VulkanSwapchain final {
     VkSwapchainKHR handle;
