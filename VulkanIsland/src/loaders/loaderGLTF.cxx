@@ -959,17 +959,14 @@ bool load(std::string_view name, staging::scene_t &scene)
 
                         return sizeof(A);
 
-                    }, std::move(attribute.value()));
+                    }, std::move(*attribute));
 
-                    // auto it_vertexBuffer = std::find_if(std::begin(scene.vertexBuffers), std::end(scene.vertexBuffers), [&layout] (auto &&vertexBuffer) {
-                    //     return layout == vertexBuffer.layout;
-                    // });
+                    /*auto it_vertexBuffer = std::find_if(std::begin(scene.vertexBuffers), std::end(scene.vertexBuffers), [&layout] (auto &&vertexBuffer) {
+                        return layout == vertexBuffer.layout;
+                    });
 
-                    // if (it_vertexBuffer == std::end(scene.vertexBuffers))
-                    //     it_vertexBuffer = scene.vertexBuffers.emplace(std::end(scene.vertexBuffers), layout);
-
-                    // auto &&vertexBuffer = *it_vertexBuffer;
-                    // vertexBuffer.buffer.resize(vertexBufferWriteIndex + verticesCount * vertexTypeSize);
+                    auto &&vertexBuffer = *it_vertexBuffer;
+                    vertexBuffer.buffer.resize(vertexBuffer.offset + verticesCount * vertexTypeSize);*/
 
                     std::size_t const readBeginIndex = accessor.byteOffset + bufferView.byteOffset;
                     std::size_t const readEndIndex = readBeginIndex + accessor.count * attributeSize;
