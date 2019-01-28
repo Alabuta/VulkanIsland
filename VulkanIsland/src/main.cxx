@@ -774,25 +774,10 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipeline);
 
-        //auto const descriptorSets = std::array{app.descriptorSet};
-
-        /*vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayout,
-                                0, static_cast<std::uint32_t>(std::size(descriptorSets)), std::data(descriptorSets), 0, nullptr);*/
-
         auto const vertexBuffers = std::array{app.vertexBuffer->handle()};
         auto const offsets = std::array{VkDeviceSize{0}};
 
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, std::data(vertexBuffers), std::data(offsets));
-
-        /*if (app.indexBuffer) {
-            auto index_type = std::visit([] (auto type)
-            {
-                return std::is_same_v<typename decltype(type), std::uint32_t> ? VK_INDEX_TYPE_UINT32 : VK_INDEX_TYPE_UINT16;
-
-            }, app.scene.meshes.front().submeshes.front().indices.type);
-
-            vkCmdBindIndexBuffer(commandBuffer, app.indexBuffer->handle(), 0, index_type);
-        }*/
 
         std::size_t const stride = app.alignedBufferSize / app.objectsNumber;
         std::size_t instanceIndex = 0;
@@ -1178,146 +1163,6 @@ try {
     _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     //_CrtSetBreakAlloc(84);
 #endif
-
-#if 0
-    SceneTree sceneTree;
-
-    if (auto node = sceneTree.AttachNode(sceneTree.root()); node)
-        sceneTree.AttachNode(*node);
-
-    if (auto node = sceneTree.AddChild(sceneTree.root()); node) {
-        sceneTree.AddChild(*node);
-		auto middle = sceneTree.AddChild(*node);
-		sceneTree.AddChild(*node);
-
-		if (middle)
-			sceneTree.DestroyNode(*middle);
-
-        //if (auto child = sceneTree.AddChild(*node); child)
-        //    sceneTree.DestroyNode(*child);
-
-        sceneTree.AddChild(*node);
-    }
-#endif
-
-    /*
-    AttachNode(parent node handle)
-        Calculate the child depth index
-        Get children layer at the child depth index (create if there isn't)
-
-        1. Parent does have children
-            Find a chunk range adjacent to the children range end
-
-            1. 1. If there is the requsted chunk
-                Emplace a new child node at chunk position
-                Create a node handle to newly emplaced the child node
-
-                Extent the children range end by one index
-
-                Update the chunk range
-                
-            1. 2. If there is not
-                Find a range of continuous chunks for all children plus one
-
-                1. 2. 1. If there is such a range
-                    Move all children nodes plus one to available chunks
-                    Create a node handle to newly emplaced the child node
-                    Update children node handles
-
-                    Recalculate the parent children range
-
-                    Update available chunks' ranges
-
-                1. 2. 2. If there isn't
-                    Append to the children layer end all children nodes plus one
-                    Create a node handle to newly emplaced the child node
-                    Update children node handles
-
-                    Recalculate the parent children range
-
-                    Put the empty nodes to a chunk range
-
-
-        2. Parent doesn't have children
-            Find a chunk range inside the children layer for child node emplacement
-
-            2. 1. If there is chunk range
-                Emplace a new child node at chunk position
-
-                Update the chunk range
-
-            2. 2. If there is not
-                Append to the children layer end a new child node
-
-            Create a node handle to newly emplaced the child node
-
-            Update the parent children range
-
-        return node handle
-
-        */
-
-    /*
-
-    DestroyNode(node handle)
-        Validate node handle
-
-        Get and validate node
-        Get and validate node info
-
-        Get node chidren range
-
-        Get and validate parent handle
-        Get and validate parent node
-        Get and validate parent node info
-
-        Get parent children range
-
-        1. If parent has children more than one
-            1. 1. If node placed at the begining of parent's children range
-                Increment parent's children range begin index
-
-            1. 2. If node placed at the end of parent's children range
-                Decrement parent's children range end index
-
-            1. 3. Else
-                Move following nodes by one index back
-                Update moved nodes handles
-
-                Decrement parent's children range end index
-
-        2. If it hasn't
-            Reset parent's children range
-
-            Add new empty node to available chunks
-
-        3. Node does have children
-            Call DestroyChildren(node handle).
-
-        Invalidate node handle
-
-        return nothing
-        */
-
-    /*DestroyChildren(node handle)
-        Validate node handle
-
-        Get and validate node
-        Get and validate node info
-
-        Get node chidren range
-
-        
-        ...
-
-        Collect child's node hadle indices
-
-        Traverse vector of child nodes handle indexes and invalidate them
-
-        Reset parent's children range
-
-        return nothing
-    */
 
     glfwInit();
 
