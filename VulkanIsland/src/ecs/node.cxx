@@ -33,7 +33,7 @@ void NodeSystem::update()
 
         auto &&[localMatrix, worldMatrix] = transform;
 
-        localMatrix = worldMatrix * glm::inverse(parentTransform.worldMatrix);
+        worldMatrix = parentTransform.worldMatrix * localMatrix;
     });
 }
 }

@@ -21,23 +21,21 @@ struct Transform final {
     Transform(T1 &&localMatrix, T2 &&worldMatrix) noexcept : localMatrix{std::forward<T1>(localMatrix)}, worldMatrix{std::forward<T2>(worldMatrix)} { }
 };
 
-/*class TransformSystem final : public System {
+
+namespace ecs
+{
+class Transform final : public System {
 public:
 
-    ~TransformSystem() = default;
+    Transform(entity_registry &registry) noexcept : registry{registry} { }
+    ~Transform() = default;
 
-    void update(entt::registry<> &registry) override
-    {
-        registry.view<Transform>().each([] (auto &&transfom)
-        {
-            ;
-        });
-    }
+    void update() override;
 
 private:
-
-    std::vector<Transform> transforms;
-};*/
+    entity_registry &registry;
+};
+}
 
 /*struct TransformSytem final : public ex::System<Transform> {
     void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) final

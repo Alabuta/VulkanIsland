@@ -60,6 +60,7 @@ set(SOURCE_FILES
     src/platform/window.cxx
 
     src/ecs/node.cxx
+    src/ecs/transform.cxx
 
     src/main.cxx
 )

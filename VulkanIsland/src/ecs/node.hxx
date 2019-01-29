@@ -17,6 +17,15 @@ struct Node final {
     Node() noexcept = default;
 
     Node(entity_type parent, std::uint32_t depth) noexcept : parent{parent}, depth{depth} { }
+
+    template<class T1, class T2, typename std::enable_if_t<are_same_v<Node, T1, T2>>...>
+    bool constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
+    {
+        if (lhs.depth == rhs.depth)
+            return lhs.parent < rhs.parent;
+
+        return lhs.depth < rhs.depth;
+    }
 };
 
 class NodeSystem final : public System {

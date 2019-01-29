@@ -105,6 +105,11 @@ struct app_t final {
 
     VulkanTexture texture;
 
+    ecs::entity_registry registry;
+
+    ecs::NodeSystem nodeSystem{registry};
+    ecs::MeshSystem meshSystem{registry};
+
 
     ~app_t()
     {
@@ -878,8 +883,6 @@ LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
     return texture;
 }
 
-
-
 void RecreateSwapChain(app_t &app)
 {
     if (app.width < 1 || app.height < 1) return;
@@ -1184,58 +1187,40 @@ try {
 
     std::cout << measure<>::execution(InitVulkan, window, std::ref(app)) << " ms\n"s;
 
-    ecs::entity_registry registry;
+    auto root = app.registry.create();
 
-    ecs::NodeSystem nodeSystem{registry};
-    ecs::MeshSystem meshSystem{registry};
+    app.registry.assign<Transform>(root, glm::mat4{1}, glm::mat4{1});
+    app.nodeSystem.attachNode(root, root, "root"sv);
 
-    auto root = registry.create();
+    auto entityA = app.registry.create();
 
-    registry.assign<Transform>(root, glm::mat4{1}, glm::mat4{1});
-    nodeSystem.attachNode(root, root, "root"sv);
+    app.registry.assign<Transform>(entityA, glm::mat4{1}, glm::mat4{1});
+    app.nodeSystem.attachNode(root, entityA, "entityA"sv);
 
-    auto entityA = registry.create();
+    auto entityB = app.registry.create();
 
-    registry.assign<Transform>(entityA, glm::mat4{1}, glm::mat4{1});
-    nodeSystem.attachNode(root, entityA, "entityA"sv);
+    app.registry.assign<Transform>(entityB, glm::mat4{1}, glm::mat4{1});
+    app.nodeSystem.attachNode(root, entityB, "entityB"sv);
 
-    auto entityB = registry.create();
+    auto entityC = app.registry.create();
 
-    registry.assign<Transform>(entityB, glm::mat4{1}, glm::mat4{1});
-    nodeSystem.attachNode(root, entityB, "entityB"sv);
+    app.registry.assign<Transform>(entityC, glm::mat4{1}, glm::mat4{1});
+    app.nodeSystem.attachNode(entityA, entityC, "entityC"sv);
 
-    auto entityC = registry.create();
+    auto entityD = app.registry.create();
 
-    registry.assign<Transform>(entityC, glm::mat4{1}, glm::mat4{1});
-    nodeSystem.attachNode(entityA, entityC, "entityC"sv);
-
-    auto entityD = registry.create();
-
-    registry.assign<Transform>(entityD, glm::mat4{1}, glm::mat4{1});
-    nodeSystem.attachNode(entityB, entityD, "entityD"sv);
-
-    registry.sort<ecs::Node>([] (auto &&lhs, auto &&rhs)
-    {
-        if (lhs.depth == rhs.depth)
-            return lhs.parent < rhs.parent;
-
-        return lhs.depth < rhs.depth;
-    });
-
-    registry.sort<ecs::mesh>([] (auto &&lhs, auto &&rhs)
-    {
-        if (lhs.vertexBuffer == rhs.vertexBuffer)
-            return lhs.firstIndex < rhs.firstIndex;
-
-        return lhs.vertexBuffer < rhs.vertexBuffer;
-    });
-
-    nodeSystem.update();
-    meshSystem.update();
+    app.registry.assign<Transform>(entityD, glm::mat4{1}, glm::mat4{1});
+    app.nodeSystem.attachNode(entityB, entityD, "entityD"sv);
 
     window.update([&app]
     {
         glfwPollEvents();
+
+        app.registry.sort<ecs::Node>(ecs::Node());
+        app.registry.sort<ecs::mesh>(ecs::mesh());
+
+        app.nodeSystem.update();
+        app.meshSystem.update();
 
         Update(app);
 
