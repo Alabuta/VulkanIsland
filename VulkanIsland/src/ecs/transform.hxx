@@ -2,14 +2,11 @@
 
 #include <iomanip>
 
-#include "entityx/entityx.hh"
-namespace ex = entityx;
-
-#include <entt/entity/registry.hpp>
-
 #include "main.hxx"
 #include "helpers.hxx"
 #include "math.hxx"
+
+#include "ecs.hxx"
 
 struct Transform final {
     glm::mat4 localMatrix;
@@ -24,11 +21,11 @@ struct Transform final {
 
 namespace ecs
 {
-class Transform final : public System {
+class TransformSystem final : public System {
 public:
 
-    Transform(entity_registry &registry) noexcept : registry{registry} { }
-    ~Transform() = default;
+    TransformSystem(entity_registry &registry) noexcept : registry{registry} { }
+    ~TransformSystem() = default;
 
     void update() override;
 

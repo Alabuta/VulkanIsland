@@ -1,5 +1,8 @@
 #pragma once
 
+#include "entityx/entityx.hh"
+namespace ex = entityx;
+
 #include <entt/entity/registry.hpp>
 
 

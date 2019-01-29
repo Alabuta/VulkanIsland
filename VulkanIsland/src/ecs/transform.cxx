@@ -2,7 +2,7 @@
 
 namespace ecs
 {
-void Transform::update()
+void TransformSystem::update()
 {
     auto view = registry.view<Transform>();
 

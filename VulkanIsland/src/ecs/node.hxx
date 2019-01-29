@@ -10,15 +10,17 @@
 
 namespace ecs
 {
-struct Node final {
+struct node final {
     entity_type parent;
     std::uint32_t depth;
 
-    Node() noexcept = default;
+    std::string name;
 
-    Node(entity_type parent, std::uint32_t depth) noexcept : parent{parent}, depth{depth} { }
+    node() noexcept = default;
 
-    template<class T1, class T2, typename std::enable_if_t<are_same_v<Node, T1, T2>>...>
+    node(entity_type parent, std::uint32_t depth, std::string_view name) noexcept : parent{parent}, depth{depth}, name{name} { }
+
+    template<class T1, class T2, typename std::enable_if_t<are_same_v<node, T1, T2>>...>
     bool constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
     {
         if (lhs.depth == rhs.depth)
@@ -30,15 +32,25 @@ struct Node final {
 
 class NodeSystem final : public System {
 public:
+    entity_registry &registry;
 
-    NodeSystem(entity_registry &registry) noexcept : registry{registry} { }
+    NodeSystem(entity_registry &registry) noexcept : registry{registry}
+    {
+        root_ = registry.create();
+
+        registry.assign<Transform>(root_, glm::mat4{1}, glm::mat4{1});
+        attachNode(root_, root_, "root"sv);
+    }
+
     ~NodeSystem() = default;
 
-    std::optional<Node *const> attachNode(entity_type parent, entity_type entity, std::string_view name = ""sv);
+    entity_type root() const noexcept { return root_; }
+
+    std::optional<node *const> attachNode(entity_type parent, entity_type entity, std::string_view name = ""sv);
 
     void update() override;
 
 private:
-    entity_registry &registry;
+    entity_type root_;
 };
 }

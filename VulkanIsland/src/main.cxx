@@ -1216,7 +1216,7 @@ try {
     {
         glfwPollEvents();
 
-        app.registry.sort<ecs::Node>(ecs::Node());
+        app.registry.sort<ecs::node>(ecs::node());
         app.registry.sort<ecs::mesh>(ecs::mesh());
 
         app.nodeSystem.update();
