@@ -65,9 +65,6 @@
     <ClCompile Include="src/camera/handlers/mouseHandler.cxx">
       <Filter>Source Files\Camera\inputHandlers</Filter>
     </ClCompile>
-    <ClCompile Include="src/sceneTree.cxx">
-      <Filter>Source Files\ECS</Filter>
-    </ClCompile>
     <ClCompile Include="src\loaders\loaderGLTF.cxx">
       <Filter>Source Files\Loaders</Filter>
     </ClCompile>
@@ -89,7 +86,13 @@
     <ClCompile Include="src\loaders\loaderTARGA.cxx">
       <Filter>Source Files\Loaders</Filter>
     </ClCompile>
+    <ClCompile Include="src\ecs\transform.cxx">
+      <Filter>Source Files\ECS</Filter>
+    </ClCompile>
     <ClCompile Include="src\ecs\node.cxx">
+      <Filter>Source Files\ECS</Filter>
+    </ClCompile>
+    <ClCompile Include="src\sceneTree.cxx">
       <Filter>Source Files\ECS</Filter>
     </ClCompile>
   </ItemGroup>
@@ -145,12 +148,6 @@
     <ClInclude Include="src/platform/window.hxx">
       <Filter>Source Files\Platform</Filter>
     </ClInclude>
-    <ClInclude Include="src/sceneTree.hxx">
-      <Filter>Source Files\ECS</Filter>
-    </ClInclude>
-    <ClInclude Include="src/transform.hxx">
-      <Filter>Source Files\ECS</Filter>
-    </ClInclude>
     <ClInclude Include="src\vertexFormat.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -162,9 +159,6 @@
     </ClInclude>
     <ClInclude Include="src\pipeline.hxx">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ecs.hxx">
-      <Filter>Source Files\ECS</Filter>
     </ClInclude>
     <ClInclude Include="src\resources\buffer.hxx">
       <Filter>Source Files\Resources</Filter>
@@ -181,13 +175,22 @@
     <ClInclude Include="src\loaders\loaderTARGA.hxx">
       <Filter>Source Files\Loaders</Filter>
     </ClInclude>
-    <ClInclude Include="src\ecs\node.hxx">
-      <Filter>Source Files\ECS</Filter>
-    </ClInclude>
     <ClInclude Include="src/mesh.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\ecs\node.hxx">
+      <Filter>Source Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\transform.hxx">
+      <Filter>Source Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ecs\ecs.hxx">
+      <Filter>Source Files\ECS</Filter>
+    </ClInclude>
     <ClInclude Include="src\ecs\mesh.hxx">
+      <Filter>Source Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="src\sceneTree.hxx">
       <Filter>Source Files\ECS</Filter>
     </ClInclude>
   </ItemGroup>

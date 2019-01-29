@@ -245,11 +245,11 @@
     <ClCompile Include="src/instance.cxx" />
     <ClCompile Include="src/main.cxx" />
     <ClCompile Include="src/platform/window.cxx" />
-    <ClCompile Include="src/sceneTree.cxx" />
     <ClCompile Include="src/swapchain.cxx" />
     <ClCompile Include="src/camera/cameraController.cxx" />
     <ClCompile Include="src/camera/handlers/mouseHandler.cxx" />
     <ClCompile Include="src\ecs\node.cxx" />
+    <ClCompile Include="src\ecs\transform.cxx" />
     <ClCompile Include="src\loaders\loaderGLTF.cxx" />
     <ClCompile Include="src\loaders\loaderTARGA.cxx" />
     <ClCompile Include="src\pipeline.cxx" />
@@ -257,6 +257,7 @@
     <ClCompile Include="src\resources\image.cxx" />
     <ClCompile Include="src\resources\program.cxx" />
     <ClCompile Include="src\resources\resource.cxx" />
+    <ClCompile Include="src\sceneTree.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/commandBuffer.hxx" />
@@ -275,14 +276,13 @@
     <ClInclude Include="src/platform/window.hxx" />
     <ClInclude Include="src/queues.hxx" />
     <ClInclude Include="src/queueBuilder.hxx" />
-    <ClInclude Include="src/sceneTree.hxx" />
     <ClInclude Include="src/swapchain.hxx" />
-    <ClInclude Include="src/transform.hxx" />
     <ClInclude Include="src/camera/cameraController.hxx" />
     <ClInclude Include="src/camera/handlers/mouseHandler.hxx" />
-    <ClInclude Include="src\ecs.hxx" />
+    <ClInclude Include="src\ecs\ecs.hxx" />
     <ClInclude Include="src\ecs\mesh.hxx" />
     <ClInclude Include="src\ecs\node.hxx" />
+    <ClInclude Include="src\ecs\transform.hxx" />
     <ClInclude Include="src\loaders\loaderGLTF.hxx" />
     <ClInclude Include="src\loaders\loaderTARGA.hxx" />
     <ClInclude Include="src\pipeline.hxx" />
@@ -290,6 +290,7 @@
     <ClInclude Include="src\resources\image.hxx" />
     <ClInclude Include="src\resources\program.hxx" />
     <ClInclude Include="src\resources\resource.hxx" />
+    <ClInclude Include="src\sceneTree.hxx" />
     <ClInclude Include="src\vertexFormat.hxx" />
   </ItemGroup>
   <ItemGroup>
