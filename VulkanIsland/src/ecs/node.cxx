@@ -3,10 +3,10 @@
 
 namespace ecs
 {
-std::optional<node *const> NodeSystem::attachNode(entity_type parent, entity_type entity, [[maybe_unused]] std::string_view name)
+std::optional<node> NodeSystem::attachNode(entity_type parent, entity_type entity, [[maybe_unused]] std::string_view name)
 {
     if (parent == entity)
-        return &registry.assign<ecs::node>(entity, parent, 0, name);
+        return registry.assign<ecs::node>(entity, parent, 0, name);
 
     if (!registry.has<node>(parent))
         return { };
@@ -16,7 +16,7 @@ std::optional<node *const> NodeSystem::attachNode(entity_type parent, entity_typ
 
     auto &&parentNode = registry.get<node>(parent);
 
-    return &registry.assign<ecs::node>(entity, parent, parentNode.depth + 1, name);
+    return registry.assign<ecs::node>(entity, parent, parentNode.depth + 1, name);
 }
 
 void NodeSystem::update()

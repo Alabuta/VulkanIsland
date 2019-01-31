@@ -731,12 +731,94 @@ std::vector<SceneTree> initSceneTree(std::vector<glTF::scene_t> const &scenes, s
 
     return sceneTrees;
 }
+
+void initNodeGraph(std::vector<glTF::scene_t> const &scenes, std::vector<glTF::node_t> const &nodes, ecs::NodeSystem &nodeSystem)
+{
+    auto &&registry = nodeSystem.registry;
+    //auto &&rootNode = registry.get<ecs::node>(nodeSystem.root());
+
+    for (auto &&scene : scenes) {
+        auto parent = nodeSystem.root();
+
+        using entities_t = std::vector<ecs::entity_type>;
+
+        entities_t handles;
+        std::vector<entities_t> handlesStack;
+
+        std::vector<std::vector<std::size_t>> indicesStack{scene.nodes};
+
+        while (!indicesStack.empty()) {
+            auto &&indices = indicesStack.back();
+
+            if (indices.empty()) {
+                handlesStack.pop_back();
+
+                if (!handlesStack.empty() && !handlesStack.back().empty())
+                    parent = handlesStack.back().back();
+
+                indicesStack.pop_back();
+
+                continue;
+            }
+
+            if (std::size(indicesStack) != std::size(handlesStack)) {
+                for (auto index : indices) {
+                    auto &&node = nodes.at(index);
+
+                    auto entity = registry.create();
+
+                    if (auto nodeComponent = nodeSystem.attachNode(parent, entity, node.name); nodeComponent) {
+                        handles.emplace_back(entity);
+
+                        std::visit([&registry, entity] (auto &&transform)
+                        {
+                            using T = std::decay_t<decltype(transform)>;
+
+                            if constexpr (std::is_same_v<T, glm::mat4>)
+                                registry.replace<Transform>(entity, transform, glm::mat4{1});
+
+                            else {
+                                auto &&[position, rotation, scale] = transform;
+
+                                auto matrix = glm::translate(glm::mat4{1.f}, position);
+                                matrix = matrix * glm::mat4_cast(rotation);
+                                matrix = glm::scale(matrix, scale);
+
+                                registry.replace<Transform>(entity, std::move(matrix), glm::mat4{1});
+                            }
+
+                        }, node.transform);
+                    }
+
+                    if (node.mesh) {
+                        registry.assign<ecs::mesh>(entity);
+                    }
+                }
+
+                handlesStack.emplace_back(std::move(handles));
+            }
+
+            auto index = indices.back();
+            indices.pop_back();
+
+            auto &&node = nodes.at(index);
+
+            if (!node.children.empty()) {
+                indicesStack.emplace_back(node.children);
+
+                parent = handlesStack.back().back();
+            }
+
+            handlesStack.back().pop_back();
+        }
+    }
+}
 }
 
 
 namespace glTF
 {
-bool load(std::string_view name, staging::scene_t &scene)
+bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &nodeSystem)
 {
     fs::path contents{"contents/scenes"s};
 
@@ -996,6 +1078,8 @@ bool load(std::string_view name, staging::scene_t &scene)
     auto nodes = json.at("nodes"s).get<std::vector<glTF::node_t>>();
 
     auto sceneTree = initSceneTree(scenes, nodes);
+
+    initNodeGraph(scenes, nodes, nodeSystem);
 
     return true;
 }

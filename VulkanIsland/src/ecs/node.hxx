@@ -46,7 +46,7 @@ public:
 
     entity_type root() const noexcept { return root_; }
 
-    std::optional<node *const> attachNode(entity_type parent, entity_type entity, std::string_view name = ""sv);
+    std::optional<node> attachNode(entity_type parent, entity_type entity, std::string_view name = ""sv);
 
     void update() override;
 

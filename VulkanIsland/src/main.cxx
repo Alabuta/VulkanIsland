@@ -1028,7 +1028,7 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.renderPass = std::move(renderPass.value());
 
-    if (auto result = glTF::load(sceneName, app.scene); !result)
+    if (auto result = glTF::load(sceneName, app.scene, app.nodeSystem); !result)
         throw std::runtime_error("failed to load a mesh"s);
 
     if (app.vertexBuffer = InitVertexBuffer(app); !app.vertexBuffer)
@@ -1187,7 +1187,7 @@ try {
 
     std::cout << measure<>::execution(InitVulkan, window, std::ref(app)) << " ms\n"s;
 
-    auto root = app.registry.create();
+    /*auto root = app.registry.create();
 
     app.registry.assign<Transform>(root, glm::mat4{1}, glm::mat4{1});
     app.nodeSystem.attachNode(root, root, "root"sv);
@@ -1210,7 +1210,7 @@ try {
     auto entityD = app.registry.create();
 
     app.registry.assign<Transform>(entityD, glm::mat4{1}, glm::mat4{1});
-    app.nodeSystem.attachNode(entityB, entityD, "entityD"sv);
+    app.nodeSystem.attachNode(entityB, entityD, "entityD"sv);*/
 
     window.update([&app]
     {
