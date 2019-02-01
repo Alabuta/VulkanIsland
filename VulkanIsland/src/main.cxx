@@ -1162,9 +1162,11 @@ void Update(app_t &app)
 
 int main()
 try {
-#if defined(_MSC_VER) && defined(_DEBUG)
-    _CrtSetDbgFlag(_CrtSetDbgFlag(_CRTDBG_REPORT_FLAG) | _CRTDBG_ALLOC_MEM_DF | _CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
-    //_CrtSetBreakAlloc(84);
+#if defined(_MSC_VER)
+    _CrtSetDbgFlag(_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+#else
+	std::signal(SIGSEGV, PosixSignalHandler);
+	std::signal(SIGTRAP, PosixSignalHandler);
 #endif
 
     glfwInit();

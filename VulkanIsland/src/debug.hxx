@@ -1,6 +1,6 @@
 #pragma once
 
-#include "debug.hxx"
+#include <csignal>
 
 
 [[nodiscard]] inline VKAPI_ATTR VkBool32 VKAPI_CALL
@@ -8,3 +8,8 @@ DebugCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType
               const char *pLayerPrefix, const char *pMessage, void *pUserData);
 
 void CreateDebugReportCallback(VkInstance instance, VkDebugReportCallbackEXT &callback);
+
+
+#if !defined(_WIN32) 
+void PosixSignalHandler(int signum);
+#endif

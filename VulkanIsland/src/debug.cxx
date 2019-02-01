@@ -1,9 +1,13 @@
 
 #include "main.hxx"
+#include "debug.hxx"
 
 #include <iostream>
 #include <string>
 #include <string_view>
+
+#include <thread>
+#include <execinfo.h>
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;
@@ -57,3 +61,36 @@ void CreateDebugReportCallback(VkInstance instance, VkDebugReportCallbackEXT &ca
     if (auto result = vkCreateDebugReportCallbackEXT(instance, &createInfo, nullptr, &callback); result != VK_SUCCESS)
         throw std::runtime_error("failed to set up debug callback: "s + std::to_string(result));
 }
+
+#if !defined(_WIN32) 
+void PosixSignalHandler(int signum)
+{
+	auto currentThread = std::this_thread::get_id();
+
+	auto name = "unknown"s;
+
+	switch (signum) {
+		case SIGABRT: name = "SIGABRT"s;  break;
+		case SIGSEGV: name = "SIGSEGV"s;  break;
+		case SIGBUS:  name = "SIGBUS"s;   break;
+		case SIGILL:  name = "SIGILL"s;   break;
+		case SIGFPE:  name = "SIGFPE"s;   break;
+        case SIGTRAP: name = "SIGTRAP"s;  break;
+	}
+
+    std::array<void *, 32> callStack;
+
+    auto size = backtrace(std::data(callStack), std::size(callStack));
+
+    std::cerr << "Error: signal " << name << '\n';
+
+    auto symbollist = backtrace_symbols(std::data(callStack), size);
+
+    for (auto i = 0; i < size; ++i)
+        std::cerr << i << ' ' << currentThread << ' ' << symbollist[i] << '\n';
+
+    free(symbollist);
+
+    exit(1);
+}
+#endif
