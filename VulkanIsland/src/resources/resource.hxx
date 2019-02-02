@@ -7,6 +7,7 @@
 #include "device.hxx"
 #include "program.hxx"
 #include "commandBuffer.hxx"
+#include "vertexFormat.hxx"
 
 class VulkanImage;
 class VulkanImageView;
@@ -24,6 +25,8 @@ struct IndexBuffer final {
 
 struct VertexBuffer final {
     std::shared_ptr<VulkanBuffer> buffer;
+
+    vertex_layout_t layout;
 };
 
 
