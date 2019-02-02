@@ -61,6 +61,7 @@ set(SOURCE_FILES
 
     src/ecs/node.cxx
     src/ecs/transform.cxx
+    src/ecs/camera.cxx
 
     src/main.cxx
 )
