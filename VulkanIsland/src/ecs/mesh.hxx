@@ -6,6 +6,7 @@
 #include "helpers.hxx"
 #include "math.hxx"
 #include "resources/buffer.hxx"
+#include "resources/resource.hxx"
 
 #include "ecs.hxx"
 
@@ -13,22 +14,15 @@
 namespace ecs
 {
 struct mesh final {
-    std::shared_ptr<VulkanBuffer> vertexBuffer{nullptr};
-    std::shared_ptr<VulkanBuffer> indexBuffer{nullptr};
+    std::optional<VertexBuffer> vertexBuffer;
+    std::optional<IndexBuffer> indexBuffer;
 
     std::uint32_t vertexCount{0};
     std::uint32_t indexCount{0};
 
-    std::uint32_t instanceCount{0};
-
-    std::uint32_t firstIndex{0};
-
     template<class T1, class T2, typename std::enable_if_t<are_same_v<mesh, T1, T2>>...>
     bool constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
     {
-        if (lhs.vertexBuffer == rhs.vertexBuffer)
-            return lhs.firstIndex < rhs.firstIndex;
-
         return lhs.vertexBuffer < rhs.vertexBuffer;
     }
 };

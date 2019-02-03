@@ -16,15 +16,39 @@ class VulkanBuffer;
 class VulkanShaderModule;
 
 
-template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>...>
-struct IndexBuffer final {
-    using type = T;
+class IndexBuffer final {
+public:
 
-    std::shared_ptr<VulkanBuffer> buffer;
+    template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>...>
+    IndexBuffer(std::shared_ptr<VulkanBuffer> buffer, std::size_t size) noexcept : buffer{buffer}, size{size}, type{T{}} { }
+
+    template<class T, typename std::enable_if_t<std::is_same_v<IndexBuffer, std::decay_t<T>>>...>
+    bool constexpr operator< (T &&rhs) const noexcept
+    {
+        return buffer->handle() < rhs.buffer->handle();
+    }
+
+private:
+    std::shared_ptr<VulkanBuffer> buffer{nullptr};
+    std::size_t size{0};
+
+    std::variant<std::uint16_t, std::uint32_t> type;
 };
 
-struct VertexBuffer final {
-    std::shared_ptr<VulkanBuffer> buffer;
+class VertexBuffer final {
+public:
+
+    VertexBuffer(std::shared_ptr<VulkanBuffer> buffer, std::size_t size) noexcept : buffer{buffer}, size{size} { }
+
+    template<class T, typename std::enable_if_t<std::is_same_v<VertexBuffer, std::decay_t<T>>>...>
+    bool constexpr operator< (T &&rhs) const noexcept
+    {
+        return buffer->handle() < rhs.buffer->handle();
+    }
+
+private:
+    std::shared_ptr<VulkanBuffer> buffer{nullptr};
+    std::size_t size{0};
 
     vertex_layout_t layout;
 };
@@ -52,7 +76,7 @@ public:
     CreateShaderModule(std::vector<std::byte> const &shaderByteCode) noexcept;
 
     template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>...>
-    [[nodiscard]] std::optional<IndexBuffer<T>> CreateIndexBuffer(std::size_t sizeInBytes) noexcept;
+    [[nodiscard]] std::optional<IndexBuffer> CreateIndexBuffer(std::size_t sizeInBytes) noexcept;
 
     [[nodiscard]] std::optional<VertexBuffer> CreateVertexBuffer(std::size_t sizeInBytes) noexcept;
 
@@ -75,7 +99,7 @@ private:
 
 
 template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>...>
-std::optional<IndexBuffer<T>> ResourceManager::CreateIndexBuffer(std::size_t /*sizeInBytes*/) noexcept
+std::optional<IndexBuffer> ResourceManager::CreateIndexBuffer(std::size_t /*sizeInBytes*/) noexcept
 {
-    return std::optional<IndexBuffer<T>>();
+    return std::optional<IndexBuffer>();
 }
