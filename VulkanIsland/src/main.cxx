@@ -38,7 +38,7 @@
 #include "loaders/loaderGLTF.hxx"
 #include "loaders/loaderTARGA.hxx"
 
-#include "mesh.hxx"
+#include "staging.hxx"
 #include "sceneTree.hxx"
 
 #include "input/inputManager.hxx"

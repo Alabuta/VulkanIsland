@@ -175,9 +175,6 @@
     <ClInclude Include="src\loaders\loaderTARGA.hxx">
       <Filter>Source Files\Loaders</Filter>
     </ClInclude>
-    <ClInclude Include="src/mesh.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\ecs\node.hxx">
       <Filter>Source Files\ECS</Filter>
     </ClInclude>
@@ -192,6 +189,9 @@
     </ClInclude>
     <ClInclude Include="src\sceneTree.hxx">
       <Filter>Source Files\ECS</Filter>
+    </ClInclude>
+    <ClInclude Include="src\staging.hxx">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

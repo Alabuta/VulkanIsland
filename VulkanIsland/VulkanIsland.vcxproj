@@ -272,7 +272,7 @@
     <ClInclude Include="src/instance.hxx" />
     <ClInclude Include="src/math.hxx" />
     <ClInclude Include="src/main.hxx" />
-    <ClInclude Include="src/mesh.hxx" />
+    <ClInclude Include="src\staging.hxx" />
     <ClInclude Include="src/platform/window.hxx" />
     <ClInclude Include="src/queues.hxx" />
     <ClInclude Include="src/queueBuilder.hxx" />

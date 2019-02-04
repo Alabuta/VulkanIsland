@@ -5,7 +5,7 @@
 #include "main.hxx"
 #include "helpers.hxx"
 #include "device.hxx"
-#include "mesh.hxx"
+#include "staging.hxx"
 
 class VertexInputStateInfo final {
 public:

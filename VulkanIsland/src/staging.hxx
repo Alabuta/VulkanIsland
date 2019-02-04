@@ -58,26 +58,57 @@ namespace staging
                 return lhs.semantic.index() == rhs.semantic.index() && lhs.attribute.index() == rhs.attribute.index();
             });
         }
+
+        struct comparator final {
+            using is_transparent = void;
+
+            template<class L, class R>
+            std::enable_if_t<are_same_v<vertex_buffer_t, L, R>, bool>
+                constexpr operator() (L &&lhs, R &&rhs) const noexcept
+            {
+                if (std::size(buffer) != std::size(rhs.buffer))
+                    return false;
+
+                return std::equal(std::cbegin(buffer), std::cend(buffer), std::cbegin(rhs.buffer), [] (auto &&lhs, auto &&rhs)
+                {
+                    return lhs.semantic.index() == rhs.semantic.index() && lhs.attribute.index() == rhs.attribute.index();
+                });
+            }
+
+            /*template<class T, class S, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>> && std::is_integral_v<S>>...>
+            auto operator() (T &&chunk, S size) const noexcept
+            {
+                return chunk.size < size;
+            }
+
+            template<class S, class T, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>> && std::is_integral_v<S>>...>
+            auto operator() (S size, T &&chunk) const noexcept
+            {
+                return chunk.size < size;
+            }*/
+        };
     };
 
-    struct submesh_t {
+    struct submesh_t final {
         PRIMITIVE_TOPOLOGY topology;
 
         vertices_t  vertices;
         indices_t indices;
     };
 
-    struct mesh_t {
+    struct mesh_t final {
         std::vector<submesh_t> submeshes;
+        //std::vector<std::size_t> submeshes;
     };
 
-    struct scene_t {
+    struct scene_t final {
+        //std::vector<submesh_t> submeshes;
         std::vector<mesh_t> meshes;
 
         std::vector<std::byte> vertexBuffer;
         std::vector<std::byte> indexBuffer;
 
-        //std::vector<vertex_buffer_t> vertexBuffers;
+        std::vector<vertex_buffer_t> vertexBuffers;
         //std::unordered_map<vertex_layout_t, std::vector<std::byte>, vertex_buffer_t::hash_value> vertexBuffers;
     };
 }
