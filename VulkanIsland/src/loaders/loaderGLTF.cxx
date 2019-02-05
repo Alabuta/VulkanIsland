@@ -22,9 +22,9 @@ namespace fs = std::filesystem;
 #include "loaders/loaderGLTF.hxx"
 #include "sceneTree.hxx"
 
-namespace
+namespace glTF
 {
-enum class GL {
+enum class  GL {
     BYTE = 0x1400, UNSIGNED_BYTE,
     SHORT, UNSIGNED_SHORT,
     INT, UNSIGNED_INT,
@@ -35,7 +35,7 @@ enum class GL {
 };
 
 
-enum class PRIMITIVE_MODE {
+enum class  PRIMITIVE_MODE {
     POINTS = 0,
     LINES, LINE_LOOP, LINE_STRIP,
     TRIANGLES, TRIANGLE_STRIP, TRIANGLE_FAN
@@ -79,28 +79,28 @@ std::optional<semantics_t> get_semantic(std::string_view name)
 
 namespace glTF
 {
-std::optional<PRIMITIVE_TOPOLOGY> constexpr get_primitive_topology(PRIMITIVE_MODE mode)
+std::optional<PRIMITIVE_TOPOLOGY> constexpr get_primitive_topology(glTF::PRIMITIVE_MODE mode)
 {
     switch (mode) {
-        case PRIMITIVE_MODE::POINTS:
+        case  glTF::PRIMITIVE_MODE::POINTS:
             return PRIMITIVE_TOPOLOGY::POINTS;
 
-        case PRIMITIVE_MODE::LINES:
+        case  glTF::PRIMITIVE_MODE::LINES:
             return PRIMITIVE_TOPOLOGY::LINES;
 
-        case PRIMITIVE_MODE::LINE_LOOP:
+        case  glTF::PRIMITIVE_MODE::LINE_LOOP:
             return PRIMITIVE_TOPOLOGY::LINE_LOOP;
 
-        case PRIMITIVE_MODE::LINE_STRIP:
+        case  glTF::PRIMITIVE_MODE::LINE_STRIP:
             return PRIMITIVE_TOPOLOGY::LINE_STRIP;
 
-        case PRIMITIVE_MODE::TRIANGLES:
+        case  glTF::PRIMITIVE_MODE::TRIANGLES:
             return PRIMITIVE_TOPOLOGY::TRIANGLES;
 
-        case PRIMITIVE_MODE::TRIANGLE_STRIP:
+        case  glTF::PRIMITIVE_MODE::TRIANGLE_STRIP:
             return PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
 
-        case PRIMITIVE_MODE::TRIANGLE_FAN:
+        case  glTF::PRIMITIVE_MODE::TRIANGLE_FAN:
             return PRIMITIVE_TOPOLOGY::TRIANGLE_FAN;
 
         default:
@@ -109,28 +109,28 @@ std::optional<PRIMITIVE_TOPOLOGY> constexpr get_primitive_topology(PRIMITIVE_MOD
 }
 
 template<std::size_t N>
-std::size_t constexpr attribute_size(GL componentType)
+std::size_t constexpr attribute_size(glTF::GL componentType)
 {
     switch (componentType) {
-        case GL::BYTE:
+        case  glTF::GL::BYTE:
             return N * sizeof(std::int8_t);
 
-        case GL::UNSIGNED_BYTE:
+        case  glTF::GL::UNSIGNED_BYTE:
             return N * sizeof(std::uint8_t);
 
-        case GL::SHORT:
+        case  glTF::GL::SHORT:
             return N * sizeof(std::int16_t);
 
-        case GL::UNSIGNED_SHORT:
+        case  glTF::GL::UNSIGNED_SHORT:
             return N * sizeof(std::uint16_t);
 
-        case GL::INT:
+        case  glTF::GL::INT:
             return N * sizeof(std::int32_t);
 
-        case GL::UNSIGNED_INT:
+        case  glTF::GL::UNSIGNED_INT:
             return N * sizeof(std::uint32_t);
 
-        case GL::FLOAT:
+        case  glTF::GL::FLOAT:
             return N * sizeof(std::float_t);
 
         default:
@@ -138,7 +138,7 @@ std::size_t constexpr attribute_size(GL componentType)
     }
 }
 
-std::size_t attribute_size(std::string_view type, GL componentType)
+std::size_t attribute_size(std::string_view type, glTF::GL componentType)
 {
     if (type == "SCALAR"sv)
         return attribute_size<1>(componentType);
@@ -156,28 +156,28 @@ std::size_t attribute_size(std::string_view type, GL componentType)
 }
 
 template<std::uint32_t N>
-std::optional<attribute_t> constexpr instantiate_attribute(GL componentType)
+std::optional<attribute_t> constexpr instantiate_attribute(glTF::GL componentType)
 {
     switch (componentType) {
-        case GL::BYTE:
+        case  glTF::GL::BYTE:
             return vec<N, std::int8_t>{};
 
-        case GL::UNSIGNED_BYTE:
+        case  glTF::GL::UNSIGNED_BYTE:
             return vec<N, std::uint8_t>{};
 
-        case GL::SHORT:
+        case  glTF::GL::SHORT:
             return vec<N, std::int16_t>{};
 
-        case GL::UNSIGNED_SHORT:
+        case  glTF::GL::UNSIGNED_SHORT:
             return vec<N, std::uint16_t>{};
 
-        case GL::INT:
+        case  glTF::GL::INT:
             return vec<N, std::int32_t>{};
 
-        case GL::UNSIGNED_INT:
+        case  glTF::GL::UNSIGNED_INT:
             return vec<N, std::uint32_t>{};
 
-        case GL::FLOAT:
+        case  glTF::GL::FLOAT:
             return vec<N, std::float_t>{};
 
         default:
@@ -185,7 +185,7 @@ std::optional<attribute_t> constexpr instantiate_attribute(GL componentType)
     }
 }
 
-std::optional<attribute_t> instantiate_attribute(std::string_view type, GL componentType)
+std::optional<attribute_t> instantiate_attribute(std::string_view type, glTF::GL componentType)
 {
     if (type == "SCALAR"sv)
         return glTF::instantiate_attribute<1>(componentType);
@@ -202,13 +202,13 @@ std::optional<attribute_t> instantiate_attribute(std::string_view type, GL compo
     return { };
 }
 
-std::optional<indices2_t> instantiate_index(GL componentType)
+std::optional<indices2_t> instantiate_index(glTF::GL componentType)
 {
     switch (componentType) {
-        case GL::UNSIGNED_SHORT:
+        case  glTF::GL::UNSIGNED_SHORT:
             return std::uint16_t{};
 
-        case GL::UNSIGNED_INT:
+        case  glTF::GL::UNSIGNED_INT:
             return std::uint32_t{};
 
         default:
@@ -257,10 +257,10 @@ struct mesh_t {
         std::vector<accessor_t> attributes;
 
         accessors_set_t attribute_accessors;
-#if NOT_YET_IMPLEMENTED
+    #if NOT_YET_IMPLEMENTED
         saa_t attribute_accessors2;
-#endif
-        PRIMITIVE_MODE mode{PRIMITIVE_MODE::TRIANGLES};
+    #endif
+        glTF::PRIMITIVE_MODE mode{glTF::PRIMITIVE_MODE::TRIANGLES};
     };
 
     std::vector<primitive_t> primitives;
@@ -361,7 +361,7 @@ struct accessor_t {
 
     std::vector<float> min, max;
 
-    GL componentType;
+    glTF::GL componentType;
 
     std::string type;
 
@@ -849,21 +849,24 @@ bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &nodeS
     auto accessors = json.at("accessors"s).get<std::vector<glTF::accessor_t>>();
 
 #if TEMPORARILY_DISABLED
-    auto images = ([&json] {
+    auto images = ([&json]
+    {
         if (json.count("images"s))
             return json.at("images"s).get<std::vector<glTF::image_t>>();
 
         return std::vector<glTF::image_t>{};
     })();
 
-    auto textures = ([&json] {
+    auto textures = ([&json]
+    {
         if (json.count("textures"s))
             return json.at("textures"s).get<std::vector<glTF::texture_t>>();
 
         return std::vector<glTF::texture_t>{};
     })();
 
-    auto samplers = ([&json] {
+    auto samplers = ([&json]
+    {
         if (json.count("samplers"s))
             return json.at("samplers"s).get<std::vector<glTF::sampler_t>>();
 
@@ -872,7 +875,8 @@ bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &nodeS
 
     auto materials = json.at("materials"s).get<std::vector<glTF::material_t>>();
 
-    auto cameras = ([&json] {
+    auto cameras = ([&json]
+    {
         if (json.count("cameras"s))
             return json.at("cameras"s).get<std::vector<glTF::camera_t>>();
 
@@ -959,7 +963,7 @@ bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &nodeS
 
                 else continue;
 
-#if 0
+            #if 0
                 if (auto index_buffer = instantiate_index_buffer(accessor.componentType); index_buffer) {
                     auto &&bufferView = bufferViews.at(accessor.bufferView);
                     auto &&binBuffer = binBuffers.at(bufferView.buffer);
@@ -988,7 +992,7 @@ bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &nodeS
 
                     }, indices);
                 }
-#endif
+            #endif
             }
 
             std::size_t vertexTypeSize = 0;
