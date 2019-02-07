@@ -1,6 +1,82 @@
 #include "buffer.hxx"
 #include "image.hxx"
 #include "resource.hxx"
+#include "commandBuffer.hxx"
+
+
+namespace
+{
+[[nodiscard]] std::optional<VkBuffer>
+CreateBufferHandle(VulkanDevice const &device, VkDeviceSize size, VkBufferUsageFlags usage) noexcept
+{
+    std::optional<VkBuffer> buffer;
+
+    VkBufferCreateInfo const bufferCreateInfo{
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        nullptr, 0,
+        size,
+        usage,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0, nullptr
+    };
+
+    VkBuffer handle;
+
+    if (auto result = vkCreateBuffer(device.handle(), &bufferCreateInfo, nullptr, &handle); result != VK_SUCCESS)
+        std::cerr << "failed to create buffer: "s << result << '\n';
+
+    else buffer.emplace(handle);
+
+    return buffer;
+}
+
+[[nodiscard]] std::optional<VkImage>
+CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
+                  VkSampleCountFlagBits samplesCount, VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage) noexcept
+{
+    VkImageCreateInfo const createInfo{
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        nullptr, 0,
+        VK_IMAGE_TYPE_2D,
+        format,
+        { width, height, 1 },
+        mipLevels,
+        1,
+        samplesCount,
+        tiling,
+        usage,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0, nullptr,
+        VK_IMAGE_LAYOUT_UNDEFINED
+    };
+
+    std::optional<VkImage> image;
+
+    VkImage handle;
+
+    if (auto result = vkCreateImage(vulkanDevice.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
+        std::cerr << "failed to create image: "s << result << '\n';
+
+    else image.emplace(handle);
+
+#if USE_DEBUG_MARKERS
+    VkDebugMarkerObjectNameInfoEXT const info{
+        VK_STRUCTURE_TYPE_DEBUG_MARKER_OBJECT_NAME_INFO_EXT,
+        nullptr,
+        VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT,
+        (std::uint64_t)handle,//static_cast<std::uint64_t>(handle),
+        "image"
+    };
+
+    auto vkDebugMarkerSetObjectNameEXT = (PFN_vkDebugMarkerSetObjectNameEXT)vkGetDeviceProcAddr(vulkanDevice.handle(), "vkDebugMarkerSetObjectNameEXT");
+
+    if (auto result = vkDebugMarkerSetObjectNameEXT(vulkanDevice.handle(), &info); result != VK_SUCCESS)
+        throw std::runtime_error("failed to set the image debug marker: "s + std::to_string(result));
+#endif
+
+    return image;
+}
+}
 
 std::shared_ptr<VulkanImage>
 ResourceManager::CreateImage(VkFormat format, std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels,
@@ -194,7 +270,30 @@ void ResourceManager::ReleaseResource(T &&resource) noexcept
     }
 }
 
-std::optional<VertexBuffer> ResourceManager::CreateVertexBuffer(std::size_t /*sizeInBytes*/) noexcept
+
+std::shared_ptr<VulkanBuffer>
+CreateUniformBuffer(VulkanDevice &device, std::size_t size)
 {
-    return std::optional<VertexBuffer>();
+    auto constexpr usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    return device.resourceManager().CreateBuffer(size, usageFlags, propertyFlags);
+}
+
+std::shared_ptr<VulkanBuffer>
+CreateCoherentStorageBuffer(VulkanDevice &device, std::size_t size)
+{
+    auto constexpr usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    return device.resourceManager().CreateBuffer(size, usageFlags, propertyFlags);
+}
+
+std::shared_ptr<VulkanBuffer>
+CreateStorageBuffer(VulkanDevice &device, std::size_t size)
+{
+    auto constexpr usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+
+    return device.resourceManager().CreateBuffer(size, usageFlags, propertyFlags);
 }

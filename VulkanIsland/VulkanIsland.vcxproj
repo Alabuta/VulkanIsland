@@ -253,8 +253,10 @@
     <ClCompile Include="src\loaders\loaderGLTF.cxx" />
     <ClCompile Include="src\loaders\loaderTARGA.cxx" />
     <ClCompile Include="src\pipeline.cxx" />
+    <ClCompile Include="src\renderPass.cxx" />
     <ClCompile Include="src\resources\buffer.cxx" />
     <ClCompile Include="src\resources\image.cxx" />
+    <ClCompile Include="src\resources\memory.cxx" />
     <ClCompile Include="src\resources\program.cxx" />
     <ClCompile Include="src\resources\resource.cxx" />
     <ClCompile Include="src\sceneTree.cxx" />
@@ -272,6 +274,8 @@
     <ClInclude Include="src/instance.hxx" />
     <ClInclude Include="src/math.hxx" />
     <ClInclude Include="src/main.hxx" />
+    <ClInclude Include="src\renderPass.hxx" />
+    <ClInclude Include="src\resources\memory.hxx" />
     <ClInclude Include="src\staging.hxx" />
     <ClInclude Include="src/platform/window.hxx" />
     <ClInclude Include="src/queues.hxx" />

@@ -6,7 +6,6 @@
 #include "main.hxx"
 #include "device.hxx"
 #include "program.hxx"
-#include "commandBuffer.hxx"
 #include "vertexFormat.hxx"
 
 class VulkanImage;
@@ -98,8 +97,6 @@ private:
 };
 
 
-template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>...>
-std::optional<IndexBuffer> ResourceManager::CreateIndexBuffer(std::size_t /*sizeInBytes*/) noexcept
-{
-    return std::optional<IndexBuffer>();
-}
+[[nodiscard]] std::shared_ptr<VulkanBuffer> CreateUniformBuffer(VulkanDevice &device, std::size_t size);
+[[nodiscard]] std::shared_ptr<VulkanBuffer> CreateCoherentStorageBuffer(VulkanDevice &device, std::size_t size);
+[[nodiscard]] std::shared_ptr<VulkanBuffer> CreateStorageBuffer(VulkanDevice &device, std::size_t size);

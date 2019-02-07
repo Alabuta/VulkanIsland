@@ -95,6 +95,12 @@
     <ClCompile Include="src\sceneTree.cxx">
       <Filter>Source Files\ECS</Filter>
     </ClCompile>
+    <ClCompile Include="src\resources\memory.cxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderPass.cxx">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/input/inputDataTypes.hxx">
@@ -191,6 +197,12 @@
       <Filter>Source Files\ECS</Filter>
     </ClInclude>
     <ClInclude Include="src\staging.hxx">
+      <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\memory.hxx">
+      <Filter>Source Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderPass.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>

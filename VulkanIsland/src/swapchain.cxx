@@ -1,4 +1,5 @@
 #include "swapchain.hxx"
+#include "commandBuffer.hxx"
 
 
 #if USE_WIN32
@@ -127,7 +128,7 @@ CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
 {
     std::optional<VulkanTexture> texture;
 
-    if (auto const format = FindDepthImageFormat(device.physical_handle()); format) {
+    if (auto const format = FindDepthImageFormat(device); format) {
         auto constexpr mipLevels = 1u;
 
         auto constexpr usageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
