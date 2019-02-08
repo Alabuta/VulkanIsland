@@ -30,6 +30,7 @@
 #include "commandBuffer.hxx"
 #include "pipeline.hxx"
 #include "renderPass.hxx"
+#include "semaphore.hxx"
 
 #include "ecs/ecs.hxx"
 #include "ecs/node.hxx"
@@ -46,7 +47,6 @@
 #include "camera/cameraController.hxx"
 
 
-#define USE_GLM 1
 #define USE_DYNAMIC_PIPELINE_STATE 0
 
 auto constexpr sceneName{"unlit-test"sv};
@@ -299,7 +299,7 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
 }
 
 
-void CreateGraphicsPipeline(app_t &app, VkDevice device)
+void CreateGraphicsPipeline(app_t &app)
 {
     auto const vertShaderByteCode = ReadShaderFile(R"(vert.spv)"sv);
 
@@ -478,7 +478,7 @@ void CreateGraphicsPipeline(app_t &app, VkDevice device)
         VK_NULL_HANDLE, -1
     };
 
-    if (auto result = vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &app.graphicsPipeline); result != VK_SUCCESS)
+    if (auto result = vkCreateGraphicsPipelines(app.vulkanDevice->handle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &app.graphicsPipeline); result != VK_SUCCESS)
         throw std::runtime_error("failed to create graphics pipeline: "s + std::to_string(result));
 }
 
@@ -703,18 +703,17 @@ void CreateGraphicsCommandBuffers(app_t &app)
     }
 }
 
-void CreateSemaphores(app_t &app, VkDevice device)
+void CreateSemaphores(app_t &app)
 {
-    VkSemaphoreCreateInfo constexpr createInfo{
-        VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
-        nullptr, 0
-    };
+    if (auto semaphore = CreateSemaphore(*app.vulkanDevice); !semaphore)
+        throw std::runtime_error("failed to create image semaphore"s);
 
-    if (auto result = vkCreateSemaphore(device, &createInfo, nullptr, &app.imageAvailableSemaphore); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create image semaphore: "s + std::to_string(result));
+    else app.imageAvailableSemaphore = *semaphore;
 
-    if (auto result = vkCreateSemaphore(device, &createInfo, nullptr, &app.renderFinishedSemaphore); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create render semaphore: "s + std::to_string(result));
+    if (auto semaphore = CreateSemaphore(*app.vulkanDevice); !semaphore)
+        throw std::runtime_error("failed to create render semaphore"s);
+
+    else app.renderFinishedSemaphore = *semaphore;
 }
 
 
@@ -763,6 +762,7 @@ LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
     return texture;
 }
 
+
 void RecreateSwapChain(app_t &app)
 {
     if (app.width < 1 || app.height < 1) return;
@@ -785,7 +785,7 @@ void RecreateSwapChain(app_t &app)
     else app.renderPass = std::move(renderPass.value());
 
 #if !USE_DYNAMIC_PIPELINE_STATE
-    CreateGraphicsPipeline(app, app.vulkanDevice->handle());
+    CreateGraphicsPipeline(app);
 #endif
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
@@ -793,69 +793,6 @@ void RecreateSwapChain(app_t &app)
     CreateGraphicsCommandBuffers(app);
 }
 
-
-void DrawFrame(app_t &app)
-{
-    auto &&vulkanDevice = *app.vulkanDevice;
-
-    vkQueueWaitIdle(app.presentationQueue.handle());
-
-    std::uint32_t imageIndex;
-
-    switch (auto result = vkAcquireNextImageKHR(vulkanDevice.handle(), app.swapchain.handle,
-            std::numeric_limits<std::uint64_t>::max(),app.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex); result) {
-        case VK_ERROR_OUT_OF_DATE_KHR:
-            RecreateSwapChain(app);
-            return;
-
-        case VK_SUBOPTIMAL_KHR:
-        case VK_SUCCESS:
-            break;
-
-        default:
-            throw std::runtime_error("failed to acquire next image index: "s + std::to_string(result));
-    }
-
-    auto const waitSemaphores = std::array{app.imageAvailableSemaphore};
-    auto const signalSemaphores = std::array{app.renderFinishedSemaphore};
-
-    std::array<VkPipelineStageFlags, 1> constexpr waitStages{
-        { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
-    };
-
-    VkSubmitInfo const submitInfo{
-        VK_STRUCTURE_TYPE_SUBMIT_INFO,
-        nullptr,
-        static_cast<std::uint32_t>(std::size(waitSemaphores)), std::data(waitSemaphores),
-        std::data(waitStages),
-        1, &app.commandBuffers.at(imageIndex),
-        static_cast<std::uint32_t>(std::size(signalSemaphores)), std::data(signalSemaphores),
-    };
-
-    if (auto result = vkQueueSubmit(app.graphicsQueue.handle(), 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS)
-        throw std::runtime_error("failed to submit draw command buffer: "s + std::to_string(result));
-
-    VkPresentInfoKHR const presentInfo{
-        VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-        nullptr,
-        static_cast<std::uint32_t>(std::size(signalSemaphores)), std::data(signalSemaphores),
-        1, &app.swapchain.handle,
-        &imageIndex, nullptr
-    };
-
-    switch (auto result = vkQueuePresentKHR(app.presentationQueue.handle(), &presentInfo); result) {
-        case VK_ERROR_OUT_OF_DATE_KHR:
-        case VK_SUBOPTIMAL_KHR:
-            RecreateSwapChain(app);
-            return;
-
-        case VK_SUCCESS:
-            break;
-
-        default:
-            throw std::runtime_error("failed to submit request to present framebuffer: "s + std::to_string(result));
-    }
-}
 
 void InitVulkan(Window &window, app_t &app)
 {
@@ -919,7 +856,7 @@ void InitVulkan(Window &window, app_t &app)
             throw std::runtime_error("failed to init index buffer"s);
     }
 
-    CreateGraphicsPipeline(app, app.vulkanDevice->handle());
+    CreateGraphicsPipeline(app);
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
@@ -973,7 +910,7 @@ void InitVulkan(Window &window, app_t &app)
 
     CreateGraphicsCommandBuffers(app);
 
-    CreateSemaphores(app, app.vulkanDevice->handle());
+    CreateSemaphores(app);
 }
 
 
@@ -1034,6 +971,69 @@ void Update(app_t &app)
     };
 
     vkFlushMappedMemoryRanges(app.vulkanDevice->handle(), static_cast<std::uint32_t>(std::size(mappedRanges)), std::data(mappedRanges));
+}
+
+void DrawFrame(app_t &app)
+{
+    auto &&vulkanDevice = *app.vulkanDevice;
+
+    vkQueueWaitIdle(app.presentationQueue.handle());
+
+    std::uint32_t imageIndex;
+
+    switch (auto result = vkAcquireNextImageKHR(vulkanDevice.handle(), app.swapchain.handle,
+            std::numeric_limits<std::uint64_t>::max(),app.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex); result) {
+        case VK_ERROR_OUT_OF_DATE_KHR:
+            RecreateSwapChain(app);
+            return;
+
+        case VK_SUBOPTIMAL_KHR:
+        case VK_SUCCESS:
+            break;
+
+        default:
+            throw std::runtime_error("failed to acquire next image index: "s + std::to_string(result));
+    }
+
+    auto const waitSemaphores = std::array{app.imageAvailableSemaphore};
+    auto const signalSemaphores = std::array{app.renderFinishedSemaphore};
+
+    std::array<VkPipelineStageFlags, 1> constexpr waitStages{
+        { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
+    };
+
+    VkSubmitInfo const submitInfo{
+        VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        nullptr,
+        static_cast<std::uint32_t>(std::size(waitSemaphores)), std::data(waitSemaphores),
+        std::data(waitStages),
+        1, &app.commandBuffers.at(imageIndex),
+        static_cast<std::uint32_t>(std::size(signalSemaphores)), std::data(signalSemaphores),
+    };
+
+    if (auto result = vkQueueSubmit(app.graphicsQueue.handle(), 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS)
+        throw std::runtime_error("failed to submit draw command buffer: "s + std::to_string(result));
+
+    VkPresentInfoKHR const presentInfo{
+        VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+        nullptr,
+        static_cast<std::uint32_t>(std::size(signalSemaphores)), std::data(signalSemaphores),
+        1, &app.swapchain.handle,
+        &imageIndex, nullptr
+    };
+
+    switch (auto result = vkQueuePresentKHR(app.presentationQueue.handle(), &presentInfo); result) {
+        case VK_ERROR_OUT_OF_DATE_KHR:
+        case VK_SUBOPTIMAL_KHR:
+            RecreateSwapChain(app);
+            return;
+
+        case VK_SUCCESS:
+            break;
+
+        default:
+            throw std::runtime_error("failed to submit request to present framebuffer: "s + std::to_string(result));
+    }
 }
 
 

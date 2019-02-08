@@ -205,6 +205,9 @@
     <ClInclude Include="src\renderPass.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\semaphore.hxx">
+      <Filter>Source Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="../shaders/shader.frag">

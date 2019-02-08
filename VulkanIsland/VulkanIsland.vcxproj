@@ -276,6 +276,7 @@
     <ClInclude Include="src/main.hxx" />
     <ClInclude Include="src\renderPass.hxx" />
     <ClInclude Include="src\resources\memory.hxx" />
+    <ClInclude Include="src\semaphore.hxx" />
     <ClInclude Include="src\staging.hxx" />
     <ClInclude Include="src/platform/window.hxx" />
     <ClInclude Include="src/queues.hxx" />
