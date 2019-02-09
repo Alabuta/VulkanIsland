@@ -32,6 +32,7 @@ include_directories(src)
 
 
 set(SOURCE_FILES
+	src/resources/memory.cxx
 	src/resources/buffer.cxx
 	src/resources/image.cxx
     src/resources/resource.cxx
@@ -49,7 +50,9 @@ set(SOURCE_FILES
     src/pipeline.cxx
 
 	src/sceneTree.cxx
-    src/swapchain.cxx
+	src/swapchain.cxx
+
+	src/renderPass.cxx
     
     src/camera/cameraController.cxx
     src/camera/handlers/mouseHandler.cxx
