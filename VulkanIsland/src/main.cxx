@@ -1038,6 +1038,121 @@ void DrawFrame(app_t &app)
 
 
 
+struct xformat final {
+    std::vector<vertex_layout_t> vertexLayouts;
+
+    struct vertex_buffer final {
+        std::size_t vertexLayoutIndex;
+
+        std::uint32_t count{0};
+
+        std::vector<std::byte> buffer;
+    };
+
+    std::vector<vertex_buffer> vertexBuffers;
+
+    struct index_buffer final {
+        std::variant<std::uint16_t, std::uint32_t> type;
+
+        std::uint32_t count{0};
+
+        std::vector<std::byte> buffer;
+    };
+
+    std::vector<index_buffer> indexBuffers;
+
+    struct non_indexed_renderable final {
+        std::size_t vertexBufferIndex;
+
+        std::uint32_t vertexCount{0};
+        std::uint32_t instanceCount{0};
+        std::uint32_t firstVertex{0};
+        std::uint32_t firstInstance{0};
+    };
+
+    std::vector<non_indexed_renderable> nonIndexedRenderables;
+
+    struct indexed_renderable final {
+        std::size_t vertexBufferIndex;
+        std::size_t indexBufferIndex;
+
+        std::uint32_t indexCount{0};
+        std::uint32_t instanceCount{0};
+        std::uint32_t firstIndex{0};
+        std::uint32_t vertexOffset{0};
+        std::uint32_t firstInstance{0};
+    };
+
+    std::vector<indexed_renderable> indexedRenderables;
+};
+
+namespace temp
+{
+struct vertex final {
+    vec<3, std::float_t> position;
+    vec<2, std::float_t> texCoord;
+};
+
+xformat populate()
+{
+    using vertices_t = std::vector<vertex>;
+    std::vector<vertices_t> vertexBuffers;
+
+    {
+        vertices_t vertices;
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<2, std::float_t>{.5f, .5f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{-1.f, 0.f, 1.f}, vec<2, std::float_t>{0.f, 0.f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{1.f, 0.f, 1.f}, vec<2, std::float_t>{1.f, 0.f}
+        });
+
+        vertexBuffers.push_back(std::move(vertices));
+    }
+
+    {
+        vertices_t vertices;
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<2, std::float_t>{.5f, .5f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{1.f, 0.f, -1.f}, vec<2, std::float_t>{1.f, 1.f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{0.f, 0.f, 1.f}, vec<2, std::float_t>{.5f, 1.f}
+        });
+
+        vertexBuffers.push_back(std::move(vertices));
+    }
+
+    xformat model;
+
+    auto &&vertexLayouts = model.vertexLayouts;
+
+    std::transform(std::begin(vertexBuffers), std::end(vertexBuffers), std::back_inserter(model.vertexBuffers), [] (auto &&vertexBuffers)
+    {
+        xformat::vertex_buffer buffer;
+
+        vertex_layout_t vertexLayout;
+
+        using vertex_t = std::decay_t<decltype(vertexBuffers)>::value_type;
+
+        return buffer;
+    });
+
+    return model;
+}
+}
+
 
 
 int main()
@@ -1048,6 +1163,8 @@ try {
 	std::signal(SIGSEGV, PosixSignalHandler);
 	std::signal(SIGTRAP, PosixSignalHandler);
 #endif
+
+    temp::populate();
 
     glfwInit();
 

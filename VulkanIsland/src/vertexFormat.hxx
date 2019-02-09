@@ -68,11 +68,9 @@ using semantics_t = std::variant<
 
 
 template<std::uint32_t N, class T>
-struct vec {
+struct vec final : public std::array<T, N> {
     using type = T;
     static auto constexpr number{N};
-
-    std::array<T, N> array;
 };
 
 using attribute_t = std::variant<
