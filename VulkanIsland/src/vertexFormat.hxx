@@ -117,7 +117,7 @@ struct attribute_description_t {
     attribute_t attribute;
     bool normalized;
 
-    attribute_description_t() { }
+    //attribute_description_t() { }
 
     attribute_description_t(std::size_t offset, semantics_t semantic, attribute_t &&attribute, bool normalized)
         : offset{offset}, semantic{semantic}, attribute{attribute}, normalized{normalized} { }

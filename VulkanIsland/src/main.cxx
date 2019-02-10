@@ -1039,12 +1039,30 @@ void DrawFrame(app_t &app)
 
 
 struct xformat final {
+    struct vertex_attribute final {
+        semantics_t semantic;
+        attribute_t type;
+        bool normalized;
+    };
+
+    struct vertex_layout final {
+        std::vector<std::pair<std::uint8_t, vertex_attribute>> attributes;
+    };
+
+    struct vertex_input final {
+        std::vector<vertex_attribute> attributes;
+    };
+
+    struct vertex_topology final {
+        ;
+    };
+
     std::vector<vertex_layout_t> vertexLayouts;
 
     struct vertex_buffer final {
         std::size_t vertexLayoutIndex;
 
-        std::uint32_t count{0};
+        std::size_t count{0};
 
         std::vector<std::byte> buffer;
     };
@@ -1054,36 +1072,40 @@ struct xformat final {
     struct index_buffer final {
         std::variant<std::uint16_t, std::uint32_t> type;
 
-        std::uint32_t count{0};
+        std::size_t count{0};
 
         std::vector<std::byte> buffer;
     };
 
     std::vector<index_buffer> indexBuffers;
 
-    struct non_indexed_renderable final {
-        std::size_t vertexBufferIndex;
-
-        std::uint32_t vertexCount{0};
-        std::uint32_t instanceCount{0};
-        std::uint32_t firstVertex{0};
-        std::uint32_t firstInstance{0};
+    struct buffer_view final {
+        std::size_t bufferIndex;
     };
 
-    std::vector<non_indexed_renderable> nonIndexedRenderables;
+    struct non_indexed_submesh final {
+        std::size_t vertexBufferIndex;
 
-    struct indexed_renderable final {
+        std::size_t vertexCount{0};
+        std::size_t instanceCount{0};
+        std::size_t firstVertex{0};
+        std::size_t firstInstance{0};
+    };
+
+    std::vector<non_indexed_submesh> nonIndexedSubmeshes;
+
+    struct indexed_submesh final {
         std::size_t vertexBufferIndex;
         std::size_t indexBufferIndex;
 
-        std::uint32_t indexCount{0};
-        std::uint32_t instanceCount{0};
-        std::uint32_t firstIndex{0};
-        std::uint32_t vertexOffset{0};
-        std::uint32_t firstInstance{0};
+        std::size_t indexCount{0};
+        std::size_t instanceCount{0};
+        std::size_t firstIndex{0};
+        std::size_t vertexOffset{0};
+        std::size_t firstInstance{0};
     };
 
-    std::vector<indexed_renderable> indexedRenderables;
+    std::vector<indexed_submesh> indexedSubmeshes;
 };
 
 namespace temp
