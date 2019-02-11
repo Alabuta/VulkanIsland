@@ -1039,25 +1039,72 @@ void DrawFrame(app_t &app)
 
 
 struct xformat final {
+    enum class ATTRIBUTE_TYPE : std::uint8_t {
+        SCALAR = 0,
+        VEC2, VEC3, VEC4
+    };
+
+    enum class COMPONENT_TYPE : std::uint8_t {
+        I8 = 0, U8,
+        I16, U16,
+        I32, U32,
+        F32,
+        F64
+    };
+
+    enum class ATTRIBUTE_SEMANTIC : std::uint8_t {
+        POSITION = 0,
+        NORMAL,
+        TEXCOORD_0,
+        TEXCOORD_1,
+        TANGENT,
+        COLOR_0,
+        JOINTS_0,
+        WEIGHTS_0
+    };
+
+
     struct vertex_attribute final {
-        semantics_t semantic;
-        attribute_t type;
+        ATTRIBUTE_SEMANTIC semantic;
+        ATTRIBUTE_TYPE attributeType;
+        COMPONENT_TYPE componentType;
         bool normalized;
     };
 
     struct vertex_layout final {
-        std::vector<std::pair<std::uint8_t, vertex_attribute>> attributes;
+        vertex_attribute attribute;
+        std::size_t offset;
+    };
+
+    struct less_comparator final {
+
+        template<class T1, class T2, typename std::enable_if_t<are_same_v<vertex_attribute, T1, T2>>...>
+        auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
+        {
+            return lhs.semantic < rhs.semantic;
+        }
+
+        template<class T1, class T2, typename std::enable_if_t<are_same_v<vertex_layout, T1, T2>>...>
+        auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
+        {
+            return lhs.attribute < rhs.attribute;
+        }
     };
 
     struct vertex_input final {
-        std::vector<vertex_attribute> attributes;
+        std::size_t size;
+        std::set<vertex_input, less_comparator> layout;
     };
 
-    struct vertex_topology final {
+    struct primitve_topology final {
         ;
     };
 
-    std::vector<vertex_layout_t> vertexLayouts;
+    /*struct vertex_input final {
+        std::vector<vertex_attribute> attributes;
+    };*/
+
+    std::vector<vertex_layout> vertexLayouts;
 
     struct vertex_buffer final {
         std::size_t vertexLayoutIndex;
