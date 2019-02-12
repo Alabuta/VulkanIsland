@@ -1205,7 +1205,7 @@ xformat populate()
 
     xformat model;
 
-    auto &&vertexLayouts = model.vertexLayouts;
+    // auto &&vertexLayouts = model.vertexLayouts;
 
     std::transform(std::begin(vertexBuffers), std::end(vertexBuffers), std::back_inserter(model.vertexBuffers), [] (auto &&vertexBuffers)
     {
@@ -1213,7 +1213,7 @@ xformat populate()
 
         vertex_layout_t vertexLayout;
 
-        using vertex_t = std::decay_t<decltype(vertexBuffers)>::value_type;
+        using vertex_t = typename std::decay_t<decltype(vertexBuffers)>::value_type;
 
         return buffer;
     });
