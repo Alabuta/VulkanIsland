@@ -1039,6 +1039,7 @@ void DrawFrame(app_t &app)
 
 
 struct xformat final {
+#if NOT_YET_IMPLEMENTED
     enum class ATTRIBUTE_TYPE : std::uint8_t {
         SCALAR = 0,
         VEC2, VEC3, VEC4
@@ -1055,8 +1056,7 @@ struct xformat final {
     enum class ATTRIBUTE_SEMANTIC : std::uint8_t {
         POSITION = 0,
         NORMAL,
-        TEXCOORD_0,
-        TEXCOORD_1,
+        TEXCOORD_0, TEXCOORD_1,
         TANGENT,
         COLOR_0,
         JOINTS_0,
@@ -1070,15 +1070,23 @@ struct xformat final {
         COMPONENT_TYPE componentType;
         bool normalized;
     };
+#endif
+
+    struct vertex_attribute final {
+        semantics_t semantic;
+        attribute_t type;
+        bool normalized;
+    };
 
     struct vertex_layout final {
         vertex_attribute attribute;
-        std::size_t offset;
+
+        std::size_t offsetInBytes;
     };
 
     struct less_comparator final {
 
-        template<class T1, class T2, typename std::enable_if_t<are_same_v<vertex_attribute, T1, T2>>...>
+        template<class T1, class T2, typename std::enable_if_t<are_same_v<struct vertex_attribute, T1, T2>>...>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
             return lhs.semantic < rhs.semantic;
@@ -1091,20 +1099,40 @@ struct xformat final {
         }
     };
 
-    struct vertex_input final {
-        std::size_t size;
-        std::set<vertex_input, less_comparator> layout;
+    struct hash_value final {
+        template<class T, typename std::enable_if_t<std::is_same_v<vertex_attribute, std::decay_t<T>>>...>
+        auto constexpr operator() (T &&attribute) const noexcept
+        {
+            std::size_t seed = 0;
+
+            boost::hash_combine(seed, attribute.semantic.index());
+            boost::hash_combine(seed, attribute.type.index());
+            boost::hash_combine(seed, attribute.normalized);
+
+            return seed;
+        }
+
+        template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout, std::decay_t<T>>>...>
+        auto constexpr operator() (T &&layout) const noexcept
+        {
+            std::size_t seed = 0;
+
+            boost::hash_combine(seed, boost::hash<vertex_attribute>{layout.attribute});
+
+            boost::hash_combine(seed, layout.offsetInBytes);
+
+            return seed;
+        }
     };
 
-    struct primitve_topology final {
-        ;
+
+    struct vertex_input_state final {
+        std::size_t offsetInBytes;
+
+        std::set<vertex_layout, less_comparator> layouts;
     };
 
-    /*struct vertex_input final {
-        std::vector<vertex_attribute> attributes;
-    };*/
-
-    std::vector<vertex_layout> vertexLayouts;
+    std::vector<vertex_input_state> vertexInputStates;
 
     struct vertex_buffer final {
         std::size_t vertexLayoutIndex;
@@ -1164,6 +1192,9 @@ struct vertex final {
 
 xformat populate()
 {
+    std::set<xformat::vertex_attribute, xformat::less_comparator> set;
+    set.emplace(xformat::vertex_attribute{});
+
     using vertices_t = std::vector<vertex>;
     std::vector<vertices_t> vertexBuffers;
 
