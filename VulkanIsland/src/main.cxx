@@ -1133,15 +1133,15 @@ struct xformat final {
 
 
     struct vertex_input_state final {
-        std::size_t offsetInBytes;
+        std::vector<vertex_layout> layouts;
 
-        std::set<vertex_layout, less_comparator> layouts;
+        std::size_t sizeInBytes;
     };
 
     std::vector<vertex_input_state> vertexInputStates;
 
     struct vertex_buffer final {
-        std::size_t vertexLayoutIndex;
+        std::size_t vertexInputIndex;
 
         std::size_t count{0};
 
@@ -1160,12 +1160,16 @@ struct xformat final {
 
     std::vector<index_buffer> indexBuffers;
 
-    struct buffer_view final {
-        std::size_t bufferIndex;
+    struct material final {
+        PRIMITIVE_TOPOLOGY topology;
     };
 
-    struct non_indexed_submesh final {
+    std::vector<material> materials;
+
+    struct non_indexed_meshlet final {
         std::size_t vertexBufferIndex;
+
+        std::size_t materialIndex;
 
         std::size_t vertexCount{0};
         std::size_t instanceCount{0};
@@ -1173,11 +1177,13 @@ struct xformat final {
         std::size_t firstInstance{0};
     };
 
-    std::vector<non_indexed_submesh> nonIndexedSubmeshes;
+    std::vector<non_indexed_meshlet> nonIndexedMeshlets;
 
-    struct indexed_submesh final {
+    struct indexed_meshlet final {
         std::size_t vertexBufferIndex;
         std::size_t indexBufferIndex;
+
+        std::size_t materialIndex;
 
         std::size_t indexCount{0};
         std::size_t instanceCount{0};
@@ -1186,7 +1192,7 @@ struct xformat final {
         std::size_t firstInstance{0};
     };
 
-    std::vector<indexed_submesh> indexedSubmeshes;
+    std::vector<indexed_meshlet> indexedMeshlets;
 };
 
 namespace temp
@@ -1198,9 +1204,6 @@ struct vertex final {
 
 xformat populate()
 {
-    std::set<xformat::vertex_attribute, xformat::less_comparator> set;
-    set.emplace(xformat::vertex_attribute{});
-
     using vertices_t = std::vector<vertex>;
     std::vector<vertices_t> vertexBuffers;
 
