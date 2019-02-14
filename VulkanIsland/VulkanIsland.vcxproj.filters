@@ -30,6 +30,9 @@
     <Filter Include="Source Files\ECS">
       <UniqueIdentifier>{8223f4da-e7ea-423b-bbfb-837960d6c9c7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Source Files\Renderer">
+      <UniqueIdentifier>{f912d248-d83a-4499-80a0-fcbf4bd3304a}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src/debug.cxx">
@@ -207,6 +210,15 @@
     </ClInclude>
     <ClInclude Include="src\semaphore.hxx">
       <Filter>Source Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\material.hxx">
+      <Filter>Source Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\shader.hxx">
+      <Filter>Source Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\pipelines.hxx">
+      <Filter>Source Files\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

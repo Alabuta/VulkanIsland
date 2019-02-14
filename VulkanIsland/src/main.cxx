@@ -301,6 +301,7 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
 
 void CreateGraphicsPipeline(app_t &app)
 {
+    // Shader
     auto const vertShaderByteCode = ReadShaderFile(R"(vert.spv)"sv);
 
     if (vertShaderByteCode.empty())
@@ -353,6 +354,7 @@ void CreateGraphicsPipeline(app_t &app)
 
     auto shaderStages = std::array{ vertShaderCreateInfo, fragShaderCreateInfo };
 
+    // Vertex layout
     VertexInputStateInfo vertexInputStateCreateInfo{app.scene.meshes.front().submeshes.front().vertices.layout};
 
     VkPipelineInputAssemblyStateCreateInfo constexpr vertexAssemblyStateCreateInfo{
@@ -362,6 +364,7 @@ void CreateGraphicsPipeline(app_t &app)
         VK_FALSE
     };
 
+    // Render pass
 #if USE_DYNAMIC_PIPELINE_STATE
     auto const dynamicStates = std::array{
         VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT,
@@ -397,6 +400,17 @@ void CreateGraphicsPipeline(app_t &app)
     auto constexpr rasterizerDiscardEnable = VK_FALSE;
 #endif
 
+    VkPipelineMultisampleStateCreateInfo const multisampleCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        nullptr, 0,
+        app.vulkanDevice->samplesCount(),//VK_SAMPLE_COUNT_1_BIT
+        VK_FALSE, 1,
+        nullptr,
+        VK_FALSE,
+        VK_FALSE
+    };
+
+    // Material
     VkPipelineRasterizationStateCreateInfo constexpr rasterizerState{
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
         nullptr, 0,
@@ -408,16 +422,6 @@ void CreateGraphicsPipeline(app_t &app)
         VK_FALSE,
         0.f, 0.f, 0.f,
         1.f
-    };
-
-    VkPipelineMultisampleStateCreateInfo const multisampleCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-        nullptr, 0,
-        app.vulkanDevice->samplesCount(),//VK_SAMPLE_COUNT_1_BIT
-        VK_FALSE, 1,
-        nullptr,
-        VK_FALSE,
-        VK_FALSE
     };
 
     VkPipelineDepthStencilStateCreateInfo constexpr depthStencilStateCreateInfo{
@@ -453,6 +457,7 @@ void CreateGraphicsPipeline(app_t &app)
 
     if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); pipelineLayout)
         app.pipelineLayout = pipelineLayout.value();
+
 
     VkGraphicsPipelineCreateInfo const graphicsPipelineCreateInfo{
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
@@ -1083,6 +1088,7 @@ struct xformat final {
 
         std::size_t offsetInBytes;
     };
+
 
     struct less_comparator final {
 
