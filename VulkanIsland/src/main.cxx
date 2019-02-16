@@ -799,6 +799,114 @@ void RecreateSwapChain(app_t &app)
 }
 
 
+namespace temp
+{
+struct vertex final {
+    vec<3, std::float_t> position;
+    vec<2, std::float_t> texCoord;
+};
+
+xformat populate()
+{
+    xformat model;
+
+    {
+        xformat::vertex_layout vertexLayout;
+        vertexLayout.sizeInBytes = sizeof(vertex);
+
+        vertexLayout.attributes.push_back(xformat::vertex_attribute{
+            0, semantic::position{}, vec<3, std::float_t>{}
+        });
+
+        vertexLayout.attributes.push_back(xformat::vertex_attribute{
+            sizeof(vec<3, std::float_t>), semantic::tex_coord_0{}, vec<2, std::float_t>{}
+        });
+
+        model.vertexLayouts.push_back(std::move(vertexLayout));
+    }
+
+    using vertices_t = std::vector<vertex>;
+    std::vector<vertices_t> vertexBuffers;
+
+    {
+        vertices_t vertices;
+
+        // First triangle
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<2, std::float_t>{.5f, .5f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{-1.f, 0.f, 1.f}, vec<2, std::float_t>{0.f, 0.f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{1.f, 0.f, 1.f}, vec<2, std::float_t>{1.f, 0.f}
+        });
+
+        // Second triangle
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<2, std::float_t>{.5f, .5f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{1.f, 0.f, -1.f}, vec<2, std::float_t>{1.f, 1.f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{0.f, 0.f, 1.f}, vec<2, std::float_t>{.5f, 1.f}
+        });
+
+        vertexBuffers.push_back(std::move(vertices));
+    }
+
+    std::transform(std::begin(vertexBuffers), std::end(vertexBuffers), std::back_inserter(model.vertexBuffers), [] (auto &&srcBuffer)
+    {
+        xformat::vertex_buffer dstBuffer;
+
+        dstBuffer.vertexLayoutIndex = 0;
+        dstBuffer.count = std::size(srcBuffer);
+
+        dstBuffer.buffer.resize(sizeof(temp::vertex) * std::size(srcBuffer));
+
+        std::uninitialized_copy(std::begin(srcBuffer), std::end(srcBuffer), reinterpret_cast<temp::vertex *>(std::data(dstBuffer.buffer)));
+
+        return dstBuffer;
+    });
+
+    model.materials.push_back(xformat::material{ PRIMITIVE_TOPOLOGY::TRIANGLES });
+
+    {
+        xformat::non_indexed_meshlet meshlet;
+
+        meshlet.vertexBufferIndex = 0;
+        meshlet.materialIndex = 0;
+        meshlet.vertexCount = 3;
+        meshlet.instanceCount = 1;
+        meshlet.firstVertex = 0;
+        meshlet.firstInstance = 0;
+
+        model.nonIndexedMeshlets.push_back(std::move(meshlet));
+    }
+
+    {
+        xformat::non_indexed_meshlet meshlet;
+
+        meshlet.vertexBufferIndex = 0;
+        meshlet.materialIndex = 0;
+        meshlet.vertexCount = 3;
+        meshlet.instanceCount = 1;
+        meshlet.firstVertex = 3;
+        meshlet.firstInstance = 0;
+
+        model.nonIndexedMeshlets.push_back(std::move(meshlet));
+    }
+
+    return model;
+}
+}
+
+
 void InitVulkan(Window &window, app_t &app)
 {
     app.vulkanInstance = std::make_unique<VulkanInstance>(config::extensions, config::layers);
@@ -839,6 +947,8 @@ void InitVulkan(Window &window, app_t &app)
         app.swapchain = std::move(swapchain.value());
 
     else throw std::runtime_error("failed to create the swapchain"s);
+
+    auto model = temp::populate();
 
     if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkanDevice); !descriptorSetLayout)
         throw std::runtime_error("failed to create the descriptor set layout"s);
@@ -1043,264 +1153,6 @@ void DrawFrame(app_t &app)
 
 
 
-struct xformat final {
-#if NOT_YET_IMPLEMENTED
-    enum class ATTRIBUTE_TYPE : std::uint8_t {
-        SCALAR = 0,
-        VEC2, VEC3, VEC4
-    };
-
-    enum class COMPONENT_TYPE : std::uint8_t {
-        I8 = 0, U8,
-        I16, U16,
-        I32, U32,
-        F32,
-        F64
-    };
-
-    enum class ATTRIBUTE_SEMANTIC : std::uint8_t {
-        POSITION = 0,
-        NORMAL,
-        TEXCOORD_0, TEXCOORD_1,
-        TANGENT,
-        COLOR_0,
-        JOINTS_0,
-        WEIGHTS_0
-    };
-
-
-    struct vertex_attribute final {
-        ATTRIBUTE_SEMANTIC semantic;
-        ATTRIBUTE_TYPE attributeType;
-        COMPONENT_TYPE componentType;
-        bool normalized;
-    };
-#endif
-
-    struct vertex_attribute final {
-        std::size_t offsetInBytes;
-
-        semantics_t semantic;
-        attribute_t type;
-
-        bool normalized;
-    };
-
-
-#if NOT_YET_IMPLEMENTED
-    struct less_comparator final {
-
-        template<class T1, class T2, typename std::enable_if_t<are_same_v<struct vertex_attribute, T1, T2>>...>
-        auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
-        {
-            return lhs.semantic < rhs.semantic;
-        }
-
-        template<class T1, class T2, typename std::enable_if_t<are_same_v<vertex_layout, T1, T2>>...>
-        auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
-        {
-            return lhs.attribute < rhs.attribute;
-        }
-    };
-
-    struct hash_value final {
-        template<class T, typename std::enable_if_t<std::is_same_v<vertex_attribute, std::decay_t<T>>>...>
-        auto constexpr operator() (T &&attribute) const noexcept
-        {
-            std::size_t seed = 0;
-
-            boost::hash_combine(seed, attribute.semantic.index());
-            boost::hash_combine(seed, attribute.type.index());
-            boost::hash_combine(seed, attribute.normalized);
-
-            return seed;
-        }
-
-        template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout, std::decay_t<T>>>...>
-        auto constexpr operator() (T &&layout) const noexcept
-        {
-            std::size_t seed = 0;
-
-            boost::hash_combine(seed, boost::hash<vertex_attribute>{layout.attribute});
-
-            boost::hash_combine(seed, layout.offsetInBytes);
-
-            return seed;
-        }
-    };
-#endif
-
-
-    struct vertex_layout final {
-        std::vector<vertex_attribute> attributes;
-
-        std::size_t sizeInBytes;
-    };
-
-    std::vector<vertex_layout> vertexLayouts;
-
-    struct vertex_buffer final {
-        std::size_t vertexLayoutIndex;
-
-        std::size_t count{0};
-
-        std::vector<std::byte> buffer;
-    };
-
-    std::vector<vertex_buffer> vertexBuffers;
-
-    struct index_buffer final {
-        std::variant<std::uint16_t, std::uint32_t> type;
-
-        std::size_t count{0};
-
-        std::vector<std::byte> buffer;
-    };
-
-    std::vector<index_buffer> indexBuffers;
-
-    struct material final {
-        PRIMITIVE_TOPOLOGY topology;
-    };
-
-    std::vector<material> materials;
-
-    struct non_indexed_meshlet final {
-        std::size_t vertexBufferIndex;
-
-        std::size_t materialIndex;
-
-        std::size_t vertexCount{0};
-        std::size_t instanceCount{0};
-        std::size_t firstVertex{0};
-        std::size_t firstInstance{0};
-    };
-
-    std::vector<non_indexed_meshlet> nonIndexedMeshlets;
-
-    struct indexed_meshlet final {
-        std::size_t vertexBufferIndex;
-        std::size_t indexBufferIndex;
-
-        std::size_t materialIndex;
-
-        std::size_t indexCount{0};
-        std::size_t instanceCount{0};
-        std::size_t firstIndex{0};
-        std::size_t vertexOffset{0};
-        std::size_t firstInstance{0};
-    };
-
-    std::vector<indexed_meshlet> indexedMeshlets;
-};
-
-namespace temp
-{
-struct vertex final {
-    vec<3, std::float_t> position;
-    vec<2, std::float_t> texCoord;
-};
-
-xformat populate()
-{
-    xformat model;
-
-    {
-        xformat::vertex_layout vertexLayout;
-        vertexLayout.sizeInBytes = sizeof(vertex);
-
-        vertexLayout.attributes.push_back(xformat::vertex_attribute{
-            0, semantic::position{}, vec<3, std::float_t>{}
-        });
-
-        vertexLayout.attributes.push_back(xformat::vertex_attribute{
-            sizeof(vec<3, std::float_t>), semantic::tex_coord_0{}, vec<2, std::float_t>{}
-        });
-
-        model.vertexLayouts.push_back(std::move(vertexLayout));
-    }
-
-    using vertices_t = std::vector<vertex>;
-    std::vector<vertices_t> vertexBuffers;
-
-    {
-        vertices_t vertices;
-
-        // First triangle
-        vertices.push_back(vertex{
-            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<2, std::float_t>{.5f, .5f}
-        });
-
-        vertices.push_back(vertex{
-            vec<3, std::float_t>{-1.f, 0.f, 1.f}, vec<2, std::float_t>{0.f, 0.f}
-        });
-
-        vertices.push_back(vertex{
-            vec<3, std::float_t>{1.f, 0.f, 1.f}, vec<2, std::float_t>{1.f, 0.f}
-        });
-
-        // Second triangle
-        vertices.push_back(vertex{
-            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<2, std::float_t>{.5f, .5f}
-        });
-
-        vertices.push_back(vertex{
-            vec<3, std::float_t>{1.f, 0.f, -1.f}, vec<2, std::float_t>{1.f, 1.f}
-        });
-
-        vertices.push_back(vertex{
-            vec<3, std::float_t>{0.f, 0.f, 1.f}, vec<2, std::float_t>{.5f, 1.f}
-        });
-
-        vertexBuffers.push_back(std::move(vertices));
-    }
-
-    std::transform(std::begin(vertexBuffers), std::end(vertexBuffers), std::back_inserter(model.vertexBuffers), [] (auto &&srcBuffer)
-    {
-        xformat::vertex_buffer dstBuffer;
-
-        dstBuffer.vertexLayoutIndex = 0;
-        dstBuffer.count = std::size(srcBuffer);
-
-        dstBuffer.buffer.resize(sizeof(temp::vertex) * std::size(srcBuffer));
-
-        std::uninitialized_copy(std::begin(srcBuffer), std::end(srcBuffer), reinterpret_cast<temp::vertex *>(std::data(dstBuffer.buffer)));
-
-        return dstBuffer;
-    });
-
-    model.materials.push_back(xformat::material{ PRIMITIVE_TOPOLOGY::TRIANGLES });
-
-    {
-        xformat::non_indexed_meshlet meshlet;
-
-        meshlet.vertexBufferIndex = 0;
-        meshlet.materialIndex = 0;
-        meshlet.vertexCount = 3;
-        meshlet.instanceCount = 1;
-        meshlet.firstVertex = 0;
-        meshlet.firstInstance = 0;
-
-        model.nonIndexedMeshlets.push_back(std::move(meshlet));
-    }
-
-    {
-        xformat::non_indexed_meshlet meshlet;
-
-        meshlet.vertexBufferIndex = 0;
-        meshlet.materialIndex = 0;
-        meshlet.vertexCount = 3;
-        meshlet.instanceCount = 1;
-        meshlet.firstVertex = 3;
-        meshlet.firstInstance = 0;
-
-        model.nonIndexedMeshlets.push_back(std::move(meshlet));
-    }
-
-    return model;
-}
-}
-
 
 
 int main()
@@ -1311,8 +1163,6 @@ try {
 	std::signal(SIGSEGV, PosixSignalHandler);
 	std::signal(SIGTRAP, PosixSignalHandler);
 #endif
-
-    temp::populate();
 
     glfwInit();
 

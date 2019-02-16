@@ -37,7 +37,7 @@ private:
 class VertexBuffer final {
 public:
 
-    VertexBuffer(std::shared_ptr<VulkanBuffer> buffer, std::size_t size) noexcept : buffer{buffer}, size{size} { }
+    VertexBuffer(std::shared_ptr<VulkanBuffer> buffer, std::size_t sizeInBytes) noexcept : buffer{buffer}, sizeInBytes{sizeInBytes} { }
 
     template<class T, typename std::enable_if_t<std::is_same_v<VertexBuffer, std::decay_t<T>>>...>
     bool constexpr operator< (T &&rhs) const noexcept
@@ -47,9 +47,8 @@ public:
 
 private:
     std::shared_ptr<VulkanBuffer> buffer{nullptr};
-    std::size_t size{0};
-
-    vertex_layout_t layout;
+    std::size_t sizeInBytes{0};
+    std::size_t offset{0};
 };
 
 

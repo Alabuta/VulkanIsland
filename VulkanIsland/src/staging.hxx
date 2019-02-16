@@ -114,6 +114,157 @@ namespace staging
 }
 
 
+struct xformat final {
+#if NOT_YET_IMPLEMENTED
+    enum class ATTRIBUTE_TYPE : std::uint8_t {
+        SCALAR = 0,
+        VEC2, VEC3, VEC4
+    };
+
+    enum class COMPONENT_TYPE : std::uint8_t {
+        I8 = 0, U8,
+        I16, U16,
+        I32, U32,
+        F32,
+        F64
+    };
+
+    enum class ATTRIBUTE_SEMANTIC : std::uint8_t {
+        POSITION = 0,
+        NORMAL,
+        TEXCOORD_0, TEXCOORD_1,
+        TANGENT,
+        COLOR_0,
+        JOINTS_0,
+        WEIGHTS_0
+    };
+
+
+    struct vertex_attribute final {
+        ATTRIBUTE_SEMANTIC semantic;
+        ATTRIBUTE_TYPE attributeType;
+        COMPONENT_TYPE componentType;
+        bool normalized;
+    };
+#endif
+
+    struct vertex_attribute final {
+        std::size_t offsetInBytes;
+
+        semantics_t semantic;
+        attribute_t type;
+
+        bool normalized;
+    };
+
+
+#if NOT_YET_IMPLEMENTED
+    struct less_comparator final {
+
+        template<class T1, class T2, typename std::enable_if_t<are_same_v<struct vertex_attribute, T1, T2>>...>
+        auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
+        {
+            return lhs.semantic < rhs.semantic;
+        }
+
+        template<class T1, class T2, typename std::enable_if_t<are_same_v<vertex_layout, T1, T2>>...>
+        auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
+        {
+            return lhs.attribute < rhs.attribute;
+        }
+    };
+
+    struct hash_value final {
+        template<class T, typename std::enable_if_t<std::is_same_v<vertex_attribute, std::decay_t<T>>>...>
+        auto constexpr operator() (T &&attribute) const noexcept
+        {
+            std::size_t seed = 0;
+
+            boost::hash_combine(seed, attribute.semantic.index());
+            boost::hash_combine(seed, attribute.type.index());
+            boost::hash_combine(seed, attribute.normalized);
+
+            return seed;
+        }
+
+        template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout, std::decay_t<T>>>...>
+        auto constexpr operator() (T &&layout) const noexcept
+        {
+            std::size_t seed = 0;
+
+            boost::hash_combine(seed, boost::hash<vertex_attribute>{layout.attribute});
+
+            boost::hash_combine(seed, layout.offsetInBytes);
+
+            return seed;
+        }
+    };
+#endif
+
+
+    struct vertex_layout final {
+        std::vector<vertex_attribute> attributes;
+
+        std::size_t sizeInBytes;
+    };
+
+    std::vector<vertex_layout> vertexLayouts;
+
+    struct vertex_buffer final {
+        std::size_t vertexLayoutIndex;
+
+        std::size_t count{0};
+
+        std::vector<std::byte> buffer;
+    };
+
+    std::vector<vertex_buffer> vertexBuffers;
+
+    struct index_buffer final {
+        std::variant<std::uint16_t, std::uint32_t> type;
+
+        std::size_t count{0};
+
+        std::vector<std::byte> buffer;
+    };
+
+    std::vector<index_buffer> indexBuffers;
+
+    struct material final {
+        PRIMITIVE_TOPOLOGY topology;
+    };
+
+    std::vector<material> materials;
+
+    struct non_indexed_meshlet final {
+        std::size_t vertexBufferIndex;
+
+        std::size_t materialIndex;
+
+        std::size_t vertexCount{0};
+        std::size_t instanceCount{0};
+        std::size_t firstVertex{0};
+        std::size_t firstInstance{0};
+    };
+
+    std::vector<non_indexed_meshlet> nonIndexedMeshlets;
+
+    struct indexed_meshlet final {
+        std::size_t vertexBufferIndex;
+        std::size_t indexBufferIndex;
+
+        std::size_t materialIndex;
+
+        std::size_t indexCount{0};
+        std::size_t instanceCount{0};
+        std::size_t firstIndex{0};
+        std::size_t vertexOffset{0};
+        std::size_t firstInstance{0};
+    };
+
+    std::vector<indexed_meshlet> indexedMeshlets;
+};
+
 
 /*struct Mesh final {
     glm::mat4 localMatrix;
