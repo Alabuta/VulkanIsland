@@ -71,9 +71,6 @@
     <ClCompile Include="src\loaders\loaderGLTF.cxx">
       <Filter>Source Files\Loaders</Filter>
     </ClCompile>
-    <ClCompile Include="src\pipeline.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\resources\resource.cxx">
       <Filter>Source Files\Resources</Filter>
     </ClCompile>
@@ -103,6 +100,9 @@
     </ClCompile>
     <ClCompile Include="src\renderPass.cxx">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\pipelines.cxx">
+      <Filter>Source Files\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -165,9 +165,6 @@
     </ClInclude>
     <ClInclude Include="src/input/mouseInput.hxx">
       <Filter>Source Files\Input</Filter>
-    </ClInclude>
-    <ClInclude Include="src\pipeline.hxx">
-      <Filter>Source Files</Filter>
     </ClInclude>
     <ClInclude Include="src\resources\buffer.hxx">
       <Filter>Source Files\Resources</Filter>

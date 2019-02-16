@@ -28,7 +28,7 @@
 #include "resources/resource.hxx"
 #include "descriptor.hxx"
 #include "commandBuffer.hxx"
-#include "pipeline.hxx"
+#include "pipelines.hxx"
 #include "renderPass.hxx"
 #include "semaphore.hxx"
 

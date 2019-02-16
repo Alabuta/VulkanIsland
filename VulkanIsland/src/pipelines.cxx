@@ -4,7 +4,7 @@
 
 #include <boost/functional/hash_fwd.hpp>
 
-#include "pipeline.hxx"
+#include "pipelines.hxx"
 
 #if NOT_YET_IMPLEMENTED
 namespace

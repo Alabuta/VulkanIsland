@@ -252,7 +252,7 @@
     <ClCompile Include="src\ecs\transform.cxx" />
     <ClCompile Include="src\loaders\loaderGLTF.cxx" />
     <ClCompile Include="src\loaders\loaderTARGA.cxx" />
-    <ClCompile Include="src\pipeline.cxx" />
+    <ClCompile Include="src\pipelines.cxx" />
     <ClCompile Include="src\renderPass.cxx" />
     <ClCompile Include="src\resources\buffer.cxx" />
     <ClCompile Include="src\resources\image.cxx" />
@@ -274,9 +274,11 @@
     <ClInclude Include="src/instance.hxx" />
     <ClInclude Include="src/math.hxx" />
     <ClInclude Include="src/main.hxx" />
+    <ClInclude Include="src\material.hxx" />
     <ClInclude Include="src\renderPass.hxx" />
     <ClInclude Include="src\resources\memory.hxx" />
     <ClInclude Include="src\semaphore.hxx" />
+    <ClInclude Include="src\shader.hxx" />
     <ClInclude Include="src\staging.hxx" />
     <ClInclude Include="src/platform/window.hxx" />
     <ClInclude Include="src/queues.hxx" />
@@ -290,7 +292,7 @@
     <ClInclude Include="src\ecs\transform.hxx" />
     <ClInclude Include="src\loaders\loaderGLTF.hxx" />
     <ClInclude Include="src\loaders\loaderTARGA.hxx" />
-    <ClInclude Include="src\pipeline.hxx" />
+    <ClInclude Include="src\pipelines.hxx" />
     <ClInclude Include="src\resources\buffer.hxx" />
     <ClInclude Include="src\resources\image.hxx" />
     <ClInclude Include="src\resources\program.hxx" />
