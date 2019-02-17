@@ -7,6 +7,7 @@
 #include "device.hxx"
 #include "program.hxx"
 #include "vertexFormat.hxx"
+#include "staging.hxx"
 
 class VulkanImage;
 class VulkanImageView;
@@ -37,18 +38,27 @@ private:
 class VertexBuffer final {
 public:
 
-    VertexBuffer(std::shared_ptr<VulkanBuffer> buffer, std::size_t sizeInBytes) noexcept : buffer{buffer}, sizeInBytes{sizeInBytes} { }
+    VertexBuffer(std::shared_ptr<VulkanBuffer> deviceBuffer, std::shared_ptr<VulkanBuffer> stagingBuffer, std::size_t sizeInBytes, xformat::vertex_layout &&layout) noexcept
+        : deviceBuffer_{deviceBuffer}, stagingBuffer_{stagingBuffer}, sizeInBytes_{sizeInBytes}, layout{std::move(layout)} { }
 
-    template<class T, typename std::enable_if_t<std::is_same_v<VertexBuffer, std::decay_t<T>>>...>
-    bool constexpr operator< (T &&rhs) const noexcept
-    {
-        return buffer->handle() < rhs.buffer->handle();
-    }
+    VulkanBuffer const &deviceBuffer() const noexcept { return *deviceBuffer_; }
 
 private:
-    std::shared_ptr<VulkanBuffer> buffer{nullptr};
+
+    std::shared_ptr<VulkanBuffer> deviceBuffer_{nullptr};
+    std::shared_ptr<VulkanBuffer> stagingBuffer_{nullptr};
+
+    std::size_t sizeInBytes_{0};
+    std::size_t offset_{0};
+
+    xformat::vertex_layout layout;
+};
+
+struct VertexBufferView final {
+    std::shared_ptr<VertexBuffer> buffer;
+
     std::size_t sizeInBytes{0};
-    std::size_t offset{0};
+    std::byte *begin;
 };
 
 

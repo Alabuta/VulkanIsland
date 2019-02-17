@@ -647,6 +647,11 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
+        auto const vertexBuffers = std::array{app.vertexBuffer->handle()};
+        auto const offsets = std::array{VkDeviceSize{0}};
+
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, std::data(vertexBuffers), std::data(offsets));
+
     #if USE_DYNAMIC_PIPELINE_STATE
         VkViewport const viewport{
             0, static_cast<float>(app.swapchain.extent.height),
@@ -663,11 +668,6 @@ void CreateGraphicsCommandBuffers(app_t &app)
     #endif
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipeline);
-
-        auto const vertexBuffers = std::array{app.vertexBuffer->handle()};
-        auto const offsets = std::array{VkDeviceSize{0}};
-
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, std::data(vertexBuffers), std::data(offsets));
 
         std::size_t const stride = app.alignedBufferSize / app.objectsNumber;
         std::size_t instanceIndex = 0;
