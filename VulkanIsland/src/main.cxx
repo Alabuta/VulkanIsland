@@ -111,6 +111,11 @@ struct app_t final {
     ecs::NodeSystem nodeSystem{registry};
     ecs::MeshSystem meshSystem{registry};
 
+    std::shared_ptr<VulkanBuffer> vertexBufferA;
+    std::shared_ptr<VulkanBuffer> vertexBufferB;
+    VkPipeline graphicsPipelineA{VK_NULL_HANDLE};
+    VkPipeline graphicsPipelineB{VK_NULL_HANDLE};
+
 
     ~app_t()
     {
@@ -150,6 +155,9 @@ struct app_t final {
         perObjectBuffer.reset();
 
         uboBuffer.reset();
+
+        vertexBufferB.reset();
+        vertexBufferA.reset();
 
         indexBuffer.reset();
         vertexBuffer.reset();
@@ -229,6 +237,12 @@ void CleanupFrameData(app_t &app)
 
     if (app.graphicsPipeline != VK_NULL_HANDLE)
         vkDestroyPipeline(device.handle(), app.graphicsPipeline, nullptr);
+
+    if (app.graphicsPipelineA != VK_NULL_HANDLE)
+        vkDestroyPipeline(device.handle(), app.graphicsPipelineA, nullptr);
+
+    if (app.graphicsPipelineB != VK_NULL_HANDLE)
+        vkDestroyPipeline(device.handle(), app.graphicsPipelineB, nullptr);
 
     if (app.pipelineLayout != VK_NULL_HANDLE)
         vkDestroyPipelineLayout(device.handle(), app.pipelineLayout, nullptr);
@@ -904,6 +918,244 @@ xformat populate()
 
     return model;
 }
+
+void populate(app_t &app)
+{
+    {
+        struct vertex final {
+            vec<3, std::float_t> position;
+            vec<2, std::float_t> texCoord;
+        };
+
+        std::vector<vertex> vertices;
+
+        // First triangle
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<2, std::float_t>{.5f, .5f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{-1.f, 0.f, 1.f}, vec<2, std::float_t>{0.f, 0.f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{1.f, 0.f, 1.f}, vec<2, std::float_t>{1.f, 0.f}
+        });
+        
+        auto &&buffer = app.vertexBufferA;
+
+        if (auto stagingBuffer = StageData(*app.vulkanDevice, vertices); stagingBuffer) {
+            auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+            buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
+
+            if (buffer) {
+                auto copyRegions = std::array{VkBufferCopy{ 0, 0, stagingBuffer->memory()->size() }};
+
+                CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
+                                   buffer->handle(), std::move(copyRegions), app.transferCommandPool);
+            }
+        }
+    }
+
+    {
+        struct vertex final {
+            vec<3, std::float_t> position;
+            vec<4, std::float_t> color;
+        };
+
+        std::vector<vertex> vertices;
+
+        // Second triangle
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<4, std::float_t>{1.f, 0.f, 0.f, 1.f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{1.f, 0.f, -1.f}, vec<4, std::float_t>{0.f, 1.f, 0.f, 1.f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{0.f, 0.f, 1.f}, vec<4, std::float_t>{0.f, 0.f, 1.f, 1.f}
+        });
+
+        auto &&buffer = app.vertexBufferB;
+
+        if (auto stagingBuffer = StageData(*app.vulkanDevice, vertices); stagingBuffer) {
+            auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+            buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
+
+            if (buffer) {
+                auto copyRegions = std::array{VkBufferCopy{ 0, 0, stagingBuffer->memory()->size() }};
+
+                CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
+                                   buffer->handle(), std::move(copyRegions), app.transferCommandPool);
+            }
+        }
+    }
+}
+
+void CreateGraphicsPipeline(app_t &app, vertex_layout_t const &layout, std::string_view name)
+{
+    // Shader
+    auto const vertShaderByteCode = ReadShaderFile(R"(test/vert)"s + std::string{name} +R"(.spv)"s);
+
+    if (vertShaderByteCode.empty())
+        throw std::runtime_error("failed to open vertex shader file"s);
+
+    auto const vertShaderModule = app.vulkanDevice->resourceManager().CreateShaderModule(vertShaderByteCode);
+
+    auto const fragShaderByteCode = ReadShaderFile(R"(test/frag)"s + std::string{name} + R"(.spv)"s);
+
+    if (fragShaderByteCode.empty())
+        throw std::runtime_error("failed to open fragment shader file"s);
+
+    auto const fragShaderModule = app.vulkanDevice->resourceManager().CreateShaderModule(fragShaderByteCode);
+
+    VkPipelineShaderStageCreateInfo const vertShaderCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        nullptr, 0,
+        VK_SHADER_STAGE_VERTEX_BIT,
+        vertShaderModule->handle(),
+        "main",
+        nullptr
+    };
+
+    VkPipelineShaderStageCreateInfo const fragShaderCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+        nullptr, 0,
+        VK_SHADER_STAGE_FRAGMENT_BIT,
+        fragShaderModule->handle(),
+        "main",
+        nullptr
+    };
+
+    auto shaderStages = std::array{ vertShaderCreateInfo, fragShaderCreateInfo };
+
+    // Vertex layout
+    VertexInputStateInfo vertexInputStateCreateInfo{layout};
+
+    VkPipelineInputAssemblyStateCreateInfo constexpr vertexAssemblyStateCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        nullptr, 0,
+        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        VK_FALSE
+    };
+
+    // Render pass
+    VkViewport const viewport{
+        0, static_cast<float>(app.swapchain.extent.height),
+        static_cast<float>(app.swapchain.extent.width), -static_cast<float>(app.swapchain.extent.height),
+        0, 1
+    };
+
+    VkRect2D const scissor{
+        {0, 0}, app.swapchain.extent
+    };
+
+    VkPipelineViewportStateCreateInfo const viewportStateCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        nullptr, 0,
+        1, &viewport,
+        1, &scissor
+    };
+
+    auto constexpr rasterizerDiscardEnable = VK_FALSE;
+
+    VkPipelineMultisampleStateCreateInfo const multisampleCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        nullptr, 0,
+        app.vulkanDevice->samplesCount(),//VK_SAMPLE_COUNT_1_BIT
+        VK_FALSE, 1,
+        nullptr,
+        VK_FALSE,
+        VK_FALSE
+    };
+
+    // Material
+    VkPipelineRasterizationStateCreateInfo constexpr rasterizerState{
+        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+        nullptr, 0,
+        VK_TRUE,
+        rasterizerDiscardEnable,
+        VK_POLYGON_MODE_FILL,
+        VK_CULL_MODE_BACK_BIT,
+        VK_FRONT_FACE_COUNTER_CLOCKWISE,
+        VK_FALSE,
+        0.f, 0.f, 0.f,
+        1.f
+    };
+
+    VkPipelineDepthStencilStateCreateInfo constexpr depthStencilStateCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        nullptr, 0,
+        VK_TRUE, VK_TRUE,
+        kREVERSED_DEPTH ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_LESS,
+        VK_FALSE,
+        VK_FALSE, VkStencilOpState{}, VkStencilOpState{},
+        0, 1
+    };
+
+    VkPipelineColorBlendAttachmentState constexpr colorBlendAttachment{
+        VK_FALSE,
+        VK_BLEND_FACTOR_ONE,
+        VK_BLEND_FACTOR_ZERO,
+        VK_BLEND_OP_ADD,
+        VK_BLEND_FACTOR_ONE,
+        VK_BLEND_FACTOR_ZERO,
+        VK_BLEND_OP_ADD,
+        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
+    };
+
+    VkPipelineColorBlendStateCreateInfo const colorBlendStateCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        nullptr, 0,
+        VK_FALSE,
+        VK_LOGIC_OP_COPY,
+        1,
+        &colorBlendAttachment,
+        { 0, 0, 0, 0 }
+    };
+
+    if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); pipelineLayout)
+        app.pipelineLayout = pipelineLayout.value();
+
+
+    VkGraphicsPipelineCreateInfo const graphicsPipelineCreateInfo{
+        VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        nullptr,
+        VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,
+        static_cast<std::uint32_t>(std::size(shaderStages)), std::data(shaderStages),
+        &vertexInputStateCreateInfo.info(),
+        &vertexAssemblyStateCreateInfo,
+        nullptr,
+#if USE_DYNAMIC_PIPELINE_STATE
+        nullptr,
+#else
+        &viewportStateCreateInfo,
+#endif
+        &rasterizerState,
+        &multisampleCreateInfo,
+        &depthStencilStateCreateInfo,
+        &colorBlendStateCreateInfo,
+        nullptr,
+        app.pipelineLayout,
+        app.renderPass,
+        0,
+        VK_NULL_HANDLE, -1
+    };
+
+    auto pipeline = &app.graphicsPipelineA;
+
+    if (name == "B"sv) pipeline = &app.graphicsPipelineB;
+
+    if (auto result = vkCreateGraphicsPipelines(app.vulkanDevice->handle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, pipeline); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create graphics pipeline: "s + std::to_string(result));
+}
+
 }
 
 
@@ -949,6 +1201,7 @@ void InitVulkan(Window &window, app_t &app)
     else throw std::runtime_error("failed to create the swapchain"s);
 
     auto model = temp::populate();
+    temp::populate(app);
 
     if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkanDevice); !descriptorSetLayout)
         throw std::runtime_error("failed to create the descriptor set layout"s);
@@ -970,6 +1223,18 @@ void InitVulkan(Window &window, app_t &app)
         if (app.indexBuffer = InitIndexBuffer(app); !app.indexBuffer)
             throw std::runtime_error("failed to init index buffer"s);
     }
+
+
+    vertex_layout_t layoutA;
+    layoutA.emplace_back(0, semantic::position{}, vec<3, std::float_t>{}, false);
+    layoutA.emplace_back(0, semantic::tex_coord_0{}, vec<2, std::float_t>{}, false);
+
+    vertex_layout_t layoutB;
+    layoutB.emplace_back(0, semantic::position{}, vec<3, std::float_t>{}, false);
+    layoutB.emplace_back(0, semantic::color_0{}, vec<4, std::float_t>{}, false);
+
+    temp::CreateGraphicsPipeline(app, layoutA, "A"sv);
+    temp::CreateGraphicsPipeline(app, layoutB, "B"sv);
 
     CreateGraphicsPipeline(app);
 

@@ -303,6 +303,10 @@
   <ItemGroup>
     <None Include="../shaders/shader.frag" />
     <None Include="../shaders/shader.vert" />
+    <None Include="..\shaders\test\shaderA.frag" />
+    <None Include="..\shaders\test\shaderA.vert" />
+    <None Include="..\shaders\test\shaderB.frag" />
+    <None Include="..\shaders\test\shaderB.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
