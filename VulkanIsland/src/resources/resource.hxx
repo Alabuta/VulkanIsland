@@ -43,6 +43,54 @@ public:
 
     VulkanBuffer const &deviceBuffer() const noexcept { return *deviceBuffer_; }
 
+    template<class T, typename std::enable_if_t<std::is_same_v<VertexBuffer, std::decay_t<T>>>...>
+    bool constexpr operator< (T &&rhs) const noexcept
+    {
+        return false;
+    }
+
+
+    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, VertexBuffer>>...>
+    bool constexpr operator== (T&& rhs) const noexcept
+    {
+        if (deviceBuffer_ != rhs.deviceBuffer_)
+            return false;
+
+        return false;
+
+        /*auto &&layout = vertexBuffer.layout;
+
+        return std::equal(std::cbegin(buffer), std::cend(buffer), std::cbegin(rhs.vertexBuffer.layout), [] (auto &&lhs, auto &&rhs)
+        {
+            return lhs.semantic.index() == rhs.semantic.index() && lhs.attribute.index() == rhs.attribute.index();
+        });*/
+    }
+
+#if 0
+    struct hash final {
+        template<class T, typename std::enable_if_t<std::is_same_v<VertexBuffer, std::decay_t<T>>>...>
+        std::size_t constexpr operator() (T &&vertexBuffer) const noexcept
+        {
+            std::size_t seed = 0;
+
+            /*boost::hash_combine(seed, deviceBuffer_);
+
+            auto &&layuot = vertexBuffer.layout;
+
+            boost::hash_combine(seed, layout.sizeInBytes);
+
+            for (auto &&attribute : layout.attributes) {
+                boost::hash_combine(seed, attribute.offsetInBytes);
+                boost::hash_combine(seed, attribute.semantic.index());
+                boost::hash_combine(seed, attribute.type.index());
+                boost::hash_combine(seed, attribute.normalized);
+            }*/
+
+            return seed;
+        }
+    };
+#endif
+
 private:
 
     std::shared_ptr<VulkanBuffer> deviceBuffer_{nullptr};
@@ -54,7 +102,7 @@ private:
     xformat::vertex_layout layout;
 };
 
-struct VertexBufferView final {
+struct StagingVertexBuffer final {
     std::shared_ptr<VertexBuffer> buffer;
 
     std::size_t sizeInBytes{0};
@@ -86,7 +134,7 @@ public:
     template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>...>
     [[nodiscard]] std::optional<IndexBuffer> CreateIndexBuffer(std::size_t sizeInBytes) noexcept;
 
-    [[nodiscard]] std::optional<VertexBuffer> CreateVertexBuffer(std::size_t sizeInBytes) noexcept;
+    [[nodiscard]] std::optional<VertexBuffer> CreateVertexBuffer(xformat::vertex_layout const &layout, std::size_t sizeInBytes) noexcept;
 
 private:
 
@@ -101,8 +149,7 @@ private:
     ResourceManager(ResourceManager const &) = delete;
     ResourceManager(ResourceManager &&) = delete;
 
-    /*std::vector<IndexBuffer<std::uint16_t>> indexBufferU16_;
-    std::vector<IndexBuffer<std::uint32_t>> indexBufferU32_;*/
+    //std::unordered_map<xformat::vertex_layout, std::shared_ptr<VertexBuffer>, VertexBuffer::hash> vertexBuffers_;
 };
 
 

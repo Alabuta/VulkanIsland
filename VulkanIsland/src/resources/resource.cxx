@@ -270,6 +270,10 @@ void ResourceManager::ReleaseResource(T &&resource) noexcept
     }
 }
 
+std::optional<VertexBuffer> ResourceManager::CreateVertexBuffer(xformat::vertex_layout const &layout, std::size_t sizeInBytes) noexcept
+{
+    return std::optional<VertexBuffer>();
+}
 
 std::shared_ptr<VulkanBuffer>
 CreateUniformBuffer(VulkanDevice &device, std::size_t size)
