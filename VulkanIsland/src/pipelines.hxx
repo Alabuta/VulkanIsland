@@ -31,9 +31,11 @@ private:
 class VertexInputStateInfo final {
 public:
 
-    VertexInputStateInfo(vertex_layout_t const &layout) noexcept;
+    VertexInputStateInfo(vertex_layout_t const &layout, std::uint32_t binding = 5) noexcept;
 
     VkPipelineVertexInputStateCreateInfo const &info() const noexcept { return info_; }
+
+    std::uint32_t binding() const noexcept { return binding_; }
 
     template<class T>
     bool operator== (T &&rhs) const noexcept;
@@ -44,6 +46,7 @@ public:
 private:
 
     VkPipelineVertexInputStateCreateInfo info_;
+    std::uint32_t binding_;
 
     std::vector<VkVertexInputBindingDescription> inputBindingDescriptions;
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions;

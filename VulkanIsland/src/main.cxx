@@ -57,6 +57,23 @@ struct per_object_t {
 };
 
 
+class VertexLayoutsManager final {
+public:
+
+    std::optional<std::uint32_t> binding(xformat::vertex_layout const &layout) const noexcept
+    {
+        if (vertexLayouts_.count(layout))
+            return 0;// vertexLayouts_[layout].second;
+
+        return { };
+    }
+
+private:
+
+    std::unordered_map<xformat::vertex_layout, std::uint32_t, xformat::hash_value, xformat::equal_comparator> vertexLayouts_;
+};
+
+
 void CleanupFrameData(struct app_t &app);
 
 struct app_t final {
@@ -664,7 +681,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
         auto const vertexBuffers = std::array{app.vertexBuffer->handle()};
         auto const offsets = std::array{VkDeviceSize{0}};
 
-        vkCmdBindVertexBuffers(commandBuffer, 0, 1, std::data(vertexBuffers), std::data(offsets));
+        vkCmdBindVertexBuffers(commandBuffer, 5, 1, std::data(vertexBuffers), std::data(offsets));
 
     #if USE_DYNAMIC_PIPELINE_STATE
         VkViewport const viewport{
@@ -1036,7 +1053,7 @@ void CreateGraphicsPipeline(app_t &app, vertex_layout_t const &layout, std::stri
     auto shaderStages = std::array{ vertShaderCreateInfo, fragShaderCreateInfo };
 
     // Vertex layout
-    VertexInputStateInfo vertexInputStateCreateInfo{layout};
+    VertexInputStateInfo vertexInputStateCreateInfo{layout, name == "A"sv ? 1u : 2u};
 
     VkPipelineInputAssemblyStateCreateInfo constexpr vertexAssemblyStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,

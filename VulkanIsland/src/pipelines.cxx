@@ -22,7 +22,7 @@ namespace
 #endif
 
 
-VertexInputStateInfo::VertexInputStateInfo(vertex_layout_t const &layout) noexcept
+VertexInputStateInfo::VertexInputStateInfo(vertex_layout_t const &layout, std::uint32_t binding) noexcept : binding_{binding}
 {
     auto vertexSize = std::accumulate(std::cbegin(layout), std::cend(layout), 0u,
                                         [] (std::uint32_t size, auto &&description)
@@ -34,8 +34,6 @@ VertexInputStateInfo::VertexInputStateInfo(vertex_layout_t const &layout) noexce
 
         }, description.attribute);
     });
-
-    std::uint32_t binding = 0;
 
     inputBindingDescriptions.push_back(
         VkVertexInputBindingDescription{ binding, vertexSize, VK_VERTEX_INPUT_RATE_VERTEX }
