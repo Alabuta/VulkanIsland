@@ -38,58 +38,16 @@ private:
 class VertexBuffer final {
 public:
 
-    VertexBuffer(std::shared_ptr<VulkanBuffer> deviceBuffer, std::shared_ptr<VulkanBuffer> stagingBuffer, std::size_t sizeInBytes, xformat::vertex_layout &&layout) noexcept
-        : deviceBuffer_{deviceBuffer}, stagingBuffer_{stagingBuffer}, sizeInBytes_{sizeInBytes}, layout{std::move(layout)} { }
+    VertexBuffer(std::shared_ptr<VulkanBuffer> deviceBuffer, std::shared_ptr<VulkanBuffer> stagingBuffer, std::size_t sizeInBytes, std::uint32_t vertexInputBinding) noexcept
+        : deviceBuffer_{deviceBuffer}, stagingBuffer_{stagingBuffer}, sizeInBytes_{sizeInBytes}, vertexInputBinding_{vertexInputBinding} { }
 
     VulkanBuffer const &deviceBuffer() const noexcept { return *deviceBuffer_; }
 
     template<class T, typename std::enable_if_t<std::is_same_v<VertexBuffer, std::decay_t<T>>>...>
     bool constexpr operator< (T &&rhs) const noexcept
     {
-        return false;
+        return vertexInputBinding_ < rhs.vertexInputBinding_;
     }
-
-
-    template<class T, typename std::enable_if_t<std::is_same_v<std::decay_t<T>, VertexBuffer>>...>
-    bool constexpr operator== (T&& rhs) const noexcept
-    {
-        if (deviceBuffer_ != rhs.deviceBuffer_)
-            return false;
-
-        return false;
-
-        /*auto &&layout = vertexBuffer.layout;
-
-        return std::equal(std::cbegin(buffer), std::cend(buffer), std::cbegin(rhs.vertexBuffer.layout), [] (auto &&lhs, auto &&rhs)
-        {
-            return lhs.semantic.index() == rhs.semantic.index() && lhs.attribute.index() == rhs.attribute.index();
-        });*/
-    }
-
-#if 0
-    struct hash final {
-        template<class T, typename std::enable_if_t<std::is_same_v<VertexBuffer, std::decay_t<T>>>...>
-        std::size_t constexpr operator() (T &&vertexBuffer) const noexcept
-        {
-            std::size_t seed = 0;
-
-            /*boost::hash_combine(seed, deviceBuffer_);
-
-            auto &&layuot = vertexBuffer.layout;
-
-            boost::hash_combine(seed, layout.sizeInBytes);
-
-            for (auto &&attribute : layout.attributes) {
-                boost::hash_combine(seed, attribute.offsetInBytes);
-                boost::hash_combine(seed, attribute.semantic.index());
-                boost::hash_combine(seed, attribute.type.index());
-                boost::hash_combine(seed, attribute.normalized);
-            }*/
-
-            return seed;
-        }
-    };
-#endif
 
 private:
 
@@ -99,7 +57,7 @@ private:
     std::size_t sizeInBytes_{0};
     std::size_t offset_{0};
 
-    xformat::vertex_layout layout;
+    std::uint32_t vertexInputBinding_;
 };
 
 struct StagingVertexBuffer final {
@@ -149,7 +107,7 @@ private:
     ResourceManager(ResourceManager const &) = delete;
     ResourceManager(ResourceManager &&) = delete;
 
-    //std::unordered_map<xformat::vertex_layout, std::shared_ptr<VertexBuffer>, VertexBuffer::hash> vertexBuffers_;
+    std::map<std::uint32_t, std::shared_ptr<VertexBuffer>> vertexBuffers_;
 };
 
 

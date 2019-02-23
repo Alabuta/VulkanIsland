@@ -272,8 +272,26 @@ void ResourceManager::ReleaseResource(T &&resource) noexcept
 
 std::optional<VertexBuffer> ResourceManager::CreateVertexBuffer(xformat::vertex_layout const &layout, std::size_t sizeInBytes) noexcept
 {
+    /*vertexBuffers_[]
+
+    VertexBuffer vertexBuffer;
+
+    if (auto stagingBuffer = StageData(*app.vulkanDevice, vertices); stagingBuffer) {
+        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+        buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
+
+        if (buffer) {
+            auto copyRegions = std::array{VkBufferCopy{ 0, 0, stagingBuffer->memory()->size() }};
+
+            CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
+                               buffer->handle(), std::move(copyRegions), app.transferCommandPool);
+        }
+    }*/
     return std::optional<VertexBuffer>();
 }
+
 
 std::shared_ptr<VulkanBuffer>
 CreateUniformBuffer(VulkanDevice &device, std::size_t size)

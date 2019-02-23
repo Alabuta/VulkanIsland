@@ -1248,7 +1248,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
         auto const bindingCount = static_cast<std::uint32_t>(std::size(offsets));
 
-        vkCmdBindVertexBuffers(commandBuffer, 1, bindingCount, std::data(vertexBuffers), std::data(offsets));
+        vkCmdBindVertexBuffers(commandBuffer, 0, bindingCount, std::data(vertexBuffers), std::data(offsets));
 
     #if USE_DYNAMIC_PIPELINE_STATE
         VkViewport const viewport{
