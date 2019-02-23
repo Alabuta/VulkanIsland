@@ -260,6 +260,7 @@
     <ClCompile Include="src\resources\program.cxx" />
     <ClCompile Include="src\resources\resource.cxx" />
     <ClCompile Include="src\sceneTree.cxx" />
+    <ClCompile Include="src\vertexLayout.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/commandBuffer.hxx" />
@@ -299,6 +300,7 @@
     <ClInclude Include="src\resources\resource.hxx" />
     <ClInclude Include="src\sceneTree.hxx" />
     <ClInclude Include="src\vertexFormat.hxx" />
+    <ClInclude Include="src\vertexLayout.hxx" />
   </ItemGroup>
   <ItemGroup>
     <None Include="../shaders/shader.frag" />

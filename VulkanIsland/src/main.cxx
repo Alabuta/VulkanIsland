@@ -32,6 +32,8 @@
 #include "renderPass.hxx"
 #include "semaphore.hxx"
 
+#include "vertexLayout.hxx"
+
 #include "ecs/ecs.hxx"
 #include "ecs/node.hxx"
 #include "ecs/mesh.hxx"
@@ -57,24 +59,8 @@ struct per_object_t {
 };
 
 
-class VertexLayoutsManager final {
-public:
-
-    std::optional<std::uint32_t> binding(xformat::vertex_layout const &layout) const noexcept
-    {
-        if (vertexLayouts_.count(layout))
-            return 0;// vertexLayouts_[layout].second;
-
-        return { };
-    }
-
-private:
-
-    std::unordered_map<xformat::vertex_layout, std::uint32_t, xformat::hash_value, xformat::equal_comparator> vertexLayouts_;
-};
-
-
 void CleanupFrameData(struct app_t &app);
+
 
 struct app_t final {
     std::uint32_t width{800u};
@@ -132,6 +118,10 @@ struct app_t final {
     std::shared_ptr<VulkanBuffer> vertexBufferB;
     VkPipeline graphicsPipelineA{VK_NULL_HANDLE};
     VkPipeline graphicsPipelineB{VK_NULL_HANDLE};
+    VkPipelineLayout pipelineLayoutA{VK_NULL_HANDLE};
+    VkPipelineLayout pipelineLayoutB{VK_NULL_HANDLE};
+
+    VertexLayoutsManager vertexLayoutsManager;
 
 
     ~app_t()
@@ -194,6 +184,13 @@ struct app_t final {
 };
 
 
+namespace temp
+{
+void CreateGraphicsPipeline(app_t & app, xformat::vertex_layout const & layout, std::string_view name);
+void CreateGraphicsCommandBuffers(app_t &app);
+}
+
+
 void RecreateSwapChain(app_t &app);
 
 struct ResizeHandler final : public Window::IEventHandler {
@@ -254,6 +251,12 @@ void CleanupFrameData(app_t &app)
 
     if (app.graphicsPipeline != VK_NULL_HANDLE)
         vkDestroyPipeline(device.handle(), app.graphicsPipeline, nullptr);
+
+    if (app.pipelineLayoutB != VK_NULL_HANDLE)
+        vkDestroyPipelineLayout(device.handle(), app.pipelineLayoutB, nullptr);
+
+    if (app.pipelineLayoutA != VK_NULL_HANDLE)
+        vkDestroyPipelineLayout(device.handle(), app.pipelineLayoutA, nullptr);
 
     if (app.graphicsPipelineA != VK_NULL_HANDLE)
         vkDestroyPipeline(device.handle(), app.graphicsPipelineA, nullptr);
@@ -386,7 +389,7 @@ void CreateGraphicsPipeline(app_t &app)
     auto shaderStages = std::array{ vertShaderCreateInfo, fragShaderCreateInfo };
 
     // Vertex layout
-    VertexInputStateInfo vertexInputStateCreateInfo{app.scene.meshes.front().submeshes.front().vertices.layout};
+    VertexInputStateInfo2 vertexInputStateCreateInfo{app.scene.meshes.front().submeshes.front().vertices.layout};
 
     VkPipelineInputAssemblyStateCreateInfo constexpr vertexAssemblyStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -627,7 +630,7 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
 }
 
 
-void CreateGraphicsCommandBuffers(app_t &app)
+void CreateGraphicsCommandBuffers2(app_t &app)
 {
     app.commandBuffers.resize(std::size(app.swapchain.framebuffers));
 
@@ -826,19 +829,22 @@ void RecreateSwapChain(app_t &app)
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
-    CreateGraphicsCommandBuffers(app);
+    temp::CreateGraphicsCommandBuffers(app);
 }
 
 
 namespace temp
 {
-struct vertex final {
-    vec<3, std::float_t> position;
-    vec<2, std::float_t> texCoord;
-};
+xformat::vertex_layout layoutA;
+xformat::vertex_layout layoutB;
 
 xformat populate()
 {
+    struct vertex final {
+        vec<3, std::float_t> position;
+        vec<2, std::float_t> texCoord;
+    };
+
     xformat model;
 
     {
@@ -898,9 +904,9 @@ xformat populate()
         dstBuffer.vertexLayoutIndex = 0;
         dstBuffer.count = std::size(srcBuffer);
 
-        dstBuffer.buffer.resize(sizeof(temp::vertex) * std::size(srcBuffer));
+        dstBuffer.buffer.resize(sizeof(vertex) * std::size(srcBuffer));
 
-        std::uninitialized_copy(std::begin(srcBuffer), std::end(srcBuffer), reinterpret_cast<temp::vertex *>(std::data(dstBuffer.buffer)));
+        std::uninitialized_copy(std::begin(srcBuffer), std::end(srcBuffer), reinterpret_cast<vertex *>(std::data(dstBuffer.buffer)));
 
         return dstBuffer;
     });
@@ -944,6 +950,11 @@ void populate(app_t &app)
             vec<2, std::float_t> texCoord;
         };
 
+        layoutA.sizeInBytes = sizeof(vertex);
+
+        layoutA.attributes.push_back(xformat::vertex_attribute{0, semantic::position{}, vec<3, std::float_t>{}, false});
+        layoutA.attributes.push_back(xformat::vertex_attribute{sizeof(vec<3, std::float_t>), semantic::tex_coord_0{}, vec<2, std::float_t>{}, false});
+
         std::vector<vertex> vertices;
 
         // First triangle
@@ -958,14 +969,14 @@ void populate(app_t &app)
         vertices.push_back(vertex{
             vec<3, std::float_t>{1.f, 0.f, 1.f}, vec<2, std::float_t>{1.f, 0.f}
         });
-        
+
         auto &&buffer = app.vertexBufferA;
 
         if (auto stagingBuffer = StageData(*app.vulkanDevice, vertices); stagingBuffer) {
             auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
             auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-            buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
+            buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size() * 10, usageFlags, propertyFlags);
 
             if (buffer) {
                 auto copyRegions = std::array{VkBufferCopy{ 0, 0, stagingBuffer->memory()->size() }};
@@ -982,6 +993,11 @@ void populate(app_t &app)
             vec<4, std::float_t> color;
         };
 
+        layoutB.sizeInBytes = sizeof(vertex);
+
+        layoutB.attributes.push_back(xformat::vertex_attribute{0, semantic::position{}, vec<3, std::float_t>{}, false});
+        layoutB.attributes.push_back(xformat::vertex_attribute{sizeof(vec<3, std::float_t>), semantic::color_0{}, vec<4, std::float_t>{}, false});
+
         std::vector<vertex> vertices;
 
         // Second triangle
@@ -994,7 +1010,7 @@ void populate(app_t &app)
         });
 
         vertices.push_back(vertex{
-            vec<3, std::float_t>{0.f, 0.f, 1.f}, vec<4, std::float_t>{0.f, 0.f, 1.f, 1.f}
+            vec<3, std::float_t>{0.f, 0.f, -1.f}, vec<4, std::float_t>{0.f, 0.f, 1.f, 1.f}
         });
 
         auto &&buffer = app.vertexBufferB;
@@ -1015,7 +1031,7 @@ void populate(app_t &app)
     }
 }
 
-void CreateGraphicsPipeline(app_t &app, vertex_layout_t const &layout, std::string_view name)
+void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, std::string_view name)
 {
     // Shader
     auto const vertShaderByteCode = ReadShaderFile(R"(test/vert)"s + std::string{name} +R"(.spv)"s);
@@ -1053,7 +1069,7 @@ void CreateGraphicsPipeline(app_t &app, vertex_layout_t const &layout, std::stri
     auto shaderStages = std::array{ vertShaderCreateInfo, fragShaderCreateInfo };
 
     // Vertex layout
-    VertexInputStateInfo vertexInputStateCreateInfo{layout, name == "A"sv ? 1u : 2u};
+    auto const vertexInputInfo = app.vertexLayoutsManager.info(layout);
 
     VkPipelineInputAssemblyStateCreateInfo constexpr vertexAssemblyStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -1137,8 +1153,10 @@ void CreateGraphicsPipeline(app_t &app, vertex_layout_t const &layout, std::stri
         { 0, 0, 0, 0 }
     };
 
-    if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); pipelineLayout)
-        app.pipelineLayout = pipelineLayout.value();
+    auto &&pipelineLayout = name == "A"sv ? app.pipelineLayoutA : app.pipelineLayoutB;
+
+    if (auto result = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); result)
+        pipelineLayout = result.value();
 
 
     VkGraphicsPipelineCreateInfo const graphicsPipelineCreateInfo{
@@ -1146,7 +1164,7 @@ void CreateGraphicsPipeline(app_t &app, vertex_layout_t const &layout, std::stri
         nullptr,
         VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,
         static_cast<std::uint32_t>(std::size(shaderStages)), std::data(shaderStages),
-        &vertexInputStateCreateInfo.info(),
+        &vertexInputInfo,
         &vertexAssemblyStateCreateInfo,
         nullptr,
 #if USE_DYNAMIC_PIPELINE_STATE
@@ -1159,7 +1177,7 @@ void CreateGraphicsPipeline(app_t &app, vertex_layout_t const &layout, std::stri
         &depthStencilStateCreateInfo,
         &colorBlendStateCreateInfo,
         nullptr,
-        app.pipelineLayout,
+        pipelineLayout,
         app.renderPass,
         0,
         VK_NULL_HANDLE, -1
@@ -1171,6 +1189,113 @@ void CreateGraphicsPipeline(app_t &app, vertex_layout_t const &layout, std::stri
 
     if (auto result = vkCreateGraphicsPipelines(app.vulkanDevice->handle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, pipeline); result != VK_SUCCESS)
         throw std::runtime_error("failed to create graphics pipeline: "s + std::to_string(result));
+}
+
+
+void CreateGraphicsCommandBuffers(app_t &app)
+{
+    app.commandBuffers.resize(std::size(app.swapchain.framebuffers));
+
+    VkCommandBufferAllocateInfo const allocateInfo{
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        nullptr,
+        app.graphicsCommandPool,
+        VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        static_cast<std::uint32_t>(std::size(app.commandBuffers))
+    };
+
+    if (auto result = vkAllocateCommandBuffers(app.vulkanDevice->handle(), &allocateInfo, std::data(app.commandBuffers)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create allocate command buffers: "s + std::to_string(result));
+
+    std::size_t i = 0;
+
+    for (auto &commandBuffer : app.commandBuffers) {
+        VkCommandBufferBeginInfo const beginInfo{
+            VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            nullptr,
+            VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
+            nullptr
+        };
+
+        if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
+            throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
+
+#if defined( __clang__) || defined(_MSC_VER)
+        auto const clearColors = std::array{
+            VkClearValue{{{ .64f, .64f, .64f, 1.f }}},
+            VkClearValue{{{ kREVERSED_DEPTH ? 0.f : 1.f, 0 }}}
+        };
+#else
+        auto const clearColors = std::array{
+            VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f } } },
+            VkClearValue{ .depthStencil = { kREVERSED_DEPTH ? 0.f : 1.f, 0 } }
+        };
+#endif
+
+        VkRenderPassBeginInfo const renderPassInfo{
+            VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+            nullptr,
+            app.renderPass,
+            app.swapchain.framebuffers.at(i++),
+            {{0, 0}, app.swapchain.extent},
+            static_cast<std::uint32_t>(std::size(clearColors)), std::data(clearColors)
+        };
+
+        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        auto const vertexBuffers = std::array{app.vertexBufferA->handle(), app.vertexBufferB->handle()};
+        auto const offsets = std::array{VkDeviceSize{0}, VkDeviceSize{0}};
+
+        auto const bindingCount = static_cast<std::uint32_t>(std::size(offsets));
+
+        vkCmdBindVertexBuffers(commandBuffer, 1, bindingCount, std::data(vertexBuffers), std::data(offsets));
+
+    #if USE_DYNAMIC_PIPELINE_STATE
+        VkViewport const viewport{
+            0, static_cast<float>(app.swapchain.extent.height),
+            static_cast<float>(app.swapchain.extent.width), -static_cast<float>(app.swapchain.extent.height),
+            0, 1
+        };
+
+        VkRect2D const scissor{
+            {0, 0}, app.swapchain.extent
+        };
+
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+    #endif
+
+        auto const verticesCount = 3u;
+
+        {
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipelineA);
+
+            std::size_t const stride = app.alignedBufferSize / app.objectsNumber;
+            auto const dynamicOffset = static_cast<std::uint32_t>(0 * stride);
+
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayoutA,
+                                    0, 1, &app.descriptorSet, 1, &dynamicOffset);
+
+            vkCmdDraw(commandBuffer, verticesCount, 1, 0, 0);
+        }
+
+        {
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipelineB);
+
+            std::size_t const stride = app.alignedBufferSize / app.objectsNumber;
+            auto const dynamicOffset = static_cast<std::uint32_t>(1 * stride);
+
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayoutB,
+                                    0, 1, &app.descriptorSet, 1, &dynamicOffset);
+
+            vkCmdDraw(commandBuffer, verticesCount, 1, 0, 0);
+        }
+
+        vkCmdEndRenderPass(commandBuffer);
+
+        if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS)
+            throw std::runtime_error("failed to end command buffer: "s + std::to_string(result));
+    }
 }
 
 }
@@ -1242,16 +1367,8 @@ void InitVulkan(Window &window, app_t &app)
     }
 
 
-    vertex_layout_t layoutA;
-    layoutA.emplace_back(0, semantic::position{}, vec<3, std::float_t>{}, false);
-    layoutA.emplace_back(0, semantic::tex_coord_0{}, vec<2, std::float_t>{}, false);
-
-    vertex_layout_t layoutB;
-    layoutB.emplace_back(0, semantic::position{}, vec<3, std::float_t>{}, false);
-    layoutB.emplace_back(0, semantic::color_0{}, vec<4, std::float_t>{}, false);
-
-    temp::CreateGraphicsPipeline(app, layoutA, "A"sv);
-    temp::CreateGraphicsPipeline(app, layoutB, "B"sv);
+    temp::CreateGraphicsPipeline(app, temp::layoutA, "A"sv);
+    temp::CreateGraphicsPipeline(app, temp::layoutB, "B"sv);
 
     CreateGraphicsPipeline(app);
 
@@ -1305,7 +1422,7 @@ void InitVulkan(Window &window, app_t &app)
 
     UpdateDescriptorSet(app, *app.vulkanDevice, app.descriptorSet);
 
-    CreateGraphicsCommandBuffers(app);
+    temp::CreateGraphicsCommandBuffers(app);
 
     CreateSemaphores(app);
 }
@@ -1338,8 +1455,8 @@ void Update(app_t &app)
     std::size_t instanceIndex = 0;
 
     for (auto &&object : app.objects) {
-        object.world = glm::translate(glm::mat4{1.f}, glm::vec3{2 * instanceIndex, 0, 0});
-        object.world = glm::rotate(object.world, glm::radians(-90.f), glm::vec3{1, 0, 0});
+        //object.world = glm::translate(glm::mat4{1.f}, glm::vec3{2 * instanceIndex, 0, 0});
+        //object.world = glm::rotate(object.world, glm::radians(-90.f), glm::vec3{1, 0, 0});
         //object.world = glm::scale(object.world, glm::vec3{.01f});
 
         object.normal = glm::inverseTranspose(object.world);
@@ -1462,7 +1579,7 @@ try {
     app.camera->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
 
     app.cameraController = std::make_unique<OrbitController>(app.camera, *inputManager);
-    app.cameraController->lookAt(glm::vec3{.8, 2.4, 2.4}, {0, .8, 0});
+    app.cameraController->lookAt(glm::vec3{0, 2, 1}, {0, 0, 0});
 
     std::cout << measure<>::execution(InitVulkan, window, std::ref(app)) << " ms\n"s;
 

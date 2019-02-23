@@ -185,7 +185,10 @@ struct xformat final {
         {
             std::size_t seed = 0;
 
-            //boost::hash_combine(seed, boost::hash<vertex_attribute>{layout.attributes});
+            hash_value hasher;
+
+            for (auto &&attribute : layout.attributes)
+                boost::hash_combine(seed, hasher(attribute));
 
             boost::hash_combine(seed, layout.sizeInBytes);
 

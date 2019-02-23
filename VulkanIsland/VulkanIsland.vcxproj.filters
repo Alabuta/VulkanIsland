@@ -107,6 +107,9 @@
     <ClCompile Include="src\pipelines.cxx">
       <Filter>Source Files\Renderer</Filter>
     </ClCompile>
+    <ClCompile Include="src\vertexLayout.cxx">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src/input/inputDataTypes.hxx">
@@ -218,6 +221,9 @@
       <Filter>Source Files\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\pipelines.hxx">
+      <Filter>Source Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\vertexLayout.hxx">
       <Filter>Source Files\Renderer</Filter>
     </ClInclude>
   </ItemGroup>

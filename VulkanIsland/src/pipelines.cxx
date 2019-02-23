@@ -22,7 +22,7 @@ namespace
 #endif
 
 
-VertexInputStateInfo::VertexInputStateInfo(vertex_layout_t const &layout, std::uint32_t binding) noexcept : binding_{binding}
+VertexInputStateInfo2::VertexInputStateInfo2(vertex_layout_t const &layout, std::uint32_t binding) noexcept : binding_{binding}
 {
     auto vertexSize = std::accumulate(std::cbegin(layout), std::cend(layout), 0u,
                                         [] (std::uint32_t size, auto &&description)
@@ -72,6 +72,7 @@ VertexInputStateInfo::VertexInputStateInfo(vertex_layout_t const &layout, std::u
     attributeDescriptions.shrink_to_fit();
 }
 
+#if OBSOLETE
 template<class T>
 bool VertexInputStateInfo::operator== (T &&rhs) const noexcept
 {
@@ -104,3 +105,4 @@ std::size_t VertexInputStateInfo::hash_value() const noexcept
 
     return seed;
 }
+#endif

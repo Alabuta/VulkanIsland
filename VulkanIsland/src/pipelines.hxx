@@ -28,20 +28,20 @@ private:
 };
 
 
-class VertexInputStateInfo final {
+class VertexInputStateInfo2 final {
 public:
 
-    VertexInputStateInfo(vertex_layout_t const &layout, std::uint32_t binding = 5) noexcept;
+    VertexInputStateInfo2(vertex_layout_t const &layout, std::uint32_t binding = 5) noexcept;
 
     VkPipelineVertexInputStateCreateInfo const &info() const noexcept { return info_; }
 
     std::uint32_t binding() const noexcept { return binding_; }
 
-    template<class T>
+    /*template<class T>
     bool operator== (T &&rhs) const noexcept;
 
     template<class T>
-    std::size_t hash_value() const noexcept;
+    std::size_t hash_value() const noexcept;*/
 
 private:
 
