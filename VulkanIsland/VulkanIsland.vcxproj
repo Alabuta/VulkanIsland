@@ -278,6 +278,7 @@
     <ClInclude Include="src\material.hxx" />
     <ClInclude Include="src\renderPass.hxx" />
     <ClInclude Include="src\resources\memory.hxx" />
+    <ClInclude Include="src\resources\resource.hxx" />
     <ClInclude Include="src\semaphore.hxx" />
     <ClInclude Include="src\shader.hxx" />
     <ClInclude Include="src\staging.hxx" />
@@ -297,7 +298,6 @@
     <ClInclude Include="src\resources\buffer.hxx" />
     <ClInclude Include="src\resources\image.hxx" />
     <ClInclude Include="src\resources\program.hxx" />
-    <ClInclude Include="src\resources\resource.hxx" />
     <ClInclude Include="src\sceneTree.hxx" />
     <ClInclude Include="src\vertexFormat.hxx" />
     <ClInclude Include="src\vertexLayout.hxx" />

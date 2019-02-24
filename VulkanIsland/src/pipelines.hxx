@@ -12,8 +12,6 @@
 class GraphicsPipeline final {
 public:
 
-    GraphicsPipeline();
-
     std::size_t hash() const noexcept { return hash_; }
 
     template<class T, typename std::enable_if_t<std::is_same_v<GraphicsPipeline, std::decay_t<T>>>...>

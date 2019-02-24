@@ -181,9 +181,6 @@
     <ClInclude Include="src\resources\program.hxx">
       <Filter>Source Files\Resources</Filter>
     </ClInclude>
-    <ClInclude Include="src\resources\resource.hxx">
-      <Filter>Source Files\Resources</Filter>
-    </ClInclude>
     <ClInclude Include="src\loaders\loaderTARGA.hxx">
       <Filter>Source Files\Loaders</Filter>
     </ClInclude>
@@ -225,6 +222,9 @@
     </ClInclude>
     <ClInclude Include="src\vertexLayout.hxx">
       <Filter>Source Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\resources\resource.hxx">
+      <Filter>Source Files\Resources</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

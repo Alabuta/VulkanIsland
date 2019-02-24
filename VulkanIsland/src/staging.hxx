@@ -206,31 +206,37 @@ struct xformat final {
         template<class T1, class T2, typename std::enable_if_t<are_same_v<vertex_layout, T1, T2>>...>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
-            auto sameSize = lhs.sizeInBytes == rhs.sizeInBytes;;
+            auto sameSize = lhs.sizeInBytes == rhs.sizeInBytes;
 
-            return std::equal(std::begin(lhs.attributes), std::end(lhs.attributes), std::begin(rhs.attributes), [] (auto &&lhs, auto &&rhs)
+            equal_comparator comparator;
+
+            return std::equal(std::begin(lhs.attributes), std::end(lhs.attributes), std::begin(rhs.attributes), [comparator] (auto &&lhs, auto &&rhs)
             {
-                return true;// lhs.attribute == rhs.attribute;
+                return comparator(lhs, rhs);
             }) && sameSize;
         }
     };
 
-#if NOT_YET_IMPLEMENTED
     struct less_comparator final {
-
         template<class T1, class T2, typename std::enable_if_t<are_same_v<struct vertex_attribute, T1, T2>>...>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
-            return lhs.semantic < rhs.semantic;
+            return lhs.offsetInBytes < rhs.offsetInBytes && lhs.semantic < rhs.semantic && lhs.type < rhs.type && lhs.normalized < rhs.normalized;
         }
 
         template<class T1, class T2, typename std::enable_if_t<are_same_v<vertex_layout, T1, T2>>...>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
-            return lhs.attribute < rhs.attribute;
+            auto lessSize = lhs.sizeInBytes < rhs.sizeInBytes;
+
+            less_comparator comparator;
+
+            return std::equal(std::begin(lhs.attributes), std::end(lhs.attributes), std::begin(rhs.attributes), [comparator] (auto &&lhs, auto &&rhs)
+            {
+                return comparator(lhs, rhs);
+            }) && lessSize;
         }
     };
-#endif
 
 
     std::vector<vertex_layout> vertexLayouts;
