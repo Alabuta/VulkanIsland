@@ -28,11 +28,11 @@
 #include "resources/resource.hxx"
 #include "descriptor.hxx"
 #include "commandBuffer.hxx"
-#include "pipelines.hxx"
-#include "renderPass.hxx"
+#include "renderer/pipelines.hxx"
+#include "renderer/renderPass.hxx"
 #include "semaphore.hxx"
 
-#include "vertexLayout.hxx"
+#include "renderer/vertexLayout.hxx"
 
 #include "ecs/ecs.hxx"
 #include "ecs/node.hxx"
@@ -852,11 +852,11 @@ xformat populate()
         vertexLayout.sizeInBytes = sizeof(vertex);
 
         vertexLayout.attributes.push_back(xformat::vertex_attribute{
-            0, semantic::position{}, vec<3, std::float_t>{}
+            0, semantic::position{}, vec<3, std::float_t>{}, false
         });
 
         vertexLayout.attributes.push_back(xformat::vertex_attribute{
-            sizeof(vec<3, std::float_t>), semantic::tex_coord_0{}, vec<2, std::float_t>{}
+            sizeof(vec<3, std::float_t>), semantic::tex_coord_0{}, vec<2, std::float_t>{}, false
         });
 
         model.vertexLayouts.push_back(std::move(vertexLayout));
