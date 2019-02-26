@@ -101,13 +101,16 @@
     <ClCompile Include="src\resources\memory.cxx">
       <Filter>Source Files\Resources</Filter>
     </ClCompile>
-    <ClCompile Include="src\renderPass.cxx">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\pipelines.cxx">
+    <ClCompile Include="src\renderer\pipelines.cxx">
       <Filter>Source Files\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="src\vertexLayout.cxx">
+    <ClCompile Include="src\renderer\renderPass.cxx">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderer\vertexLayout.cxx">
+      <Filter>Source Files\Renderer</Filter>
+    </ClCompile>
+    <ClCompile Include="src\renderer\material.cxx">
       <Filter>Source Files\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
@@ -205,26 +208,29 @@
     <ClInclude Include="src\resources\memory.hxx">
       <Filter>Source Files\Resources</Filter>
     </ClInclude>
-    <ClInclude Include="src\renderPass.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\semaphore.hxx">
       <Filter>Source Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\material.hxx">
-      <Filter>Source Files\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\shader.hxx">
       <Filter>Source Files\Renderer</Filter>
     </ClInclude>
-    <ClInclude Include="src\pipelines.hxx">
-      <Filter>Source Files\Renderer</Filter>
-    </ClInclude>
-    <ClInclude Include="src\vertexLayout.hxx">
-      <Filter>Source Files\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="src\resources\resource.hxx">
       <Filter>Source Files\Resources</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderer\vertexLayout.hxx">
+      <Filter>Source Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderer\pipelines.hxx">
+      <Filter>Source Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderer\renderPass.hxx">
+      <Filter>Source Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderer\material.hxx">
+      <Filter>Source Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderer\attachments.hxx">
+      <Filter>Source Files\Renderer</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

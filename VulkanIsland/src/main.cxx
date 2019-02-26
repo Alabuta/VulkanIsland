@@ -1132,6 +1132,7 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
         0, 1
     };
 
+    // Blending
     VkPipelineColorBlendAttachmentState constexpr colorBlendAttachment{
         VK_FALSE,
         VK_BLEND_FACTOR_ONE,
@@ -1152,6 +1153,7 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
         &colorBlendAttachment,
         { 0, 0, 0, 0 }
     };
+
 
     auto &&pipelineLayout = name == "A"sv ? app.pipelineLayoutA : app.pipelineLayoutB;
 
