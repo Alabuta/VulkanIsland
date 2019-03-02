@@ -69,20 +69,25 @@ private:
     // pipeline layout (descriptor set layout)
 };
 
+struct MaterialProperties final {
+    VkPipelineRasterizationStateCreateInfo rasterizationState;
+
+    VkPipelineDepthStencilStateCreateInfo depthStencilState;
+
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+    VkPipelineColorBlendStateCreateInfo colorBlendState;
+};
+
 
 class MaterialFactory final {
 public:
 
     [[nodiscard]] std::shared_ptr<Material> CreateMaterial() noexcept;
 
-private:
 
-    struct MaterialProperties final {
-        VkPipelineRasterizationStateCreateInfo rasterizationState;
-        VkPipelineDepthStencilStateCreateInfo depthStencilState;
-        VkPipelineColorBlendAttachmentState colorBlendAttachment;
-        VkPipelineColorBlendStateCreateInfo colorBlendState;
-    };
+    [[nodiscard]] std::shared_ptr<MaterialProperties> const properties(std::shared_ptr<Material> material);// const noexcept;
+
+private:
 
     std::unordered_map<std::shared_ptr<Material>, MaterialProperties> materialProperties_;
 };

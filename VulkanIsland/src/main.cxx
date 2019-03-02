@@ -33,6 +33,7 @@
 #include "semaphore.hxx"
 
 #include "renderer/vertexLayout.hxx"
+#include "renderer/material.hxx"
 
 #include "ecs/ecs.hxx"
 #include "ecs/node.hxx"
@@ -122,6 +123,10 @@ struct app_t final {
     VkPipelineLayout pipelineLayoutB{VK_NULL_HANDLE};
 
     VertexLayoutsManager vertexLayoutsManager;
+
+    MaterialFactory materialFactory;
+    std::shared_ptr<Material> materialA;
+    std::shared_ptr<Material> materialB;
 
 
     ~app_t()
@@ -1068,6 +1073,22 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
 
     auto shaderStages = std::array{ vertShaderCreateInfo, fragShaderCreateInfo };
 
+    // Material
+    if (name == "A"sv)
+        app.materialA = app.materialFactory.CreateMaterial();
+
+    else app.materialB = app.materialFactory.CreateMaterial();
+
+    auto material = name == "A"sv ? app.materialA : app.materialB;
+
+    if (!material)
+        throw std::runtime_error("failed to create a material"s);
+
+    auto materialProperties = app.materialFactory.properties(material);
+
+    if (!materialProperties)
+        throw std::runtime_error("failed to get a material properties"s);
+
     // Vertex layout
     auto const vertexInputInfo = app.vertexLayoutsManager.info(layout);
 
@@ -1096,8 +1117,6 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
         1, &scissor
     };
 
-    auto constexpr rasterizerDiscardEnable = VK_FALSE;
-
     VkPipelineMultisampleStateCreateInfo const multisampleCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         nullptr, 0,
@@ -1107,53 +1126,6 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
         VK_FALSE,
         VK_FALSE
     };
-
-    // Material
-    VkPipelineRasterizationStateCreateInfo constexpr rasterizerState{
-        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-        nullptr, 0,
-        VK_TRUE,
-        rasterizerDiscardEnable,
-        VK_POLYGON_MODE_FILL,
-        VK_CULL_MODE_BACK_BIT,
-        VK_FRONT_FACE_COUNTER_CLOCKWISE,
-        VK_FALSE,
-        0.f, 0.f, 0.f,
-        1.f
-    };
-
-    VkPipelineDepthStencilStateCreateInfo constexpr depthStencilStateCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        nullptr, 0,
-        VK_TRUE, VK_TRUE,
-        kREVERSED_DEPTH ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_LESS,
-        VK_FALSE,
-        VK_FALSE, VkStencilOpState{}, VkStencilOpState{},
-        0, 1
-    };
-
-    // Blending
-    VkPipelineColorBlendAttachmentState constexpr colorBlendAttachment{
-        VK_FALSE,
-        VK_BLEND_FACTOR_ONE,
-        VK_BLEND_FACTOR_ZERO,
-        VK_BLEND_OP_ADD,
-        VK_BLEND_FACTOR_ONE,
-        VK_BLEND_FACTOR_ZERO,
-        VK_BLEND_OP_ADD,
-        VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT
-    };
-
-    VkPipelineColorBlendStateCreateInfo const colorBlendStateCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-        nullptr, 0,
-        VK_FALSE,
-        VK_LOGIC_OP_COPY,
-        1,
-        &colorBlendAttachment,
-        { 0, 0, 0, 0 }
-    };
-
 
     auto &&pipelineLayout = name == "A"sv ? app.pipelineLayoutA : app.pipelineLayoutB;
 
@@ -1174,10 +1146,10 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
 #else
         &viewportStateCreateInfo,
 #endif
-        &rasterizerState,
+        &materialProperties->rasterizationState,
         &multisampleCreateInfo,
-        &depthStencilStateCreateInfo,
-        &colorBlendStateCreateInfo,
+        &materialProperties->depthStencilState,
+        &materialProperties->colorBlendState,
         nullptr,
         pipelineLayout,
         app.renderPass,

@@ -208,6 +208,20 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial() noexcept
 {
     auto material = std::make_shared<Material>();
 
+    material->colorBlendState.attachments.push_back(ColorBlendAttachmentState{
+        false,
+        BLEND_FACTOR::ONE,
+        BLEND_FACTOR::ZERO,
+        BLEND_OPERATION::ADD,
+        BLEND_FACTOR::ONE,
+        BLEND_FACTOR::ZERO,
+        BLEND_OPERATION::ADD,
+        COLOR_COMPONENT::RGBA
+    });
+
+    /*if (materialProperties_.count(material) == 0)
+        return { };*/
+
     auto &&properties = materialProperties_[material];
 
     properties.rasterizationState = VkPipelineRasterizationStateCreateInfo{
@@ -235,10 +249,8 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial() noexcept
         0, 1
     };
 
-    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
-
     for (auto &&attachment : material->colorBlendState.attachments) {
-        colorBlendAttachments.push_back(VkPipelineColorBlendAttachmentState{
+        properties.colorBlendAttachments.push_back(VkPipelineColorBlendAttachmentState{
             VkBool32(attachment.blendEnable),
             ConvertToGAPI(attachment.srcColorBlendFactor),
             ConvertToGAPI(attachment.dstColorBlendFactor),
@@ -259,8 +271,8 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial() noexcept
         nullptr, 0,
         VK_FALSE,
         VK_LOGIC_OP_COPY,
-        static_cast<std::uint32_t>(std::size(colorBlendAttachments)),
-        std::data(colorBlendAttachments)
+        static_cast<std::uint32_t>(std::size(properties.colorBlendAttachments)),
+        std::data(properties.colorBlendAttachments)
     };
 
     std::copy(std::cbegin(material->colorBlendState.blendConstants), std::cend(material->colorBlendState.blendConstants),
@@ -268,3 +280,14 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial() noexcept
 
     return material;
 }
+
+std::shared_ptr<MaterialProperties> const MaterialFactory::properties(std::shared_ptr<Material> material)// const noexcept
+{
+    if (materialProperties_.count(material) == 0)
+        return { };
+
+    auto &&properties = materialProperties_.at(material);
+
+    return {material, &properties};
+}
+
