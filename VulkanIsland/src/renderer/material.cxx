@@ -203,25 +203,49 @@ VkColorComponentFlags constexpr ConvertToGAPI(COLOR_COMPONENT colorComponent) no
 }
 }
 
-
-std::shared_ptr<Material> MaterialFactory::CreateMaterial() noexcept
+namespace
 {
-    auto material = std::make_shared<Material>();
+struct ShaderSourceFilesNames final {
+    std::string vertexFileName_;
+    std::string fragmentFileName_;
+};
 
-    material->colorBlendState.attachments.push_back(ColorBlendAttachmentState{
-        false,
-        BLEND_FACTOR::ONE,
-        BLEND_FACTOR::ZERO,
-        BLEND_OPERATION::ADD,
-        BLEND_FACTOR::ONE,
-        BLEND_FACTOR::ZERO,
-        BLEND_OPERATION::ADD,
-        COLOR_COMPONENT::RGBA
-    });
+template<class T>
+ShaderSourceFilesNames constexpr ShadersNames() noexcept
+{
+    if constexpr (std::is_same_v<T, TexCoordsDebugMaterial>)
+    {
+        return ShaderSourceFilesNames{
+            R"(test/vertA.spv)"s,
+            R"(test/fragA.spv)"s
+        };
+    }
 
-    /*if (materialProperties_.count(material) == 0)
-        return { };*/
+    else if constexpr (std::is_same_v<T, NormalsDebugMaterial>)
+    {
+        return ShaderSourceFilesNames{
+            R"(test/vertB.spv)"s,
+            R"(test/fragB.spv)"s
+        };
+    }
 
+    else static_assert("material type has to be derived from common 'Material' type class");
+}
+}
+
+
+std::shared_ptr<MaterialProperties> const MaterialFactory::properties(std::shared_ptr<Material> material)// const noexcept
+{
+    if (materialProperties_.count(material) == 0)
+        return { };
+
+    auto &&properties = materialProperties_.at(material);
+
+    return {material, &properties};
+}
+
+void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material> material) noexcept
+{
     auto &&properties = materialProperties_[material];
 
     properties.rasterizationState = VkPipelineRasterizationStateCreateInfo{
@@ -277,17 +301,5 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial() noexcept
 
     std::copy(std::cbegin(material->colorBlendState.blendConstants), std::cend(material->colorBlendState.blendConstants),
               std::begin(properties.colorBlendState.blendConstants));
-
-    return material;
-}
-
-std::shared_ptr<MaterialProperties> const MaterialFactory::properties(std::shared_ptr<Material> material)// const noexcept
-{
-    if (materialProperties_.count(material) == 0)
-        return { };
-
-    auto &&properties = materialProperties_.at(material);
-
-    return {material, &properties};
 }
 

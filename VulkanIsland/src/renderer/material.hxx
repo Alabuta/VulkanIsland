@@ -5,6 +5,7 @@
 
 #include "main.hxx"
 #include "attachments.hxx"
+#include "resources/program.hxx"
 
 
 
@@ -51,6 +52,16 @@ struct DepthStencilState final {
 };
 
 
+struct MaterialProperties final {
+    VkPipelineRasterizationStateCreateInfo rasterizationState;
+
+    VkPipelineDepthStencilStateCreateInfo depthStencilState;
+
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+    VkPipelineColorBlendStateCreateInfo colorBlendState;
+};
+
+
 
 class Material {
 public:
@@ -69,20 +80,30 @@ private:
     // pipeline layout (descriptor set layout)
 };
 
-struct MaterialProperties final {
-    VkPipelineRasterizationStateCreateInfo rasterizationState;
+class TexCoordsDebugMaterial final : public Material {
+public:
 
-    VkPipelineDepthStencilStateCreateInfo depthStencilState;
+    ;
 
-    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
-    VkPipelineColorBlendStateCreateInfo colorBlendState;
+private:
+
+};
+
+class NormalsDebugMaterial final : public Material {
+public:
+
+    ;
+
+private:
+
 };
 
 
 class MaterialFactory final {
 public:
 
-    [[nodiscard]] std::shared_ptr<Material> CreateMaterial() noexcept;
+    template<class T>
+    [[nodiscard]] std::shared_ptr<T> CreateMaterial() noexcept;
 
 
     [[nodiscard]] std::shared_ptr<MaterialProperties> const properties(std::shared_ptr<Material> material);// const noexcept;
@@ -90,4 +111,33 @@ public:
 private:
 
     std::unordered_map<std::shared_ptr<Material>, MaterialProperties> materialProperties_;
+
+    void InitMaterialProperties(std::shared_ptr<Material> material) noexcept;
+
+
+    std::unordered_map<std::string, std::shared_ptr<VulkanShaderModule>> shaderModules_;
 };
+
+template<class T>
+std::shared_ptr<T> MaterialFactory::CreateMaterial() noexcept
+{
+    auto material = std::make_shared<T>();
+
+    /*if (materialProperties_.count(material) == 0)
+        return { };*/
+
+    material->colorBlendState.attachments.push_back(ColorBlendAttachmentState{
+        false,
+        BLEND_FACTOR::ONE,
+        BLEND_FACTOR::ZERO,
+        BLEND_OPERATION::ADD,
+        BLEND_FACTOR::ONE,
+        BLEND_FACTOR::ZERO,
+        BLEND_OPERATION::ADD,
+        COLOR_COMPONENT::RGBA
+    });
+
+    InitMaterialProperties(material);
+
+    return material;
+}
