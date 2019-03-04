@@ -124,7 +124,7 @@ struct app_t final {
 
     VertexLayoutsManager vertexLayoutsManager;
 
-    MaterialFactory materialFactory;
+    std::unique_ptr<MaterialFactory> materialFactory;
     std::shared_ptr<Material> materialA;
     std::shared_ptr<Material> materialB;
 
@@ -1075,16 +1075,16 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
 
     // Material
     if (name == "A"sv)
-        app.materialA = app.materialFactory.CreateMaterial<TexCoordsDebugMaterial>();
+        app.materialA = app.materialFactory->CreateMaterial<TexCoordsDebugMaterial>();
 
-    else app.materialB = app.materialFactory.CreateMaterial<NormalsDebugMaterial>();
+    else app.materialB = app.materialFactory->CreateMaterial<NormalsDebugMaterial>();
 
     auto material = name == "A"sv ? app.materialA : app.materialB;
 
     if (!material)
         throw std::runtime_error("failed to create a material"s);
 
-    auto materialProperties = app.materialFactory.properties(material);
+    auto materialProperties = app.materialFactory->properties(material);
 
     if (!materialProperties)
         throw std::runtime_error("failed to get a material properties"s);
@@ -1300,6 +1300,8 @@ void InitVulkan(Window &window, app_t &app)
     > qpool;
 
     app.vulkanDevice = std::make_unique<VulkanDevice>(*app.vulkanInstance, app.surface, config::deviceExtensions, std::move(qpool));
+
+    app.materialFactory = std::make_unique<MaterialFactory>(*app.vulkanDevice);
 
     app.graphicsQueue = app.vulkanDevice->queue<GraphicsQueue>();
     app.transferQueue = app.vulkanDevice->queue<TransferQueue>();

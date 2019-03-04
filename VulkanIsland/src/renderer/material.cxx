@@ -215,7 +215,7 @@ ShaderSourceFilesNames constexpr ShadersNames() noexcept
 {
     if constexpr (std::is_same_v<T, TexCoordsDebugMaterial>)
     {
-        return ShaderSourceFilesNames{
+        return {
             R"(test/vertA.spv)"s,
             R"(test/fragA.spv)"s
         };
@@ -223,7 +223,7 @@ ShaderSourceFilesNames constexpr ShadersNames() noexcept
 
     else if constexpr (std::is_same_v<T, NormalsDebugMaterial>)
     {
-        return ShaderSourceFilesNames{
+        return {
             R"(test/vertB.spv)"s,
             R"(test/fragB.spv)"s
         };
@@ -303,4 +303,3 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material> material)
     std::copy(std::cbegin(material->colorBlendState.blendConstants), std::cend(material->colorBlendState.blendConstants),
               std::begin(properties.colorBlendState.blendConstants));
 }
-
