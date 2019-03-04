@@ -270,7 +270,7 @@ void ResourceManager::ReleaseResource(T &&resource) noexcept
     }
 }
 
-std::optional<VertexBuffer> ResourceManager::CreateVertexBuffer(xformat::vertex_layout const &layout, std::size_t sizeInBytes) noexcept
+std::optional<VertexBuffer> ResourceManager::CreateVertexBuffer(xformat::vertex_layout const &, std::size_t) noexcept
 {
     /*vertexBuffers_[]
 

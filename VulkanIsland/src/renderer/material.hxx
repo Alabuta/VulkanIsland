@@ -83,7 +83,6 @@ private:
 class TexCoordsDebugMaterial final : public Material {
 public:
 
-    ;
 
 private:
 
@@ -92,7 +91,6 @@ private:
 class NormalsDebugMaterial final : public Material {
 public:
 
-    ;
 
 private:
 

@@ -296,7 +296,8 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material> material)
         VK_FALSE,
         VK_LOGIC_OP_COPY,
         static_cast<std::uint32_t>(std::size(properties.colorBlendAttachments)),
-        std::data(properties.colorBlendAttachments)
+        std::data(properties.colorBlendAttachments),
+        {}
     };
 
     std::copy(std::cbegin(material->colorBlendState.blendConstants), std::cend(material->colorBlendState.blendConstants),

@@ -47,9 +47,10 @@ set(SOURCE_FILES
 	
 	src/instance.cxx
     
+    src/renderer/vertexLayout.cxx
+    src/renderer/material.cxx
     src/renderer/pipelines.cxx
     src/renderer/renderPass.cxx
-    src/renderer/vertexLayout.cxx
 
 	src/sceneTree.cxx
 	src/swapchain.cxx
