@@ -1038,41 +1038,6 @@ void populate(app_t &app)
 
 void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, std::string_view name)
 {
-    // Shader
-    auto const vertShaderByteCode = ReadShaderFile(R"(test/vert)"s + std::string{name} +R"(.spv)"s);
-
-    if (vertShaderByteCode.empty())
-        throw std::runtime_error("failed to open vertex shader file"s);
-
-    auto const vertShaderModule = app.vulkanDevice->resourceManager().CreateShaderModule(vertShaderByteCode);
-
-    auto const fragShaderByteCode = ReadShaderFile(R"(test/frag)"s + std::string{name} + R"(.spv)"s);
-
-    if (fragShaderByteCode.empty())
-        throw std::runtime_error("failed to open fragment shader file"s);
-
-    auto const fragShaderModule = app.vulkanDevice->resourceManager().CreateShaderModule(fragShaderByteCode);
-
-    VkPipelineShaderStageCreateInfo const vertShaderCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        nullptr, 0,
-        VK_SHADER_STAGE_VERTEX_BIT,
-        vertShaderModule->handle(),
-        "main",
-        nullptr
-    };
-
-    VkPipelineShaderStageCreateInfo const fragShaderCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        nullptr, 0,
-        VK_SHADER_STAGE_FRAGMENT_BIT,
-        fragShaderModule->handle(),
-        "main",
-        nullptr
-    };
-
-    auto shaderStages = std::array{ vertShaderCreateInfo, fragShaderCreateInfo };
-
     // Material
     if (name == "A"sv)
         app.materialA = app.materialFactory->CreateMaterial<TexCoordsDebugMaterial>();
@@ -1088,6 +1053,8 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
 
     if (!materialProperties)
         throw std::runtime_error("failed to get a material properties"s);
+
+    auto shaderStages = name == "A"sv ? app.materialFactory->pipelineShaderStages<TexCoordsDebugMaterial>() : app.materialFactory->pipelineShaderStages<NormalsDebugMaterial>();;
 
     // Vertex layout
     auto const vertexInputInfo = app.vertexLayoutsManager.info(layout);

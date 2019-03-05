@@ -118,7 +118,7 @@ public:
     [[nodiscard]] std::shared_ptr<MaterialProperties> const properties(std::shared_ptr<Material> material);// const noexcept;
 
     template<class T>
-    [[nodiscard]] std::optional<VkPipelineShaderStageCreateInfo> MaterialFactory::pipelineShaderStage() const
+    [[nodiscard]] std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStages() const;
 
 private:
 
@@ -168,10 +168,8 @@ void MaterialFactory::InitShaderStages()
     if (shaderStages_.count(T::kVERTEX_FILE_NAME) == 0) {
         auto const shaderByteCode = ReadShaderFile(T::kVERTEX_FILE_NAME);
 
-        if (shaderByteCode.empty()) {
-            std::cerr << "failed to open vertex shader file\n"s;
-            return;
-        }
+        if (shaderByteCode.empty())
+            throw std::runtime_error("failed to open vertex shader file"s);
 
         auto const shaderModule = vulkanDevice_.resourceManager().CreateShaderModule(shaderByteCode);
 
@@ -190,10 +188,8 @@ void MaterialFactory::InitShaderStages()
     if (shaderStages_.count(T::kFRAGMENT_FILE_NAME) == 0) {
         auto const shaderByteCode = ReadShaderFile(T::kFRAGMENT_FILE_NAME);
 
-        if (shaderByteCode.empty()) {
-            std::cerr << "failed to open fragment shader file\n"s;
-            return;
-        }
+        if (shaderByteCode.empty())
+            throw std::runtime_error("failed to open fragment shader file"s);
 
         auto const shaderModule = vulkanDevice_.resourceManager().CreateShaderModule(shaderByteCode);
 
@@ -211,10 +207,18 @@ void MaterialFactory::InitShaderStages()
 }
 
 template<class T>
-std::optional<VkPipelineShaderStageCreateInfo> MaterialFactory::pipelineShaderStage() const
+std::vector<VkPipelineShaderStageCreateInfo> MaterialFactory::pipelineShaderStages() const
 {
+    std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+
     if (shaderStages_.count(T::kVERTEX_FILE_NAME) == 0)
         return { };
 
-    else shaderStages_.at(T::kVERTEX_FILE_NAME);
+    if (shaderStages_.count(T::kFRAGMENT_FILE_NAME) == 0)
+        return { };
+
+    shaderStages.push_back(shaderStages_.at(T::kVERTEX_FILE_NAME));
+    shaderStages.push_back(shaderStages_.at(T::kFRAGMENT_FILE_NAME));
+
+    return shaderStages;
 }

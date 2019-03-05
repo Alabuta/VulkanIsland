@@ -203,6 +203,7 @@ VkColorComponentFlags constexpr ConvertToGAPI(COLOR_COMPONENT colorComponent) no
 }
 }
 
+#if 0
 namespace
 {
 struct ShaderSourceFilesNames final {
@@ -232,6 +233,7 @@ ShaderSourceFilesNames constexpr ShadersNames() noexcept
     else static_assert("material type has to be derived from common 'Material' type class");
 }
 }
+#endif
 
 
 std::shared_ptr<MaterialProperties> const MaterialFactory::properties(std::shared_ptr<Material> material)// const noexcept
