@@ -141,6 +141,9 @@ struct app_t final {
 
         vkDeviceWaitIdle(vulkanDevice->handle());
 
+        if (materialFactory)
+            materialFactory.reset();
+
         if (renderFinishedSemaphore)
             vkDestroySemaphore(vulkanDevice->handle(), renderFinishedSemaphore, nullptr);
 
@@ -1054,7 +1057,9 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
     if (!materialProperties)
         throw std::runtime_error("failed to get a material properties"s);
 
-    auto shaderStages = name == "A"sv ? app.materialFactory->pipelineShaderStages<TexCoordsDebugMaterial>() : app.materialFactory->pipelineShaderStages<NormalsDebugMaterial>();;
+    auto &&shaderStages = name == "A"sv ?
+        app.materialFactory->pipelineShaderStages<TexCoordsDebugMaterial>() :
+        app.materialFactory->pipelineShaderStages<NormalsDebugMaterial>();
 
     // Vertex layout
     auto const vertexInputInfo = app.vertexLayoutsManager.info(layout);

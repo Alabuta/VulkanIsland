@@ -73,6 +73,7 @@ public:
     DepthStencilState depthStencilState;
     ColorBlendState colorBlendState;
 
+
 private:
 
     // resources
@@ -118,7 +119,7 @@ public:
     [[nodiscard]] std::shared_ptr<MaterialProperties> const properties(std::shared_ptr<Material> material);// const noexcept;
 
     template<class T>
-    [[nodiscard]] std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStages() const;
+    [[nodiscard]] std::vector<VkPipelineShaderStageCreateInfo> const &pipelineShaderStages() const;
 
 private:
 
@@ -126,7 +127,8 @@ private:
 
     std::unordered_map<std::shared_ptr<Material>, MaterialProperties> materialProperties_;
 
-    std::unordered_map<std::string_view, VkPipelineShaderStageCreateInfo> shaderStages_;
+    std::unordered_map<std::string, std::vector<VkPipelineShaderStageCreateInfo>> shaderStages_;
+    std::unordered_map<std::string_view, std::shared_ptr<VulkanShaderModule>> shaderModules_;
 
 
     void InitMaterialProperties(std::shared_ptr<Material> material) noexcept;
@@ -165,60 +167,76 @@ void MaterialFactory::InitShaderStages()
 {
     static_assert(std::is_base_of_v<Material, T>, "material type has to be derived from base 'Material' type");
 
-    if (shaderStages_.count(T::kVERTEX_FILE_NAME) == 0) {
-        auto const shaderByteCode = ReadShaderFile(T::kVERTEX_FILE_NAME);
+    auto names = std::string{T::kVERTEX_FILE_NAME} +std::string{T::kFRAGMENT_FILE_NAME};
 
-        if (shaderByteCode.empty())
-            throw std::runtime_error("failed to open vertex shader file"s);
+    if (shaderStages_.count(names) == 0) {
+        std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
 
-        auto const shaderModule = vulkanDevice_.resourceManager().CreateShaderModule(shaderByteCode);
+        {
+            std::shared_ptr<VulkanShaderModule> shaderModule;
 
-        VkPipelineShaderStageCreateInfo const shaderCreateInfo{
-            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            nullptr, 0,
-            VK_SHADER_STAGE_VERTEX_BIT,
-            shaderModule->handle(),
-            "main",
-            nullptr
-        };
+            if (shaderModules_.count(T::kVERTEX_FILE_NAME) == 0) {
+                auto const shaderByteCode = ReadShaderFile(T::kVERTEX_FILE_NAME);
 
-        shaderStages_.emplace(T::kVERTEX_FILE_NAME, shaderCreateInfo);
-    }
+                if (shaderByteCode.empty())
+                    throw std::runtime_error("failed to open vertex shader file"s);
 
-    if (shaderStages_.count(T::kFRAGMENT_FILE_NAME) == 0) {
-        auto const shaderByteCode = ReadShaderFile(T::kFRAGMENT_FILE_NAME);
+                shaderModule = vulkanDevice_.resourceManager().CreateShaderModule(shaderByteCode);
 
-        if (shaderByteCode.empty())
-            throw std::runtime_error("failed to open fragment shader file"s);
+                shaderModules_.emplace(T::kVERTEX_FILE_NAME, shaderModule);
+            }
 
-        auto const shaderModule = vulkanDevice_.resourceManager().CreateShaderModule(shaderByteCode);
+            else shaderModule = shaderModules_.at(T::kVERTEX_FILE_NAME);
 
-        VkPipelineShaderStageCreateInfo const shaderCreateInfo{
-            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            nullptr, 0,
-            VK_SHADER_STAGE_FRAGMENT_BIT,
-            shaderModule->handle(),
-            "main",
-            nullptr
-        };
+            shaderStages.push_back(VkPipelineShaderStageCreateInfo{
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                nullptr, 0,
+                VK_SHADER_STAGE_VERTEX_BIT,
+                shaderModule->handle(),
+                "main",
+                nullptr
+            });
+        }
 
-        shaderStages_.emplace(T::kFRAGMENT_FILE_NAME, shaderCreateInfo);
+        {
+            std::shared_ptr<VulkanShaderModule> shaderModule;
+
+            if (shaderModules_.count(T::kFRAGMENT_FILE_NAME) == 0) {
+                auto const shaderByteCode = ReadShaderFile(T::kFRAGMENT_FILE_NAME);
+
+                if (shaderByteCode.empty())
+                    throw std::runtime_error("failed to open fragment shader file"s);
+
+                shaderModule = vulkanDevice_.resourceManager().CreateShaderModule(shaderByteCode);
+
+                shaderModules_.emplace(T::kFRAGMENT_FILE_NAME, shaderModule);
+            }
+
+            else shaderModule = shaderModules_.at(T::kFRAGMENT_FILE_NAME);
+
+            shaderStages.push_back(VkPipelineShaderStageCreateInfo{
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                nullptr, 0,
+                VK_SHADER_STAGE_FRAGMENT_BIT,
+                shaderModule->handle(),
+                "main",
+                nullptr
+            });
+
+            shaderModules_.emplace(T::kFRAGMENT_FILE_NAME, shaderModule);
+        }
+
+        shaderStages_.emplace(names, std::move(shaderStages));
     }
 }
 
 template<class T>
-std::vector<VkPipelineShaderStageCreateInfo> MaterialFactory::pipelineShaderStages() const
+std::vector<VkPipelineShaderStageCreateInfo> const &MaterialFactory::pipelineShaderStages() const
 {
-    std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+    auto names = std::string{T::kVERTEX_FILE_NAME} +std::string{T::kFRAGMENT_FILE_NAME};
 
-    if (shaderStages_.count(T::kVERTEX_FILE_NAME) == 0)
-        return { };
+    if (shaderStages_.count(names) == 0)
+        throw std::runtime_error("failed to find shader modules"s);
 
-    if (shaderStages_.count(T::kFRAGMENT_FILE_NAME) == 0)
-        return { };
-
-    shaderStages.push_back(shaderStages_.at(T::kVERTEX_FILE_NAME));
-    shaderStages.push_back(shaderStages_.at(T::kFRAGMENT_FILE_NAME));
-
-    return shaderStages;
+    return shaderStages_.at(names);
 }
