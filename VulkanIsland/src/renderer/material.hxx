@@ -113,7 +113,7 @@ public:
     MaterialFactory(VulkanDevice &vulkanDevice) noexcept : vulkanDevice_{vulkanDevice} { }
 
     template<class T>
-    [[nodiscard]] std::shared_ptr<T> CreateMaterial();
+    [[nodiscard]] std::shared_ptr<T> CreateMaterial(ShaderManager &shaderManager);
 
 
     [[nodiscard]] std::shared_ptr<MaterialProperties> const properties(std::shared_ptr<Material> material);// const noexcept;
@@ -134,11 +134,11 @@ private:
     void InitMaterialProperties(std::shared_ptr<Material> material) noexcept;
 
     template<class T>
-    void InitShaderStages();
+    void InitShaderStages(ShaderManager &shaderManager);
 };
 
 template<class T>
-std::shared_ptr<T> MaterialFactory::CreateMaterial()
+std::shared_ptr<T> MaterialFactory::CreateMaterial(ShaderManager &shaderManager)
 {
     static_assert(std::is_base_of_v<Material, T>, "material type has to be derived from base 'Material' type");
     
@@ -157,17 +157,17 @@ std::shared_ptr<T> MaterialFactory::CreateMaterial()
 
     InitMaterialProperties(material);
 
-    InitShaderStages<T>();
+    InitShaderStages<T>(shaderManager);
 
     return material;
 }
 
 template<class T>
-void MaterialFactory::InitShaderStages()
+void MaterialFactory::InitShaderStages(ShaderManager &shaderManager)
 {
     static_assert(std::is_base_of_v<Material, T>, "material type has to be derived from base 'Material' type");
 
-    auto names = std::string{T::kVERTEX_FILE_NAME} +std::string{T::kFRAGMENT_FILE_NAME};
+    auto names = std::string{T::kVERTEX_FILE_NAME} + std::string{T::kFRAGMENT_FILE_NAME};
 
     if (shaderStages_.count(names) == 0) {
         std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
@@ -176,7 +176,7 @@ void MaterialFactory::InitShaderStages()
             std::shared_ptr<VulkanShaderModule> shaderModule;
 
             if (shaderModules_.count(T::kVERTEX_FILE_NAME) == 0) {
-                auto const shaderByteCode = ReadShaderFile(T::kVERTEX_FILE_NAME);
+                auto const shaderByteCode = shaderManager.ReadShaderFile(T::kVERTEX_FILE_NAME);
 
                 if (shaderByteCode.empty())
                     throw std::runtime_error("failed to open vertex shader file"s);
@@ -202,7 +202,7 @@ void MaterialFactory::InitShaderStages()
             std::shared_ptr<VulkanShaderModule> shaderModule;
 
             if (shaderModules_.count(T::kFRAGMENT_FILE_NAME) == 0) {
-                auto const shaderByteCode = ReadShaderFile(T::kFRAGMENT_FILE_NAME);
+                auto const shaderByteCode = shaderManager.ReadShaderFile(T::kFRAGMENT_FILE_NAME);
 
                 if (shaderByteCode.empty())
                     throw std::runtime_error("failed to open fragment shader file"s);

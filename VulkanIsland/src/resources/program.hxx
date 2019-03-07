@@ -1,29 +1,34 @@
 #pragma once
 
+#include <memory>
+#include <unordered_map>
+
 #include "main.hxx"
+#include "device.hxx"
+#include "resources/resource.hxx"
 
 
 namespace shader
 {
-    enum class eSHADER_STAGE {
-        nVERTEX = 0,
-        nTESS_CONTROL,
-        nTESS_EVAL,
-        nGEOMETRY,
-        nFRAGMENT,
-        nCOMPUTE
+    enum class STAGE {
+        VERTEX = 0,
+        TESS_CONTROL,
+        TESS_EVAL,
+        GEOMETRY,
+        FRAGMENT,
+        COMPUTE
     };
 
-    template<eSHADER_STAGE S>
+    template<STAGE S>
     struct stage {
-        template<eSHADER_STAGE s>
+        template<STAGE s>
         auto constexpr operator< (stage<s>) const noexcept
         {
             return S < s;
         }
     };
 
-    struct vertex : stage<eSHADER_STAGE::nVERTEX> { };
+    struct vertex : stage<STAGE::VERTEX> { };
 }
 
 class VulkanShaderModule final {
@@ -42,30 +47,64 @@ private:
     VulkanShaderModule(VulkanShaderModule &&) = delete;
 };
 
-[[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view name);
 
-[[nodiscard]] std::vector<VkPipelineShaderStageCreateInfo>
-JoinShaderStages(std::vector<std::string_view> &&names) noexcept;
+struct ShaderStageSource final {
+    shader::STAGE stage;
+    std::string path;
+    std::string entry;
+};
 
-template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
-[[nodiscard]] VkShaderModule CreateShaderModule(VkDevice device, T &&shaderByteCode)
+
+#if 0
+namespace
 {
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, std::byte>, "iterable object does not contain std::byte elements");
+struct ShaderSourceFilesNames final {
+    std::string vertexFileName_;
+    std::string fragmentFileName_;
+};
 
-    if (shaderByteCode.size() % sizeof(std::uint32_t) != 0)
-        throw std::runtime_error("invalid byte code buffer size"s);
+template<class T>
+ShaderSourceFilesNames constexpr ShadersNames() noexcept
+{
+    if constexpr (std::is_same_v<T, TexCoordsDebugMaterial>)
+    {
+        return {
+            R"(test/vertA.spv)"s,
+            R"(test/fragA.spv)"s
+        };
+    }
 
-    VkShaderModuleCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-        nullptr, 0,
-        shaderByteCode.size(),
-        reinterpret_cast<std::uint32_t const *>(std::data(shaderByteCode))
-    };
+    else if constexpr (std::is_same_v<T, NormalsDebugMaterial>)
+    {
+        return {
+            R"(test/vertB.spv)"s,
+            R"(test/fragB.spv)"s
+        };
+    }
 
-    VkShaderModule shaderModule;
-
-    if (auto result = vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create shader module: "s + std::to_string(result));
-
-    return shaderModule;
+    else static_assert("material type has to be derived from common 'Material' type class");
 }
+}
+#endif
+
+
+
+class ShaderManager final {
+public:
+
+    ShaderManager(VulkanDevice &vulkanDevice) noexcept : vulkanDevice_{vulkanDevice} { }
+
+    [[nodiscard]] std::vector<VkPipelineShaderStageCreateInfo>
+    GetShaderStages(std::vector<ShaderStageSource> const &shaderStageSources);
+
+public:
+
+    VulkanDevice &vulkanDevice_;
+
+    std::unordered_map<std::string_view, std::shared_ptr<VulkanShaderModule>> shaderModules_;
+    std::unordered_map<std::string, std::vector<VkPipelineShaderStageCreateInfo>> shaderStages_;
+
+    [[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view name) const noexcept;
+
+    [[nodiscard]] std::shared_ptr<VulkanShaderModule> CreateShaderModule(std::vector<std::byte> const &shaderByteCode);
+};

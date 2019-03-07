@@ -125,6 +125,8 @@ struct app_t final {
     VertexLayoutsManager vertexLayoutsManager;
 
     std::unique_ptr<MaterialFactory> materialFactory;
+    std::unique_ptr<ShaderManager> shaderManager;
+
     std::shared_ptr<Material> materialA;
     std::shared_ptr<Material> materialB;
 
@@ -140,6 +142,9 @@ struct app_t final {
             return;
 
         vkDeviceWaitIdle(vulkanDevice->handle());
+
+        if (shaderManager)
+            shaderManager.reset();
 
         if (materialFactory)
             materialFactory.reset();
@@ -344,14 +349,14 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
 void CreateGraphicsPipeline(app_t &app)
 {
     // Shader
-    auto const vertShaderByteCode = ReadShaderFile(R"(vert.spv)"sv);
+    auto const vertShaderByteCode = app.shaderManager->ReadShaderFile(R"(vert.spv)"sv);
 
     if (vertShaderByteCode.empty())
         throw std::runtime_error("failed to open vertex shader file"s);
 
     auto const vertShaderModule = app.vulkanDevice->resourceManager().CreateShaderModule(vertShaderByteCode);
 
-    auto const fragShaderByteCode = ReadShaderFile(R"(frag.spv)"sv);
+    auto const fragShaderByteCode = app.shaderManager->ReadShaderFile(R"(frag.spv)"sv);
 
     if (fragShaderByteCode.empty())
         throw std::runtime_error("failed to open fragment shader file"s);
@@ -1043,9 +1048,9 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
 {
     // Material
     if (name == "A"sv)
-        app.materialA = app.materialFactory->CreateMaterial<TexCoordsDebugMaterial>();
+        app.materialA = app.materialFactory->CreateMaterial<TexCoordsDebugMaterial>(*app.shaderManager);
 
-    else app.materialB = app.materialFactory->CreateMaterial<NormalsDebugMaterial>();
+    else app.materialB = app.materialFactory->CreateMaterial<NormalsDebugMaterial>(*app.shaderManager);
 
     auto material = name == "A"sv ? app.materialA : app.materialB;
 
@@ -1274,6 +1279,7 @@ void InitVulkan(Window &window, app_t &app)
     app.vulkanDevice = std::make_unique<VulkanDevice>(*app.vulkanInstance, app.surface, config::deviceExtensions, std::move(qpool));
 
     app.materialFactory = std::make_unique<MaterialFactory>(*app.vulkanDevice);
+    app.shaderManager = std::make_unique<ShaderManager>(*app.vulkanDevice);
 
     app.graphicsQueue = app.vulkanDevice->queue<GraphicsQueue>();
     app.transferQueue = app.vulkanDevice->queue<TransferQueue>();

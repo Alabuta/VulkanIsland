@@ -203,37 +203,6 @@ VkColorComponentFlags constexpr ConvertToGAPI(COLOR_COMPONENT colorComponent) no
 }
 }
 
-#if 0
-namespace
-{
-struct ShaderSourceFilesNames final {
-    std::string vertexFileName_;
-    std::string fragmentFileName_;
-};
-
-template<class T>
-ShaderSourceFilesNames constexpr ShadersNames() noexcept
-{
-    if constexpr (std::is_same_v<T, TexCoordsDebugMaterial>)
-    {
-        return {
-            R"(test/vertA.spv)"s,
-            R"(test/fragA.spv)"s
-        };
-    }
-
-    else if constexpr (std::is_same_v<T, NormalsDebugMaterial>)
-    {
-        return {
-            R"(test/vertB.spv)"s,
-            R"(test/fragB.spv)"s
-        };
-    }
-
-    else static_assert("material type has to be derived from common 'Material' type class");
-}
-}
-#endif
 
 
 std::shared_ptr<MaterialProperties> const MaterialFactory::properties(std::shared_ptr<Material> material)// const noexcept
