@@ -106,6 +106,17 @@ private:
 
 };
 
+class TestMaterial final : public Material {
+public:
+
+    static auto constexpr kVERTEX_FILE_NAME{R"(vert.spv)"sv};
+    static auto constexpr kFRAGMENT_FILE_NAME{R"(frag.spv)"sv};
+
+
+private:
+
+};
+
 
 class MaterialFactory final {
 public:

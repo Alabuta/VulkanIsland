@@ -127,6 +127,7 @@ struct app_t final {
     std::unique_ptr<MaterialFactory> materialFactory;
     std::unique_ptr<ShaderManager> shaderManager;
 
+    std::shared_ptr<Material> material;
     std::shared_ptr<Material> materialA;
     std::shared_ptr<Material> materialB;
 
@@ -348,6 +349,7 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
 
 void CreateGraphicsPipeline(app_t &app)
 {
+#if OBSOLETE
     // Shader
     auto const vertShaderByteCode = app.shaderManager->ReadShaderFile(R"(vert.spv)"sv);
 
@@ -362,24 +364,6 @@ void CreateGraphicsPipeline(app_t &app)
         throw std::runtime_error("failed to open fragment shader file"s);
 
     auto const fragShaderModule = app.vulkanDevice->resourceManager().CreateShaderModule(fragShaderByteCode);
-
-#if NOT_YET_IMPLEMENTED
-    auto const vertexMapEntries = std::array{
-        VkSpecializationMapEntry{ 0, 0, sizeof(std::int32_t) },
-        VkSpecializationMapEntry{ 1, 4, sizeof(std::int32_t) }
-    };
-
-    std::array<std::int32_t, 2> const vertexConstants{
-        0, 1//, 2, 3
-    };
-
-    VkSpecializationInfo  const vertexSpeializationInfo{
-        static_cast<std::uint32_t>(std::size(vertexMapEntries)),
-        std::data(vertexMapEntries),
-        std::size(vertexConstants) * sizeof(decltype(vertexConstants)::value_type),
-        std::data(vertexConstants),
-    };
-#endif
 
     VkPipelineShaderStageCreateInfo const vertShaderCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
@@ -399,7 +383,40 @@ void CreateGraphicsPipeline(app_t &app)
         nullptr
     };
 
-    auto shaderStages = std::array{ vertShaderCreateInfo, fragShaderCreateInfo };
+    auto shaderStages = std::array{vertShaderCreateInfo, fragShaderCreateInfo};
+#endif
+
+    // Material
+    app.material = app.materialFactory->CreateMaterial<TestMaterial>(*app.shaderManager);
+
+    if (!app.material)
+        throw std::runtime_error("failed to create a material"s);
+
+    auto materialProperties = app.materialFactory->properties(app.material);
+
+    if (!materialProperties)
+        throw std::runtime_error("failed to get a material properties"s);
+
+    auto &&shaderStages = app.materialFactory->pipelineShaderStages<TestMaterial>();
+
+
+#if NOT_YET_IMPLEMENTED
+    auto const vertexMapEntries = std::array{
+        VkSpecializationMapEntry{ 0, 0, sizeof(std::int32_t) },
+        VkSpecializationMapEntry{ 1, 4, sizeof(std::int32_t) }
+    };
+
+    std::array<std::int32_t, 2> const vertexConstants{
+        0, 1//, 2, 3
+    };
+
+    VkSpecializationInfo  const vertexSpeializationInfo{
+        static_cast<std::uint32_t>(std::size(vertexMapEntries)),
+        std::data(vertexMapEntries),
+        std::size(vertexConstants) * sizeof(decltype(vertexConstants)::value_type),
+        std::data(vertexConstants),
+    };
+#endif
 
     // Vertex layout
     VertexInputStateInfo2 vertexInputStateCreateInfo{app.scene.meshes.front().submeshes.front().vertices.layout};
@@ -457,6 +474,7 @@ void CreateGraphicsPipeline(app_t &app)
         VK_FALSE
     };
 
+#if OBSOLETE
     // Material
     VkPipelineRasterizationStateCreateInfo constexpr rasterizerState{
         VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
@@ -501,6 +519,7 @@ void CreateGraphicsPipeline(app_t &app)
         &colorBlendAttachment,
         { 0, 0, 0, 0 }
     };
+#endif
 
     if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); pipelineLayout)
         app.pipelineLayout = pipelineLayout.value();
@@ -519,10 +538,10 @@ void CreateGraphicsPipeline(app_t &app)
 #else
         &viewportStateCreateInfo,
 #endif
-        &rasterizerState,
+        &materialProperties->rasterizationState,
         &multisampleCreateInfo,
-        &depthStencilStateCreateInfo,
-        &colorBlendStateCreateInfo,
+        &materialProperties->depthStencilState,
+        &materialProperties->colorBlendState,
         nullptr,
         app.pipelineLayout,
         app.renderPass,
@@ -643,7 +662,7 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
 }
 
 
-void CreateGraphicsCommandBuffers2(app_t &app)
+void CreateGraphicsCommandBuffers(app_t &app)
 {
     app.commandBuffers.resize(std::size(app.swapchain.framebuffers));
 
@@ -843,6 +862,7 @@ void RecreateSwapChain(app_t &app)
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
     temp::CreateGraphicsCommandBuffers(app);
+    //CreateGraphicsCommandBuffers(app);
 }
 
 
@@ -1377,6 +1397,7 @@ void InitVulkan(Window &window, app_t &app)
     UpdateDescriptorSet(app, *app.vulkanDevice, app.descriptorSet);
 
     temp::CreateGraphicsCommandBuffers(app);
+    //CreateGraphicsCommandBuffers(app);
 
     CreateSemaphores(app);
 }
@@ -1409,7 +1430,7 @@ void Update(app_t &app)
     std::size_t instanceIndex = 0;
 
     for (auto &&object : app.objects) {
-        //object.world = glm::translate(glm::mat4{1.f}, glm::vec3{2 * instanceIndex, 0, 0});
+        object.world = glm::translate(glm::mat4{1.f}, glm::vec3{0, 0, -0.125 * instanceIndex});
         //object.world = glm::rotate(object.world, glm::radians(-90.f), glm::vec3{1, 0, 0});
         //object.world = glm::scale(object.world, glm::vec3{.01f});
 
