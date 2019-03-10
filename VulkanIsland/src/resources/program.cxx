@@ -1,8 +1,63 @@
 #include "program.hxx"
+#include "renderer/material.hxx"
 
 
 
-std::vector<std::byte> ShaderManager::ReadShaderFile(std::string_view name) const noexcept
+std::shared_ptr<VulkanShaderModule> ShaderManager::CreateShader(Material const *material)
+{
+    {
+        auto const shaderByteCode = ReadShaderFile(material->kVERTEX_FILE_NAME);
+
+        if (shaderByteCode.empty())
+            throw std::runtime_error("failed to open vertex shader file"s);
+
+        auto shaderModule = CreateShaderModule(shader::STAGE::VERTEX, shaderByteCode);
+
+        auto stage = VkPipelineShaderStageCreateInfo{
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            nullptr, 0,
+            VK_SHADER_STAGE_VERTEX_BIT,
+            shaderModule->handle(),
+            "main",
+            nullptr
+        };
+    }
+
+    {
+        auto const shaderByteCode = ReadShaderFile(material->kFRAGMENT_FILE_NAME);
+
+        if (shaderByteCode.empty())
+            throw std::runtime_error("failed to open fragment shader file"s);
+
+        auto shaderModule = CreateShaderModule(shader::STAGE::FRAGMENT, shaderByteCode);
+
+        auto stage = VkPipelineShaderStageCreateInfo{
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            nullptr, 0,
+            VK_SHADER_STAGE_FRAGMENT_BIT,
+            shaderModule->handle(),
+            "main",
+            nullptr
+        };
+    }
+
+    return std::shared_ptr<VulkanShaderModule>();
+}
+
+std::vector<VkPipelineShaderStageCreateInfo>
+ShaderManager::GetShaderStages(std::vector<ShaderStageSource> const &shaderStageSources)
+{
+    std::vector<VkPipelineShaderStageCreateInfo> stages;
+
+    /*auto paths = std::accumulate(std::cbegin(shaderStageSources), std::cend(shaderStageSources), ""s, [] (auto &&lhs, auto &&rhs)
+    {
+        return lhs + rhs.path;
+    });*/
+
+    return stages;
+}
+
+std::vector<std::byte> ShaderManager::ReadShaderFile(std::string_view name) const
 {
     fs::path contents{"shaders"sv};
 
@@ -29,7 +84,7 @@ std::vector<std::byte> ShaderManager::ReadShaderFile(std::string_view name) cons
     return shaderByteCode;
 }
 
-std::shared_ptr<VulkanShaderModule> ShaderManager::CreateShaderModule(std::vector<std::byte> const &shaderByteCode)
+std::shared_ptr<VulkanShaderModule> ShaderManager::CreateShaderModule(shader::STAGE stage, std::vector<std::byte> const &shaderByteCode)
 {
     std::shared_ptr<VulkanShaderModule> shaderModule;
 
@@ -61,17 +116,4 @@ std::shared_ptr<VulkanShaderModule> ShaderManager::CreateShaderModule(std::vecto
     }
 
     return shaderModule;
-}
-
-std::vector<VkPipelineShaderStageCreateInfo>
-ShaderManager::GetShaderStages(std::vector<ShaderStageSource> const &shaderStageSources)
-{
-    std::vector<VkPipelineShaderStageCreateInfo> stages;
-
-    auto paths = std::accumulate(std::cbegin(shaderStageSources), std::cend(shaderStageSources), ""s, [] (auto &&lhs, auto &&rhs)
-    {
-        return lhs + rhs.path;
-    });
-
-    return stages;
 }

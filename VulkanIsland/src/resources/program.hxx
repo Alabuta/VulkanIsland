@@ -94,6 +94,8 @@ public:
 
     ShaderManager(VulkanDevice &vulkanDevice) noexcept : vulkanDevice_{vulkanDevice} { }
 
+    [[nodiscard]] std::shared_ptr<VulkanShaderModule> CreateShader(class Material const *material);
+
     [[nodiscard]] std::vector<VkPipelineShaderStageCreateInfo>
     GetShaderStages(std::vector<ShaderStageSource> const &shaderStageSources);
 
@@ -104,7 +106,7 @@ public:
     std::unordered_map<std::string_view, std::shared_ptr<VulkanShaderModule>> shaderModules_;
     std::unordered_map<std::string, std::vector<VkPipelineShaderStageCreateInfo>> shaderStages_;
 
-    [[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view name) const noexcept;
+    [[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view name) const;
 
-    [[nodiscard]] std::shared_ptr<VulkanShaderModule> CreateShaderModule(std::vector<std::byte> const &shaderByteCode);
+    [[nodiscard]] std::shared_ptr<VulkanShaderModule> CreateShaderModule(shader::STAGE stage, std::vector<std::byte> const &shaderByteCode);
 };

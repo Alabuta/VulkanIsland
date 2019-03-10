@@ -144,11 +144,11 @@ struct app_t final {
 
         vkDeviceWaitIdle(vulkanDevice->handle());
 
-        if (shaderManager)
-            shaderManager.reset();
-
         if (materialFactory)
             materialFactory.reset();
+
+        if (shaderManager)
+            shaderManager.reset();
 
         if (renderFinishedSemaphore)
             vkDestroySemaphore(vulkanDevice->handle(), renderFinishedSemaphore, nullptr);

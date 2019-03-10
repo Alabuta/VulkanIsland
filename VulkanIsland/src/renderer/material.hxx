@@ -69,6 +69,9 @@ struct MaterialProperties final {
 class Material {
 public:
 
+    static auto constexpr kVERTEX_FILE_NAME{""sv};
+    static auto constexpr kFRAGMENT_FILE_NAME{""sv};
+
     RasterizationState rasterizationState;
     DepthStencilState depthStencilState;
     ColorBlendState colorBlendState;
@@ -192,7 +195,7 @@ void MaterialFactory::InitShaderStages(ShaderManager &shaderManager)
                 if (shaderByteCode.empty())
                     throw std::runtime_error("failed to open vertex shader file"s);
 
-                shaderModule = vulkanDevice_.resourceManager().CreateShaderModule(shaderByteCode);
+                shaderModule = shaderManager.CreateShaderModule(shaderByteCode);
 
                 shaderModules_.emplace(T::kVERTEX_FILE_NAME, shaderModule);
             }
@@ -218,7 +221,7 @@ void MaterialFactory::InitShaderStages(ShaderManager &shaderManager)
                 if (shaderByteCode.empty())
                     throw std::runtime_error("failed to open fragment shader file"s);
 
-                shaderModule = vulkanDevice_.resourceManager().CreateShaderModule(shaderByteCode);
+                shaderModule = shaderManager.CreateShaderModule(shaderByteCode);
 
                 shaderModules_.emplace(T::kFRAGMENT_FILE_NAME, shaderModule);
             }
