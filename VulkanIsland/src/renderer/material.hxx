@@ -139,7 +139,7 @@ private:
 
     VulkanDevice &vulkanDevice_;
 
-    std::unordered_map<std::shared_ptr<Material>, MaterialProperties> materialProperties_;
+    std::map<std::shared_ptr<Material>, MaterialProperties, std::owner_less<std::shared_ptr<Material>>> materialProperties_;
 
     std::unordered_map<std::string, std::vector<VkPipelineShaderStageCreateInfo>> shaderStages_;
     std::unordered_map<std::string_view, std::shared_ptr<VulkanShaderModule>> shaderModules_;
@@ -195,7 +195,7 @@ void MaterialFactory::InitShaderStages(ShaderManager &shaderManager)
                 if (shaderByteCode.empty())
                     throw std::runtime_error("failed to open vertex shader file"s);
 
-                shaderModule = shaderManager.CreateShaderModule(shaderByteCode);
+                shaderModule = shaderManager.CreateShaderModule(shader::STAGE::VERTEX, shaderByteCode);
 
                 shaderModules_.emplace(T::kVERTEX_FILE_NAME, shaderModule);
             }
@@ -221,7 +221,7 @@ void MaterialFactory::InitShaderStages(ShaderManager &shaderManager)
                 if (shaderByteCode.empty())
                     throw std::runtime_error("failed to open fragment shader file"s);
 
-                shaderModule = shaderManager.CreateShaderModule(shaderByteCode);
+                shaderModule = shaderManager.CreateShaderModule(shader::STAGE::FRAGMENT, shaderByteCode);
 
                 shaderModules_.emplace(T::kFRAGMENT_FILE_NAME, shaderModule);
             }

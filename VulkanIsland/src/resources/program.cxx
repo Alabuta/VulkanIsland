@@ -5,7 +5,9 @@
 
 std::shared_ptr<VulkanShaderModule> ShaderManager::CreateShader(Material const *material)
 {
-    {
+    auto names = std::string{material->kVERTEX_FILE_NAME} + std::string{material->kFRAGMENT_FILE_NAME};
+
+    if (shaderModules_.count(material->kVERTEX_FILE_NAME) == 0) {
         auto const shaderByteCode = ReadShaderFile(material->kVERTEX_FILE_NAME);
 
         if (shaderByteCode.empty())
@@ -13,17 +15,23 @@ std::shared_ptr<VulkanShaderModule> ShaderManager::CreateShader(Material const *
 
         auto shaderModule = CreateShaderModule(shader::STAGE::VERTEX, shaderByteCode);
 
-        auto stage = VkPipelineShaderStageCreateInfo{
+        shaderModules_.emplace(material->kVERTEX_FILE_NAME, shaderModule);
+    }
+
+    {
+        auto shaderModule = shaderModules_.at(material->kVERTEX_FILE_NAME);
+
+        shaderStages_.emplace(shaderModule, VkPipelineShaderStageCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
             nullptr, 0,
             VK_SHADER_STAGE_VERTEX_BIT,
             shaderModule->handle(),
             "main",
             nullptr
-        };
+        });
     }
 
-    {
+    if (shaderModules_.count(material->kFRAGMENT_FILE_NAME) == 0) {
         auto const shaderByteCode = ReadShaderFile(material->kFRAGMENT_FILE_NAME);
 
         if (shaderByteCode.empty())
@@ -31,21 +39,34 @@ std::shared_ptr<VulkanShaderModule> ShaderManager::CreateShader(Material const *
 
         auto shaderModule = CreateShaderModule(shader::STAGE::FRAGMENT, shaderByteCode);
 
-        auto stage = VkPipelineShaderStageCreateInfo{
+        shaderModules_.emplace(material->kFRAGMENT_FILE_NAME, shaderModule);
+    }
+
+    {
+        auto shaderModule = shaderModules_.at(material->kFRAGMENT_FILE_NAME);
+
+        shaderStages_.emplace(shaderModule, VkPipelineShaderStageCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
             nullptr, 0,
             VK_SHADER_STAGE_FRAGMENT_BIT,
             shaderModule->handle(),
             "main",
             nullptr
-        };
+        });
     }
+
+    /*if (shaderStages_.count(names) == 0) {
+        std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
+
+
+        shaderStages_.emplace(names, std::move(shaderStages));
+    }*/
 
     return std::shared_ptr<VulkanShaderModule>();
 }
 
 std::vector<VkPipelineShaderStageCreateInfo>
-ShaderManager::GetShaderStages(std::vector<ShaderStageSource> const &shaderStageSources)
+ShaderManager::GetShaderStages(std::vector<ShaderStage> const &shaderStageSources)
 {
     std::vector<VkPipelineShaderStageCreateInfo> stages;
 
