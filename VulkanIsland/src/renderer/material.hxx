@@ -72,6 +72,8 @@ public:
     static auto constexpr kVERTEX_FILE_NAME{""sv};
     static auto constexpr kFRAGMENT_FILE_NAME{""sv};
 
+    virtual std::vector<ShaderStage> const &shaderStages() const noexcept = 0;
+
     RasterizationState rasterizationState;
     DepthStencilState depthStencilState;
     ColorBlendState colorBlendState;
@@ -93,6 +95,15 @@ public:
     static auto constexpr kVERTEX_FILE_NAME{R"(test/vertA.spv)"sv};
     static auto constexpr kFRAGMENT_FILE_NAME{R"(test/fragA.spv)"sv};
 
+    std::vector<ShaderStage> const &shaderStages() const noexcept override
+    {
+        thread_local static std::vector<ShaderStage> shaderStages{
+            ShaderStage{shader::STAGE::VERTEX, R"(test/vertA.spv)"s, "main"s},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(test/fragA.spv)"s, "main"s}
+        };
+
+        return shaderStages;
+    }
 
 private:
 
@@ -103,6 +114,16 @@ public:
 
     static auto constexpr kVERTEX_FILE_NAME{R"(test/vertB.spv)"sv};
     static auto constexpr kFRAGMENT_FILE_NAME{R"(test/fragB.spv)"sv};
+
+    std::vector<ShaderStage> const &shaderStages() const noexcept override
+    {
+        thread_local static std::vector<ShaderStage> shaderStages{
+            ShaderStage{shader::STAGE::VERTEX, R"(test/vertB.spv)"s, "main"s},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(test/fragB.spv)"s, "main"s}
+        };
+
+        return shaderStages;
+    }
 
 
 private:
@@ -115,6 +136,16 @@ public:
     static auto constexpr kVERTEX_FILE_NAME{R"(vert.spv)"sv};
     static auto constexpr kFRAGMENT_FILE_NAME{R"(frag.spv)"sv};
 
+    std::vector<ShaderStage> const &shaderStages() const noexcept override
+    {
+        thread_local static std::vector<ShaderStage> shaderStages{
+            ShaderStage{shader::STAGE::VERTEX, R"(vert.spv)"s, "main"s},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(frag.spv)"s, "main"s}
+        };
+
+        return shaderStages;
+    }
+
 
 private:
 
@@ -124,31 +155,25 @@ private:
 class MaterialFactory final {
 public:
 
-    MaterialFactory(VulkanDevice &vulkanDevice) noexcept : vulkanDevice_{vulkanDevice} { }
+    MaterialFactory(ShaderManager &shaderManager) noexcept : shaderManager_{shaderManager} { }
 
     template<class T>
     [[nodiscard]] std::shared_ptr<T> CreateMaterial(ShaderManager &shaderManager);
 
+    [[nodiscard]] std::shared_ptr<MaterialProperties> const properties(std::shared_ptr<Material> const material);// const noexcept;
 
-    [[nodiscard]] std::shared_ptr<MaterialProperties> const properties(std::shared_ptr<Material> material);// const noexcept;
-
-    template<class T>
-    [[nodiscard]] std::vector<VkPipelineShaderStageCreateInfo> const &pipelineShaderStages() const;
+    [[nodiscard]] std::vector<VkPipelineShaderStageCreateInfo> const &pipelineShaderStages(std::shared_ptr<Material> const material);
 
 private:
 
-    VulkanDevice &vulkanDevice_;
+    ShaderManager &shaderManager_;
 
     std::map<std::shared_ptr<Material>, MaterialProperties, std::owner_less<std::shared_ptr<Material>>> materialProperties_;
 
-    std::unordered_map<std::string, std::vector<VkPipelineShaderStageCreateInfo>> shaderStages_;
-    std::unordered_map<std::string_view, std::shared_ptr<VulkanShaderModule>> shaderModules_;
+    std::map<std::shared_ptr<Material>, std::vector<VkPipelineShaderStageCreateInfo>, std::owner_less<std::shared_ptr<Material>>> pipelineShaderStages_;
 
 
     void InitMaterialProperties(std::shared_ptr<Material> material) noexcept;
-
-    template<class T>
-    void InitShaderStages(ShaderManager &shaderManager);
 };
 
 template<class T>
@@ -171,86 +196,7 @@ std::shared_ptr<T> MaterialFactory::CreateMaterial(ShaderManager &shaderManager)
 
     InitMaterialProperties(material);
 
-    InitShaderStages<T>(shaderManager);
+    shaderManager_.CreateShaderPrograms(material.get());
 
     return material;
-}
-
-template<class T>
-void MaterialFactory::InitShaderStages(ShaderManager &shaderManager)
-{
-    static_assert(std::is_base_of_v<Material, T>, "material type has to be derived from base 'Material' type");
-
-    auto names = std::string{T::kVERTEX_FILE_NAME} + std::string{T::kFRAGMENT_FILE_NAME};
-
-    if (shaderStages_.count(names) == 0) {
-        std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-
-        {
-            std::shared_ptr<VulkanShaderModule> shaderModule;
-
-            if (shaderModules_.count(T::kVERTEX_FILE_NAME) == 0) {
-                auto const shaderByteCode = shaderManager.ReadShaderFile(T::kVERTEX_FILE_NAME);
-
-                if (shaderByteCode.empty())
-                    throw std::runtime_error("failed to open vertex shader file"s);
-
-                shaderModule = shaderManager.CreateShaderModule(shader::STAGE::VERTEX, shaderByteCode);
-
-                shaderModules_.emplace(T::kVERTEX_FILE_NAME, shaderModule);
-            }
-
-            else shaderModule = shaderModules_.at(T::kVERTEX_FILE_NAME);
-
-            shaderStages.push_back(VkPipelineShaderStageCreateInfo{
-                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                nullptr, 0,
-                VK_SHADER_STAGE_VERTEX_BIT,
-                shaderModule->handle(),
-                "main",
-                nullptr
-            });
-        }
-
-        {
-            std::shared_ptr<VulkanShaderModule> shaderModule;
-
-            if (shaderModules_.count(T::kFRAGMENT_FILE_NAME) == 0) {
-                auto const shaderByteCode = shaderManager.ReadShaderFile(T::kFRAGMENT_FILE_NAME);
-
-                if (shaderByteCode.empty())
-                    throw std::runtime_error("failed to open fragment shader file"s);
-
-                shaderModule = shaderManager.CreateShaderModule(shader::STAGE::FRAGMENT, shaderByteCode);
-
-                shaderModules_.emplace(T::kFRAGMENT_FILE_NAME, shaderModule);
-            }
-
-            else shaderModule = shaderModules_.at(T::kFRAGMENT_FILE_NAME);
-
-            shaderStages.push_back(VkPipelineShaderStageCreateInfo{
-                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                nullptr, 0,
-                VK_SHADER_STAGE_FRAGMENT_BIT,
-                shaderModule->handle(),
-                "main",
-                nullptr
-            });
-
-            shaderModules_.emplace(T::kFRAGMENT_FILE_NAME, shaderModule);
-        }
-
-        shaderStages_.emplace(names, std::move(shaderStages));
-    }
-}
-
-template<class T>
-std::vector<VkPipelineShaderStageCreateInfo> const &MaterialFactory::pipelineShaderStages() const
-{
-    auto names = std::string{T::kVERTEX_FILE_NAME} +std::string{T::kFRAGMENT_FILE_NAME};
-
-    if (shaderStages_.count(names) == 0)
-        throw std::runtime_error("failed to find shader modules"s);
-
-    return shaderStages_.at(names);
 }

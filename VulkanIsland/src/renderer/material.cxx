@@ -204,8 +204,7 @@ VkColorComponentFlags constexpr ConvertToGAPI(COLOR_COMPONENT colorComponent) no
 }
 
 
-
-std::shared_ptr<MaterialProperties> const MaterialFactory::properties(std::shared_ptr<Material> material)// const noexcept
+std::shared_ptr<MaterialProperties> const MaterialFactory::properties(std::shared_ptr<Material> const material)// const noexcept
 {
     if (materialProperties_.count(material) == 0)
         return { };
@@ -213,6 +212,24 @@ std::shared_ptr<MaterialProperties> const MaterialFactory::properties(std::share
     auto &&properties = materialProperties_.at(material);
 
     return {material, &properties};
+}
+
+std::vector<VkPipelineShaderStageCreateInfo> const &MaterialFactory::pipelineShaderStages(std::shared_ptr<Material> const material)
+{
+    if (pipelineShaderStages_.count(material) == 0) {
+        std::vector<VkPipelineShaderStageCreateInfo> pipelineStages;
+
+        auto &&stages = material->shaderStages();
+
+        std::transform(std::cbegin(stages), std::cend(stages), std::back_inserter(pipelineStages), [this] (auto &&stage)
+        {
+            return shaderManager_.GetPipelineShaderStage(stage);
+        });
+
+        pipelineShaderStages_.emplace(material, pipelineStages);
+    }
+
+    return pipelineShaderStages_.at(material);
 }
 
 void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material> material) noexcept

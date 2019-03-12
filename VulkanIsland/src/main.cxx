@@ -397,7 +397,7 @@ void CreateGraphicsPipeline(app_t &app)
     if (!materialProperties)
         throw std::runtime_error("failed to get a material properties"s);
 
-    auto &&shaderStages = app.materialFactory->pipelineShaderStages<TestMaterial>();
+    auto &&shaderStages = app.materialFactory->pipelineShaderStages(app.material);
 
 
 #if NOT_YET_IMPLEMENTED
@@ -1082,9 +1082,7 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
     if (!materialProperties)
         throw std::runtime_error("failed to get a material properties"s);
 
-    auto &&shaderStages = name == "A"sv ?
-        app.materialFactory->pipelineShaderStages<TexCoordsDebugMaterial>() :
-        app.materialFactory->pipelineShaderStages<NormalsDebugMaterial>();
+    auto &&shaderStages = app.materialFactory->pipelineShaderStages(material);
 
     // Vertex layout
     auto const vertexInputInfo = app.vertexLayoutsManager.info(layout);
@@ -1298,8 +1296,8 @@ void InitVulkan(Window &window, app_t &app)
 
     app.vulkanDevice = std::make_unique<VulkanDevice>(*app.vulkanInstance, app.surface, config::deviceExtensions, std::move(qpool));
 
-    app.materialFactory = std::make_unique<MaterialFactory>(*app.vulkanDevice);
     app.shaderManager = std::make_unique<ShaderManager>(*app.vulkanDevice);
+    app.materialFactory = std::make_unique<MaterialFactory>(*app.shaderManager);
 
     app.graphicsQueue = app.vulkanDevice->queue<GraphicsQueue>();
     app.transferQueue = app.vulkanDevice->queue<TransferQueue>();

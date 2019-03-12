@@ -11,12 +11,12 @@
 namespace shader
 {
     enum class STAGE {
-        VERTEX = 0,
-        TESS_CONTROL,
-        TESS_EVAL,
-        GEOMETRY,
-        FRAGMENT,
-        COMPUTE
+        VERTEX = 0x01,
+        TESS_CONTROL = 0x02,
+        TESS_EVAL = 0x04,
+        GEOMETRY = 0x08,
+        FRAGMENT = 0x10,
+        COMPUTE = 0x20
     };
 
     template<STAGE S>
@@ -51,8 +51,8 @@ private:
 struct ShaderStage final {
     shader::STAGE semantic;
 
-    std::string_view moduleName;
-    std::string_view entryPoint;
+    std::string moduleName;
+    std::string entryPoint;
 
     struct hash_value final {
         template<class T, typename std::enable_if_t<std::is_same_v<ShaderStage, std::decay_t<T>>>...>
@@ -120,19 +120,16 @@ public:
 
     ShaderManager(VulkanDevice &vulkanDevice) noexcept : vulkanDevice_{vulkanDevice} { }
 
-    [[nodiscard]] std::shared_ptr<VulkanShaderModule> CreateShader(class Material const *material);
+    void CreateShaderPrograms(class Material const *const material);
 
-    [[nodiscard]] std::vector<VkPipelineShaderStageCreateInfo>
-    GetShaderStages(std::vector<ShaderStage> const &shaderStageSources);
+    [[nodiscard]] VkPipelineShaderStageCreateInfo const &GetPipelineShaderStage(ShaderStage const &shaderStage) const;
 
 public:
 
     VulkanDevice &vulkanDevice_;
 
-    std::unordered_map<std::string_view, std::shared_ptr<VulkanShaderModule>> shaderModules_;
-    std::unordered_map<ShaderStage, VkPipelineShaderStageCreateInfo, ShaderStage::hash_value, ShaderStage::equal_comparator> shaderStages_;
+    std::unordered_map<std::string, std::shared_ptr<VulkanShaderModule>> shaderModules_;
+    std::unordered_map<ShaderStage, VkPipelineShaderStageCreateInfo, ShaderStage::hash_value, ShaderStage::equal_comparator> pipelineShaderStages_;
 
-    [[nodiscard]] std::vector<std::byte> ReadShaderFile(std::string_view name) const;
-
-    [[nodiscard]] std::shared_ptr<VulkanShaderModule> CreateShaderModule(shader::STAGE stage, std::vector<std::byte> const &shaderByteCode);
+    [[nodiscard]] std::shared_ptr<VulkanShaderModule> CreateShaderModule(std::vector<std::byte> const &shaderByteCode);
 };

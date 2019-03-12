@@ -3,82 +3,38 @@
 
 
 
-std::shared_ptr<VulkanShaderModule> ShaderManager::CreateShader(Material const *material)
+namespace
 {
-    auto names = std::string{material->kVERTEX_FILE_NAME} + std::string{material->kFRAGMENT_FILE_NAME};
+VkShaderStageFlagBits constexpr ConvertToGAPI(shader::STAGE stage) noexcept
+{
+    switch (stage) {
+        case shader::STAGE::VERTEX:
+            return VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
 
-    if (shaderModules_.count(material->kVERTEX_FILE_NAME) == 0) {
-        auto const shaderByteCode = ReadShaderFile(material->kVERTEX_FILE_NAME);
+        case shader::STAGE::TESS_CONTROL:
+            return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 
-        if (shaderByteCode.empty())
-            throw std::runtime_error("failed to open vertex shader file"s);
+        case shader::STAGE::TESS_EVAL:
+            return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 
-        auto shaderModule = CreateShaderModule(shader::STAGE::VERTEX, shaderByteCode);
+        case shader::STAGE::GEOMETRY:
+            return VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT;
 
-        shaderModules_.emplace(material->kVERTEX_FILE_NAME, shaderModule);
+        case shader::STAGE::FRAGMENT:
+            return VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        case shader::STAGE::COMPUTE:
+            return VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT;
+
+        default:
+            return VkShaderStageFlagBits::VK_SHADER_STAGE_ALL;
     }
-
-    {
-        auto shaderModule = shaderModules_.at(material->kVERTEX_FILE_NAME);
-
-        shaderStages_.emplace(shaderModule, VkPipelineShaderStageCreateInfo{
-            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            nullptr, 0,
-            VK_SHADER_STAGE_VERTEX_BIT,
-            shaderModule->handle(),
-            "main",
-            nullptr
-        });
-    }
-
-    if (shaderModules_.count(material->kFRAGMENT_FILE_NAME) == 0) {
-        auto const shaderByteCode = ReadShaderFile(material->kFRAGMENT_FILE_NAME);
-
-        if (shaderByteCode.empty())
-            throw std::runtime_error("failed to open fragment shader file"s);
-
-        auto shaderModule = CreateShaderModule(shader::STAGE::FRAGMENT, shaderByteCode);
-
-        shaderModules_.emplace(material->kFRAGMENT_FILE_NAME, shaderModule);
-    }
-
-    {
-        auto shaderModule = shaderModules_.at(material->kFRAGMENT_FILE_NAME);
-
-        shaderStages_.emplace(shaderModule, VkPipelineShaderStageCreateInfo{
-            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-            nullptr, 0,
-            VK_SHADER_STAGE_FRAGMENT_BIT,
-            shaderModule->handle(),
-            "main",
-            nullptr
-        });
-    }
-
-    /*if (shaderStages_.count(names) == 0) {
-        std::vector<VkPipelineShaderStageCreateInfo> shaderStages;
-
-
-        shaderStages_.emplace(names, std::move(shaderStages));
-    }*/
-
-    return std::shared_ptr<VulkanShaderModule>();
+}
 }
 
-std::vector<VkPipelineShaderStageCreateInfo>
-ShaderManager::GetShaderStages(std::vector<ShaderStage> const &shaderStageSources)
+namespace
 {
-    std::vector<VkPipelineShaderStageCreateInfo> stages;
-
-    /*auto paths = std::accumulate(std::cbegin(shaderStageSources), std::cend(shaderStageSources), ""s, [] (auto &&lhs, auto &&rhs)
-    {
-        return lhs + rhs.path;
-    });*/
-
-    return stages;
-}
-
-std::vector<std::byte> ShaderManager::ReadShaderFile(std::string_view name) const
+std::vector<std::byte> ReadShaderFile(std::string_view name)
 {
     fs::path contents{"shaders"sv};
 
@@ -104,8 +60,45 @@ std::vector<std::byte> ShaderManager::ReadShaderFile(std::string_view name) cons
 
     return shaderByteCode;
 }
+}
 
-std::shared_ptr<VulkanShaderModule> ShaderManager::CreateShaderModule(shader::STAGE stage, std::vector<std::byte> const &shaderByteCode)
+
+
+void ShaderManager::CreateShaderPrograms(Material const *const material)
+{
+    for (auto &&shaderStage : material->shaderStages()) {
+        if (pipelineShaderStages_.count(shaderStage) == 0) {
+            if (shaderModules_.count(shaderStage.moduleName) == 0) {
+                auto const shaderByteCode = ReadShaderFile(shaderStage.moduleName);
+
+                if (shaderByteCode.empty())
+                    throw std::runtime_error("failed to open vertex shader file"s);
+
+                auto shaderModule = CreateShaderModule(shaderByteCode);
+
+                shaderModules_.emplace(shaderStage.moduleName, shaderModule);
+            }
+
+            auto &&shaderModule = shaderModules_.at(shaderStage.moduleName);
+
+            pipelineShaderStages_.emplace(shaderStage, VkPipelineShaderStageCreateInfo{
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                nullptr, 0,
+                ConvertToGAPI(shaderStage.semantic),
+                shaderModule->handle(),
+                shaderStage.entryPoint.c_str(),
+                nullptr
+            });
+        }
+    }
+}
+
+VkPipelineShaderStageCreateInfo const &ShaderManager::GetPipelineShaderStage(ShaderStage const &shaderStage) const
+{
+    return pipelineShaderStages_.at(shaderStage);
+}
+
+std::shared_ptr<VulkanShaderModule> ShaderManager::CreateShaderModule(std::vector<std::byte> const &shaderByteCode)
 {
     std::shared_ptr<VulkanShaderModule> shaderModule;
 
