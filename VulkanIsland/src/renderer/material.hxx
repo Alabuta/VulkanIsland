@@ -69,6 +69,8 @@ struct MaterialProperties final {
 class Material {
 public:
 
+    virtual ~Material() = default;
+
     static auto constexpr kVERTEX_FILE_NAME{""sv};
     static auto constexpr kFRAGMENT_FILE_NAME{""sv};
 
@@ -92,6 +94,8 @@ private:
 class TexCoordsDebugMaterial final : public Material {
 public:
 
+    ~TexCoordsDebugMaterial() override = default;
+
     static auto constexpr kVERTEX_FILE_NAME{R"(test/vertA.spv)"sv};
     static auto constexpr kFRAGMENT_FILE_NAME{R"(test/fragA.spv)"sv};
 
@@ -111,6 +115,8 @@ private:
 
 class NormalsDebugMaterial final : public Material {
 public:
+
+    ~NormalsDebugMaterial() override = default;
 
     static auto constexpr kVERTEX_FILE_NAME{R"(test/vertB.spv)"sv};
     static auto constexpr kFRAGMENT_FILE_NAME{R"(test/fragB.spv)"sv};
@@ -132,6 +138,8 @@ private:
 
 class TestMaterial final : public Material {
 public:
+
+    ~TestMaterial() override = default;
 
     static auto constexpr kVERTEX_FILE_NAME{R"(vert.spv)"sv};
     static auto constexpr kFRAGMENT_FILE_NAME{R"(frag.spv)"sv};
@@ -158,7 +166,7 @@ public:
     MaterialFactory(ShaderManager &shaderManager) noexcept : shaderManager_{shaderManager} { }
 
     template<class T>
-    [[nodiscard]] std::shared_ptr<T> CreateMaterial(ShaderManager &shaderManager);
+    [[nodiscard]] std::shared_ptr<T> CreateMaterial();
 
     [[nodiscard]] std::shared_ptr<MaterialProperties> const properties(std::shared_ptr<Material> const material);// const noexcept;
 
@@ -177,7 +185,7 @@ private:
 };
 
 template<class T>
-std::shared_ptr<T> MaterialFactory::CreateMaterial(ShaderManager &shaderManager)
+std::shared_ptr<T> MaterialFactory::CreateMaterial()
 {
     static_assert(std::is_base_of_v<Material, T>, "material type has to be derived from base 'Material' type");
     

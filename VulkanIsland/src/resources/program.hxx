@@ -3,6 +3,8 @@
 #include <memory>
 #include <unordered_map>
 
+#include <boost/functional/hash_fwd.hpp>
+
 #include "main.hxx"
 #include "device.hxx"
 #include "resources/resource.hxx"

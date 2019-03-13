@@ -387,7 +387,7 @@ void CreateGraphicsPipeline(app_t &app)
 #endif
 
     // Material
-    app.material = app.materialFactory->CreateMaterial<TestMaterial>(*app.shaderManager);
+    app.material = app.materialFactory->CreateMaterial<TestMaterial>();
 
     if (!app.material)
         throw std::runtime_error("failed to create a material"s);
@@ -461,7 +461,7 @@ void CreateGraphicsPipeline(app_t &app)
         1, &scissor
     };
 
-    auto constexpr rasterizerDiscardEnable = VK_FALSE;
+    // auto constexpr rasterizerDiscardEnable = VK_FALSE;
 #endif
 
     VkPipelineMultisampleStateCreateInfo const multisampleCreateInfo{
@@ -1068,9 +1068,9 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
 {
     // Material
     if (name == "A"sv)
-        app.materialA = app.materialFactory->CreateMaterial<TexCoordsDebugMaterial>(*app.shaderManager);
+        app.materialA = app.materialFactory->CreateMaterial<TexCoordsDebugMaterial>();
 
-    else app.materialB = app.materialFactory->CreateMaterial<NormalsDebugMaterial>(*app.shaderManager);
+    else app.materialB = app.materialFactory->CreateMaterial<NormalsDebugMaterial>();
 
     auto material = name == "A"sv ? app.materialA : app.materialB;
 
@@ -1428,7 +1428,7 @@ void Update(app_t &app)
     std::size_t instanceIndex = 0;
 
     for (auto &&object : app.objects) {
-        object.world = glm::translate(glm::mat4{1.f}, glm::vec3{0, 0, -0.125 * instanceIndex});
+        object.world = glm::translate(glm::mat4{1.f}, glm::vec3{0, 0, -0.125f * static_cast<float>(instanceIndex)});
         //object.world = glm::rotate(object.world, glm::radians(-90.f), glm::vec3{1, 0, 0});
         //object.world = glm::scale(object.world, glm::vec3{.01f});
 
