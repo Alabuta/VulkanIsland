@@ -71,10 +71,7 @@ public:
 
     virtual ~Material() = default;
 
-    static auto constexpr kVERTEX_FILE_NAME{""sv};
-    static auto constexpr kFRAGMENT_FILE_NAME{""sv};
-
-    virtual std::vector<ShaderStage> const &shaderStages() const noexcept = 0;
+    virtual std::vector<ShaderStage> const &shaderStages() const = 0;
 
     RasterizationState rasterizationState;
     DepthStencilState depthStencilState;
@@ -84,7 +81,7 @@ public:
 private:
 
     // resources
-    // shader handle
+    //// shader handle
     //// rasterization state
     //// depth and stencil state
     //// blending
@@ -94,16 +91,12 @@ private:
 class TexCoordsDebugMaterial final : public Material {
 public:
 
-    ~TexCoordsDebugMaterial() override = default;
-
-    static auto constexpr kVERTEX_FILE_NAME{R"(test/vertA.spv)"sv};
-    static auto constexpr kFRAGMENT_FILE_NAME{R"(test/fragA.spv)"sv};
-
-    std::vector<ShaderStage> const &shaderStages() const noexcept override
+    std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
-            ShaderStage{shader::STAGE::VERTEX, R"(test/vertA.spv)"s, "main"s},
-            ShaderStage{shader::STAGE::FRAGMENT, R"(test/fragA.spv)"s, "main"s}
+            ShaderStage{shader::STAGE::VERTEX, R"(debug/vert.spv)"s, "main"s, std::vector<std::int32_t>{1}},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(debug/frag.spv)"s, "main"s}
+            
         };
 
         return shaderStages;
@@ -116,21 +109,15 @@ private:
 class NormalsDebugMaterial final : public Material {
 public:
 
-    ~NormalsDebugMaterial() override = default;
-
-    static auto constexpr kVERTEX_FILE_NAME{R"(test/vertB.spv)"sv};
-    static auto constexpr kFRAGMENT_FILE_NAME{R"(test/fragB.spv)"sv};
-
-    std::vector<ShaderStage> const &shaderStages() const noexcept override
+    std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
-            ShaderStage{shader::STAGE::VERTEX, R"(test/vertB.spv)"s, "main"s},
-            ShaderStage{shader::STAGE::FRAGMENT, R"(test/fragB.spv)"s, "main"s}
+            ShaderStage{shader::STAGE::VERTEX, R"(debug/vert.spv)"s, "main"s, std::vector<std::int32_t>{0}},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(debug/frag.spv)"s, "main"s}
         };
 
         return shaderStages;
     }
-
 
 private:
 
@@ -139,12 +126,7 @@ private:
 class TestMaterial final : public Material {
 public:
 
-    ~TestMaterial() override = default;
-
-    static auto constexpr kVERTEX_FILE_NAME{R"(vert.spv)"sv};
-    static auto constexpr kFRAGMENT_FILE_NAME{R"(frag.spv)"sv};
-
-    std::vector<ShaderStage> const &shaderStages() const noexcept override
+    std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
             ShaderStage{shader::STAGE::VERTEX, R"(vert.spv)"s, "main"s},
@@ -153,7 +135,6 @@ public:
 
         return shaderStages;
     }
-
 
 private:
 

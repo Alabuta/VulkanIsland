@@ -67,7 +67,7 @@ std::vector<std::byte> ReadShaderFile(std::string_view name)
 void ShaderManager::CreateShaderPrograms(Material const *const material)
 {
     for (auto &&shaderStage : material->shaderStages()) {
-        if (pipelineShaderStages_.count(shaderStage) == 0) {
+        if (shaderStagePrograms_.count(shaderStage) == 0) {
             if (shaderModules_.count(shaderStage.moduleName) == 0) {
                 auto const shaderByteCode = ReadShaderFile(shaderStage.moduleName);
 
@@ -81,21 +81,67 @@ void ShaderManager::CreateShaderPrograms(Material const *const material)
 
             auto &&shaderModule = shaderModules_.at(shaderStage.moduleName);
 
-            pipelineShaderStages_.emplace(shaderStage, VkPipelineShaderStageCreateInfo{
-                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                nullptr, 0,
-                ConvertToGAPI(shaderStage.semantic),
-                shaderModule->handle(),
-                shaderStage.entryPoint.c_str(),
-                nullptr
-            });
+            // TODO: refactor!
+            if (!shaderStage.constants.empty()) {
+                auto &&constants = shaderStage.constants;
+
+                if (specializationInfos_.count(shaderStage) == 0) {
+                    if (specializationMapEntries_.count(shaderStage) == 0) {
+                        std::vector<VkSpecializationMapEntry> specializationMapEntry;
+
+                        std::uint32_t constantID = 0;
+                        std::uint32_t offset = 0;
+
+                        for (auto constant : constants) {
+                            specializationMapEntry.push_back({
+                                constantID++, offset, sizeof(constant)
+                            });
+
+                            offset += sizeof(constant);
+                        }
+
+                        specializationMapEntries_.emplace(shaderStage, std::move(specializationMapEntry));
+                    }
+
+                    auto &&specializationMapEntry = specializationMapEntries_.at(shaderStage);
+
+                    specializationInfos_.emplace(shaderStage, VkSpecializationInfo{
+                        static_cast<std::uint32_t>(std::size(specializationMapEntry)),
+                        std::data(specializationMapEntry),
+                        std::size(constants) * sizeof(std::decay_t<decltype(constants)>::value_type),
+                        std::data(constants)
+                    });
+                }
+
+                auto &&specializationInfo = specializationInfos_.at(shaderStage);
+                
+                shaderStagePrograms_.emplace(shaderStage, VkPipelineShaderStageCreateInfo{
+                    VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                    nullptr, 0,
+                    ConvertToGAPI(shaderStage.semantic),
+                    shaderModule->handle(),
+                    shaderStage.entryPoint.c_str(),
+                    &specializationInfo
+                });
+            }
+
+            else {
+                shaderStagePrograms_.emplace(shaderStage, VkPipelineShaderStageCreateInfo{
+                    VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                    nullptr, 0,
+                    ConvertToGAPI(shaderStage.semantic),
+                    shaderModule->handle(),
+                    shaderStage.entryPoint.c_str(),
+                    nullptr
+                });
+            }
         }
     }
 }
 
-VkPipelineShaderStageCreateInfo const &ShaderManager::GetPipelineShaderStage(ShaderStage const &shaderStage) const
+VkPipelineShaderStageCreateInfo const &ShaderManager::shaderStageProgram(ShaderStage const &shaderStage) const
 {
-    return pipelineShaderStages_.at(shaderStage);
+    return shaderStagePrograms_.at(shaderStage);
 }
 
 std::shared_ptr<VulkanShaderModule> ShaderManager::CreateShaderModule(std::vector<std::byte> const &shaderByteCode)

@@ -3,6 +3,7 @@
 
 layout(early_fragment_tests) in;
 
+
 layout(set = 0, binding = 0, std430) readonly buffer PER_CAMERA
 {
     mat4 view;
@@ -22,5 +23,5 @@ layout(location = 0) out vec4 fragColor;
 
 void main()
 {
-    fragColor = vec4(texCoord, 1.0, 1.0);
+    fragColor = vec4(texCoord, 0.0, 1.0);
 }

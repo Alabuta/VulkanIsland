@@ -211,7 +211,7 @@ std::shared_ptr<MaterialProperties> const MaterialFactory::properties(std::share
 
     auto &&properties = materialProperties_.at(material);
 
-    return {material, &properties};
+    return { material, &properties };
 }
 
 std::vector<VkPipelineShaderStageCreateInfo> const &MaterialFactory::pipelineShaderStages(std::shared_ptr<Material> const material)
@@ -223,7 +223,7 @@ std::vector<VkPipelineShaderStageCreateInfo> const &MaterialFactory::pipelineSha
 
         std::transform(std::cbegin(stages), std::cend(stages), std::back_inserter(pipelineStages), [this] (auto &&stage)
         {
-            return shaderManager_.GetPipelineShaderStage(stage);
+            return shaderManager_.shaderStageProgram(stage);
         });
 
         pipelineShaderStages_.emplace(material, pipelineStages);

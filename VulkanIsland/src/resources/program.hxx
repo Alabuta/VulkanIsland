@@ -56,6 +56,8 @@ struct ShaderStage final {
     std::string moduleName;
     std::string entryPoint;
 
+    std::vector<std::int32_t> constants;
+
     struct hash_value final {
         template<class T, typename std::enable_if_t<std::is_same_v<ShaderStage, std::decay_t<T>>>...>
         auto constexpr operator() (T &&shaderStage) const noexcept
@@ -67,6 +69,9 @@ struct ShaderStage final {
             boost::hash_combine(seed, shaderStage.moduleName);
             boost::hash_combine(seed, shaderStage.entryPoint);
 
+            for (auto constant : shaderStage.constants)
+                boost::hash_combine(seed, constant);
+
             return seed;
         }
     };
@@ -75,45 +80,13 @@ struct ShaderStage final {
         template<class T1, class T2, typename std::enable_if_t<are_same_v<struct ShaderStage, T1, T2>>...>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
-            return lhs.semantic == rhs.semantic && lhs.moduleName == rhs.moduleName && lhs.entryPoint == rhs.entryPoint;
+            auto constansAreEqual = std::size(lhs.constants) == std::size(rhs.constants) &&
+                std::equal(std::cbegin(lhs.constants), std::cend(lhs.constants), std::cbegin(rhs.constants));
+
+            return lhs.semantic == rhs.semantic && lhs.moduleName == rhs.moduleName && lhs.entryPoint == rhs.entryPoint && constansAreEqual;
         }
     };
-
 };
-
-
-
-#if 0
-namespace
-{
-struct ShaderSourceFilesNames final {
-    std::string vertexFileName_;
-    std::string fragmentFileName_;
-};
-
-template<class T>
-ShaderSourceFilesNames constexpr ShadersNames() noexcept
-{
-    if constexpr (std::is_same_v<T, TexCoordsDebugMaterial>)
-    {
-        return {
-            R"(test/vertA.spv)"s,
-            R"(test/fragA.spv)"s
-        };
-    }
-
-    else if constexpr (std::is_same_v<T, NormalsDebugMaterial>)
-    {
-        return {
-            R"(test/vertB.spv)"s,
-            R"(test/fragB.spv)"s
-        };
-    }
-
-    else static_assert("material type has to be derived from common 'Material' type class");
-}
-}
-#endif
 
 
 
@@ -124,14 +97,18 @@ public:
 
     void CreateShaderPrograms(class Material const *const material);
 
-    [[nodiscard]] VkPipelineShaderStageCreateInfo const &GetPipelineShaderStage(ShaderStage const &shaderStage) const;
+    [[nodiscard]] VkPipelineShaderStageCreateInfo const &shaderStageProgram(ShaderStage const &shaderStage) const;
 
 public:
 
     VulkanDevice &vulkanDevice_;
 
     std::unordered_map<std::string, std::shared_ptr<VulkanShaderModule>> shaderModules_;
-    std::unordered_map<ShaderStage, VkPipelineShaderStageCreateInfo, ShaderStage::hash_value, ShaderStage::equal_comparator> pipelineShaderStages_;
+    std::unordered_map<ShaderStage, VkPipelineShaderStageCreateInfo, ShaderStage::hash_value, ShaderStage::equal_comparator> shaderStagePrograms_;
+
+    // TODO: refactor!
+    std::unordered_map<ShaderStage, std::vector<VkSpecializationMapEntry>, ShaderStage::hash_value, ShaderStage::equal_comparator> specializationMapEntries_;
+    std::unordered_map<ShaderStage, VkSpecializationInfo, ShaderStage::hash_value, ShaderStage::equal_comparator> specializationInfos_;
 
     [[nodiscard]] std::shared_ptr<VulkanShaderModule> CreateShaderModule(std::vector<std::byte> const &shaderByteCode);
 };

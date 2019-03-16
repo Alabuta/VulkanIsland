@@ -3,6 +3,7 @@
 
 layout(early_fragment_tests) in;
 
+
 layout(set = 0, binding = 0, std430) readonly buffer PER_CAMERA
 {
     mat4 view;

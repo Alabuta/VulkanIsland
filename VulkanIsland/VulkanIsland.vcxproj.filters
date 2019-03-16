@@ -36,6 +36,9 @@
     <Filter Include="Resource Files\test">
       <UniqueIdentifier>{9a7c7895-4325-42df-9521-1f45d12542d7}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Resource Files\Debug">
+      <UniqueIdentifier>{1c74a45f-a7c9-49eb-9d71-ae245fcdb006}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="src/debug.cxx">
@@ -251,6 +254,12 @@
     </None>
     <None Include="..\shaders\test\shaderB.frag">
       <Filter>Resource Files\test</Filter>
+    </None>
+    <None Include="..\shaders\debug\debug.frag">
+      <Filter>Resource Files\Debug</Filter>
+    </None>
+    <None Include="..\shaders\debug\debug.vert">
+      <Filter>Resource Files\Debug</Filter>
     </None>
   </ItemGroup>
 </Project>

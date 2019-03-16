@@ -307,6 +307,8 @@
   <ItemGroup>
     <None Include="../shaders/shader.frag" />
     <None Include="../shaders/shader.vert" />
+    <None Include="..\shaders\debug\debug.frag" />
+    <None Include="..\shaders\debug\debug.vert" />
     <None Include="..\shaders\test\shaderA.frag" />
     <None Include="..\shaders\test\shaderA.vert" />
     <None Include="..\shaders\test\shaderB.frag" />
