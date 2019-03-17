@@ -214,9 +214,6 @@
     <ClInclude Include="src\semaphore.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\shader.hxx">
-      <Filter>Source Files\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="src\resources\resource.hxx">
       <Filter>Source Files\Resources</Filter>
     </ClInclude>

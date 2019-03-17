@@ -284,7 +284,6 @@
     <ClInclude Include="src\resources\memory.hxx" />
     <ClInclude Include="src\resources\resource.hxx" />
     <ClInclude Include="src\semaphore.hxx" />
-    <ClInclude Include="src\shader.hxx" />
     <ClInclude Include="src\staging.hxx" />
     <ClInclude Include="src/platform/window.hxx" />
     <ClInclude Include="src/queues.hxx" />
