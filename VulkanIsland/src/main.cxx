@@ -834,38 +834,6 @@ LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
 }
 
 
-void RecreateSwapChain(app_t &app)
-{
-    if (app.width < 1 || app.height < 1) return;
-
-    vkDeviceWaitIdle(app.vulkanDevice->handle());
-
-    CleanupFrameData(app);
-
-    auto swapchain = CreateSwapchain(*app.vulkanDevice, app.surface, app.width, app.height,
-                                     app.presentationQueue, app.graphicsQueue, app.transferQueue, app.transferCommandPool);
-
-    if (swapchain)
-        app.swapchain = std::move(swapchain.value());
-
-    else throw std::runtime_error("failed to create the swapchain"s);
-
-    if (auto renderPass = CreateRenderPass(*app.vulkanDevice, app.swapchain); !renderPass)
-        throw std::runtime_error("failed to create the render pass"s);
-
-    else app.renderPass = std::move(renderPass.value());
-
-#if !USE_DYNAMIC_PIPELINE_STATE
-    CreateGraphicsPipeline(app);
-#endif
-
-    CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
-
-    temp::CreateGraphicsCommandBuffers(app);
-    //CreateGraphicsCommandBuffers(app);
-}
-
-
 namespace temp
 {
 xformat::vertex_layout layoutA;
@@ -1189,17 +1157,17 @@ void CreateGraphicsCommandBuffers(app_t &app)
         if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
             throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
 
-#if defined( __clang__) || defined(_MSC_VER)
+    #if defined( __clang__) || defined(_MSC_VER)
         auto const clearColors = std::array{
             VkClearValue{{{ .64f, .64f, .64f, 1.f }}},
             VkClearValue{{{ kREVERSED_DEPTH ? 0.f : 1.f, 0 }}}
         };
-#else
+    #else
         auto const clearColors = std::array{
-            VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f } } },
-            VkClearValue{ .depthStencil = { kREVERSED_DEPTH ? 0.f : 1.f, 0 } }
+            VkClearValue{.color = {.float32 = { .64f, .64f, .64f, 1.f } } },
+            VkClearValue{.depthStencil = { kREVERSED_DEPTH ? 0.f : 1.f, 0 } }
         };
-#endif
+    #endif
 
         VkRenderPassBeginInfo const renderPassInfo{
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -1267,6 +1235,41 @@ void CreateGraphicsCommandBuffers(app_t &app)
     }
 }
 
+}
+
+
+void RecreateSwapChain(app_t &app)
+{
+    if (app.width < 1 || app.height < 1) return;
+
+    vkDeviceWaitIdle(app.vulkanDevice->handle());
+
+    CleanupFrameData(app);
+
+    auto swapchain = CreateSwapchain(*app.vulkanDevice, app.surface, app.width, app.height,
+                                     app.presentationQueue, app.graphicsQueue, app.transferQueue, app.transferCommandPool);
+
+    if (swapchain)
+        app.swapchain = std::move(swapchain.value());
+
+    else throw std::runtime_error("failed to create the swapchain"s);
+
+    if (auto renderPass = CreateRenderPass(*app.vulkanDevice, app.swapchain); !renderPass)
+        throw std::runtime_error("failed to create the render pass"s);
+
+    else app.renderPass = std::move(renderPass.value());
+
+#if !USE_DYNAMIC_PIPELINE_STATE
+    CreateGraphicsPipeline(app);
+#endif
+
+    temp::CreateGraphicsPipeline(app, temp::layoutA, "A"sv);
+    temp::CreateGraphicsPipeline(app, temp::layoutB, "B"sv);
+
+    CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
+
+    temp::CreateGraphicsCommandBuffers(app);
+    //CreateGraphicsCommandBuffers(app);
 }
 
 
