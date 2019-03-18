@@ -81,7 +81,6 @@ void ShaderManager::CreateShaderPrograms(Material const *const material)
 
             auto &&shaderModule = shaderModules_.at(shaderStage.moduleName);
 
-            // TODO: refactor!
             if (!shaderStage.constants.empty()) {
                 auto &&constants = shaderStage.constants;
 

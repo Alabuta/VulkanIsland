@@ -71,7 +71,7 @@ public:
 
     virtual ~Material() = default;
 
-    virtual std::vector<ShaderStage> const &shaderStages() const = 0;
+    [[nodiscard]] virtual std::vector<ShaderStage> const &shaderStages() const = 0;
 
     RasterizationState rasterizationState;
     DepthStencilState depthStencilState;
@@ -91,7 +91,7 @@ private:
 class TexCoordsDebugMaterial final : public Material {
 public:
 
-    std::vector<ShaderStage> const &shaderStages() const override
+    [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
             ShaderStage{shader::STAGE::VERTEX, R"(debug/vert.spv)"s, "main"s, std::vector<std::int32_t>{1}},
@@ -109,7 +109,7 @@ private:
 class NormalsDebugMaterial final : public Material {
 public:
 
-    std::vector<ShaderStage> const &shaderStages() const override
+    [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
             ShaderStage{shader::STAGE::VERTEX, R"(debug/vert.spv)"s, "main"s, std::vector<std::int32_t>{0}},
@@ -126,7 +126,7 @@ private:
 class TestMaterial final : public Material {
 public:
 
-    std::vector<ShaderStage> const &shaderStages() const override
+    [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
             ShaderStage{shader::STAGE::VERTEX, R"(vert.spv)"s, "main"s},
