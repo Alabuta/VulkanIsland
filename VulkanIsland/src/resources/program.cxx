@@ -96,7 +96,7 @@ void ShaderManager::CreateShaderPrograms(Material const *const material)
                                 constantID++, offset, sizeof(constant)
                             });
 
-                            offset += sizeof(constant);
+                            offset += static_cast<std::uint32_t>(sizeof(constant));
                         }
 
                         specializationMapEntries_.emplace(shaderStage, std::move(specializationMapEntry));

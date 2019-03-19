@@ -56,7 +56,7 @@ struct ShaderStage final {
     std::string moduleName;
     std::string entryPoint;
 
-    std::vector<std::int32_t> constants;
+    std::vector<std::int32_t> constants{};
 
     struct hash_value final {
         template<class T, typename std::enable_if_t<std::is_same_v<ShaderStage, std::decay_t<T>>>...>
