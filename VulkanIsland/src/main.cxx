@@ -841,35 +841,35 @@ xformat::vertex_layout layoutB;
 
 xformat populate()
 {
-    struct vertex final {
-        vec<3, std::float_t> position;
-        vec<2, std::float_t> texCoord;
-    };
 
     xformat model;
 
     {
-        xformat::vertex_layout vertexLayout;
-        vertexLayout.sizeInBytes = sizeof(vertex);
-
-        vertexLayout.attributes.push_back(xformat::vertex_attribute{
-            0, semantic::position{}, vec<3, std::float_t>{}, false
-        });
-
-        vertexLayout.attributes.push_back(xformat::vertex_attribute{
-            sizeof(vec<3, std::float_t>), semantic::tex_coord_0{}, vec<2, std::float_t>{}, false
-        });
-
-        model.vertexLayouts.push_back(std::move(vertexLayout));
-    }
-
-    using vertices_t = std::vector<vertex>;
-    std::vector<vertices_t> vertexBuffers;
-
-    {
-        vertices_t vertices;
-
         // First triangle
+        struct vertex final {
+            vec<3, std::float_t> position;
+            vec<2, std::float_t> texCoord;
+        };
+
+        auto const vertexLayoutIndex = std::size(model.vertexLayouts);
+
+        {
+            xformat::vertex_layout vertexLayout;
+            vertexLayout.sizeInBytes = sizeof(vertex);
+
+            vertexLayout.attributes.push_back(xformat::vertex_attribute{
+                0, semantic::position{}, vec<3, std::float_t>{}, false
+            });
+
+            vertexLayout.attributes.push_back(xformat::vertex_attribute{
+                sizeof(vec<3, std::float_t>), semantic::tex_coord_0{}, vec<2, std::float_t>{}, false
+            });
+
+            model.vertexLayouts.push_back(std::move(vertexLayout));
+        }
+
+        std::vector<vertex> vertices;
+
         vertices.push_back(vertex{
             vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<2, std::float_t>{.5f, .5f}
         });
@@ -882,52 +882,39 @@ xformat populate()
             vec<3, std::float_t>{1.f, 0.f, 1.f}, vec<2, std::float_t>{1.f, 0.f}
         });
 
-        // Second triangle
-        vertices.push_back(vertex{
-            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<2, std::float_t>{.5f, .5f}
-        });
-
-        vertices.push_back(vertex{
-            vec<3, std::float_t>{1.f, 0.f, -1.f}, vec<2, std::float_t>{1.f, 1.f}
-        });
-
-        vertices.push_back(vertex{
-            vec<3, std::float_t>{0.f, 0.f, 1.f}, vec<2, std::float_t>{.5f, 1.f}
-        });
-
-        vertexBuffers.push_back(std::move(vertices));
-    }
-
-    std::transform(std::begin(vertexBuffers), std::end(vertexBuffers), std::back_inserter(model.vertexBuffers), [] (auto &&srcBuffer)
-    {
-        xformat::vertex_buffer dstBuffer;
-
-        dstBuffer.vertexLayoutIndex = 0;
-        dstBuffer.count = std::size(srcBuffer);
-
-        dstBuffer.buffer.resize(sizeof(vertex) * std::size(srcBuffer));
-
-        std::uninitialized_copy(std::begin(srcBuffer), std::end(srcBuffer), reinterpret_cast<vertex *>(std::data(dstBuffer.buffer)));
-
-        return dstBuffer;
-    });
-
-    model.materials.push_back(xformat::material{ PRIMITIVE_TOPOLOGY::TRIANGLES });
-
-    {
         xformat::non_indexed_meshlet meshlet;
 
-        meshlet.vertexBufferIndex = 0;
-        meshlet.materialIndex = 0;
-        meshlet.vertexCount = 3;
+        {
+            auto const vertexCount = std::size(vertices);
+            auto const bytesCount = sizeof(vertex) * vertexCount;
+
+            auto &&vertexBuffer = model.vertexBuffers[vertexLayoutIndex];
+
+            meshlet.vertexBufferIndex = vertexLayoutIndex;
+            meshlet.vertexCount = vertexCount;
+            meshlet.firstVertex = vertexBuffer.count;
+
+            vertexBuffer.buffer.resize(bytesCount);
+
+            auto vertexBufferBegin = std::next(std::begin(vertexBuffer.buffer), vertexBuffer.count);
+
+            vertexBuffer.count = vertexCount;
+
+            std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, vertexBufferBegin);
+        }
+
+        auto const materialIndex = std::size(model.materials);
+
+        model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES});
+
+        meshlet.materialIndex = materialIndex;
         meshlet.instanceCount = 1;
-        meshlet.firstVertex = 0;
         meshlet.firstInstance = 0;
 
         model.nonIndexedMeshlets.push_back(std::move(meshlet));
     }
 
-    {
+    /*{
         xformat::non_indexed_meshlet meshlet;
 
         meshlet.vertexBufferIndex = 0;
@@ -938,7 +925,7 @@ xformat populate()
         meshlet.firstInstance = 0;
 
         model.nonIndexedMeshlets.push_back(std::move(meshlet));
-    }
+    }*/
 
     return model;
 }

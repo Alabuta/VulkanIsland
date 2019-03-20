@@ -249,7 +249,7 @@ struct xformat final {
         std::vector<std::byte> buffer;
     };
 
-    std::vector<vertex_buffer> vertexBuffers;
+    std::unordered_map<std::size_t, vertex_buffer> vertexBuffers;
 
     struct index_buffer final {
         std::variant<std::uint16_t, std::uint32_t> type;
