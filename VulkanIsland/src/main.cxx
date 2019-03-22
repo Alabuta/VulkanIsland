@@ -896,11 +896,13 @@ xformat populate()
 
             vertexBuffer.buffer.resize(bytesCount);
 
-            auto vertexBufferBegin = std::next(std::begin(vertexBuffer.buffer), vertexBuffer.count);
+            auto writeOffset = static_cast<std::decay_t<decltype((vertexBuffer.buffer))>::difference_type>(vertexBuffer.count);
+
+            auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
 
             vertexBuffer.count = vertexCount;
 
-            std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, vertexBufferBegin);
+            std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
         }
 
         auto const materialIndex = std::size(model.materials);
