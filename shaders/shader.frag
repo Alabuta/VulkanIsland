@@ -1,11 +1,11 @@
 #version 460
 #extension GL_ARB_separate_shader_objects : enable
 
-layout(early_fragment_tests) in;
+layout (early_fragment_tests) in;
 
-layout(set = 0, binding = 1) uniform sampler2D textureSampler;
+layout (set = 0, binding = 1) uniform sampler2D textureSampler;
 
-layout(set = 0, binding = 0, std430) readonly buffer PER_CAMERA
+layout (set = 0, binding = 0, std430) readonly buffer PER_CAMERA
 {
     mat4 view;
     mat4 projection;
@@ -16,11 +16,11 @@ layout(set = 0, binding = 0, std430) readonly buffer PER_CAMERA
     mat4 invertedProjection;
 } camera;
 
-layout(location = 0) in vec3 worldSpaceNormal;
-layout(location = 1) in vec2 texCoord1;
-layout(location = 2) in vec3 worldSpacePosition;
+layout (location = 0) in vec3 worldSpaceNormal;
+layout (location = 1) in vec2 texCoord1;
+layout (location = 2) in vec3 worldSpacePosition;
 
-layout(location = 0) out vec4 fragColor;
+layout (location = 0) out vec4 fragColor;
 
 struct PointLight {
     vec3 position;
