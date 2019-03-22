@@ -1025,7 +1025,7 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
     if (name == "A"sv)
         app.materialA = app.materialFactory->CreateMaterial<TexCoordsDebugMaterial>();
 
-    else app.materialB = app.materialFactory->CreateMaterial<NormalsDebugMaterial>();
+    else app.materialB = app.materialFactory->CreateMaterial<ColorsDebugMaterial>();
 
     auto material = name == "A"sv ? app.materialA : app.materialB;
 

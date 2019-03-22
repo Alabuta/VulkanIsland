@@ -94,16 +94,13 @@ public:
     [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
-            ShaderStage{shader::STAGE::VERTEX, R"(debug/vert.spv)"s, "main"s, std::vector<std::int32_t>{1}},
-            ShaderStage{shader::STAGE::FRAGMENT, R"(debug/frag.spv)"s, "main"s}
+            ShaderStage{shader::STAGE::VERTEX, R"(test/vert.spv)"s, "main"s, std::vector<std::int32_t>{1}},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(test/frag.spv)"s, "main"s}
             
         };
 
         return shaderStages;
     }
-
-private:
-
 };
 
 class NormalsDebugMaterial final : public Material {
@@ -112,15 +109,26 @@ public:
     [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
-            ShaderStage{shader::STAGE::VERTEX, R"(debug/vert.spv)"s, "main"s, std::vector<std::int32_t>{0}},
-            ShaderStage{shader::STAGE::FRAGMENT, R"(debug/frag.spv)"s, "main"s}
+            ShaderStage{shader::STAGE::VERTEX, R"(test/vert.spv)"s, "main"s, std::vector<std::int32_t>{0}},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(test/frag.spv)"s, "main"s}
         };
 
         return shaderStages;
     }
+};
 
-private:
+class ColorsDebugMaterial final : public Material {
+public:
 
+    [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
+    {
+        thread_local static std::vector<ShaderStage> shaderStages{
+            ShaderStage{shader::STAGE::VERTEX, R"(test/vert.spv)"s, "main"s, std::vector<std::int32_t>{2}},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(test/frag.spv)"s, "main"s}
+        };
+
+        return shaderStages;
+    }
 };
 
 class TestMaterial final : public Material {

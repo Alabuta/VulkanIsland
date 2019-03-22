@@ -16,12 +16,12 @@ layout(set = 0, binding = 0, std430) readonly buffer PER_CAMERA
 } camera;
 
 
-layout(location = 0) in vec4 color_0;
+layout(location = 0) in vec4 inColor;
 
 layout(location = 0) out vec4 fragColor;
 
 
 void main()
 {
-    fragColor = color_0;
+    fragColor = inColor;
 }
