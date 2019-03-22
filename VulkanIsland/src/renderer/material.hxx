@@ -143,9 +143,6 @@ public:
 
         return shaderStages;
     }
-
-private:
-
 };
 
 

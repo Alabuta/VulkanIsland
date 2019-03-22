@@ -898,9 +898,9 @@ xformat populate()
 
             auto writeOffset = static_cast<std::decay_t<decltype((vertexBuffer.buffer))>::difference_type>(vertexBuffer.count);
 
-            auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
-
             vertexBuffer.count = vertexCount;
+
+            auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
 
             std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
         }
