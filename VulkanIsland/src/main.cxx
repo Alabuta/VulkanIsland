@@ -916,18 +916,115 @@ xformat populate()
         model.nonIndexedMeshlets.push_back(std::move(meshlet));
     }
 
-    /*{
-        xformat::non_indexed_meshlet meshlet;
+    {
+        struct vertex final {
+            vec<3, std::float_t> position;
+            vec<4, std::float_t> color;
+        };
 
-        meshlet.vertexBufferIndex = 0;
-        meshlet.materialIndex = 0;
-        meshlet.vertexCount = 3;
-        meshlet.instanceCount = 1;
-        meshlet.firstVertex = 3;
-        meshlet.firstInstance = 0;
+        auto const vertexLayoutIndex = std::size(model.vertexLayouts);
 
-        model.nonIndexedMeshlets.push_back(std::move(meshlet));
-    }*/
+        {
+            xformat::vertex_layout vertexLayout;
+            vertexLayout.sizeInBytes = sizeof(vertex);
+
+            vertexLayout.attributes.push_back(xformat::vertex_attribute{
+                0, semantic::position{}, vec<3, std::float_t>{}, false
+            });
+
+            vertexLayout.attributes.push_back(xformat::vertex_attribute{
+                sizeof(vec<3, std::float_t>), semantic::color_0{}, vec<4, std::float_t>{}, false
+            });
+
+            model.vertexLayouts.push_back(std::move(vertexLayout));
+        }
+
+        std::vector<vertex> vertices;
+
+        // Second triangle
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<4, std::float_t>{1.f, 0.f, 0.f, 1.f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{1.f, 0.f, -1.f}, vec<4, std::float_t>{0.f, 1.f, 0.f, 1.f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{0.f, 0.f, -1.f}, vec<4, std::float_t>{0.f, 0.f, 1.f, 1.f}
+        });
+
+        // Third triangle
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<4, std::float_t>{1.f, 0.f, 1.f, 1.f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{-1.f, 0.f, 0.f}, vec<4, std::float_t>{1.f, 1.f, 0.f, 1.f}
+        });
+
+        vertices.push_back(vertex{
+            vec<3, std::float_t>{-1.f, 0.f, -1.f}, vec<4, std::float_t>{0.f, 1.f, 1.f, 1.f}
+        });
+
+        auto const vertexCountPerMeshlet = 3;
+
+        auto &&vertexBuffer = model.vertexBuffers[vertexLayoutIndex];
+
+        {
+            // Second triangle
+            xformat::non_indexed_meshlet meshlet;
+
+            auto const materialIndex = std::size(model.materials);
+
+            model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES});
+
+            meshlet.vertexBufferIndex = vertexLayoutIndex;
+            meshlet.vertexCount = vertexCountPerMeshlet;
+            meshlet.firstVertex = vertexBuffer.count + 0;
+
+            meshlet.materialIndex = materialIndex;
+            meshlet.instanceCount = 1;
+            meshlet.firstInstance = 0;
+
+            model.nonIndexedMeshlets.push_back(std::move(meshlet));
+        }
+
+        {
+            // Third triangle
+            xformat::non_indexed_meshlet meshlet;
+
+            auto const materialIndex = std::size(model.materials);
+
+            model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES});
+
+            meshlet.vertexBufferIndex = vertexLayoutIndex;
+            meshlet.vertexCount = vertexCountPerMeshlet;
+            meshlet.firstVertex = vertexBuffer.count + vertexCountPerMeshlet;
+
+            meshlet.materialIndex = materialIndex;
+            meshlet.instanceCount = 1;
+            meshlet.firstInstance = 0;
+
+            model.nonIndexedMeshlets.push_back(std::move(meshlet));
+        }
+
+
+        {
+            auto const vertexCount = std::size(vertices);
+            auto const bytesCount = sizeof(vertex) * vertexCount;
+
+            vertexBuffer.buffer.resize(bytesCount);
+
+            auto writeOffset = static_cast<std::decay_t<decltype((vertexBuffer.buffer))>::difference_type>(vertexBuffer.count);
+
+            vertexBuffer.count = vertexCount;
+
+            auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
+
+            std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
+        }
+    }
 
     return model;
 }
