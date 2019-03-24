@@ -42,9 +42,9 @@ public:
     CreateShaderModule(std::vector<std::byte> const &shaderByteCode) noexcept;
 
     template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>...>
-    [[nodiscard]] std::optional<IndexBuffer> CreateIndexBuffer(std::size_t sizeInBytes) noexcept;
+    [[nodiscard]] std::shared_ptr<IndexBuffer> CreateIndexBuffer(std::size_t sizeInBytes) noexcept;
 
-    [[nodiscard]] std::optional<VertexBuffer> CreateVertexBuffer(xformat::vertex_layout const &layout, std::size_t sizeInBytes) noexcept;
+    [[nodiscard]] std::shared_ptr<VertexBuffer> GetVertexBuffer(xformat::vertex_layout const &layout, std::size_t sizeInBytes) noexcept;
 
 private:
 
@@ -58,8 +58,9 @@ private:
     ResourceManager() = delete;
     ResourceManager(ResourceManager const &) = delete;
     ResourceManager(ResourceManager &&) = delete;
-
-    std::map<std::uint32_t, std::shared_ptr<VertexBuffer>> vertexBuffers_;
+    
+    // TODO:: unordered_miltimap
+    std::unordered_map<xformat::vertex_layout, std::shared_ptr<VertexBuffer>, xformat::hash_value, xformat::equal_comparator> vertexBuffers_;
 };
 
 

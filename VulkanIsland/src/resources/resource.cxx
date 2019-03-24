@@ -270,26 +270,40 @@ void ResourceManager::ReleaseResource(T &&resource) noexcept
     }
 }
 
-std::optional<VertexBuffer> ResourceManager::CreateVertexBuffer(xformat::vertex_layout const &, std::size_t) noexcept
+std::shared_ptr<VertexBuffer> ResourceManager::GetVertexBuffer(xformat::vertex_layout const &layout, std::size_t sizeInBytes) noexcept
 {
-    /*vertexBuffers_[]
+    if (vertexBuffers_.count(layout) == 0) {
+        std::shared_ptr<VulkanBuffer> stagingBuffer;
+        std::shared_ptr<VulkanBuffer> deviceBuffer;
 
-    VertexBuffer vertexBuffer;
+        {
+            auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-    if (auto stagingBuffer = StageData(*app.vulkanDevice, vertices); stagingBuffer) {
-        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            stagingBuffer = device_.resourceManager().CreateBuffer(sizeInBytes, usageFlags, propertyFlags);
 
-        buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
-
-        if (buffer) {
-            auto copyRegions = std::array{VkBufferCopy{ 0, 0, stagingBuffer->memory()->size() }};
-
-            CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
-                               buffer->handle(), std::move(copyRegions), app.transferCommandPool);
+            if (!stagingBuffer) {
+                std::cerr << "failed to create staging vertex buffer\n"s;
+                return { };
+            }
         }
-    }*/
-    return std::optional<VertexBuffer>();
+
+        {
+            auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+            deviceBuffer = device_.resourceManager().CreateBuffer(sizeInBytes, usageFlags, propertyFlags);
+
+            if (!deviceBuffer) {
+                std::cerr << "failed to create device vertex buffer\n"s;
+                return { };
+            }
+        }
+
+        vertexBuffers_.emplace(layout, std::make_shared<VertexBuffer>(deviceBuffer, stagingBuffer, sizeInBytes, 0));
+    }
+
+    return vertexBuffers_[layout];
 }
 
 

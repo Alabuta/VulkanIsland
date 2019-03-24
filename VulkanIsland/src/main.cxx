@@ -1029,6 +1029,34 @@ xformat populate()
     return model;
 }
 
+void stageXformat(app_t &app, xformat const &model)
+{
+    for (auto &&[layoutIndex, xVertexBuffer] : model.vertexBuffers) {
+        auto &&layout = model.vertexLayouts[layoutIndex];
+
+        auto vertexBuffer = app.vulkanDevice->resourceManager().GetVertexBuffer(layout, std::size(xVertexBuffer.buffer));
+
+        if (!vertexBuffer)
+            throw std::runtime_error("failed to get vertex buffer"s);
+
+        //vertexBuffer.stageData(xVertexBuffer.buffer);
+
+        /*if (auto stagingBuffer = StageData(*app.vulkanDevice, vertices); stagingBuffer) {
+            auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+            buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size() * 10, usageFlags, propertyFlags);
+
+            if (buffer) {
+                auto copyRegions = std::array{VkBufferCopy{ 0, 0, stagingBuffer->memory()->size() }};
+
+                CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
+                                   buffer->handle(), std::move(copyRegions), app.transferCommandPool);
+            }
+        }*/
+    }
+}
+
 void populate(app_t &app)
 {
     {
@@ -1404,6 +1432,7 @@ void InitVulkan(Window &window, app_t &app)
     else throw std::runtime_error("failed to create the swapchain"s);
 
     auto model = temp::populate();
+    temp::stageXformat(app, model);
     temp::populate(app);
 
     if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkanDevice); !descriptorSetLayout)

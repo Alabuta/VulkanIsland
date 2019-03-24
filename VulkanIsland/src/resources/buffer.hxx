@@ -48,7 +48,10 @@ public:
     VertexBuffer(std::shared_ptr<VulkanBuffer> deviceBuffer, std::shared_ptr<VulkanBuffer> stagingBuffer, std::size_t sizeInBytes, std::uint32_t vertexInputBinding) noexcept
         : deviceBuffer_{deviceBuffer}, stagingBuffer_{stagingBuffer}, sizeInBytes_{sizeInBytes}, vertexInputBinding_{vertexInputBinding} { }
 
+    void StageData(std::vector<std::byte> const &data);
+
     VulkanBuffer const &deviceBuffer() const noexcept { return *deviceBuffer_; }
+    VulkanBuffer &stagingBuffer() noexcept { return *stagingBuffer_; }
 
     template<class T, typename std::enable_if_t<std::is_same_v<VertexBuffer, std::decay_t<T>>>...>
     bool constexpr operator< (T &&rhs) const noexcept
