@@ -116,7 +116,6 @@ template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>..
 [[nodiscard]] std::shared_ptr<DeviceMemory>
 MemoryManager::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, [[maybe_unused]] bool linear)
 {
-
 #if TEMPORALY_DISABLED
     VkMemoryDedicatedRequirements memoryDedicatedRequirements{
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_REQUIREMENTS,

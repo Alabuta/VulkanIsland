@@ -303,7 +303,28 @@ std::shared_ptr<VertexBuffer> ResourceManager::GetVertexBuffer(xformat::vertex_l
         vertexBuffers_.emplace(layout, std::make_shared<VertexBuffer>(deviceBuffer, stagingBuffer, sizeInBytes, 0));
     }
 
-    return vertexBuffers_[layout];
+    auto &vertexBuffer = vertexBuffers_[layout];
+
+    if (vertexBuffer->stagingBufferSizeInBytes_ < sizeInBytes) {
+        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+        vertexBuffer->stagingBuffer_ = device_.resourceManager().CreateBuffer(sizeInBytes, usageFlags, propertyFlags);
+
+        if (!vertexBuffer->stagingBuffer_) {
+            std::cerr << "failed to re-create staging vertex buffer\n"s;
+            return { };
+        }
+
+        vertexBuffer->stagingBufferSizeInBytes_ = sizeInBytes;
+    }
+
+    if (vertexBuffer->sizeInBytes_ - vertexBuffer->offset_ < sizeInBytes) {
+        auto bufferHandle = vertexBuffer->deviceBuffer_->handle();
+        auto memory = device_.memoryManager().AllocateMemory(bufferHandle, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, false);
+    }
+
+    return vertexBuffer;
 }
 
 

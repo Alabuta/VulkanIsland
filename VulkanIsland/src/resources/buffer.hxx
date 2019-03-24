@@ -61,6 +61,8 @@ public:
 
 private:
 
+    friend class ResourceManager;
+
     std::shared_ptr<VulkanBuffer> deviceBuffer_{nullptr};
     std::shared_ptr<VulkanBuffer> stagingBuffer_{nullptr};
 
@@ -68,6 +70,8 @@ private:
     std::size_t offset_{0};
 
     std::uint32_t vertexInputBinding_;
+
+    std::size_t stagingBufferSizeInBytes_{0};
 };
 
 struct StagingVertexBuffer final {
