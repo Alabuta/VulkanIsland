@@ -304,10 +304,10 @@
     <ClInclude Include="src\vertexFormat.hxx" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="../shaders/shader.frag" />
-    <None Include="../shaders/shader.vert" />
-    <None Include="..\shaders\test\shader.frag" />
-    <None Include="..\shaders\test\shader.vert" />
+    <None Include="..\contents\shaders\shader.frag" />
+    <None Include="..\contents\shaders\shader.vert" />
+    <None Include="..\contents\shaders\test\shader.frag" />
+    <None Include="..\contents\shaders\test\shader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

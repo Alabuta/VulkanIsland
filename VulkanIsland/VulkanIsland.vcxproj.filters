@@ -33,8 +33,11 @@
     <Filter Include="Source Files\Renderer">
       <UniqueIdentifier>{f912d248-d83a-4499-80a0-fcbf4bd3304a}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Resource Files\test">
-      <UniqueIdentifier>{9a7c7895-4325-42df-9521-1f45d12542d7}</UniqueIdentifier>
+    <Filter Include="Resource Files\Shaders">
+      <UniqueIdentifier>{3f2ac4e7-1b3f-4058-bfd3-4fea28ff2a85}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Resource Files\Shaders\Test">
+      <UniqueIdentifier>{48425b0b-ce4b-424b-877c-99f2323ab70e}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -231,17 +234,17 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="../shaders/shader.frag">
-      <Filter>Resource Files</Filter>
+    <None Include="..\contents\shaders\shader.frag">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="../shaders/shader.vert">
-      <Filter>Resource Files</Filter>
+    <None Include="..\contents\shaders\shader.vert">
+      <Filter>Resource Files\Shaders</Filter>
     </None>
-    <None Include="..\shaders\test\shader.vert">
-      <Filter>Resource Files\test</Filter>
+    <None Include="..\contents\shaders\test\shader.frag">
+      <Filter>Resource Files\Shaders\Test</Filter>
     </None>
-    <None Include="..\shaders\test\shader.frag">
-      <Filter>Resource Files\test</Filter>
+    <None Include="..\contents\shaders\test\shader.vert">
+      <Filter>Resource Files\Shaders\Test</Filter>
     </None>
   </ItemGroup>
 </Project>

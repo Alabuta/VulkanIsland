@@ -5,7 +5,7 @@ from subprocess import call
 
 glslangValidatorPath = 'glslangValidator'
 
-shadersDirectory = "{}/../{}".format(os.path.dirname(os.path.realpath(__file__)), "shaders/")
+shadersDirectory = "{}/../{}".format(os.path.dirname(os.path.realpath(__file__)), "contents/shaders/")
 
 vertPath = "{}shader.vert".format(shadersDirectory)
 fragPath = "{}shader.frag".format(shadersDirectory)
