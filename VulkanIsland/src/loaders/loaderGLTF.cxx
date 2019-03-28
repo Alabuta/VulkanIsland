@@ -790,9 +790,11 @@ void initNodeGraph(std::vector<glTF::scene_t> const &scenes, std::vector<glTF::n
                         }, node.transform);
                     }
 
+                #if NOT_YET_IMPLEMENTED
                     if (node.mesh) {
                         registry.assign<ecs::mesh>(entity);
                     }
+                #endif
                 }
 
                 handlesStack.emplace_back(std::move(handles));

@@ -51,11 +51,6 @@ public:
     VulkanBuffer const &deviceBuffer() const noexcept { return *deviceBuffer_; }
     VulkanBuffer &stagingBuffer() noexcept { return *stagingBuffer_; }
 
-    template<class T, typename std::enable_if_t<std::is_same_v<VertexBuffer, std::decay_t<T>>>...>
-    bool constexpr operator< (T &&rhs) const noexcept
-    {
-        return vertexInputBinding_ < rhs.vertexInputBinding_;
-    }
     std::size_t availableMemorySize() const noexcept { return capacityInBytes_ - offset_; }
 
 private:
@@ -65,8 +60,6 @@ private:
 
     std::size_t capacityInBytes_{0};
     std::size_t offset_{0};
-
-    std::uint32_t vertexInputBinding_;
 
     std::size_t stagingBufferSizeInBytes_{0};
 

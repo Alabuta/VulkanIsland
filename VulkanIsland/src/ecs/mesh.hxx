@@ -11,6 +11,7 @@
 #include "ecs.hxx"
 
 
+#if NOT_YET_IMPLEMENTED
 namespace ecs
 {
 struct mesh final {
@@ -48,3 +49,4 @@ private:
     entity_registry &registry;
 };
 }
+#endif

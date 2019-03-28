@@ -113,7 +113,9 @@ struct app_t final {
     ecs::entity_registry registry;
 
     ecs::NodeSystem nodeSystem{registry};
+#if NOT_YET_IMPLEMENTED
     ecs::MeshSystem meshSystem{registry};
+#endif
 
     std::shared_ptr<VulkanBuffer> vertexBufferA;
     std::shared_ptr<VulkanBuffer> vertexBufferB;
@@ -1690,11 +1692,14 @@ try {
         glfwPollEvents();
 
         app.registry.sort<ecs::node>(ecs::node());
+    #if NOT_YET_IMPLEMENTED
         app.registry.sort<ecs::mesh>(ecs::mesh());
+    #endif
 
         app.nodeSystem.update();
+    #if NOT_YET_IMPLEMENTED
         app.meshSystem.update();
-
+    #endif
         Update(app);
 
         DrawFrame(app);
