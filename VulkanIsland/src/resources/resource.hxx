@@ -46,7 +46,12 @@ public:
 
     [[nodiscard]] std::shared_ptr<VertexBuffer> GetVertexBuffer(xformat::vertex_layout const &layout, std::size_t sizeInBytes) noexcept;
 
+    void StageVertexData(std::shared_ptr<VertexBuffer> vertexBuffer, std::vector<std::byte> const &container) const;
+
+
 private:
+
+    static auto constexpr kVertexBufferIncreaseValue{2};
 
     VulkanDevice &device_;
 

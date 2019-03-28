@@ -275,6 +275,8 @@ std::shared_ptr<VertexBuffer> ResourceManager::GetVertexBuffer(xformat::vertex_l
     if (vertexBuffers_.count(layout) == 0) {
         std::shared_ptr<VulkanBuffer> stagingBuffer;
         std::shared_ptr<VulkanBuffer> deviceBuffer;
+        
+        auto const capacityInBytes = sizeInBytes * kVertexBufferIncreaseValue;
 
         {
             auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
@@ -292,7 +294,7 @@ std::shared_ptr<VertexBuffer> ResourceManager::GetVertexBuffer(xformat::vertex_l
             auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
             auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-            deviceBuffer = device_.resourceManager().CreateBuffer(sizeInBytes, usageFlags, propertyFlags);
+            deviceBuffer = device_.resourceManager().CreateBuffer(capacityInBytes, usageFlags, propertyFlags);
 
             if (!deviceBuffer) {
                 std::cerr << "failed to create device vertex buffer\n"s;
@@ -300,7 +302,7 @@ std::shared_ptr<VertexBuffer> ResourceManager::GetVertexBuffer(xformat::vertex_l
             }
         }
 
-        vertexBuffers_.emplace(layout, std::make_shared<VertexBuffer>(deviceBuffer, stagingBuffer, sizeInBytes, 0));
+        vertexBuffers_.emplace(layout, std::make_shared<VertexBuffer>(deviceBuffer, stagingBuffer, capacityInBytes));
     }
 
     auto &vertexBuffer = vertexBuffers_[layout];
@@ -312,19 +314,50 @@ std::shared_ptr<VertexBuffer> ResourceManager::GetVertexBuffer(xformat::vertex_l
         vertexBuffer->stagingBuffer_ = device_.resourceManager().CreateBuffer(sizeInBytes, usageFlags, propertyFlags);
 
         if (!vertexBuffer->stagingBuffer_) {
-            std::cerr << "failed to re-create staging vertex buffer\n"s;
+            std::cerr << "failed to extend staging vertex buffer\n"s;
             return { };
         }
 
         vertexBuffer->stagingBufferSizeInBytes_ = sizeInBytes;
     }
 
-    if (vertexBuffer->sizeInBytes_ - vertexBuffer->offset_ < sizeInBytes) {
+    if (vertexBuffer->availableMemorySize() < sizeInBytes) {
+        // TODO: sparse memory binding
+#if NOT_YET_IMPLEMENTED
         auto bufferHandle = vertexBuffer->deviceBuffer_->handle();
         auto memory = device_.memoryManager().AllocateMemory(bufferHandle, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, false);
+#endif
+        std::cerr << "not enough device memory for vertex buffer\n"s;
+        return { };
     }
 
     return vertexBuffer;
+}
+
+void ResourceManager::StageVertexData(std::shared_ptr<VertexBuffer> vertexBuffer, std::vector<std::byte> const &container) const
+{
+    if (vertexBuffer) {
+        auto const lengthInBytes = std::size(container);
+
+        // TODO: sparse memory binding
+        if (vertexBuffer->availableMemorySize() < lengthInBytes)
+            throw std::runtime_error("not enough device memory for vertex buffer"s);
+
+        auto &&memory = vertexBuffer->stagingBuffer().memory();
+
+        void *ptr;
+
+        if (auto result = vkMapMemory(device_.handle(), memory->handle(), vertexBuffer->offset_, lengthInBytes, 0, &ptr); result != VK_SUCCESS)
+            throw std::runtime_error("failed to map staging vertex buffer memory: "s + std::to_string(result));
+
+        else {
+            std::uninitialized_copy_n(std::begin(container), lengthInBytes, reinterpret_cast<std::byte *>(ptr));
+
+            vkUnmapMemory(device_.handle(), memory->handle());
+
+            vertexBuffer->offset_ += lengthInBytes;
+        }
+    }
 }
 
 

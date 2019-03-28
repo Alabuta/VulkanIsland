@@ -45,10 +45,8 @@ private:
 class VertexBuffer final {
 public:
 
-    VertexBuffer(std::shared_ptr<VulkanBuffer> deviceBuffer, std::shared_ptr<VulkanBuffer> stagingBuffer, std::size_t sizeInBytes, std::uint32_t vertexInputBinding) noexcept
-        : deviceBuffer_{deviceBuffer}, stagingBuffer_{stagingBuffer}, sizeInBytes_{sizeInBytes}, vertexInputBinding_{vertexInputBinding} { }
-
-    void StageData(std::vector<std::byte> const &data);
+    VertexBuffer(std::shared_ptr<VulkanBuffer> deviceBuffer, std::shared_ptr<VulkanBuffer> stagingBuffer, std::size_t capacityInBytes) noexcept
+        : deviceBuffer_{deviceBuffer}, stagingBuffer_{stagingBuffer}, capacityInBytes_{capacityInBytes} { }
 
     VulkanBuffer const &deviceBuffer() const noexcept { return *deviceBuffer_; }
     VulkanBuffer &stagingBuffer() noexcept { return *stagingBuffer_; }
@@ -58,20 +56,21 @@ public:
     {
         return vertexInputBinding_ < rhs.vertexInputBinding_;
     }
+    std::size_t availableMemorySize() const noexcept { return capacityInBytes_ - offset_; }
 
 private:
-
-    friend class ResourceManager;
 
     std::shared_ptr<VulkanBuffer> deviceBuffer_{nullptr};
     std::shared_ptr<VulkanBuffer> stagingBuffer_{nullptr};
 
-    std::size_t sizeInBytes_{0};
+    std::size_t capacityInBytes_{0};
     std::size_t offset_{0};
 
     std::uint32_t vertexInputBinding_;
 
     std::size_t stagingBufferSizeInBytes_{0};
+
+    friend class ResourceManager;
 };
 
 struct StagingVertexBuffer final {

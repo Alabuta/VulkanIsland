@@ -1036,24 +1036,10 @@ void stageXformat(app_t &app, xformat const &model)
 
         auto vertexBuffer = app.vulkanDevice->resourceManager().GetVertexBuffer(layout, std::size(xVertexBuffer.buffer));
 
-        if (!vertexBuffer)
-            throw std::runtime_error("failed to get vertex buffer"s);
+        if (vertexBuffer)
+            app.vulkanDevice->resourceManager().StageVertexData(vertexBuffer, xVertexBuffer.buffer);
 
-        //vertexBuffer.stageData(xVertexBuffer.buffer);
-
-        /*if (auto stagingBuffer = StageData(*app.vulkanDevice, vertices); stagingBuffer) {
-            auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-            buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size() * 10, usageFlags, propertyFlags);
-
-            if (buffer) {
-                auto copyRegions = std::array{VkBufferCopy{ 0, 0, stagingBuffer->memory()->size() }};
-
-                CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
-                                   buffer->handle(), std::move(copyRegions), app.transferCommandPool);
-            }
-        }*/
+        else throw std::runtime_error("failed to init vertex buffer"s);
     }
 }
 
