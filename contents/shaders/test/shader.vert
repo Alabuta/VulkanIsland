@@ -27,7 +27,7 @@ layout (constant_id = 0) const int constant_0 = 0;
 
 layout (location = 0) out vec4 outColor;
 
-out gl_PerVertex{
+out gl_PerVertex {
     vec4 gl_Position;
 };
 
