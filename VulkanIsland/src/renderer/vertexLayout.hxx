@@ -9,7 +9,6 @@
 
 
 struct VertexInputStateInfo final {
-
     std::uint32_t binding;
 
     VkPipelineVertexInputStateCreateInfo info;

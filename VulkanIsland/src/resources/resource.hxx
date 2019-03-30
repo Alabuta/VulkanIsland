@@ -44,10 +44,11 @@ public:
     template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>...>
     [[nodiscard]] std::shared_ptr<IndexBuffer> CreateIndexBuffer(std::size_t sizeInBytes) noexcept;
 
-    [[nodiscard]] std::shared_ptr<VertexBuffer> GetVertexBuffer(xformat::vertex_layout const &layout, std::size_t sizeInBytes) noexcept;
+    [[nodiscard]] std::shared_ptr<VertexBuffer> CreateVertexBuffer(xformat::vertex_layout const &layout, std::size_t sizeInBytes) noexcept;
 
     void StageVertexData(std::shared_ptr<VertexBuffer> vertexBuffer, std::vector<std::byte> const &container) const;
 
+    [[nodiscard]] auto &vertexBuffers() const noexcept { return vertexBuffers_; }
 
 private:
 

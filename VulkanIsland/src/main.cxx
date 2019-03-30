@@ -1036,7 +1036,7 @@ void stageXformat(app_t &app, xformat const &model)
     for (auto &&[layoutIndex, xVertexBuffer] : model.vertexBuffers) {
         auto &&layout = model.vertexLayouts[layoutIndex];
 
-        auto vertexBuffer = app.vulkanDevice->resourceManager().GetVertexBuffer(layout, std::size(xVertexBuffer.buffer));
+        auto vertexBuffer = app.vulkanDevice->resourceManager().CreateVertexBuffer(layout, std::size(xVertexBuffer.buffer));
 
         if (vertexBuffer)
             app.vulkanDevice->resourceManager().StageVertexData(vertexBuffer, xVertexBuffer.buffer);
@@ -1155,7 +1155,7 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
     auto &&shaderStages = app.materialFactory->pipelineShaderStages(material);
 
     // Vertex layout
-    auto const vertexInputInfo = app.vertexLayoutsManager.info(layout);
+    auto const pipelineVertexInputInfo = app.vertexLayoutsManager.info(layout);
 
     VkPipelineInputAssemblyStateCreateInfo constexpr vertexAssemblyStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -1203,7 +1203,7 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
         nullptr,
         VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,
         static_cast<std::uint32_t>(std::size(shaderStages)), std::data(shaderStages),
-        &vertexInputInfo,
+        &pipelineVertexInputInfo,
         &vertexAssemblyStateCreateInfo,
         nullptr,
 #if USE_DYNAMIC_PIPELINE_STATE
@@ -1229,7 +1229,6 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
     if (auto result = vkCreateGraphicsPipelines(app.vulkanDevice->handle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, pipeline); result != VK_SUCCESS)
         throw std::runtime_error("failed to create graphics pipeline: "s + std::to_string(result));
 }
-
 
 void CreateGraphicsCommandBuffers(app_t &app)
 {
