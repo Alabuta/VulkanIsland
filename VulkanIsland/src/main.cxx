@@ -121,8 +121,6 @@ struct app_t final {
     std::shared_ptr<VulkanBuffer> vertexBufferB;
     std::shared_ptr<GraphicsPipeline> graphicsPipelineA;
     std::shared_ptr<GraphicsPipeline> graphicsPipelineB;
-    VkPipelineLayout pipelineLayoutA{VK_NULL_HANDLE};
-    VkPipelineLayout pipelineLayoutB{VK_NULL_HANDLE};
 
     PipelineVertexInputStatesManager pipelineVertexInputStatesManager;
 
@@ -203,7 +201,7 @@ struct app_t final {
 
 namespace temp
 {
-void CreateGraphicsPipeline(app_t & app, xformat::vertex_layout const & layout, std::string_view name);
+void CreateGraphicsPipeline(app_t & app, xformat::vertex_layout const & layout, VkPipelineLayout pipelineLayout, std::string_view name);
 void CreateGraphicsCommandBuffers(app_t &app);
 }
 
@@ -268,12 +266,6 @@ void CleanupFrameData(app_t &app)
 
     if (app.graphicsPipeline != VK_NULL_HANDLE)
         vkDestroyPipeline(device.handle(), app.graphicsPipeline, nullptr);
-
-    if (app.pipelineLayoutB != VK_NULL_HANDLE)
-        vkDestroyPipelineLayout(device.handle(), app.pipelineLayoutB, nullptr);
-
-    if (app.pipelineLayoutA != VK_NULL_HANDLE)
-        vkDestroyPipelineLayout(device.handle(), app.pipelineLayoutA, nullptr);
 
     if (app.graphicsPipelineA)
         app.graphicsPipelineA.reset();
@@ -523,9 +515,6 @@ void CreateGraphicsPipeline(app_t &app)
         { 0, 0, 0, 0 }
     };
 #endif
-
-    if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); pipelineLayout)
-        app.pipelineLayout = pipelineLayout.value();
 
 
     VkGraphicsPipelineCreateInfo const graphicsPipelineCreateInfo{
@@ -1135,7 +1124,7 @@ void populate(app_t &app)
     }
 }
 
-void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, std::string_view name)
+void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, VkPipelineLayout pipelineLayout, std::string_view name)
 {
     // Material
     if (name == "A"sv)
@@ -1147,11 +1136,6 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
 
     if (!material)
         throw std::runtime_error("failed to create a material"s);
-
-    if (auto result = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); result)
-        (name == "A"sv ? app.pipelineLayoutA : app.pipelineLayoutB) = result.value();
-
-    auto &&pipelineLayout = name == "A"sv ? app.pipelineLayoutA : app.pipelineLayoutB;
 
     auto pipeline = app.graphicsPipelineManager->CreateGraphicsPipeline(layout, material, pipelineLayout, app.renderPass, app.swapchain.extent);
 
@@ -1239,7 +1223,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
             std::size_t const stride = app.alignedBufferSize / app.objectsNumber;
             auto const dynamicOffset = static_cast<std::uint32_t>(0 * stride);
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayoutA,
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayout,
                                     0, 1, &app.descriptorSet, 1, &dynamicOffset);
 
             vkCmdDraw(commandBuffer, verticesCount, 1, 0, 0);
@@ -1251,7 +1235,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
             std::size_t const stride = app.alignedBufferSize / app.objectsNumber;
             auto const dynamicOffset = static_cast<std::uint32_t>(1 * stride);
 
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayoutB,
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayout,
                                     0, 1, &app.descriptorSet, 1, &dynamicOffset);
 
             vkCmdDraw(commandBuffer, verticesCount, 1, 0, 0);
@@ -1289,16 +1273,18 @@ void RecreateSwapChain(app_t &app)
     else app.renderPass = std::move(renderPass.value());
 
 #if !USE_DYNAMIC_PIPELINE_STATE
-    CreateGraphicsPipeline(app);
-#endif
+    if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); !pipelineLayout)
+        throw std::runtime_error("failed to create the pipeline layout"s);
 
-    temp::CreateGraphicsPipeline(app, temp::layoutA, "A"sv);
-    temp::CreateGraphicsPipeline(app, temp::layoutB, "B"sv);
+    else app.pipelineLayout = std::move(pipelineLayout.value());
+
+    temp::CreateGraphicsPipeline(app, temp::layoutA, app.pipelineLayout, "A"sv);
+    temp::CreateGraphicsPipeline(app, temp::layoutB, app.pipelineLayout, "B"sv);
+#endif
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
     temp::CreateGraphicsCommandBuffers(app);
-    //CreateGraphicsCommandBuffers(app);
 }
 
 
@@ -1373,10 +1359,13 @@ void InitVulkan(Window &window, app_t &app)
     }
 
 
-    temp::CreateGraphicsPipeline(app, temp::layoutA, "A"sv);
-    temp::CreateGraphicsPipeline(app, temp::layoutB, "B"sv);
+    if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); !pipelineLayout)
+        throw std::runtime_error("failed to create the pipeline layout"s);
 
-    CreateGraphicsPipeline(app);
+    else app.pipelineLayout = std::move(pipelineLayout.value());
+
+    temp::CreateGraphicsPipeline(app, temp::layoutA, app.pipelineLayout, "A"sv);
+    temp::CreateGraphicsPipeline(app, temp::layoutB, app.pipelineLayout, "B"sv);
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
@@ -1429,7 +1418,6 @@ void InitVulkan(Window &window, app_t &app)
     UpdateDescriptorSet(app, *app.vulkanDevice, app.descriptorSet);
 
     temp::CreateGraphicsCommandBuffers(app);
-    //CreateGraphicsCommandBuffers(app);
 
     CreateSemaphores(app);
 }
