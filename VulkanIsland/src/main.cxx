@@ -910,7 +910,7 @@ xformat populate()
 
         auto const materialIndex = std::size(model.materials);
 
-        model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES});
+        model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "TexCoordsDebugMaterial"s});
 
         meshlet.materialIndex = materialIndex;
         meshlet.instanceCount = 1;
@@ -980,7 +980,7 @@ xformat populate()
 
             auto const materialIndex = std::size(model.materials);
 
-            model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES});
+            model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "ColorsDebugMaterial"s});
 
             meshlet.vertexBufferIndex = vertexLayoutIndex;
             meshlet.vertexCount = vertexCountPerMeshlet;
@@ -999,7 +999,7 @@ xformat populate()
 
             auto const materialIndex = std::size(model.materials);
 
-            model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES});
+            model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "ColorsDebugMaterial"s});
 
             meshlet.vertexBufferIndex = vertexLayoutIndex;
             meshlet.vertexCount = vertexCountPerMeshlet;

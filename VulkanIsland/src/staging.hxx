@@ -263,6 +263,7 @@ struct xformat final {
 
     struct material final {
         PRIMITIVE_TOPOLOGY topology;
+        std::string type;
     };
 
     std::vector<material> materials;
