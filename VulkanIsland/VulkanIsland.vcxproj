@@ -255,7 +255,7 @@
     <ClCompile Include="src\renderer\material.cxx" />
     <ClCompile Include="src\renderer\pipelines.cxx" />
     <ClCompile Include="src\renderer\renderPass.cxx" />
-    <ClCompile Include="src\renderer\vertexLayout.cxx" />
+    <ClCompile Include="src\renderer\pipelineVertexInputState.cxx" />
     <ClCompile Include="src\resources\buffer.cxx" />
     <ClCompile Include="src\resources\image.cxx" />
     <ClCompile Include="src\resources\memory.cxx" />
@@ -280,7 +280,7 @@
     <ClInclude Include="src\renderer\material.hxx" />
     <ClInclude Include="src\renderer\pipelines.hxx" />
     <ClInclude Include="src\renderer\renderPass.hxx" />
-    <ClInclude Include="src\renderer\vertexLayout.hxx" />
+    <ClInclude Include="src\renderer\pipelineVertexInputState.hxx" />
     <ClInclude Include="src\resources\memory.hxx" />
     <ClInclude Include="src\resources\resource.hxx" />
     <ClInclude Include="src\semaphore.hxx" />

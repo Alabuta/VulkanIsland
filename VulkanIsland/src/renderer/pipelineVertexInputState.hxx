@@ -8,17 +8,17 @@
 #include "staging.hxx"
 
 
-struct VertexInputStateInfo final {
+struct PipelineVertexInputState final {
     std::uint32_t binding;
 
     VkPipelineVertexInputStateCreateInfo info;
 
-    std::vector<VkVertexInputBindingDescription> inputBindingDescriptions;
+    std::vector<VkVertexInputBindingDescription> bindingDescriptions;
     std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
 };
 
 
-class VertexLayoutsManager final {
+class PipelineVertexInputStatesManager final {
 public:
 
     [[nodiscard]] std::uint32_t binding(xformat::vertex_layout const &layout) noexcept;
@@ -26,7 +26,7 @@ public:
 
 private:
 
-    std::unordered_map<xformat::vertex_layout, VertexInputStateInfo, xformat::hash_value, xformat::equal_comparator> layouts_;
+    std::unordered_map<xformat::vertex_layout, PipelineVertexInputState, xformat::hash_value, xformat::equal_comparator> layouts_;
 
-
+    void createPipelineVertexInputState(xformat::vertex_layout const &layout) noexcept;
 };

@@ -110,10 +110,10 @@
     <ClCompile Include="src\renderer\renderPass.cxx">
       <Filter>Source Files\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="src\renderer\vertexLayout.cxx">
+    <ClCompile Include="src\renderer\material.cxx">
       <Filter>Source Files\Renderer</Filter>
     </ClCompile>
-    <ClCompile Include="src\renderer\material.cxx">
+    <ClCompile Include="src\renderer\pipelineVertexInputState.cxx">
       <Filter>Source Files\Renderer</Filter>
     </ClCompile>
   </ItemGroup>
@@ -217,9 +217,6 @@
     <ClInclude Include="src\resources\resource.hxx">
       <Filter>Source Files\Resources</Filter>
     </ClInclude>
-    <ClInclude Include="src\renderer\vertexLayout.hxx">
-      <Filter>Source Files\Renderer</Filter>
-    </ClInclude>
     <ClInclude Include="src\renderer\pipelines.hxx">
       <Filter>Source Files\Renderer</Filter>
     </ClInclude>
@@ -230,6 +227,9 @@
       <Filter>Source Files\Renderer</Filter>
     </ClInclude>
     <ClInclude Include="src\renderer\attachments.hxx">
+      <Filter>Source Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\renderer\pipelineVertexInputState.hxx">
       <Filter>Source Files\Renderer</Filter>
     </ClInclude>
   </ItemGroup>

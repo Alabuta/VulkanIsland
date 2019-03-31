@@ -32,7 +32,7 @@
 #include "renderer/renderPass.hxx"
 #include "semaphore.hxx"
 
-#include "renderer/vertexLayout.hxx"
+#include "renderer/pipelineVertexInputState.hxx"
 #include "renderer/material.hxx"
 
 #include "ecs/ecs.hxx"
@@ -124,7 +124,7 @@ struct app_t final {
     VkPipelineLayout pipelineLayoutA{VK_NULL_HANDLE};
     VkPipelineLayout pipelineLayoutB{VK_NULL_HANDLE};
 
-    VertexLayoutsManager vertexLayoutsManager;
+    PipelineVertexInputStatesManager pipelineVertexInputStatesManager;
 
     std::unique_ptr<MaterialFactory> materialFactory;
     std::unique_ptr<ShaderManager> shaderManager;
@@ -1155,7 +1155,7 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
     auto &&shaderStages = app.materialFactory->pipelineShaderStages(material);
 
     // Vertex layout
-    auto const pipelineVertexInputInfo = app.vertexLayoutsManager.info(layout);
+    auto &&pipelineVertexInputInfo = app.pipelineVertexInputStatesManager.info(layout);
 
     VkPipelineInputAssemblyStateCreateInfo constexpr vertexAssemblyStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
