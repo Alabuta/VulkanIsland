@@ -6,6 +6,99 @@
 
 #include "pipelines.hxx"
 
+
+std::shared_ptr<GraphicsPipeline>
+GraphicsPipelineManager::CreateGraphicsPipeline(xformat::vertex_layout const &layout, std::shared_ptr<Material> material,
+                                                VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkExtent2D extent)
+{
+    auto materialProperties = materialFactory_.properties(material);
+
+    if (!materialProperties)
+        throw std::runtime_error("failed to get a material properties"s);
+
+    auto &&shaderStages = materialFactory_.pipelineShaderStages(material);
+
+    if (std::empty(shaderStages))
+        throw std::runtime_error("material's shader stages are empty"s);
+
+    // Vertex layout
+    auto &&pipelineVertexInputInfo = pipelineVertexInputStatesManager_.info(layout);
+
+    // TODO:: primitive topology
+    VkPipelineInputAssemblyStateCreateInfo constexpr vertexAssemblyStateCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
+        nullptr, 0,
+        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        VK_FALSE
+    };
+
+    // Render pass
+    VkViewport const viewport{
+        0, static_cast<float>(extent.height),
+        static_cast<float>(extent.width), -static_cast<float>(extent.height),
+        0, 1
+    };
+
+    VkRect2D const scissor{
+        {0, 0}, extent
+    };
+
+    VkPipelineViewportStateCreateInfo const viewportStateCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+        nullptr, 0,
+        1, &viewport,
+        1, &scissor
+    };
+
+    VkPipelineMultisampleStateCreateInfo const multisampleCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        nullptr, 0,
+        vulkanDevice_.samplesCount(),//VK_SAMPLE_COUNT_1_BIT
+        VK_FALSE, 1,
+        nullptr,
+        VK_FALSE,
+        VK_FALSE
+    };
+
+    VkGraphicsPipelineCreateInfo const graphicsPipelineCreateInfo{
+        VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
+        nullptr,
+        VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,
+        static_cast<std::uint32_t>(std::size(shaderStages)), std::data(shaderStages),
+        &pipelineVertexInputInfo,
+        &vertexAssemblyStateCreateInfo,
+        nullptr,
+#if USE_DYNAMIC_PIPELINE_STATE
+        nullptr,
+#else
+        &viewportStateCreateInfo,
+#endif
+        &materialProperties->rasterizationState,
+        &multisampleCreateInfo,
+        &materialProperties->depthStencilState,
+        &materialProperties->colorBlendState,
+        nullptr,
+        pipelineLayout,
+        renderPass,
+        0,
+        VK_NULL_HANDLE, -1
+    };
+
+    VkPipeline handle;
+
+    if (auto result = vkCreateGraphicsPipelines(vulkanDevice_.handle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, &handle); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create graphics pipeline: "s + std::to_string(result));
+
+    return std::shared_ptr<GraphicsPipeline>(
+        new GraphicsPipeline{handle}, [this] (GraphicsPipeline *const ptr_pipeline)
+        {
+            vkDestroyPipeline(vulkanDevice_.handle(), ptr_pipeline->handle(), nullptr);
+
+            delete ptr_pipeline;
+        }
+    );
+}
+
 #if NOT_YET_IMPLEMENTED
 namespace
 {

@@ -6,23 +6,39 @@
 #include "helpers.hxx"
 #include "device.hxx"
 #include "staging.hxx"
+#include "material.hxx"
+#include "pipelineVertexInputState.hxx"
 
 
 
 class GraphicsPipeline final {
 public:
 
-    std::size_t hash() const noexcept { return hash_; }
+    GraphicsPipeline(VkPipeline handle) noexcept : handle_{handle} { }
 
-    template<class T, typename std::enable_if_t<std::is_same_v<GraphicsPipeline, std::decay_t<T>>>...>
-    auto constexpr operator== (T &&pipeline) const noexcept
-    {
-        return hash_ == pipeline.hash();
-    }
+    VkPipeline handle() const noexcept { return handle_; }
 
 private:
 
-    std::size_t hash_{0};
+    VkPipeline handle_;
+};
+
+
+class GraphicsPipelineManager final {
+public:
+
+    GraphicsPipelineManager(VulkanDevice &vulkanDevice, MaterialFactory &materialFactory, PipelineVertexInputStatesManager &pipelineVertexInputStatesManager) noexcept :
+        vulkanDevice_{vulkanDevice}, materialFactory_{materialFactory}, pipelineVertexInputStatesManager_{pipelineVertexInputStatesManager} { }
+
+    [[nodiscard]] std::shared_ptr<GraphicsPipeline>
+    CreateGraphicsPipeline(xformat::vertex_layout const &layout, std::shared_ptr<Material> material,
+                           VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkExtent2D extent);
+
+private:
+
+    VulkanDevice &vulkanDevice_;
+    MaterialFactory &materialFactory_;
+    PipelineVertexInputStatesManager &pipelineVertexInputStatesManager_;
 };
 
 

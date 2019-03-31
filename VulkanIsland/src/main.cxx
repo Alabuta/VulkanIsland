@@ -119,8 +119,8 @@ struct app_t final {
 
     std::shared_ptr<VulkanBuffer> vertexBufferA;
     std::shared_ptr<VulkanBuffer> vertexBufferB;
-    VkPipeline graphicsPipelineA{VK_NULL_HANDLE};
-    VkPipeline graphicsPipelineB{VK_NULL_HANDLE};
+    std::shared_ptr<GraphicsPipeline> graphicsPipelineA;
+    std::shared_ptr<GraphicsPipeline> graphicsPipelineB;
     VkPipelineLayout pipelineLayoutA{VK_NULL_HANDLE};
     VkPipelineLayout pipelineLayoutB{VK_NULL_HANDLE};
 
@@ -128,6 +128,7 @@ struct app_t final {
 
     std::unique_ptr<MaterialFactory> materialFactory;
     std::unique_ptr<ShaderManager> shaderManager;
+    std::unique_ptr<GraphicsPipelineManager> graphicsPipelineManager;
 
     std::shared_ptr<Material> material;
     std::shared_ptr<Material> materialA;
@@ -274,11 +275,11 @@ void CleanupFrameData(app_t &app)
     if (app.pipelineLayoutA != VK_NULL_HANDLE)
         vkDestroyPipelineLayout(device.handle(), app.pipelineLayoutA, nullptr);
 
-    if (app.graphicsPipelineA != VK_NULL_HANDLE)
-        vkDestroyPipeline(device.handle(), app.graphicsPipelineA, nullptr);
+    if (app.graphicsPipelineA)
+        app.graphicsPipelineA.reset();
 
-    if (app.graphicsPipelineB != VK_NULL_HANDLE)
-        vkDestroyPipeline(device.handle(), app.graphicsPipelineB, nullptr);
+    if (app.graphicsPipelineB)
+        app.graphicsPipelineB.reset();
 
     if (app.pipelineLayout != VK_NULL_HANDLE)
         vkDestroyPipelineLayout(device.handle(), app.pipelineLayout, nullptr);
@@ -1041,7 +1042,7 @@ void stageXformat(app_t &app, xformat const &model)
         if (vertexBuffer)
             app.vulkanDevice->resourceManager().StageVertexData(vertexBuffer, xVertexBuffer.buffer);
 
-        else throw std::runtime_error("failed to init vertex buffer"s);
+        else throw std::runtime_error("failed to get vertex buffer"s);
     }
 }
 
@@ -1147,87 +1148,14 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, st
     if (!material)
         throw std::runtime_error("failed to create a material"s);
 
-    auto materialProperties = app.materialFactory->properties(material);
-
-    if (!materialProperties)
-        throw std::runtime_error("failed to get a material properties"s);
-
-    auto &&shaderStages = app.materialFactory->pipelineShaderStages(material);
-
-    // Vertex layout
-    auto &&pipelineVertexInputInfo = app.pipelineVertexInputStatesManager.info(layout);
-
-    VkPipelineInputAssemblyStateCreateInfo constexpr vertexAssemblyStateCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
-        nullptr, 0,
-        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
-        VK_FALSE
-    };
-
-    // Render pass
-    VkViewport const viewport{
-        0, static_cast<float>(app.swapchain.extent.height),
-        static_cast<float>(app.swapchain.extent.width), -static_cast<float>(app.swapchain.extent.height),
-        0, 1
-    };
-
-    VkRect2D const scissor{
-        {0, 0}, app.swapchain.extent
-    };
-
-    VkPipelineViewportStateCreateInfo const viewportStateCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
-        nullptr, 0,
-        1, &viewport,
-        1, &scissor
-    };
-
-    VkPipelineMultisampleStateCreateInfo const multisampleCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
-        nullptr, 0,
-        app.vulkanDevice->samplesCount(),//VK_SAMPLE_COUNT_1_BIT
-        VK_FALSE, 1,
-        nullptr,
-        VK_FALSE,
-        VK_FALSE
-    };
+    if (auto result = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); result)
+        (name == "A"sv ? app.pipelineLayoutA : app.pipelineLayoutB) = result.value();
 
     auto &&pipelineLayout = name == "A"sv ? app.pipelineLayoutA : app.pipelineLayoutB;
 
-    if (auto result = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); result)
-        pipelineLayout = result.value();
+    auto pipeline = app.graphicsPipelineManager->CreateGraphicsPipeline(layout, material, pipelineLayout, app.renderPass, app.swapchain.extent);
 
-
-    VkGraphicsPipelineCreateInfo const graphicsPipelineCreateInfo{
-        VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
-        nullptr,
-        VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,
-        static_cast<std::uint32_t>(std::size(shaderStages)), std::data(shaderStages),
-        &pipelineVertexInputInfo,
-        &vertexAssemblyStateCreateInfo,
-        nullptr,
-#if USE_DYNAMIC_PIPELINE_STATE
-        nullptr,
-#else
-        &viewportStateCreateInfo,
-#endif
-        &materialProperties->rasterizationState,
-        &multisampleCreateInfo,
-        &materialProperties->depthStencilState,
-        &materialProperties->colorBlendState,
-        nullptr,
-        pipelineLayout,
-        app.renderPass,
-        0,
-        VK_NULL_HANDLE, -1
-    };
-
-    auto pipeline = &app.graphicsPipelineA;
-
-    if (name == "B"sv) pipeline = &app.graphicsPipelineB;
-
-    if (auto result = vkCreateGraphicsPipelines(app.vulkanDevice->handle(), VK_NULL_HANDLE, 1, &graphicsPipelineCreateInfo, nullptr, pipeline); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create graphics pipeline: "s + std::to_string(result));
+    (name == "A"sv ? app.graphicsPipelineA : app.graphicsPipelineB) = pipeline;
 }
 
 void CreateGraphicsCommandBuffers(app_t &app)
@@ -1306,7 +1234,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
         auto const verticesCount = 3u;
 
         {
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipelineA);
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipelineA->handle());
 
             std::size_t const stride = app.alignedBufferSize / app.objectsNumber;
             auto const dynamicOffset = static_cast<std::uint32_t>(0 * stride);
@@ -1318,7 +1246,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
         }
 
         {
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipelineB);
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipelineB->handle());
 
             std::size_t const stride = app.alignedBufferSize / app.objectsNumber;
             auto const dynamicOffset = static_cast<std::uint32_t>(1 * stride);
@@ -1402,6 +1330,7 @@ void InitVulkan(Window &window, app_t &app)
 
     app.shaderManager = std::make_unique<ShaderManager>(*app.vulkanDevice);
     app.materialFactory = std::make_unique<MaterialFactory>(*app.shaderManager);
+    app.graphicsPipelineManager = std::make_unique<GraphicsPipelineManager>(*app.vulkanDevice, *app.materialFactory, app.pipelineVertexInputStatesManager);
 
     app.graphicsQueue = app.vulkanDevice->queue<GraphicsQueue>();
     app.transferQueue = app.vulkanDevice->queue<TransferQueue>();
