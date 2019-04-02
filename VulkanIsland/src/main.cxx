@@ -1023,6 +1023,8 @@ xformat populate()
 
 void stageXformat(app_t &app, xformat const &model)
 {
+    //std::vector<std::shared_ptr<VertexBuffer>> vertexBuffers;
+
     for (auto &&[layoutIndex, xVertexBuffer] : model.vertexBuffers) {
         auto &&layout = model.vertexLayouts[layoutIndex];
 
@@ -1032,6 +1034,16 @@ void stageXformat(app_t &app, xformat const &model)
             app.vulkanDevice->resourceManager().StageVertexData(vertexBuffer, xVertexBuffer.buffer);
 
         else throw std::runtime_error("failed to get vertex buffer"s);
+    }
+
+    for (auto &&xMaterial : model.materials) {
+        std::shared_ptr<Material> material;
+
+        if (xMaterial.type == "TexCoordsDebugMaterial"s)
+            material = app.materialFactory->CreateMaterial<TexCoordsDebugMaterial>();
+
+        else if (xMaterial.type == "ColorsDebugMaterial"s)
+            material = app.materialFactory->CreateMaterial<ColorsDebugMaterial>();
     }
 }
 
