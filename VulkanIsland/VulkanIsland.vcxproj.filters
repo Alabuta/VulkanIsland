@@ -133,9 +133,6 @@
     <ClInclude Include="src/commandBuffer.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
-    <ClInclude Include="src/deviceDefaults.hxx">
-      <Filter>Source Files</Filter>
-    </ClInclude>
     <ClInclude Include="src/queueBuilder.hxx">
       <Filter>Source Files</Filter>
     </ClInclude>
@@ -231,6 +228,9 @@
     </ClInclude>
     <ClInclude Include="src\renderer\pipelineVertexInputState.hxx">
       <Filter>Source Files\Renderer</Filter>
+    </ClInclude>
+    <ClInclude Include="src\deviceConfig.hxx">
+      <Filter>Source Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

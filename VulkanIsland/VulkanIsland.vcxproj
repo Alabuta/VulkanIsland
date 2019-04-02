@@ -268,7 +268,7 @@
     <ClInclude Include="src/debug.hxx" />
     <ClInclude Include="src/descriptor.hxx" />
     <ClInclude Include="src/device.hxx" />
-    <ClInclude Include="src/deviceDefaults.hxx" />
+    <ClInclude Include="src\deviceConfig.hxx" />
     <ClInclude Include="src/helpers.hxx" />
     <ClInclude Include="src/input/inputDataTypes.hxx" />
     <ClInclude Include="src/input/inputManager.hxx" />

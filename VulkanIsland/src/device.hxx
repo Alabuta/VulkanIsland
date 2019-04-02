@@ -1,7 +1,6 @@
 #pragma once
 
 #include "instance.hxx"
-#include "deviceDefaults.hxx"
 #include "queues.hxx"
 #include "queueBuilder.hxx"
 

@@ -6,7 +6,7 @@
 #include "main.hxx"
 #include "swapchain.hxx"
 #include "device.hxx"
-#include "deviceDefaults.hxx"
+#include "deviceConfig.hxx"
 #include "resources/buffer.hxx"
 #include "resources/resource.hxx"
 
