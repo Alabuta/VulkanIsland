@@ -47,7 +47,7 @@ set(SOURCE_FILES
 	
 	src/instance.cxx
     
-    src/renderer/vertexLayout.cxx
+    src/renderer/pipelineVertexInputState.cxx
     src/renderer/material.cxx
     src/renderer/pipelines.cxx
     src/renderer/renderPass.cxx
