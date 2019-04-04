@@ -1023,26 +1023,26 @@ xformat populate()
 
 void stageXformat(app_t &app, xformat const &model)
 {
-    //std::vector<std::shared_ptr<VertexBuffer>> vertexBuffers;
-
-    for (auto &&[layoutIndex, xVertexBuffer] : model.vertexBuffers) {
+    for (auto &&[layoutIndex, _vertexBuffer] : model.vertexBuffers) {
         auto &&layout = model.vertexLayouts[layoutIndex];
 
-        auto vertexBuffer = app.vulkanDevice->resourceManager().CreateVertexBuffer(layout, std::size(xVertexBuffer.buffer));
+        auto vertexBuffer = app.vulkanDevice->resourceManager().CreateVertexBuffer(layout, std::size(_vertexBuffer.buffer));
 
         if (vertexBuffer)
-            app.vulkanDevice->resourceManager().StageVertexData(vertexBuffer, xVertexBuffer.buffer);
+            app.vulkanDevice->resourceManager().StageVertexData(vertexBuffer, _vertexBuffer.buffer);
 
         else throw std::runtime_error("failed to get vertex buffer"s);
     }
 
-    for (auto &&xMaterial : model.materials) {
+    std::unordered_map<std::shared_ptr<Material>, std::shared_ptr<GraphicsPipeline>> graphicsPipelines;
+
+    for (auto &&_material : model.materials) {
         std::shared_ptr<Material> material;
 
-        if (xMaterial.type == "TexCoordsDebugMaterial"s)
+        if (_material.type == "TexCoordsDebugMaterial"s)
             material = app.materialFactory->CreateMaterial<TexCoordsDebugMaterial>();
 
-        else if (xMaterial.type == "ColorsDebugMaterial"s)
+        else if (_material.type == "ColorsDebugMaterial"s)
             material = app.materialFactory->CreateMaterial<ColorsDebugMaterial>();
     }
 }
