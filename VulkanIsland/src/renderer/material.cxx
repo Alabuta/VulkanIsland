@@ -291,3 +291,31 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material> material)
     std::copy(std::cbegin(material->colorBlendState.blendConstants), std::cend(material->colorBlendState.blendConstants),
               std::begin(properties.colorBlendState.blendConstants));
 }
+
+std::shared_ptr<Material> MaterialFactory::CreateMaterial(std::string_view type)
+{
+    std::shared_ptr<Material> material;
+
+    if (type == "TexCoordsDebugMaterial"s)
+        material = std::make_shared<TexCoordsDebugMaterial>();
+
+    else if (type == "ColorsDebugMaterial"s)
+        material = std::make_shared<ColorsDebugMaterial>();
+
+    material->colorBlendState.attachments.push_back(ColorBlendAttachmentState{
+        false,
+        BLEND_FACTOR::ONE,
+        BLEND_FACTOR::ZERO,
+        BLEND_OPERATION::ADD,
+        BLEND_FACTOR::ONE,
+        BLEND_FACTOR::ZERO,
+        BLEND_OPERATION::ADD,
+        COLOR_COMPONENT::RGBA
+    });
+
+    InitMaterialProperties(material);
+
+    shaderManager_.CreateShaderPrograms(material.get());
+
+    return material;
+}

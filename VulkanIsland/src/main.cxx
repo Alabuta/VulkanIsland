@@ -54,10 +54,19 @@
 
 auto constexpr sceneName{"unlit-test"sv};
 
-struct per_object_t {
+struct per_object_t final {
     glm::mat4 world{1};
     glm::mat4 normal{1};  // Transposed of the inversed of the upper left 3x3 sub-matrix of model(world)-view matrix.
 };
+
+struct renderable_t final {
+    std::size_t vertexBufferIndex;
+    std::size_t materialIndex;
+    std::size_t vertexCount{0};
+    std::size_t firstVertex{0};
+};
+
+std::vector<renderable_t> renderables;
 
 
 void CleanupFrameData(struct app_t &app);
@@ -1023,27 +1032,31 @@ xformat populate()
 
 void stageXformat(app_t &app, xformat const &model)
 {
-    for (auto &&[layoutIndex, _vertexBuffer] : model.vertexBuffers) {
-        auto &&layout = model.vertexLayouts[layoutIndex];
+    auto &&resourceManager = app.vulkanDevice->resourceManager();
 
-        auto vertexBuffer = app.vulkanDevice->resourceManager().CreateVertexBuffer(layout, std::size(_vertexBuffer.buffer));
+    for (auto &&meshlet : model.nonIndexedMeshlets) {
+        auto vertexLayoutIndex = meshlet.vertexBufferIndex;
+        auto &&vertexLayout = model.vertexLayouts[vertexLayoutIndex];
 
-        if (vertexBuffer)
-            app.vulkanDevice->resourceManager().StageVertexData(vertexBuffer, _vertexBuffer.buffer);
+        auto &&_vertexBuffer = model.vertexBuffers.at(vertexLayoutIndex);
+
+        if (auto vertexBuffer = resourceManager.CreateVertexBuffer(vertexLayout, std::size(_vertexBuffer.buffer)); vertexBuffer)
+            resourceManager.StageVertexData(vertexBuffer, _vertexBuffer.buffer);
 
         else throw std::runtime_error("failed to get vertex buffer"s);
-    }
 
-    std::unordered_map<std::shared_ptr<Material>, std::shared_ptr<GraphicsPipeline>> graphicsPipelines;
+        auto materialIndex = meshlet.materialIndex;
+        auto &&_material = model.materials[materialIndex];
 
-    for (auto &&_material : model.materials) {
-        std::shared_ptr<Material> material;
+        if (auto material = app.materialFactory->CreateMaterial(_material.type); material) {
+            auto pipeline = app.graphicsPipelineManager->CreateGraphicsPipeline(vertexLayout, material, app.pipelineLayout, app.renderPass, app.swapchain.extent);
 
-        if (_material.type == "TexCoordsDebugMaterial"s)
-            material = app.materialFactory->CreateMaterial<TexCoordsDebugMaterial>();
+            if (!pipeline)
+                throw std::runtime_error("failed to get graphics pipeline"s);
+        }
 
-        else if (_material.type == "ColorsDebugMaterial"s)
-            material = app.materialFactory->CreateMaterial<ColorsDebugMaterial>();
+        else throw std::runtime_error("failed to get material"s);
+
     }
 }
 

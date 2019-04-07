@@ -154,6 +154,8 @@ public:
     template<class T>
     [[nodiscard]] std::shared_ptr<T> CreateMaterial();
 
+    [[nodiscard]] std::shared_ptr<Material> CreateMaterial(std::string_view type);
+
     [[nodiscard]] std::shared_ptr<MaterialProperties> const properties(std::shared_ptr<Material> const material);// const noexcept;
 
     [[nodiscard]] std::vector<VkPipelineShaderStageCreateInfo> const &pipelineShaderStages(std::shared_ptr<Material> const material);
