@@ -1358,10 +1358,6 @@ void InitVulkan(Window &window, app_t &app)
 
     else throw std::runtime_error("failed to create the swapchain"s);
 
-    auto model = temp::populate();
-    temp::stageXformat(app, model);
-    temp::populate(app);
-
     if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkanDevice); !descriptorSetLayout)
         throw std::runtime_error("failed to create the descriptor set layout"s);
 
@@ -1389,6 +1385,10 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.pipelineLayout = std::move(pipelineLayout.value());
 
+    auto model = temp::populate();
+    temp::stageXformat(app, model);
+
+    temp::populate(app);
     temp::CreateGraphicsPipeline(app, temp::layoutA, app.pipelineLayout, "A"sv);
     temp::CreateGraphicsPipeline(app, temp::layoutB, app.pipelineLayout, "B"sv);
 
