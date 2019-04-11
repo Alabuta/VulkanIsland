@@ -391,7 +391,7 @@ void CreateGraphicsPipeline(app_t &app)
 #endif
 
     // Material
-    app.material = app.materialFactory->CreateMaterial<TestMaterial>();
+    app.material = app.materialFactory->CreateMaterial("TestMaterial"sv);
 
     if (!app.material)
         throw std::runtime_error("failed to create a material"s);
@@ -1056,7 +1056,6 @@ void stageXformat(app_t &app, xformat const &model)
         }
 
         else throw std::runtime_error("failed to get material"s);
-
     }
 }
 
@@ -1153,9 +1152,9 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, Vk
 {
     // Material
     if (name == "A"sv)
-        app.materialA = app.materialFactory->CreateMaterial<TexCoordsDebugMaterial>();
+        app.materialA = app.materialFactory->CreateMaterial("TexCoordsDebugMaterial"sv);
 
-    else app.materialB = app.materialFactory->CreateMaterial<ColorsDebugMaterial>();
+    else app.materialB = app.materialFactory->CreateMaterial("ColorsDebugMaterial"sv);
 
     auto material = name == "A"sv ? app.materialA : app.materialB;
 
@@ -1375,8 +1374,9 @@ void InitVulkan(Window &window, app_t &app)
         throw std::runtime_error("failed to init vertex buffer"s);
 
     if (!std::empty(app.scene.indexBuffer)) {
-        if (app.indexBuffer = InitIndexBuffer(app); !app.indexBuffer)
+        if (app.indexBuffer = InitIndexBuffer(app); !app.indexBuffer) {
             throw std::runtime_error("failed to init index buffer"s);
+        }
     }
 
 

@@ -203,6 +203,66 @@ VkColorComponentFlags constexpr ConvertToGAPI(COLOR_COMPONENT colorComponent) no
 }
 }
 
+namespace
+{
+class TexCoordsDebugMaterial final : public Material {
+public:
+
+    [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
+    {
+        thread_local static std::vector<ShaderStage> shaderStages{
+            ShaderStage{shader::STAGE::VERTEX, R"(test/vert.spv)"s, "main"s, std::vector<std::int32_t>{1}},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(test/frag.spv)"s, "main"s}
+
+        };
+
+        return shaderStages;
+    }
+};
+
+class NormalsDebugMaterial final : public Material {
+public:
+
+    [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
+    {
+        thread_local static std::vector<ShaderStage> shaderStages{
+            ShaderStage{shader::STAGE::VERTEX, R"(test/vert.spv)"s, "main"s, std::vector<std::int32_t>{0}},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(test/frag.spv)"s, "main"s}
+        };
+
+        return shaderStages;
+    }
+};
+
+class ColorsDebugMaterial final : public Material {
+public:
+
+    [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
+    {
+        thread_local static std::vector<ShaderStage> shaderStages{
+            ShaderStage{shader::STAGE::VERTEX, R"(test/vert.spv)"s, "main"s, std::vector<std::int32_t>{2}},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(test/frag.spv)"s, "main"s}
+        };
+
+        return shaderStages;
+    }
+};
+
+class TestMaterial final : public Material {
+public:
+
+    [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
+    {
+        thread_local static std::vector<ShaderStage> shaderStages{
+            ShaderStage{shader::STAGE::VERTEX, R"(vert.spv)"s, "main"s},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(frag.spv)"s, "main"s}
+        };
+
+        return shaderStages;
+    }
+};
+}
+
 
 std::shared_ptr<MaterialProperties> const MaterialFactory::properties(std::shared_ptr<Material> const material)// const noexcept
 {
@@ -294,6 +354,9 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material> material)
 
 std::shared_ptr<Material> MaterialFactory::CreateMaterial(std::string_view type)
 {
+    if (materials_.count(std::string{type}) != 0)
+        return materials_.at(std::string{type});
+
     std::shared_ptr<Material> material;
 
     if (type == "TexCoordsDebugMaterial"s)
@@ -301,6 +364,9 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial(std::string_view type)
 
     else if (type == "ColorsDebugMaterial"s)
         material = std::make_shared<ColorsDebugMaterial>();
+
+    else if (type == "TestMaterial"s)
+        material = std::make_shared<TestMaterial>();
 
     material->colorBlendState.attachments.push_back(ColorBlendAttachmentState{
         false,
@@ -316,6 +382,8 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial(std::string_view type)
     InitMaterialProperties(material);
 
     shaderManager_.CreateShaderPrograms(material.get());
+
+    materials_.emplace(std::string{type}, material);
 
     return material;
 }
