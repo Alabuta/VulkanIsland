@@ -37,7 +37,7 @@ enum class  GL {
 
 enum class  PRIMITIVE_MODE {
     POINTS = 0,
-    LINES, LINE_LOOP, LINE_STRIP,
+    LINES, LINE_STRIP,
     TRIANGLES, TRIANGLE_STRIP, TRIANGLE_FAN
 };
 }
@@ -87,9 +87,6 @@ std::optional<PRIMITIVE_TOPOLOGY> constexpr get_primitive_topology(glTF::PRIMITI
 
         case  glTF::PRIMITIVE_MODE::LINES:
             return PRIMITIVE_TOPOLOGY::LINES;
-
-        case  glTF::PRIMITIVE_MODE::LINE_LOOP:
-            return PRIMITIVE_TOPOLOGY::LINE_LOOP;
 
         case  glTF::PRIMITIVE_MODE::LINE_STRIP:
             return PRIMITIVE_TOPOLOGY::LINE_STRIP;

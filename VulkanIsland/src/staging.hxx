@@ -18,7 +18,7 @@ namespace ex = entityx;
 
 enum class PRIMITIVE_TOPOLOGY {
     POINTS = 0,
-    LINES, LINE_LOOP, LINE_STRIP,
+    LINES, LINE_STRIP,
     TRIANGLES, TRIANGLE_STRIP, TRIANGLE_FAN
 };
 
