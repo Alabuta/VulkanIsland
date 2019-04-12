@@ -31,7 +31,7 @@ public:
         vulkanDevice_{vulkanDevice}, materialFactory_{materialFactory}, pipelineVertexInputStatesManager_{pipelineVertexInputStatesManager} { }
 
     [[nodiscard]] std::shared_ptr<GraphicsPipeline>
-    CreateGraphicsPipeline(xformat::vertex_layout const &layout, std::shared_ptr<Material> material,
+    CreateGraphicsPipeline(xformat::vertex_layout const &layout, std::shared_ptr<Material> material, PRIMITIVE_TOPOLOGY topology,
                            VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkExtent2D extent);
 
 private:
@@ -39,6 +39,66 @@ private:
     VulkanDevice &vulkanDevice_;
     MaterialFactory &materialFactory_;
     PipelineVertexInputStatesManager &pipelineVertexInputStatesManager_;
+
+    struct GraphicsPipelinePropertiesKey final {
+        PRIMITIVE_TOPOLOGY topology_;
+        xformat::vertex_layout layout_;
+        std::shared_ptr<Material> material_;
+
+        struct hash_value final {
+            template<class T, typename std::enable_if_t<std::is_same_v<GraphicsPipelinePropertiesKey, std::decay_t<T>>>...>
+            auto constexpr operator() (T &&graphicsPipeline) const noexcept
+            {
+                std::size_t seed = 0;
+
+                boost::hash_combine(seed, graphicsPipeline.topology_);
+
+                auto layout = xformat::hash_value{}(graphicsPipeline.layout_);
+
+                boost::hash_combine(seed, graphicsPipeline.material_);
+
+                return seed;
+            }
+        };
+
+        struct equal_comparator final {
+            template<class T1, class T2, typename std::enable_if_t<are_same_v<GraphicsPipelinePropertiesKey, T1, T2>>...>
+            auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
+            {
+                auto topology = lhs.topology_ == rhs.topology_;
+
+                auto layout = xformat::equal_comparator{}(lhs.layout_, rhs.layout_);
+
+                auto material = lhs.material_ == rhs.material_;
+
+                return topology && layout && material;
+            }
+        };
+
+        struct less_comparator final {
+            template<class T1, class T2, typename std::enable_if_t<are_same_v<GraphicsPipelinePropertiesKey, T1, T2>>...>
+            auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
+            {
+                auto topology = lhs.topology_ < rhs.topology_;
+
+                auto layout = xformat::less_comparator{}(lhs.layout_, rhs.layout_);
+
+                auto material = lhs.material_ < rhs.material_;
+
+                return topology && layout && material;
+            }
+        };
+    };
+
+    /*struct GraphicsPipelinePropertiesValue final {
+        std::shared_ptr<MaterialProperties> materialProperties_;
+        std::vector<VkPipelineShaderStageCreateInfo> pipelineShaderStages_;
+        VkPipelineVertexInputStateCreateInfo pipelineVertexInputInfo_;
+        VkPipelineInputAssemblyStateCreateInfo vertexAssemblyStateCreateInfo_;
+    };*/
+
+    std::unordered_map<GraphicsPipelinePropertiesKey, std::shared_ptr<GraphicsPipeline>,
+        GraphicsPipelinePropertiesKey::hash_value, GraphicsPipelinePropertiesKey::equal_comparator> graphicsPipelineProperties_;
 };
 
 

@@ -1049,7 +1049,7 @@ void stageXformat(app_t &app, xformat const &model)
         auto &&_material = model.materials[materialIndex];
 
         if (auto material = app.materialFactory->CreateMaterial(_material.type); material) {
-            auto pipeline = app.graphicsPipelineManager->CreateGraphicsPipeline(vertexLayout, material, app.pipelineLayout, app.renderPass, app.swapchain.extent);
+            auto pipeline = app.graphicsPipelineManager->CreateGraphicsPipeline(vertexLayout, material, _material.topology, app.pipelineLayout, app.renderPass, app.swapchain.extent);
 
             if (!pipeline)
                 throw std::runtime_error("failed to get graphics pipeline"s);
@@ -1161,7 +1161,7 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, Vk
     if (!material)
         throw std::runtime_error("failed to create a material"s);
 
-    auto pipeline = app.graphicsPipelineManager->CreateGraphicsPipeline(layout, material, pipelineLayout, app.renderPass, app.swapchain.extent);
+    auto pipeline = app.graphicsPipelineManager->CreateGraphicsPipeline(layout, material, PRIMITIVE_TOPOLOGY::TRIANGLES, pipelineLayout, app.renderPass, app.swapchain.extent);
 
     (name == "A"sv ? app.graphicsPipelineA : app.graphicsPipelineB) = pipeline;
 }
