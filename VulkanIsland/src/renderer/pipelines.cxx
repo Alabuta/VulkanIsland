@@ -41,7 +41,9 @@ std::shared_ptr<GraphicsPipeline>
 GraphicsPipelineManager::CreateGraphicsPipeline(xformat::vertex_layout const &layout, std::shared_ptr<Material> material, PRIMITIVE_TOPOLOGY topology,
                                                 VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkExtent2D extent)
 {
-    GraphicsPipelinePropertiesKey key{ topology, layout, material };
+    auto viewportExtent = std::array{static_cast<float>(extent.width), static_cast<float>(extent.height)};
+
+    GraphicsPipelinePropertiesKey key{topology, layout, material, viewportExtent };
 
     if (graphicsPipelineProperties_.count(key) == 0) {
         auto materialProperties = materialFactory_.properties(material);

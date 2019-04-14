@@ -154,6 +154,8 @@ struct app_t final {
 
         vkDeviceWaitIdle(vulkanDevice->handle());
 
+        CleanupFrameData(*this);
+
         if (materialFactory)
             materialFactory.reset();
 
@@ -166,7 +168,8 @@ struct app_t final {
         if (imageAvailableSemaphore)
             vkDestroySemaphore(vulkanDevice->handle(), imageAvailableSemaphore, nullptr);
 
-        CleanupFrameData(*this);
+        if (graphicsPipelineManager)
+            graphicsPipelineManager.reset();
 
         vkDestroyDescriptorSetLayout(vulkanDevice->handle(), descriptorSetLayout, nullptr);
         vkDestroyDescriptorPool(vulkanDevice->handle(), descriptorPool, nullptr);
