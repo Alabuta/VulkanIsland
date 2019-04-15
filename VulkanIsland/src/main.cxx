@@ -59,8 +59,13 @@ struct per_object_t final {
 };
 
 struct renderable_t final {
-    std::size_t vertexBufferIndex;
-    std::size_t materialIndex;
+    /*std::size_t vertexBufferIndex;
+    std::size_t materialIndex;*/
+
+    std::shared_ptr<GraphicsPipeline> pipeline;
+    std::shared_ptr<Material> material;
+    //std::shared_ptr<VertexBuffer> vertexBuffer;
+
     std::size_t vertexCount{0};
     std::size_t firstVertex{0};
 };
@@ -152,6 +157,8 @@ struct app_t final {
             return;
 
         vkDeviceWaitIdle(vulkanDevice->handle());
+
+        renderables.clear();
 
         CleanupFrameData(*this);
 
@@ -908,11 +915,7 @@ xformat populate()
             std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
         }
 
-        auto const materialIndex = std::size(model.materials);
-
-        model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "TexCoordsDebugMaterial"s});
-
-        meshlet.materialIndex = materialIndex;
+        meshlet.materialIndex = 0;
         meshlet.instanceCount = 1;
         meshlet.firstInstance = 0;
 
@@ -978,15 +981,11 @@ xformat populate()
             // Second triangle
             xformat::non_indexed_meshlet meshlet;
 
-            auto const materialIndex = std::size(model.materials);
-
-            model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "ColorsDebugMaterial"s});
-
             meshlet.vertexBufferIndex = vertexLayoutIndex;
             meshlet.vertexCount = vertexCountPerMeshlet;
-            meshlet.firstVertex = vertexBuffer.count + 0;
+            meshlet.firstVertex = vertexBuffer.count + vertexCountPerMeshlet;
 
-            meshlet.materialIndex = materialIndex;
+            meshlet.materialIndex = 0;
             meshlet.instanceCount = 1;
             meshlet.firstInstance = 0;
 
@@ -997,21 +996,16 @@ xformat populate()
             // Third triangle
             xformat::non_indexed_meshlet meshlet;
 
-            auto const materialIndex = std::size(model.materials);
-
-            model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "ColorsDebugMaterial"s});
-
             meshlet.vertexBufferIndex = vertexLayoutIndex;
             meshlet.vertexCount = vertexCountPerMeshlet;
-            meshlet.firstVertex = vertexBuffer.count + vertexCountPerMeshlet;
+            meshlet.firstVertex = vertexBuffer.count + 0;
 
-            meshlet.materialIndex = materialIndex;
+            meshlet.materialIndex = 1;
             meshlet.instanceCount = 1;
             meshlet.firstInstance = 0;
 
             model.nonIndexedMeshlets.push_back(std::move(meshlet));
         }
-
 
         {
             auto const vertexCount = std::size(vertices);
@@ -1028,6 +1022,9 @@ xformat populate()
             std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
         }
     }
+
+    model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "TexCoordsDebugMaterial"s});
+    model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "ColorsDebugMaterial"s});
 
     return model;
 }
@@ -1055,6 +1052,10 @@ void stageXformat(app_t &app, xformat const &model)
 
             if (!pipeline)
                 throw std::runtime_error("failed to get graphics pipeline"s);
+
+            renderables.push_back({
+                pipeline, material, meshlet.vertexCount, meshlet.firstVertex
+            });
         }
 
         else throw std::runtime_error("failed to get material"s);
