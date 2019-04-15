@@ -50,7 +50,6 @@
 #include "camera/cameraController.hxx"
 
 
-#define USE_DYNAMIC_PIPELINE_STATE 0
 
 auto constexpr sceneName{"unlit-test"sv};
 

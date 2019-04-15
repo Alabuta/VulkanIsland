@@ -12,6 +12,8 @@
 #include "pipelineVertexInputState.hxx"
 
 
+#define USE_DYNAMIC_PIPELINE_STATE 0
+
 
 class GraphicsPipeline final {
 public:

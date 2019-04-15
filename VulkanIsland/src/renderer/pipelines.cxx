@@ -68,6 +68,21 @@ GraphicsPipelineManager::CreateGraphicsPipeline(xformat::vertex_layout const &la
         };
 
         // Render pass
+    #if USE_DYNAMIC_PIPELINE_STATE
+        auto const dynamicStates = std::array{
+            VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT,
+            VkDynamicState::VK_DYNAMIC_STATE_SCISSOR,
+        };
+
+        VkPipelineDynamicStateCreateInfo const dynamicStateCreateInfo{
+            VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+            nullptr, 0,
+            static_cast<std::uint32_t>(std::size(dynamicStates)),
+            std::data(dynamicStates)
+        };
+
+        auto constexpr rasterizerDiscardEnable = VK_TRUE;
+    #else
         VkViewport const viewport{
             0, static_cast<float>(extent.height),
             static_cast<float>(extent.width), -static_cast<float>(extent.height),
@@ -84,6 +99,7 @@ GraphicsPipelineManager::CreateGraphicsPipeline(xformat::vertex_layout const &la
             1, &viewport,
             1, &scissor
         };
+    #endif
 
         VkPipelineMultisampleStateCreateInfo const multisampleCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
@@ -112,7 +128,11 @@ GraphicsPipelineManager::CreateGraphicsPipeline(xformat::vertex_layout const &la
             &multisampleCreateInfo,
             &materialProperties->depthStencilState,
             &materialProperties->colorBlendState,
+    #if USE_DYNAMIC_PIPELINE_STATE
+            &dynamicStateCreateInfo,
+    #else
             nullptr,
+    #endif
             pipelineLayout,
             renderPass,
             0,
