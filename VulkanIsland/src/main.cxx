@@ -1060,7 +1060,125 @@ void stageXformat(app_t &app, xformat const &model)
 
         else throw std::runtime_error("failed to get material"s);
     }
+    
+    std::sort(std::begin(renderables), std::end(renderables), [] (auto &&lhs, auto &&rhs)
+    {
+        return lhs.pipeline < rhs.pipeline;
+    });
 }
+
+void CreateGraphicsCommandBuffers2(app_t &app)
+{
+    app.commandBuffers.resize(std::size(app.swapchain.framebuffers));
+
+    VkCommandBufferAllocateInfo const allocateInfo{
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
+        nullptr,
+        app.graphicsCommandPool,
+        VK_COMMAND_BUFFER_LEVEL_PRIMARY,
+        static_cast<std::uint32_t>(std::size(app.commandBuffers))
+    };
+
+    if (auto result = vkAllocateCommandBuffers(app.vulkanDevice->handle(), &allocateInfo, std::data(app.commandBuffers)); result != VK_SUCCESS)
+        throw std::runtime_error("failed to create allocate command buffers: "s + std::to_string(result));
+
+    std::size_t i = 0;
+
+    for (auto &commandBuffer : app.commandBuffers) {
+        VkCommandBufferBeginInfo const beginInfo{
+            VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+            nullptr,
+            VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
+            nullptr
+        };
+
+        if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
+            throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
+
+    #if defined( __clang__) || defined(_MSC_VER)
+        auto const clearColors = std::array{
+            VkClearValue{{{ .64f, .64f, .64f, 1.f }}},
+            VkClearValue{{{ kREVERSED_DEPTH ? 0.f : 1.f, 0 }}}
+        };
+    #else
+        auto const clearColors = std::array{
+            VkClearValue{.color = {.float32 = { .64f, .64f, .64f, 1.f } } },
+            VkClearValue{.depthStencil = { kREVERSED_DEPTH ? 0.f : 1.f, 0 } }
+        };
+    #endif
+
+        VkRenderPassBeginInfo const renderPassInfo{
+            VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+            nullptr,
+            app.renderPass,
+            app.swapchain.framebuffers.at(i++),
+            {{0, 0}, app.swapchain.extent},
+            static_cast<std::uint32_t>(std::size(clearColors)), std::data(clearColors)
+        };
+
+        vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+        auto &&resourceManager = app.vulkanDevice->resourceManager();
+
+        std::vector<VkBuffer> vertexBuffers;
+        std::vector<VkDeviceSize> vertexBuffersOffsets(std::size(vertexBuffers), 0);
+
+        for (auto &&[layout, vertexBuffer] : resourceManager.vertexBuffers()) {
+            vertexBuffers.push_back(vertexBuffer->deviceBuffer()->handle());
+        }
+
+        auto const bindingCount = static_cast<std::uint32_t>(std::size(vertexBuffers));
+
+        vkCmdBindVertexBuffers(commandBuffer, 0, bindingCount, std::data(vertexBuffers), std::data(vertexBuffersOffsets));
+
+    #if USE_DYNAMIC_PIPELINE_STATE
+        VkViewport const viewport{
+            0, static_cast<float>(app.swapchain.extent.height),
+            static_cast<float>(app.swapchain.extent.width), -static_cast<float>(app.swapchain.extent.height),
+            0, 1
+        };
+
+        VkRect2D const scissor{
+            {0, 0}, app.swapchain.extent
+        };
+
+        vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+        vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+    #endif
+
+        auto const verticesCount = 3u;
+
+        {
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipelineA->handle());
+
+            std::size_t const stride = app.alignedBufferSize / app.objectsNumber;
+            auto const dynamicOffset = static_cast<std::uint32_t>(0 * stride);
+
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayout,
+                                    0, 1, &app.descriptorSet, 1, &dynamicOffset);
+
+            vkCmdDraw(commandBuffer, verticesCount, 1, 0, 0);
+        }
+
+        {
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipelineB->handle());
+
+            std::size_t const stride = app.alignedBufferSize / app.objectsNumber;
+            auto const dynamicOffset = static_cast<std::uint32_t>(1 * stride);
+
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayout,
+                                    0, 1, &app.descriptorSet, 1, &dynamicOffset);
+
+            vkCmdDraw(commandBuffer, verticesCount, 1, 0, 0);
+        }
+
+        vkCmdEndRenderPass(commandBuffer);
+
+        if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS)
+            throw std::runtime_error("failed to end command buffer: "s + std::to_string(result));
+    }
+}
+
 
 void populate(app_t &app)
 {
