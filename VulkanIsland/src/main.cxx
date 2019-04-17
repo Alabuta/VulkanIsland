@@ -70,6 +70,8 @@ struct renderable_t final {
     std::size_t firstVertex{0};
 };
 
+xformat model;
+
 std::vector<renderable_t> renderables;
 
 
@@ -1048,7 +1050,9 @@ void stageXformat(app_t &app, xformat const &model)
         auto &&_material = model.materials[materialIndex];
 
         if (auto material = app.materialFactory->CreateMaterial(_material.type); material) {
-            auto pipeline = app.graphicsPipelineManager->CreateGraphicsPipeline(vertexLayout, material, _material.topology, app.pipelineLayout, app.renderPass, app.swapchain.extent);
+            auto pipeline = app.graphicsPipelineManager->CreateGraphicsPipeline(
+                vertexLayout, material, _material.topology, app.pipelineLayout, app.renderPass, app.swapchain.extent
+            );
 
             if (!pipeline)
                 throw std::runtime_error("failed to get graphics pipeline"s);
@@ -1121,13 +1125,13 @@ void CreateGraphicsCommandBuffers2(app_t &app)
         auto &&resourceManager = app.vulkanDevice->resourceManager();
 
         std::vector<VkBuffer> vertexBuffers;
-        std::vector<VkDeviceSize> vertexBuffersOffsets(std::size(vertexBuffers), 0);
 
-        for (auto &&[layout, vertexBuffer] : resourceManager.vertexBuffers()) {
-            vertexBuffers.push_back(vertexBuffer->deviceBuffer()->handle());
-        }
+        for (auto &&[layout, vertexBuffer] : resourceManager.vertexBuffers())
+            vertexBuffers.push_back(vertexBuffer->deviceBuffer().handle());
 
         auto const bindingCount = static_cast<std::uint32_t>(std::size(vertexBuffers));
+
+        std::vector<VkDeviceSize> vertexBuffersOffsets(bindingCount, 0);
 
         vkCmdBindVertexBuffers(commandBuffer, 0, bindingCount, std::data(vertexBuffers), std::data(vertexBuffersOffsets));
 
@@ -1146,30 +1150,17 @@ void CreateGraphicsCommandBuffers2(app_t &app)
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     #endif
 
-        auto const verticesCount = 3u;
+        for (auto &&renderable : renderables) {
+            auto [pipeline, material, vertexCount, firstVertex] = renderable;
 
-        {
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipelineA->handle());
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
 
-            std::size_t const stride = app.alignedBufferSize / app.objectsNumber;
-            auto const dynamicOffset = static_cast<std::uint32_t>(0 * stride);
-
-            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayout,
-                                    0, 1, &app.descriptorSet, 1, &dynamicOffset);
-
-            vkCmdDraw(commandBuffer, verticesCount, 1, 0, 0);
-        }
-
-        {
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.graphicsPipelineB->handle());
-
-            std::size_t const stride = app.alignedBufferSize / app.objectsNumber;
-            auto const dynamicOffset = static_cast<std::uint32_t>(1 * stride);
+            std::uint32_t const dynamicOffset = 0;
 
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayout,
                                     0, 1, &app.descriptorSet, 1, &dynamicOffset);
 
-            vkCmdDraw(commandBuffer, verticesCount, 1, 0, 0);
+            vkCmdDraw(commandBuffer, static_cast<std::uint32_t>(vertexCount), 1, static_cast<std::uint32_t>(firstVertex), 0);
         }
 
         vkCmdEndRenderPass(commandBuffer);
@@ -1429,7 +1420,8 @@ void RecreateSwapChain(app_t &app)
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
-    temp::CreateGraphicsCommandBuffers(app);
+    temp::CreateGraphicsCommandBuffers2(app);
+    //temp::CreateGraphicsCommandBuffers(app);
 }
 
 
@@ -1506,12 +1498,12 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.pipelineLayout = std::move(pipelineLayout.value());
 
-    auto model = temp::populate();
+    model = temp::populate();
     temp::stageXformat(app, model);
 
-    temp::populate(app);
+    /*temp::populate(app);
     temp::CreateGraphicsPipeline(app, temp::layoutA, app.pipelineLayout, "A"sv);
-    temp::CreateGraphicsPipeline(app, temp::layoutB, app.pipelineLayout, "B"sv);
+    temp::CreateGraphicsPipeline(app, temp::layoutB, app.pipelineLayout, "B"sv);*/
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
@@ -1563,7 +1555,8 @@ void InitVulkan(Window &window, app_t &app)
 
     UpdateDescriptorSet(app, *app.vulkanDevice, app.descriptorSet);
 
-    temp::CreateGraphicsCommandBuffers(app);
+    temp::CreateGraphicsCommandBuffers2(app);
+    //temp::CreateGraphicsCommandBuffers(app);
 
     CreateSemaphores(app);
 }
