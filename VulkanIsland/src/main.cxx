@@ -132,7 +132,7 @@ struct app_t final {
     ecs::MeshSystem meshSystem{registry};
 #endif
 
-    std::shared_ptr<VulkanBuffer> vertexBufferA;
+    std::shared_ptr<VertexBuffer> vertexBufferA;
     std::shared_ptr<VulkanBuffer> vertexBufferB;
     std::shared_ptr<GraphicsPipeline> graphicsPipelineA;
     std::shared_ptr<GraphicsPipeline> graphicsPipelineB;
@@ -221,8 +221,8 @@ struct app_t final {
 
 namespace temp
 {
-void CreateGraphicsPipeline(app_t & app, xformat::vertex_layout const & layout, VkPipelineLayout pipelineLayout, std::string_view name);
-void CreateGraphicsCommandBuffers(app_t &app);
+void _createGraphicsPipeline(app_t & app, xformat::vertex_layout const & layout, VkPipelineLayout pipelineLayout, std::string_view name);
+void _createGraphicsCommandBuffers(app_t &app);
 }
 
 
@@ -404,7 +404,7 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
         throw std::runtime_error("failed to create a command buffer: "s + std::to_string(result));
 }
 
-
+#if 0
 [[nodiscard]] std::shared_ptr<VulkanBuffer> InitVertexBuffer(app_t &app)
 {
     if (std::empty(app.scene.vertexBuffer))
@@ -435,6 +435,7 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
 
     return buffer;
 }
+#endif
 
 [[nodiscard]] std::shared_ptr<VulkanBuffer> InitIndexBuffer(app_t &app)
 {
@@ -606,7 +607,7 @@ xformat populate()
         model.nonIndexedMeshlets.push_back(std::move(meshlet));
     }
 
-    {
+    if (false) {
         struct vertex final {
             vec<3, std::float_t> position;
             vec<4, std::float_t> color;
@@ -708,7 +709,7 @@ xformat populate()
     }
 
     model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "TexCoordsDebugMaterial"s});
-    model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "ColorsDebugMaterial"s});
+    //model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "ColorsDebugMaterial"s});
 
     return model;
 }
@@ -854,6 +855,8 @@ void CreateGraphicsCommandBuffers2(app_t &app)
 
 void populate(app_t &app)
 {
+    auto &&resourceManager = app.vulkanDevice->resourceManager();
+
     {
         struct vertex final {
             vec<3, std::float_t> position;
@@ -880,9 +883,20 @@ void populate(app_t &app)
             vec<3, std::float_t>{1.f, 0.f, 1.f}, vec<2, std::float_t>{1.f, 0.f}
         });
 
+        std::vector<std::byte> _vertexBuffer(std::size(vertices) * sizeof(vertex));
+
+        std::uninitialized_copy_n(std::begin(vertices), std::size(vertices), reinterpret_cast<vertex *>(std::data(_vertexBuffer)));
+
         auto &&buffer = app.vertexBufferA;
 
-        if (auto stagingBuffer = StageData(*app.vulkanDevice, vertices); stagingBuffer) {
+        app.vertexBufferA = resourceManager.CreateVertexBuffer(layoutA, std::size(_vertexBuffer));
+
+        if (app.vertexBufferA)
+            resourceManager.StageVertexData(app.vertexBufferA, _vertexBuffer);
+
+        else throw std::runtime_error("failed to get vertex buffer"s);
+
+        /*if (auto stagingBuffer = StageData(*app.vulkanDevice, vertices); stagingBuffer) {
             auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
             auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
@@ -894,7 +908,7 @@ void populate(app_t &app)
                 CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
                                    buffer->handle(), std::move(copyRegions), app.transferCommandPool);
             }
-        }
+        }*/
     }
 
     {
@@ -941,7 +955,7 @@ void populate(app_t &app)
     }
 }
 
-void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, VkPipelineLayout pipelineLayout, std::string_view name)
+void _createGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, VkPipelineLayout pipelineLayout, std::string_view name)
 {
     // Material
     if (name == "A"sv)
@@ -959,7 +973,7 @@ void CreateGraphicsPipeline(app_t &app, xformat::vertex_layout const &layout, Vk
     (name == "A"sv ? app.graphicsPipelineA : app.graphicsPipelineB) = pipeline;
 }
 
-void CreateGraphicsCommandBuffers(app_t &app)
+void _createGraphicsCommandBuffers(app_t &app)
 {
     app.commandBuffers.resize(std::size(app.swapchain.framebuffers));
 
@@ -1010,7 +1024,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        auto const vertexBuffers = std::array{app.vertexBufferA->handle(), app.vertexBufferB->handle()};
+        auto const vertexBuffers = std::array{app.vertexBufferA->deviceBuffer().handle(), app.vertexBufferB->handle()};
         auto const offsets = std::array{VkDeviceSize{0}, VkDeviceSize{0}};
 
         auto const bindingCount = static_cast<std::uint32_t>(std::size(offsets));
@@ -1093,15 +1107,15 @@ void RecreateSwapChain(app_t &app)
         throw std::runtime_error("failed to create the pipeline layout"s);
 
     else app.pipelineLayout = std::move(pipelineLayout.value());
-
-    temp::CreateGraphicsPipeline(app, temp::layoutA, app.pipelineLayout, "A"sv);
-    temp::CreateGraphicsPipeline(app, temp::layoutB, app.pipelineLayout, "B"sv);
+#if 0
+    temp::_createGraphicsPipeline(app, temp::layoutA, app.pipelineLayout, "A"sv);
+    temp::_createGraphicsPipeline(app, temp::layoutB, app.pipelineLayout, "B"sv);
+#endif
 #endif
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
-    temp::CreateGraphicsCommandBuffers2(app);
-    //temp::CreateGraphicsCommandBuffers(app);
+    temp::_createGraphicsCommandBuffers(app);
 }
 
 
@@ -1163,8 +1177,10 @@ void InitVulkan(Window &window, app_t &app)
     if (auto result = glTF::load(sceneName, app.scene, app.nodeSystem); !result)
         throw std::runtime_error("failed to load a mesh"s);
 
+#if 0
     if (app.vertexBuffer = InitVertexBuffer(app); !app.vertexBuffer)
         throw std::runtime_error("failed to init vertex buffer"s);
+#endif
 
     if (!std::empty(app.scene.indexBuffer)) {
         if (app.indexBuffer = InitIndexBuffer(app); !app.indexBuffer) {
@@ -1172,18 +1188,17 @@ void InitVulkan(Window &window, app_t &app)
         }
     }
 
-
     if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); !pipelineLayout)
         throw std::runtime_error("failed to create the pipeline layout"s);
 
     else app.pipelineLayout = std::move(pipelineLayout.value());
 
-    model = temp::populate();
-    temp::stageXformat(app, model);
+    /*model = temp::populate();
+    temp::stageXformat(app, model);*/
 
-    /*temp::populate(app);
-    temp::CreateGraphicsPipeline(app, temp::layoutA, app.pipelineLayout, "A"sv);
-    temp::CreateGraphicsPipeline(app, temp::layoutB, app.pipelineLayout, "B"sv);*/
+    temp::populate(app);
+    temp::_createGraphicsPipeline(app, temp::layoutA, app.pipelineLayout, "A"sv);
+    temp::_createGraphicsPipeline(app, temp::layoutB, app.pipelineLayout, "B"sv);
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
@@ -1235,8 +1250,7 @@ void InitVulkan(Window &window, app_t &app)
 
     UpdateDescriptorSet(app, *app.vulkanDevice, app.descriptorSet);
 
-    temp::CreateGraphicsCommandBuffers2(app);
-    //temp::CreateGraphicsCommandBuffers(app);
+    temp::_createGraphicsCommandBuffers(app);
 
     CreateSemaphores(app);
 }
