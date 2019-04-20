@@ -49,7 +49,8 @@ public:
         : deviceBuffer_{deviceBuffer}, stagingBuffer_{stagingBuffer}, capacityInBytes_{capacityInBytes} { }
 
     VulkanBuffer const &deviceBuffer() const noexcept { return *deviceBuffer_; }
-    VulkanBuffer &stagingBuffer() noexcept { return *stagingBuffer_; }
+    VulkanBuffer const &stagingBuffer() const noexcept { return *stagingBuffer_; }
+    std::shared_ptr<VulkanBuffer> stagingBuffer2() const noexcept { return stagingBuffer_; }
 
     std::size_t availableMemorySize() const noexcept { return capacityInBytes_ - offset_; }
 
