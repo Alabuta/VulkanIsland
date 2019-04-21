@@ -607,9 +607,10 @@ xformat populate()
         model.nonIndexedMeshlets.push_back(std::move(meshlet));
     }
 
-    if (false) {
+     {
         struct vertex final {
             vec<3, std::float_t> position;
+            vec<2, std::float_t> texCoord;
             vec<4, std::float_t> color;
         };
 
@@ -624,7 +625,11 @@ xformat populate()
             });
 
             vertexLayout.attributes.push_back(xformat::vertex_attribute{
-                sizeof(vec<3, std::float_t>), semantic::color_0{}, vec<4, std::float_t>{}, false
+                sizeof(std::float_t) * 3, semantic::tex_coord_0{}, vec<2, std::float_t>{}, false
+            });
+
+            vertexLayout.attributes.push_back(xformat::vertex_attribute{
+                sizeof(std::float_t) * 5, semantic::color_0{}, vec<4, std::float_t>{}, false
             });
 
             model.vertexLayouts.push_back(std::move(vertexLayout));
@@ -634,28 +639,28 @@ xformat populate()
 
         // Second triangle
         vertices.push_back(vertex{
-            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<4, std::float_t>{1.f, 0.f, 0.f, 1.f}
+            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<2, std::float_t>{.5f, .5f}, vec<4, std::float_t>{0.f, 0.f, 0.f, 1.f}
         });
 
         vertices.push_back(vertex{
-            vec<3, std::float_t>{1.f, 0.f, -1.f}, vec<4, std::float_t>{0.f, 1.f, 0.f, 1.f}
+            vec<3, std::float_t>{1.f, 0.f, -1.f}, vec<2, std::float_t>{1.f, 1.f}, vec<4, std::float_t>{1.f, 0.f, 1.f, 1.f}
         });
 
         vertices.push_back(vertex{
-            vec<3, std::float_t>{0.f, 0.f, -1.f}, vec<4, std::float_t>{0.f, 0.f, 1.f, 1.f}
+            vec<3, std::float_t>{0.f, 0.f, -1.f}, vec<2, std::float_t>{.5f, 1.f}, vec<4, std::float_t>{0.f, 0.f, 1.f, 1.f}
         });
 
         // Third triangle
         vertices.push_back(vertex{
-            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<4, std::float_t>{1.f, 0.f, 1.f, 1.f}
+            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<2, std::float_t>{.5f, .5f}, vec<4, std::float_t>{1.f, 0.f, 1.f, 1.f}
         });
 
         vertices.push_back(vertex{
-            vec<3, std::float_t>{-1.f, 0.f, 0.f}, vec<4, std::float_t>{1.f, 1.f, 0.f, 1.f}
+            vec<3, std::float_t>{-1.f, 0.f, -1.f}, vec<2, std::float_t>{0.f, 1.f}, vec<4, std::float_t>{0.f, 1.f, 1.f, 1.f}
         });
 
         vertices.push_back(vertex{
-            vec<3, std::float_t>{-1.f, 0.f, -1.f}, vec<4, std::float_t>{0.f, 1.f, 1.f, 1.f}
+            vec<3, std::float_t>{-1.f, 0.f, 0.f}, vec<2, std::float_t>{0.f, .5f}, vec<4, std::float_t>{1.f, 1.f, 0.f, 1.f}
         });
 
         auto const vertexCountPerMeshlet = 3;
@@ -668,7 +673,7 @@ xformat populate()
 
             meshlet.vertexBufferIndex = vertexLayoutIndex;
             meshlet.vertexCount = vertexCountPerMeshlet;
-            meshlet.firstVertex = vertexBuffer.count + vertexCountPerMeshlet;
+            meshlet.firstVertex = vertexBuffer.count + 0;
 
             meshlet.materialIndex = 0;
             meshlet.instanceCount = 1;
@@ -683,7 +688,7 @@ xformat populate()
 
             meshlet.vertexBufferIndex = vertexLayoutIndex;
             meshlet.vertexCount = vertexCountPerMeshlet;
-            meshlet.firstVertex = vertexBuffer.count + 0;
+            meshlet.firstVertex = vertexBuffer.count + vertexCountPerMeshlet;
 
             meshlet.materialIndex = 1;
             meshlet.instanceCount = 1;
@@ -709,7 +714,8 @@ xformat populate()
     }
 
     model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "TexCoordsDebugMaterial"s});
-    //model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "ColorsDebugMaterial"s});
+    model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "ColorsDebugMaterial"s});
+    //model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "NormalsDebugMaterial"s});
 
     return model;
 }
@@ -748,10 +754,10 @@ void stageXformat(app_t &app, xformat const &model)
         else throw std::runtime_error("failed to get material"s);
     }
     
-    std::sort(std::begin(renderables), std::end(renderables), [] (auto &&lhs, auto &&rhs)
+    /*std::sort(std::begin(renderables), std::end(renderables), [] (auto &&lhs, auto &&rhs)
     {
         return lhs.pipeline < rhs.pipeline;
-    });
+    });*/
 }
 
 void CreateGraphicsCommandBuffers2(app_t &app)
@@ -1176,8 +1182,8 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.pipelineLayout = std::move(pipelineLayout.value());
 
-    /*model = temp::populate();
-    temp::stageXformat(app, model);*/
+    model = temp::populate();
+    temp::stageXformat(app, model);
 
     temp::populate(app);
     temp::_createGraphicsPipeline(app, temp::layoutA, app.pipelineLayout, "A"sv);
@@ -1235,7 +1241,8 @@ void InitVulkan(Window &window, app_t &app)
 
     UpdateDescriptorSet(app, *app.vulkanDevice, app.descriptorSet);
 
-    temp::_createGraphicsCommandBuffers(app);
+    temp::CreateGraphicsCommandBuffers2(app);
+    //temp::_createGraphicsCommandBuffers(app);
 
     CreateSemaphores(app);
 }
