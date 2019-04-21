@@ -286,10 +286,10 @@ struct xformat final {
 
         std::size_t materialIndex;
 
-        std::size_t vertexCount{0};
-        std::size_t instanceCount{0};
-        std::size_t firstVertex{0};
-        std::size_t firstInstance{0};
+        std::uint32_t vertexCount{0};
+        std::uint32_t instanceCount{0};
+        std::uint32_t firstVertex{0};
+        std::uint32_t firstInstance{0};
     };
 
     std::vector<non_indexed_meshlet> nonIndexedMeshlets;
@@ -300,11 +300,11 @@ struct xformat final {
 
         std::size_t materialIndex;
 
-        std::size_t indexCount{0};
-        std::size_t instanceCount{0};
-        std::size_t firstIndex{0};
-        std::size_t vertexOffset{0};
-        std::size_t firstInstance{0};
+        std::uint32_t indexCount{0};
+        std::uint32_t instanceCount{0};
+        std::uint32_t firstIndex{0};
+        std::uint32_t vertexOffset{0};
+        std::uint32_t firstInstance{0};
     };
 
     std::vector<indexed_meshlet> indexedMeshlets;

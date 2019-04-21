@@ -100,6 +100,8 @@ public:
 
     [[nodiscard]] std::vector<VkPipelineShaderStageCreateInfo> const &pipelineShaderStages(std::shared_ptr<Material> const material);
 
+    std::map<std::string, std::shared_ptr<Material>> const materials() const noexcept { return materials_; }
+
 private:
 
     ShaderManager &shaderManager_;
