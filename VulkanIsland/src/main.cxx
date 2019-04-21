@@ -889,79 +889,10 @@ void populate(app_t &app)
 
         app.vertexBufferA = resourceManager.CreateVertexBuffer(layoutA, std::size(_vertexBuffer));
 
-        if (app.vertexBufferA) {
-            //resourceManager.StageVertexData(app.vertexBufferA, _vertexBuffer);
-
-            {
-                auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-                auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-                using type = typename std::byte;
-
-                auto const bufferSize = static_cast<VkDeviceSize>(sizeof(type) * std::size(_vertexBuffer));
-
-                auto stagingBuffer = app.vertexBufferA->stagingBuffer2();
-
-                if (stagingBuffer) {
-                    void *data;
-
-                    auto &&memory = stagingBuffer->memory();
-
-                    if (auto result = vkMapMemory(app.vulkanDevice->handle(), memory->handle(), memory->offset(), memory->size(), 0, &data); result != VK_SUCCESS)
-                        std::cerr << "failed to map staging buffer memory: "s << result << '\n';
-
-                    else {
-                        std::uninitialized_copy(std::begin(_vertexBuffer), std::end(_vertexBuffer), reinterpret_cast<type *>(data));
-
-                        vkUnmapMemory(app.vulkanDevice->handle(), stagingBuffer->memory()->handle());
-                    }
-
-                    ///////////////
-                    auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-                    auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-                    auto copyRegions = std::array{VkBufferCopy{ 0, 0, stagingBuffer->memory()->size() }};
-
-                    CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
-                                       app.vertexBufferA->deviceBuffer().handle(), std::move(copyRegions), app.transferCommandPool);
-                }
-            }
-
-            /*auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-            auto copyRegions = std::array{VkBufferCopy{ 0, 0, app.vertexBufferA->stagingBuffer().memory()->size() }};
-
-            CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, app.vertexBufferA->stagingBuffer().handle(),
-                               app.vertexBufferA->deviceBuffer().handle(), std::move(copyRegions), app.transferCommandPool);*/
-
-
-            /*if (auto stagingBuffer = StageData(*app.vulkanDevice, _vertexBuffer); stagingBuffer) {
-                auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-                auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-                auto copyRegions = std::array{VkBufferCopy{ 0, 0, stagingBuffer->memory()->size() }};
-
-                CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
-                                   app.vertexBufferA->deviceBuffer().handle(), std::move(copyRegions), app.transferCommandPool);
-            }*/
-        }
+        if (app.vertexBufferA)
+            resourceManager.StageVertexData(app.vertexBufferA, _vertexBuffer);
 
         else throw std::runtime_error("failed to get vertex buffer"s);
-
-        /*if (auto stagingBuffer = StageData(*app.vulkanDevice, vertices); stagingBuffer) {
-            auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-            auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-            buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size() * 10, usageFlags, propertyFlags);
-
-            if (buffer) {
-                auto copyRegions = std::array{VkBufferCopy{ 0, 0, stagingBuffer->memory()->size() }};
-
-                CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
-                                   buffer->handle(), std::move(copyRegions), app.transferCommandPool);
-            }
-        }*/
     }
 
     {
@@ -1160,10 +1091,9 @@ void RecreateSwapChain(app_t &app)
         throw std::runtime_error("failed to create the pipeline layout"s);
 
     else app.pipelineLayout = std::move(pipelineLayout.value());
-#if 0
+
     temp::_createGraphicsPipeline(app, temp::layoutA, app.pipelineLayout, "A"sv);
     temp::_createGraphicsPipeline(app, temp::layoutB, app.pipelineLayout, "B"sv);
-#endif
 #endif
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
@@ -1252,6 +1182,8 @@ void InitVulkan(Window &window, app_t &app)
     temp::populate(app);
     temp::_createGraphicsPipeline(app, temp::layoutA, app.pipelineLayout, "A"sv);
     temp::_createGraphicsPipeline(app, temp::layoutB, app.pipelineLayout, "B"sv);
+
+    app.vulkanDevice->resourceManager().TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 

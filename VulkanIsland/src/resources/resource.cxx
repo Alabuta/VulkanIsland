@@ -347,7 +347,7 @@ void ResourceManager::StageVertexData(std::shared_ptr<VertexBuffer> vertexBuffer
 
         void *ptr;
 
-        if (auto result = vkMapMemory(device_.handle(), memory->handle(), vertexBuffer->offset_, lengthInBytes, 0, &ptr); result != VK_SUCCESS)
+        if (auto result = vkMapMemory(device_.handle(), memory->handle(), vertexBuffer->stagingBufferOffset(), lengthInBytes, 0, &ptr); result != VK_SUCCESS)
             throw std::runtime_error("failed to map staging vertex buffer memory: "s + std::to_string(result));
 
         else {
@@ -357,6 +357,18 @@ void ResourceManager::StageVertexData(std::shared_ptr<VertexBuffer> vertexBuffer
 
             vertexBuffer->offset_ += lengthInBytes;
         }
+    }
+}
+
+void ResourceManager::TransferStagedVertexData(VkCommandPool transferCommandPool, TransferQueue &transferQueue) const
+{
+    for (auto &&[layout, vertexBuffer] : vertexBuffers_) {
+        auto &&stagingBuffer = vertexBuffer->stagingBuffer();
+        auto &&deviceBuffer = vertexBuffer->deviceBuffer();
+
+        auto copyRegions = std::array{VkBufferCopy{ 0, 0, stagingBuffer.memory()->size() }};
+
+        CopyBufferToBuffer(device_, transferQueue, stagingBuffer.handle(), deviceBuffer.handle(), std::move(copyRegions), transferCommandPool);
     }
 }
 

@@ -48,6 +48,8 @@ public:
 
     void StageVertexData(std::shared_ptr<VertexBuffer> vertexBuffer, std::vector<std::byte> const &container) const;
 
+    void TransferStagedVertexData(VkCommandPool transferCommandPool, TransferQueue &transferQueue) const;
+
     [[nodiscard]] auto &vertexBuffers() const noexcept { return vertexBuffers_; }
 
 private:
