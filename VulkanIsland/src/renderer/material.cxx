@@ -365,6 +365,9 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial(std::string_view type)
     else if (type == "ColorsDebugMaterial"s)
         material = std::make_shared<ColorsDebugMaterial>();
 
+    else if (type == "NormalsDebugMaterial"s)
+        material = std::make_shared<NormalsDebugMaterial>();
+
     else if (type == "TestMaterial"s)
         material = std::make_shared<TestMaterial>();
 

@@ -43,6 +43,12 @@ struct attribute {
     {
         return SI == si;
     }
+
+    template<eSEMANTIC_INDEX si>
+    auto constexpr operator!= (attribute<si>) const noexcept
+    {
+        return !(SI == si);
+    }
 };
 
 struct position : attribute<eSEMANTIC_INDEX::nPOSITION> { };

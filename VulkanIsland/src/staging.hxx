@@ -200,20 +200,33 @@ struct xformat final {
         template<class T1, class T2, typename std::enable_if_t<are_same_v<struct vertex_attribute, T1, T2>>...>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
-            return lhs.offsetInBytes == rhs.offsetInBytes && lhs.semantic == rhs.semantic && lhs.type == rhs.type && lhs.normalized == rhs.normalized;
+            if (lhs.offsetInBytes != rhs.offsetInBytes)
+                return false;
+
+            if (lhs.semantic != rhs.semantic)
+                return false;
+
+            if (lhs.type != rhs.type)
+                return false;
+
+            return lhs.normalized == rhs.normalized;
         }
 
         template<class T1, class T2, typename std::enable_if_t<are_same_v<vertex_layout, T1, T2>>...>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
-            auto sameSize = lhs.sizeInBytes == rhs.sizeInBytes;
+            if (lhs.sizeInBytes != rhs.sizeInBytes)
+                return false;
+
+            if (std::size(lhs.attributes) != std::size(rhs.attributes))
+                return false;
 
             equal_comparator comparator;
 
             return std::equal(std::begin(lhs.attributes), std::end(lhs.attributes), std::begin(rhs.attributes), [comparator] (auto &&lhs, auto &&rhs)
             {
                 return comparator(lhs, rhs);
-            }) && sameSize;
+            });
         }
     };
 
