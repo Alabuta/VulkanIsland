@@ -50,8 +50,9 @@
 #include "camera/cameraController.hxx"
 
 
-
 auto constexpr sceneName{"unlit-test"sv};
+
+xformat model;
 
 struct per_object_t final {
     glm::mat4 world{1};
@@ -69,8 +70,6 @@ struct renderable_t final {
     std::uint32_t vertexCount{0};
     std::uint32_t firstVertex{0};
 };
-
-xformat model;
 
 std::vector<renderable_t> renderables;
 
@@ -94,28 +93,27 @@ struct app_t final {
     std::unique_ptr<VulkanInstance> vulkanInstance;
     std::unique_ptr<VulkanDevice> vulkanDevice;
 
-    VkSurfaceKHR surface{ VK_NULL_HANDLE };
+    VkSurfaceKHR surface{VK_NULL_HANDLE};
     VulkanSwapchain swapchain;
 
     GraphicsQueue graphicsQueue;
     TransferQueue transferQueue;
     PresentationQueue presentationQueue;
 
-    VkPipelineLayout pipelineLayout{ VK_NULL_HANDLE };
-    VkRenderPass renderPass{ VK_NULL_HANDLE };
-    VkPipeline graphicsPipeline{ VK_NULL_HANDLE };
+    VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
+    VkRenderPass renderPass{VK_NULL_HANDLE};
+    VkPipeline graphicsPipeline{VK_NULL_HANDLE};
 
-    VkCommandPool graphicsCommandPool{ VK_NULL_HANDLE }, transferCommandPool{ VK_NULL_HANDLE };
+    VkCommandPool graphicsCommandPool{VK_NULL_HANDLE}, transferCommandPool{VK_NULL_HANDLE};
 
-    VkDescriptorSetLayout descriptorSetLayout{ VK_NULL_HANDLE };
-    VkDescriptorPool descriptorPool{ VK_NULL_HANDLE };
-    VkDescriptorSet descriptorSet{ VK_NULL_HANDLE };
+    VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
+    VkDescriptorPool descriptorPool{VK_NULL_HANDLE};
+    VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
 
     std::vector<VkCommandBuffer> commandBuffers;
 
-    VkSemaphore imageAvailableSemaphore{ VK_NULL_HANDLE }, renderFinishedSemaphore{ VK_NULL_HANDLE };
+    VkSemaphore imageAvailableSemaphore{VK_NULL_HANDLE}, renderFinishedSemaphore{VK_NULL_HANDLE};
 
-    std::shared_ptr<VulkanBuffer> vertexBuffer, indexBuffer, uboBuffer;
     std::shared_ptr<VulkanBuffer> perObjectBuffer, perCameraBuffer;
     void *perObjectsMappedPtr{nullptr};
     void *alignedBuffer{nullptr};
@@ -132,21 +130,11 @@ struct app_t final {
     ecs::MeshSystem meshSystem{registry};
 #endif
 
-    std::shared_ptr<VertexBuffer> vertexBufferA;
-    std::shared_ptr<VulkanBuffer> vertexBufferB;
-    std::shared_ptr<GraphicsPipeline> graphicsPipelineA;
-    std::shared_ptr<GraphicsPipeline> graphicsPipelineB;
-
     PipelineVertexInputStatesManager pipelineVertexInputStatesManager;
 
     std::unique_ptr<MaterialFactory> materialFactory;
     std::unique_ptr<ShaderManager> shaderManager;
     std::unique_ptr<GraphicsPipelineManager> graphicsPipelineManager;
-
-    std::shared_ptr<Material> material;
-    std::shared_ptr<Material> materialA;
-    std::shared_ptr<Material> materialB;
-
 
     ~app_t()
     {
@@ -196,14 +184,6 @@ struct app_t final {
         perCameraBuffer.reset();
         perObjectBuffer.reset();
 
-        uboBuffer.reset();
-
-        vertexBufferB.reset();
-        vertexBufferA.reset();
-
-        indexBuffer.reset();
-        vertexBuffer.reset();
-
         if (transferCommandPool != VK_NULL_HANDLE)
             vkDestroyCommandPool(vulkanDevice->handle(), transferCommandPool, nullptr);
 
@@ -221,6 +201,13 @@ struct app_t final {
 
 void RecreateSwapChain(app_t &app);
 
+template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
+[[nodiscard]] std::shared_ptr<VulkanBuffer> StageData(VulkanDevice &device, T &&container);
+
+[[nodiscard]] std::optional<VulkanTexture>
+LoadTexture(app_t &app, VulkanDevice &device, std::string_view name);
+
+
 struct ResizeHandler final : public Window::IEventHandler {
     ResizeHandler(app_t &app) : app{app} { }
 
@@ -237,36 +224,6 @@ struct ResizeHandler final : public Window::IEventHandler {
     }
 };
 
-template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
-[[nodiscard]] std::shared_ptr<VulkanBuffer> StageData(VulkanDevice &device, T &&container)
-{
-    auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-    auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
-
-    using type = typename std::decay_t<T>::value_type;
-
-    auto const bufferSize = static_cast<VkDeviceSize>(sizeof(type) * std::size(container));
-
-    auto buffer = device.resourceManager().CreateBuffer(bufferSize, usageFlags, propertyFlags);
-
-    if (buffer) {
-        void *data;
-
-        auto &&memory = buffer->memory();
-
-        if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, &data); result != VK_SUCCESS)
-            std::cerr << "failed to map staging buffer memory: "s << result << '\n';
-
-        else {
-            std::uninitialized_copy(std::begin(container), std::end(container), reinterpret_cast<type *>(data));
-
-            vkUnmapMemory(device.handle(), buffer->memory()->handle());
-        }
-    }
-
-    return buffer;
-}
-
 
 void CleanupFrameData(app_t &app)
 {
@@ -279,12 +236,6 @@ void CleanupFrameData(app_t &app)
 
     if (app.graphicsPipeline != VK_NULL_HANDLE)
         vkDestroyPipeline(device.handle(), app.graphicsPipeline, nullptr);
-
-    if (app.graphicsPipelineA)
-        app.graphicsPipelineA.reset();
-
-    if (app.graphicsPipelineB)
-        app.graphicsPipelineB.reset();
 
     if (app.pipelineLayout != VK_NULL_HANDLE)
         vkDestroyPipelineLayout(device.handle(), app.pipelineLayout, nullptr);
@@ -397,70 +348,6 @@ void CreateCommandPool(VkDevice device, Q &queue, VkCommandPool &commandPool, Vk
         throw std::runtime_error("failed to create a command buffer: "s + std::to_string(result));
 }
 
-#if 0
-[[nodiscard]] std::shared_ptr<VulkanBuffer> InitVertexBuffer(app_t &app)
-{
-    if (std::empty(app.scene.vertexBuffer))
-        return { };
-
-    std::shared_ptr<VulkanBuffer> buffer;
-
-    auto &&vertices = app.scene.vertexBuffer;
-
-    if (auto stagingBuffer = StageData(*app.vulkanDevice, vertices); stagingBuffer) {
-        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-        buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
-
-        if (buffer) {
-            auto copyRegions = std::array{
-                VkBufferCopy{
-                    /*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/
-                    0, 0, stagingBuffer->memory()->size()
-                }
-            };
-
-            CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
-                                buffer->handle(), std::move(copyRegions), app.transferCommandPool);
-        }
-    }
-
-    return buffer;
-}
-
-[[nodiscard]] std::shared_ptr<VulkanBuffer> InitIndexBuffer(app_t &app)
-{
-    auto &&indices = app.scene.indexBuffer;
-
-    if (std::empty(indices))
-        return { };
-
-    std::shared_ptr<VulkanBuffer> buffer;
-
-    if (auto stagingBuffer = StageData(*app.vulkanDevice, indices); stagingBuffer) {
-        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-        buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
-
-        if (buffer) {
-            auto copyRegions = std::array{
-                VkBufferCopy{
-                    /*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/
-                    0, 0, stagingBuffer->memory()->size()
-                }
-            };
-
-            CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
-                                buffer->handle(), std::move(copyRegions), app.transferCommandPool);
-        }
-    }
-
-    return buffer;
-}
-#endif
-
 
 void CreateSemaphores(app_t &app)
 {
@@ -475,51 +362,6 @@ void CreateSemaphores(app_t &app)
     else app.renderFinishedSemaphore = *semaphore;
 }
 
-
-[[nodiscard]] std::optional<VulkanTexture>
-LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
-{
-    std::optional<VulkanTexture> texture;
-
-    auto constexpr generateMipMaps = true;
-
-    if (auto rawImage = LoadTARGA(name); rawImage) {
-        auto stagingBuffer = std::visit([&device] (auto &&data)
-        {
-            return StageData(device, std::forward<decltype(data)>(data));
-        }, std::move(rawImage->data));
-
-        if (stagingBuffer) {
-            auto const width = static_cast<std::uint16_t>(rawImage->width);
-            auto const height = static_cast<std::uint16_t>(rawImage->height);
-
-            auto constexpr usageFlags = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
-            auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-            auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
-
-            texture = CreateTexture(device, rawImage->format, rawImage->type, width, height, rawImage->mipLevels,
-                                    VK_SAMPLE_COUNT_1_BIT, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
-
-            if (texture) {
-                TransitionImageLayout(device, app.transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
-                                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, app.transferCommandPool);
-
-                CopyBufferToImage(device, app.transferQueue, stagingBuffer->handle(), texture->image->handle(), width, height, app.transferCommandPool);
-
-                if (generateMipMaps)
-                    GenerateMipMaps(device, app.transferQueue, *texture->image, app.transferCommandPool);
-
-                else TransitionImageLayout(device, app.transferQueue, *texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, app.transferCommandPool);
-            }
-        }
-    }
-
-    else std::cerr << "failed to load an image\n"s;
-
-    return texture;
-}
 
 
 namespace temp
@@ -900,7 +742,6 @@ void RecreateSwapChain(app_t &app)
     temp::CreateGraphicsCommandBuffers(app);
 }
 
-
 void InitVulkan(Window &window, app_t &app)
 {
     app.vulkanInstance = std::make_unique<VulkanInstance>(config::extensions, config::layers);
@@ -1034,7 +875,6 @@ void InitVulkan(Window &window, app_t &app)
 
     CreateSemaphores(app);
 }
-
 
 void Update(app_t &app)
 {
@@ -1244,3 +1084,144 @@ try {
     std::cout << ex.what() << std::endl;
     std::cin.get();
 }
+
+
+template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
+[[nodiscard]] std::shared_ptr<VulkanBuffer> StageData(VulkanDevice &device, T &&container)
+{
+    auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    using type = typename std::decay_t<T>::value_type;
+
+    auto const bufferSize = static_cast<VkDeviceSize>(sizeof(type) * std::size(container));
+
+    auto buffer = device.resourceManager().CreateBuffer(bufferSize, usageFlags, propertyFlags);
+
+    if (buffer) {
+        void *data;
+
+        auto &&memory = buffer->memory();
+
+        if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, &data); result != VK_SUCCESS)
+            std::cerr << "failed to map staging buffer memory: "s << result << '\n';
+
+        else {
+            std::uninitialized_copy(std::begin(container), std::end(container), reinterpret_cast<type *>(data));
+
+            vkUnmapMemory(device.handle(), buffer->memory()->handle());
+        }
+    }
+
+    return buffer;
+}
+
+[[nodiscard]] std::optional<VulkanTexture>
+LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
+{
+    std::optional<VulkanTexture> texture;
+
+    auto constexpr generateMipMaps = true;
+
+    if (auto rawImage = LoadTARGA(name); rawImage) {
+        auto stagingBuffer = std::visit([&device] (auto &&data)
+        {
+            return StageData(device, std::forward<decltype(data)>(data));
+        }, std::move(rawImage->data));
+
+        if (stagingBuffer) {
+            auto const width = static_cast<std::uint16_t>(rawImage->width);
+            auto const height = static_cast<std::uint16_t>(rawImage->height);
+
+            auto constexpr usageFlags = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+            auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+            auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
+
+            texture = CreateTexture(device, rawImage->format, rawImage->type, width, height, rawImage->mipLevels,
+                                    VK_SAMPLE_COUNT_1_BIT, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
+
+            if (texture) {
+                TransitionImageLayout(device, app.transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
+                                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, app.transferCommandPool);
+
+                CopyBufferToImage(device, app.transferQueue, stagingBuffer->handle(), texture->image->handle(), width, height, app.transferCommandPool);
+
+                if (generateMipMaps)
+                    GenerateMipMaps(device, app.transferQueue, *texture->image, app.transferCommandPool);
+
+                else TransitionImageLayout(device, app.transferQueue, *texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, app.transferCommandPool);
+            }
+        }
+    }
+
+    else std::cerr << "failed to load an image\n"s;
+
+    return texture;
+}
+
+
+#if 0
+[[nodiscard]] std::shared_ptr<VulkanBuffer> InitVertexBuffer(app_t &app)
+{
+    if (std::empty(app.scene.vertexBuffer))
+        return { };
+
+    std::shared_ptr<VulkanBuffer> buffer;
+
+    auto &&vertices = app.scene.vertexBuffer;
+
+    if (auto stagingBuffer = StageData(*app.vulkanDevice, vertices); stagingBuffer) {
+        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+        buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
+
+        if (buffer) {
+            auto copyRegions = std::array{
+                VkBufferCopy{
+                /*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/
+                0, 0, stagingBuffer->memory()->size()
+            }
+            };
+
+            CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
+                               buffer->handle(), std::move(copyRegions), app.transferCommandPool);
+        }
+    }
+
+    return buffer;
+}
+
+[[nodiscard]] std::shared_ptr<VulkanBuffer> InitIndexBuffer(app_t &app)
+{
+    auto &&indices = app.scene.indexBuffer;
+
+    if (std::empty(indices))
+        return { };
+
+    std::shared_ptr<VulkanBuffer> buffer;
+
+    if (auto stagingBuffer = StageData(*app.vulkanDevice, indices); stagingBuffer) {
+        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+        buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
+
+        if (buffer) {
+            auto copyRegions = std::array{
+                VkBufferCopy{
+                /*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/
+                0, 0, stagingBuffer->memory()->size()
+            }
+            };
+
+            CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
+                               buffer->handle(), std::move(copyRegions), app.transferCommandPool);
+        }
+    }
+
+    return buffer;
+}
+#endif
