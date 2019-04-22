@@ -60,12 +60,14 @@ struct per_object_t final {
 };
 
 struct renderable_t final {
+    PRIMITIVE_TOPOLOGY topology;
+
     /*std::size_t vertexBufferIndex;
     std::size_t materialIndex;*/
 
-    std::shared_ptr<GraphicsPipeline> pipeline;
+    //std::shared_ptr<GraphicsPipeline> pipeline;
     std::shared_ptr<Material> material;
-    //std::shared_ptr<VertexBuffer> vertexBuffer;
+    std::shared_ptr<VertexBuffer> vertexBuffer;
 
     std::uint32_t vertexCount{0};
     std::uint32_t firstVertex{0};
@@ -411,6 +413,8 @@ xformat populate()
 
         xformat::non_indexed_meshlet meshlet;
 
+        meshlet.topology = PRIMITIVE_TOPOLOGY::TRIANGLES;
+
         {
             auto const vertexCount = std::size(vertices);
             auto const bytesCount = sizeof(vertex) * vertexCount;
@@ -503,6 +507,8 @@ xformat populate()
             // Second triangle
             xformat::non_indexed_meshlet meshlet;
 
+            meshlet.topology = PRIMITIVE_TOPOLOGY::TRIANGLES;
+
             meshlet.vertexBufferIndex = vertexLayoutIndex;
             meshlet.vertexCount = static_cast<std::uint32_t>(vertexCountPerMeshlet);
             meshlet.firstVertex = static_cast<std::uint32_t>(vertexBuffer.count + 0);
@@ -517,6 +523,8 @@ xformat populate()
         {
             // Third triangle
             xformat::non_indexed_meshlet meshlet;
+
+            meshlet.topology = PRIMITIVE_TOPOLOGY::TRIANGLES;
 
             meshlet.vertexBufferIndex = vertexLayoutIndex;
             meshlet.vertexCount = static_cast<std::uint32_t>(vertexCountPerMeshlet);
@@ -545,9 +553,9 @@ xformat populate()
         }
     }
 
-    model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "TexCoordsDebugMaterial"s});
-    model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "ColorsDebugMaterial"s});
-    //model.materials.push_back(xformat::material{PRIMITIVE_TOPOLOGY::TRIANGLES, "NormalsDebugMaterial"s});
+    model.materials.push_back(xformat::material{"TexCoordsDebugMaterial"s});
+    model.materials.push_back(xformat::material{"ColorsDebugMaterial"s});
+    //model.materials.push_back(xformat::material{"NormalsDebugMaterial"s});
 
     return model;
 }
@@ -562,28 +570,24 @@ void stageXformat(app_t &app, xformat const &model)
 
         auto &&_vertexBuffer = model.vertexBuffers.at(vertexLayoutIndex);
 
-        if (auto vertexBuffer = resourceManager.CreateVertexBuffer(vertexLayout, std::size(_vertexBuffer.buffer)); vertexBuffer)
-            resourceManager.StageVertexData(vertexBuffer, _vertexBuffer.buffer);
+        auto vertexBuffer = resourceManager.CreateVertexBuffer(vertexLayout, std::size(_vertexBuffer.buffer));
 
-        else throw std::runtime_error("failed to get vertex buffer"s);
+        if (!vertexBuffer)
+            throw std::runtime_error("failed to get vertex buffer"s);
+
+        resourceManager.StageVertexData(vertexBuffer, _vertexBuffer.buffer);
 
         auto materialIndex = meshlet.materialIndex;
         auto &&_material = model.materials[materialIndex];
 
-        if (auto material = app.materialFactory->CreateMaterial(_material.type); material) {
-            auto pipeline = app.graphicsPipelineManager->CreateGraphicsPipeline(
-                vertexLayout, material, _material.topology, app.pipelineLayout, app.renderPass, app.swapchain.extent
-            );
+        auto material = app.materialFactory->CreateMaterial(_material.type);
 
-            if (!pipeline)
-                throw std::runtime_error("failed to get graphics pipeline"s);
+        if (!material)
+            throw std::runtime_error("failed to get material"s);
 
-            renderables.push_back({
-                pipeline, material, meshlet.vertexCount, meshlet.firstVertex
-            });
-        }
-
-        else throw std::runtime_error("failed to get material"s);
+        renderables.push_back({
+            meshlet.topology, material, vertexBuffer, meshlet.vertexCount, meshlet.firstVertex
+        });
     }
     
     /*std::sort(std::begin(renderables), std::end(renderables), [] (auto &&lhs, auto &&rhs)
@@ -592,17 +596,17 @@ void stageXformat(app_t &app, xformat const &model)
     });*/
 }
 
-//void CreateGraphicsPipelines(app_t &app)
-//{
-//    for (auto &&material : app.materialFactory->materials()) {
-//        auto pipeline = app.graphicsPipelineManager->CreateGraphicsPipeline(
-//            vertexLayout, material, _material.topology, app.pipelineLayout, app.renderPass, app.swapchain.extent
-//        );
-//
-//        if (!pipeline)
-//            throw std::runtime_error("failed to get graphics pipeline"s);
-//    }
-//}
+void CreateGraphicsPipelines(app_t &app)
+{
+    for (auto &&renderable : renderables) {
+        auto pipeline = app.graphicsPipelineManager->CreateGraphicsPipeline(
+            renderable.vertexBuffer->vertexLayout(), renderable.material, renderable.topology, app.pipelineLayout, app.renderPass, app.swapchain.extent
+        );
+
+        if (!pipeline)
+            throw std::runtime_error("failed to get graphics pipeline"s);
+    }
+}
 
 void CreateGraphicsCommandBuffers(app_t &app)
 {
@@ -683,10 +687,22 @@ void CreateGraphicsCommandBuffers(app_t &app)
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     #endif
 
-        for (auto &&renderable : renderables) {
-            auto [pipeline, material, vertexCount, firstVertex] = renderable;
+        auto &&graphicsPipelines = app.graphicsPipelineManager->graphicsPipelines();
 
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
+        for (auto &&renderable : renderables) {
+            auto [topology, material, vertexBuffer, vertexCount, firstVertex] = renderable;
+
+            GraphicsPipelineManager::GraphicsPipelinePropertiesKey key{
+                topology, vertexBuffer->vertexLayout(), material,
+                std::array{static_cast<float>(app.swapchain.extent.width), static_cast<float>(app.swapchain.extent.height)}
+            };
+
+            auto it_pipeline = graphicsPipelines.find(key);
+
+            if (it_pipeline == std::cend(graphicsPipelines))
+                throw std::runtime_error("failed to find pipeline"s);
+
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, it_pipeline->second->handle());
 
             std::uint32_t const dynamicOffset = 0;
 
@@ -732,9 +748,7 @@ void RecreateSwapChain(app_t &app)
 
     else app.pipelineLayout = std::move(pipelineLayout.value());
 
-    // TODO::
-    /*temp::_createGraphicsPipeline(app, temp::layoutA, app.pipelineLayout, "A"sv);
-    temp::_createGraphicsPipeline(app, temp::layoutB, app.pipelineLayout, "B"sv);*/
+    temp::CreateGraphicsPipelines(app);
 #endif
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
@@ -820,6 +834,7 @@ void InitVulkan(Window &window, app_t &app)
     temp::stageXformat(app, model);
 
     app.vulkanDevice->resourceManager().TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
+    temp::CreateGraphicsPipelines(app);
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 

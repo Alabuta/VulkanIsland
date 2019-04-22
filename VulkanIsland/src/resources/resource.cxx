@@ -302,7 +302,7 @@ std::shared_ptr<VertexBuffer> ResourceManager::CreateVertexBuffer(xformat::verte
             }
         }
 
-        vertexBuffers_.emplace(layout, std::make_shared<VertexBuffer>(deviceBuffer, stagingBuffer, capacityInBytes));
+        vertexBuffers_.emplace(layout, std::make_shared<VertexBuffer>(deviceBuffer, stagingBuffer, capacityInBytes, layout));
     }
 
     auto &vertexBuffer = vertexBuffers_[layout];

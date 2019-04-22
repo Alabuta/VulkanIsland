@@ -38,11 +38,7 @@ public:
     CreateGraphicsPipeline(xformat::vertex_layout const &layout, std::shared_ptr<Material> material, PRIMITIVE_TOPOLOGY topology,
                            VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkExtent2D extent);
 
-private:
-
-    VulkanDevice &vulkanDevice_;
-    MaterialFactory &materialFactory_;
-    PipelineVertexInputStatesManager &pipelineVertexInputStatesManager_;
+    auto const &graphicsPipelines() const noexcept { return graphicsPipelineProperties_; }
 
     struct GraphicsPipelinePropertiesKey final {
         PRIMITIVE_TOPOLOGY topology_;
@@ -101,6 +97,12 @@ private:
         };
     #endif
     };
+
+private:
+
+    VulkanDevice &vulkanDevice_;
+    MaterialFactory &materialFactory_;
+    PipelineVertexInputStatesManager &pipelineVertexInputStatesManager_;
 
     std::unordered_map<GraphicsPipelinePropertiesKey, std::shared_ptr<GraphicsPipeline>,
         GraphicsPipelinePropertiesKey::hash_value, GraphicsPipelinePropertiesKey::equal_comparator> graphicsPipelineProperties_;

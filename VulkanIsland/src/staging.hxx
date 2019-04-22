@@ -275,13 +275,14 @@ struct xformat final {
     std::vector<index_buffer> indexBuffers;
 
     struct material final {
-        PRIMITIVE_TOPOLOGY topology;
         std::string type;
     };
 
     std::vector<material> materials;
 
     struct non_indexed_meshlet final {
+        PRIMITIVE_TOPOLOGY topology;
+
         std::size_t vertexBufferIndex;
 
         std::size_t materialIndex;
@@ -295,6 +296,8 @@ struct xformat final {
     std::vector<non_indexed_meshlet> nonIndexedMeshlets;
 
     struct indexed_meshlet final {
+        PRIMITIVE_TOPOLOGY topology;
+
         std::size_t vertexBufferIndex;
         std::size_t indexBufferIndex;
 

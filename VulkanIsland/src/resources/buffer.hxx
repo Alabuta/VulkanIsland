@@ -2,6 +2,7 @@
 
 #include "main.hxx"
 #include "memory.hxx"
+#include "staging.hxx"
 
 
 class VulkanBuffer final {
@@ -45,8 +46,9 @@ private:
 class VertexBuffer final {
 public:
 
-    VertexBuffer(std::shared_ptr<VulkanBuffer> deviceBuffer, std::shared_ptr<VulkanBuffer> stagingBuffer, std::size_t capacityInBytes) noexcept
-        : deviceBuffer_{deviceBuffer}, stagingBuffer_{stagingBuffer}, capacityInBytes_{capacityInBytes} { }
+    VertexBuffer(std::shared_ptr<VulkanBuffer> deviceBuffer, std::shared_ptr<VulkanBuffer> stagingBuffer,
+                 std::size_t capacityInBytes, xformat::vertex_layout const &vertexLayout) noexcept
+        : deviceBuffer_{deviceBuffer}, stagingBuffer_{stagingBuffer}, capacityInBytes_{capacityInBytes}, vertexLayout_{vertexLayout} { }
 
     VulkanBuffer const &deviceBuffer() const noexcept { return *deviceBuffer_; }
     VulkanBuffer const &stagingBuffer() const noexcept { return *stagingBuffer_; }
@@ -56,22 +58,19 @@ public:
 
     std::size_t availableMemorySize() const noexcept { return capacityInBytes_ - offset_; }
 
+    xformat::vertex_layout const &vertexLayout() const noexcept { return vertexLayout_; }
+
 private:
 
     std::shared_ptr<VulkanBuffer> deviceBuffer_{nullptr};
     std::shared_ptr<VulkanBuffer> stagingBuffer_{nullptr};
 
     std::size_t capacityInBytes_{0};
-    std::size_t offset_{0};
 
+    xformat::vertex_layout vertexLayout_;
+
+    std::size_t offset_{0};
     std::size_t stagingBufferSizeInBytes_{0};
 
     friend class ResourceManager;
-};
-
-struct StagingVertexBuffer final {
-    std::shared_ptr<VertexBuffer> buffer;
-
-    std::size_t sizeInBytes{0};
-    std::byte *begin;
 };
