@@ -104,7 +104,6 @@ struct app_t final {
 
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
     VkRenderPass renderPass{VK_NULL_HANDLE};
-    VkPipeline graphicsPipeline{VK_NULL_HANDLE};
 
     VkCommandPool graphicsCommandPool{VK_NULL_HANDLE}, transferCommandPool{VK_NULL_HANDLE};
 
@@ -168,6 +167,9 @@ struct app_t final {
 
         if (graphicsPipelineManager)
             graphicsPipelineManager.reset();
+
+        if (pipelineLayout != VK_NULL_HANDLE)
+            vkDestroyPipelineLayout(vulkanDevice->handle(), pipelineLayout, nullptr);
 
         vkDestroyDescriptorSetLayout(vulkanDevice->handle(), descriptorSetLayout, nullptr);
         vkDestroyDescriptorPool(vulkanDevice->handle(), descriptorPool, nullptr);
@@ -235,12 +237,6 @@ void CleanupFrameData(app_t &app)
         vkFreeCommandBuffers(device.handle(), app.graphicsCommandPool, static_cast<std::uint32_t>(std::size(app.commandBuffers)), std::data(app.commandBuffers));
 
     app.commandBuffers.clear();
-
-    if (app.graphicsPipeline != VK_NULL_HANDLE)
-        vkDestroyPipeline(device.handle(), app.graphicsPipeline, nullptr);
-
-    if (app.pipelineLayout != VK_NULL_HANDLE)
-        vkDestroyPipelineLayout(device.handle(), app.pipelineLayout, nullptr);
 
     if (app.renderPass != VK_NULL_HANDLE)
         vkDestroyRenderPass(device.handle(), app.renderPass, nullptr);
@@ -743,11 +739,6 @@ void RecreateSwapChain(app_t &app)
     else app.renderPass = std::move(renderPass.value());
 
 #if !USE_DYNAMIC_PIPELINE_STATE
-    if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); !pipelineLayout)
-        throw std::runtime_error("failed to create the pipeline layout"s);
-
-    else app.pipelineLayout = std::move(pipelineLayout.value());
-
     temp::CreateGraphicsPipelines(app);
 #endif
 
@@ -814,16 +805,6 @@ void InitVulkan(Window &window, app_t &app)
     if (auto result = glTF::load(sceneName, app.scene, app.nodeSystem); !result)
         throw std::runtime_error("failed to load a mesh"s);
 
-#if 0
-    if (app.vertexBuffer = InitVertexBuffer(app); !app.vertexBuffer)
-        throw std::runtime_error("failed to init vertex buffer"s);
-
-    if (!std::empty(app.scene.indexBuffer)) {
-        if (app.indexBuffer = InitIndexBuffer(app); !app.indexBuffer) {
-            throw std::runtime_error("failed to init index buffer"s);
-        }
-    }
-#endif
 
     if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); !pipelineLayout)
         throw std::runtime_error("failed to create the pipeline layout"s);
@@ -1093,8 +1074,6 @@ try {
 
     glfwTerminate();
 
-    return 0;
-
 } catch (std::exception const &ex) {
     std::cout << ex.what() << std::endl;
     std::cin.get();
@@ -1102,7 +1081,8 @@ try {
 
 
 template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
-[[nodiscard]] std::shared_ptr<VulkanBuffer> StageData(VulkanDevice &device, T &&container)
+[[nodiscard]] std::shared_ptr<VulkanBuffer>
+StageData(VulkanDevice &device, T &&container)
 {
     auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
