@@ -72,6 +72,8 @@ struct ShaderStage final {
             for (auto constant : shaderStage.constants)
                 boost::hash_combine(seed, constant);
 
+            // boost::hash_range(seed, shaderStage.constants);
+
             return seed;
         }
     };

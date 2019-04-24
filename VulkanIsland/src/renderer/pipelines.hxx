@@ -47,14 +47,13 @@ public:
         std::array<float, 2> viewport_;
 
         struct hash_value final {
-            template<class T, typename std::enable_if_t<std::is_same_v<GraphicsPipelinePropertiesKey, std::decay_t<T>>>...>
-            auto constexpr operator() (T &&graphicsPipeline) const noexcept
+            template<class T/* , typename std::enable_if_t<std::is_same_v<GraphicsPipelinePropertiesKey, std::decay_t<T>>>... */>
+            std::size_t constexpr operator() (T &&graphicsPipeline) const noexcept
+            // std::size_t operator() (GraphicsPipelinePropertiesKey const &graphicsPipeline) const noexcept
             {
-                std::size_t seed = 0;
+                auto seed = xformat::hash_value{}(graphicsPipeline.layout_);
 
                 boost::hash_combine(seed, graphicsPipeline.topology_);
-
-                auto layout = xformat::hash_value{}(graphicsPipeline.layout_);
 
                 boost::hash_combine(seed, graphicsPipeline.material_);
 
@@ -66,8 +65,9 @@ public:
         };
 
         struct equal_comparator final {
-            template<class T1, class T2, typename std::enable_if_t<are_same_v<GraphicsPipelinePropertiesKey, T1, T2>>...>
-            auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
+            // template<class T1, class T2, typename std::enable_if_t<are_same_v<GraphicsPipelinePropertiesKey, T1, T2>>...>
+            // auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
+            std::size_t operator() (GraphicsPipelinePropertiesKey const &lhs, GraphicsPipelinePropertiesKey const &rhs) const noexcept
             {
                 auto topology = lhs.topology_ == rhs.topology_;
 
@@ -77,7 +77,7 @@ public:
 
                 auto viewport = lhs.viewport_ == rhs.viewport_;
 
-                return topology && layout && material;
+                return topology && layout && material && viewport;
             }
         };
 
