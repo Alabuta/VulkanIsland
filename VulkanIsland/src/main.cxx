@@ -62,10 +62,6 @@ struct per_object_t final {
 struct renderable_t final {
     PRIMITIVE_TOPOLOGY topology;
 
-    /*std::size_t vertexBufferIndex;
-    std::size_t materialIndex;*/
-
-    //std::shared_ptr<GraphicsPipeline> pipeline;
     std::shared_ptr<Material> material;
     std::shared_ptr<VertexBuffer> vertexBuffer;
 
@@ -585,11 +581,6 @@ void stageXformat(app_t &app, xformat const &model)
             meshlet.topology, material, vertexBuffer, meshlet.vertexCount, meshlet.firstVertex
         });
     }
-    
-    /*std::sort(std::begin(renderables), std::end(renderables), [] (auto &&lhs, auto &&rhs)
-    {
-        return lhs.pipeline < rhs.pipeline;
-    });*/
 }
 
 void CreateGraphicsPipelines(app_t &app)
