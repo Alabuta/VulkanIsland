@@ -81,6 +81,13 @@ GraphicsPipelineManager::CreateGraphicsPipeline(xformat::vertex_layout const &la
             std::data(dynamicStates)
         };
 
+        VkPipelineViewportStateCreateInfo const viewportStateCreateInfo{
+            VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
+            nullptr, 0,
+            1, nullptr,
+            1, nullptr
+        };
+
         auto constexpr rasterizerDiscardEnable = VK_TRUE;
     #else
         VkViewport const viewport{
@@ -119,11 +126,7 @@ GraphicsPipelineManager::CreateGraphicsPipeline(xformat::vertex_layout const &la
             &pipelineVertexInputInfo,
             &vertexAssemblyStateCreateInfo,
             nullptr,
-    #if USE_DYNAMIC_PIPELINE_STATE
-            nullptr,
-    #else
             &viewportStateCreateInfo,
-    #endif
             &materialProperties->rasterizationState,
             &multisampleCreateInfo,
             &materialProperties->depthStencilState,

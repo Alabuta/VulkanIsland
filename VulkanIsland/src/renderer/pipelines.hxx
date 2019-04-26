@@ -12,7 +12,7 @@
 #include "pipelineVertexInputState.hxx"
 
 
-#define USE_DYNAMIC_PIPELINE_STATE 0
+#define USE_DYNAMIC_PIPELINE_STATE 1
 
 
 class GraphicsPipeline final {
@@ -57,8 +57,10 @@ public:
 
                 boost::hash_combine(seed, graphicsPipeline.material_);
 
+            #if !USE_DYNAMIC_PIPELINE_STATE
                 boost::hash_combine(seed, std::hash<float>{}(graphicsPipeline.viewport_[0]));
                 boost::hash_combine(seed, std::hash<float>{}(graphicsPipeline.viewport_[1]));
+            #endif
 
                 return seed;
             }
@@ -75,9 +77,13 @@ public:
 
                 auto material = lhs.material_ == rhs.material_;
 
+            #if USE_DYNAMIC_PIPELINE_STATE
+                return topology && layout && material;
+            #else
                 auto viewport = lhs.viewport_ == rhs.viewport_;
 
                 return topology && layout && material && viewport;
+            #endif
             }
         };
 

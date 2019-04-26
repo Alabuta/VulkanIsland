@@ -646,19 +646,6 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
         vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 
-        auto &&resourceManager = app.vulkanDevice->resourceManager();
-
-        std::vector<VkBuffer> vertexBuffers;
-
-        for (auto &&[layout, vertexBuffer] : resourceManager.vertexBuffers())
-            vertexBuffers.push_back(vertexBuffer->deviceBuffer().handle());
-
-        auto const bindingCount = static_cast<std::uint32_t>(std::size(vertexBuffers));
-
-        std::vector<VkDeviceSize> vertexBuffersOffsets(bindingCount, 0);
-
-        vkCmdBindVertexBuffers(commandBuffer, 0, bindingCount, std::data(vertexBuffers), std::data(vertexBuffersOffsets));
-
     #if USE_DYNAMIC_PIPELINE_STATE
         VkViewport const viewport{
             0, static_cast<float>(app.swapchain.extent.height),
@@ -673,6 +660,19 @@ void CreateGraphicsCommandBuffers(app_t &app)
         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     #endif
+
+        auto &&resourceManager = app.vulkanDevice->resourceManager();
+
+        std::vector<VkBuffer> vertexBuffers;
+
+        for (auto &&[layout, vertexBuffer] : resourceManager.vertexBuffers())
+            vertexBuffers.push_back(vertexBuffer->deviceBuffer().handle());
+
+        auto const bindingCount = static_cast<std::uint32_t>(std::size(vertexBuffers));
+
+        std::vector<VkDeviceSize> vertexBuffersOffsets(bindingCount, 0);
+
+        vkCmdBindVertexBuffers(commandBuffer, 0, bindingCount, std::data(vertexBuffers), std::data(vertexBuffersOffsets));
 
         auto &&graphicsPipelines = app.graphicsPipelineManager->graphicsPipelines();
 
