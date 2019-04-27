@@ -363,7 +363,7 @@ namespace temp
 xformat populate()
 {
 
-    xformat model;
+    xformat _model;
 
     {
         // First triangle
@@ -372,7 +372,7 @@ xformat populate()
             vec<2, std::float_t> texCoord;
         };
 
-        auto const vertexLayoutIndex = std::size(model.vertexLayouts);
+        auto const vertexLayoutIndex = std::size(_model.vertexLayouts);
 
         {
             xformat::vertex_layout vertexLayout;
@@ -386,7 +386,7 @@ xformat populate()
                 sizeof(vec<3, std::float_t>), semantic::tex_coord_0{}, vec<2, std::float_t>{}, false
             });
 
-            model.vertexLayouts.push_back(std::move(vertexLayout));
+            _model.vertexLayouts.push_back(std::move(vertexLayout));
         }
 
         std::vector<vertex> vertices;
@@ -411,7 +411,7 @@ xformat populate()
             auto const vertexCount = std::size(vertices);
             auto const bytesCount = sizeof(vertex) * vertexCount;
 
-            auto &&vertexBuffer = model.vertexBuffers[vertexLayoutIndex];
+            auto &&vertexBuffer = _model.vertexBuffers[vertexLayoutIndex];
 
             meshlet.vertexBufferIndex = vertexLayoutIndex;
             meshlet.vertexCount = static_cast<std::uint32_t>(vertexCount);
@@ -432,7 +432,7 @@ xformat populate()
         meshlet.instanceCount = 1;
         meshlet.firstInstance = 0;
 
-        model.nonIndexedMeshlets.push_back(std::move(meshlet));
+        _model.nonIndexedMeshlets.push_back(std::move(meshlet));
     }
 
     {
@@ -442,7 +442,7 @@ xformat populate()
             vec<4, std::float_t> color;
         };
 
-        auto const vertexLayoutIndex = std::size(model.vertexLayouts);
+        auto const vertexLayoutIndex = std::size(_model.vertexLayouts);
 
         {
             xformat::vertex_layout vertexLayout;
@@ -460,7 +460,7 @@ xformat populate()
                 sizeof(std::float_t) * 5, semantic::color_0{}, vec<4, std::float_t>{}, false
             });
 
-            model.vertexLayouts.push_back(std::move(vertexLayout));
+            _model.vertexLayouts.push_back(std::move(vertexLayout));
         }
 
         std::vector<vertex> vertices;
@@ -493,7 +493,7 @@ xformat populate()
 
         auto const vertexCountPerMeshlet = 3;
 
-        auto &&vertexBuffer = model.vertexBuffers[vertexLayoutIndex];
+        auto &&vertexBuffer = _model.vertexBuffers[vertexLayoutIndex];
 
         {
             // Second triangle
@@ -509,7 +509,7 @@ xformat populate()
             meshlet.instanceCount = 1;
             meshlet.firstInstance = 0;
 
-            model.nonIndexedMeshlets.push_back(std::move(meshlet));
+            _model.nonIndexedMeshlets.push_back(std::move(meshlet));
         }
 
         {
@@ -526,7 +526,7 @@ xformat populate()
             meshlet.instanceCount = 1;
             meshlet.firstInstance = 0;
 
-            model.nonIndexedMeshlets.push_back(std::move(meshlet));
+            _model.nonIndexedMeshlets.push_back(std::move(meshlet));
         }
 
         {
@@ -545,32 +545,32 @@ xformat populate()
         }
     }
 
-    model.materials.push_back(xformat::material{"TexCoordsDebugMaterial"s});
-    model.materials.push_back(xformat::material{"ColorsDebugMaterial"s});
+    _model.materials.push_back(xformat::material{"TexCoordsDebugMaterial"s});
+    _model.materials.push_back(xformat::material{"ColorsDebugMaterial"s});
     //model.materials.push_back(xformat::material{"NormalsDebugMaterial"s});
 
-    return model;
+    return _model;
 }
 
-void stageXformat(app_t &app, xformat const &model)
+void stageXformat(app_t &app, xformat const &_model)
 {
     auto &&resourceManager = app.vulkanDevice->resourceManager();
 
-    for (auto &&meshlet : model.nonIndexedMeshlets) {
+    for (auto &&meshlet : _model.nonIndexedMeshlets) {
         auto vertexLayoutIndex = meshlet.vertexBufferIndex;
-        auto &&vertexLayout = model.vertexLayouts[vertexLayoutIndex];
+        auto &&vertexLayout = _model.vertexLayouts[vertexLayoutIndex];
 
-        auto &&_vertexBuffer = model.vertexBuffers.at(vertexLayoutIndex);
+        auto &&_vertexBuffer = _model.vertexBuffers.at(vertexLayoutIndex);
 
         auto vertexBuffer = resourceManager.CreateVertexBuffer(vertexLayout, std::size(_vertexBuffer.buffer));
 
-        if (!vertexBuffer)
-            throw std::runtime_error("failed to get vertex buffer"s);
+        if (vertexBuffer)
+            resourceManager.StageVertexData(vertexBuffer, _vertexBuffer.buffer);
 
-        resourceManager.StageVertexData(vertexBuffer, _vertexBuffer.buffer);
+        else throw std::runtime_error("failed to get vertex buffer"s);
 
         auto materialIndex = meshlet.materialIndex;
-        auto &&_material = model.materials[materialIndex];
+        auto &&_material = _model.materials[materialIndex];
 
         auto material = app.materialFactory->CreateMaterial(_material.type);
 
@@ -684,12 +684,10 @@ void CreateGraphicsCommandBuffers(app_t &app)
                 std::array{static_cast<float>(app.swapchain.extent.width), static_cast<float>(app.swapchain.extent.height)}
             };
 
-            auto it_pipeline = graphicsPipelines.find(key);
-
-            if (it_pipeline == std::cend(graphicsPipelines))
+            if (auto it_pipeline = graphicsPipelines.find(key); it_pipeline == std::cend(graphicsPipelines))
                 throw std::runtime_error("failed to find pipeline"s);
 
-            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, it_pipeline->second->handle());
+            else vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, it_pipeline->second->handle());
 
             std::uint32_t const dynamicOffset = 0;
 

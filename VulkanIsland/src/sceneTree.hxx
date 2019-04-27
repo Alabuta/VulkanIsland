@@ -51,7 +51,7 @@ struct NodeInfo final {
 class SceneTree final {
 public:
 
-    SceneTree(std::string_view name = "noname"sv) : name{name}
+    SceneTree(std::string_view name = "noname"sv) : name_{name}
     {
         entities = std::make_unique<EntityManager>();
 
@@ -95,7 +95,7 @@ public:
 private:
     std::unique_ptr<EntityManager> entities;
 
-    std::string name;
+    std::string name_;
 
     std::vector<Node> nodes;
 

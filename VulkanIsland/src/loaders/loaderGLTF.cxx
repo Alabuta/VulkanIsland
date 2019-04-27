@@ -15,7 +15,7 @@ using namespace std::string_view_literals;
 #include <filesystem>
 namespace fs = std::filesystem;
 
-#include "nlohmann/json.hpp"
+#include <nlohmann/json.hpp>
 
 #include "math.hxx"
 #include "staging.hxx"
@@ -1035,7 +1035,7 @@ bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &nodeS
 
                 auto normalized = accessor.normalized;
 
-                if (auto attribute = glTF::instantiate_attribute(accessor.type, accessor.componentType); attribute) {
+                if (auto _attribute = glTF::instantiate_attribute(accessor.type, accessor.componentType); _attribute) {
                     auto attributeSize = std::visit([dstOffset, semantic = semantic, normalized, &layout] (auto &&attribute)
                     {
                         using A = std::decay_t<decltype(attribute)>;
@@ -1044,7 +1044,7 @@ bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &nodeS
 
                         return sizeof(A);
 
-                    }, std::move(*attribute));
+                    }, std::move(*_attribute));
 
                     /*auto it_vertexBuffer = std::find_if(std::begin(scene.vertexBuffers), std::end(scene.vertexBuffers), [&layout] (auto &&vertexBuffer) {
                         return layout == vertexBuffer.layout;
