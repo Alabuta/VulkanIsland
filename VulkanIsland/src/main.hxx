@@ -36,7 +36,7 @@ namespace fs = std::filesystem;
 #include <GLFW/glfw3native.h>
 #endif
 
-#include "config.h"
+#include "config.hxx"
 
 
 

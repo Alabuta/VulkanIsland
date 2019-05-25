@@ -1,29 +1,25 @@
-cmake_minimum_required(VERSION 3.12 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.14 FATAL_ERROR)
 
 if(NOT DEFINED PROJECT_VERSION)
     set(PROJECT_VERSION 1.0.0)
 endif()
 
-project(VulkanIsland
-	VERSION ${PROJECT_VERSION}
-	LANGUAGES CXX
-)
+project(VulkanIsland VERSION ${PROJECT_VERSION})
 
-include(build/conanbuildinfo.cmake)
-conan_basic_setup(TARGETS)
+enable_language(CXX)
 
 configure_file(
-    "${PROJECT_SOURCE_DIR}/config.h.in"
-    "${PROJECT_SOURCE_DIR}/include/config.h"
+    "${PROJECT_SOURCE_DIR}/config.hxx.in"
+    "${PROJECT_SOURCE_DIR}/include/config.hxx"
 )
-
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_DEBUG "${PROJECT_SOURCE_DIR}/../bin")
-set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${PROJECT_SOURCE_DIR}/../bin")
 
 find_package(Vulkan REQUIRED)
 
-#find_package(nlohmann_json CONFIG REQUIRED)
-#find_package(EnTT CONFIG REQUIRED)
+find_package(glm REQUIRED)
+find_package(glfw3 3.3 REQUIRED)
+find_package(boost 1.70 REQUIRED)
+find_package(nlohmann_json 3.6 CONFIG REQUIRED)
+find_package(EnTT 3.0 CONFIG REQUIRED)
 
 if(NOT WIN32)
 	find_package(X11 REQUIRED)
@@ -75,6 +71,19 @@ set(SOURCE_FILES
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
+if(NOT WIN32)
+    set(EXTRA_LIBS ${EXTRA_LIBS}
+        stdc++fs
+        # pthread
+    )
+
+    set(EXTRA_LIBS_LINK_OPTIONS ${EXTRA_LIBS}
+        -Wl,-no-undefined
+        -Wl,-no-allow-shlib-undefined
+        -Wl,-unresolved-symbols=report-all
+    )
+endif()
+
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
@@ -83,7 +92,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
     CXX_STANDARD_REQUIRED NO
     CXX_EXTENSIONS OFF
 
-    POSITION_INDEPENDENT_CODE YES
+    POSITION_INDEPENDENT_CODE ON
 
     DEBUG_POSTFIX .d
 )
@@ -131,7 +140,7 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${PROJECT_NAME} PRIVATE
-        /Wall
+        /W3
 )
 endif()
 
@@ -141,20 +150,14 @@ target_include_directories(${PROJECT_NAME} PRIVATE
 )
 
 target_link_libraries(${PROJECT_NAME} PRIVATE
-    -Wl,-no-undefined
-    -Wl,-no-allow-shlib-undefined
-    -Wl,-unresolved-symbols=report-all
+    ${EXTRA_LIBS_LINK_OPTIONS}
 
-    #pthread
-
-    stdc++fs
+    ${EXTRA_LIBS}
 
     Vulkan::Vulkan
 
-	#nlohmann_json nlohmann_json::nlohmann_json
-	#EnTT
-
-	CONAN_PKG::glm
-	CONAN_PKG::boost
-	CONAN_PKG::glfw
+    glm
+    glfw
+	nlohmann_json::nlohmann_json
+	EnTT
 )
