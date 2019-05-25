@@ -114,7 +114,7 @@
       </Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)glsl2spirv/main.py"</Command>
+      <Command>"$(SolutionDir)glsl2spirv/compile-shaders.py"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
@@ -151,7 +151,7 @@
       </Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)glsl2spirv/main.py"</Command>
+      <Command>"$(SolutionDir)glsl2spirv/compile-shaders.py"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
@@ -186,7 +186,7 @@
       </Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)glsl2spirv/main.py"</Command>
+      <Command>"$(SolutionDir)glsl2spirv/compile-shaders.py"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
@@ -230,7 +230,7 @@
       </Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)glsl2spirv/main.py"</Command>
+      <Command>"$(SolutionDir)glsl2spirv/compile-shaders.py"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>

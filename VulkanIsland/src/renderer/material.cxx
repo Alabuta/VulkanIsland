@@ -211,8 +211,8 @@ public:
     [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
-            ShaderStage{shader::STAGE::VERTEX, R"(test/vert.spv)"s, "main"s, std::vector<std::int32_t>{1}},
-            ShaderStage{shader::STAGE::FRAGMENT, R"(test/frag.spv)"s, "main"s}
+            ShaderStage{shader::STAGE::VERTEX, R"(test/shader.vert)"s, "main"s, std::vector<std::int32_t>{1}},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(test/shader.frag)"s, "main"s}
 
         };
 
@@ -226,8 +226,8 @@ public:
     [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
-            ShaderStage{shader::STAGE::VERTEX, R"(test/vert.spv)"s, "main"s, std::vector<std::int32_t>{0}},
-            ShaderStage{shader::STAGE::FRAGMENT, R"(test/frag.spv)"s, "main"s}
+            ShaderStage{shader::STAGE::VERTEX, R"(test/shader.vert)"s, "main"s, std::vector<std::int32_t>{0}},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(test/shader.frag)"s, "main"s}
         };
 
         return shaderStages;
@@ -240,8 +240,8 @@ public:
     [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
-            ShaderStage{shader::STAGE::VERTEX, R"(test/vert.spv)"s, "main"s, std::vector<std::int32_t>{2}},
-            ShaderStage{shader::STAGE::FRAGMENT, R"(test/frag.spv)"s, "main"s}
+            ShaderStage{shader::STAGE::VERTEX, R"(test/shader.vert)"s, "main"s, std::vector<std::int32_t>{2}},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(test/shader.frag)"s, "main"s}
         };
 
         return shaderStages;
@@ -254,8 +254,8 @@ public:
     [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
-            ShaderStage{shader::STAGE::VERTEX, R"(vert.spv)"s, "main"s},
-            ShaderStage{shader::STAGE::FRAGMENT, R"(frag.spv)"s, "main"s}
+            ShaderStage{shader::STAGE::VERTEX, R"(shader.vert)"s, "main"s},
+            ShaderStage{shader::STAGE::FRAGMENT, R"(shader.frag)"s, "main"s}
         };
 
         return shaderStages;

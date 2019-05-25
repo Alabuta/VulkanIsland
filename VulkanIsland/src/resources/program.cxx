@@ -41,7 +41,7 @@ std::vector<std::byte> ReadShaderFile(std::string_view name)
     if (!fs::exists(fs::current_path() / contents))
         contents = fs::current_path() / "../"sv / contents;
 
-    auto path = contents / name;
+    auto path = contents / (std::string{name} + ".spv"s);
 
     std::ifstream file{path.native(), std::ios::in | std::ios::binary};
 
