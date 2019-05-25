@@ -640,6 +640,7 @@ void from_json(nlohmann::json const &j, accessor_t &accessor)
 }
 
 
+#if 0
 namespace
 {
 std::vector<SceneTree> initSceneTree(std::vector<glTF::scene_t> const &scenes, std::vector<glTF::node_t> const &nodes)
@@ -813,6 +814,7 @@ void initNodeGraph(std::vector<glTF::scene_t> const &scenes, std::vector<glTF::n
     }
 }
 }
+#endif
 
 
 namespace glTF
@@ -1080,9 +1082,11 @@ bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &nodeS
     auto scenes = json.at("scenes"s).get<std::vector<glTF::scene_t>>();
     auto nodes = json.at("nodes"s).get<std::vector<glTF::node_t>>();
 
+#if 0
     auto sceneTree = initSceneTree(scenes, nodes);
 
     initNodeGraph(scenes, nodes, nodeSystem);
+#endif
 
     return true;
 }

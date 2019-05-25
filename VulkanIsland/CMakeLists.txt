@@ -22,6 +22,9 @@ set(CMAKE_RUNTIME_OUTPUT_DIRECTORY_RELEASE "${PROJECT_SOURCE_DIR}/../bin")
 
 find_package(Vulkan REQUIRED)
 
+#find_package(nlohmann_json CONFIG REQUIRED)
+#find_package(EnTT CONFIG REQUIRED)
+
 if(NOT WIN32)
 	find_package(X11 REQUIRED)
 endif()
@@ -147,6 +150,9 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     stdc++fs
 
     Vulkan::Vulkan
+
+	#nlohmann_json nlohmann_json::nlohmann_json
+	#EnTT
 
 	CONAN_PKG::glm
 	CONAN_PKG::boost

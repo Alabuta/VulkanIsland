@@ -6,9 +6,7 @@
 #include "sceneTree.hxx"
 
 
-
-
-
+#if 0
 std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle, std::string_view name)
 {
     std::optional<NodeHandle> handle;
@@ -327,3 +325,4 @@ void SceneTree::Update()
 
     //entities->systems.update_all(0.f);
 }
+#endif

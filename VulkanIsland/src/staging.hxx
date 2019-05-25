@@ -6,7 +6,7 @@
 
 #include <boost/functional/hash.hpp>
 
-#include "entityx/entityx.hh"
+#include "entityx/entityx.h"
 namespace ex = entityx;
 
 #include "main.hxx"

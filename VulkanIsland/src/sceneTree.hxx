@@ -4,7 +4,7 @@
 #include <string>
 #include <string_view>
 
-#include "entityx/entityx.hh"
+#include "entityx/entityx.h"
 namespace ex = entityx;
 
 #include "main.hxx"
@@ -12,6 +12,7 @@ namespace ex = entityx;
 #include "math.hxx"
 #include "ecs/transform.hxx"
 
+#if 0
 using EntityManager = entityx::EntityX<entityx::DefaultStorage, 0, Transform>;
 using Entity = EntityManager::Entity;
 
@@ -143,3 +144,4 @@ private:
     using chunks_t = std::set<node_index_t>;
     std::vector<chunks_t> layersChunks;
 };
+#endif
