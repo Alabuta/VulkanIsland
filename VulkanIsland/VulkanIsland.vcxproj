@@ -278,6 +278,7 @@
     <ClInclude Include="src/math.hxx" />
     <ClInclude Include="src/main.hxx" />
     <ClInclude Include="src\ecs\camera.hxx" />
+    <ClInclude Include="src\loaders\loaderSPIRV.hxx" />
     <ClInclude Include="src\renderer\attachments.hxx" />
     <ClInclude Include="src\renderer\material.hxx" />
     <ClInclude Include="src\renderer\pipelines.hxx" />

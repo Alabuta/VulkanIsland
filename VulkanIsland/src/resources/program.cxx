@@ -1,3 +1,4 @@
+#include "loaders/loaderSPIRV.hxx"
 #include "program.hxx"
 #include "renderer/material.hxx"
 
@@ -32,44 +33,13 @@ VkShaderStageFlagBits constexpr ConvertToGAPI(shader::STAGE stage) noexcept
 }
 }
 
-namespace
-{
-std::vector<std::byte> ReadShaderFile(std::string_view name)
-{
-    fs::path contents{"contents/shaders"sv};
-
-    if (!fs::exists(fs::current_path() / contents))
-        contents = fs::current_path() / "../"sv / contents;
-
-    auto path = contents / (std::string{name} + ".spv"s);
-
-    std::ifstream file{path.native(), std::ios::in | std::ios::binary};
-
-    if (file.bad() || file.fail())
-        return { };
-
-    auto const start_pos = file.tellg();
-    file.ignore(std::numeric_limits<std::streamsize>::max());
-
-    std::vector<std::byte> shaderByteCode(static_cast<std::size_t>(file.gcount()));
-
-    file.seekg(start_pos);
-
-    if (!shaderByteCode.empty())
-        file.read(reinterpret_cast<char *>(std::data(shaderByteCode)), static_cast<std::streamsize>(std::size(shaderByteCode)));
-
-    return shaderByteCode;
-}
-}
-
-
 
 void ShaderManager::CreateShaderPrograms(Material const *const material)
 {
     for (auto &&shaderStage : material->shaderStages()) {
         if (shaderStagePrograms_.count(shaderStage) == 0) {
             if (shaderModules_.count(shaderStage.moduleName) == 0) {
-                auto const shaderByteCode = ReadShaderFile(shaderStage.moduleName);
+                auto const shaderByteCode = loader::loadSPIRV(shaderStage.moduleName);
 
                 if (shaderByteCode.empty())
                     throw std::runtime_error("failed to open vertex shader file"s);
