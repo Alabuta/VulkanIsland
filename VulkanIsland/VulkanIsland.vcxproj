@@ -114,7 +114,7 @@
       </Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)glsl2spirv/compile-shaders.py"</Command>
+      <Command>"$(SolutionDir)compile-shaders.py"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
@@ -151,7 +151,7 @@
       </Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)glsl2spirv/compile-shaders.py"</Command>
+      <Command>"$(SolutionDir)compile-shaders.py"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
@@ -186,7 +186,7 @@
       </Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)glsl2spirv/compile-shaders.py"</Command>
+      <Command>"$(SolutionDir)compile-shaders.py"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
@@ -230,7 +230,7 @@
       </Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)glsl2spirv/compile-shaders.py"</Command>
+      <Command>"$(SolutionDir)compile-shaders.py"</Command>
     </PostBuildEvent>
     <PostBuildEvent>
       <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
@@ -265,6 +265,7 @@
     <ClCompile Include="src\sceneTree.cxx" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="include\config.hxx" />
     <ClInclude Include="src/commandBuffer.hxx" />
     <ClInclude Include="src/debug.hxx" />
     <ClInclude Include="src/descriptor.hxx" />
@@ -305,13 +306,6 @@
     <ClInclude Include="src\resources\program.hxx" />
     <ClInclude Include="src\sceneTree.hxx" />
     <ClInclude Include="src\vertexFormat.hxx" />
-  </ItemGroup>
-  <ItemGroup>
-    <None Include="..\contents\shaders\shader.frag" />
-    <None Include="..\contents\shaders\shader.vert" />
-    <None Include="..\contents\shaders\test\shader.frag" />
-    <None Include="..\contents\shaders\test\shader.vert" />
-    <None Include="config.h.in" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,11 +1,9 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 15
-VisualStudioVersion = 15.0.27323.2
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.28917.182
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VulkanIsland", "VulkanIsland\VulkanIsland.vcxproj", "{FF5F9E8B-F482-4B1D-8863-78B8C3551CAF}"
-EndProject
-Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "glsl2spirv", "glsl2spirv\glsl2spirv.pyproj", "{65CC327E-E9BB-4920-A0BA-5B4BC4D5E3AD}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -27,12 +25,6 @@ Global
 		{FF5F9E8B-F482-4B1D-8863-78B8C3551CAF}.Release|x64.Build.0 = Release|x64
 		{FF5F9E8B-F482-4B1D-8863-78B8C3551CAF}.Release|x86.ActiveCfg = Release|Win32
 		{FF5F9E8B-F482-4B1D-8863-78B8C3551CAF}.Release|x86.Build.0 = Release|Win32
-		{65CC327E-E9BB-4920-A0BA-5B4BC4D5E3AD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{65CC327E-E9BB-4920-A0BA-5B4BC4D5E3AD}.Debug|x64.ActiveCfg = Debug|Any CPU
-		{65CC327E-E9BB-4920-A0BA-5B4BC4D5E3AD}.Debug|x86.ActiveCfg = Debug|Any CPU
-		{65CC327E-E9BB-4920-A0BA-5B4BC4D5E3AD}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{65CC327E-E9BB-4920-A0BA-5B4BC4D5E3AD}.Release|x64.ActiveCfg = Release|Any CPU
-		{65CC327E-E9BB-4920-A0BA-5B4BC4D5E3AD}.Release|x86.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

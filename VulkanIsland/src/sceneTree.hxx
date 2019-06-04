@@ -4,7 +4,7 @@
 #include <string>
 #include <string_view>
 
-#include "entityx/entityx.h"
+#include <entityx/entityx.h>
 namespace ex = entityx;
 
 #include "main.hxx"
