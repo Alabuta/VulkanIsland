@@ -88,7 +88,7 @@ GraphicsPipelineManager::CreateGraphicsPipeline(xformat::vertex_layout const &la
             1, nullptr
         };
 
-        auto constexpr rasterizerDiscardEnable = VK_TRUE;
+        // auto constexpr rasterizerDiscardEnable = VK_TRUE;
     #else
         VkViewport const viewport{
             0, static_cast<float>(extent.height),

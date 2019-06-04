@@ -819,7 +819,7 @@ void initNodeGraph(std::vector<glTF::scene_t> const &scenes, std::vector<glTF::n
 
 namespace glTF
 {
-bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &nodeSystem)
+bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &)
 {
     fs::path contents{"contents/scenes"s};
 

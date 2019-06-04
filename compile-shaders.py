@@ -4,7 +4,7 @@ from subprocess import call
 
 compiler_path = 'glslangValidator'
 
-shaders_path =  '../contents/shaders'
+shaders_path =  './contents/shaders'
 shaders_include_path =  shaders_path + '/include'
 
 shader_extensions = ('.vert.glsl', '.tesc.glsl', '.tese.glsl', '.geom.glsl', '.frag.glsl', '.comp.glsl')
