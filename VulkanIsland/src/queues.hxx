@@ -2,7 +2,7 @@
 #include <variant>
 
 #include "main.hxx"
-#include "device.hxx"
+#include "device/device.hxx"
 
 class VulkanDevice;
 

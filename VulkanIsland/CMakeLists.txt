@@ -31,42 +31,54 @@ include_directories(src)
 
 
 set(SOURCE_FILES
-	src/resources/memory.cxx
-	src/resources/buffer.cxx
-	src/resources/image.cxx
-    src/resources/resource.cxx
-    src/resources/program.cxx
+    src/camera/handlers/mouseHandler.hxx            src/camera/handlers/mouseHandler.cxx
+    src/camera/cameraController.hxx                 src/camera/cameraController.cxx
+
+	src/device/device.hxx                           src/device/device.cxx
+    src/device/deviceConfig.hxx
+
+    src/ecs/camera.hxx                              src/ecs/camera.cxx
+    src/ecs/ecs.hxx
+    src/ecs/mesh.hxx
+    src/ecs/node.hxx                                src/ecs/node.cxx
+    src/ecs/transform.hxx                           src/ecs/transform.cxx
+
+    src/input/inputDataTypes.hxx
+    src/input/inputManager.hxx                      src/input/inputManager.cxx
+    src/input/mouseInput.hxx                    	src/input/mouseInput.cxx
+
+	src/loaders/loaderGLTF.hxx                      src/loaders/loaderGLTF.cxx
+	src/loaders/loaderSPIRV.hxx
+	src/loaders/loaderTARGA.hxx                     src/loaders/loaderTARGA.cxx
+
+    src/platform/window.hxx                         src/platform/window.cxx
+
+    src/renderer/attachments.hxx
+    src/renderer/material.hxx                       src/renderer/material.cxx
+    src/renderer/pipelines.hxx                      src/renderer/pipelines.cxx
+    src/renderer/pipelineVertexInputState.hxx       src/renderer/pipelineVertexInputState.cxx
+    src/renderer/renderPass.hxx                     src/renderer/renderPass.cxx
+
+	src/resources/buffer.hxx                        src/resources/buffer.cxx
+	src/resources/image.hxx                         src/resources/image.cxx
+    src/resources/memory.hxx                        src/resources/memory.cxx
+    src/resources/program.hxx                       src/resources/program.cxx
+    src/resources/resource.hxx                      src/resources/resource.cxx
 	
-	src/debug.cxx
-	src/descriptor.cxx
-	src/device.cxx
-	
-	src/loaders/loaderGLTF.cxx
-	src/loaders/loaderTARGA.cxx
-	
-	src/instance.cxx
-    
-    src/renderer/pipelineVertexInputState.cxx
-    src/renderer/material.cxx
-    src/renderer/pipelines.cxx
-    src/renderer/renderPass.cxx
-
-	src/sceneTree.cxx
-	src/swapchain.cxx
-
-    src/camera/cameraController.cxx
-    src/camera/handlers/mouseHandler.cxx
-	
-	src/input/inputManager.cxx
-	src/input/mouseInput.cxx
-
-    src/platform/window.cxx
-
-    src/ecs/node.cxx
-    src/ecs/transform.cxx
-    src/ecs/camera.cxx
-
-    src/main.cxx
+	src/commandBuffer.hxx
+	src/debug.hxx                                   src/debug.cxx
+    src/descriptor.hxx                              src/descriptor.cxx
+	src/helpers.hxx
+	src/instance.hxx                                src/instance.cxx
+    src/main.hxx                                    src/main.cxx
+    src/math.hxx
+    src/queueBuilder.hxx
+    src/queues.hxx
+    src/sceneTree.hxx                               src/sceneTree.cxx
+    src/semaphore.hxx
+    src/staging.hxx
+	src/swapchain.hxx                               src/swapchain.cxx
+    src/vertexFormat.hxx
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})

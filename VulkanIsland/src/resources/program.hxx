@@ -6,7 +6,7 @@
 #include <boost/functional/hash_fwd.hpp>
 
 #include "main.hxx"
-#include "device.hxx"
+#include "device/device.hxx"
 #include "resources/resource.hxx"
 
 

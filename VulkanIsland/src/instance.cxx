@@ -1,7 +1,7 @@
 
 #include "main.hxx"
 #include "instance.hxx"
-#include "device.hxx"
+#include "device/device.hxx"
 
 namespace {
 

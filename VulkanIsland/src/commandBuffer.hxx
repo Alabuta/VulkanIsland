@@ -1,7 +1,7 @@
 #pragma once
 
 #include "main.hxx"
-#include "device.hxx"
+#include "device/device.hxx"
 #include "resources/image.hxx"
 
 

@@ -4,7 +4,7 @@
 #include <optional>
 
 #include "main.hxx"
-#include "device.hxx"
+#include "device/device.hxx"
 
 
 std::optional<VkSemaphore> CreateSemaphore(VulkanDevice const &device) noexcept

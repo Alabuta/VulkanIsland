@@ -20,7 +20,7 @@
 #include "main.hxx"
 #include "math.hxx"
 #include "instance.hxx"
-#include "device.hxx"
+#include "device/device.hxx"
 #include "swapchain.hxx"
 #include "resources/program.hxx"
 #include "resources/buffer.hxx"
@@ -988,7 +988,7 @@ void DrawFrame(app_t &app)
 
 
 int main()
-{
+try {
 #if defined(_MSC_VER)
     _CrtSetDbgFlag(_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #else
@@ -1062,6 +1062,9 @@ int main()
     app.cleanUp();
 
     glfwTerminate();
+} catch (std::exception const &ex) {
+    std::cout << ex.what() << std::endl;
+    std::cin.get();
 }
 
 

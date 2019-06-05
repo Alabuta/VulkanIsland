@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "main.hxx"
-#include "device.hxx"
+#include "device/device.hxx"
 #include "program.hxx"
 #include "vertexFormat.hxx"
 #include "staging.hxx"

@@ -6,7 +6,7 @@
 
 #include "main.hxx"
 #include "helpers.hxx"
-#include "device.hxx"
+#include "device/device.hxx"
 #include "staging.hxx"
 #include "material.hxx"
 #include "pipelineVertexInputState.hxx"
@@ -110,31 +110,6 @@ private:
 
     std::unordered_map<GraphicsPipelinePropertiesKey, std::shared_ptr<GraphicsPipeline>,
         GraphicsPipelinePropertiesKey::hash_value, GraphicsPipelinePropertiesKey::equal_comparator> graphicsPipelineProperties_;
-};
-
-
-class VertexInputStateInfo2 final {
-public:
-
-    VertexInputStateInfo2(vertex_layout_t const &layout, std::uint32_t binding = 5) noexcept;
-
-    VkPipelineVertexInputStateCreateInfo const &info() const noexcept { return info_; }
-
-    std::uint32_t binding() const noexcept { return binding_; }
-
-    /*template<class T>
-    bool operator== (T &&rhs) const noexcept;
-
-    template<class T>
-    std::size_t hash_value() const noexcept;*/
-
-private:
-
-    VkPipelineVertexInputStateCreateInfo info_;
-    std::uint32_t binding_;
-
-    std::vector<VkVertexInputBindingDescription> inputBindingDescriptions;
-    std::vector<VkVertexInputAttributeDescription> attributeDescriptions;
 };
 
 

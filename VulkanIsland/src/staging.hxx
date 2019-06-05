@@ -369,7 +369,7 @@ auto constexpr getFormat([[maybe_unused]] bool normalized = false)
                 case 2: return VK_FORMAT_R8G8_SNORM;
                 case 3: return VK_FORMAT_R8G8B8_SNORM;
                 case 4: return VK_FORMAT_R8G8B8A8_SNORM;
-                default: return VK_FORMAT_UNDEFINED;
+                default: break;
             }
         }
 
@@ -379,7 +379,7 @@ auto constexpr getFormat([[maybe_unused]] bool normalized = false)
                 case 2: return VK_FORMAT_R8G8_SINT;
                 case 3: return VK_FORMAT_R8G8B8_SINT;
                 case 4: return VK_FORMAT_R8G8B8A8_SINT;
-                default: return VK_FORMAT_UNDEFINED;
+                default: break;
             }
         }
     }
@@ -391,7 +391,7 @@ auto constexpr getFormat([[maybe_unused]] bool normalized = false)
                 case 2: return VK_FORMAT_R8G8_UNORM;
                 case 3: return VK_FORMAT_R8G8B8_UNORM;
                 case 4: return VK_FORMAT_R8G8B8A8_UNORM;
-                default: return VK_FORMAT_UNDEFINED;
+                default: break;
             }
         }
 
@@ -401,7 +401,7 @@ auto constexpr getFormat([[maybe_unused]] bool normalized = false)
                 case 2: return VK_FORMAT_R8G8_UINT;
                 case 3: return VK_FORMAT_R8G8B8_UINT;
                 case 4: return VK_FORMAT_R8G8B8A8_UINT;
-                default: return VK_FORMAT_UNDEFINED;
+                default: break;
             }
         }
     }
@@ -413,7 +413,7 @@ auto constexpr getFormat([[maybe_unused]] bool normalized = false)
                 case 2: return VK_FORMAT_R16G16_SNORM;
                 case 3: return VK_FORMAT_R16G16B16_SNORM;
                 case 4: return VK_FORMAT_R16G16B16A16_SNORM;
-                default: return VK_FORMAT_UNDEFINED;
+                default: break;
             }
         }
 
@@ -423,7 +423,7 @@ auto constexpr getFormat([[maybe_unused]] bool normalized = false)
                 case 2: return VK_FORMAT_R16G16_SINT;
                 case 3: return VK_FORMAT_R16G16B16_SINT;
                 case 4: return VK_FORMAT_R16G16B16A16_SINT;
-                default: return VK_FORMAT_UNDEFINED;
+                default: break;
             }
         }
     }
@@ -435,7 +435,7 @@ auto constexpr getFormat([[maybe_unused]] bool normalized = false)
                 case 2: return VK_FORMAT_R16G16_UNORM;
                 case 3: return VK_FORMAT_R16G16B16_UNORM;
                 case 4: return VK_FORMAT_R16G16B16A16_UNORM;
-                default: return VK_FORMAT_UNDEFINED;
+                default: break;
             }
         }
 
@@ -445,7 +445,7 @@ auto constexpr getFormat([[maybe_unused]] bool normalized = false)
                 case 2: return VK_FORMAT_R16G16_UINT;
                 case 3: return VK_FORMAT_R16G16B16_UINT;
                 case 4: return VK_FORMAT_R16G16B16A16_UINT;
-                default: return VK_FORMAT_UNDEFINED;
+                default: break;
             }
         }
     }
@@ -456,7 +456,7 @@ auto constexpr getFormat([[maybe_unused]] bool normalized = false)
             case 2: return VK_FORMAT_R32G32_SINT;
             case 3: return VK_FORMAT_R32G32B32_SINT;
             case 4: return VK_FORMAT_R32G32B32A32_SINT;
-            default: return VK_FORMAT_UNDEFINED;
+            default: break;
         }
     }
 
@@ -466,7 +466,7 @@ auto constexpr getFormat([[maybe_unused]] bool normalized = false)
             case 2: return VK_FORMAT_R32G32_UINT;
             case 3: return VK_FORMAT_R32G32B32_UINT;
             case 4: return VK_FORMAT_R32G32B32A32_UINT;
-            default: return VK_FORMAT_UNDEFINED;
+            default: break;
         }
     }
 
@@ -476,9 +476,9 @@ auto constexpr getFormat([[maybe_unused]] bool normalized = false)
             case 2: return VK_FORMAT_R32G32_SFLOAT;
             case 3: return VK_FORMAT_R32G32B32_SFLOAT;
             case 4: return VK_FORMAT_R32G32B32A32_SFLOAT;
-            default: return VK_FORMAT_UNDEFINED;
+            default: break;
         }
     }
 
-    else return VK_FORMAT_UNDEFINED;
+    throw std::runtime_error("undefined format"s);
 }

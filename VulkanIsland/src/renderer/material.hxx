@@ -4,7 +4,7 @@
 #include <unordered_map>
 
 #include "main.hxx"
-#include "device.hxx"
+#include "device/device.hxx"
 #include "resources/resource.hxx"
 
 #include "attachments.hxx"

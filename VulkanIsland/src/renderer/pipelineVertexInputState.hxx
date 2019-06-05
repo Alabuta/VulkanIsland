@@ -4,7 +4,7 @@
 
 #include "main.hxx"
 #include "helpers.hxx"
-#include "device.hxx"
+#include "device/device.hxx"
 #include "staging.hxx"
 
 
