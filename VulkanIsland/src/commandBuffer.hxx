@@ -216,3 +216,25 @@ bool TransitionImageLayout(VulkanDevice const &device, Q &queue, VulkanImage con
 
     return true;
 }
+
+
+template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>* = 0>
+std::optional<VkCommandPool> CreateCommandPool(VkDevice device, Q &queue, VkCommandPoolCreateFlags flags)
+{
+    VkCommandPoolCreateInfo const createInfo{
+        VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,
+        nullptr,
+        flags,
+        queue.family()
+    };
+
+    VkCommandPool handle;
+
+    if (auto result = vkCreateCommandPool(device, &createInfo, nullptr, &handle); result != VK_SUCCESS)
+        std::cerr << "failed to create a command buffer: "s << result << std::endl;
+
+    else return handle;
+
+    return { };
+}
+
