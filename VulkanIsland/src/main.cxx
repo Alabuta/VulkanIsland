@@ -52,7 +52,9 @@
 
 auto constexpr sceneName{"unlit-test"sv};
 
+namespace temp {
 xformat model;
+}
 
 struct per_object_t final {
     glm::mat4 world{1};
@@ -496,7 +498,6 @@ namespace temp
 {
 xformat populate()
 {
-
     xformat _model;
 
     {
@@ -506,18 +507,23 @@ xformat populate()
             vec<2, std::float_t> texCoord;
         };
 
+        using Position = decltype(vertex::position);
+        using Texcoord = decltype(vertex::texCoord);
+
         auto const vertexLayoutIndex = std::size(_model.vertexLayouts);
+
+        std::cout << "vertexLayoutIndex "s << vertexLayoutIndex << std::endl;
 
         {
             xformat::vertex_layout vertexLayout;
             vertexLayout.sizeInBytes = sizeof(vertex);
 
             vertexLayout.attributes.push_back(xformat::vertex_attribute{
-                0, semantic::position{}, vec<3, std::float_t>{}, false
+                offsetof(vertex, position), semantic::position{}, Position{}, false
             });
 
             vertexLayout.attributes.push_back(xformat::vertex_attribute{
-                sizeof(vec<3, std::float_t>), semantic::tex_coord_0{}, vec<2, std::float_t>{}, false
+                offsetof(vertex, texCoord), semantic::tex_coord_0{}, Texcoord{}, false
             });
 
             _model.vertexLayouts.push_back(std::move(vertexLayout));
@@ -526,15 +532,15 @@ xformat populate()
         std::vector<vertex> vertices;
 
         vertices.push_back(vertex{
-            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<2, std::float_t>{.5f, .5f}
+            Position{0.f, 0.f, 0.f}, Texcoord{.5f, .5f}
         });
 
         vertices.push_back(vertex{
-            vec<3, std::float_t>{-1.f, 0.f, 1.f}, vec<2, std::float_t>{0.f, 0.f}
+            Position{-1.f, 0.f, 1.f}, Texcoord{0.f, 0.f}
         });
 
         vertices.push_back(vertex{
-            vec<3, std::float_t>{1.f, 0.f, 1.f}, vec<2, std::float_t>{1.f, 0.f}
+            Position{1.f, 0.f, 1.f}, Texcoord{1.f, 0.f}
         });
 
         xformat::non_indexed_meshlet meshlet;
@@ -542,22 +548,30 @@ xformat populate()
         meshlet.topology = PRIMITIVE_TOPOLOGY::TRIANGLES;
 
         {
+            auto const vertexSize = sizeof(vertex);
             auto const vertexCount = std::size(vertices);
-            auto const bytesCount = sizeof(vertex) * vertexCount;
+            auto const bytesCount = vertexSize * vertexCount;
 
             auto &&vertexBuffer = _model.vertexBuffers[vertexLayoutIndex];
+
+            using buffer_type_t = std::decay_t<decltype(vertexBuffer.buffer)>;
 
             meshlet.vertexBufferIndex = vertexLayoutIndex;
             meshlet.vertexCount = static_cast<std::uint32_t>(vertexCount);
             meshlet.firstVertex = static_cast<std::uint32_t>(vertexBuffer.count);
 
-            vertexBuffer.buffer.resize(bytesCount);
+            std::cout << "#### @" << std::size(vertexBuffer.buffer) << std::endl;
+            std::cout << "#### !" << bytesCount << '\t' << vertexBuffer.count << std::endl;
 
-            auto writeOffset = static_cast<std::decay_t<decltype((vertexBuffer.buffer))>::difference_type>(vertexBuffer.count);
+            vertexBuffer.buffer.resize(std::size(vertexBuffer.buffer) + bytesCount);
 
-            vertexBuffer.count = vertexCount;
+            auto writeOffset = static_cast<buffer_type_t::difference_type>(vertexBuffer.count * vertexSize);
+
+            vertexBuffer.count += vertexCount;
 
             auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
+
+            std::cout << "!!!! " << std::distance(dstBegin, std::begin(vertexBuffer.buffer)) << std::endl;
 
             std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
         }
@@ -569,29 +583,35 @@ xformat populate()
         _model.nonIndexedMeshlets.push_back(std::move(meshlet));
     }
 
-    {
+    if constexpr (true) {
         struct vertex final {
             vec<3, std::float_t> position;
             vec<2, std::float_t> texCoord;
             vec<4, std::float_t> color;
         };
 
+        using Position = decltype(vertex::position);
+        using Texcoord = decltype(vertex::texCoord);
+        using Color = decltype(vertex::color);
+
         auto const vertexLayoutIndex = std::size(_model.vertexLayouts);
+
+        std::cout << "vertexLayoutIndex "s << vertexLayoutIndex << std::endl;
 
         {
             xformat::vertex_layout vertexLayout;
             vertexLayout.sizeInBytes = sizeof(vertex);
 
             vertexLayout.attributes.push_back(xformat::vertex_attribute{
-                0, semantic::position{}, vec<3, std::float_t>{}, false
+                offsetof(vertex, position), semantic::position{}, Position{}, false
             });
 
             vertexLayout.attributes.push_back(xformat::vertex_attribute{
-                sizeof(std::float_t) * 3, semantic::tex_coord_0{}, vec<2, std::float_t>{}, false
+                offsetof(vertex, texCoord), semantic::tex_coord_0{}, Texcoord{}, false
             });
 
             vertexLayout.attributes.push_back(xformat::vertex_attribute{
-                sizeof(std::float_t) * 5, semantic::color_0{}, vec<4, std::float_t>{}, false
+                offsetof(vertex, color), semantic::color_0{}, Color{}, false
             });
 
             _model.vertexLayouts.push_back(std::move(vertexLayout));
@@ -601,33 +621,35 @@ xformat populate()
 
         // Second triangle
         vertices.push_back(vertex{
-            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<2, std::float_t>{.5f, .5f}, vec<4, std::float_t>{0.f, 0.f, 0.f, 1.f}
+            Position{0.f, 0.f, 0.f}, Texcoord{.5f, .5f}, Color{0.f, 0.f, 0.f, 1.f}
         });
 
         vertices.push_back(vertex{
-            vec<3, std::float_t>{1.f, 0.f, -1.f}, vec<2, std::float_t>{1.f, 1.f}, vec<4, std::float_t>{1.f, 0.f, 1.f, 1.f}
+            Position{1.f, 0.f, -1.f}, Texcoord{1.f, 1.f}, Color{1.f, 0.f, 1.f, 1.f}
         });
 
         vertices.push_back(vertex{
-            vec<3, std::float_t>{0.f, 0.f, -1.f}, vec<2, std::float_t>{.5f, 1.f}, vec<4, std::float_t>{0.f, 0.f, 1.f, 1.f}
+            Position{0.f, 0.f, -1.f}, Texcoord{.5f, 1.f}, Color{0.f, 0.f, 1.f, 1.f}
         });
 
         // Third triangle
-        vertices.push_back(vertex{
-            vec<3, std::float_t>{0.f, 0.f, 0.f}, vec<2, std::float_t>{.5f, .5f}, vec<4, std::float_t>{1.f, 0.f, 1.f, 1.f}
+        /* vertices.push_back(vertex{
+            Position{0.f, 0.f, 0.f}, Texcoord{.5f, .5f}, Color{1.f, 0.f, 1.f, 1.f}
         });
 
         vertices.push_back(vertex{
-            vec<3, std::float_t>{-1.f, 0.f, -1.f}, vec<2, std::float_t>{0.f, 1.f}, vec<4, std::float_t>{0.f, 1.f, 1.f, 1.f}
+            Position{-1.f, 0.f, -1.f}, Texcoord{0.f, 1.f}, Color{0.f, 1.f, 1.f, 1.f}
         });
 
         vertices.push_back(vertex{
-            vec<3, std::float_t>{-1.f, 0.f, 0.f}, vec<2, std::float_t>{0.f, .5f}, vec<4, std::float_t>{1.f, 1.f, 0.f, 1.f}
-        });
+            Position{-1.f, 0.f, 0.f}, Texcoord{0.f, .5f}, Color{1.f, 1.f, 0.f, 1.f}
+        }); */
 
-        auto const vertexCountPerMeshlet = 3;
+        auto constexpr vertexCountPerMeshlet = 3u;
 
         auto &&vertexBuffer = _model.vertexBuffers[vertexLayoutIndex];
+
+        using buffer_type_t = std::decay_t<decltype(vertexBuffer.buffer)>;
 
         {
             // Second triangle
@@ -637,7 +659,7 @@ xformat populate()
 
             meshlet.vertexBufferIndex = vertexLayoutIndex;
             meshlet.vertexCount = static_cast<std::uint32_t>(vertexCountPerMeshlet);
-            meshlet.firstVertex = static_cast<std::uint32_t>(vertexBuffer.count + 0);
+            meshlet.firstVertex = static_cast<std::uint32_t>(vertexBuffer.count + 0u);
 
             meshlet.materialIndex = 0;
             meshlet.instanceCount = 1;
@@ -646,7 +668,7 @@ xformat populate()
             _model.nonIndexedMeshlets.push_back(std::move(meshlet));
         }
 
-        {
+        /* {
             // Third triangle
             xformat::non_indexed_meshlet meshlet;
 
@@ -661,19 +683,27 @@ xformat populate()
             meshlet.firstInstance = 0;
 
             _model.nonIndexedMeshlets.push_back(std::move(meshlet));
-        }
+        } */
 
         {
+            auto const vertexSize = sizeof(vertex);
             auto const vertexCount = std::size(vertices);
-            auto const bytesCount = sizeof(vertex) * vertexCount;
+            auto const bytesCount = vertexSize * vertexCount;
 
-            vertexBuffer.buffer.resize(bytesCount);
+            std::cout << "#### %" << std::size(vertexBuffer.buffer) << std::endl;
+            std::cout << "#### ^" << bytesCount << '\t' << vertexBuffer.count << std::endl;
 
-            auto writeOffset = static_cast<std::decay_t<decltype((vertexBuffer.buffer))>::difference_type>(vertexBuffer.count);
+            vertexBuffer.buffer.resize(std::size(vertexBuffer.buffer) + bytesCount);
 
-            vertexBuffer.count = vertexCount;
+            std::cout << "#### !" << vertexSize << '\t' << std::size(vertexBuffer.buffer) << std::endl;
+
+            auto writeOffset = static_cast<buffer_type_t::difference_type>(vertexBuffer.count * vertexSize);
+
+            vertexBuffer.count += vertexCount;
 
             auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
+
+            std::cout << "!!!! " << writeOffset << '\t' << std::distance(std::begin(vertexBuffer.buffer), dstBegin) << std::endl;
 
             std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
         }
@@ -681,7 +711,7 @@ xformat populate()
 
     _model.materials.push_back(xformat::material{"TexCoordsDebugMaterial"s});
     _model.materials.push_back(xformat::material{"ColorsDebugMaterial"s});
-    //model.materials.push_back(xformat::material{"NormalsDebugMaterial"s});
+    //_model.materials.push_back(xformat::material{"NormalsDebugMaterial"s});
 
     return _model;
 }
@@ -790,8 +820,8 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.pipelineLayout = std::move(pipelineLayout.value());
 
-    model = temp::populate();
-    temp::stageXformat(app, model);
+    temp::model = temp::populate();
+    temp::stageXformat(app, temp::model);
 
     app.vulkanDevice->resourceManager().TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
     CreateGraphicsPipelines(app);

@@ -83,6 +83,10 @@ set(SOURCE_FILES
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
 
+if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
+    target_compile_definitions(${PROJECT_NAME} PRIVATE _GLIBCXX_USE_CXX11_ABI=1)
+endif ()
+
 if(NOT WIN32)
     set(EXTRA_LIBS ${EXTRA_LIBS}
         stdc++fs
