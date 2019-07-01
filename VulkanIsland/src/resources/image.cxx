@@ -7,12 +7,14 @@
 
 [[nodiscard]] std::optional<VkFormat> FindDepthImageFormat(VulkanDevice const &device) noexcept
 {
-    return FindSupportedImageFormat(
+    auto format = FindSupportedImageFormat(
         device,
         std::array{VK_FORMAT_D32_SFLOAT, VK_FORMAT_D24_UNORM_S8_UINT},
         VK_IMAGE_TILING_OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
     );
+
+    return *format;
 }
 
 
