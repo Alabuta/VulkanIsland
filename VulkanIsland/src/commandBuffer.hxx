@@ -218,7 +218,7 @@ bool TransitionImageLayout(VulkanDevice const &device, Q &queue, VulkanImage con
 }
 
 
-template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>* = 0>
+template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>* = nullptr>
 std::optional<VkCommandPool> CreateCommandPool(VkDevice device, Q &queue, VkCommandPoolCreateFlags flags)
 {
     VkCommandPoolCreateInfo const createInfo{

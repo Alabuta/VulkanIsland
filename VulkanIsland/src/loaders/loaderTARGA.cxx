@@ -166,7 +166,7 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
             for (auto &&texel : palette)
                 intermidiateBuffer.at(++i - 1) = std::move(vec_type{texel.array.at(0), texel.array.at(1), texel.array.at(2), 1});
 
-            return std::move(intermidiateBuffer);
+            return intermidiateBuffer;
         }
 
         else return std::move(palette);
