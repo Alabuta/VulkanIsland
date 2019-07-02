@@ -894,7 +894,7 @@ bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &)
         std::ifstream file{path.native(), std::ios::in | std::ios::binary};
 
         if (file.bad() || file.fail()) {
-            std::cout << "failed to open file: "s << path << '\n';
+            std::cerr << "failed to open file: "s << path << '\n';
             return false;
         }
 

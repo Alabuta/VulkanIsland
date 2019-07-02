@@ -500,6 +500,8 @@ xformat populate()
 {
     xformat _model;
 
+    auto constexpr vertexCountPerMeshlet = 3u;
+
     {
         // First triangle
         struct vertex final {
@@ -511,8 +513,6 @@ xformat populate()
         using Texcoord = decltype(vertex::texCoord);
 
         auto const vertexLayoutIndex = std::size(_model.vertexLayouts);
-
-        std::cout << "vertexLayoutIndex "s << vertexLayoutIndex << std::endl;
 
         {
             xformat::vertex_layout vertexLayout;
@@ -557,11 +557,8 @@ xformat populate()
             using buffer_type_t = std::decay_t<decltype(vertexBuffer.buffer)>;
 
             meshlet.vertexBufferIndex = vertexLayoutIndex;
-            meshlet.vertexCount = static_cast<std::uint32_t>(vertexCount);
+            meshlet.vertexCount = static_cast<std::uint32_t>(vertexCountPerMeshlet);
             meshlet.firstVertex = static_cast<std::uint32_t>(vertexBuffer.count);
-
-            std::cout << "#### @" << std::size(vertexBuffer.buffer) << std::endl;
-            std::cout << "#### !" << bytesCount << '\t' << vertexBuffer.count << std::endl;
 
             vertexBuffer.buffer.resize(std::size(vertexBuffer.buffer) + bytesCount);
 
@@ -570,8 +567,6 @@ xformat populate()
             vertexBuffer.count += vertexCount;
 
             auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
-
-            std::cout << "!!!! " << std::distance(dstBegin, std::begin(vertexBuffer.buffer)) << std::endl;
 
             std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
         }
@@ -583,7 +578,7 @@ xformat populate()
         _model.nonIndexedMeshlets.push_back(std::move(meshlet));
     }
 
-    if constexpr (true) {
+    {
         struct vertex final {
             vec<3, std::float_t> position;
             vec<2, std::float_t> texCoord;
@@ -595,8 +590,6 @@ xformat populate()
         using Color = decltype(vertex::color);
 
         auto const vertexLayoutIndex = std::size(_model.vertexLayouts);
-
-        std::cout << "vertexLayoutIndex "s << vertexLayoutIndex << std::endl;
 
         {
             xformat::vertex_layout vertexLayout;
@@ -633,7 +626,7 @@ xformat populate()
         });
 
         // Third triangle
-        /* vertices.push_back(vertex{
+        vertices.push_back(vertex{
             Position{0.f, 0.f, 0.f}, Texcoord{.5f, .5f}, Color{1.f, 0.f, 1.f, 1.f}
         });
 
@@ -643,9 +636,7 @@ xformat populate()
 
         vertices.push_back(vertex{
             Position{-1.f, 0.f, 0.f}, Texcoord{0.f, .5f}, Color{1.f, 1.f, 0.f, 1.f}
-        }); */
-
-        auto constexpr vertexCountPerMeshlet = 3u;
+        });
 
         auto &&vertexBuffer = _model.vertexBuffers[vertexLayoutIndex];
 
@@ -661,14 +652,14 @@ xformat populate()
             meshlet.vertexCount = static_cast<std::uint32_t>(vertexCountPerMeshlet);
             meshlet.firstVertex = static_cast<std::uint32_t>(vertexBuffer.count + 0u);
 
-            meshlet.materialIndex = 0;
+            meshlet.materialIndex = 1;
             meshlet.instanceCount = 1;
             meshlet.firstInstance = 0;
 
             _model.nonIndexedMeshlets.push_back(std::move(meshlet));
         }
 
-        /* {
+        {
             // Third triangle
             xformat::non_indexed_meshlet meshlet;
 
@@ -678,32 +669,25 @@ xformat populate()
             meshlet.vertexCount = static_cast<std::uint32_t>(vertexCountPerMeshlet);
             meshlet.firstVertex = static_cast<std::uint32_t>(vertexBuffer.count + vertexCountPerMeshlet);
 
-            meshlet.materialIndex = 1;
+            meshlet.materialIndex = 0;
             meshlet.instanceCount = 1;
             meshlet.firstInstance = 0;
 
             _model.nonIndexedMeshlets.push_back(std::move(meshlet));
-        } */
+        }
 
         {
             auto const vertexSize = sizeof(vertex);
             auto const vertexCount = std::size(vertices);
             auto const bytesCount = vertexSize * vertexCount;
 
-            std::cout << "#### %" << std::size(vertexBuffer.buffer) << std::endl;
-            std::cout << "#### ^" << bytesCount << '\t' << vertexBuffer.count << std::endl;
-
             vertexBuffer.buffer.resize(std::size(vertexBuffer.buffer) + bytesCount);
-
-            std::cout << "#### !" << vertexSize << '\t' << std::size(vertexBuffer.buffer) << std::endl;
 
             auto writeOffset = static_cast<buffer_type_t::difference_type>(vertexBuffer.count * vertexSize);
 
             vertexBuffer.count += vertexCount;
 
             auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
-
-            std::cout << "!!!! " << writeOffset << '\t' << std::distance(std::begin(vertexBuffer.buffer), dstBegin) << std::endl;
 
             std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
         }

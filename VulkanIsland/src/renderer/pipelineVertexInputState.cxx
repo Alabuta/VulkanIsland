@@ -50,15 +50,15 @@ void PipelineVertexInputStatesManager::createPipelineVertexInputState(xformat::v
         };
     });
 
+    inputState.bindingDescriptions.shrink_to_fit();
+    inputState.attributeDescriptions.shrink_to_fit();
+
     inputState.info = VkPipelineVertexInputStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
         nullptr, 0,
         static_cast<std::uint32_t>(std::size(inputState.bindingDescriptions)), std::data(inputState.bindingDescriptions),
         static_cast<std::uint32_t>(std::size(inputState.attributeDescriptions)), std::data(inputState.attributeDescriptions),
     };
-
-    inputState.bindingDescriptions.shrink_to_fit();
-    inputState.attributeDescriptions.shrink_to_fit();
 
     layouts_.emplace(layout, std::move(inputState));
 }
