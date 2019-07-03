@@ -47,6 +47,7 @@
 #include "sceneTree.hxx"
 
 #include "input/inputManager.hxx"
+#include "camera/camera.hxx"
 #include "camera/cameraController.hxx"
 
 
@@ -986,9 +987,6 @@ void DrawFrame(app_t &app)
             throw std::runtime_error("failed to submit request to present framebuffer: "s + std::to_string(result));
     }
 }
-
-
-
 
 
 int main()

@@ -247,8 +247,8 @@
     <ClCompile Include="src/swapchain.cxx" />
     <ClCompile Include="src/camera/cameraController.cxx" />
     <ClCompile Include="src/camera/handlers/mouseHandler.cxx" />
+    <ClCompile Include="src\camera\camera.cxx" />
     <ClCompile Include="src\device\device.cxx" />
-    <ClCompile Include="src\ecs\camera.cxx" />
     <ClCompile Include="src\ecs\node.cxx" />
     <ClCompile Include="src\ecs\transform.cxx" />
     <ClCompile Include="src\loaders\loaderGLTF.cxx" />
@@ -270,6 +270,7 @@
     <ClInclude Include="src/debug.hxx" />
     <ClInclude Include="src/descriptor.hxx" />
     <ClInclude Include="src/device.hxx" />
+    <ClInclude Include="src\camera\camera.hxx" />
     <ClInclude Include="src\deviceConfig.hxx" />
     <ClInclude Include="src/helpers.hxx" />
     <ClInclude Include="src/input/inputDataTypes.hxx" />
@@ -280,7 +281,6 @@
     <ClInclude Include="src/main.hxx" />
     <ClInclude Include="src\device\device.hxx" />
     <ClInclude Include="src\device\deviceConfig.hxx" />
-    <ClInclude Include="src\ecs\camera.hxx" />
     <ClInclude Include="src\loaders\loaderSPIRV.hxx" />
     <ClInclude Include="src\renderer\attachments.hxx" />
     <ClInclude Include="src\renderer\material.hxx" />
