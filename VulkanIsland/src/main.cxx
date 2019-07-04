@@ -411,8 +411,16 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
         std::vector<VkBuffer> vertexBuffers;
 
-        for (auto &&[layout, vertexBuffer] : resourceManager.vertexBuffers())
-            vertexBuffers.push_back(vertexBuffer->deviceBuffer().handle());
+        /* for (auto &&[layout, vertexBuffer] : resourceManager.vertexBuffers())
+            vertexBuffers.push_back(vertexBuffer->deviceBuffer().handle()); */
+
+        vertexBuffers.resize(2);
+        std::size_t iiii = 2;
+
+        for (auto &&[layout, vertexBuffer] : resourceManager.vertexBuffers()) {
+            // vertexBuffers.push_back(vertexBuffer->deviceBuffer().handle());
+            vertexBuffers[--iiii] = vertexBuffer->deviceBuffer().handle();
+        }
 
         auto const bindingCount = static_cast<std::uint32_t>(std::size(vertexBuffers));
 
@@ -986,10 +994,6 @@ void DrawFrame(app_t &app)
             throw std::runtime_error("failed to submit request to present framebuffer: "s + std::to_string(result));
     }
 }
-
-
-
-
 
 int main()
 try {
