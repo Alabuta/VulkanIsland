@@ -1,66 +1,7 @@
-#ifdef _MSC_VER
-    #define USE_EXECUTION_POLICIES
-    #include <execution>
-#endif
-
-#include <iomanip>
-
 #include "handlers/mouseHandler.hxx"
 #include "cameraController.hxx"
 
 
-template<class U, class V>
-glm::quat fromTwoVec3(U &&u, V &&v)
-{
-    auto norm_uv = std::sqrt(glm::dot(u, u) * glm::dot(v, v));
-    auto real_part = norm_uv + glm::dot(u, v);
-
-    glm::vec3 w{0};
-
-    if (real_part < 1.e-6f * norm_uv) {
-        real_part = 0.f;
-
-        w = std::abs(u.x) > std::abs(u.z) ? glm::vec3{-u.y, u.x, 0} : glm::vec3{0, -u.z, u.y};
-    }
-
-    else w = glm::cross(u, v);
-
-    return glm::normalize(glm::quat{real_part, w});
-}
-
-
-glm::mat4 reversedPerspective(float yFOV, float aspect, float znear, float zfar)
-{
-    auto const f = 1.f / std::tan(yFOV * .5f);
-
-    auto const kA = zfar / (zfar - znear)  - 1.f;
-    auto const kB = zfar * znear / (zfar - znear);
-
-    return glm::mat4{
-        f / aspect, 0, 0, 0,
-        0, f, 0, 0,
-        0, 0, kA, -1,
-        0, 0, kB, 0
-    };
-}
-
-void CameraSystem::update()
-{
-#ifdef _MSC_VER
-    std::for_each(std::execution::par_unseq, std::begin(cameras_), std::end(cameras_), [] (auto &&camera)
-#else
-    std::for_each(std::begin(cameras_), std::end(cameras_), [] (auto &&camera)
-#endif
-    {
-        camera->data.projection = reversedPerspective(camera->yFOV, camera->aspect, camera->znear, camera->zfar);
-        camera->data.invertedProjection = glm::inverse(camera->data.projection);
-
-        camera->data.view = glm::inverse(camera->world);
-        camera->data.invertedView = glm::inverse(camera->data.view);
-
-        camera->data.projectionView = camera->data.projection * camera->data.view;
-    });
-}
 
 OrbitController::OrbitController(std::shared_ptr<Camera> camera, InputManager &inputManager) : camera_{camera}
 {

@@ -47,6 +47,7 @@
 #include "sceneTree.hxx"
 
 #include "input/inputManager.hxx"
+#include "camera/camera.hxx"
 #include "camera/cameraController.hxx"
 
 
