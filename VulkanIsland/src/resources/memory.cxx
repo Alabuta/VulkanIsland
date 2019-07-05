@@ -1,3 +1,6 @@
+#include <boost/align.hpp>
+#include <boost/align/align.hpp>
+
 #include "memory.hxx"
 #include "commandBuffer.hxx"
 
@@ -41,9 +44,8 @@ MemoryManager::~MemoryManager()
 }
 
 
-//template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>* = nullptr>
 std::shared_ptr<DeviceMemory>
-MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, VkMemoryPropertyFlags properties)
+MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, VkMemoryPropertyFlags properties, bool linear)
 {
     std::uint32_t memoryTypeIndex{0};
 
@@ -59,6 +61,8 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
         else return memoryRequirements2.memoryRequirements;
 
     } (memoryRequirements2);
+
+    auto constexpr memoryGranularity = 0x400u;
 
     if constexpr (kSUB_ALLOCATION) {
         if (memoryRequirements.size > kBLOCK_ALLOCATION_SIZE) {
@@ -87,7 +91,7 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
     typename decltype(Pool::blocks)::iterator it_block;
     typename decltype(Pool::Block::availableChunks)::iterator it_chunk;
 
-    it_block = std::find_if(std::begin(pool.blocks), std::end(pool.blocks), [&it_chunk, &memoryRequirements] (auto &&pair)
+    it_block = std::find_if(std::begin(pool.blocks), std::end(pool.blocks), [&it_chunk, &memoryRequirements, linear] (auto &&pair)
     {
         auto &&[handle, memoryBlock] = pair;
 
@@ -101,17 +105,22 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
             auto it_chunk_begin = availableChunks.lower_bound(memoryRequirements.size);
             auto it_chunk_end = availableChunks.upper_bound(memoryRequirements.size);
 
-            it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [&memoryRequirements] (auto &&chunk)
+            it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [&memoryRequirements, linear] (auto &&chunk)
             {
-                auto alignedOffset = ((chunk.offset + memoryRequirements.alignment - 1) / memoryRequirements.alignment) * memoryRequirements.alignment;
+                auto alignedOffset = boost::alignment::align_up(chunk.offset, memoryRequirements.alignment);
 
-                return alignedOffset + memoryRequirements.size <= chunk.offset + chunk.size;
+                // if (linear)
+                    alignedOffset = boost::alignment::align_up(alignedOffset, memoryGranularity);
+
+                return alignedOffset + memoryRequirements.size + linear ? memoryGranularity : 0u <= chunk.offset + chunk.size;
             });
 
             return it_chunk != it_chunk_end;
         }
 
         else {
+            throw std::runtime_error("unimplemented case"s);
+
             it_chunk = std::begin(availableChunks);
 
             return availableChunks.size() == 1 && it_chunk->offset == 0;
@@ -139,7 +148,10 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
         auto memoryOffset = offset;
 
         if constexpr (kSUB_ALLOCATION) {
-            auto alignedOffset = ((offset + memoryRequirements.alignment - 1) / memoryRequirements.alignment) * memoryRequirements.alignment;
+            auto alignedOffset = boost::alignment::align_up(offset, memoryRequirements.alignment);
+
+            // if (linear)
+                alignedOffset = boost::alignment::align_up(alignedOffset, memoryGranularity);
 
             size -= memoryRequirements.size + alignedOffset - offset;
             offset = alignedOffset + memoryRequirements.size;
@@ -154,6 +166,7 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
         }
 
         else {
+            // auto const sizeInBytes = memoryRequirements.size + linear ? memoryGranularity : 0u;
             auto const wastedMemoryRatio = 100.f - static_cast<float>(memoryRequirements.size) / static_cast<float>(memoryBlock.availableSize) * 100.f;
 
             if (wastedMemoryRatio > 1.f)
@@ -168,7 +181,7 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
         std::cout << "Memory pool: ["s << memoryTypeIndex << "]: sub-allocation : "s << static_cast<float>(memoryRequirements.size) / 1024.f << "KB\n"s;
 
         return std::shared_ptr<DeviceMemory>{
-            new DeviceMemory{it_block->first, memoryTypeIndex, properties, memoryRequirements.size, memoryOffset},
+            new DeviceMemory{it_block->first, memoryTypeIndex, properties, memoryRequirements.size, memoryOffset, linear},
             [this] (DeviceMemory *const ptr_memory)
             {
                 DeallocateMemory(*ptr_memory);

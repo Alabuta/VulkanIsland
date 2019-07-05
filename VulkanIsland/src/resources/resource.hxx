@@ -19,6 +19,20 @@ class VertexBuffer;
 class IndexBuffer;
 
 
+template<class T, std::enable_if_t<is_one_of_v<std::decay_t<T>, VulkanImage, VulkanBuffer>>...>
+bool IsResourceLinear(T &&resource)
+{
+    using type = std::decay_t<T>;
+   
+    if constexpr (std::is_same_v<type, VulkanBuffer>)
+        return true;
+
+    else if constexpr (std::is_same_v<type, VulkanImage>) {
+        return resource.tiling() == VK_IMAGE_TILING_LINEAR;
+    }
+
+    else return false;
+}
 
 class ResourceManager final {
 public:
@@ -54,7 +68,7 @@ public:
 
 private:
 
-    static auto constexpr kVertexBufferIncreaseValue{7};
+    static auto constexpr kVertexBufferIncreaseValue{8};
 
     VulkanDevice &device_;
 

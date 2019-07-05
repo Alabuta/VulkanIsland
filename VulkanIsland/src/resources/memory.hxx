@@ -22,13 +22,13 @@ public:
     ~MemoryManager();
 
     template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>* = nullptr>
-    [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(T buffer, VkMemoryPropertyFlags properties, bool linear = true)
+    [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(T buffer, VkMemoryPropertyFlags properties, bool linear)
     {
         return CheckRequirementsAndAllocate(buffer, properties, linear);
     }
 
 private:
-    static VkDeviceSize constexpr kBLOCK_ALLOCATION_SIZE{0x10'000'000};   // 256 MB
+    static VkDeviceSize constexpr kBLOCK_ALLOCATION_SIZE{0x400'0000};   // 64 MB
 
     VulkanDevice const &vulkanDevice_;
     VkDeviceSize totalAllocatedSize_{0}, bufferImageGranularity_{0};
@@ -102,10 +102,11 @@ private:
     std::unordered_map<std::size_t, Pool> pools_;
 
     template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
-    [[nodiscard]] std::shared_ptr<DeviceMemory> CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, bool linear);
+    [[nodiscard]] std::shared_ptr<DeviceMemory>
+    CheckRequirementsAndAllocate(T resource, VkMemoryPropertyFlags properties, bool linear);
 
-    //template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>* = nullptr>
-    [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(VkMemoryRequirements const &memoryRequirements, VkMemoryPropertyFlags properties);
+    [[nodiscard]] std::shared_ptr<DeviceMemory>
+    AllocateMemory(VkMemoryRequirements const &memoryRequirements, VkMemoryPropertyFlags properties, bool linear);
 
     auto AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size, VkMemoryPropertyFlags properties) -> std::optional<decltype(Pool::blocks)::iterator>;
 
@@ -114,7 +115,7 @@ private:
 
 template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
 [[nodiscard]] std::shared_ptr<DeviceMemory>
-MemoryManager::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, [[maybe_unused]] bool linear)
+MemoryManager::CheckRequirementsAndAllocate(T resource, VkMemoryPropertyFlags properties, bool linear)
 {
 #if TEMPORALY_DISABLED
     VkMemoryDedicatedRequirements memoryDedicatedRequirements{
@@ -155,11 +156,11 @@ MemoryManager::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags prop
     VkMemoryRequirements memoryRequirements;
 
     if constexpr (std::is_same_v<T, VkBuffer>)
-        vkGetBufferMemoryRequirements(vulkanDevice_.handle(), buffer, &memoryRequirements);
+        vkGetBufferMemoryRequirements(vulkanDevice_.handle(), resource, &memoryRequirements);
 
-    else vkGetImageMemoryRequirements(vulkanDevice_.handle(), buffer, &memoryRequirements);
+    else vkGetImageMemoryRequirements(vulkanDevice_.handle(), resource, &memoryRequirements);
 
-    return AllocateMemory(memoryRequirements, properties);
+    return AllocateMemory(memoryRequirements, properties, linear);
 }
 
 
@@ -185,8 +186,11 @@ private:
 
     std::size_t seed_{0};
 
-    DeviceMemory(VkDeviceMemory handle, std::uint32_t typeIndex, VkMemoryPropertyFlags properties, VkDeviceSize size, VkDeviceSize offset) noexcept
-        : handle_{handle}, size_{size}, offset_{offset}, typeIndex_{typeIndex}, properties_{properties}
+    bool linear_;
+
+    DeviceMemory(VkDeviceMemory handle, std::uint32_t typeIndex, VkMemoryPropertyFlags properties,
+                 VkDeviceSize size, VkDeviceSize offset, bool linear) noexcept
+        : handle_{handle}, size_{size}, offset_{offset}, typeIndex_{typeIndex}, properties_{properties}, linear_{linear}
     {
         boost::hash_combine(seed_, typeIndex_);
         boost::hash_combine(seed_, properties_); 

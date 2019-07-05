@@ -11,15 +11,16 @@ class VulkanImageView;
 class VulkanImage final {
 public:
 
-    VulkanImage(std::shared_ptr<DeviceMemory> memory, VkImage handle, VkFormat format,
+    VulkanImage(std::shared_ptr<DeviceMemory> memory, VkImage handle, VkFormat format, VkImageTiling tiling,
                 std::uint32_t mipLevels, std::uint16_t width, std::uint16_t height) noexcept :
-        memory_{memory}, handle_{handle}, format_{format}, mipLevels_{mipLevels}, width_{width}, height_{height} { }
+        memory_{memory}, handle_{handle}, format_{format}, tiling_{tiling}, mipLevels_{mipLevels}, width_{width}, height_{height} { }
 
     std::shared_ptr<DeviceMemory> memory() const noexcept { return memory_; }
     std::shared_ptr<DeviceMemory> &memory() noexcept { return memory_; }
 
     VkImage handle() const noexcept { return handle_; }
     VkFormat format() const noexcept { return format_; }
+    VkImageTiling tiling() const noexcept { return tiling_; }
 
     std::uint32_t mipLevels() const noexcept { return mipLevels_; }
 
@@ -31,6 +32,7 @@ private:
 
     VkImage handle_{VK_NULL_HANDLE};
     VkFormat format_{VK_FORMAT_UNDEFINED};
+    VkImageTiling tiling_{VK_IMAGE_TILING_LINEAR};
 
     std::uint32_t mipLevels_{1};
     std::uint16_t width_{0}, height_{0};

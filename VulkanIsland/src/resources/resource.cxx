@@ -87,14 +87,16 @@ ResourceManager::CreateImage(VkFormat format, std::uint16_t width, std::uint16_t
     auto handle = CreateImageHandle(device_, width, height, mipLevels, samplesCount, format, tiling, usageFlags);
 
     if (handle) {
-        auto memory = device_.memoryManager().AllocateMemory(*handle, propertyFlags, tiling == VK_IMAGE_TILING_LINEAR);
+        auto const linearMemory = tiling == VK_IMAGE_TILING_LINEAR;
+
+        auto memory = device_.memoryManager().AllocateMemory(*handle, propertyFlags, linearMemory);
 
         if (memory) {
             if (auto result = vkBindImageMemory(device_.handle(), *handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
                 std::cerr << "failed to bind image buffer memory: "s << result << '\n';
 
             else image.reset(
-                new VulkanImage{memory, *handle, format, mipLevels, width, height},
+                new VulkanImage{memory, *handle, format, tiling, mipLevels, width, height},
                 [this] (VulkanImage *ptr_image)
                 {
                     ReleaseResource(*ptr_image);
@@ -181,7 +183,9 @@ ResourceManager::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMem
     auto handle = CreateBufferHandle(device_, size, usage);
 
     if (handle) {
-        auto memory = device_.memoryManager().AllocateMemory(*handle, properties, false);
+        auto const linearMemory = true;
+
+        auto memory = device_.memoryManager().AllocateMemory(*handle, properties, linearMemory);
 
         if (memory) {
             if (auto result = vkBindBufferMemory(device_.handle(), *handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
@@ -325,7 +329,7 @@ std::shared_ptr<VertexBuffer> ResourceManager::CreateVertexBuffer(xformat::verte
         // TODO: sparse memory binding
 #if NOT_YET_IMPLEMENTED
         auto bufferHandle = vertexBuffer->deviceBuffer_->handle();
-        auto memory = device_.memoryManager().AllocateMemory(bufferHandle, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, false);
+        auto memory = device_.memoryManager().AllocateMemory(bufferHandle, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 #endif
         std::cerr << "not enough device memory for vertex buffer\n"s;
         return { };
