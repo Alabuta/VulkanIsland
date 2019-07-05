@@ -357,9 +357,36 @@ void CreateGraphicsCommandBuffers(app_t &app)
     if (auto result = vkAllocateCommandBuffers(app.vulkanDevice->handle(), &allocateInfo, std::data(app.commandBuffers)); result != VK_SUCCESS)
         throw std::runtime_error("failed to create allocate command buffers: "s + std::to_string(result));
 
-    std::size_t i = 0;
+    auto &&resourceManager = app.vulkanDevice->resourceManager();
+    auto &&vertexBuffers = resourceManager.vertexBuffers();
 
-    for (auto &commandBuffer : app.commandBuffers) {
+    auto &&pipelineVertexInputStatesManager = app.pipelineVertexInputStatesManager;
+
+    std::set<std::pair<std::uint32_t, VkBuffer>> vertexBindingsAndBuffers;
+
+    std::uint32_t firstBinding = std::numeric_limits<std::uint32_t>::max();
+
+    for (auto &&[layout, vertexBuffer] : vertexBuffers) {
+        auto binding = pipelineVertexInputStatesManager.binding(layout);
+
+        firstBinding = std::min(binding, firstBinding);
+
+        vertexBindingsAndBuffers.emplace(binding, vertexBuffer->deviceBuffer().handle());
+    }
+
+    std::vector<VkBuffer> vertexBuffersHandles;
+
+    std::transform(std::cbegin(vertexBindingsAndBuffers), std::cend(vertexBindingsAndBuffers),
+                                std::back_inserter(vertexBuffersHandles), [] (auto &&pair)
+    {
+        return pair.second;
+    });
+
+    auto const bindingCount = static_cast<std::uint32_t>(std::size(vertexBuffersHandles));
+
+    std::vector<VkDeviceSize> vertexBuffersOffsets(bindingCount, 0);
+
+    for (std::size_t i = 0; auto &commandBuffer : app.commandBuffers) {
         VkCommandBufferBeginInfo const beginInfo{
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             nullptr,
@@ -408,26 +435,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     #endif
 
-        auto &&resourceManager = app.vulkanDevice->resourceManager();
-
-        std::vector<VkBuffer> vertexBuffers;
-
-        /* for (auto &&[layout, vertexBuffer] : resourceManager.vertexBuffers())
-            vertexBuffers.push_back(vertexBuffer->deviceBuffer().handle()); */
-
-        vertexBuffers.resize(2);
-        std::size_t iiii = 2;
-
-        for (auto &&[layout, vertexBuffer] : resourceManager.vertexBuffers()) {
-            // vertexBuffers.push_back(vertexBuffer->deviceBuffer().handle());
-            vertexBuffers[--iiii] = vertexBuffer->deviceBuffer().handle();
-        }
-
-        auto const bindingCount = static_cast<std::uint32_t>(std::size(vertexBuffers));
-
-        std::vector<VkDeviceSize> vertexBuffersOffsets(bindingCount, 0);
-
-        vkCmdBindVertexBuffers(commandBuffer, 0, bindingCount, std::data(vertexBuffers), std::data(vertexBuffersOffsets));
+        vkCmdBindVertexBuffers(commandBuffer, firstBinding, bindingCount, std::data(vertexBuffersHandles), std::data(vertexBuffersOffsets));
 
         auto &&graphicsPipelines = app.graphicsPipelineManager->graphicsPipelines();
 

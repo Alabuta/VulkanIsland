@@ -52,6 +52,8 @@ void PipelineVertexInputStatesManager::createPipelineVertexInputState(xformat::v
 
     inputState.bindingDescriptions.shrink_to_fit();
     inputState.attributeDescriptions.shrink_to_fit();
+    
+    inputState.binding = binding;
 
     inputState.info = VkPipelineVertexInputStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
