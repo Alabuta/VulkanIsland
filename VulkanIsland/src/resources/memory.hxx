@@ -28,7 +28,7 @@ public:
     }
 
 private:
-    static VkDeviceSize constexpr kBLOCK_ALLOCATION_SIZE{0x400'0000};   // 64 MB
+    static VkDeviceSize constexpr kBLOCK_ALLOCATION_SIZE{0x800'0000};   // 128 MB
 
     VulkanDevice const &vulkanDevice_;
     VkDeviceSize totalAllocatedSize_{0}, bufferImageGranularity_{0};

@@ -91,7 +91,7 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
     typename decltype(Pool::blocks)::iterator it_block;
     typename decltype(Pool::Block::availableChunks)::iterator it_chunk;
 
-    it_block = std::find_if(std::begin(pool.blocks), std::end(pool.blocks), [&it_chunk, &memoryRequirements, linear] (auto &&pair)
+    it_block = std::find_if(std::begin(pool.blocks), std::end(pool.blocks), [&it_chunk, &memoryRequirements, linear, memoryGranularity] (auto &&pair)
     {
         auto &&[handle, memoryBlock] = pair;
 
@@ -105,14 +105,14 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
             auto it_chunk_begin = availableChunks.lower_bound(memoryRequirements.size);
             auto it_chunk_end = availableChunks.upper_bound(memoryRequirements.size);
 
-            it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [&memoryRequirements, linear] (auto &&chunk)
+            it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [&memoryRequirements, linear, memoryGranularity] (auto &&chunk)
             {
                 auto alignedOffset = boost::alignment::align_up(chunk.offset, memoryRequirements.alignment);
 
                 // if (linear)
                     alignedOffset = boost::alignment::align_up(alignedOffset, memoryGranularity);
 
-                return alignedOffset + memoryRequirements.size + linear ? memoryGranularity : 0u <= chunk.offset + chunk.size;
+                return alignedOffset + memoryRequirements.size <= chunk.offset + chunk.size;
             });
 
             return it_chunk != it_chunk_end;

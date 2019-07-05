@@ -68,7 +68,7 @@ public:
 
 private:
 
-    static auto constexpr kVertexBufferIncreaseValue{8};
+    static auto constexpr kVertexBufferIncreaseValue{4};
 
     VulkanDevice &device_;
 

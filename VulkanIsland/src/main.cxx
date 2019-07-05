@@ -386,7 +386,13 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
     std::vector<VkDeviceSize> vertexBuffersOffsets(bindingCount, 0);
 
+#ifdef _MSC_VER
+    std::size_t i = 0;
+
+    for (auto &commandBuffer : app.commandBuffers) {
+#else
     for (std::size_t i = 0; auto &commandBuffer : app.commandBuffers) {
+#endif
         VkCommandBufferBeginInfo const beginInfo{
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             nullptr,
