@@ -3,7 +3,7 @@
     #include <execution>
 #endif
 
-#include <iomanip>
+#include <algorithm>
 
 #include "camera/camera.hxx"
 

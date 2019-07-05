@@ -33,11 +33,12 @@ include_directories(src)
 set(SOURCE_FILES
     src/camera/handlers/mouseHandler.hxx            src/camera/handlers/mouseHandler.cxx
     src/camera/cameraController.hxx                 src/camera/cameraController.cxx
+    src/camera/camera.hxx                           src/camera/camera.cxx
 
 	src/device/device.hxx                           src/device/device.cxx
     src/device/deviceConfig.hxx
 
-    src/ecs/camera.hxx                              src/ecs/camera.cxx
+    # src/ecs/camera.hxx                              src/ecs/camera.cxx
     src/ecs/ecs.hxx
     src/ecs/mesh.hxx
     src/ecs/node.hxx                                src/ecs/node.cxx
@@ -71,7 +72,7 @@ set(SOURCE_FILES
 	src/helpers.hxx
 	src/instance.hxx                                src/instance.cxx
     src/main.hxx                                    src/main.cxx
-    src/math.hxx
+    src/math.hxx                                    src/math.cxx
     src/queueBuilder.hxx
     src/queues.hxx
     src/sceneTree.hxx                               src/sceneTree.cxx
