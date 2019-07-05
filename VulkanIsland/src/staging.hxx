@@ -30,11 +30,11 @@ namespace staging
         std::size_t offset{0};
         std::vector<std::byte> buffer;
 
-        template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout_t, std::decay_t<T>>>...>
+        template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout_t, std::decay_t<T>>>* = nullptr>
         vertex_buffer_t(T &&layout) noexcept : layout{std::forward<T>(layout)} { }
 
         struct hash_value final {
-            template<class T, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>>>...>
+            template<class T, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>>>* = nullptr>
             constexpr std::size_t operator() (T &&vertexBuffer) const noexcept
             {
                 std::size_t seed = 0;
@@ -48,7 +48,7 @@ namespace staging
             }
         };
 
-        template<class T, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>>>...>
+        template<class T, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>>>* = nullptr>
         constexpr bool operator== (T &&rhs) const noexcept
         {
             if (std::size(buffer) != std::size(rhs.buffer))
@@ -75,13 +75,13 @@ namespace staging
                 });
             }
 
-            /*template<class T, class S, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>> && std::is_integral_v<S>>...>
+            /*template<class T, class S, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>> && std::is_integral_v<S>>* = nullptr>
             auto operator() (T &&chunk, S size) const noexcept
             {
                 return chunk.size < size;
             }
 
-            template<class S, class T, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>> && std::is_integral_v<S>>...>
+            template<class S, class T, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>> && std::is_integral_v<S>>* = nullptr>
             auto operator() (S size, T &&chunk) const noexcept
             {
                 return chunk.size < size;
@@ -165,7 +165,7 @@ struct xformat final {
 
 
     struct hash_value final {
-        template<class T, typename std::enable_if_t<std::is_same_v<vertex_attribute, std::decay_t<T>>>...>
+        template<class T, typename std::enable_if_t<std::is_same_v<vertex_attribute, std::decay_t<T>>>* = nullptr>
         auto constexpr operator() (T &&attribute) const noexcept
         {
             std::size_t seed = 0;
@@ -180,7 +180,7 @@ struct xformat final {
             return seed;
         }
 
-        template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout, std::decay_t<T>>>...>
+        template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout, std::decay_t<T>>>* = nullptr>
         auto constexpr operator() (T &&layout) const noexcept
         {
             std::size_t seed = 0;
@@ -197,7 +197,7 @@ struct xformat final {
     };
 
     struct equal_comparator final {
-        template<class T1, class T2, typename std::enable_if_t<are_same_v<struct vertex_attribute, T1, T2>>...>
+        template<class T1, class T2, typename std::enable_if_t<are_same_v<struct vertex_attribute, T1, T2>>* = nullptr>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
             if (lhs.offsetInBytes != rhs.offsetInBytes)
@@ -212,7 +212,7 @@ struct xformat final {
             return lhs.normalized == rhs.normalized;
         }
 
-        template<class T1, class T2, typename std::enable_if_t<are_same_v<vertex_layout, T1, T2>>...>
+        template<class T1, class T2, typename std::enable_if_t<are_same_v<vertex_layout, T1, T2>>* = nullptr>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
             if (lhs.sizeInBytes != rhs.sizeInBytes)
@@ -231,13 +231,13 @@ struct xformat final {
     };
 
     struct less_comparator final {
-        template<class T1, class T2, typename std::enable_if_t<are_same_v<struct vertex_attribute, T1, T2>>...>
+        template<class T1, class T2, typename std::enable_if_t<are_same_v<struct vertex_attribute, T1, T2>>* = nullptr>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
             return lhs.offsetInBytes < rhs.offsetInBytes && lhs.semantic < rhs.semantic && lhs.type < rhs.type && lhs.normalized < rhs.normalized;
         }
 
-        template<class T1, class T2, typename std::enable_if_t<are_same_v<vertex_layout, T1, T2>>...>
+        template<class T1, class T2, typename std::enable_if_t<are_same_v<vertex_layout, T1, T2>>* = nullptr>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
             auto lessSize = lhs.sizeInBytes < rhs.sizeInBytes;
@@ -318,7 +318,7 @@ struct xformat final {
     glm::mat4 localMatrix;
     glm::mat4 worldMatrix;
 
-    template<class T1, class T2, std::enable_if_t<are_same_v<glm::mat4, T1, T2>>...>
+    template<class T1, class T2, std::enable_if_t<are_same_v<glm::mat4, T1, T2>>* = nullptr>
     Mesh(T1 &&localMatrix, T2 &&worldMatrix) : localMatrix{std::forward<T1>(localMatrix)}, worldMatrix{std::forward<T2>(worldMatrix)} {}
 };
 

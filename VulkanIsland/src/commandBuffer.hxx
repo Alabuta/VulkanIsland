@@ -5,7 +5,7 @@
 #include "resources/image.hxx"
 
 
-template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
+template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>* = nullptr>
 [[nodiscard]] VkCommandBuffer BeginSingleTimeCommand(VulkanDevice const &device, [[maybe_unused]] Q &queue, VkCommandPool commandPool)
 {
     VkCommandBuffer commandBuffer;
@@ -34,7 +34,7 @@ template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, st
     return commandBuffer;
 }
 
-template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
+template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>* = nullptr>
 void EndSingleTimeCommand(VulkanDevice const &device, Q &queue, VkCommandBuffer commandBuffer, VkCommandPool commandPool)
 {
     if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS)
@@ -58,7 +58,7 @@ void EndSingleTimeCommand(VulkanDevice const &device, Q &queue, VkCommandBuffer 
 }
 
 
-template<class Q, class R, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>> && is_container_v<std::decay_t<R>>>...>
+template<class Q, class R, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>> && is_container_v<std::decay_t<R>>>* = nullptr>
 void CopyBufferToBuffer(VulkanDevice const &device, Q &queue, VkBuffer srcBuffer, VkBuffer dstBuffer, R &&copyRegion, VkCommandPool commandPool)
 {
     static_assert(std::is_same_v<typename std::decay_t<R>::value_type, VkBufferCopy>, "'copyRegion' argument does not contain 'VkBufferCopy' elements");
@@ -70,7 +70,7 @@ void CopyBufferToBuffer(VulkanDevice const &device, Q &queue, VkBuffer srcBuffer
     EndSingleTimeCommand(device, queue, commandBuffer, commandPool);
 }
 
-template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
+template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>* = nullptr>
 void CopyBufferToImage(VulkanDevice const &device, Q &queue, VkBuffer srcBuffer, VkImage dstImage, std::uint16_t width, std::uint16_t height, VkCommandPool commandPool)
 {
     auto commandBuffer = BeginSingleTimeCommand(device, queue, commandPool);
@@ -89,7 +89,7 @@ void CopyBufferToImage(VulkanDevice const &device, Q &queue, VkBuffer srcBuffer,
 }
 
 
-template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
+template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>* = nullptr>
 void GenerateMipMaps(VulkanDevice const &device, Q &queue, VulkanImage const &image, VkCommandPool commandPool) noexcept
 {
     auto commandBuffer = BeginSingleTimeCommand(device, queue, commandPool);
@@ -148,7 +148,7 @@ void GenerateMipMaps(VulkanDevice const &device, Q &queue, VulkanImage const &im
 }
 
 
-template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>...>
+template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>* = nullptr>
 bool TransitionImageLayout(VulkanDevice const &device, Q &queue, VulkanImage const &image,
                            VkImageLayout srcLayout, VkImageLayout dstLayout, VkCommandPool commandPool) noexcept
 {

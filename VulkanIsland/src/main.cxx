@@ -204,7 +204,7 @@ struct app_t final {
 
 void RecreateSwapChain(app_t &app);
 
-template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
+template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>* = nullptr>
 [[nodiscard]] std::shared_ptr<VulkanBuffer> StageData(VulkanDevice &device, T &&container);
 
 [[nodiscard]] std::optional<VulkanTexture>
@@ -1077,7 +1077,7 @@ try {
 }
 
 
-template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
+template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>* = nullptr>
 [[nodiscard]] std::shared_ptr<VulkanBuffer>
 StageData(VulkanDevice &device, T &&container)
 {

@@ -21,7 +21,7 @@ struct mesh final {
     std::uint32_t vertexCount{0};
     std::uint32_t indexCount{0};
 
-    template<class T1, class T2, typename std::enable_if_t<are_same_v<mesh, T1, T2>>...>
+    template<class T1, class T2, typename std::enable_if_t<are_same_v<mesh, T1, T2>>* = nullptr>
     bool constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
     {
         return lhs.vertexBuffer < rhs.vertexBuffer;

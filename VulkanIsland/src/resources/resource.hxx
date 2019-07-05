@@ -41,7 +41,7 @@ public:
     [[nodiscard]] std::shared_ptr<VulkanShaderModule>
     CreateShaderModule(std::vector<std::byte> const &shaderByteCode) noexcept;
 
-    template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>...>
+    template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>* = nullptr>
     [[nodiscard]] std::shared_ptr<IndexBuffer> CreateIndexBuffer(std::size_t sizeInBytes) noexcept;
 
     [[nodiscard]] std::shared_ptr<VertexBuffer> CreateVertexBuffer(xformat::vertex_layout const &layout, std::size_t sizeInBytes) noexcept;

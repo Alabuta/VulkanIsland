@@ -41,7 +41,7 @@ MemoryManager::~MemoryManager()
 }
 
 
-//template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
+//template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>* = nullptr>
 std::shared_ptr<DeviceMemory>
 MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, VkMemoryPropertyFlags properties)
 {

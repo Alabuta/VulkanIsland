@@ -87,7 +87,7 @@ public:
 
     #if TEMPORARILY_DISABLED
         struct less_comparator final {
-            template<class T1, class T2, typename std::enable_if_t<are_same_v<GraphicsPipelinePropertiesKey, T1, T2>>...>
+            template<class T1, class T2, typename std::enable_if_t<are_same_v<GraphicsPipelinePropertiesKey, T1, T2>>* = nullptr>
             auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
             {
                 auto topology = lhs.topology_ < rhs.topology_;
@@ -113,7 +113,7 @@ private:
 };
 
 
-template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
+template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>* = nullptr>
 [[nodiscard]] std::optional<VkPipelineLayout>
 CreatePipelineLayout(VulkanDevice const &vulkanDevice, T &&descriptorSetLayouts) noexcept
 {

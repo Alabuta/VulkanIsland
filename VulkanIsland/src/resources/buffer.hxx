@@ -27,10 +27,10 @@ private:
 class IndexBuffer final {
 public:
 
-    template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>...>
+    template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>* = nullptr>
     IndexBuffer(std::shared_ptr<VulkanBuffer> buffer, std::size_t size) noexcept : buffer{buffer}, size{size}, type{T{}} { }
 
-    template<class T, typename std::enable_if_t<std::is_same_v<IndexBuffer, std::decay_t<T>>>...>
+    template<class T, typename std::enable_if_t<std::is_same_v<IndexBuffer, std::decay_t<T>>>* = nullptr>
     bool constexpr operator< (T &&rhs) const noexcept
     {
         return buffer->handle() < rhs.buffer->handle();

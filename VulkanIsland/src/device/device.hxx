@@ -45,7 +45,7 @@ public:
     VkDevice handle() const noexcept { return device_; };
     VkPhysicalDevice physical_handle() const noexcept { return physicalDevice_; };
 
-    template<class Q, std::size_t I = 0, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
+    template<class Q, std::size_t I = 0, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>* = nullptr>
     Q const &queue() const noexcept;
 
     MemoryManager &memoryManager() noexcept { return *memoryManager_; }
@@ -64,7 +64,7 @@ public:
         static auto constexpr level{L};
     };
 
-    template<class Q, std::size_t I = 0, VkCommandBufferLevel L, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
+    template<class Q, std::size_t I = 0, VkCommandBufferLevel L, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>* = nullptr>
     std::vector<VulkanCmdBuffer<L>> AllocateCmdBuffers(std::size_t count)
     {
         std::vector<VulkanCmdBuffer<L>> commandBuffers(count);
@@ -154,7 +154,7 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
     resourceManager_ = std::make_unique<ResourceManager>(*this);
 }
 
-template<class Q, std::size_t I, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
+template<class Q, std::size_t I, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>* = nullptr>
 inline Q const &VulkanDevice::queue() const noexcept
 {
     if constexpr (std::is_same_v<Q, GraphicsQueue>)

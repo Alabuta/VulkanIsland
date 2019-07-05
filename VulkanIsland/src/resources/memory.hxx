@@ -21,7 +21,7 @@ public:
     MemoryManager(VulkanDevice const &vulkanDevice, VkDeviceSize bufferImageGranularity);
     ~MemoryManager();
 
-    template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
+    template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>* = nullptr>
     [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(T buffer, VkMemoryPropertyFlags properties, bool linear = true)
     {
         return CheckRequirementsAndAllocate(buffer, properties, linear);
@@ -39,7 +39,7 @@ private:
         VkMemoryPropertyFlags properties{0};
 
         struct hash_value final {
-            template<class T, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>>>...>
+            template<class T, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>>>* = nullptr>
             constexpr std::size_t operator() (T &&pool) const noexcept
             {
                 std::size_t seed = 0;
@@ -51,7 +51,7 @@ private:
             }
         };
 
-        template<class T, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>>>...>
+        template<class T, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>>>* = nullptr>
         constexpr bool operator== (T &&rhs) const noexcept
         {
             return memoryTypeIndex == rhs.memoryTypeIndex && properties == rhs.properties;
@@ -75,13 +75,13 @@ private:
                         return lhs.size < rhs.size;
                     }
 
-                    template<class T, class S, typename std::enable_if_t<std::is_same_v<Chunk, std::decay_t<T>> && std::is_integral_v<S>>...>
+                    template<class T, class S, typename std::enable_if_t<std::is_same_v<Chunk, std::decay_t<T>> && std::is_integral_v<S>>* = nullptr>
                     auto operator() (T &&chunk, S size) const noexcept
                     {
                         return chunk.size < size;
                     }
 
-                    template<class S, class T, typename std::enable_if_t<std::is_same_v<Chunk, std::decay_t<T>> && std::is_integral_v<S>>...>
+                    template<class S, class T, typename std::enable_if_t<std::is_same_v<Chunk, std::decay_t<T>> && std::is_integral_v<S>>* = nullptr>
                     auto operator() (S size, T &&chunk) const noexcept
                     {
                         return chunk.size < size;
@@ -101,10 +101,10 @@ private:
 
     std::unordered_map<std::size_t, Pool> pools_;
 
-    template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
+    template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>* = nullptr>
     [[nodiscard]] std::shared_ptr<DeviceMemory> CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, bool linear);
 
-    //template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>...>
+    //template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>* = nullptr>
     [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(VkMemoryRequirements const &memoryRequirements, VkMemoryPropertyFlags properties);
 
     auto AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size, VkMemoryPropertyFlags properties) -> std::optional<decltype(Pool::blocks)::iterator>;
@@ -112,7 +112,7 @@ private:
     void DeallocateMemory(DeviceMemory const &deviceMemory);
 };
 
-template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
+template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>* = nullptr>
 [[nodiscard]] std::shared_ptr<DeviceMemory>
 MemoryManager::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, [[maybe_unused]] bool linear)
 {

@@ -5,7 +5,7 @@
 
 namespace {
 
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
+template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>* = nullptr>
 [[nodiscard]] auto CheckRequiredExtensions(T &&_requiredExtensions)
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *>, "iterable object does not contain null-terminated strings");
@@ -40,7 +40,7 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     return std::includes(supportedExtensions.begin(), supportedExtensions.end(), requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
 }
 
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
+template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>* = nullptr>
 [[nodiscard]] auto CheckRequiredLayers(T &&_requiredLayers)
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *>, "iterable object does not contain null-terminated strings");

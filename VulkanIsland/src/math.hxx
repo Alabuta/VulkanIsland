@@ -62,7 +62,7 @@ glm::mat4 reversedPerspective(float yFOV, float aspect, float znear, float zfar)
 }
 
 
-template<class T, std::enable_if_t<std::is_same_v<std::decay_t<T>, glm::mat4>>...>
+template<class T, std::enable_if_t<std::is_same_v<std::decay_t<T>, glm::mat4>>* = nullptr>
 inline std::ostream &operator<< (std::ostream &stream, T &&m)
 {
     stream << std::setprecision(4) << std::fixed;

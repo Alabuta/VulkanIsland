@@ -48,7 +48,7 @@ namespace {
     };
 }
 
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
+template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>* = nullptr>
 [[nodiscard]] VkSurfaceFormatKHR ChooseSwapSurfaceFormat(T &&surfaceFormats)
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkSurfaceFormatKHR>, "iterable object does not contain VkSurfaceFormatKHR elements");
@@ -67,7 +67,7 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
     return surfaceFormats.at(0);
 }
 
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
+template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>* = nullptr>
 [[nodiscard]] VkPresentModeKHR ChooseSwapPresentMode(T &&presentModes)
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkPresentModeKHR>, "iterable object does not contain VkPresentModeKHR elements");

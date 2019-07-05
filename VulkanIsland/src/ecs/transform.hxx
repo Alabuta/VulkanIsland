@@ -14,7 +14,7 @@ struct Transform final {
 
     Transform() noexcept = default;
 
-    template<class T1, class T2, std::enable_if_t<are_same_v<glm::mat4, T1, T2>>...>
+    template<class T1, class T2, std::enable_if_t<are_same_v<glm::mat4, T1, T2>>* = nullptr>
     Transform(T1 &&localMatrix, T2 &&worldMatrix) noexcept : localMatrix{std::forward<T1>(localMatrix)}, worldMatrix{std::forward<T2>(worldMatrix)} { }
 };
 

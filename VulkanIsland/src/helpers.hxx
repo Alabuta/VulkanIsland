@@ -45,7 +45,7 @@ struct is_one_of {
 template<class T, class... Ts>
 auto constexpr is_one_of_v = is_one_of<T, Ts...>::value;
 
-//template<class T, typename std::enable_if_t<std::is_integral_v<std::decay_t<T>>>...>
+//template<class T, typename std::enable_if_t<std::is_integral_v<std::decay_t<T>>>* = nullptr>
 constexpr std::uint16_t operator"" _ui16(unsigned long long value)
 {
     return static_cast<std::uint16_t>(value);

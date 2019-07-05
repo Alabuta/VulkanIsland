@@ -83,7 +83,7 @@ struct VulkanTexture final {
 };
 
 
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>...>
+template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>* = nullptr>
 [[nodiscard]] std::optional<VkFormat>
 FindSupportedImageFormat(VulkanDevice const &device, T &&candidates, VkImageTiling tiling, VkFormatFeatureFlags features) noexcept
 {

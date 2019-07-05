@@ -59,7 +59,7 @@ struct ShaderStage final {
     std::vector<std::int32_t> constants{};
 
     struct hash_value final {
-        template<class T, typename std::enable_if_t<std::is_same_v<ShaderStage, std::decay_t<T>>>...>
+        template<class T, typename std::enable_if_t<std::is_same_v<ShaderStage, std::decay_t<T>>>* = nullptr>
         auto constexpr operator() (T &&shaderStage) const noexcept
         {
             std::size_t seed = 0;
@@ -79,7 +79,7 @@ struct ShaderStage final {
     };
 
     struct equal_comparator final {
-        template<class T1, class T2, typename std::enable_if_t<are_same_v<struct ShaderStage, T1, T2>>...>
+        template<class T1, class T2, typename std::enable_if_t<are_same_v<struct ShaderStage, T1, T2>>* = nullptr>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
             auto constansAreEqual = std::size(lhs.constants) == std::size(rhs.constants) &&
