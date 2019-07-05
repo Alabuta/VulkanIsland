@@ -101,7 +101,7 @@ private:
 
     std::unordered_map<std::size_t, Pool> pools_;
 
-    template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>* = nullptr>
+    template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
     [[nodiscard]] std::shared_ptr<DeviceMemory> CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, bool linear);
 
     //template<class R, typename std::enable_if_t<is_one_of_v<std::decay_t<R>, VkMemoryRequirements, VkMemoryRequirements2>>* = nullptr>
@@ -112,7 +112,7 @@ private:
     void DeallocateMemory(DeviceMemory const &deviceMemory);
 };
 
-template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>* = nullptr>
+template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
 [[nodiscard]] std::shared_ptr<DeviceMemory>
 MemoryManager::CheckRequirementsAndAllocate(T buffer, VkMemoryPropertyFlags properties, [[maybe_unused]] bool linear)
 {

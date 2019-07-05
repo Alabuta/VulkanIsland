@@ -60,7 +60,7 @@ private:
 
     template<class T, std::enable_if_t<is_one_of_v<std::decay_t<T>,
         VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, VulkanShaderModule
-    >>* = nullptr>
+    >>...>
     void ReleaseResource(T &&resource) noexcept;
 
     ResourceManager() = delete;

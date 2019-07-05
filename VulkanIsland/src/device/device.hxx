@@ -45,7 +45,7 @@ public:
     VkDevice handle() const noexcept { return device_; };
     VkPhysicalDevice physical_handle() const noexcept { return physicalDevice_; };
 
-    template<class Q, std::size_t I = 0, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>* = nullptr>
+    template<class Q, std::size_t I = 0, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
     Q const &queue() const noexcept;
 
     MemoryManager &memoryManager() noexcept { return *memoryManager_; }
@@ -154,7 +154,7 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
     resourceManager_ = std::make_unique<ResourceManager>(*this);
 }
 
-template<class Q, std::size_t I, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>* = nullptr>
+template<class Q, std::size_t I, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
 inline Q const &VulkanDevice::queue() const noexcept
 {
     if constexpr (std::is_same_v<Q, GraphicsQueue>)

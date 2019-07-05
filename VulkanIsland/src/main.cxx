@@ -204,7 +204,7 @@ struct app_t final {
 
 void RecreateSwapChain(app_t &app);
 
-template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>* = nullptr>
+template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
 [[nodiscard]] std::shared_ptr<VulkanBuffer> StageData(VulkanDevice &device, T &&container);
 
 [[nodiscard]] std::optional<VulkanTexture>
@@ -549,15 +549,15 @@ xformat populate()
         std::vector<vertex> vertices;
 
         vertices.push_back(vertex{
-            Position{0.f, 0.f, 0.f}, Texcoord{.5f, .5f}
+            Position{{0.f, 0.f, 0.f}}, Texcoord{{.5f, .5f}}
         });
 
         vertices.push_back(vertex{
-            Position{-1.f, 0.f, 1.f}, Texcoord{0.f, 0.f}
+            Position{{-1.f, 0.f, 1.f}}, Texcoord{{0.f, 0.f}}
         });
 
         vertices.push_back(vertex{
-            Position{1.f, 0.f, 1.f}, Texcoord{1.f, 0.f}
+            Position{{1.f, 0.f, 1.f}}, Texcoord{{1.f, 0.f}}
         });
 
         xformat::non_indexed_meshlet meshlet;
@@ -631,28 +631,28 @@ xformat populate()
 
         // Second triangle
         vertices.push_back(vertex{
-            Position{0.f, 0.f, 0.f}, Texcoord{.5f, .5f}, Color{0.f, 0.f, 0.f, 1.f}
+            Position{{0.f, 0.f, 0.f}}, Texcoord{{.5f, .5f}}, Color{{0.f, 0.f, 0.f, 1.f}}
         });
 
         vertices.push_back(vertex{
-            Position{1.f, 0.f, -1.f}, Texcoord{1.f, 1.f}, Color{1.f, 0.f, 1.f, 1.f}
+            Position{{1.f, 0.f, -1.f}}, Texcoord{{1.f, 1.f}}, Color{{1.f, 0.f, 1.f, 1.f}}
         });
 
         vertices.push_back(vertex{
-            Position{0.f, 0.f, -1.f}, Texcoord{.5f, 1.f}, Color{0.f, 0.f, 1.f, 1.f}
+            Position{{0.f, 0.f, -1.f}}, Texcoord{{.5f, 1.f}}, Color{{0.f, 0.f, 1.f, 1.f}}
         });
 
         // Third triangle
         vertices.push_back(vertex{
-            Position{0.f, 0.f, 0.f}, Texcoord{.5f, .5f}, Color{1.f, 0.f, 1.f, 1.f}
+            Position{{0.f, 0.f, 0.f}}, Texcoord{{.5f, .5f}}, Color{{1.f, 0.f, 1.f, 1.f}}
         });
 
         vertices.push_back(vertex{
-            Position{-1.f, 0.f, -1.f}, Texcoord{0.f, 1.f}, Color{0.f, 1.f, 1.f, 1.f}
+            Position{{-1.f, 0.f, -1.f}}, Texcoord{{0.f, 1.f}}, Color{{0.f, 1.f, 1.f, 1.f}}
         });
 
         vertices.push_back(vertex{
-            Position{-1.f, 0.f, 0.f}, Texcoord{0.f, .5f}, Color{1.f, 1.f, 0.f, 1.f}
+            Position{{-1.f, 0.f, 0.f}}, Texcoord{{0.f, .5f}}, Color{{1.f, 1.f, 0.f, 1.f}}
         });
 
         auto &&vertexBuffer = _model.vertexBuffers[vertexLayoutIndex];
@@ -1085,7 +1085,7 @@ try {
 }
 
 
-template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>* = nullptr>
+template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
 [[nodiscard]] std::shared_ptr<VulkanBuffer>
 StageData(VulkanDevice &device, T &&container)
 {

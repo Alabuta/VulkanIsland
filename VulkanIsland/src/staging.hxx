@@ -59,6 +59,7 @@ namespace staging
             });
         }
 
+#if NOT_YET_IMPLEMENTED
         struct comparator final {
             using is_transparent = void;
 
@@ -87,6 +88,7 @@ namespace staging
                 return chunk.size < size;
             }*/
         };
+#endif
     };
 
     struct submesh_t final {
