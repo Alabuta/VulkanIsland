@@ -38,6 +38,8 @@ private:
         VkDeviceSize allocatedSize{0};
         VkMemoryPropertyFlags properties{0};
 
+        bool linear{true};
+
         struct hash_value final {
             template<class T, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>>>* = nullptr>
             constexpr std::size_t operator() (T &&pool) const noexcept
@@ -46,6 +48,7 @@ private:
 
                 boost::hash_combine(seed, pool.memoryTypeIndex);
                 boost::hash_combine(seed, pool.properties);
+                boost::hash_combine(seed, pool.linear);
 
                 return seed;
             }
@@ -54,7 +57,7 @@ private:
         template<class T, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>>>* = nullptr>
         constexpr bool operator== (T &&rhs) const noexcept
         {
-            return memoryTypeIndex == rhs.memoryTypeIndex && properties == rhs.properties;
+            return memoryTypeIndex == rhs.memoryTypeIndex && properties == rhs.properties && linear == rhs.linear;
         }
 
         struct Block final {
@@ -68,9 +71,8 @@ private:
                 struct comparator final {
                     using is_transparent = void;
 
-                    template<class L, class R>
-                    std::enable_if_t<are_same_v<Chunk, L, R>, bool>
-                    operator() (L &&lhs, R &&rhs) const noexcept
+                    template<class L, class R, std::enable_if_t<are_same_v<Chunk, L, R>>* = nullptr>
+                    auto operator() (L &&lhs, R &&rhs) const noexcept
                     {
                         return lhs.size < rhs.size;
                     }
@@ -96,7 +98,8 @@ private:
 
         std::unordered_map<VkDeviceMemory, Block> blocks;
 
-        Pool(std::uint32_t memoryTypeIndex, VkMemoryPropertyFlags properties) noexcept : memoryTypeIndex{memoryTypeIndex}, properties{properties} { }
+        Pool(std::uint32_t memoryTypeIndex, VkMemoryPropertyFlags properties, bool linear) noexcept
+            : memoryTypeIndex{memoryTypeIndex}, properties{properties}, linear{linear} { }
     };
 
     std::unordered_map<std::size_t, Pool> pools_;
@@ -108,7 +111,8 @@ private:
     [[nodiscard]] std::shared_ptr<DeviceMemory>
     AllocateMemory(VkMemoryRequirements const &memoryRequirements, VkMemoryPropertyFlags properties, bool linear);
 
-    auto AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size, VkMemoryPropertyFlags properties) -> std::optional<decltype(Pool::blocks)::iterator>;
+    auto AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size, VkMemoryPropertyFlags properties, bool linear)
+        -> std::optional<decltype(Pool::blocks)::iterator>;
 
     void DeallocateMemory(DeviceMemory const &deviceMemory);
 };
@@ -194,6 +198,7 @@ private:
     {
         boost::hash_combine(seed_, typeIndex_);
         boost::hash_combine(seed_, properties_); 
+        boost::hash_combine(seed_, linear_);
     }
 
     DeviceMemory() = delete;
