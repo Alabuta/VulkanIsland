@@ -62,8 +62,6 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
 
     } (memoryRequirements2);
 
-    auto constexpr memoryGranularity = 0x400u;
-
     if constexpr (kSUB_ALLOCATION) {
         if (memoryRequirements.size > kBLOCK_ALLOCATION_SIZE) {
             std::cerr << "requested allocation size is bigger than memory page size\n"s;
@@ -82,16 +80,18 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
 
     boost::hash_combine(seed, memoryTypeIndex);
     boost::hash_combine(seed, properties);
+    boost::hash_combine(seed, linear);
 
     if (pools_.count(seed) < 1)
-        pools_.try_emplace(seed, memoryTypeIndex, properties);
+        pools_.try_emplace(seed, memoryTypeIndex, properties, linear);
 
     auto &&pool = pools_.at(seed);
 
     typename decltype(Pool::blocks)::iterator it_block;
     typename decltype(Pool::Block::availableChunks)::iterator it_chunk;
 
-    it_block = std::find_if(std::begin(pool.blocks), std::end(pool.blocks), [&it_chunk, &memoryRequirements, linear, memoryGranularity] (auto &&pair)
+    it_block = std::find_if(std::begin(pool.blocks), std::end(pool.blocks),
+                            [&it_chunk, &memoryRequirements, imageGranularity = bufferImageGranularity_, linear] (auto &&pair)
     {
         auto &&[handle, memoryBlock] = pair;
 
@@ -105,14 +105,16 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
             auto it_chunk_begin = availableChunks.lower_bound(memoryRequirements.size);
             auto it_chunk_end = availableChunks.upper_bound(memoryRequirements.size);
 
-            it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [&memoryRequirements, linear, memoryGranularity] (auto &&chunk)
+            it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [&memoryRequirements, linear, imageGranularity] (auto &&chunk)
             {
                 auto alignedOffset = boost::alignment::align_up(chunk.offset, memoryRequirements.alignment);
 
                 // if (linear)
-                    alignedOffset = boost::alignment::align_up(alignedOffset, memoryGranularity);
+                    //alignedOffset = boost::alignment::align_up(alignedOffset, imageGranularity);
 
-                return alignedOffset + memoryRequirements.size <= chunk.offset + chunk.size;
+                auto fits = alignedOffset + memoryRequirements.size <= chunk.offset + chunk.size;;
+
+                return fits;
             });
 
             return it_chunk != it_chunk_end;
@@ -128,7 +130,8 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
     });
 
     if (it_block == std::end(pool.blocks)) {
-        if (auto result = AllocateMemoryBlock(memoryTypeIndex, kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size, properties); !result)
+        if (auto result = AllocateMemoryBlock(
+            memoryTypeIndex, kSUB_ALLOCATION ? kBLOCK_ALLOCATION_SIZE : memoryRequirements.size, properties, linear); !result)
             return { };
 
         else it_block = result.value();
@@ -151,7 +154,7 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
             auto alignedOffset = boost::alignment::align_up(offset, memoryRequirements.alignment);
 
             // if (linear)
-                alignedOffset = boost::alignment::align_up(alignedOffset, memoryGranularity);
+                //alignedOffset = boost::alignment::align_up(alignedOffset, imageGranularity);
 
             size -= memoryRequirements.size + alignedOffset - offset;
             offset = alignedOffset + memoryRequirements.size;
@@ -166,7 +169,7 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
         }
 
         else {
-            // auto const sizeInBytes = memoryRequirements.size + linear ? memoryGranularity : 0u;
+            // auto const sizeInBytes = memoryRequirements.size + linear ? imageGranularity : 0u;
             auto const wastedMemoryRatio = 100.f - static_cast<float>(memoryRequirements.size) / static_cast<float>(memoryBlock.availableSize) * 100.f;
 
             if (wastedMemoryRatio > 1.f)
@@ -196,13 +199,14 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
     return { };
 }
 
-auto MemoryManager::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size, VkMemoryPropertyFlags properties)
+auto MemoryManager::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceSize size, VkMemoryPropertyFlags properties, bool linear)
 -> std::optional<decltype(Pool::blocks)::iterator>
 {
     std::size_t seed = 0;
 
     boost::hash_combine(seed, memoryTypeIndex);
     boost::hash_combine(seed, properties);
+    boost::hash_combine(seed, linear);
 
     if (pools_.count(seed) < 1) {
         std::cerr << "failed to find instantiated memory pool for type index: "s << memoryTypeIndex << '\n';
@@ -230,7 +234,7 @@ auto MemoryManager::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceS
 
     auto it = pool.blocks.try_emplace(handle, size).first;
 
-    std::cout << "Memory pool: ["s << memoryTypeIndex << "]: #"s << std::size(pool.blocks) << " page allocation: "s;
+    std::cout << "Memory type index ["s << memoryTypeIndex << "]: #"s << std::size(pool.blocks) << " page allocation: "s;
     std::cout << static_cast<float>(size) / 1024.f << " KB/"s << static_cast<float>(totalAllocatedSize_) / std::pow(2.f, 20.f) << "MB\n"s;
 
     return it;
@@ -239,21 +243,21 @@ auto MemoryManager::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceS
 void MemoryManager::DeallocateMemory(DeviceMemory const &memory)
 {
     if (pools_.count(memory.seed()) < 1) {
-        std::cerr << "Memory pool: dead chunk encountered.\n"s;
+        std::cerr << "Memory manager: dead chunk encountered.\n"s;
         return;
     }
 
     auto &&pool = pools_.at(memory.seed());
 
     if (pool.blocks.count(memory.handle()) < 1) {
-        std::cerr << "Memory pool: dead chunk encountered.\n"s;
+        std::cerr << "Memory manager: dead chunk encountered.\n"s;
         return;
     }
 
     auto &&block = pool.blocks.at(memory.handle());
     auto &&availableChunks = block.availableChunks;
 
-    std::cout << "Memory pool: ["s << memory.typeIndex() << "]: releasing chunk: "s << static_cast<float>(memory.size()) / 1024.f << "KB.\n"s;
+    std::cout << "Memory type index ["s << memory.typeIndex() << "]: releasing chunk: "s << static_cast<float>(memory.size()) / 1024.f << "KB.\n"s;
 
     auto it_chunk = availableChunks.emplace(memory.offset(), memory.size());
 
