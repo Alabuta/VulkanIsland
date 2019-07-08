@@ -386,6 +386,18 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
     std::vector<VkDeviceSize> vertexBuffersOffsets(bindingCount, 0);
 
+#if defined( __clang__) || defined(_MSC_VER)
+    auto const clearColors = std::array{
+        VkClearValue{{{ .64f, .64f, .64f, 1.f }}},
+        VkClearValue{{{ kREVERSED_DEPTH ? 0.f : 1.f, 0 }}}
+    };
+#else
+    auto const clearColors = std::array{
+        VkClearValue{.color = {.float32 = { .64f, .64f, .64f, 1.f } } },
+        VkClearValue{.depthStencil = { kREVERSED_DEPTH ? 0.f : 1.f, 0 } }
+    };
+#endif
+
 #ifdef _MSC_VER
     std::size_t i = 0;
 
@@ -402,18 +414,6 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
         if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
             throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
-
-    #if defined( __clang__) || defined(_MSC_VER)
-        auto const clearColors = std::array{
-            VkClearValue{{{ .64f, .64f, .64f, 1.f }}},
-            VkClearValue{{{ kREVERSED_DEPTH ? 0.f : 1.f, 0 }}}
-        };
-    #else
-        auto const clearColors = std::array{
-            VkClearValue{.color = {.float32 = { .64f, .64f, .64f, 1.f } } },
-            VkClearValue{.depthStencil = { kREVERSED_DEPTH ? 0.f : 1.f, 0 } }
-        };
-    #endif
 
         VkRenderPassBeginInfo const renderPassInfo{
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
