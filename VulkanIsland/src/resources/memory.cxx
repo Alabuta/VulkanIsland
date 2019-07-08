@@ -90,8 +90,7 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
     typename decltype(Pool::blocks)::iterator it_block;
     typename decltype(Pool::Block::availableChunks)::iterator it_chunk;
 
-    it_block = std::find_if(std::begin(pool.blocks), std::end(pool.blocks),
-                            [&it_chunk, &memoryRequirements, imageGranularity = bufferImageGranularity_, linear] (auto &&pair)
+    it_block = std::find_if(std::begin(pool.blocks), std::end(pool.blocks), [&it_chunk, &memoryRequirements] (auto &&pair)
     {
         auto &&[handle, memoryBlock] = pair;
 
@@ -105,7 +104,7 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
             auto it_chunk_begin = availableChunks.lower_bound(memoryRequirements.size);
             auto it_chunk_end = availableChunks.upper_bound(memoryRequirements.size);
 
-            it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [&memoryRequirements, linear, imageGranularity] (auto &&chunk)
+            it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [&memoryRequirements] (auto &&chunk)
             {
                 auto alignedOffset = boost::alignment::align_up(chunk.offset, memoryRequirements.alignment);
 
@@ -173,7 +172,7 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
             auto const wastedMemoryRatio = 100.f - static_cast<float>(memoryRequirements.size) / static_cast<float>(memoryBlock.availableSize) * 100.f;
 
             if (wastedMemoryRatio > 1.f)
-                std::cerr << "Memory pool: wasted memory ratio: "s << wastedMemoryRatio << "%\n"s;
+                std::cerr << "Memory type index ["s << memoryTypeIndex << "]: wasted ratio is "s << wastedMemoryRatio << "%\n"s;
 
             availableChunks.emplace(memoryRequirements.size, memoryBlock.availableSize - memoryRequirements.size);
             memoryBlock.availableSize -= memoryRequirements.size;
@@ -181,7 +180,7 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
 
         availableChunks.erase(Pool::Block::Chunk{0, 0});
 
-        std::cout << "Memory pool: ["s << memoryTypeIndex << "]: sub-allocation : "s << static_cast<float>(memoryRequirements.size) / 1024.f << "KB\n"s;
+        std::cout << "Memory type index ["s << memoryTypeIndex << "]: sub-allocation : "s << static_cast<float>(memoryRequirements.size) / 1024.f << "KB\n"s;
 
         return std::shared_ptr<DeviceMemory>{
             new DeviceMemory{it_block->first, memoryTypeIndex, properties, memoryRequirements.size, memoryOffset, linear},
@@ -234,7 +233,7 @@ auto MemoryManager::AllocateMemoryBlock(std::uint32_t memoryTypeIndex, VkDeviceS
 
     auto it = pool.blocks.try_emplace(handle, size).first;
 
-    std::cout << "Memory type index ["s << memoryTypeIndex << "]: #"s << std::size(pool.blocks) << " page allocation: "s;
+    std::cout << "Memory type index ["s << memoryTypeIndex << "]: "s << std::size(pool.blocks) << "th page allocation: "s;
     std::cout << static_cast<float>(size) / 1024.f << " KB/"s << static_cast<float>(totalAllocatedSize_) / std::pow(2.f, 20.f) << "MB\n"s;
 
     return it;
@@ -257,7 +256,8 @@ void MemoryManager::DeallocateMemory(DeviceMemory const &memory)
     auto &&block = pool.blocks.at(memory.handle());
     auto &&availableChunks = block.availableChunks;
 
-    std::cout << "Memory type index ["s << memory.typeIndex() << "]: releasing chunk: "s << static_cast<float>(memory.size()) / 1024.f << "KB.\n"s;
+    std::cout << "Memory type index ["s << memory.typeIndex() << "]"s;
+    std::cout << ": releasing chunk "s << static_cast<float>(memory.size()) / 1024.f << "KB.\n"s;
 
     auto it_chunk = availableChunks.emplace(memory.offset(), memory.size());
 
