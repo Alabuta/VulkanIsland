@@ -2,6 +2,7 @@
 
 #include <vector>
 #include <iomanip>
+#include <numeric>
 #include <unordered_map>
 
 #include <boost/functional/hash.hpp>
@@ -151,7 +152,7 @@ struct xformat final {
 #endif
 
     struct vertex_attribute final {
-        std::size_t offsetInBytes;
+        std::size_t offsetInBytes{0};
 
         semantics_t semantic;
         attribute_t type;
@@ -162,7 +163,7 @@ struct xformat final {
     struct vertex_layout final {
         std::vector<vertex_attribute> attributes;
 
-        std::size_t sizeInBytes;
+        std::size_t sizeInBytes{0};
     };
 
 
@@ -314,6 +315,44 @@ struct xformat final {
 
     std::vector<indexed_meshlet> indexedMeshlets;
 };
+
+template<class S, class T, class N>
+void AddVertexAttributes(std::vector<xformat::vertex_attribute> &attributes, std::size_t offsetInBytes, S semantic, T type, N normalized)
+{
+    attributes.push_back({offsetInBytes, semantic, type, normalized});
+}
+
+template<class S, class T, class N, class... Ts>
+void AddVertexAttributes(std::vector<xformat::vertex_attribute> &attributes, std::size_t offsetInBytes, S semantic, T type, N normalized, Ts... args)
+{
+    attributes.push_back({offsetInBytes, semantic, type, normalized});
+
+    AddVertexAttributes(attributes, offsetInBytes + sizeof(type), args...);
+}
+
+template<class... Ts>
+xformat::vertex_layout CreateVertexLayout(Ts... args)
+{
+    xformat::vertex_layout vertexLayout;
+
+    auto &&vertexAttributes = vertexLayout.attributes;
+
+    AddVertexAttributes(vertexAttributes, 0, args...);
+
+    vertexLayout.sizeInBytes = 0;
+
+    for (auto &&vertexAttribute : vertexAttributes) {
+        auto sizeInBytes = std::visit([] (auto &&type)
+        {
+            return sizeof(std::decay_t<decltype(type)>);
+
+        }, vertexAttribute.type);
+
+        vertexLayout.sizeInBytes += sizeInBytes;
+    }
+
+    return vertexLayout;
+}
 
 
 /*struct Mesh final {

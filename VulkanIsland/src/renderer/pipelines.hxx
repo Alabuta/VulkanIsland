@@ -44,6 +44,7 @@ public:
         PRIMITIVE_TOPOLOGY topology_;
         xformat::vertex_layout layout_;
         std::shared_ptr<Material> material_;
+
         std::array<float, 2> viewport_;
 
         struct hash_value final {

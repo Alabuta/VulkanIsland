@@ -43,7 +43,7 @@ GraphicsPipelineManager::CreateGraphicsPipeline(xformat::vertex_layout const &la
 {
     auto viewportExtent = std::array{static_cast<float>(extent.width), static_cast<float>(extent.height)};
 
-    GraphicsPipelinePropertiesKey key{topology, layout, material, viewportExtent };
+    GraphicsPipelinePropertiesKey key{topology, layout, material, viewportExtent};
 
     if (graphicsPipelineProperties_.count(key) == 0) {
         auto materialProperties = materialFactory_.properties(material);

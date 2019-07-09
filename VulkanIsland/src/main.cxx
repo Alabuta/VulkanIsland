@@ -377,7 +377,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
     std::vector<VkBuffer> vertexBuffersHandles;
 
     std::transform(std::cbegin(vertexBindingsAndBuffers), std::cend(vertexBindingsAndBuffers),
-                                std::back_inserter(vertexBuffersHandles), [] (auto &&pair)
+                               std::back_inserter(vertexBuffersHandles), [] (auto &&pair)
     {
         return pair.second;
     });
@@ -532,38 +532,27 @@ xformat populate()
             vec<2, std::float_t> texCoord;
         };
 
-        using Position = decltype(vertex::position);
-        using Texcoord = decltype(vertex::texCoord);
-
         auto const vertexLayoutIndex = std::size(_model.vertexLayouts);
 
-        {
-            xformat::vertex_layout vertexLayout;
-            vertexLayout.sizeInBytes = sizeof(vertex);
-
-            vertexLayout.attributes.push_back(xformat::vertex_attribute{
-                offsetof(vertex, position), semantic::position{}, Position{}, false
-            });
-
-            vertexLayout.attributes.push_back(xformat::vertex_attribute{
-                offsetof(vertex, texCoord), semantic::tex_coord_0{}, Texcoord{}, false
-            });
-
-            _model.vertexLayouts.push_back(std::move(vertexLayout));
-        }
+        _model.vertexLayouts.push_back(
+            CreateVertexLayout(
+                semantic::position{}, decltype(vertex::position){}, false,
+                semantic::tex_coord_0{}, decltype(vertex::texCoord){}, false
+            )
+        );
 
         std::vector<vertex> vertices;
 
         vertices.push_back(vertex{
-            Position{{0.f, 0.f, 0.f}}, Texcoord{{.5f, .5f}}
+            {{0.f, 0.f, 0.f}}, {{.5f, .5f}}
         });
 
         vertices.push_back(vertex{
-            Position{{-1.f, 0.f, 1.f}}, Texcoord{{0.f, 0.f}}
+            {{-1.f, 0.f, 1.f}}, {{0.f, 0.f}}
         });
 
         vertices.push_back(vertex{
-            Position{{1.f, 0.f, 1.f}}, Texcoord{{1.f, 0.f}}
+            {{1.f, 0.f, 1.f}}, {{1.f, 0.f}}
         });
 
         xformat::non_indexed_meshlet meshlet;
@@ -608,57 +597,42 @@ xformat populate()
             vec<4, std::float_t> color;
         };
 
-        using Position = decltype(vertex::position);
-        using Texcoord = decltype(vertex::texCoord);
-        using Color = decltype(vertex::color);
-
         auto const vertexLayoutIndex = std::size(_model.vertexLayouts);
 
-        {
-            xformat::vertex_layout vertexLayout;
-            vertexLayout.sizeInBytes = sizeof(vertex);
-
-            vertexLayout.attributes.push_back(xformat::vertex_attribute{
-                offsetof(vertex, position), semantic::position{}, Position{}, false
-            });
-
-            vertexLayout.attributes.push_back(xformat::vertex_attribute{
-                offsetof(vertex, texCoord), semantic::tex_coord_0{}, Texcoord{}, false
-            });
-
-            vertexLayout.attributes.push_back(xformat::vertex_attribute{
-                offsetof(vertex, color), semantic::color_0{}, Color{}, false
-            });
-
-            _model.vertexLayouts.push_back(std::move(vertexLayout));
-        }
+        _model.vertexLayouts.push_back(
+            CreateVertexLayout(
+                semantic::position{}, decltype(vertex::position){}, false,
+                semantic::tex_coord_0{}, decltype(vertex::texCoord){}, false,
+                semantic::color_0{}, decltype(vertex::color){}, false
+            )
+        );
 
         std::vector<vertex> vertices;
 
         // Second triangle
         vertices.push_back(vertex{
-            Position{{0.f, 0.f, 0.f}}, Texcoord{{.5f, .5f}}, Color{{0.f, 0.f, 0.f, 1.f}}
+            {{0.f, 0.f, 0.f}}, {{.5f, .5f}}, {{0.f, 0.f, 0.f, 1.f}}
         });
 
         vertices.push_back(vertex{
-            Position{{1.f, 0.f, -1.f}}, Texcoord{{1.f, 1.f}}, Color{{1.f, 0.f, 1.f, 1.f}}
+            {{1.f, 0.f, -1.f}}, {{1.f, 1.f}}, {{1.f, 0.f, 1.f, 1.f}}
         });
 
         vertices.push_back(vertex{
-            Position{{0.f, 0.f, -1.f}}, Texcoord{{.5f, 1.f}}, Color{{0.f, 0.f, 1.f, 1.f}}
+            {{0.f, 0.f, -1.f}}, {{.5f, 1.f}}, {{0.f, 0.f, 1.f, 1.f}}
         });
 
         // Third triangle
         vertices.push_back(vertex{
-            Position{{0.f, 0.f, 0.f}}, Texcoord{{.5f, .5f}}, Color{{1.f, 0.f, 1.f, 1.f}}
+            {{0.f, 0.f, 0.f}}, {{.5f, .5f}}, {{1.f, 0.f, 1.f, 1.f}}
         });
 
         vertices.push_back(vertex{
-            Position{{-1.f, 0.f, -1.f}}, Texcoord{{0.f, 1.f}}, Color{{0.f, 1.f, 1.f, 1.f}}
+            {{-1.f, 0.f, -1.f}}, {{0.f, 1.f}}, {{0.f, 1.f, 1.f, 1.f}}
         });
 
         vertices.push_back(vertex{
-            Position{{-1.f, 0.f, 0.f}}, Texcoord{{0.f, .5f}}, Color{{1.f, 1.f, 0.f, 1.f}}
+            {{-1.f, 0.f, 0.f}}, {{0.f, .5f}}, {{1.f, 1.f, 0.f, 1.f}}
         });
 
         auto &&vertexBuffer = _model.vertexBuffers[vertexLayoutIndex];
@@ -821,7 +795,6 @@ void InitVulkan(Window &window, app_t &app)
     if (auto result = glTF::load(sceneName, app.scene, app.nodeSystem); !result)
         throw std::runtime_error("failed to load a mesh"s);
 
-
     if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); !pipelineLayout)
         throw std::runtime_error("failed to create the pipeline layout"s);
 
@@ -855,10 +828,7 @@ void InitVulkan(Window &window, app_t &app)
 
     app.objects.resize(app.objectsNumber);
 
-    if (app.perObjectBuffer = CreateStorageBuffer(*app.vulkanDevice, app.alignedBufferSize); !app.perObjectBuffer)
-        throw std::runtime_error("failed to init per object uniform buffer"s);
-
-    else {
+    if (app.perObjectBuffer = CreateStorageBuffer(*app.vulkanDevice, app.alignedBufferSize); app.perObjectBuffer) {
         auto &&buffer = *app.perObjectBuffer;
 
         auto offset = buffer.memory()->offset();
@@ -867,6 +837,8 @@ void InitVulkan(Window &window, app_t &app)
         if (auto result = vkMapMemory(app.vulkanDevice->handle(), buffer.memory()->handle(), offset, size, 0, &app.perObjectsMappedPtr); result != VK_SUCCESS)
             throw std::runtime_error("failed to map per object uniform buffer memory: "s + std::to_string(result));
     }
+
+    else throw std::runtime_error("failed to init per object uniform buffer"s);
 
     if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.vulkanDevice, sizeof(Camera::data_t)); !app.perCameraBuffer)
         throw std::runtime_error("failed to init per camera uniform buffer"s);
