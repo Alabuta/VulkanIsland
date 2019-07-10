@@ -1,6 +1,12 @@
 #version 460
+
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_EXT_scalar_block_layout : enable
+
+#pragma attribute(POSITION, vec3, required)
+#pragma attribute(NORMAL, vec3, optional)
+#pragma attribute(TEXCOORD_0, vec2, required)
+#pragma attribute(COLOR_0, vec4, optional)
 
 layout (location = 0) in vec3 POSITION;
 layout (location = 1) in vec3 NORMAL;
