@@ -2,69 +2,65 @@ import os
 import re
 import json
 from subprocess import call
+from typing import NamedTuple
 
 
-compiler_path = 'glslangValidator'
+class Shaders(NamedTuple):
+    compiler_path: str
+    source_path: str
+    include_path: str
+    file_extensions: tuple
 
-shaders_path =  './contents/shaders'
-shaders_include_path =  shaders_path + '/include'
-
-shader_extensions = ('.vert.glsl', '.tesc.glsl', '.tese.glsl', '.geom.glsl', '.frag.glsl', '.comp.glsl')
+shaders = Shaders(
+    'glslangValidator',
+    './contents/shaders',
+    './contents/shaders/include',
+    ('.vert.glsl', '.tesc.glsl', '.tese.glsl', '.geom.glsl', '.frag.glsl', '.comp.glsl')
+)
 
 
 def parse_vertex_shader_source(shader_source_path):
-    file = open(shader_source_path, 'r')
+    output = {}
 
-    attributes=[]
+    with open(shader_source_path, 'r') as file:
+        attributes = []
 
-    for line in file:
-        found_attributes = re.findall(r'^[ |\t]*#[ |\t]*pragma[ |\t]+attribute[ |\t]*\((.*)\)[ |\t]*\n$', line)
+        for line in file:
+            found_attributes = re.findall(r'^[ |\t]*#[ |\t]*pragma[ |\t]+attribute[ |\t]*\((.*)\)[ |\t]*\n$', line)
 
-        if found_attributes:
-            found_attribute = re.sub('[\s|\t]*', '', found_attributes[0])
-            semantic, type, presence = re.split(',', found_attribute)
+            if found_attributes:
+                found_attribute = re.sub('[\s|\t]*', '', found_attributes[0])
+                semantic, type, presence = re.split(',', found_attribute)
 
-            attribute = {
-                'semantic': semantic,
-                'type': type,
-                'optional': presence == 'optional'
-            }
+                attribute = {
+                    'semantic': semantic,
+                    'type': type,
+                    'optional': presence == 'optional'
+                }
 
-            attributes.append(attribute)
+                attributes.append(attribute)
 
-    file.close()
-
-    output = {
-        'attributes': attributes
-    }
+        if attributes:
+            output['attributes'] = attributes
 
     output_path = shader_source_path.replace('.glsl', '.json')
 
-    file = open(output_path, 'w+')
+    with open(output_path, 'w+') as file:
+        print(json.dumps(output, indent = 4))
 
-    print(json.dumps(output, indent=4))
-
-    file.write(json.dumps(output, indent=4))
-
-    file.close()
-
-            
+        file.write(json.dumps(output, indent = 4))
 
 
-for root, dirs, files in os.walk(shaders_path):
+for root, dirs, files in os.walk(shaders.source_path):
     if 'include' in dirs:
         dirs.remove('include')
 
     for file in files:
-        if file.endswith(shader_extensions):
+        if file.endswith(shaders.file_extensions):
             in_path = os.path.join(root, file)
             out_path = in_path.replace('.glsl', '.spv')
 
             if file.endswith('.vert.glsl'):
                 parse_vertex_shader_source(in_path)
 
-            call([compiler_path, '-V', '-I' + shaders_include_path, in_path, '-o', out_path])
-
-
-#if not os.path.exists(out_path):
-#    open(out_path, 'x').close()
+            call([shaders.compiler_path, '-V', '-I' + shaders.include_path, in_path, '-o', out_path])
