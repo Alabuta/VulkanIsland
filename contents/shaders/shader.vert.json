@@ -1,0 +1,24 @@
+{
+    "attributes": [
+        {
+            "semantic": "POSITION",
+            "type": "vec3",
+            "optional": false
+        },
+        {
+            "semantic": "NORMAL",
+            "type": "vec3",
+            "optional": false
+        },
+        {
+            "semantic": "TEXCOORD_0",
+            "type": "vec2",
+            "optional": false
+        },
+        {
+            "semantic": "TANGENT",
+            "type": "vec4",
+            "optional": false
+        }
+    ]
+}
