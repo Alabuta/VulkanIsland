@@ -1,0 +1,85 @@
+{
+    "name": "debug-material",
+    "shaderModules": [
+        {
+            "moduleName": "test/shader.vert",
+            "entryPoint": "main",
+            "semantic": "vertex"
+        },
+        {
+            "moduleName": "test/shader.frag",
+            "entryPoint": "main",
+            "semantic": "fragment"
+        }
+    ],
+    "techniques": [
+        {
+            "name": "normals-debug",
+            "passes": [
+                {
+                    "shaderModules": [ 0, 1 ],
+                    "rasterizationState": 0,
+                    "depthStencilState": 0,
+                    "colorBlendState": 0
+                }
+            ]
+        },
+        {
+            "name": "texture-coordinates-debug",
+            "passes": [
+                {
+                    "shaderModules": [ 0, 1 ],
+                    "rasterizationState": 0,
+                    "depthStencilState": 0,
+                    "colorBlendState": 0
+                }
+            ]
+        },
+        {
+            "name": "color-debug",
+            "passes": [
+                {
+                    "shaderModules": [ 0, 1 ],
+                    "rasterizationState": 0,
+                    "depthStencilState": 0,
+                    "colorBlendState": 0
+                }
+            ]
+        }
+    ],
+    "rasterizationStates": [
+        {
+            "cullMode": "back",
+            "polygonMode": "fill",
+            "frontFaceClockwise": false
+        }
+    ],
+    "depthStencilStates": [
+        {
+            "depthTestEnable": true,
+            "depthWriteEnable": true,
+            "stencilTestEnable": false,
+            "depthCompareOperation": "greater"
+        }
+    ],
+    "colorBlendStates": [
+        {
+            "logicOperationEnable": false,
+            "logicOperation": "copy",
+            "blendConstants": [ 0, 0, 0, 0 ],
+            "attachments": [ 0 ]
+        }
+    ],
+    "colorBlendAttachmentStates": [
+        {
+            "blendEnable": false,
+            "srcColorBlendFactor": "one",
+            "dstColorBlendFactor": "zero",
+            "colorBlendOperation": "add",
+            "srcAlphaBlendFactor": "one",
+            "dstAlphaBlendFactor": "zero",
+            "alphaBlendOperation": "add",
+            "colorWriteMask": "rgba"
+        }
+    ]
+}
