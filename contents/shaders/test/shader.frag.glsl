@@ -3,6 +3,8 @@
 
 layout (early_fragment_tests) in;
 
+layout(constant_id = 0) const int technique = 0;
+
 
 layout (set = 0, binding = 0, std430) readonly buffer PER_CAMERA
 {

@@ -30,7 +30,7 @@ layout (set = 0, binding = 2, scalar) readonly buffer PER_OBJECT
     mat4 normal;
 } object;
 
-layout (constant_id = 0) const int constant_0 = 0;
+layout (constant_id = 0) const int technique = 0;
 
 layout (location = 0) out vec4 outColor;
 
@@ -44,7 +44,7 @@ void main()
 
     gl_Position = camera.projection * gl_Position;
 
-    switch (constant_0) {
+    switch (technique) {
         case 0:
             outColor = vec4(normalize((object.normal * vec4(NORMAL, 0.0)).xyz), 1.0);
             break;

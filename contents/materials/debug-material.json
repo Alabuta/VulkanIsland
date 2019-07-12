@@ -17,6 +17,16 @@
             "name": "normals-debug",
             "passes": [
                 {
+                    "attributes": [
+                        {
+                            "semantic": "POSITION",
+                            "type": "vec3"
+                        },
+                        {
+                            "semantic": "NORMAL",
+                            "type": "vec3"
+                        }
+                    ],
                     "shaderModules": [ 0, 1 ],
                     "rasterizationState": 0,
                     "depthStencilState": 0,
@@ -28,6 +38,16 @@
             "name": "texture-coordinates-debug",
             "passes": [
                 {
+                    "attributes": [
+                        {
+                            "semantic": "POSITION",
+                            "type": "vec3"
+                        },
+                        {
+                            "semantic": "TEXCOORD_0",
+                            "type": "vec2"
+                        }
+                    ],
                     "shaderModules": [ 0, 1 ],
                     "rasterizationState": 0,
                     "depthStencilState": 0,
@@ -39,6 +59,16 @@
             "name": "color-debug",
             "passes": [
                 {
+                    "attributes": [
+                        {
+                            "semantic": "POSITION",
+                            "type": "vec3"
+                        },
+                        {
+                            "semantic": "COLOR_0",
+                            "type": "vec4"
+                        }
+                    ],
                     "shaderModules": [ 0, 1 ],
                     "rasterizationState": 0,
                     "depthStencilState": 0,

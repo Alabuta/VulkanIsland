@@ -32,4 +32,10 @@ for root, dirs, relative_paths in os.walk(materials.source_path):
         with open(absolute_path, 'r') as json_file:
             data = json.load(json_file)
 
-            print(data)
+            for technique in data['techniques']:
+                name = technique['name']
+                passes = technique['passes']
+
+                render_pass = passes[0]
+
+                print(render_pass)
