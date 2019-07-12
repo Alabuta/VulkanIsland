@@ -14,19 +14,10 @@
     ],
     "techniques": [
         {
-            "name": "normals-debug",
+            "name": "normal-debug",
             "passes": [
                 {
-                    "attributes": [
-                        {
-                            "semantic": "POSITION",
-                            "type": "vec3"
-                        },
-                        {
-                            "semantic": "NORMAL",
-                            "type": "vec3"
-                        }
-                    ],
+                    "vertexAttributes": [ 0, 1 ],
                     "shaderModules": [ 0, 1 ],
                     "rasterizationState": 0,
                     "depthStencilState": 0,
@@ -35,19 +26,10 @@
             ]
         },
         {
-            "name": "texture-coordinates-debug",
+            "name": "texture-coordinate-debug",
             "passes": [
                 {
-                    "attributes": [
-                        {
-                            "semantic": "POSITION",
-                            "type": "vec3"
-                        },
-                        {
-                            "semantic": "TEXCOORD_0",
-                            "type": "vec2"
-                        }
-                    ],
+                    "vertexAttributes": [ 0, 2 ],
                     "shaderModules": [ 0, 1 ],
                     "rasterizationState": 0,
                     "depthStencilState": 0,
@@ -59,22 +41,31 @@
             "name": "color-debug",
             "passes": [
                 {
-                    "attributes": [
-                        {
-                            "semantic": "POSITION",
-                            "type": "vec3"
-                        },
-                        {
-                            "semantic": "COLOR_0",
-                            "type": "vec4"
-                        }
-                    ],
+                    "vertexAttributes": [ 0, 3 ],
                     "shaderModules": [ 0, 1 ],
                     "rasterizationState": 0,
                     "depthStencilState": 0,
                     "colorBlendState": 0
                 }
             ]
+        }
+    ],
+    "vertexAttributes": [
+        {
+            "semantic": "POSITION",
+            "type": "vec3"
+        },
+        {
+            "semantic": "NORMAL",
+            "type": "vec3"
+        },
+        {
+            "semantic": "TEXCOORD_0",
+            "type": "vec2"
+        },
+        {
+            "semantic": "COLOR_0",
+            "type": "vec4"
         }
     ],
     "rasterizationStates": [

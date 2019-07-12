@@ -11,6 +11,10 @@ class Shaders(NamedTuple):
     include_path: str
     file_extensions: tuple
 
+class Materials(NamedTuple):
+    source_path: str
+
+
 shaders = Shaders(
     'glslangValidator',
     './contents/shaders',
@@ -18,11 +22,11 @@ shaders = Shaders(
     ('.vert.glsl', '.tesc.glsl', '.tese.glsl', '.geom.glsl', '.frag.glsl', '.comp.glsl')
 )
 
-
-class Materials(NamedTuple):
-    source_path: str
-
 materials = Materials('./contents/materials')
+
+
+def compile_shader(path):
+    ;
 
 
 for root, dirs, relative_paths in os.walk(materials.source_path):

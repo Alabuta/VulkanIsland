@@ -3,15 +3,6 @@
 #extension GL_ARB_separate_shader_objects : enable
 #extension GL_EXT_scalar_block_layout : enable
 
-#pragma attribute(POSITION, vec3, required)
-#pragma attribute(NORMAL, vec3, optional)
-#pragma attribute(TEXCOORD_0, vec2, required)
-#pragma attribute(COLOR_0, vec4, optional)
-
-layout (location = 0) in vec3 POSITION;
-layout (location = 1) in vec3 NORMAL;
-layout (location = 2) in vec2 TEXCOORD_0;
-layout (location = 5) in vec4 COLOR_0;
 
 layout (set = 0, binding = 0, scalar) readonly buffer PER_CAMERA
 {
@@ -30,7 +21,7 @@ layout (set = 0, binding = 2, scalar) readonly buffer PER_OBJECT
     mat4 normal;
 } object;
 
-layout (constant_id = 0) const int technique = 0;
+layout(constant_id = 0) const int technique = 0;
 
 layout (location = 0) out vec4 outColor;
 
@@ -38,27 +29,31 @@ out gl_PerVertex {
     vec4 gl_Position;
 };
 
-void main()
+
+void update_position()
 {
     gl_Position = camera.view * object.world * vec4(POSITION, 1.0);
-
     gl_Position = camera.projection * gl_Position;
+}
 
-    switch (technique) {
-        case 0:
-            outColor = vec4(normalize((object.normal * vec4(NORMAL, 0.0)).xyz), 1.0);
-            break;
 
-        case 1:
-            outColor = vec4(TEXCOORD_0, 0.0, 1.0);
-            break;
+#pragma technique("normal-debug")
+{
+    update_position();
 
-        case 2:
-            outColor = COLOR_0;
-            break;
+    outColor = vec4(normalize(vec3(object.normal * vec4(NORMAL, 0.0))), 1.0);
+}
 
-        default:
-            outColor = vec4(1.0);
-            break;
-    }
+#pragma technique("texture-coordinate-debug")
+{
+    update_position();
+
+    outColor = vec4(TEXCOORD_0, 0.0, 1.0);
+}
+
+#pragma technique("color-debug")
+{
+    update_position();
+
+    outColor = COLOR_0;
 }
