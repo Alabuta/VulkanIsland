@@ -1,0 +1,65 @@
+{
+    "name": "texture-coordinate-debug-material",
+    "shaderModules": [
+        {
+            "name": "debug/texture-coordinate-debug.vert",
+            "stage": "vertex"
+        },
+        {
+            "name": "common/out-color.frag",
+            "stage": "fragment"
+        }
+    ],
+    "techniques": [
+        {
+            "rasterizationState": 0,
+            "depthStencilState": 0,
+            "colorBlendState": 0
+        }
+    ],
+    "vertexAttributes": [
+        {
+            "semantic": "POSITION",
+            "type": "vec3"
+        },
+        {
+            "semantic": "TEXCOORD_0",
+            "type": "vec2"
+        }
+    ],
+    "rasterizationStates": [
+        {
+            "cullMode": "back",
+            "polygonMode": "fill",
+            "frontFaceClockwise": false
+        }
+    ],
+    "depthStencilStates": [
+        {
+            "depthTestEnable": true,
+            "depthWriteEnable": true,
+            "stencilTestEnable": false,
+            "depthCompareOperation": "greater"
+        }
+    ],
+    "colorBlendStates": [
+        {
+            "logicOperationEnable": false,
+            "logicOperation": "copy",
+            "blendConstants": [ 0, 0, 0, 0 ],
+            "attachments": [ 0 ]
+        }
+    ],
+    "colorBlendAttachmentStates": [
+        {
+            "blendEnable": false,
+            "srcColorBlendFactor": "one",
+            "dstColorBlendFactor": "zero",
+            "colorBlendOperation": "add",
+            "srcAlphaBlendFactor": "one",
+            "dstAlphaBlendFactor": "zero",
+            "alphaBlendOperation": "add",
+            "colorWriteMask": "rgba"
+        }
+    ]
+}

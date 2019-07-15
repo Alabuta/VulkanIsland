@@ -19,7 +19,5 @@ build/
 [Bb]in_d/
 x64/
 x86/
-Debug/
-Release/
 Win32/
 [Tt]emp/
