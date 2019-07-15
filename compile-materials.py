@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import tempfile
 
 from subprocess import call
 from typing import NamedTuple
@@ -79,32 +80,40 @@ def preprocess_vertex_shader(material_data, shader_module):
     source_code = ''
 
     with open(shader_module_absolute_path, 'r') as file:
-        #source_code = file.read().decode("utf-8")
-
         for line in file:
             line = re.sub(
                 r'[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)',
                 lambda match_object : 'void technique{}()'.format(match_object.group(1)),
-                #lambda match_object : 'void technique_{}()'.format(chr(ord('a') + int(match_object.group(1)))),
                 line
             )
 
             source_code += line
 
-    source_path = os.path.join(shaders.source_path, module_name)
-
     if source_code:
         full_source_code = '{}\n{}'.format(shader_header, source_code)
 
-        with open(source_path, 'w+') as file:
-            file.write(full_source_code)
+        with tempfile.TemporaryDirectory() as tmpdirname:
+            temp_module_name = re.split(r'\\|/', module_name)[-1]
+            preproccessed_source_path = os.path.join(tempfile.gettempdir(), temp_module_name)
 
-    for technique in re.findall(r'void (technique\d)\(\)', source_code):
-        entry_point = technique
-        output_path = os.path.join(shaders.source_path, '{}.{}.spv'.format(module_name, entry_point))
-        print(entry_point, output_path)
+            with open(preproccessed_source_path, 'w+') as file:
+                file.write(full_source_code)
 
-        call([shaders.compiler_path, '-e', entry_point, '-V', '-I' + shaders.include_path, '-o', output_path, source_path])
+            for technique in re.findall(r'void (technique\d)\(\)', source_code):
+                output_path = os.path.join(shaders.source_path, '{}.{}.spv'.format(module_name, technique))
+
+                call([
+                    shaders.compiler_path,
+                    '-e', technique,
+                    '--source-entrypoint', 'main',
+                    '-V',
+                    #'-H',
+                    '--target-env', 'vulkan1.1',
+                    '-I' + shaders.include_path,
+                    '-S', 'vert',
+                    '-o', output_path,
+                    preproccessed_source_path
+                ])
 
 #def compile_shader(path):
 #    ;
@@ -128,6 +137,3 @@ for root, dirs, material_relative_paths in os.walk(materials.source_path):
 
             for vertex_stage_module in vertex_stage_modules:
                 preprocess_vertex_shader(material_data, vertex_stage_module)
-
-        break
-                
