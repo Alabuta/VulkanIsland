@@ -91,19 +91,20 @@ def preprocess_vertex_shader(material_data, shader_module):
 
             source_code += line
 
-    for technique in re.findall(r'void (technique\d)\(\)', source_code):
-        full_source_code = '{}\n{}'.format(shader_header, source_code)
+    source_path = os.path.join(shaders.source_path, module_name)
 
-        source_path = os.path.join(shaders.source_path, module_name)
+    if source_code:
+        full_source_code = '{}\n{}'.format(shader_header, source_code)
 
         with open(source_path, 'w+') as file:
             file.write(full_source_code)
 
+    for technique in re.findall(r'void (technique\d)\(\)', source_code):
         entry_point = technique
         output_path = os.path.join(shaders.source_path, '{}.{}.spv'.format(module_name, entry_point))
         print(entry_point, output_path)
 
-        call([shaders.compiler_path, '-V', '-I' + shaders.include_path, '-e', entry_point, '-o', output_path, source_path])
+        call([shaders.compiler_path, '-e', entry_point, '-V', '-I' + shaders.include_path, '-o', output_path, source_path])
 
 #def compile_shader(path):
 #    ;
