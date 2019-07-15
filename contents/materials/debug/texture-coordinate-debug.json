@@ -12,6 +12,7 @@
     ],
     "techniques": [
         {
+            "vertexLayout": [ 0, 1 ],
             "rasterizationState": 0,
             "depthStencilState": 0,
             "colorBlendState": 0

@@ -12,6 +12,7 @@
     ],
     "techniques": [
         {
+            "vertexLayout": [ 0, 1 ],
             "rasterizationState": 0,
             "depthStencilState": 0,
             "colorBlendState": 0
@@ -25,6 +26,10 @@
         {
             "semantic": "COLOR_0",
             "type": "vec4"
+        },
+        {
+            "semantic": "COLOR_0",
+            "type": "vec3"
         }
     ],
     "rasterizationStates": [

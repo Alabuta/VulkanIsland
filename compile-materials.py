@@ -66,23 +66,12 @@ def preprocess_vertex_shader(material_data, shader_module):
 
     extensions_string += '\n'
 
-    vertex_attributes_string = ''
-
-    for vertex_attribute in material_data['vertexAttributes']:
-        semantic, type = [vertex_attribute[key] for key in ('semantic', 'type')]
-
-        layout = shaders.vertex_attributes_layout[semantic]
-
-        vertex_attributes_string += 'layout (location = {}) in {} {};\n'.format(layout, type, semantic)
-
-    shader_header = '{}\n{}\n{}\n#line 0'.format(version_string, extensions_string, vertex_attributes_string)
-
     source_code = ''
 
     with open(shader_module_absolute_path, 'r') as file:
         for line in file:
             line = re.sub(
-                r'[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)',
+                r'^[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)$',
                 lambda match_object : 'void technique{}()'.format(match_object.group(1)),
                 line
             )
@@ -90,16 +79,35 @@ def preprocess_vertex_shader(material_data, shader_module):
             source_code += line
 
     if source_code:
-        full_source_code = '{}\n{}'.format(shader_header, source_code)
+
+        vertex_attributes = material_data['vertexAttributes']
+        techniques = material_data['techniques']
 
         with tempfile.TemporaryDirectory() as tmpdirname:
             temp_module_name = re.split(r'\\|/', module_name)[-1]
             preproccessed_source_path = os.path.join(tempfile.gettempdir(), temp_module_name)
 
-            with open(preproccessed_source_path, 'w+') as file:
-                file.write(full_source_code)
+            for index in re.findall(r'void technique(\d)\(\)', source_code):
+                technique_index = int(index)
+                technique = 'technique{}'.format(technique_index)
 
-            for technique in re.findall(r'void (technique\d)\(\)', source_code):
+                vertex_attributes_string = ''
+
+                for vertex_attribute_index in techniques[technique_index]['vertexLayout']:
+                    vertex_attribute = vertex_attributes[vertex_attribute_index]
+                    semantic, type = [vertex_attribute[key] for key in ('semantic', 'type')]
+
+                    layout = shaders.vertex_attributes_layout[semantic]
+
+                    vertex_attributes_string += 'layout (location = {}) in {} {};\n'.format(layout, type, semantic)
+
+                shader_header = '{}\n{}\n{}\n#line 0'.format(version_string, extensions_string, vertex_attributes_string)
+
+                full_source_code = '{}\n{}'.format(shader_header, source_code)
+
+                with open(preproccessed_source_path, 'w+') as file:
+                    file.write(full_source_code)
+
                 output_path = os.path.join(shaders.source_path, '{}.{}.spv'.format(module_name, technique))
 
                 call([
@@ -137,3 +145,4 @@ for root, dirs, material_relative_paths in os.walk(materials.source_path):
 
             for vertex_stage_module in vertex_stage_modules:
                 preprocess_vertex_shader(material_data, vertex_stage_module)
+        break
