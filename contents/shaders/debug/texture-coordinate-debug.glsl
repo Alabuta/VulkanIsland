@@ -16,7 +16,7 @@ layout (set = 0, binding = 2, scalar) readonly buffer PER_OBJECT
     mat4 normal;
 } object;
 
-//layout (constant_id = 0) const int technique = 0;
+layout(constant_id = 0) const int technique = 0;
 
 layout (location = 0) out vec4 outColor;
 
@@ -30,13 +30,5 @@ out gl_PerVertex {
     gl_Position = camera.view * object.world * vec4(POSITION, 1.0);
     gl_Position = camera.projection * gl_Position;
 
-    outColor = COLOR_0;
-}
-
-#pragma technique(1)
-{
-    gl_Position = camera.view * object.world * vec4(POSITION, 1.0);
-    gl_Position = camera.projection * gl_Position;
-
-    outColor = COLOR_0;
+    outColor = vec4(TEXCOORD_0, 0.0, 1.0);
 }

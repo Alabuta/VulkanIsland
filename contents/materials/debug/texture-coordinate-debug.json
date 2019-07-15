@@ -2,11 +2,11 @@
     "name": "texture-coordinate-debug-material",
     "shaderModules": [
         {
-            "name": "debug/texture-coordinate-debug.vert",
+            "name": "debug/texture-coordinate-debug",
             "stage": "vertex"
         },
         {
-            "name": "common/out-color.frag",
+            "name": "common/out-color",
             "stage": "fragment"
         }
     ],

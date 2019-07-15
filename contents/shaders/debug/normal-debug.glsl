@@ -1,13 +1,3 @@
-#version 460
-
-#extension GL_ARB_separate_shader_objects : enable
-#extension GL_EXT_scalar_block_layout : enable
-
-
-layout (location = 0) in vec3 POSITION;
-layout (location = 5) in vec4 COLOR_0;
-
-#line 0
 
 layout (set = 0, binding = 0, scalar) readonly buffer PER_CAMERA
 {
@@ -26,7 +16,7 @@ layout (set = 0, binding = 2, scalar) readonly buffer PER_OBJECT
     mat4 normal;
 } object;
 
-//layout (constant_id = 0) const int technique = 0;
+layout(constant_id = 0) const int technique = 0;
 
 layout (location = 0) out vec4 outColor;
 
@@ -35,18 +25,10 @@ out gl_PerVertex {
 };
 
 
-void technique0()
+#pragma technique(0)
 {
     gl_Position = camera.view * object.world * vec4(POSITION, 1.0);
     gl_Position = camera.projection * gl_Position;
 
-    outColor = COLOR_0;
-}
-
-void technique1()
-{
-    gl_Position = camera.view * object.world * vec4(POSITION, 1.0);
-    gl_Position = camera.projection * gl_Position;
-
-    outColor = COLOR_0;
+    outColor = vec4(normalize(vec3(object.normal * vec4(NORMAL, 0.0))), 1.0);
 }
