@@ -2,6 +2,7 @@ import os
 import re
 import json
 import tempfile
+import pyparsing
 
 from subprocess import call
 from typing import NamedTuple
@@ -69,8 +70,8 @@ def preprocess_vertex_shader(material_data, shader_module):
     with open(shader_module_absolute_path, 'r') as file:
         for line in file:
             line = re.sub(
-                r'^[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)$',
-                lambda match_object : f'void technique{match_object.group(1)}()',
+                r'^(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)',
+                lambda match_object : f'{match_object.group(1)}void technique{match_object.group(2)}(){match_object.group(3)}',
                 line
             )
 
@@ -79,6 +80,9 @@ def preprocess_vertex_shader(material_data, shader_module):
     if source_code:
         vertex_attributes = material_data['vertexAttributes']
         techniques = material_data['techniques']
+        print(source_code)
+
+        pyparsing.Word('')
 
         with tempfile.TemporaryDirectory() as tmpdirname:
             temp_module_name = re.split(r'\\|/', module_name)[-1]
@@ -142,3 +146,4 @@ for root, dirs, material_relative_paths in os.walk(materials.source_path):
 
             for vertex_stage_module in vertex_stage_modules:
                 preprocess_vertex_shader(material_data, vertex_stage_module)
+        break
