@@ -25,18 +25,18 @@ class Materials(NamedTuple):
 
 
 shaders = Shaders(
-    'glslangValidator',
-    './contents/shaders',
-    './contents/shaders/include',
-    ('.vert.glsl', '.tesc.glsl', '.tese.glsl', '.geom.glsl', '.frag.glsl', '.comp.glsl'),
-    GLSLSettings(
-        460,
-        {
+    compiler_path = 'glslangValidator',
+    source_path = './contents/shaders',
+    include_path = './contents/shaders/include',
+    file_extensions = ('.vert.glsl', '.tesc.glsl', '.tese.glsl', '.geom.glsl', '.frag.glsl', '.comp.glsl'),
+    glslSettings = GLSLSettings(
+        version = 460,
+        extensions = {
             'GL_ARB_separate_shader_objects': 'enable',
             'GL_EXT_scalar_block_layout': 'enable'
         }
     ),
-    {
+    vertex_attributes_layout = {
         'POSITION': 0,
         'NORMAL': 1,
         'TEXCOORD_0': 2,
@@ -57,14 +57,12 @@ def preprocess_vertex_shader(material_data, shader_module):
     module_name = shader_module['name']
     shader_module_absolute_path = os.path.join(shaders.source_path, module_name + '.glsl')
 
-    version_string = '#version {}\n'.format(shaders.glslSettings.version)
+    version_string = f'#version {shaders.glslSettings.version}\n'
 
     extensions_string = ''
 
     for extension, behavior in shaders.glslSettings.extensions.items():
-        extensions_string += '#extension {} : {}\n'.format(extension, behavior)
-
-    extensions_string += '\n'
+        extensions_string += f'#extension {extension} : {behavior}\n'
 
     source_code = ''
 
@@ -72,24 +70,23 @@ def preprocess_vertex_shader(material_data, shader_module):
         for line in file:
             line = re.sub(
                 r'^[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)$',
-                lambda match_object : 'void technique{}()'.format(match_object.group(1)),
+                lambda match_object : f'void technique{match_object.group(1)}()',
                 line
             )
 
             source_code += line
 
     if source_code:
-
         vertex_attributes = material_data['vertexAttributes']
         techniques = material_data['techniques']
 
         with tempfile.TemporaryDirectory() as tmpdirname:
             temp_module_name = re.split(r'\\|/', module_name)[-1]
-            preproccessed_source_path = os.path.join(tempfile.gettempdir(), temp_module_name)
+            preproccessed_source_path = os.path.join(tmpdirname, temp_module_name)
 
-            for index in re.findall(r'void technique(\d)\(\)', source_code):
+            for index in re.findall(r'void technique(\d+)\(\)', source_code):
                 technique_index = int(index)
-                technique = 'technique{}'.format(technique_index)
+                technique = f'technique{technique_index}'
 
                 vertex_attributes_string = ''
 
@@ -99,16 +96,16 @@ def preprocess_vertex_shader(material_data, shader_module):
 
                     layout = shaders.vertex_attributes_layout[semantic]
 
-                    vertex_attributes_string += 'layout (location = {}) in {} {};\n'.format(layout, type, semantic)
+                    vertex_attributes_string += f'layout (location = {layout}) in {type} {semantic};\n'
 
-                shader_header = '{}\n{}\n{}\n#line 0'.format(version_string, extensions_string, vertex_attributes_string)
+                shader_header = f'{version_string}\n{extensions_string}\n{vertex_attributes_string}\n#line 0'
 
-                full_source_code = '{}\n{}'.format(shader_header, source_code)
+                full_source_code = f'{shader_header}\n{source_code}'
 
                 with open(preproccessed_source_path, 'w+') as file:
                     file.write(full_source_code)
 
-                output_path = os.path.join(shaders.source_path, '{}.{}.spv'.format(module_name, technique))
+                output_path = os.path.join(shaders.source_path, f'{module_name}.{technique}.spv')
 
                 call([
                     shaders.compiler_path,
@@ -145,4 +142,3 @@ for root, dirs, material_relative_paths in os.walk(materials.source_path):
 
             for vertex_stage_module in vertex_stage_modules:
                 preprocess_vertex_shader(material_data, vertex_stage_module)
-        break
