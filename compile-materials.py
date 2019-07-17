@@ -103,7 +103,7 @@ def compile_material(material_data):
         material_data[k] for k in ('techniques', 'vertexAttributes', 'shaderModules')
     ]
     
-    for technique in techniques:
+    for technique_index, technique in enumerate(techniques):
         vertex_attribute_layout = shader_vertex_attribute_layout(vertex_attributes, technique)
 
         inputs = shader_inputs(vertex_attribute_layout)
@@ -115,9 +115,28 @@ def compile_material(material_data):
 
             name, stage = shader_module['name'], shader_module['stage']
 
-    return
+            source_code = ''
 
-    source_code = ''
+            technique_lines = [ ]
+
+            with open(os.path.join(shaders.source_path, f'{name}.glsl'), 'r') as file:
+                for row_index, row in enumerate(file):
+                    mo = re.search(r'^(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)', row)
+
+                    if mo and int(mo.group(2)) == technique_index:
+                        print(mo.group(2), mo.span(), technique_index)
+
+                    source_code += re.sub(
+                        r'^(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)',
+                        lambda mo : f'{mo.group(1)}void technique{mo.group(2)}(){mo.group(3)}',
+                        row
+                    )
+
+            source_code_stream = f'{header}\n{source_code}'#.encode('UTF-8')
+
+            # print(source_code_stream)
+
+    return
 
     module_name = shader_module['name']
     shader_module_absolute_path = os.path.join(shaders.source_path, module_name + '.glsl')
