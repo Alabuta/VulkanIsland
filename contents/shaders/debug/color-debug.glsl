@@ -31,7 +31,9 @@ out gl_PerVertex {
     outColor = COLOR_0;
 }
 
-//#pragma 1technique(1)
+/* #pragma technique(2) { COLOR_0; } */
+
+//#pragma technique(1)
 //{
 //    gl_Position = camera.projectionView * object.world * vec4(POSITION, 1.0);
 //

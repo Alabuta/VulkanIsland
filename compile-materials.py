@@ -119,21 +119,37 @@ def compile_material(material_data):
 
             technique_lines = [ ]
 
-            with open(os.path.join(shaders.source_path, f'{name}.glsl'), 'r') as file:
-                for row_index, row in enumerate(file):
-                    mo = re.search(r'^(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)', row)
+            with open(os.path.join(shaders.source_path, f'{name}.glsl'), 'rb') as file:
+                opening_braces = 0
+                closing_braces = 0
 
-                    if mo and int(mo.group(2)) == technique_index:
-                        print(mo.group(2), mo.span(), technique_index)
+                rows = file.read().decode('UTF-8')
 
-                    source_code += re.sub(
-                        r'^(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)',
-                        lambda mo : f'{mo.group(1)}void technique{mo.group(2)}(){mo.group(3)}',
-                        row
-                    )
+                mo = re.search(r'(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)', rows)
+
+                if mo:
+                    print(mo.group(1), mo.group(3), mo.span(), mo.group(2))
+
+                #for row_index, row in enumerate(file):
+                #    mo = re.search(r'(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)', row)
+
+                #    if mo and int(mo.group(2)) != technique_index:
+                #        opening_braces = len(re.findall(r'\{', mo.group(3)))
+                #        closing_braces = len(re.findall(r'\}', mo.group(3)))
+
+                #        if opening_braces != 0 and opening_braces == closing_braces:
+                #            print(mo.group(1), mo.group(3), mo.span(), mo.group(2))
+                #            source_code += f'{mo.group(1)} // {mo.group(3)}'
+
+                    #source_code += re.sub(
+                    #    r'^(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)',
+                    #    lambda mo : f'{mo.group(1)}void technique{mo.group(2)}(){mo.group(3)}',
+                    #    row
+                    #)
 
             source_code_stream = f'{header}\n{source_code}'#.encode('UTF-8')
 
+            # print(source_code)
             # print(source_code_stream)
 
     return
