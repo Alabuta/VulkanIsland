@@ -123,12 +123,42 @@ def compile_material(material_data):
                 opening_braces = 0
                 closing_braces = 0
 
-                rows = file.read().decode('UTF-8')
+                _rows = file.read().decode('UTF-8')
+                rows = _rows
 
-                mo = re.search(r'(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)', rows)
+                while True:
+                    mo = re.search(r'(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)', rows)
 
-                if mo:
-                    print(mo.group(1), mo.group(3), mo.span(), mo.group(2))
+                    if not mo:
+                        break
+
+                    print(f'################{mo.group(1)}|{mo.group(3)}|{mo.span()}|{mo.group(2)}')
+
+                    if int(mo.group(2)) == technique_index:
+                        # rows = re.sub(
+                        #    r'^(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\(technique_index\)(.*)',
+                        #    lambda mo : f'{mo.group(1)}void technique{technique_index}(){mo.group(2)}',
+                        #    rows
+                        # )
+                        # print(rows)
+                        print(f'technique_index {technique_index}')
+
+                    else:
+                        xrows = rows
+                        while True:
+                            mo2 = re.search(r'\n', xrows)
+
+                            if not mo2:
+                                break
+                            
+                            print(f'@@@@@@@@@@@@@@@{mo2.string}')
+
+                            xrows = xrows[mo2.span()[1]:]
+                        # opening_braces = len(re.findall(r'\{', mo.group(3)))
+                        # closing_braces = len(re.findall(r'\}', mo.group(3)))
+                        # print(f'===========\n{rows}')
+
+                    rows = rows[mo.span()[1]:]
 
                 #for row_index, row in enumerate(file):
                 #    mo = re.search(r'(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)', row)
