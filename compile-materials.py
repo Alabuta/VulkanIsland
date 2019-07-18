@@ -123,16 +123,22 @@ def compile_material(material_data):
                 opening_braces = 0
                 closing_braces = 0
 
-                _rows = file.read().decode('UTF-8')
-                rows = _rows
+                rows = file.read().decode('UTF-8')
 
                 while True:
-                    mo = re.search(r'(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)', rows)
+                    mo = re.search(r'(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)\n', rows)
 
                     if not mo:
                         break
 
-                    print(f'################{mo.group(1)}|{mo.group(3)}|{mo.span()}|{mo.group(2)}')
+                    opening_braces = len(re.findall(r'\{', mo.group(3)))
+                    closing_braces = len(re.findall(r'\}', mo.group(3)))
+
+                    if opening_braces * closing_braces != 0 and opening_braces == closing_braces:
+                        print(r'^^^^^^^^^^^^')
+
+                    print('############')
+                    print(mo.group(1), mo.group(3), mo.span(), mo.group(2))
 
                     if int(mo.group(2)) == technique_index:
                         # rows = re.sub(
@@ -144,14 +150,16 @@ def compile_material(material_data):
                         print(f'technique_index {technique_index}')
 
                     else:
-                        xrows = rows
+                        xrows = rows[mo.span()[0]:]
+                        print(f'@@@@@@@@@@@@@@@{xrows}')
+
                         while True:
                             mo2 = re.search(r'\n', xrows)
 
                             if not mo2:
                                 break
                             
-                            print(f'@@@@@@@@@@@@@@@{mo2.string}')
+                            print(f'\t|{xrows[:mo2.span()[1]]}')
 
                             xrows = xrows[mo2.span()[1]:]
                         # opening_braces = len(re.findall(r'\{', mo.group(3)))

@@ -31,7 +31,7 @@ out gl_PerVertex {
     outColor = COLOR_0;
 }
 
-/* #pragma technique(2) { COLOR_0; } */
+/* #pragma technique(2) { {COLOR_0; } */
 
 //#pragma technique(1)
 //{
