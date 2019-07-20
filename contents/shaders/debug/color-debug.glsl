@@ -18,12 +18,18 @@ layout (set = 0, binding = 2, scalar) readonly buffer PER_OBJECT
 
 //layout (constant_id = 0) const int technique = 0;
 
-layout (location = 0) out vec4 outColor;
+layout (location = 0) out vec4 outColor; // xyz // abc
 
 out gl_PerVertex {
     vec4 gl_Position;
 };
 
+// /*
+/**/
+/*
+
+/*
+dasdsadas*/
 
 #   pragma technique(0) {
     gl_Position = camera.projectionView * object.world * vec4(POSITION, 1.0);

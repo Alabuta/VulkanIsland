@@ -96,6 +96,56 @@ def shader_inputs(vertex_attribute_layout):
         vertex_attributes_lines += f'layout (location = {location}) in {attribute_type} {semantic};\n'
 
     return vertex_attributes_lines
+
+
+def remove_one_line_comments(source_code):
+    rows = ''
+
+    for row in source_code:
+        found = re.findall(r'\A//', row)
+
+        if found:
+            rows += f'\n'
+    
+        else:
+            found = re.findall(r'.+?(?=//)', row)
+
+            if found:
+                rows += f'{found[0]}\n'
+            
+            else:
+                rows += row
+
+    return rows
+
+
+def remove_multi_line_comments(source_code):
+    rows = ''
+
+    for row in source_code:
+        found = re.findall(r'\A/\*.*', row)
+
+        if found:
+            print(found)
+            rows += f'\n'
+    
+        else:
+            found = re.findall(r'.+?(?=/\*)', row)
+
+            if found:
+                print(found)
+                rows += f'{found[0]}\n'
+           
+            else:
+                rows += row
+
+    #print(rows)
+    return rows
+
+
+def remove_comments(source_code):
+    source_code = remove_one_line_comments(source_code)
+    source_code = remove_multi_line_comments(source_code)
     
 
 def compile_material(material_data):
@@ -118,6 +168,10 @@ def compile_material(material_data):
             source_code = ''
 
             technique_lines = [ ]
+
+            with open(os.path.join(shaders.source_path, f'{name}.glsl'), 'r') as file:
+                remove_comments(file)
+            break
 
             with open(os.path.join(shaders.source_path, f'{name}.glsl'), 'rb') as file:
                 opening_braces = 0
