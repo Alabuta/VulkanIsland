@@ -26,10 +26,19 @@ out gl_PerVertex {
 
 // /*
 /**/
-/*
-
+// /*
+//
 /*
 dasdsadas*/
+
+const int a = 0;
+
+/*dsadasd*//*eq // eqweqwe*/
+
+const int b = 0;
+
+/*dsadasd*///*eq  eqweqwe*/
+/*dsadasd*/ const int c = 0; //*eq  eqweqwe*/
 
 #   pragma technique(0) {
     gl_Position = camera.projectionView * object.world * vec4(POSITION, 1.0);
@@ -37,7 +46,7 @@ dasdsadas*/
     outColor = COLOR_0;
 }
 
-/* #pragma technique(2) { {COLOR_0; } */
+/* #pragma /* technique(2) { {COLOR_0; } */
 
 //#pragma technique(1)
 //{

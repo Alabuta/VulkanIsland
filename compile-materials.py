@@ -99,53 +99,61 @@ def shader_inputs(vertex_attribute_layout):
 
 
 def remove_one_line_comments(source_code):
-    rows = ''
+    unprocessed = source_code
+    processed = ''
 
-    for row in source_code:
-        found = re.findall(r'\A//', row)
+    for row in unprocessed.splitlines(True):
+        found = re.findall(r'(?<=[^/])/\*.+?\*/', row)
 
         if found:
-            rows += f'\n'
-    
+            print(found)
+            processed += f'\n'
+
         else:
-            found = re.findall(r'.+?(?=//)', row)
+            processed += row
 
-            if found:
-                rows += f'{found[0]}\n'
-            
-            else:
-                rows += row
+    #processed, unprocessed = '', processed
 
-    return rows
+    #for row in unprocessed.splitlines(True):
+    #    found = re.findall(r'.*?(?=/{2})', row)
+
+    #    if found:
+    #        processed += f'{found[0]}\n'
+
+    #    else:
+    #        processed += row
+
+    return processed
 
 
 def remove_multi_line_comments(source_code):
     rows = ''
 
     for row in source_code:
-        found = re.findall(r'\A/\*.*', row)
+        found = re.findall(r'.+?(?=/\*)', row)
 
         if found:
-            print(found)
-            rows += f'\n'
-    
-        else:
-            found = re.findall(r'.+?(?=/\*)', row)
-
-            if found:
-                print(found)
-                rows += f'{found[0]}\n'
+            #print('###########', found)
+            rows += row
+            #rows += f'{found[0]}\n'
            
-            else:
-                rows += row
+        else:
+            rows += row
 
-    #print(rows)
     return rows
 
 
-def remove_comments(source_code):
-    source_code = remove_one_line_comments(source_code)
-    source_code = remove_multi_line_comments(source_code)
+def remove_comments(file):
+    chars = file.read().decode('UTF-8')
+
+    #while any(pattern in chars for pattern in ['/*', '//', '*/']):
+    chars = re.sub(r'(?<=[^/])/\*.*?\*/', '', chars)
+    #chars = re.sub(r'.*?(?=/{2}).*?(?=\n)', '', chars)
+
+    #source_code = remove_multi_line_comments(source_code)
+    #source_code = remove_one_line_comments(source_code)
+
+    print(chars)
     
 
 def compile_material(material_data):
@@ -169,7 +177,7 @@ def compile_material(material_data):
 
             technique_lines = [ ]
 
-            with open(os.path.join(shaders.source_path, f'{name}.glsl'), 'r') as file:
+            with open(os.path.join(shaders.source_path, f'{name}.glsl'), 'rb') as file:
                 remove_comments(file)
             break
 
