@@ -26,10 +26,11 @@ out gl_PerVertex {
 
 // /*
 /**/
-// /*
+// /**/
 //
 /*
-dasdsadas*/
+x // x
+// qwerty*/
 
 const int a = 0;
 
@@ -37,8 +38,8 @@ const int a = 0;
 
 const int b = 0;
 
-/*dsadasd*///*eq  eqweqwe*/
-/*dsadasd*/ const int c = 0; //*eq  eqweqwe*/
+/*jljkl*///*eq  nbnbvnbv*/
+/*gfgfdgfd*/ const int c = 0; //*iu  ytuytu*/
 
 #   pragma technique(0) {
     gl_Position = camera.projectionView * object.world * vec4(POSITION, 1.0);

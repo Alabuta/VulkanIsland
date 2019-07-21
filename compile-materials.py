@@ -99,18 +99,42 @@ def shader_inputs(vertex_attribute_layout):
 
 
 def remove_one_line_comments(source_code):
-    unprocessed = source_code
-    processed = ''
+    multi_line_pattern = r'(?<!/)/\*.*?\*/'
+    source_code = re.sub(multi_line_pattern, '', source_code)
 
-    for row in unprocessed.splitlines(True):
-        found = re.findall(r'(?<=[^/])/\*.+?\*/', row)
+    while re.findall(multi_line_pattern, source_code):
+        source_code = re.sub(multi_line_pattern, '', source_code)
 
-        if found:
-            print(found)
-            processed += f'\n'
+    source_code = re.sub(r'(?<!/)/\*.*?\*/.*?', '', source_code)
 
-        else:
-            processed += row
+    one_line_pattern = r'(.*?)(?=/{2}).*?\n'
+    source_code = re.sub(one_line_pattern, r'\1\n', source_code)
+
+    #processed = ''
+
+    #for line in source_code.splitlines(True):
+    #    found = re.findall(r'.*?(?=/{2})', line)
+
+    #    if found:
+    #        print(found)
+    #        processed += f'{found[0]}\n'
+
+    #    else:
+    #        processed += line
+
+    #source_code = processed
+
+    return source_code
+
+    #for line in unprocessed.splitlines(True):
+    #    found = re.findall(r'(?<=[^/])/\*.*?\*/', f'\n{line}')
+
+    #    if found:
+    #        print(found)
+    #        processed += ''
+
+    #    else:
+    #        processed += line
 
     #processed, unprocessed = '', processed
 
@@ -123,7 +147,7 @@ def remove_one_line_comments(source_code):
     #    else:
     #        processed += row
 
-    return processed
+    #return processed
 
 
 def remove_multi_line_comments(source_code):
@@ -144,16 +168,23 @@ def remove_multi_line_comments(source_code):
 
 
 def remove_comments(file):
-    chars = file.read().decode('UTF-8')
+    #print(file.read())
+    source_code = file.read().decode('UTF-8')
 
-    #while any(pattern in chars for pattern in ['/*', '//', '*/']):
-    chars = re.sub(r'(?<=[^/])/\*.*?\*/', '', chars)
+    #while True:
+    #    for row in unprocessed.splitlines(True):
+    #        print(row)
+
+    #    processed, unprocessed = '', processed
+
+    #while any(pattern in chars for pattern in ['/*']):#, '//', '*/'
+    #    chars = re.sub(r'(?<=[^/])/\*.*?\*/', '', chars)
     #chars = re.sub(r'.*?(?=/{2}).*?(?=\n)', '', chars)
 
     #source_code = remove_multi_line_comments(source_code)
-    #source_code = remove_one_line_comments(source_code)
+    source_code = remove_one_line_comments(source_code)
 
-    print(chars)
+    print(source_code)
     
 
 def compile_material(material_data):
