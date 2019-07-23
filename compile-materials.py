@@ -98,93 +98,16 @@ def shader_inputs(vertex_attribute_layout):
     return vertex_attributes_lines
 
 
-def remove_one_line_comments(source_code):
-    multi_line_pattern = r'(?<!/)/\*.*?\*/'
-    source_code = re.sub(multi_line_pattern, '', source_code)
+def remove_comments(source_code):
+    pattern = r'(?://[^\n]*|/\*(?:(?!\*/).)*\*/)'
 
-    while re.findall(multi_line_pattern, source_code):
-        source_code = re.sub(multi_line_pattern, '', source_code)
-
-    source_code = re.sub(r'(?<!/)/\*.*?\*/.*?', '', source_code)
-
-    one_line_pattern = r'(.*?)(?=/{2}).*?\n'
-    source_code = re.sub(one_line_pattern, r'\1\n', source_code)
-
-    #processed = ''
-
-    #for line in source_code.splitlines(True):
-    #    found = re.findall(r'.*?(?=/{2})', line)
-
-    #    if found:
-    #        print(found)
-    #        processed += f'{found[0]}\n'
-
-    #    else:
-    #        processed += line
-
-    #source_code = processed
-
-    return source_code
-
-    #for line in unprocessed.splitlines(True):
-    #    found = re.findall(r'(?<=[^/])/\*.*?\*/', f'\n{line}')
-
-    #    if found:
-    #        print(found)
-    #        processed += ''
-
-    #    else:
-    #        processed += line
-
-    #processed, unprocessed = '', processed
-
-    #for row in unprocessed.splitlines(True):
-    #    found = re.findall(r'.*?(?=/{2})', row)
-
-    #    if found:
-    #        processed += f'{found[0]}\n'
-
-    #    else:
-    #        processed += row
-
-    #return processed
+    return re.sub(pattern, '', source_code, 0, re.DOTALL)
 
 
-def remove_multi_line_comments(source_code):
-    rows = ''
+def sub_techniques(source_code):
+    pattern = r'([^\n]*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)([^\n]*)'
 
-    for row in source_code:
-        found = re.findall(r'.+?(?=/\*)', row)
-
-        if found:
-            #print('###########', found)
-            rows += row
-            #rows += f'{found[0]}\n'
-           
-        else:
-            rows += row
-
-    return rows
-
-
-def remove_comments(file):
-    #print(file.read())
-    source_code = file.read().decode('UTF-8')
-
-    #while True:
-    #    for row in unprocessed.splitlines(True):
-    #        print(row)
-
-    #    processed, unprocessed = '', processed
-
-    #while any(pattern in chars for pattern in ['/*']):#, '//', '*/'
-    #    chars = re.sub(r'(?<=[^/])/\*.*?\*/', '', chars)
-    #chars = re.sub(r'.*?(?=/{2}).*?(?=\n)', '', chars)
-
-    #source_code = remove_multi_line_comments(source_code)
-    source_code = remove_one_line_comments(source_code)
-
-    print(source_code)
+    return re.sub(pattern, r'\1void technique\2()\3', source_code, 0, re.DOTALL)
     
 
 def compile_material(material_data):
@@ -208,77 +131,18 @@ def compile_material(material_data):
 
             technique_lines = [ ]
 
+            source_code = ''
+
             with open(os.path.join(shaders.source_path, f'{name}.glsl'), 'rb') as file:
-                remove_comments(file)
+                source_code = file.read().decode('UTF-8')
+
+                source_code = remove_comments(source_code)
+                source_code = sub_techniques(source_code)
+                #print(source_code)
+
+                source_code_stream = f'{header}\n{source_code}'#.encode('UTF-8')
+                print(source_code_stream)
             break
-
-            with open(os.path.join(shaders.source_path, f'{name}.glsl'), 'rb') as file:
-                opening_braces = 0
-                closing_braces = 0
-
-                rows = file.read().decode('UTF-8')
-
-                while True:
-                    mo = re.search(r'(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)\n', rows)
-
-                    if not mo:
-                        break
-
-                    opening_braces = len(re.findall(r'\{', mo.group(3)))
-                    closing_braces = len(re.findall(r'\}', mo.group(3)))
-
-                    if opening_braces * closing_braces != 0 and opening_braces == closing_braces:
-                        print(r'^^^^^^^^^^^^')
-
-                    print('############')
-                    print(mo.group(1), mo.group(3), mo.span(), mo.group(2))
-
-                    if int(mo.group(2)) == technique_index:
-                        # rows = re.sub(
-                        #    r'^(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\(technique_index\)(.*)',
-                        #    lambda mo : f'{mo.group(1)}void technique{technique_index}(){mo.group(2)}',
-                        #    rows
-                        # )
-                        # print(rows)
-                        print(f'technique_index {technique_index}')
-
-                    else:
-                        xrows = rows[mo.span()[0]:]
-                        print(f'@@@@@@@@@@@@@@@{xrows}')
-
-                        while True:
-                            mo2 = re.search(r'\n', xrows)
-
-                            if not mo2:
-                                break
-                            
-                            print(f'\t|{xrows[:mo2.span()[1]]}')
-
-                            xrows = xrows[mo2.span()[1]:]
-                        # opening_braces = len(re.findall(r'\{', mo.group(3)))
-                        # closing_braces = len(re.findall(r'\}', mo.group(3)))
-                        # print(f'===========\n{rows}')
-
-                    rows = rows[mo.span()[1]:]
-
-                #for row_index, row in enumerate(file):
-                #    mo = re.search(r'(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)', row)
-
-                #    if mo and int(mo.group(2)) != technique_index:
-                #        opening_braces = len(re.findall(r'\{', mo.group(3)))
-                #        closing_braces = len(re.findall(r'\}', mo.group(3)))
-
-                #        if opening_braces != 0 and opening_braces == closing_braces:
-                #            print(mo.group(1), mo.group(3), mo.span(), mo.group(2))
-                #            source_code += f'{mo.group(1)} // {mo.group(3)}'
-
-                    #source_code += re.sub(
-                    #    r'^(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)',
-                    #    lambda mo : f'{mo.group(1)}void technique{mo.group(2)}(){mo.group(3)}',
-                    #    row
-                    #)
-
-            source_code_stream = f'{header}\n{source_code}'#.encode('UTF-8')
 
             # print(source_code)
             # print(source_code_stream)

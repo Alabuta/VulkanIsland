@@ -1,5 +1,5 @@
 
-layout (set = 0, binding = 0, scalar) readonly buffer PER_CAMERA
+layout(set = 0, binding = 0, scalar) readonly buffer PER_CAMERA
 {
     mat4 view;
     mat4 projection;
@@ -10,7 +10,7 @@ layout (set = 0, binding = 0, scalar) readonly buffer PER_CAMERA
     mat4 invertedProjection;
 } camera;
 
-layout (set = 0, binding = 2, scalar) readonly buffer PER_OBJECT
+layout(set = 0, binding = 2, scalar) readonly buffer PER_OBJECT
 {
     mat4 world;
     mat4 normal;
@@ -18,19 +18,19 @@ layout (set = 0, binding = 2, scalar) readonly buffer PER_OBJECT
 
 //layout (constant_id = 0) const int technique = 0;
 
-layout (location = 0) out vec4 outColor; // xyz // abc
+layout(location = 0) out vec4 outColor; // xyz // abc
 
-out gl_PerVertex {
+out gl_PerVertex{
     vec4 gl_Position;
 };
 
-// /*
+// /* dsadsa
 /**/
 // /**/
 //
-/*
+const int w = 0; /*
 x // x
-// qwerty*/
+/* // qwerty*/
 
 const int a = 0;
 
