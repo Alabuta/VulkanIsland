@@ -18,6 +18,7 @@ class Shaders(NamedTuple):
     file_extensions: tuple
     glslSettings: GLSLSettings
     vertex_attributes_locations: dict
+    stage2extension: dict
 
 class Materials(NamedTuple):
     source_path: str
@@ -44,7 +45,15 @@ shaders = Shaders(
         'TANGENT': 4,
         'COLOR_0': 5,
         'JOINTS_0': 6,
-        'WEIGHTS_0': 7,
+        'WEIGHTS_0': 7
+    },
+    stage2extension = {
+        'vertex': 'vert',
+        'tesselation_control': 'tesc',
+        'tesselation_evaluation': 'tese',
+        'geometry': 'geom',
+        'fragment': 'frag',
+        'compute': 'comp'
     }
 )
 
@@ -60,15 +69,17 @@ def shader_directives():
     extensions_lines = ''
 
     for extension, behavior in shaders.glslSettings.extensions.items():
-        extensions_lines += f'#extension {extension} : {behavior}\n'
+        extensions_lines +=  f'#extension {extension} : {behavior}\n'
 
     return (version_line, extensions_lines)
 
 
-def shader_header(shader_inputs):
+def shader_header(stage, shader_inputs):
     version_line, extensions_lines = shader_directives()
 
-    return f'{version_line}\n{extensions_lines}\n{shader_inputs}\n#line 0'
+    stage_inputs = shader_inputs[stage]
+
+    return f'{version_line}\n{extensions_lines}\n{stage_inputs}\n#line 0'
 
 
 def shader_vertex_attribute_layout(vertex_attributes, technique):
@@ -81,11 +92,6 @@ def shader_vertex_attribute_layout(vertex_attributes, technique):
 
         vertex_attribute_layout.append([ semantic, type ])
 
-    return vertex_attribute_layout
-
-
-# TODO:: add another shader input structures
-def shader_inputs(vertex_attribute_layout):
     vertex_attributes_lines = ''
 
     for vertex_attribute in vertex_attribute_layout:
@@ -93,9 +99,34 @@ def shader_inputs(vertex_attribute_layout):
 
         location = shaders.vertex_attributes_locations[semantic]
 
-        vertex_attributes_lines += f'layout (location = {location}) in {attribute_type} {semantic};\n'
+        vertex_attributes_lines +=  f'layout (location = {location}) in {attribute_type} {semantic};\n'
 
     return vertex_attributes_lines
+
+
+# TODO:: add another shader input structures
+def shader_inputs(material, technique):
+    vertex_attributes = material['vertexAttributes']
+
+    vertex_attributes_lines = shader_vertex_attribute_layout(vertex_attributes, technique)
+
+    vertex_stage_inputs = f'{vertex_attributes_lines}\n'
+    tesc_stage_inputs = f'\n'
+    tese_stage_inputs = f'\n'
+    geometry_stage_inputs = f'\n'
+    fragment_stage_inputs = f'\n'
+    compute_stage_inputs = f'\n'
+
+    inputs = {
+        'vertex': vertex_stage_inputs,
+        'tesselation_control': tesc_stage_inputs,
+        'tesselation_evaluation': tese_stage_inputs,
+        'geometry': geometry_stage_inputs,
+        'fragment': fragment_stage_inputs,
+        'compute': compute_stage_inputs
+    }
+
+    return inputs
 
 
 def remove_comments(source_code):
@@ -111,21 +142,21 @@ def sub_techniques(source_code):
     
 
 def compile_material(material_data):
-    techniques, vertex_attributes, shader_modules = [
-        material_data[k] for k in ('techniques', 'vertexAttributes', 'shaderModules')
+    techniques, shader_modules = [
+        material_data[k] for k in ('techniques', 'shaderModules')
     ]
     
     for technique_index, technique in enumerate(techniques):
-        vertex_attribute_layout = shader_vertex_attribute_layout(vertex_attributes, technique)
+        technique_name = f'technique{technique_index}'
 
-        inputs = shader_inputs(vertex_attribute_layout)
-
-        header = shader_header(inputs)
+        inputs = shader_inputs(material_data, technique)
 
         for shader_module_index in technique['shadersBundle']:
             shader_module = shader_modules[shader_module_index]
 
             name, stage = shader_module['name'], shader_module['stage']
+
+            header = shader_header(stage, inputs)
 
             source_code = ''
 
@@ -138,72 +169,30 @@ def compile_material(material_data):
 
                 source_code = remove_comments(source_code)
                 source_code = sub_techniques(source_code)
-                #print(source_code)
 
-                source_code_stream = f'{header}\n{source_code}'#.encode('UTF-8')
-                print(source_code_stream)
-            break
+                source_code = f'{header}\n{source_code}'
 
-            # print(source_code)
-            # print(source_code_stream)
+                output_path = os.path.join(shaders.source_path, f'{name}.{technique_name}.spv')
 
-    return
+                compiler = subprocess.Popen([
+                    shaders.compiler_path,
+                    '-e', technique_name,
+                    '--source-entrypoint', 'main',
+                    '-V',
+                    # '-H',
+                    '--target-env', 'vulkan1.1',
+                    f'-I{shaders.include_path}',
+                    '-o', output_path,
+                    '--stdin',
+                    '-S', shaders.stage2extension[stage]
+                ], stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
 
-    module_name = shader_module['name']
-    shader_module_absolute_path = os.path.join(shaders.source_path, module_name + '.glsl')
+                output, errors = compiler.communicate(source_code.encode('UTF-8'))
 
-    with open(shader_module_absolute_path, 'r') as file:
-        for line in file:
-            source_code += re.sub(
-                r'^(.*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)(.*)',
-                lambda mo : f'{mo.group(1)}void technique{mo.group(2)}(){mo.group(3)}',
-                line
-            )
+                print(output.decode('UTF-8'))
 
-    if not source_code:
-        return
-
-    # print(source_code)
-
-    for index in re.findall(r'void technique(\d+)\(\)', source_code):
-        technique_index = int(index)
-        technique = f'technique{technique_index}'
-
-        vertex_attributes_string = ''
-
-        for vertex_attribute_index in techniques[technique_index]['vertexLayout']:
-            vertex_attribute = vertex_attributes[vertex_attribute_index]
-            semantic, type = [vertex_attribute[k] for k in ('semantic', 'type')]
-
-            layout = shaders.vertex_attributes_locations[semantic]
-
-            vertex_attributes_string += f'layout (location = {layout}) in {type} {semantic};\n'
-
-        shader_header2 = f'{version_string}\n{extensions_string}\n{vertex_attributes_string}\n#line 0'
-
-        full_source_code = f'{shader_header2}\n{source_code}'
-
-        output_path = os.path.join(shaders.source_path, f'{module_name}.{technique}.spv')
-
-        compiler = subprocess.Popen([
-            shaders.compiler_path,
-            '-e', technique,
-            '--source-entrypoint', 'main',
-            '-V',
-            # '-H',
-            '--target-env', 'vulkan1.1',
-            f'-I{shaders.include_path}',
-            '-o', output_path,
-            '--stdin',
-            '-S', 'vert'
-        ], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-        output, errors = compiler.communicate(full_source_code.encode('UTF-8'))
-
-        print(output.decode('UTF-8'))
-
-        if compiler.returncode != 0:
-            print(errors.decode('UTF-8'))
+                if compiler.returncode !=  0:
+                    print(errors.decode('UTF-8'))
 
 
 for root, dirs, material_relative_paths in os.walk(materials.source_path):
@@ -211,21 +200,7 @@ for root, dirs, material_relative_paths in os.walk(materials.source_path):
         if not material_relative_path.endswith(materials.file_extensions):
             continue
 
-        if material_relative_path != 'color-debug-material.json':
-            continue
-
-        print(material_relative_path)
-
         material_absolute_path = os.path.join(root, material_relative_path)
 
         with open(material_absolute_path, 'r') as json_file:
             compile_material(json.load(json_file))
-
-            # material_data = json.load(json_file)
-            
-            # shader_modules = material_data['shaderModules']
-
-            # vertex_stage_modules = [shader_module for shader_module in shader_modules if shader_module['stage'] == 'vertex']
-
-            # for vertex_stage_module in vertex_stage_modules:
-            #     compile_material(material_data, vertex_stage_module)
