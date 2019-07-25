@@ -17,6 +17,13 @@
             "rasterizationState": 0,
             "depthStencilState": 0,
             "colorBlendState": 0
+        },
+        {
+            "shadersBundle": [ 0 ],
+            "vertexLayout": [ 0, 2 ],
+            "rasterizationState": 0,
+            "depthStencilState": 0,
+            "colorBlendState": 0
         }
     ],
     "vertexAttributes": [

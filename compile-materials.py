@@ -132,11 +132,16 @@ def shader_inputs(material, technique):
 def remove_comments(source_code):
     pattern = r'(?://[^\n]*|/\*(?:(?!\*/).)*\*/)'
 
-    return re.sub(pattern, '', source_code, 0, re.DOTALL)
+    substrs = re.findall(pattern, source_code, re.DOTALL)
+
+    for substr in substrs:
+        source_code = source_code.replace(substr, '\n' * substr.count('\n'))
+
+    return source_code
 
 
 def sub_techniques(source_code):
-    pattern = r'([^\n]*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\((\d+)\)([^\n]*)'
+    pattern = r'([^\n]*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\([ |\t]*?(\d+)[ |\t]*?\)([^\n]*)'
 
     return re.sub(pattern, r'\1void technique\2()\3', source_code, 0, re.DOTALL)
     
@@ -200,8 +205,10 @@ for root, dirs, material_relative_paths in os.walk(materials.source_path):
         if not material_relative_path.endswith(materials.file_extensions):
             continue
 
+        if material_relative_path != 'color-debug-material.json':
+            continue
+
         material_absolute_path = os.path.join(root, material_relative_path)
 
         with open(material_absolute_path, 'r') as json_file:
             compile_material(json.load(json_file))
-            break
