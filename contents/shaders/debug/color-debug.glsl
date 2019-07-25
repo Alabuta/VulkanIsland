@@ -22,25 +22,16 @@ out gl_PerVertex {
     vec4 gl_Position;
 };
 
-#pragma technique( 0    )
+#pragma technique(0)
 {
     gl_Position = camera.projectionView * object.world * vec4(POSITION, 1.0);
-
-	{
-		int i = 0;
-	}{
-        ;
-    }
 
     outColor = COLOR_0;
 }
 
-#pragma technique(1) /*qwerty*/ {
+#pragma technique(1)
+{
     gl_Position = camera.projectionView * object.world * vec4(POSITION, 1.0);
-
-    {}
 
     outColor = vec4(COLOR_0, 1.0);
 }
-
-    #   pragma technique   (2) {  outColor = COLOR_0; }

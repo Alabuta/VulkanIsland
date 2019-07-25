@@ -147,15 +147,16 @@ def sub_techniques(source_code):
     
 
 def remove_inactive_techniques(technique_index, source_code):
-    # pattern = r'void technique[^I]\(\).*?(?:{(?:(?!{).)*})'
     pattern = r'void technique[^I]\(\).*?{(.*?)}'
-    # pattern = pattern.replace(pattern, str(technique_index))
+    pattern = pattern.replace('I', str(technique_index))
 
-    matches = re.finditer(pattern, source_code, re.DOTALL)
+    while True:
+        match = re.search(pattern, source_code, re.DOTALL)
 
-    for match in matches:
+        if not match:
+            break
+    
         substr = match.group(0)
-        print('777777', substr)
 
         opening_brackets = substr.count('{')
         closing_brackets = substr.count('}')
@@ -168,37 +169,24 @@ def remove_inactive_techniques(technique_index, source_code):
 
             start, end = match.span()
 
-            # xxxx = match.group(0)
-
             while True:
                 substr = source_code[end:]
-                print('1111111', substr)
 
                 match = re.search(r'.*?}', substr, re.DOTALL)
 
-                if match:
-                    end += match.span()[1]
-                    # substr = source_code[start:end]
+                if not match:
+                    break
 
-                    print('8888888', start, end, match.group(0))
+                end += match.span()[1]
 
-                    # xxxx += match.group(0)
+                opening_brackets += match.group(0).count('{')
+                closing_brackets += match.group(0).count('}')
 
-                    print('555555', opening_brackets, closing_brackets)
-                    opening_brackets += substr.count('{')
-                    closing_brackets += substr.count('}')
+                if opening_brackets == closing_brackets:
+                    substr = source_code[start:end]
+                    source_code = source_code.replace(substr, '\n' * substr.count('\n'))
 
-                    if opening_brackets == closing_brackets:
-                        # print('2222222', source_code[start:end])
-                        print('2222222', start, end)
-                        print('2222222', opening_brackets, closing_brackets)
-                        # print('2222222', xxxx)
-                        # source_code = source_code.replace(substr, '\n' * substr.count('\n'))
-
-                        break
-
-                else:
-                    return None
+                    break
 
     return source_code
 
@@ -226,8 +214,6 @@ def compile_material(material_data):
                 source_code = remove_comments(source_code)
                 source_code = sub_techniques(source_code)
                 source_code = remove_inactive_techniques(technique_index, source_code)
-                print('####', source_code)
-                return
 
                 source_code = f'{header}\n{source_code}'
 
