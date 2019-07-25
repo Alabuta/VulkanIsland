@@ -141,6 +141,10 @@ def sub_techniques(source_code):
     return re.sub(pattern, r'\1void technique\2()\3', source_code, 0, re.DOTALL)
     
 
+def remove_inactive_techniques(source_code):
+    pattern = r'(?:void technique.+?\(\))'
+
+
 def compile_material(material_data):
     techniques, shader_modules = [
         material_data[k] for k in ('techniques', 'shaderModules')
@@ -157,10 +161,6 @@ def compile_material(material_data):
             name, stage = shader_module['name'], shader_module['stage']
 
             header = shader_header(stage, inputs)
-
-            source_code = ''
-
-            technique_lines = [ ]
 
             source_code = ''
 
@@ -204,3 +204,4 @@ for root, dirs, material_relative_paths in os.walk(materials.source_path):
 
         with open(material_absolute_path, 'r') as json_file:
             compile_material(json.load(json_file))
+            break

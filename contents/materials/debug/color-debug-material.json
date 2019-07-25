@@ -12,7 +12,7 @@
     ],
     "techniques": [
         {
-            "shadersBundle": [ 0, 1 ],
+            "shadersBundle": [ 0 ],
             "vertexLayout": [ 0, 1 ],
             "rasterizationState": 0,
             "depthStencilState": 0,

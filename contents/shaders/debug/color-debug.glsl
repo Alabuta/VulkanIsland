@@ -16,42 +16,21 @@ layout(set = 0, binding = 2, scalar) readonly buffer PER_OBJECT
     mat4 normal;
 } object;
 
-//layout (constant_id = 0) const int technique = 0;
+layout(location = 0) out vec4 outColor;
 
-layout(location = 0) out vec4 outColor; // xyz // abc
-
-out gl_PerVertex{
+out gl_PerVertex {
     vec4 gl_Position;
 };
 
-// /* dsadsa
-/**/
-// /**/
-//
-const int w = 0; /*
-x // x
-/* // qwerty*/
-
-const int a = 0;
-
-/*dsadasd*//*eq // eqweqwe*/
-
-const int b = 0;
-
-/*jljkl*///*eq  nbnbvnbv*/
-/*gfgfdgfd*/ const int c = 0; //*iu  ytuytu*/
-
-#   pragma technique(0) {
+#pragma technique(0)
+{
     gl_Position = camera.projectionView * object.world * vec4(POSITION, 1.0);
 
     outColor = COLOR_0;
 }
 
-/* #pragma /* technique(2) { {COLOR_0; } */
+#pragma technique(1) /*qwerty*/ {
+    gl_Position = camera.projectionView * object.world * vec4(POSITION, 1.0);
 
-//#pragma technique(1)
-//{
-//    gl_Position = camera.projectionView * object.world * vec4(POSITION, 0.0);
-//
-//    outColor = vec4(COLOR_0, 1.0);
-//}
+    outColor = vec4(COLOR_0);
+}
