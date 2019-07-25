@@ -133,7 +133,7 @@ def remove_comments(source_code):
     pattern = r'(?://[^\n]*|/\*(?:(?!\*/).)*\*/)'
 
     substrs = re.findall(pattern, source_code, re.DOTALL)
-
+    
     for substr in substrs:
         source_code = source_code.replace(substr, '\n' * substr.count('\n'))
 
@@ -146,8 +146,61 @@ def sub_techniques(source_code):
     return re.sub(pattern, r'\1void technique\2()\3', source_code, 0, re.DOTALL)
     
 
-def remove_inactive_techniques(source_code):
-    pattern = r'(?:void technique.+?\(\))'
+def remove_inactive_techniques(technique_index, source_code):
+    # pattern = r'void technique[^I]\(\).*?(?:{(?:(?!{).)*})'
+    pattern = r'void technique[^I]\(\).*?{(.*?)}'
+    # pattern = pattern.replace(pattern, str(technique_index))
+
+    matches = re.finditer(pattern, source_code, re.DOTALL)
+
+    for match in matches:
+        substr = match.group(0)
+        print('777777', substr)
+
+        opening_brackets = substr.count('{')
+        closing_brackets = substr.count('}')
+
+        if opening_brackets == closing_brackets:
+            source_code = source_code.replace(substr, '\n' * substr.count('\n'))
+
+        else:
+            assert opening_brackets > closing_brackets, 'opening brackets count less than closing ones'
+
+            start, end = match.span()
+
+            # xxxx = match.group(0)
+
+            while True:
+                substr = source_code[end:]
+                print('1111111', substr)
+
+                match = re.search(r'.*?}', substr, re.DOTALL)
+
+                if match:
+                    end += match.span()[1]
+                    # substr = source_code[start:end]
+
+                    print('8888888', start, end, match.group(0))
+
+                    # xxxx += match.group(0)
+
+                    print('555555', opening_brackets, closing_brackets)
+                    opening_brackets += substr.count('{')
+                    closing_brackets += substr.count('}')
+
+                    if opening_brackets == closing_brackets:
+                        # print('2222222', source_code[start:end])
+                        print('2222222', start, end)
+                        print('2222222', opening_brackets, closing_brackets)
+                        # print('2222222', xxxx)
+                        # source_code = source_code.replace(substr, '\n' * substr.count('\n'))
+
+                        break
+
+                else:
+                    return None
+
+    return source_code
 
 
 def compile_material(material_data):
@@ -167,13 +220,14 @@ def compile_material(material_data):
 
             header = shader_header(stage, inputs)
 
-            source_code = ''
-
             with open(os.path.join(shaders.source_path, f'{name}.glsl'), 'rb') as file:
                 source_code = file.read().decode('UTF-8')
 
                 source_code = remove_comments(source_code)
                 source_code = sub_techniques(source_code)
+                source_code = remove_inactive_techniques(technique_index, source_code)
+                print('####', source_code)
+                return
 
                 source_code = f'{header}\n{source_code}'
 
