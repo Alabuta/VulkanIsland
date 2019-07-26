@@ -12,14 +12,32 @@
     ],
     "techniques": [
         {
-            "shadersBundle": [ 0 ],
+            "shadersBundle": [
+                {
+                    "index": 0,
+                    "technique": 0
+                },
+                {
+                    "index": 1,
+                    "technique": 0
+                }
+            ],
             "vertexLayout": [ 0, 1 ],
             "rasterizationState": 0,
             "depthStencilState": 0,
             "colorBlendState": 0
         },
         {
-            "shadersBundle": [ 0 ],
+            "shadersBundle": [
+                {
+                    "index": 0,
+                    "technique": 1
+                },
+                {
+                    "index": 1,
+                    "technique": 0
+                }
+            ],
             "vertexLayout": [ 0, 2 ],
             "rasterizationState": 0,
             "depthStencilState": 0,

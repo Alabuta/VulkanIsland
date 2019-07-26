@@ -196,12 +196,14 @@ def compile_material(material_data):
         material_data[k] for k in ('techniques', 'shaderModules')
     ]
     
-    for technique_index, technique in enumerate(techniques):
-        technique_name = f'technique{technique_index}'
-
+    for technique in techniques:
         inputs = shader_inputs(material_data, technique)
 
-        for shader_module_index in technique['shadersBundle']:
+        for shader_bundle in technique['shadersBundle']:
+            shader_module_index, technique_index = shader_bundle['index'], shader_bundle['technique']
+
+            technique_name = f'technique{technique_index}'
+
             shader_module = shader_modules[shader_module_index]
 
             name, stage = shader_module['name'], shader_module['stage']
