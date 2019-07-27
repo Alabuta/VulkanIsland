@@ -2,7 +2,7 @@ import os
 import re
 import json
 import subprocess
-# import pyparsing
+import hashlib
 
 from typing import NamedTuple
 
@@ -219,7 +219,10 @@ def compile_material(material_data):
 
                 source_code = f'{header}\n{source_code}'
 
-                output_path = os.path.join(shaders.source_path, f'{name}.{technique_name}.spv')
+                hashed_name = hashlib.md5(f'{name}.{technique_name}'.encode('UTF-8')).hexdigest()
+                output_path = os.path.join(shaders.source_path, f'{hashed_name}.spv')
+
+                print(f'{name}.{technique_name}', output_path)
 
                 compiler = subprocess.Popen([
                     shaders.compiler_path,
