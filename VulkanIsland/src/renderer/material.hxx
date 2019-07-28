@@ -88,6 +88,19 @@ private:
     // pipeline layout (descriptor set layout)
 };
 
+class Material2 final {
+public:
+
+    std::vector<ShaderStage2> shaderStages;
+
+    RasterizationState rasterizationState;
+    DepthStencilState depthStencilState;
+    ColorBlendState colorBlendState;
+
+
+private:
+};
+
 
 class MaterialFactory final {
 public:
@@ -95,12 +108,14 @@ public:
     MaterialFactory(ShaderManager &shaderManager) noexcept : shaderManager_{shaderManager} { }
 
     [[nodiscard]] std::shared_ptr<Material> CreateMaterial(std::string_view type);
+    [[nodiscard]] std::shared_ptr<Material2> CreateMaterial2(std::string_view name, std::uint32_t technique = 0);
 
     [[nodiscard]] std::shared_ptr<MaterialProperties> const properties(std::shared_ptr<Material> const material);// const noexcept;
 
     [[nodiscard]] std::vector<VkPipelineShaderStageCreateInfo> const &pipelineShaderStages(std::shared_ptr<Material> const material);
 
     std::map<std::string, std::shared_ptr<Material>> const materials() const noexcept { return materials_; }
+
 
 private:
 
@@ -111,6 +126,12 @@ private:
 
     std::map<std::shared_ptr<Material>, std::vector<VkPipelineShaderStageCreateInfo>, std::owner_less<std::shared_ptr<Material>>> pipelineShaderStages_;
 
+    std::map<std::string, std::shared_ptr<Material2>> materials2_;
+    std::map<std::shared_ptr<Material2>, MaterialProperties, std::owner_less<std::shared_ptr<Material2>>> materialProperties2_;
+
+    std::map<std::shared_ptr<Material2>, std::vector<VkPipelineShaderStageCreateInfo>, std::owner_less<std::shared_ptr<Material2>>> pipelineShaderStages2_;
+
 
     void InitMaterialProperties(std::shared_ptr<Material> material) noexcept;
+    void InitMaterialProperties(std::shared_ptr<Material2> material);
 };

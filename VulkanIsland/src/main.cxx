@@ -65,7 +65,7 @@ struct per_object_t final {
 struct renderable_t final {
     PRIMITIVE_TOPOLOGY topology;
 
-    std::shared_ptr<Material> material;
+    std::shared_ptr<Material2> material;
     std::shared_ptr<VertexBuffer> vertexBuffer;
 
     std::uint32_t vertexCount{0};
@@ -690,9 +690,9 @@ xformat populate()
         }
     }
 
-    _model.materials.push_back(xformat::material{"TexCoordsDebugMaterial"s});
-    _model.materials.push_back(xformat::material{"ColorsDebugMaterial"s});
-    //_model.materials.push_back(xformat::material{"NormalsDebugMaterial"s});
+    _model.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
+    _model.materials.push_back(xformat::material{0, "debug/color-debug-material"s});
+    //_model.materials.push_back(xformat::material{0, "debug/normal-debug"s});
 
     return _model;
 }
@@ -715,9 +715,9 @@ void stageXformat(app_t &app, xformat const &_model)
         else throw std::runtime_error("failed to get vertex buffer"s);
 
         auto materialIndex = meshlet.materialIndex;
-        auto &&_material = _model.materials[materialIndex];
+        auto [technique, name] = _model.materials[materialIndex];
 
-        auto material = app.materialFactory->CreateMaterial(_material.type);
+        auto material = app.materialFactory->CreateMaterial2(name, technique);
 
         if (!material)
             throw std::runtime_error("failed to get material"s);

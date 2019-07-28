@@ -278,7 +278,8 @@ struct xformat final {
     std::vector<index_buffer> indexBuffers;
 
     struct material final {
-        std::string type;
+        std::uint32_t technique;
+        std::string name;
     };
 
     std::vector<material> materials;
