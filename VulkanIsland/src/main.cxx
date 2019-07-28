@@ -528,8 +528,8 @@ xformat populate()
     {
         // First triangle
         struct vertex final {
-            vec<3, std::float_t> position;
-            vec<2, std::float_t> texCoord;
+            vec<3, float> position;
+            vec<2, float> texCoord;
         };
 
         auto const vertexLayoutIndex = std::size(_model.vertexLayouts);
@@ -592,9 +592,9 @@ xformat populate()
 
     {
         struct vertex final {
-            vec<3, std::float_t> position;
-            vec<2, std::float_t> texCoord;
-            vec<4, std::float_t> color;
+            vec<3, float> position;
+            vec<2, float> texCoord;
+            vec<4, float> color;
         };
 
         auto const vertexLayoutIndex = std::size(_model.vertexLayouts);

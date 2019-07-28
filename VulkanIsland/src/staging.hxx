@@ -511,7 +511,7 @@ auto constexpr getFormat([[maybe_unused]] bool normalized = false)
         }
     }
 
-    else if constexpr (std::is_same_v<T, std::float_t>) {
+    else if constexpr (std::is_same_v<T, float>) {
         switch (N) {
             case 1: return VK_FORMAT_R32_SFLOAT;
             case 2: return VK_FORMAT_R32G32_SFLOAT;

@@ -110,10 +110,10 @@ using attribute_t = std::variant<
     vec<3, std::uint32_t>,
     vec<4, std::uint32_t>,
 
-    vec<1, std::float_t>,
-    vec<2, std::float_t>,
-    vec<3, std::float_t>,
-    vec<4, std::float_t>
+    vec<1, float>,
+    vec<2, float>,
+    vec<3, float>,
+    vec<4, float>
 >;
 
 

@@ -128,7 +128,7 @@ std::size_t constexpr attribute_size(glTF::GL componentType)
             return N * sizeof(std::uint32_t);
 
         case  glTF::GL::FLOAT:
-            return N * sizeof(std::float_t);
+            return N * sizeof(float);
 
         default:
             return 0;
@@ -175,7 +175,7 @@ std::optional<attribute_t> constexpr instantiate_attribute(glTF::GL componentTyp
             return vec<N, std::uint32_t>{};
 
         case  glTF::GL::FLOAT:
-            return vec<N, std::float_t>{};
+            return vec<N, float>{};
 
         default:
             return { };
