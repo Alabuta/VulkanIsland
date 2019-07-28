@@ -253,6 +253,7 @@
     <ClCompile Include="src\ecs\transform.cxx" />
     <ClCompile Include="src\loaders\loaderGLTF.cxx" />
     <ClCompile Include="src\loaders\loaderTARGA.cxx" />
+    <ClCompile Include="src\loaders\material_loader.cxx" />
     <ClCompile Include="src\math.cxx" />
     <ClCompile Include="src\renderer\material.cxx" />
     <ClCompile Include="src\renderer\pipelines.cxx" />
@@ -283,6 +284,7 @@
     <ClInclude Include="src\device\device.hxx" />
     <ClInclude Include="src\device\deviceConfig.hxx" />
     <ClInclude Include="src\loaders\loaderSPIRV.hxx" />
+    <ClInclude Include="src\loaders\material_loader.hxx" />
     <ClInclude Include="src\renderer\attachments.hxx" />
     <ClInclude Include="src\renderer\material.hxx" />
     <ClInclude Include="src\renderer\pipelines.hxx" />
