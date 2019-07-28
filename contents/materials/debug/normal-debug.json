@@ -16,6 +16,10 @@
                 {
                     "index": 0,
                     "technique": 0
+                },
+                {
+                    "index": 1,
+                    "technique": 0
                 }
             ],
             "vertexLayout": [ 0, 1 ],

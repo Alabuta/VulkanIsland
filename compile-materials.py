@@ -16,9 +16,10 @@ class Shaders(NamedTuple):
     source_path: str
     include_path: str
     file_extensions: tuple
-    glslSettings: GLSLSettings
+    glsl_settings: GLSLSettings
     vertex_attributes_locations: dict
     stage2extension: dict
+    processed_shaders: dict
 
 class Materials(NamedTuple):
     source_path: str
@@ -30,7 +31,7 @@ shaders = Shaders(
     source_path = './contents/shaders',
     include_path = './contents/shaders/include',
     file_extensions = ('.vert.glsl', '.tesc.glsl', '.tese.glsl', '.geom.glsl', '.frag.glsl', '.comp.glsl'),
-    glslSettings = GLSLSettings(
+    glsl_settings = GLSLSettings(
         version = 460,
         extensions = {
             'GL_ARB_separate_shader_objects': 'enable',
@@ -54,7 +55,8 @@ shaders = Shaders(
         'geometry': 'geom',
         'fragment': 'frag',
         'compute': 'comp'
-    }
+    },
+    processed_shaders = { }
 )
 
 materials = Materials(
@@ -64,11 +66,11 @@ materials = Materials(
 
 
 def shader_directives():
-    version_line = f'#version {shaders.glslSettings.version}\n'
+    version_line = f'#version {shaders.glsl_settings.version}\n'
 
     extensions_lines = ''
 
-    for extension, behavior in shaders.glslSettings.extensions.items():
+    for extension, behavior in shaders.glsl_settings.extensions.items():
         extensions_lines +=  f'#extension {extension} : {behavior}\n'
 
     return (version_line, extensions_lines)
@@ -191,6 +193,25 @@ def remove_inactive_techniques(technique_index, source_code):
     return source_code
 
 
+def get_shader_source_code(name):
+    path = f'{name}.glsl'
+
+    if path in shaders.processed_shaders:
+        return shaders.processed_shaders[path]
+
+    with open(os.path.join(shaders.source_path, path), 'rb') as file:
+        source_code = file.read().decode('UTF-8')
+
+        source_code = remove_comments(source_code)
+        source_code = sub_techniques(source_code)
+
+        shaders.processed_shaders[path] = source_code
+
+        return source_code
+
+    return None
+
+
 def compile_material(material_data):
     techniques, shader_modules = [
         material_data[k] for k in ('techniques', 'shaderModules')
@@ -202,47 +223,45 @@ def compile_material(material_data):
         for shader_bundle in technique['shadersBundle']:
             shader_module_index, technique_index = shader_bundle['index'], shader_bundle['technique']
 
-            technique_name = f'technique{technique_index}'
-
             shader_module = shader_modules[shader_module_index]
 
             name, stage = shader_module['name'], shader_module['stage']
 
             header = shader_header(stage, inputs)
 
-            with open(os.path.join(shaders.source_path, f'{name}.glsl'), 'rb') as file:
-                source_code = file.read().decode('UTF-8')
+            source_code = get_shader_source_code(name)
 
-                source_code = remove_comments(source_code)
-                source_code = sub_techniques(source_code)
-                source_code = remove_inactive_techniques(technique_index, source_code)
+            if not source_code:
+                print(f'can\'t get shader source code {name}')
+                continue
 
-                source_code = f'{header}\n{source_code}'
+            source_code = remove_inactive_techniques(technique_index, source_code)
+            source_code = f'{header}\n{source_code}'
 
-                hashed_name = hashlib.md5(f'{name}.{technique_name}'.encode('UTF-8')).hexdigest()
-                output_path = os.path.join(shaders.source_path, f'{hashed_name}.spv')
+            hashed_name = hashlib.md5(f'{name}.{technique_index}'.encode('UTF-8')).hexdigest()
+            output_path = os.path.join(shaders.source_path, f'{hashed_name}.spv')
 
-                print(f'{name}.{technique_name}', output_path)
+            print(f'{name}.{technique_index}', output_path)
 
-                compiler = subprocess.Popen([
-                    shaders.compiler_path,
-                    '-e', technique_name,
-                    '--source-entrypoint', 'main',
-                    '-V',
-                    # '-H',
-                    '--target-env', 'vulkan1.1',
-                    f'-I{shaders.include_path}',
-                    '-o', output_path,
-                    '--stdin',
-                    '-S', shaders.stage2extension[stage]
-                ], stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
+            compiler = subprocess.Popen([
+                shaders.compiler_path,
+                '-e', f'technique{technique_index}',
+                '--source-entrypoint', 'main',
+                '-V',
+                # '-H',
+                '--target-env', 'vulkan1.1',
+                f'-I{shaders.include_path}',
+                '-o', output_path,
+                '--stdin',
+                '-S', shaders.stage2extension[stage]
+            ], stdin = subprocess.PIPE, stdout = subprocess.PIPE, stderr = subprocess.PIPE)
 
-                output, errors = compiler.communicate(source_code.encode('UTF-8'))
+            output, errors = compiler.communicate(source_code.encode('UTF-8'))
 
-                print(output.decode('UTF-8'))
+            # print(output.decode('UTF-8'))
 
-                if compiler.returncode !=  0:
-                    print(errors.decode('UTF-8'))
+            if compiler.returncode !=  0:
+                print(errors.decode('UTF-8'))
 
 
 for root, dirs, material_relative_paths in os.walk(materials.source_path):
@@ -250,8 +269,8 @@ for root, dirs, material_relative_paths in os.walk(materials.source_path):
         if not material_relative_path.endswith(materials.file_extensions):
             continue
 
-        if material_relative_path != 'color-debug-material.json':
-            continue
+        #if material_relative_path != 'color-debug-material.json':
+        #    continue
 
         material_absolute_path = os.path.join(root, material_relative_path)
 
