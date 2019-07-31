@@ -5,6 +5,7 @@ using namespace std::string_literals;
 using namespace std::string_view_literals;
 
 #include "material.hxx"
+#include "loaders/material_loader.hxx"
 
 
 namespace
@@ -405,7 +406,8 @@ std::shared_ptr<Material2> MaterialFactory::CreateMaterial2(std::string_view nam
     if (materials2_.count(_name) != 0)
         return materials2_.at(_name);
 
-    auto material = std::make_shared<Material2>();
+    auto material = loader::load_material(name);
+    //auto material = std::make_shared<Material2>();
 
     material->colorBlendState.attachments.push_back(ColorBlendAttachmentState{
         false,

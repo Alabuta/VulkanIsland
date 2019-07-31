@@ -1,5 +1,6 @@
 #pragma once
 
+#include <memory>
 #include <string_view>
 using namespace std::string_view_literals;
 
