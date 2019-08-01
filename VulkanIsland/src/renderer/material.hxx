@@ -60,7 +60,7 @@ struct MaterialProperties final {
 
     VkPipelineDepthStencilStateCreateInfo depthStencilState;
 
-    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachments;
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates;
     VkPipelineColorBlendStateCreateInfo colorBlendState;
 };
 

@@ -330,7 +330,7 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material> material)
     };
 
     for (auto &&attachment : material->colorBlendState.attachments) {
-        properties.colorBlendAttachments.push_back(VkPipelineColorBlendAttachmentState{
+        properties.colorBlendAttachmentStates.push_back(VkPipelineColorBlendAttachmentState{
             VkBool32(attachment.blendEnable),
             ConvertToGAPI(attachment.srcColorBlendFactor),
             ConvertToGAPI(attachment.dstColorBlendFactor),
@@ -351,8 +351,8 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material> material)
         nullptr, 0,
         VK_FALSE,
         VK_LOGIC_OP_COPY,
-        static_cast<std::uint32_t>(std::size(properties.colorBlendAttachments)),
-        std::data(properties.colorBlendAttachments),
+        static_cast<std::uint32_t>(std::size(properties.colorBlendAttachmentStates)),
+        std::data(properties.colorBlendAttachmentStates),
         {}
     };
 
@@ -459,7 +459,7 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material2> material
     };
 
     for (auto &&attachment : material->colorBlendState.attachments) {
-        properties.colorBlendAttachments.push_back(VkPipelineColorBlendAttachmentState{
+        properties.colorBlendAttachmentStates.push_back(VkPipelineColorBlendAttachmentState{
             VkBool32(attachment.blendEnable),
             ConvertToGAPI(attachment.srcColorBlendFactor),
             ConvertToGAPI(attachment.dstColorBlendFactor),
@@ -480,8 +480,8 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material2> material
         nullptr, 0,
         VK_FALSE,
         VK_LOGIC_OP_COPY,
-        static_cast<std::uint32_t>(std::size(properties.colorBlendAttachments)),
-        std::data(properties.colorBlendAttachments),
+        static_cast<std::uint32_t>(std::size(properties.colorBlendAttachmentStates)),
+        std::data(properties.colorBlendAttachmentStates),
         {}
     };
 
