@@ -6,6 +6,7 @@ using namespace std::string_view_literals;
 
 #include "material.hxx"
 #include "loaders/material_loader.hxx"
+#include "renderer/material_description.hxx"
 
 
 namespace
@@ -403,30 +404,29 @@ std::shared_ptr<Material2> MaterialFactory::CreateMaterial2(std::string_view nam
 {
     auto _name = std::string{name};
 
-    if (materials2_.count(_name) != 0)
-        return materials2_.at(_name);
+    auto const key = std::pair{_name, technique};
+    
+    if (materials_by_techinques_.count(key) != 0)
+        return materials_by_techinques_.at(key);
 
-    auto material = loader::load_material(name);
-    //auto material = std::make_shared<Material2>();
+    auto description = GetMaterialDescription(name);
 
-    material->colorBlendState.attachments.push_back(ColorBlendAttachmentState{
-        false,
-        BLEND_FACTOR::ONE,
-        BLEND_FACTOR::ZERO,
-        BLEND_OPERATION::ADD,
-        BLEND_FACTOR::ONE,
-        BLEND_FACTOR::ZERO,
-        BLEND_OPERATION::ADD,
-        COLOR_COMPONENT::RGBA
-    });
+    auto &&techniques;
 
-    InitMaterialProperties(material);
+    return std::make_shared<Material2>();
+}
 
-    // shaderManager_.CreateShaderPrograms(material.get());
+std::shared_ptr<material_description> MaterialFactory::GetMaterialDescription(std::string_view name)
+{
+    auto _name = std::string{name};
+    if (material_descriptions_.count(_name) != 0)
+        return material_descriptions_.at(_name);
 
-    materials2_.emplace(_name, material);
+    auto description = loader::load_material_description(name);
 
-    return material;
+    material_descriptions_.emplace(_name, description);
+
+    return description;
 }
 
 void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material2> material)

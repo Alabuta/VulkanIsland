@@ -15,92 +15,6 @@ using namespace std::string_literals;
 
 
 
-struct material_description final {
-    std::string name;
-
-    struct shader_module final {
-        shader::STAGE semantic;
-        std::string name;
-    };
-
-    std::vector<shader_module> shader_modules;
-
-    struct vertex_attribute final {
-        semantics_t semantic;
-        attribute_t type;
-    };
-
-    std::vector<vertex_attribute> vertex_attributes;
-
-    struct shader_bundle final {
-        std::size_t index;
-        std::size_t technique;
-    };
-
-    struct technique final {
-        std::vector<shader_bundle> shaders_bundle;
-        std::vector<std::size_t> vertex_layout;
-
-        std::size_t rasterization_state;
-        std::size_t depth_stencil_state;
-        std::size_t color_blend_state;
-    };
-
-    std::vector<technique> techniques;
-
-    struct rasterization_state final {
-        CULL_MODE cull_mode{CULL_MODE::BACK};
-        POLYGON_FRONT_FACE front_face{POLYGON_FRONT_FACE::COUNTER_CLOCKWISE};
-        POLYGON_MODE polygon_mode{POLYGON_MODE::FILL};
-
-        float line_width{1.f};
-    };
-
-    std::vector<rasterization_state> rasterization_states;
-
-    struct depth_stencil_state final {
-        bool depth_test_enable{true};
-        bool depth_write_enable{true};
-
-        COMPARE_OPERATION depth_compare_operation{COMPARE_OPERATION::GREATER};
-
-        bool stencil_test_enable{false};
-    };
-
-    std::vector<depth_stencil_state> depth_stencil_states;
-
-    struct color_blend_state final {
-        bool logic_operation_enable{false};
-
-        BLEND_STATE_OPERATION logic_operation{BLEND_STATE_OPERATION::COPY};
-
-        std::array<float, 4> blend_constants{0, 0, 0, 0};
-
-        std::vector<std::size_t> attachments;
-    };
-
-    std::vector<color_blend_state> color_blend_states;
-
-    struct color_blend_attachment_state final {
-        bool blend_enable{false};
-
-        BLEND_FACTOR src_color_blend_factor{BLEND_FACTOR::ONE};
-        BLEND_FACTOR dst_color_blend_factor{BLEND_FACTOR::ZERO};
-
-        BLEND_OPERATION color_blend_operation{BLEND_OPERATION::ADD};
-
-        BLEND_FACTOR src_alpha_blend_factor{BLEND_FACTOR::ONE};
-        BLEND_FACTOR dst_alpha_blend_factor{BLEND_FACTOR::ZERO};
-
-        BLEND_OPERATION alpha_blend_operation{BLEND_OPERATION::ADD};
-
-        COLOR_COMPONENT color_write_mask{COLOR_COMPONENT::RGBA};
-    };
-
-    std::vector<color_blend_attachment_state> color_blend_attachment_states;
-};
-
-
 namespace loader
 {
 std::optional<shader::STAGE> shader_stage_semantic(std::string_view name)
@@ -406,13 +320,15 @@ std::optional<COLOR_COMPONENT> color_component(std::string_view name)
 }
 }
 
+
 void from_json(nlohmann::json const &j, material_description::shader_module &shader_module)
 {
-
     if (auto semantic = loader::shader_stage_semantic(j.at("stage"s).get<std::string>()); semantic)
         shader_module.semantic = *semantic;
 
     else throw std::runtime_error("unsupported shader stage"s);
+
+    shader_module.name = j.at("name"s).get<std::string>();
 }
 
 void from_json(nlohmann::json const &j, material_description::vertex_attribute &vertex_attribute)
@@ -530,7 +446,7 @@ void from_json(nlohmann::json const &j, material_description::color_blend_attach
 
 namespace loader
 {
-std::shared_ptr<Material2> load_material(std::string_view name)
+std::shared_ptr<material_description> load_material_description(std::string_view name)
 {
     nlohmann::json json;
 
@@ -561,14 +477,21 @@ std::shared_ptr<Material2> load_material(std::string_view name)
 
     auto techniques = json.at("techniques"s).get<std::vector<material_description::technique>>();
 
-    auto rasterization_states = json.at("rasterizationStates"s).get<std::vector<material_description::color_blend_attachment_state>>();
-    auto depth_stencil_states = json.at("depthStencilStates"s).get<std::vector<material_description::color_blend_attachment_state>>();
+    auto rasterization_states = json.at("rasterizationStates"s).get<std::vector<material_description::rasterization_state>>();
+    auto depth_stencil_states = json.at("depthStencilStates"s).get<std::vector<material_description::depth_stencil_state>>();
 
-    auto color_blend_states = json.at("colorBlendStates"s).get<std::vector<material_description::color_blend_attachment_state>>();
+    auto color_blend_states = json.at("colorBlendStates"s).get<std::vector<material_description::color_blend_state>>();
     auto color_blend_attachment_states = json.at("colorBlendAttachmentStates"s).get<std::vector<material_description::color_blend_attachment_state>>();
 
-    auto material = std::make_shared<Material2>();
-
-    return material;
+    return std::make_shared<material_description>(material_description{
+        _name,
+        shader_modules,
+        vertex_attributes,
+        techniques,
+        rasterization_states,
+        depth_stencil_states,
+        color_blend_states,
+        color_blend_attachment_states
+    });
 }
 }
