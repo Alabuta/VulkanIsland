@@ -2,7 +2,7 @@ import os
 import re
 import json
 import subprocess
-import hashlib
+import uuid
 
 from typing import NamedTuple
 
@@ -238,7 +238,7 @@ def compile_material(material_data):
             source_code = remove_inactive_techniques(technique_index, source_code)
             source_code = f'{header}\n{source_code}'
 
-            hashed_name = hashlib.md5(f'{name}.{technique_index}'.encode('UTF-8')).hexdigest()
+            hashed_name = str(uuid.uuid5(uuid.NAMESPACE_DNS, f'{name}.{technique_index}'))
             output_path = os.path.join(shaders.source_path, f'{hashed_name}.spv')
 
             print(f'{name}.{technique_index}', output_path)
