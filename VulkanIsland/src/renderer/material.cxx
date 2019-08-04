@@ -4,6 +4,9 @@ using namespace std::string_literals;
 #include <string_view>
 using namespace std::string_view_literals;
 
+#include <boost/uuid/name_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 #include "material.hxx"
 #include "loaders/material_loader.hxx"
 #include "renderer/material_description.hxx"
@@ -400,18 +403,39 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial(std::string_view type)
     return material;
 }
 
-std::shared_ptr<Material2> MaterialFactory::CreateMaterial2(std::string_view name, std::uint32_t technique)
+std::shared_ptr<Material2> MaterialFactory::CreateMaterial2(std::string_view name, std::uint32_t technique_index)
 {
     auto _name = std::string{name};
 
-    auto const key = std::pair{_name, technique};
+    auto const key = std::pair{_name, technique_index};
     
     if (materials_by_techinques_.count(key) != 0)
         return materials_by_techinques_.at(key);
 
-    auto description = GetMaterialDescription(name);
+    auto const description = GetMaterialDescription(name);
 
-    auto &&techniques;
+    auto &&techniques = description->techniques;
+    auto &&technique = techniques.at(technique_index);
+
+    auto &&shader_modules = description->shader_modules;
+    auto &&shaders_bundle = technique.shaders_bundle;
+
+    std::vector<ShaderStage2> shader_stages;
+
+    std::transform(std::cbegin(shaders_bundle), std::cend(shaders_bundle),
+                   std::back_inserter(shader_stages), [_name, &shader_modules] (auto shader_bundle)
+    {
+        auto [shader_module_index, shader_technique_index] = shader_bundle;
+
+        auto &&[shader_semantic, shader_name] = shader_modules.at(shader_module_index);
+
+        auto full_name = shader_name + "."s + std::to_string(shader_technique_index);
+
+        boost::uuids::name_generator_sha1 gen(boost::uuids::ns::dns());
+        auto hashed_name = boost::uuids::to_string(gen(full_name));
+
+        return ShaderStage2{};
+    });
 
     return std::make_shared<Material2>();
 }
