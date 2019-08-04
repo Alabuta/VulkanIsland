@@ -27,8 +27,8 @@ struct material_description final {
     std::vector<vertex_attribute> vertex_attributes;
 
     struct shader_bundle final {
-        std::size_t index;
-        std::size_t technique;
+        std::size_t module_index;
+        std::size_t technique_index;
     };
 
     struct technique final {

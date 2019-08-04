@@ -20,7 +20,7 @@ using namespace std::string_view_literals;
 
 
 namespace loader {
-std::vector<std::byte> loadSPIRV(std::string_view name)
+std::vector<std::byte> load_SPIRV(std::string_view name)
 {
     fs::path contents{"contents/shaders"sv};
 

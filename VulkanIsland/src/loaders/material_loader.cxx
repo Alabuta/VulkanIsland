@@ -346,8 +346,8 @@ void from_json(nlohmann::json const &j, material_description::vertex_attribute &
 
 void from_json(nlohmann::json const &j, material_description::shader_bundle &shader_bundle)
 {
-    shader_bundle.index = j.at("index"s).get<std::size_t>();
-    shader_bundle.technique = j.at("technique"s).get<std::size_t>();
+    shader_bundle.module_index = j.at("index"s).get<std::size_t>();
+    shader_bundle.technique_index = j.at("technique"s).get<std::size_t>();
 }
 
 void from_json(nlohmann::json const &j, material_description::technique &technique)
@@ -469,8 +469,6 @@ std::shared_ptr<material_description> load_material_description(std::string_view
         file >> json;
     }
 
-    auto _name = json.at("name"s).get<std::string>();
-
     auto shader_modules = json.at("shaderModules"s).get<std::vector<material_description::shader_module>>();
 
     auto vertex_attributes = json.at("vertexAttributes"s).get<std::vector<material_description::vertex_attribute>>();
@@ -481,17 +479,17 @@ std::shared_ptr<material_description> load_material_description(std::string_view
     auto depth_stencil_states = json.at("depthStencilStates"s).get<std::vector<material_description::depth_stencil_state>>();
 
     auto color_blend_states = json.at("colorBlendStates"s).get<std::vector<material_description::color_blend_state>>();
-    auto color_blend_attachment_states = json.at("colorBlendAttachmentStates"s).get<std::vector<material_description::color_blend_attachment_state>>();
+    auto attachment_states = json.at("colorBlendAttachmentStates"s).get<std::vector<material_description::color_blend_attachment_state>>();
 
     return std::make_shared<material_description>(material_description{
-        _name,
+        std::string{name},
         shader_modules,
         vertex_attributes,
         techniques,
         rasterization_states,
         depth_stencil_states,
         color_blend_states,
-        color_blend_attachment_states
+        attachment_states
     });
 }
 }

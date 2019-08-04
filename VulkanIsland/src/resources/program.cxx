@@ -39,7 +39,7 @@ void ShaderManager::CreateShaderPrograms(Material const *const material)
     for (auto &&shaderStage : material->shaderStages()) {
         if (shaderStagePrograms_.count(shaderStage) == 0) {
             if (shaderModules_.count(shaderStage.moduleName) == 0) {
-                auto const shaderByteCode = loader::loadSPIRV(shaderStage.moduleName);
+                auto const shaderByteCode = loader::load_SPIRV(shaderStage.moduleName);
 
                 if (shaderByteCode.empty())
                     throw std::runtime_error("failed to open vertex shader file"s);
