@@ -1,3 +1,6 @@
+#include <boost/uuid/name_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 #include "loaders/loaderSPIRV.hxx"
 #include "program.hxx"
 #include "renderer/material.hxx"
@@ -44,7 +47,7 @@ void ShaderManager::CreateShaderPrograms(Material const *const material)
                 if (shaderByteCode.empty())
                     throw std::runtime_error("failed to open vertex shader file"s);
 
-                auto shaderModule = CreateShaderModule(shaderByteCode);
+                auto shaderModule = create_shader_module(shaderByteCode);
 
                 shaderModules_.emplace(shaderStage.moduleName, shaderModule);
             }
@@ -113,36 +116,62 @@ VkPipelineShaderStageCreateInfo const &ShaderManager::shaderStageProgram(ShaderS
     return shaderStagePrograms_.at(shaderStage);
 }
 
-std::shared_ptr<VulkanShaderModule> ShaderManager::CreateShaderModule(std::vector<std::byte> const &shaderByteCode)
+std::shared_ptr<VulkanShaderModule> ShaderManager::shader_module(std::string_view name, std::uint32_t technique_index)
 {
-    std::shared_ptr<VulkanShaderModule> shaderModule;
+    auto _name = std::string{name};
 
-    if (std::size(shaderByteCode) % sizeof(std::uint32_t) != 0)
+    auto const key = std::pair{_name, technique_index};
+
+    if (modules_by_techinques_.count(key) != 0)
+        return modules_by_techinques_.at(key);
+
+    auto full_name = _name + "."s + std::to_string(technique_index);
+
+    boost::uuids::name_generator_sha1 gen(boost::uuids::ns::dns());
+    auto hashed_name = boost::uuids::to_string(gen(full_name));
+
+    auto const shader_byte_code = loader::load_SPIRV(hashed_name);
+
+    if (shader_byte_code.empty())
+        throw std::runtime_error("failed to open vertex shader file"s);
+
+    auto shader_module = create_shader_module(shader_byte_code);
+
+    modules_by_techinques_.emplace(key, shader_module);
+
+    return shader_module;
+}
+
+std::shared_ptr<VulkanShaderModule> ShaderManager::create_shader_module(std::vector<std::byte> const &shader_byte_code)
+{
+    std::shared_ptr<VulkanShaderModule> shader_module;
+
+    if (std::size(shader_byte_code) % sizeof(std::uint32_t) != 0)
         std::cerr << "invalid byte code buffer size\n"s;
 
     else {
-        VkShaderModuleCreateInfo const createInfo{
+        VkShaderModuleCreateInfo const create_info{
             VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
             nullptr, 0,
-            std::size(shaderByteCode),
-            reinterpret_cast<std::uint32_t const *>(std::data(shaderByteCode))
+            std::size(shader_byte_code),
+            reinterpret_cast<std::uint32_t const *>(std::data(shader_byte_code))
         };
 
         VkShaderModule handle;
 
-        if (auto result = vkCreateShaderModule(vulkanDevice_.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
+        if (auto result = vkCreateShaderModule(vulkan_device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
             std::cerr << "failed to create shader module: "s << result << '\n';
 
-        else shaderModule.reset(
+        else shader_module.reset(
             new VulkanShaderModule{handle},
             [this] (VulkanShaderModule *ptr_module)
             {
-                vkDestroyShaderModule(vulkanDevice_.handle(), ptr_module->handle(), nullptr);
+                vkDestroyShaderModule(vulkan_device_.handle(), ptr_module->handle(), nullptr);
 
                 delete ptr_module;
             }
         );
     }
 
-    return shaderModule;
+    return shader_module;
 }

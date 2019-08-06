@@ -147,15 +147,17 @@ struct ShaderStage2 final {
 class ShaderManager final {
 public:
 
-    ShaderManager(VulkanDevice &vulkanDevice) noexcept : vulkanDevice_{vulkanDevice} { }
+    ShaderManager(VulkanDevice &vulkanDevice) noexcept : vulkan_device_{vulkanDevice} { }
 
     void CreateShaderPrograms(class Material const *const material);
 
     [[nodiscard]] VkPipelineShaderStageCreateInfo const &shaderStageProgram(ShaderStage const &shaderStage) const;
 
+    [[nodiscard]] std::shared_ptr<VulkanShaderModule> shader_module(std::string_view name, std::uint32_t technique_index);
+
 public:
 
-    VulkanDevice &vulkanDevice_;
+    VulkanDevice &vulkan_device_;
 
     std::unordered_map<std::string, std::shared_ptr<VulkanShaderModule>> shaderModules_;
 
@@ -167,5 +169,7 @@ public:
     std::unordered_map<ShaderStage2, std::vector<VkSpecializationMapEntry>, ShaderStage2::hash_value> specializationMapEntries2_;
     std::unordered_map<ShaderStage2, VkSpecializationInfo, ShaderStage2::hash_value> specializationInfos2_;
 
-    [[nodiscard]] std::shared_ptr<VulkanShaderModule> CreateShaderModule(std::vector<std::byte> const &shaderByteCode);
+    [[nodiscard]] std::shared_ptr<VulkanShaderModule> create_shader_module(std::vector<std::byte> const &shader_byte_code);
+
+    std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<VulkanShaderModule>> modules_by_techinques_;
 };
