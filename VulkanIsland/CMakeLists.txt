@@ -17,6 +17,7 @@ find_package(Vulkan REQUIRED)
 
 find_package(glm REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
+find_package(fmt 5.3 CONFIG REQUIRED)
 find_package(nlohmann_json 3.6 CONFIG REQUIRED)
 find_package(EnTT 3.0 CONFIG REQUIRED)
 find_package(Boost 1.69 REQUIRED)
@@ -175,6 +176,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 
     glm
     glfw
+	fmt::fmt
 	nlohmann_json::nlohmann_json
 	EnTT
 )
