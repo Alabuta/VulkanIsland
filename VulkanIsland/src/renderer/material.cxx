@@ -403,16 +403,14 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial(std::string_view type)
     return material;
 }
 
-std::shared_ptr<Material2> MaterialFactory::CreateMaterial2(std::string_view name, std::uint32_t technique_index)
+std::shared_ptr<Material2> MaterialFactory::material_by_techique(std::string_view name, std::uint32_t technique_index)
 {
-    auto _name = std::string{name};
-
-    auto const key = std::pair{_name, technique_index};
+    auto const key = std::pair{std::string{name}, technique_index};
     
     if (materials_by_techinques_.count(key) != 0)
         return materials_by_techinques_.at(key);
 
-    auto const description = GetMaterialDescription(name);
+    auto const description = material_description(name);
 
     auto &&techniques = description->techniques;
     auto &&technique = techniques.at(technique_index);
@@ -420,29 +418,25 @@ std::shared_ptr<Material2> MaterialFactory::CreateMaterial2(std::string_view nam
     auto &&shader_modules = description->shader_modules;
     auto &&shaders_bundle = technique.shaders_bundle;
 
-    std::vector<ShaderStage2> shader_stages;
+    std::vector<program::shader_stage> shader_stages;
 
     std::transform(std::cbegin(shaders_bundle), std::cend(shaders_bundle),
-                   std::back_inserter(shader_stages), [_name, &shader_modules] (auto shader_bundle)
+                   std::back_inserter(shader_stages), [&shader_modules] (auto shader_bundle)
     {
         auto [shader_module_index, shader_technique_index] = shader_bundle;
 
         auto &&[shader_semantic, shader_name] = shader_modules.at(shader_module_index);
 
-        auto full_name = shader_name + "."s + std::to_string(shader_technique_index);
-
-        boost::uuids::name_generator_sha1 gen(boost::uuids::ns::dns());
-        auto hashed_name = boost::uuids::to_string(gen(full_name));
-
-        return ShaderStage2{};
+        return program::shader_stage{shader_semantic, shader_name};
     });
 
     return std::make_shared<Material2>();
 }
 
-std::shared_ptr<material_description> MaterialFactory::GetMaterialDescription(std::string_view name)
+std::shared_ptr<material_description> MaterialFactory::material_description(std::string_view name)
 {
     auto _name = std::string{name};
+
     if (material_descriptions_.count(_name) != 0)
         return material_descriptions_.at(_name);
 

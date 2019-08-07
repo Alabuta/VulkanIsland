@@ -99,7 +99,7 @@ struct material_properties final {
 class Material2 final {
 public:
 
-    std::vector<ShaderStage2> shaderStages;
+    std::vector<program::shader_stage> shaderStages;
 
     RasterizationState rasterizationState;
     DepthStencilState depthStencilState;
@@ -116,7 +116,7 @@ public:
     MaterialFactory(ShaderManager &shaderManager) noexcept : shaderManager_{shaderManager} { }
 
     [[nodiscard]] std::shared_ptr<Material> CreateMaterial(std::string_view type);
-    [[nodiscard]] std::shared_ptr<Material2> CreateMaterial2(std::string_view name, std::uint32_t technique = 0);
+    [[nodiscard]] std::shared_ptr<Material2> material_by_techique(std::string_view name, std::uint32_t technique = 0);
 
     [[nodiscard]] std::shared_ptr<MaterialProperties> const properties(std::shared_ptr<Material> const material);// const noexcept;
 
@@ -140,7 +140,7 @@ private:
     std::map<std::string, std::shared_ptr<struct material_description>> material_descriptions_;
     std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<Material2>> materials_by_techinques_;
 
-    [[nodiscard]] std::shared_ptr<struct material_description> GetMaterialDescription(std::string_view name);
+    [[nodiscard]] std::shared_ptr<struct material_description> material_description(std::string_view name);
 
 
     void InitMaterialProperties(std::shared_ptr<Material2> material);
