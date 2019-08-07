@@ -1,3 +1,5 @@
+#include <fmt/format.h>
+
 #include <boost/uuid/name_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
@@ -118,14 +120,12 @@ VkPipelineShaderStageCreateInfo const &ShaderManager::shaderStageProgram(ShaderS
 
 std::shared_ptr<VulkanShaderModule> ShaderManager::shader_module(std::string_view name, std::uint32_t technique_index)
 {
-    auto _name = std::string{name};
-
-    auto const key = std::pair{_name, technique_index};
+    auto const key = std::pair{std::string{name}, technique_index};
 
     if (modules_by_techinques_.count(key) != 0)
         return modules_by_techinques_.at(key);
 
-    auto full_name = _name + "."s + std::to_string(technique_index);
+    auto full_name = fmt::format("{}.{}"s, name, technique_index);
 
     boost::uuids::name_generator_sha1 gen(boost::uuids::ns::dns());
     auto hashed_name = boost::uuids::to_string(gen(full_name));
@@ -160,7 +160,7 @@ std::shared_ptr<VulkanShaderModule> ShaderManager::create_shader_module(std::vec
         VkShaderModule handle;
 
         if (auto result = vkCreateShaderModule(vulkan_device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            std::cerr << "failed to create shader module: "s << result << '\n';
+            std::cerr << fmt::format("failed to create shader module: {0:#x}\n"s, result);
 
         else shader_module.reset(
             new VulkanShaderModule{handle},

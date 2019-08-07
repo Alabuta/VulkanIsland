@@ -108,39 +108,42 @@ struct ShaderStage final {
 };
 
 
-struct ShaderStage2 final {
-    shader::STAGE semantic;
+namespace program
+{
+    struct shader_stage final {
+        shader::STAGE semantic;
 
-    std::string moduleName;
+        std::string module_name;
 
-    std::set<SpecializationConstant> constants;
+        std::set<SpecializationConstant> constants;
 
-    template<class T, typename std::enable_if_t<std::is_same_v<ShaderStage2, std::decay_t<T>>>* = nullptr>
-    auto constexpr operator== (T &&stage) const
-    {
-        return semantic == stage.semantic && moduleName == stage.moduleName && constants == stage.constants;
-    }
-
-    struct hash_value final {
-        template<class T, typename std::enable_if_t<std::is_same_v<ShaderStage2, std::decay_t<T>>>* = nullptr>
-        auto constexpr operator() (T &&stage) const noexcept
+        template<class T, typename std::enable_if_t<std::is_same_v<shader_stage, std::decay_t<T>>>* = nullptr>
+        auto constexpr operator== (T &&stage) const
         {
-            std::size_t seed = 0;
-
-            boost::hash_combine(seed, stage.semantic);
-            boost::hash_combine(seed, stage.moduleName);
-
-            for (auto [id, value] : stage.constants) {
-                boost::hash_combine(seed, id);
-                boost::hash_combine(seed, value);
-            }
-
-            // boost::hash_range(seed, shaderStage.constants);
-
-            return seed;
+            return semantic == stage.semantic && module_name == stage.module_name && constants == stage.constants;
         }
+
+        struct hash_value final {
+            template<class T, typename std::enable_if_t<std::is_same_v<shader_stage, std::decay_t<T>>>* = nullptr>
+            auto constexpr operator() (T &&stage) const noexcept
+            {
+                std::size_t seed = 0;
+
+                boost::hash_combine(seed, stage.semantic);
+                boost::hash_combine(seed, stage.module_name);
+
+                for (auto [id, value] : stage.constants) {
+                    boost::hash_combine(seed, id);
+                    boost::hash_combine(seed, value);
+                }
+
+                // boost::hash_range(seed, shaderStage.constants);
+
+                return seed;
+            }
+        };
     };
-};
+}
 
 
 
@@ -165,9 +168,9 @@ public:
     std::unordered_map<ShaderStage, std::vector<VkSpecializationMapEntry>, ShaderStage::hash_value, ShaderStage::equal_comparator> specializationMapEntries_;
     std::unordered_map<ShaderStage, VkSpecializationInfo, ShaderStage::hash_value, ShaderStage::equal_comparator> specializationInfos_;
 
-    std::unordered_map<ShaderStage2, VkPipelineShaderStageCreateInfo, ShaderStage2::hash_value> shaderStagePrograms2_;
-    std::unordered_map<ShaderStage2, std::vector<VkSpecializationMapEntry>, ShaderStage2::hash_value> specializationMapEntries2_;
-    std::unordered_map<ShaderStage2, VkSpecializationInfo, ShaderStage2::hash_value> specializationInfos2_;
+    /*std::unordered_map<shader_stage, VkPipelineShaderStageCreateInfo, shader_stage::hash_value> shaderStagePrograms2_;
+    std::unordered_map<shader_stage, std::vector<VkSpecializationMapEntry>, shader_stage::hash_value> specializationMapEntries2_;
+    std::unordered_map<shader_stage, VkSpecializationInfo, shader_stage::hash_value> specializationInfos2_;*/
 
     [[nodiscard]] std::shared_ptr<VulkanShaderModule> create_shader_module(std::vector<std::byte> const &shader_byte_code);
 
