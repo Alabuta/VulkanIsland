@@ -5,6 +5,35 @@ VisualStudioVersion = 16.0.28917.182
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VulkanIsland", "VulkanIsland\VulkanIsland.vcxproj", "{FF5F9E8B-F482-4B1D-8863-78B8C3551CAF}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "contents", "contents", "{579A4A4B-A81C-42B2-BDC5-5FE5B7AB24F2}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "materials", "materials", "{A6A8F520-B8A1-412F-B425-19ACE2FCC55C}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "debug", "debug", "{B87DB4EC-556B-494A-AC73-4B5D5C010627}"
+	ProjectSection(SolutionItems) = preProject
+		contents\materials\debug\color-debug-material.json = contents\materials\debug\color-debug-material.json
+		contents\materials\debug\normal-debug.json = contents\materials\debug\normal-debug.json
+		contents\materials\debug\texture-coordinate-debug.json = contents\materials\debug\texture-coordinate-debug.json
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "shaders", "shaders", "{44F1DF1F-3B41-4EC3-8A88-F9BB152CB57D}"
+	ProjectSection(SolutionItems) = preProject
+		contents\shaders\shader.frag.glsl = contents\shaders\shader.frag.glsl
+		contents\shaders\shader.vert.glsl = contents\shaders\shader.vert.glsl
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common", "common", "{675A947D-6429-473C-AF62-871297F5BC0D}"
+	ProjectSection(SolutionItems) = preProject
+		contents\shaders\common\out-color.glsl = contents\shaders\common\out-color.glsl
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "debug", "debug", "{DB0DEA69-CFBA-4E29-8103-6257FBB4C9E9}"
+	ProjectSection(SolutionItems) = preProject
+		contents\shaders\debug\color-debug.glsl = contents\shaders\debug\color-debug.glsl
+		contents\shaders\debug\normal-debug.glsl = contents\shaders\debug\normal-debug.glsl
+		contents\shaders\debug\texture-coordinate-debug.glsl = contents\shaders\debug\texture-coordinate-debug.glsl
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -28,6 +57,13 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A6A8F520-B8A1-412F-B425-19ACE2FCC55C} = {579A4A4B-A81C-42B2-BDC5-5FE5B7AB24F2}
+		{B87DB4EC-556B-494A-AC73-4B5D5C010627} = {A6A8F520-B8A1-412F-B425-19ACE2FCC55C}
+		{44F1DF1F-3B41-4EC3-8A88-F9BB152CB57D} = {579A4A4B-A81C-42B2-BDC5-5FE5B7AB24F2}
+		{675A947D-6429-473C-AF62-871297F5BC0D} = {44F1DF1F-3B41-4EC3-8A88-F9BB152CB57D}
+		{DB0DEA69-CFBA-4E29-8103-6257FBB4C9E9} = {44F1DF1F-3B41-4EC3-8A88-F9BB152CB57D}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AD80E3AC-EC0F-4F59-A31A-561E05C706D7}
