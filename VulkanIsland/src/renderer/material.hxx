@@ -99,10 +99,10 @@ struct material_properties final {
 class Material2 final {
 public:
 
-    std::vector<program::shader_stage> shaderStages;
+    std::vector<program::shader_stage> shader_stages;
 
-    RasterizationState rasterizationState;
-    DepthStencilState depthStencilState;
+    RasterizationState rasterization_state;
+    DepthStencilState depth_stencil_state;
     ColorBlendState colorBlendState;
 
 

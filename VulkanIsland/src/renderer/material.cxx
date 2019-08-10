@@ -430,7 +430,13 @@ std::shared_ptr<Material2> MaterialFactory::material_by_techique(std::string_vie
         return program::shader_stage{shader_semantic, shader_name};
     });
 
-    return std::make_shared<Material2>();
+    auto material = std::make_shared<Material2>();
+
+    material->shader_stages = std::move(shader_stages);
+
+    materials_by_techinques_.emplace(key, material);
+
+    return material;
 }
 
 std::shared_ptr<material_description> MaterialFactory::material_description(std::string_view name)
@@ -456,22 +462,22 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material2> material
         nullptr, 0,
         VK_TRUE,
         VK_FALSE,
-        ConvertToGAPI(material->rasterizationState.polygonMode),
-        ConvertToGAPI(material->rasterizationState.cullMode),
-        ConvertToGAPI(material->rasterizationState.frontFace),
+        ConvertToGAPI(material->rasterization_state.polygonMode),
+        ConvertToGAPI(material->rasterization_state.cullMode),
+        ConvertToGAPI(material->rasterization_state.frontFace),
         VK_FALSE,
         0.f, 0.f, 0.f,
-        material->rasterizationState.lineWidth
+        material->rasterization_state.lineWidth
     };
 
     properties.depthStencilState = VkPipelineDepthStencilStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         nullptr, 0,
-        VkBool32(material->depthStencilState.depthTestEnable),
-        VkBool32(material->depthStencilState.depthWriteEnable),
-        ConvertToGAPI(material->depthStencilState.depthCompareOperation),//kREVERSED_DEPTH ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_LESS,
+        VkBool32(material->depth_stencil_state.depthTestEnable),
+        VkBool32(material->depth_stencil_state.depthWriteEnable),
+        ConvertToGAPI(material->depth_stencil_state.depthCompareOperation),//kREVERSED_DEPTH ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_LESS,
         VK_FALSE,
-        VkBool32(material->depthStencilState.stencilTestEnable),
+        VkBool32(material->depth_stencil_state.stencilTestEnable),
         VkStencilOpState{}, VkStencilOpState{},
         0, 1
     };

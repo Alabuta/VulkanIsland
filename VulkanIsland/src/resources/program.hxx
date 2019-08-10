@@ -33,22 +33,8 @@ namespace shader
     struct vertex : stage<STAGE::VERTEX> { };
 }
 
-struct SpecializationConstant final {
-    std::uint32_t id;
-    std::variant<std::uint32_t, float> value;
-
-    template<class T, typename std::enable_if_t<std::is_same_v<SpecializationConstant, std::decay_t<T>>>* = nullptr>
-    auto constexpr operator== (T &&constant) const
-    {
-        return value == constant.value &&id == constant.id;
-    }
-
-    template<class T, typename std::enable_if_t<std::is_same_v<SpecializationConstant, std::decay_t<T>>>* = nullptr>
-    auto constexpr operator< (T &&constant) const
-    {
-        return id < constant.id;
-    }
-};
+namespace program
+{ }
 
 class VulkanShaderModule final {
 public:
@@ -110,39 +96,50 @@ struct ShaderStage final {
 
 namespace program
 {
-    struct shader_stage final {
-        shader::STAGE semantic;
+struct specialization_constant final {
+    std::uint32_t id;
+    std::variant<std::uint32_t, float> value;
 
-        std::string module_name;
+    template<class T, typename std::enable_if_t<std::is_same_v<specialization_constant, std::decay_t<T>>>* = nullptr>
+    auto constexpr operator== (T && constant) const
+    {
+        return value == constant.value && id == constant.id;
+    }
 
-        std::set<SpecializationConstant> constants;
+    template<class T, typename std::enable_if_t<std::is_same_v<specialization_constant, std::decay_t<T>>>* = nullptr>
+    auto constexpr operator< (T && constant) const
+    {
+        return id < constant.id;
+    }
+};
 
+struct shader_stage final {
+    shader::STAGE semantic;
+
+    std::string module_name;
+
+    std::set<program::specialization_constant> constants;
+
+    template<class T, typename std::enable_if_t<std::is_same_v<shader_stage, std::decay_t<T>>>* = nullptr>
+    auto constexpr operator== (T &&stage) const
+    {
+        return semantic == stage.semantic && module_name == stage.module_name && constants == stage.constants;
+    }
+
+    struct hash_value final {
         template<class T, typename std::enable_if_t<std::is_same_v<shader_stage, std::decay_t<T>>>* = nullptr>
-        auto constexpr operator== (T &&stage) const
+        auto constexpr operator() (T &&stage) const noexcept
         {
-            return semantic == stage.semantic && module_name == stage.module_name && constants == stage.constants;
+            std::size_t seed = 0;
+
+            boost::hash_combine(seed, stage.semantic);
+            boost::hash_combine(seed, stage.module_name);
+            boost::hash_range(seed, stage.constants);
+
+            return seed;
         }
-
-        struct hash_value final {
-            template<class T, typename std::enable_if_t<std::is_same_v<shader_stage, std::decay_t<T>>>* = nullptr>
-            auto constexpr operator() (T &&stage) const noexcept
-            {
-                std::size_t seed = 0;
-
-                boost::hash_combine(seed, stage.semantic);
-                boost::hash_combine(seed, stage.module_name);
-
-                for (auto [id, value] : stage.constants) {
-                    boost::hash_combine(seed, id);
-                    boost::hash_combine(seed, value);
-                }
-
-                // boost::hash_range(seed, shaderStage.constants);
-
-                return seed;
-            }
-        };
     };
+};
 }
 
 
@@ -175,4 +172,5 @@ public:
     [[nodiscard]] std::shared_ptr<VulkanShaderModule> create_shader_module(std::vector<std::byte> const &shader_byte_code);
 
     std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<VulkanShaderModule>> modules_by_techinques_;
+    std::map<std::pair<std::string, std::uint32_t>, VkPipelineShaderStageCreateInfo> pipeline_stage_infos_;
 };
