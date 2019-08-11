@@ -118,6 +118,18 @@ VkPipelineShaderStageCreateInfo const &ShaderManager::shaderStageProgram(ShaderS
     return shaderStagePrograms_.at(shaderStage);
 }
 
+VkPipelineShaderStageCreateInfo const &ShaderManager::pipeline_shader_stage(program::shader_stage const &shader_stage)
+{
+    if (pipeline_shader_stages_.count(shader_stage) != 0)
+        return pipeline_shader_stages_.at(shader_stage);
+
+    VkPipelineShaderStageCreateInfo pipeline_stage;
+
+    pipeline_shader_stages_.emplace(shader_stage, pipeline_stage);
+
+    return pipeline_stage;
+}
+
 std::shared_ptr<VulkanShaderModule> ShaderManager::shader_module(std::string_view name, std::uint32_t technique_index)
 {
     auto const key = std::pair{std::string{name}, technique_index};

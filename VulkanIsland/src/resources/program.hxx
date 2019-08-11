@@ -117,16 +117,20 @@ struct shader_stage final {
     shader::STAGE semantic;
 
     std::string module_name;
+    std::uint32_t techique_index;
 
     std::set<program::specialization_constant> constants;
 
     template<class T, typename std::enable_if_t<std::is_same_v<shader_stage, std::decay_t<T>>>* = nullptr>
     auto constexpr operator== (T &&stage) const
     {
-        return semantic == stage.semantic && module_name == stage.module_name && constants == stage.constants;
+        return semantic == stage.semantic &&
+            module_name == stage.module_name &&
+            techique_index == stage.techique_index &&
+            constants == stage.constants;
     }
 
-    struct hash_value final {
+    struct hash final {
         template<class T, typename std::enable_if_t<std::is_same_v<shader_stage, std::decay_t<T>>>* = nullptr>
         auto constexpr operator() (T &&stage) const noexcept
         {
@@ -134,7 +138,12 @@ struct shader_stage final {
 
             boost::hash_combine(seed, stage.semantic);
             boost::hash_combine(seed, stage.module_name);
-            boost::hash_range(seed, stage.constants);
+            boost::hash_combine(seed, stage.techique_index);
+
+            for (auto [id, value] : stage.constants) {
+                boost::hash_combine(seed, id);
+                boost::hash_combine(seed, value);
+            }
 
             return seed;
         }
@@ -155,6 +164,8 @@ public:
 
     [[nodiscard]] std::shared_ptr<VulkanShaderModule> shader_module(std::string_view name, std::uint32_t technique_index);
 
+    [[nodiscard]] VkPipelineShaderStageCreateInfo const &pipeline_shader_stage(program::shader_stage const &shader_stage);
+
 public:
 
     VulkanDevice &vulkan_device_;
@@ -172,5 +183,5 @@ public:
     [[nodiscard]] std::shared_ptr<VulkanShaderModule> create_shader_module(std::vector<std::byte> const &shader_byte_code);
 
     std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<VulkanShaderModule>> modules_by_techinques_;
-    std::map<std::pair<std::string, std::uint32_t>, VkPipelineShaderStageCreateInfo> pipeline_stage_infos_;
+    std::unordered_map<program::shader_stage, VkPipelineShaderStageCreateInfo, program::shader_stage::hash> pipeline_shader_stages_;
 };
