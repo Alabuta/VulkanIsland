@@ -7,6 +7,7 @@
 #include "main.hxx"
 #include "helpers.hxx"
 #include "device/device.hxx"
+#include "graphics.hxx"
 #include "staging.hxx"
 #include "material.hxx"
 #include "pipelineVertexInputState.hxx"
@@ -140,4 +141,41 @@ CreatePipelineLayout(VulkanDevice const &vulkanDevice, T &&descriptorSetLayouts)
     else pipelineLayout.emplace(handle);
 
     return pipelineLayout;
+}
+
+
+namespace graphics
+{
+class pipeline final {
+public:
+
+    VkPipeline handle() const noexcept { return handle_; }
+
+    template<class T, typename std::enable_if_t<std::is_same_v<pipeline, std::decay_t<T>>>* = nullptr>
+    auto constexpr operator== (T && rhs) const
+    {
+        return topology_ == rhs.topology_ &&
+            vertex_layout_ == rhs.vertex_layout_;
+    }
+
+private:
+
+    VkPipeline handle_;
+
+    PRIMITIVE_TOPOLOGY topology_;
+    graphics::vertex_layout vertex_layout_;
+};
+}
+
+namespace graphics
+{
+class pipeline_manager final {
+public:
+
+    pipeline_manager(VulkanDevice &vulkanDevice) noexcept : vulkanDevice_{vulkanDevice} { }
+
+private:
+
+    VulkanDevice &vulkanDevice_;
+};
 }
