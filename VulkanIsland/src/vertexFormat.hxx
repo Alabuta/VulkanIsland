@@ -11,7 +11,7 @@
 #include "helpers.hxx"
 
 
-namespace semantic
+namespace semantic2
 {
 enum class eSEMANTIC_INDEX : std::uint32_t {
     nPOSITION = 0,
@@ -62,14 +62,14 @@ struct weights_0 : attribute<eSEMANTIC_INDEX::nWEIGHTS_0> { };
 }
 
 using semantics_t = std::variant<
-    semantic::position,
-    semantic::normal,
-    semantic::tex_coord_0,
-    semantic::tex_coord_1,
-    semantic::tangent,
-    semantic::color_0,
-    semantic::joints_0,
-    semantic::weights_0
+    semantic2::position,
+    semantic2::normal,
+    semantic2::tex_coord_0,
+    semantic2::tex_coord_1,
+    semantic2::tangent,
+    semantic2::color_0,
+    semantic2::joints_0,
+    semantic2::weights_0
 >;
 
 

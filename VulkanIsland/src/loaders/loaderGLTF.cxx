@@ -50,28 +50,28 @@ using accessors_set_t = std::set<accessor_t>;
 std::optional<semantics_t> get_semantic(std::string_view name)
 {
     if (name == "POSITION"sv)
-        return semantic::position{ };
+        return semantic2::position{ };
 
     else if (name == "NORMAL"sv)
-        return semantic::normal{ };
+        return semantic2::normal{ };
 
     else if (name == "TEXCOORD_0"sv)
-        return semantic::tex_coord_0{ };
+        return semantic2::tex_coord_0{ };
 
     else if (name == "TEXCOORD_1"sv)
-        return semantic::tex_coord_1{ };
+        return semantic2::tex_coord_1{ };
 
     else if (name == "TANGENT"sv)
-        return semantic::tangent{ };
+        return semantic2::tangent{ };
 
     else if (name == "COLOR_0"sv)
-        return semantic::color_0{ };
+        return semantic2::color_0{ };
 
     else if (name == "JOINTS_0"sv)
-        return semantic::joints_0{ };
+        return semantic2::joints_0{ };
 
     else if (name == "WEIGHTS_0"sv)
-        return semantic::weights_0{ };
+        return semantic2::weights_0{ };
 
     return { };
 }

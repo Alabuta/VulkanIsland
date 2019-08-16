@@ -40,72 +40,72 @@ std::optional<shader::STAGE> shader_stage_semantic(std::string_view name)
     return { };
 }
 
-std::optional<semantics_t> attribute_semantic(std::string_view name)
+std::optional<vertex::attribute_semantic> attribute_semantic(std::string_view name)
 {
     if (name == "POSITION"sv)
-        return semantic::position{ };
+        return vertex::position{ };
 
     else if (name == "NORMAL"sv)
-        return semantic::normal{ };
+        return vertex::normal{ };
 
     else if (name == "TEXCOORD_0"sv)
-        return semantic::tex_coord_0{ };
+        return vertex::tex_coord_0{ };
 
     else if (name == "TEXCOORD_1"sv)
-        return semantic::tex_coord_1{ };
+        return vertex::tex_coord_1{ };
 
     else if (name == "TANGENT"sv)
-        return semantic::tangent{ };
+        return vertex::tangent{ };
 
     else if (name == "COLOR_0"sv)
-        return semantic::color_0{ };
+        return vertex::color_0{ };
 
     else if (name == "JOINTS_0"sv)
-        return semantic::joints_0{ };
+        return vertex::joints_0{ };
 
     else if (name == "WEIGHTS_0"sv)
-        return semantic::weights_0{ };
+        return vertex::weights_0{ };
 
     return { };
 }
 
-std::optional<attribute_t> attribute_type(std::string_view type)
+std::optional<vertex::attribute_type> attribute_type(std::string_view type)
 {
     if (type == "float"sv)
-        return vec<1, float>{};
+        return static_array<1, boost::float32_t>{};
 
     else if (type == "vec2"sv)
-        return vec<2, float>{};
+        return static_array<2, boost::float32_t>{};
 
     else if (type == "vec3"sv)
-        return vec<3, float>{};
+        return static_array<3, boost::float32_t>{};
 
     else if (type == "vec4"sv)
-        return vec<4, float>{};
+        return static_array<4, boost::float32_t>{};
 
     else if (type == "int"sv)
-        return vec<1, std::int32_t>{};
+        return static_array<1, std::int32_t>{};
 
     else if (type == "ivec2"sv)
-        return vec<2, std::int32_t>{};
+        return static_array<2, std::int32_t>{};
 
     else if (type == "ivec3"sv)
-        return vec<3, std::int32_t>{};
+        return static_array<3, std::int32_t>{};
 
     else if (type == "ivec4"sv)
-        return vec<4, std::int32_t>{};
+        return static_array<4, std::int32_t>{};
 
     else if (type == "uint"sv)
-        return vec<1, std::uint32_t>{};
+        return static_array<1, std::uint32_t>{};
 
     else if (type == "uvec2"sv)
-        return vec<2, std::uint32_t>{};
+        return static_array<2, std::uint32_t>{};
 
     else if (type == "uvec3"sv)
-        return vec<3, std::uint32_t>{};
+        return static_array<3, std::uint32_t>{};
 
     else if (type == "uvec4"sv)
-        return vec<4, std::uint32_t>{};
+        return static_array<4, std::uint32_t>{};
 
     return { };
 }

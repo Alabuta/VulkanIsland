@@ -3,10 +3,10 @@
 #include <vector>
 #include <string>
 
-#include "renderer/attachments.hxx"
+#include "graphics.hxx"
+#include "attachments.hxx"
 #include "resources/program.hxx"
 #include "renderer/material.hxx"
-#include "vertexFormat.hxx"
 
 
 struct material_description final {
@@ -20,8 +20,8 @@ struct material_description final {
     std::vector<shader_module> shader_modules;
 
     struct vertex_attribute final {
-        semantics_t semantic;
-        attribute_t type;
+        vertex::attribute_semantic semantic;
+        vertex::attribute_type type;
     };
 
     std::vector<vertex_attribute> vertex_attributes;

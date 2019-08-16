@@ -32,6 +32,7 @@
 #include "renderer/renderPass.hxx"
 #include "semaphore.hxx"
 
+#include "renderer/graphics.hxx"
 #include "renderer/pipelineVertexInputState.hxx"
 #include "renderer/material.hxx"
 
@@ -536,8 +537,8 @@ xformat populate()
 
         _model.vertexLayouts.push_back(
             CreateVertexLayout(
-                semantic::position{}, decltype(vertex::position){}, false,
-                semantic::tex_coord_0{}, decltype(vertex::texCoord){}, false
+                semantic2::position{}, decltype(vertex::position){}, false,
+                semantic2::tex_coord_0{}, decltype(vertex::texCoord){}, false
             )
         );
 
@@ -601,9 +602,9 @@ xformat populate()
 
         _model.vertexLayouts.push_back(
             CreateVertexLayout(
-                semantic::position{}, decltype(vertex::position){}, false,
-                semantic::tex_coord_0{}, decltype(vertex::texCoord){}, false,
-                semantic::color_0{}, decltype(vertex::color){}, false
+                semantic2::position{}, decltype(vertex::position){}, false,
+                semantic2::tex_coord_0{}, decltype(vertex::texCoord){}, false,
+                semantic2::color_0{}, decltype(vertex::color){}, false
             )
         );
 
