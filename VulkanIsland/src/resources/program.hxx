@@ -164,7 +164,7 @@ public:
 
     [[nodiscard]] std::shared_ptr<VulkanShaderModule> shader_module(std::string_view name, std::uint32_t technique_index);
 
-    [[nodiscard]] VkPipelineShaderStageCreateInfo const &pipeline_shader_stage(program::shader_stage const &shader_stage);
+    [[nodiscard]] VkPipelineShaderStageCreateInfo pipeline_shader_stage(program::shader_stage const &shader_stage);
 
 public:
 

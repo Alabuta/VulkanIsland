@@ -118,7 +118,7 @@ VkPipelineShaderStageCreateInfo const &ShaderManager::shaderStageProgram(ShaderS
     return shaderStagePrograms_.at(shaderStage);
 }
 
-VkPipelineShaderStageCreateInfo const &ShaderManager::pipeline_shader_stage(program::shader_stage const &shader_stage)
+VkPipelineShaderStageCreateInfo ShaderManager::pipeline_shader_stage(program::shader_stage const &shader_stage)
 {
     if (pipeline_shader_stages_.count(shader_stage) != 0)
         return pipeline_shader_stages_.at(shader_stage);
