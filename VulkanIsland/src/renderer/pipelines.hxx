@@ -4,11 +4,14 @@
 #include <functional>
 #include <array>
 
+#include <boost/functional/hash_fwd.hpp>
+
 #include "main.hxx"
 #include "helpers.hxx"
 #include "device/device.hxx"
 #include "graphics.hxx"
 #include "vertex.hxx"
+#include "pipeline_states.hxx"
 #include "staging.hxx"
 #include "material.hxx"
 #include "pipelineVertexInputState.hxx"
@@ -165,6 +168,12 @@ private:
 
     PRIMITIVE_TOPOLOGY topology_;
     graphics::vertex_layout vertex_layout_;
+
+    graphics::rasterization_state rasterization_state;
+    graphics::depth_stencil_state depth_stencil_state;
+    graphics::color_blend_state color_blend_state;
+
+    friend graphics::hash<pipeline>;
 };
 }
 
@@ -173,10 +182,37 @@ namespace graphics
 class pipeline_manager final {
 public:
 
-    pipeline_manager(VulkanDevice &vulkanDevice) noexcept : vulkanDevice_{vulkanDevice} { }
+    pipeline_manager(VulkanDevice &vulkan_device) noexcept : vulkan_device_{vulkan_device} { }
 
 private:
 
-    VulkanDevice &vulkanDevice_;
+    VulkanDevice &vulkan_device_;
 };
+}
+
+namespace graphics
+{
+    template<>
+    struct hash<graphics::pipeline> {
+        std::size_t operator() (graphics::pipeline const &pipeline) const noexcept
+        {
+            std::size_t seed = 0;
+
+            boost::hash_combine(seed, pipeline.topology_);
+
+            graphics::hash<graphics::vertex_layout> constexpr vertex_layout_hasher;
+            boost::hash_combine(seed, vertex_layout_hasher(pipeline.vertex_layout_));
+
+            graphics::hash<graphics::rasterization_state> constexpr rasterization_state_hasher;
+            boost::hash_combine(seed, rasterization_state_hasher(pipeline.rasterization_state));
+
+            graphics::hash<graphics::depth_stencil_state> constexpr depth_stencil_state_hasher;
+            boost::hash_combine(seed, depth_stencil_state_hasher(pipeline.depth_stencil_state));
+
+            graphics::hash<graphics::color_blend_state> constexpr color_blend_state_hasher;
+            boost::hash_combine(seed, color_blend_state_hasher(pipeline.color_blend_state));
+
+            return seed;
+        }
+    };
 }
