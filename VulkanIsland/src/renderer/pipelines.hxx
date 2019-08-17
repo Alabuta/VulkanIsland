@@ -8,6 +8,7 @@
 #include "helpers.hxx"
 #include "device/device.hxx"
 #include "graphics.hxx"
+#include "vertex.hxx"
 #include "staging.hxx"
 #include "material.hxx"
 #include "pipelineVertexInputState.hxx"

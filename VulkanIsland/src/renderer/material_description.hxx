@@ -4,6 +4,7 @@
 #include <string>
 
 #include "graphics.hxx"
+#include "vertex.hxx"
 #include "attachments.hxx"
 #include "resources/program.hxx"
 #include "renderer/material.hxx"

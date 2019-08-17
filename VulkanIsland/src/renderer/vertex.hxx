@@ -5,6 +5,8 @@
 
 #include <boost/cstdfloat.hpp>
 
+#include "graphics.hxx"
+
 
 namespace
 {
@@ -111,4 +113,73 @@ namespace vertex
         static_array<3, boost::float32_t>,
         static_array<4, boost::float32_t>
     >;
+}
+
+namespace graphics
+{
+    struct vertex_attribute final {
+        std::size_t offset_in_bytes{0};
+
+        vertex::attribute_semantic semantic;
+        vertex::attribute_type type;
+
+        bool normalized;
+
+        template<class T, typename std::enable_if_t<std::is_same_v<vertex_attribute, std::decay_t<T>>>* = nullptr>
+        auto constexpr operator== (T &&rhs) const
+        {
+            return offset_in_bytes == rhs.offset_in_bytes &&
+                normalized == rhs.normalized &&
+                semantic == rhs.semantic &&
+                type == rhs.type;
+        }
+    };
+
+    struct vertex_layout final {
+        std::size_t size_in_bytes{0};
+
+        std::vector<graphics::vertex_attribute> attributes;
+
+        template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout, std::decay_t<T>>>* = nullptr>
+        auto constexpr operator== (T &&rhs) const
+        {
+            return size_in_bytes == rhs.size_in_bytes && attributes == rhs.attributes;
+        }
+    };
+}
+
+
+namespace graphics
+{
+    template<>
+    struct hash<graphics::vertex_attribute> {
+        std::size_t operator() (graphics::vertex_attribute const &attribute) const noexcept
+        {
+            std::size_t seed = 0;
+
+            boost::hash_combine(seed, attribute.offset_in_bytes);
+            boost::hash_combine(seed, attribute.semantic.index());
+            boost::hash_combine(seed, attribute.type.index());
+            boost::hash_combine(seed, attribute.normalized);
+
+            return seed;
+        }
+    };
+
+    template<>
+    struct hash<graphics::vertex_layout> {
+        std::size_t operator() (graphics::vertex_layout const &layout) const noexcept
+        {
+            std::size_t seed = 0;
+
+            boost::hash_combine(seed, layout.size_in_bytes);
+
+            graphics::hash<graphics::vertex_attribute> constexpr attribute_hasher;
+
+            for (auto &&attribute : layout.attributes)
+                boost::hash_combine(seed, attribute_hasher(attribute));
+
+            return seed;
+        }
+    };
 }
