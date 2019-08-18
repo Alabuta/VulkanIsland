@@ -18,19 +18,42 @@ namespace shader
         TESS_EVAL = 0x04,
         GEOMETRY = 0x08,
         FRAGMENT = 0x10,
-        COMPUTE = 0x20
+        COMPUTE = 0x20,
+
+        ALL_GRAPHICS = VERTEX | TESS_CONTROL | TESS_EVAL | GEOMETRY | FRAGMENT,
+        ALL = VERTEX | TESS_CONTROL | TESS_EVAL | GEOMETRY | FRAGMENT | COMPUTE
     };
 
     template<STAGE S>
     struct stage {
-        template<STAGE s>
-        auto constexpr operator< (stage<s>) const noexcept
-        {
-            return S < s;
-        }
+        static auto constexpr index{static_cast<std::uint32_t>(S)};
+
+        template<STAGE st>
+        auto constexpr operator< (stage<st>) const noexcept { return S < st; }
+
+        template<STAGE st>
+        auto constexpr operator== (stage<st>) const noexcept { return S == st; }
     };
 
+}
+
+namespace shader
+{
     struct vertex : stage<STAGE::VERTEX> { };
+    struct tessctrl : stage<STAGE::TESS_CONTROL> { };
+    struct tesseval : stage<STAGE::TESS_EVAL> { };
+    struct geometry : stage<STAGE::GEOMETRY> { };
+    struct fragment : stage<STAGE::FRAGMENT> { };
+    struct compute : stage<STAGE::COMPUTE> { };
+
+    using stages = std::variant<
+        vertex,
+        tessctrl,
+        tesseval,
+        geometry,
+        fragment,
+        compute
+    >;
 }
 
 namespace program
