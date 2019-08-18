@@ -4,6 +4,7 @@
 #include <vector>
 
 #include "graphics.hxx"
+#include "vertex.hxx"
 
 
 namespace graphics
@@ -90,6 +91,18 @@ namespace graphics
 
 namespace graphics
 {
+    struct vertex_input_state final {
+        std::vector<vertex_input_binding> binding_descriptions;
+        std::vector<vertex_input_attribute> attribute_descriptions;
+
+        template<class T, typename std::enable_if_t<std::is_same_v<vertex_input_state, std::decay_t<T>>>* = nullptr>
+        auto constexpr operator== (T &&rhs) const
+        {
+            return binding_descriptions == rhs.binding_descriptions &&
+                attribute_descriptions == rhs.attribute_descriptions;
+        }
+    };
+
     struct rasterization_state final {
         CULL_MODE cull_mode{CULL_MODE::BACK};
         POLYGON_FRONT_FACE front_face{POLYGON_FRONT_FACE::COUNTER_CLOCKWISE};
@@ -177,8 +190,28 @@ namespace graphics
 namespace graphics
 {
     template<>
+    struct hash<graphics::vertex_input_state> {
+        std::size_t operator() (graphics::vertex_input_state const &state) const
+        {
+            std::size_t seed = 0;
+
+            graphics::hash<graphics::vertex_input_binding> constexpr binding_hasher;
+
+            for (auto &&binding_description : state.binding_descriptions)
+                boost::hash_combine(seed, binding_hasher(binding_description));
+
+            graphics::hash<graphics::vertex_input_attribute> constexpr attribute_hasher;
+
+            for (auto &&attribute_description : state.attribute_descriptions)
+                boost::hash_combine(seed, attribute_hasher(attribute_description));
+
+            return seed;
+        }
+    };
+
+    template<>
     struct hash<graphics::rasterization_state> {
-        std::size_t operator() (graphics::rasterization_state const &state) const noexcept
+        std::size_t operator() (graphics::rasterization_state const &state) const
         {
             std::size_t seed = 0;
 
@@ -193,7 +226,7 @@ namespace graphics
 
     template<>
     struct hash<graphics::depth_stencil_state> {
-        std::size_t operator() (graphics::depth_stencil_state const &state) const noexcept
+        std::size_t operator() (graphics::depth_stencil_state const &state) const
         {
             std::size_t seed = 0;
 
@@ -208,7 +241,7 @@ namespace graphics
 
     template<>
     struct hash<graphics::color_blend_attachment_state> {
-        std::size_t operator() (graphics::color_blend_attachment_state const &state) const noexcept
+        std::size_t operator() (graphics::color_blend_attachment_state const &state) const
         {
             std::size_t seed = 0;
 
@@ -227,7 +260,7 @@ namespace graphics
 
     template<>
     struct hash<graphics::color_blend_state> {
-        std::size_t operator() (graphics::color_blend_state const &state) const noexcept
+        std::size_t operator() (graphics::color_blend_state const &state) const
         {
             std::size_t seed = 0;
 

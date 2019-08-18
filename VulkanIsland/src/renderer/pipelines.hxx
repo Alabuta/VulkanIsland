@@ -166,8 +166,9 @@ private:
 
     VkPipeline handle_;
 
-    PRIMITIVE_TOPOLOGY topology_;
-    graphics::vertex_layout vertex_layout_;
+    PRIMITIVE_TOPOLOGY primitive_topology_;
+
+    graphics::vertex_input_state vertex_input_state_;
 
     graphics::rasterization_state rasterization_state;
     graphics::depth_stencil_state depth_stencil_state;
@@ -194,14 +195,12 @@ namespace graphics
 {
     template<>
     struct hash<graphics::pipeline> {
-        std::size_t operator() (graphics::pipeline const &pipeline) const noexcept
+        std::size_t operator() (graphics::pipeline const &pipeline) const
         {
             std::size_t seed = 0;
 
-            boost::hash_combine(seed, pipeline.topology_);
+            boost::hash_combine(seed, pipeline.primitive_topology_);
 
-            graphics::hash<graphics::vertex_layout> constexpr vertex_layout_hasher;
-            boost::hash_combine(seed, vertex_layout_hasher(pipeline.vertex_layout_));
 
             graphics::hash<graphics::rasterization_state> constexpr rasterization_state_hasher;
             boost::hash_combine(seed, rasterization_state_hasher(pipeline.rasterization_state));
