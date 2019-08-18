@@ -286,6 +286,7 @@
     <ClInclude Include="src\loaders\loaderSPIRV.hxx" />
     <ClInclude Include="src\loaders\material_loader.hxx" />
     <ClInclude Include="src\renderer\attachments.hxx" />
+    <ClInclude Include="src\renderer\descriptor.hxx" />
     <ClInclude Include="src\renderer\graphics.hxx" />
     <ClInclude Include="src\renderer\material.hxx" />
     <ClInclude Include="src\renderer\material_description.hxx" />
