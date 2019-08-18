@@ -294,6 +294,7 @@
     <ClInclude Include="src\renderer\pipeline_states.hxx" />
     <ClInclude Include="src\renderer\renderPass.hxx" />
     <ClInclude Include="src\renderer\pipelineVertexInputState.hxx" />
+    <ClInclude Include="src\renderer\shader_program.hxx" />
     <ClInclude Include="src\renderer\vertex.hxx" />
     <ClInclude Include="src\resources\memory.hxx" />
     <ClInclude Include="src\resources\resource.hxx" />
