@@ -289,7 +289,6 @@
     <ClInclude Include="src\renderer\descriptor.hxx" />
     <ClInclude Include="src\renderer\graphics.hxx" />
     <ClInclude Include="src\renderer\material.hxx" />
-    <ClInclude Include="src\renderer\material_description.hxx" />
     <ClInclude Include="src\renderer\pipelines.hxx" />
     <ClInclude Include="src\renderer\pipeline_states.hxx" />
     <ClInclude Include="src\renderer\renderPass.hxx" />

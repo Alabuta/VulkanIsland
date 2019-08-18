@@ -8,6 +8,7 @@
 #include "resources/resource.hxx"
 
 #include "attachments.hxx"
+#include "loaders/material_loader.hxx"
 #include "resources/program.hxx"
 
 
@@ -137,10 +138,10 @@ private:
     void InitMaterialProperties(std::shared_ptr<Material> material) noexcept;
 
 
-    std::map<std::string, std::shared_ptr<struct material_description>> material_descriptions_;
+    std::map<std::string, std::shared_ptr<loader::material_description>> material_descriptions_;
     std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<Material2>> materials_by_techinques_;
 
-    [[nodiscard]] std::shared_ptr<struct material_description> material_description(std::string_view name);
+    [[nodiscard]] std::shared_ptr<loader::material_description> material_description(std::string_view name);
 
 
     void InitMaterialProperties(std::shared_ptr<Material2> material);

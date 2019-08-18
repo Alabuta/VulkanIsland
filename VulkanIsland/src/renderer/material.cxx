@@ -9,7 +9,6 @@ using namespace std::string_view_literals;
 
 #include "material.hxx"
 #include "loaders/material_loader.hxx"
-#include "renderer/material_description.hxx"
 
 
 namespace
@@ -405,6 +404,7 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial(std::string_view type)
 
 std::shared_ptr<Material2> MaterialFactory::material_by_techique(std::string_view name, std::uint32_t technique_index)
 {
+#if 0
     auto const key = std::pair{std::string{name}, technique_index};
     
     if (materials_by_techinques_.count(key) != 0)
@@ -437,10 +437,14 @@ std::shared_ptr<Material2> MaterialFactory::material_by_techique(std::string_vie
     materials_by_techinques_.emplace(key, material);
 
     return material;
+#endif
+
+    return { };
 }
 
-std::shared_ptr<material_description> MaterialFactory::material_description(std::string_view name)
+std::shared_ptr<loader::material_description> MaterialFactory::material_description(std::string_view name)
 {
+#if 0
     auto _name = std::string{name};
 
     if (material_descriptions_.count(_name) != 0)
@@ -449,8 +453,9 @@ std::shared_ptr<material_description> MaterialFactory::material_description(std:
     auto description = loader::load_material_description(name);
 
     material_descriptions_.emplace(_name, description);
+#endif
 
-    return description;
+    return { };
 }
 
 void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material2> material)
