@@ -150,21 +150,6 @@ CreatePipelineLayout(VulkanDevice const &vulkanDevice, T &&descriptorSetLayouts)
 
 namespace graphics
 {
-    enum class PIPELINE_SHADER_STAGE {
-        VERTEX = 0x01,
-        TESS_CONTROL = 0x02,
-        TESS_EVAL = 0x04,
-        GEOMETRY = 0x08,
-        FRAGMENT = 0x10,
-        COMPUTE = 0x20,
-
-        ALL_GRAPHICS = VERTEX | TESS_CONTROL | TESS_EVAL | GEOMETRY | FRAGMENT,
-        ALL = VERTEX | TESS_CONTROL | TESS_EVAL | GEOMETRY | FRAGMENT | COMPUTE
-    };
-}
-
-namespace graphics
-{
 class pipeline final {
 public:
 

@@ -8,28 +8,14 @@
 
 namespace graphics
 {
-    enum class DESCRIPTOR_TYPE {
-        SAMPLER = 0,
-        COMBINED_IMAGE_SAMPLER,
-        SAMPLED_IMAGE,
-        STORAGE_IMAGE,
-        UNIFORM_TEXEL_BUFFER,
-        STORAGE_TEXEL_BUFFER,
-        UNIFORM_BUFFER,
-        STORAGE_BUFFER,
-        UNIFORM_BUFFER_DYNAMIC,
-        STORAGE_BUFFER_DYNAMIC,
-        INPUT_ATTACHMENT
-    };
-
     struct descriptor_set_binding final {
+        // TODO:: immutable samplers support.
+
         std::uint32_t binding_index;
         std::uint32_t descriptor_count;
 
         graphics::DESCRIPTOR_TYPE descriptor_type;
         graphics::PIPELINE_SHADER_STAGE shader_stages;
-
-        // TODO:: immutable samplers support.
 
         template<class T, typename std::enable_if_t<std::is_same_v<descriptor_set_binding, std::decay_t<T>>>* = nullptr>
         auto constexpr operator== (T &&rhs) const
@@ -42,7 +28,7 @@ namespace graphics
     };
 
     struct descriptor_set_layout final {
-        // TODO:: additional create flags support.
+        // TODO:: create flags support.
 
         std::vector<graphics::descriptor_set_binding> descriptor_set_bindings;
     };

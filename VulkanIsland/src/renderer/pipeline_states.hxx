@@ -9,91 +9,9 @@
 
 namespace graphics
 {
-    enum class CULL_MODE {
-        NONE, FRONT, BACK, FRONT_AND_BACK = FRONT | BACK
-    };
-
-    enum class POLYGON_FRONT_FACE {
-        COUNTER_CLOCKWISE, CLOCKWISE
-    };
-
-    enum class POLYGON_MODE {
-        FILL, LINE, POINT
-    };
-
-    enum class COMPARE_OPERATION {
-        NEVER,
-        LESS,
-        EQUAL,
-        LESS_OR_EQUAL,
-        GREATER,
-        NOT_EQUAL,
-        GREATER_OR_EQUAL,
-        ALWAYS
-    };
-
-    enum class BLEND_STATE_OPERATION {
-        CLEAR,
-        AND,
-        AND_REVERSE,
-        COPY,
-        AND_INVERTED,
-        NO_OP,
-        XOR,
-        OR,
-        NOR,
-        EQUIVALENT,
-        INVERT,
-        OR_REVERSE,
-        COPY_INVERTED,
-        OR_INVERTED,
-        NAND,
-        SET
-    };
-
-    enum class BLEND_FACTOR {
-        ZERO,
-        ONE,
-        SRC_COLOR,
-        ONE_MINUS_SRC_COLOR,
-        DST_COLOR,
-        ONE_MINUS_DST_COLOR,
-        SRC_ALPHA,
-        ONE_MINUS_SRC_ALPHA,
-        DST_ALPHA,
-        ONE_MINUS_DST_ALPHA,
-        CONSTANT_COLOR,
-        ONE_MINUS_CONSTANT_COLOR,
-        CONSTANT_ALPHA,
-        ONE_MINUS_CONSTANT_ALPHA,
-        SRC_ALPHA_SATURATE,
-        SRC1_COLOR,
-        ONE_MINUS_SRC1_COLOR,
-        SRC1_ALPHA,
-        ONE_MINUS_SRC1_ALPHA
-    };
-
-    enum class BLEND_OPERATION {
-        ADD,
-        SUBTRACT
-    };
-
-    enum class COLOR_COMPONENT {
-        R = 0x01,
-        G = 0x02,
-        B = 0x04,
-        A = 0x08,
-
-        RGB = R | G | B,
-        RGBA = R | G | B | A
-    };
-}
-
-namespace graphics
-{
     struct vertex_input_state final {
-        std::vector<vertex_input_binding> binding_descriptions;
-        std::vector<vertex_input_attribute> attribute_descriptions;
+        std::vector<graphics::vertex_input_binding> binding_descriptions;
+        std::vector<graphics::vertex_input_attribute> attribute_descriptions;
 
         template<class T, typename std::enable_if_t<std::is_same_v<vertex_input_state, std::decay_t<T>>>* = nullptr>
         auto constexpr operator== (T &&rhs) const
@@ -104,9 +22,9 @@ namespace graphics
     };
 
     struct rasterization_state final {
-        CULL_MODE cull_mode{CULL_MODE::BACK};
-        POLYGON_FRONT_FACE front_face{POLYGON_FRONT_FACE::COUNTER_CLOCKWISE};
-        POLYGON_MODE polygon_mode{POLYGON_MODE::FILL};
+        graphics::CULL_MODE cull_mode{graphics::CULL_MODE::BACK};
+        graphics::POLYGON_FRONT_FACE front_face{graphics::POLYGON_FRONT_FACE::COUNTER_CLOCKWISE};
+        graphics::POLYGON_MODE polygon_mode{graphics::POLYGON_MODE::FILL};
 
         float line_width{1.f};
 
@@ -124,7 +42,7 @@ namespace graphics
         bool depth_test_enable{true};
         bool depth_write_enable{true};
 
-        COMPARE_OPERATION depth_compare_operation{COMPARE_OPERATION::GREATER};
+        graphics::COMPARE_OPERATION depth_compare_operation{graphics::COMPARE_OPERATION::GREATER};
 
         bool stencil_test_enable{false};
 
@@ -141,17 +59,17 @@ namespace graphics
     struct color_blend_attachment_state final {
         bool blend_enable{false};
 
-        BLEND_FACTOR src_color_blend_factor{BLEND_FACTOR::ONE};
-        BLEND_FACTOR dst_color_blend_factor{BLEND_FACTOR::ZERO};
+        graphics::BLEND_FACTOR src_color_blend_factor{graphics::BLEND_FACTOR::ONE};
+        graphics::BLEND_FACTOR dst_color_blend_factor{graphics::BLEND_FACTOR::ZERO};
 
-        BLEND_OPERATION color_blend_operation{BLEND_OPERATION::ADD};
+        graphics::BLEND_OPERATION color_blend_operation{graphics::BLEND_OPERATION::ADD};
 
-        BLEND_FACTOR src_alpha_blend_factor{BLEND_FACTOR::ONE};
-        BLEND_FACTOR dst_alpha_blend_factor{BLEND_FACTOR::ZERO};
+        graphics::BLEND_FACTOR src_alpha_blend_factor{graphics::BLEND_FACTOR::ONE};
+        graphics::BLEND_FACTOR dst_alpha_blend_factor{graphics::BLEND_FACTOR::ZERO};
 
-        BLEND_OPERATION alpha_blend_operation{BLEND_OPERATION::ADD};
+        graphics::BLEND_OPERATION alpha_blend_operation{graphics::BLEND_OPERATION::ADD};
 
-        COLOR_COMPONENT color_write_mask{COLOR_COMPONENT::RGBA};
+        graphics::COLOR_COMPONENT color_write_mask{graphics::COLOR_COMPONENT::RGBA};
 
         template<class T, typename std::enable_if_t<std::is_same_v<color_blend_attachment_state, std::decay_t<T>>>* = nullptr>
         auto constexpr operator== (T &&rhs) const
@@ -170,7 +88,7 @@ namespace graphics
     struct color_blend_state final {
         bool logic_operation_enable{false};
 
-        BLEND_STATE_OPERATION logic_operation{BLEND_STATE_OPERATION::COPY};
+        graphics::BLEND_STATE_OPERATION logic_operation{graphics::BLEND_STATE_OPERATION::COPY};
 
         std::array<float, 4> blend_constants{0, 0, 0, 0};
 
