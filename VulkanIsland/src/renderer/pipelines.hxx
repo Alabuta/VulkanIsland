@@ -150,6 +150,21 @@ CreatePipelineLayout(VulkanDevice const &vulkanDevice, T &&descriptorSetLayouts)
 
 namespace graphics
 {
+    enum class PIPELINE_SHADER_STAGE {
+        VERTEX = 0x01,
+        TESS_CONTROL = 0x02,
+        TESS_EVAL = 0x04,
+        GEOMETRY = 0x08,
+        FRAGMENT = 0x10,
+        COMPUTE = 0x20,
+
+        ALL_GRAPHICS = VERTEX | TESS_CONTROL | TESS_EVAL | GEOMETRY | FRAGMENT,
+        ALL = VERTEX | TESS_CONTROL | TESS_EVAL | GEOMETRY | FRAGMENT | COMPUTE
+    };
+}
+
+namespace graphics
+{
 class pipeline final {
 public:
 
@@ -158,8 +173,11 @@ public:
     template<class T, typename std::enable_if_t<std::is_same_v<pipeline, std::decay_t<T>>>* = nullptr>
     auto constexpr operator== (T && rhs) const
     {
-        return topology_ == rhs.topology_ &&
-            vertex_layout_ == rhs.vertex_layout_;
+        return primitive_topology_ == rhs.topology_ &&
+            vertex_input_state_ == rhs.vertex_input_state_ &&
+            rasterization_state == rhs.rasterization_state &&
+            depth_stencil_state == rhs.depth_stencil_state &&
+            color_blend_state == rhs.color_blend_state;
     }
 
 private:
@@ -173,6 +191,14 @@ private:
     graphics::rasterization_state rasterization_state;
     graphics::depth_stencil_state depth_stencil_state;
     graphics::color_blend_state color_blend_state;
+
+    // TODO:: add tesselation, viewport, multisample and dynamic states.
+
+    // TODO:: replace by an abstraction.
+    VkPipelineLayout layout_;
+
+    VkRenderPass render_pass_;
+    std::uint32_t subpass_index;
 
     friend graphics::hash<pipeline>;
 };
@@ -201,6 +227,8 @@ namespace graphics
 
             boost::hash_combine(seed, pipeline.primitive_topology_);
 
+            graphics::hash<graphics::vertex_input_state> constexpr vertex_input_state_hasher;
+            boost::hash_combine(seed, vertex_input_state_hasher(pipeline.vertex_input_state_));
 
             graphics::hash<graphics::rasterization_state> constexpr rasterization_state_hasher;
             boost::hash_combine(seed, rasterization_state_hasher(pipeline.rasterization_state));
