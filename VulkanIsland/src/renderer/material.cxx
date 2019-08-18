@@ -518,3 +518,34 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material2> material
               std::begin(properties.colorBlendState.blendConstants));
 }
 
+
+namespace graphics
+{
+    std::shared_ptr<graphics::material> material_factory::material(std::string_view name, std::uint32_t technique_index)
+    {
+        auto const key = std::pair{std::string{name}, technique_index};
+
+        if (materials_.count(key) != 0)
+            return materials_.at(key);
+
+        auto &&description = material_description(name);
+
+        auto &&techniques = description.techniques;
+        auto &&technique = techniques.at(technique_index);
+
+        auto &&shader_modules = description.shader_modules;
+        auto &&shaders_bundle = technique.shaders_bundle;
+
+        return std::shared_ptr<graphics::material>{};
+    }
+
+    loader::material_description const &material_factory::material_description(std::string_view name)
+    {
+        auto key = std::string{name};
+
+        if (material_descriptions_.count(key) == 0)
+            material_descriptions_.emplace(key, loader::load_material_description(name));
+
+        return material_descriptions_.at(key);
+    }
+}
