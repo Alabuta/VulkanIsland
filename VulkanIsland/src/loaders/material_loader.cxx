@@ -320,7 +320,7 @@ namespace loader
     }
 }
 
-namespace loader
+namespace nlohmann
 {
     void from_json(nlohmann::json const &j, loader::material_description::shader_module &shader_module)
     {
@@ -362,7 +362,7 @@ namespace loader
         technique.color_blend_state = j.at("colorBlendState"s).get<std::size_t>();
     }
 
-    void from_json(nlohmann::json const &j, loader::material_description::rasterization_state &rasterization_state)
+    void from_json(nlohmann::json const &j, graphics::rasterization_state &rasterization_state)
     {
         if (auto cull_mode = loader::cull_mode(j.at("cullMode"s).get<std::string>()); cull_mode)
             rasterization_state.cull_mode = *cull_mode;
@@ -380,7 +380,7 @@ namespace loader
         rasterization_state.front_face = front_face_clockwise ? pff::CLOCKWISE : pff::COUNTER_CLOCKWISE;
     }
 
-    void from_json(nlohmann::json const &j, loader::material_description::depth_stencil_state &depth_stencil_state)
+    void from_json(nlohmann::json const &j, graphics::depth_stencil_state &depth_stencil_state)
     {
         if (auto compare_operation = loader::compare_operation(j.at("depthCompareOperation"s).get<std::string>()); compare_operation)
             depth_stencil_state.depth_compare_operation = *compare_operation;
@@ -392,7 +392,7 @@ namespace loader
         depth_stencil_state.stencil_test_enable = j.at("stencilTestEnable"s).get<bool>();
     }
 
-    void from_json(nlohmann::json const &j, loader::material_description::color_blend_state &color_blend_state)
+    void from_json(nlohmann::json const &j, graphics::color_blend_state &color_blend_state)
     {
         if (auto logic_operation = loader::logic_operation(j.at("logicOperation"s).get<std::string>()); logic_operation)
             color_blend_state.logic_operation = *logic_operation;
@@ -406,7 +406,7 @@ namespace loader
         color_blend_state.attachments = j.at("attachments"s).get<std::vector<std::size_t>>();
     }
 
-    void from_json(nlohmann::json const &j, loader::material_description::color_blend_attachment_state &color_blend_attachment_state)
+    void from_json(nlohmann::json const &j, graphics::color_blend_attachment_state &color_blend_attachment_state)
     {
         if (auto blend_factor = loader::blend_factor(j.at("srcColorBlendFactor"s).get<std::string>()); blend_factor)
             color_blend_attachment_state.src_color_blend_factor = *blend_factor;
@@ -477,11 +477,11 @@ namespace loader
 
         auto techniques = json.at("techniques"s).get<std::vector<material_description::technique>>();
 
-        auto rasterization_states = json.at("rasterizationStates"s).get<std::vector<material_description::rasterization_state>>();
-        auto depth_stencil_states = json.at("depthStencilStates"s).get<std::vector<material_description::depth_stencil_state>>();
+        auto rasterization_states = json.at("rasterizationStates"s).get<std::vector<graphics::rasterization_state>>();
+        auto depth_stencil_states = json.at("depthStencilStates"s).get<std::vector<graphics::depth_stencil_state>>();
 
-        auto color_blend_states = json.at("colorBlendStates"s).get<std::vector<material_description::color_blend_state>>();
-        auto attachment_states = json.at("colorBlendAttachmentStates"s).get<std::vector<material_description::color_blend_attachment_state>>();
+        auto color_blend_states = json.at("colorBlendStates"s).get<std::vector<graphics::color_blend_state>>();
+        auto attachment_states = json.at("colorBlendAttachmentStates"s).get<std::vector<graphics::color_blend_attachment_state>>();
 
         return loader::material_description{
             std::string{name},
