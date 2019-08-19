@@ -255,6 +255,7 @@
     <ClCompile Include="src\loaders\loaderTARGA.cxx" />
     <ClCompile Include="src\loaders\material_loader.cxx" />
     <ClCompile Include="src\math.cxx" />
+    <ClCompile Include="src\renderer\graphics_api.cxx" />
     <ClCompile Include="src\renderer\material.cxx" />
     <ClCompile Include="src\renderer\pipelines.cxx" />
     <ClCompile Include="src\renderer\renderPass.cxx" />
@@ -288,6 +289,7 @@
     <ClInclude Include="src\renderer\attachments.hxx" />
     <ClInclude Include="src\renderer\descriptor.hxx" />
     <ClInclude Include="src\renderer\graphics.hxx" />
+    <ClInclude Include="src\renderer\graphics_api.hxx" />
     <ClInclude Include="src\renderer\graphics_pipeline.hxx" />
     <ClInclude Include="src\renderer\material.hxx" />
     <ClInclude Include="src\renderer\pipelines.hxx" />
