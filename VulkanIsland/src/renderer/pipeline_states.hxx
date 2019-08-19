@@ -92,7 +92,8 @@ namespace graphics
 
         std::array<float, 4> blend_constants{0, 0, 0, 0};
 
-        std::vector<color_blend_attachment_state> attachments;
+        //std::vector<color_blend_attachment_state> attachments;
+        std::vector<std::size_t> attachments;
 
         template<class T, typename std::enable_if_t<std::is_same_v<color_blend_state, std::decay_t<T>>>* = nullptr>
         auto constexpr operator== (T &&rhs) const
@@ -189,7 +190,7 @@ namespace graphics
             graphics::hash<graphics::color_blend_attachment_state> constexpr color_blend_attachment_state_hasher;
 
             for (auto &&attachment : state.attachments)
-                boost::hash_combine(seed, color_blend_attachment_state_hasher(attachment));
+                boost::hash_combine(seed, attachment);
 
             return seed;
         }

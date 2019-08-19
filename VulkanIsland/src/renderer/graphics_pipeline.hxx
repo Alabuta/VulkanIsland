@@ -27,9 +27,9 @@ public:
     {
         return primitive_topology_ == rhs.topology_ &&
             vertex_input_state_ == rhs.vertex_input_state_ &&
-            rasterization_state == rhs.rasterization_state &&
-            depth_stencil_state == rhs.depth_stencil_state &&
-            color_blend_state == rhs.color_blend_state;
+            rasterization_state_ == rhs.rasterization_state &&
+            depth_stencil_state_ == rhs.depth_stencil_state &&
+            color_blend_state_ == rhs.color_blend_state;
     }
 
 private:
@@ -42,9 +42,11 @@ private:
 
     graphics::vertex_input_state vertex_input_state_;
 
-    graphics::rasterization_state rasterization_state;
-    graphics::depth_stencil_state depth_stencil_state;
-    graphics::color_blend_state color_blend_state;
+    graphics::rasterization_state rasterization_state_;
+    graphics::depth_stencil_state depth_stencil_state_;
+
+    graphics::color_blend_state color_blend_state_;
+    std::vector<graphics::color_blend_attachment_state> color_blend_attachments_;
 
     // TODO:: add tesselation, viewport, multisample and dynamic states.
 
@@ -85,13 +87,13 @@ namespace graphics
             boost::hash_combine(seed, vertex_input_state_hasher(pipeline.vertex_input_state_));
 
             graphics::hash<graphics::rasterization_state> constexpr rasterization_state_hasher;
-            boost::hash_combine(seed, rasterization_state_hasher(pipeline.rasterization_state));
+            boost::hash_combine(seed, rasterization_state_hasher(pipeline.rasterization_state_));
 
             graphics::hash<graphics::depth_stencil_state> constexpr depth_stencil_state_hasher;
-            boost::hash_combine(seed, depth_stencil_state_hasher(pipeline.depth_stencil_state));
+            boost::hash_combine(seed, depth_stencil_state_hasher(pipeline.depth_stencil_state_));
 
             graphics::hash<graphics::color_blend_state> constexpr color_blend_state_hasher;
-            boost::hash_combine(seed, color_blend_state_hasher(pipeline.color_blend_state));
+            boost::hash_combine(seed, color_blend_state_hasher(pipeline.color_blend_state_));
 
             boost::hash_combine(seed, pipeline.layout_);
             boost::hash_combine(seed, pipeline.render_pass_);

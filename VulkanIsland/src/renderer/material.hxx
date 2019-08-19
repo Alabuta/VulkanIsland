@@ -173,12 +173,12 @@ namespace graphics
 
         [[nodiscard]] std::shared_ptr<graphics::material> material(std::string_view name, std::uint32_t technique_index);
 
-        [[nodiscard]] loader::material_description const &material_description(std::string_view name);
-
     private:
 
         // TODO:: move to general loader manager.
         std::map<std::string, loader::material_description> material_descriptions_;
         std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<graphics::material>> materials_;
+
+        [[nodiscard]] loader::material_description const &material_description(std::string_view name);
     };
 }

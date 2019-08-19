@@ -50,6 +50,19 @@ struct shader_stage final {
 namespace graphics
 {
     template<>
+    struct hash<graphics::specialization_constant> {
+        std::size_t operator() (graphics::specialization_constant const &specialization_constant) const
+        {
+            std::size_t seed = 0;
+
+            boost::hash_combine(seed, specialization_constant.id);
+            boost::hash_combine(seed, specialization_constant.value);
+
+            return seed;
+        }
+    };
+
+    template<>
     struct hash<graphics::shader_stage> {
         std::size_t operator() (graphics::shader_stage const &stage) const
         {
