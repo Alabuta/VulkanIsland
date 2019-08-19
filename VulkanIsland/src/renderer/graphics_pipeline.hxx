@@ -67,9 +67,18 @@ namespace graphics
 
         pipeline_manager(VulkanDevice &vulkan_device) noexcept : vulkan_device_{vulkan_device} { }
 
+        [[nodiscard]] std::shared_ptr<graphics::pipeline> create_pipeline(std::shared_ptr<class graphics::material> material);
+
     private:
 
         VulkanDevice &vulkan_device_;
+
+        // GAPI 
+        std::map<graphics::rasterization_state, VkPipelineColorBlendStateCreateInfo> rasterization_states_;
+        std::map<graphics::depth_stencil_state, VkPipelineDepthStencilStateCreateInfo> depth_stencil_states_;
+
+        std::map<graphics::color_blend_state, VkPipelineColorBlendStateCreateInfo> color_blend_states_;
+        std::map<graphics::color_blend_attachment_state, VkPipelineColorBlendAttachmentState> color_blend_attachment_states_;
     };
 }
 

@@ -8,6 +8,7 @@ using namespace std::string_view_literals;
 #include <boost/uuid/uuid_io.hpp>
 
 #include "material.hxx"
+#include "shader_program.hxx"
 #include "loaders/material_loader.hxx"
 
 
@@ -535,6 +536,18 @@ namespace graphics
 
         auto &&shader_modules = description.shader_modules;
         auto &&shaders_bundle = technique.shaders_bundle;
+
+        std::vector<graphics::shader_stage> shader_stages;
+
+        std::transform(std::cbegin(shaders_bundle), std::cend(shaders_bundle),
+                       std::back_inserter(shader_stages), [&shader_modules] (auto shader_bundle)
+        {
+            auto [shader_module_index, shader_technique_index] = shader_bundle;
+
+            auto &&[shader_semantic, shader_name] = shader_modules.at(shader_module_index);
+
+            return graphics::shader_stage{shader_name, static_cast<std::uint32_t>(shader_technique_index), shader_semantic};
+        });
 
         return std::shared_ptr<graphics::material>{};
     }
