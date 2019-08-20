@@ -3,7 +3,7 @@
 #include <boost/uuid/name_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
-#include "loaders/loaderSPIRV.hxx"
+#include "loaders/SPIRV_loader.hxx"
 #include "program.hxx"
 #include "renderer/material.hxx"
 
