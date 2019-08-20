@@ -1,7 +1,8 @@
 #pragma once
 
+#include <unordered_map>
 #include <optional>
-#include <functional>
+#include <vector>
 #include <array>
 #include <set>
 
@@ -14,6 +15,11 @@
 #include "pipeline_states.hxx"
 #include "shader_program.hxx"
 
+
+namespace graphics
+{
+    class material;
+}
 
 namespace graphics
 {
@@ -67,18 +73,27 @@ namespace graphics
 
         pipeline_manager(VulkanDevice &vulkan_device) noexcept : vulkan_device_{vulkan_device} { }
 
-        [[nodiscard]] std::shared_ptr<graphics::pipeline> create_pipeline(std::shared_ptr<class graphics::material> material);
+        [[nodiscard]] std::shared_ptr<graphics::pipeline> create_pipeline(std::shared_ptr<graphics::material> material);
 
     private:
 
         VulkanDevice &vulkan_device_;
 
-        // GAPI 
-        std::map<graphics::rasterization_state, VkPipelineColorBlendStateCreateInfo> rasterization_states_;
-        std::map<graphics::depth_stencil_state, VkPipelineDepthStencilStateCreateInfo> depth_stencil_states_;
+        using shared_material = std::shared_ptr<graphics::material>;
 
-        std::map<graphics::color_blend_state, VkPipelineColorBlendStateCreateInfo> color_blend_states_;
-        std::map<graphics::color_blend_attachment_state, VkPipelineColorBlendAttachmentState> color_blend_attachment_states_;
+        std::map<shared_material, std::shared_ptr<graphics::pipeline>, std::owner_less<shared_material>> pipelines_;
+
+        // GAPI
+        using r_info = VkPipelineRasterizationStateCreateInfo;
+        using ds_info = VkPipelineDepthStencilStateCreateInfo;
+        using cb_info = VkPipelineColorBlendStateCreateInfo;
+        using cba_info = VkPipelineColorBlendAttachmentState;
+
+        std::unordered_map<rasterization_state, r_info, hash<rasterization_state>> rasterization_states_;
+        std::unordered_map<depth_stencil_state, ds_info, hash<color_blend_attachment_state>> depth_stencil_states_;
+
+        std::unordered_map<color_blend_state, cb_info, hash<color_blend_state>> color_blend_states_;
+        std::unordered_map<color_blend_attachment_state, cba_info, hash<color_blend_attachment_state>> color_blend_attachment_states_;
     };
 }
 

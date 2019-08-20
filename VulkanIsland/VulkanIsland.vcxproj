@@ -257,6 +257,7 @@
     <ClCompile Include="src\loaders\SPIRV_loader.cxx" />
     <ClCompile Include="src\math.cxx" />
     <ClCompile Include="src\renderer\graphics_api.cxx" />
+    <ClCompile Include="src\renderer\graphics_pipeline.cxx" />
     <ClCompile Include="src\renderer\material.cxx" />
     <ClCompile Include="src\renderer\pipelines.cxx" />
     <ClCompile Include="src\renderer\renderPass.cxx" />
