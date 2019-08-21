@@ -1,6 +1,9 @@
 #pragma once
+
 #include <array>
 #include <vector>
+
+#include "graphics.hxx"
 
 enum class BLEND_STATE_OPERATION {
     CLEAR,
@@ -74,7 +77,6 @@ struct ColorBlendAttachmentState final {
     COLOR_COMPONENT colorWriteMask{COLOR_COMPONENT::RGBA};
 };
 
-
 struct ColorBlendState final {
     bool logicOperationEnable{false};
 
@@ -84,3 +86,17 @@ struct ColorBlendState final {
 
     std::vector<ColorBlendAttachmentState> attachments;
 };
+
+
+namespace graphics
+{
+    struct color_attachment final {
+        std::uint32_t index;
+        graphics::IMAGE_LAYOUT layout;
+    };
+
+    struct depth_attachment final {
+        std::uint32_t index;
+        graphics::IMAGE_LAYOUT layout;
+    };
+}
