@@ -4,26 +4,34 @@
 #include "graphics.hxx"
 
 
-namespace graphics_api
+namespace convert_to
 {
-    struct vulkan final {
+    struct vulkan_api final {
 
-        VkPrimitiveTopology constexpr operator() (graphics::PRIMITIVE_TOPOLOGY topology) const noexcept;
+        VkPrimitiveTopology operator() (graphics::PRIMITIVE_TOPOLOGY topology) const noexcept;
 
-        VkCullModeFlags constexpr operator() (graphics::CULL_MODE cull_mode) const noexcept;
+        VkCullModeFlags operator() (graphics::CULL_MODE cull_mode) const noexcept;
 
-        VkPolygonMode constexpr operator() (graphics::POLYGON_MODE polygon_mode) const noexcept;
+        VkPolygonMode operator() (graphics::POLYGON_MODE polygon_mode) const noexcept;
 
-        VkFrontFace constexpr operator() (graphics::POLYGON_FRONT_FACE front_face) const noexcept;
+        VkFrontFace operator() (graphics::POLYGON_FRONT_FACE front_face) const noexcept;
 
-        VkCompareOp constexpr operator() (graphics::COMPARE_OPERATION compare_operation) const noexcept;
+        VkCompareOp operator() (graphics::COMPARE_OPERATION compare_operation) const noexcept;
 
-        VkBlendFactor constexpr operator() (graphics::BLEND_FACTOR blend_factor) const noexcept;
+        VkBlendFactor operator() (graphics::BLEND_FACTOR blend_factor) const noexcept;
 
-        VkBlendOp constexpr operator() (graphics::BLEND_OPERATION blend_operation) const noexcept;
+        VkBlendOp operator() (graphics::BLEND_OPERATION blend_operation) const noexcept;
 
-        VkColorComponentFlags constexpr operator() (graphics::COLOR_COMPONENT color_component) const noexcept;
+        VkColorComponentFlags operator() (graphics::COLOR_COMPONENT color_component) const noexcept;
 
-        VkShaderStageFlagBits constexpr operator() (graphics::PIPELINE_SHADER_STAGE shader_stage) const noexcept;
+        VkShaderStageFlagBits operator() (graphics::PIPELINE_SHADER_STAGE shader_stage) const noexcept;
+
+        VkImageLayout operator() (graphics::IMAGE_LAYOUT image_layout) const noexcept;
+
+        VkImageTiling operator() (graphics::IMAGE_TILING image_tiling) const noexcept;
+
+        VkFormat operator() (graphics::FORMAT format) const noexcept;
     };
+
+    vulkan_api constexpr vulkan;
 }

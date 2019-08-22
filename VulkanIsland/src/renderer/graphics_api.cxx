@@ -1,9 +1,9 @@
 #include "graphics_api.hxx"
 
 
-namespace graphics_api
+namespace convert_to
 {
-    VkPrimitiveTopology constexpr vulkan::operator() (graphics::PRIMITIVE_TOPOLOGY topology) const noexcept
+    VkPrimitiveTopology vulkan_api::operator() (graphics::PRIMITIVE_TOPOLOGY topology) const noexcept
     {
         switch (topology) {
             case graphics::PRIMITIVE_TOPOLOGY::POINTS:
@@ -29,7 +29,7 @@ namespace graphics_api
         }
     }
 
-    VkCullModeFlags constexpr vulkan::operator() (graphics::CULL_MODE cull_mode) const noexcept
+    VkCullModeFlags vulkan_api::operator() (graphics::CULL_MODE cull_mode) const noexcept
     {
         switch (cull_mode) {
             case graphics::CULL_MODE::NONE:
@@ -49,7 +49,7 @@ namespace graphics_api
         }
     }
 
-    VkPolygonMode constexpr vulkan::operator() (graphics::POLYGON_MODE polygon_mode) const noexcept
+    VkPolygonMode vulkan_api::operator() (graphics::POLYGON_MODE polygon_mode) const noexcept
     {
         switch (polygon_mode) {
             case graphics::POLYGON_MODE::FILL:
@@ -66,7 +66,7 @@ namespace graphics_api
         }
     }
 
-    VkFrontFace constexpr vulkan::operator() (graphics::POLYGON_FRONT_FACE front_face) const noexcept
+    VkFrontFace vulkan_api::operator() (graphics::POLYGON_FRONT_FACE front_face) const noexcept
     {
         switch (front_face) {
             case graphics::POLYGON_FRONT_FACE::COUNTER_CLOCKWISE:
@@ -80,7 +80,7 @@ namespace graphics_api
         }
     }
 
-    VkCompareOp constexpr vulkan::operator() (graphics::COMPARE_OPERATION compare_operation) const noexcept
+    VkCompareOp vulkan_api::operator() (graphics::COMPARE_OPERATION compare_operation) const noexcept
     {
         switch (compare_operation) {
             case graphics::COMPARE_OPERATION::NEVER:
@@ -112,7 +112,7 @@ namespace graphics_api
         }
     }
 
-    VkBlendFactor constexpr vulkan::operator() (graphics::BLEND_FACTOR blend_factor) const noexcept
+    VkBlendFactor vulkan_api::operator() (graphics::BLEND_FACTOR blend_factor) const noexcept
     {
         switch (blend_factor) {
             case graphics::BLEND_FACTOR::ZERO:
@@ -178,7 +178,7 @@ namespace graphics_api
         }
     }
 
-    VkBlendOp constexpr vulkan::operator() (graphics::BLEND_OPERATION blend_operation) const noexcept
+    VkBlendOp vulkan_api::operator() (graphics::BLEND_OPERATION blend_operation) const noexcept
     {
         switch (blend_operation) {
             case graphics::BLEND_OPERATION::ADD:
@@ -192,7 +192,7 @@ namespace graphics_api
         }
     }
 
-    VkColorComponentFlags constexpr vulkan::operator() (graphics::COLOR_COMPONENT color_component) const noexcept
+    VkColorComponentFlags vulkan_api::operator() (graphics::COLOR_COMPONENT color_component) const noexcept
     {
         switch (color_component) {
             case graphics::COLOR_COMPONENT::R:
@@ -226,7 +226,7 @@ namespace graphics_api
         }
     }
 
-    VkShaderStageFlagBits constexpr vulkan::operator() (graphics::PIPELINE_SHADER_STAGE shader_stage) const noexcept
+    VkShaderStageFlagBits vulkan_api::operator() (graphics::PIPELINE_SHADER_STAGE shader_stage) const noexcept
     {
         switch (shader_stage) {
             case graphics::PIPELINE_SHADER_STAGE::VERTEX:
@@ -249,6 +249,111 @@ namespace graphics_api
 
             default:
                 return VkShaderStageFlagBits::VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
+        }
+    }
+
+    VkImageLayout vulkan_api::operator() (graphics::IMAGE_LAYOUT image_layout) const noexcept
+    {
+        switch (image_layout) {
+            case graphics::IMAGE_LAYOUT::UNDEFINED:
+                return VkImageLayout::VK_IMAGE_LAYOUT_UNDEFINED;
+
+            case graphics::IMAGE_LAYOUT::GENERAL:
+                return VkImageLayout::VK_IMAGE_LAYOUT_GENERAL;
+
+            case graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT:
+                return VkImageLayout::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+            case graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT:
+                return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+            case graphics::IMAGE_LAYOUT::DEPTH_STENCIL_READ_ONLY:
+                return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+
+            case graphics::IMAGE_LAYOUT::SHADER_READ_ONLY:
+                return VkImageLayout::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+            case graphics::IMAGE_LAYOUT::TRANSFER_SOURCE:
+                return VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+            case graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION:
+                return VkImageLayout::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+
+            case graphics::IMAGE_LAYOUT::PREINITIALIZED:
+                return VkImageLayout::VK_IMAGE_LAYOUT_PREINITIALIZED;
+
+            case graphics::IMAGE_LAYOUT::DEPTH_READ_ONLY_STENCIL_ATTACHMENT:
+                return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL;
+
+            case graphics::IMAGE_LAYOUT::DEPTH_ATTACHMENT_STENCIL_READ_ONLY:
+                return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL;
+
+            default:
+                return VkImageLayout::VK_IMAGE_LAYOUT_MAX_ENUM;
+        }
+    }
+
+    VkImageTiling vulkan_api::operator() (graphics::IMAGE_TILING image_tiling) const noexcept
+    {
+        switch (image_tiling) {
+            case graphics::IMAGE_TILING::OPTIMAL:
+                return VkImageTiling::VK_IMAGE_TILING_OPTIMAL;
+
+            case graphics::IMAGE_TILING::LINEAR:
+                return VkImageTiling::VK_IMAGE_TILING_LINEAR;
+
+            default:
+                return VkImageTiling::VK_IMAGE_TILING_MAX_ENUM;
+        }
+    }
+
+    VkFormat vulkan_api::operator() (graphics::FORMAT format) const noexcept
+    {
+        switch (format) {
+            case graphics::FORMAT::UNDEFINED:
+                return VkFormat::VK_FORMAT_UNDEFINED;
+
+            case graphics::FORMAT::RGB8_UNORM:
+                return VkFormat::VK_FORMAT_R8G8B8_UNORM;
+
+            case graphics::FORMAT::RGBA8_UNORM:
+                return VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
+
+            case graphics::FORMAT::B10GR11_UFLOAT_PACK32:
+                return VkFormat::VK_FORMAT_B10G11R11_UFLOAT_PACK32;
+
+            case graphics::FORMAT::R16_SFLOAT:
+                return VkFormat::VK_FORMAT_R16_SFLOAT;
+
+            case graphics::FORMAT::RG16_SFLOAT:
+                return VkFormat::VK_FORMAT_R16G16_SFLOAT;
+
+            case graphics::FORMAT::RGBA16_SFLOAT:
+                return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT;
+
+            case graphics::FORMAT::R32_SFLOAT:
+                return VkFormat::VK_FORMAT_R32_SFLOAT;
+
+            case graphics::FORMAT::RG32_SFLOAT:
+                return VkFormat::VK_FORMAT_R32G32_SFLOAT;
+
+            case graphics::FORMAT::RGB32_SFLOAT:
+                return VkFormat::VK_FORMAT_R32G32B32_SFLOAT;
+
+            case graphics::FORMAT::RGBA32_SFLOAT:
+                return VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT;
+
+            case graphics::FORMAT::D24_UNORM_S8_UINT:
+                return VkFormat::VK_FORMAT_D24_UNORM_S8_UINT;
+
+            case graphics::FORMAT::D32_SFLOAT:
+                return VkFormat::VK_FORMAT_D32_SFLOAT;
+
+            case graphics::FORMAT::D32_SFLOAT_S8_UINT:
+                return VkFormat::VK_FORMAT_D32_SFLOAT_S8_UINT;
+
+            default:
+                return VkFormat::VK_FORMAT_MAX_ENUM;
         }
     }
 }
