@@ -187,7 +187,7 @@ namespace graphics
             boost::hash_combine(seed, state.logic_operation);
             boost::hash_combine(seed, state.blend_constants);
 
-            graphics::hash<graphics::color_blend_attachment_state> constexpr color_blend_attachment_state_hasher;
+            // graphics::hash<graphics::color_blend_attachment_state> constexpr color_blend_attachment_state_hasher;
 
             for (auto &&attachment : state.attachments)
                 boost::hash_combine(seed, attachment);

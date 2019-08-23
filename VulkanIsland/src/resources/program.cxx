@@ -47,7 +47,7 @@ void ShaderManager::CreateShaderPrograms(Material const *const material)
                 auto const shaderByteCode = loader::load_SPIRV(shaderStage.moduleName);
 
                 if (shaderByteCode.empty())
-                    throw std::runtime_error("failed to open vertex shader file"s);
+                    throw std::runtime_error("failed to load SPIR-V shader file"s);
 
                 auto shaderModule = create_shader_module(shaderByteCode);
 
@@ -145,7 +145,7 @@ std::shared_ptr<VulkanShaderModule> ShaderManager::shader_module(std::string_vie
     auto const shader_byte_code = loader::load_SPIRV(hashed_name);
 
     if (shader_byte_code.empty())
-        throw std::runtime_error("failed to open vertex shader file"s);
+        throw std::runtime_error("failed to open shader file"s);
 
     auto shader_module = create_shader_module(shader_byte_code);
 
