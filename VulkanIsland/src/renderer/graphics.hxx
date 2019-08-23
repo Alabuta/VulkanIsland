@@ -335,4 +335,15 @@ namespace graphics
         RG12X4_UNORM_2PACK16,
         RGBA12X4_UNORM_4PACK16
     };
+
+    enum class ATTACHMENT_LOAD_TREATMENT {
+        LOAD = 0,
+        CLEAR,
+        DONT_CARE
+    };
+
+    enum class ATTACHMENT_STORE_TREATMENT {
+        STORE = 0,
+        DONT_CARE
+    };
 }

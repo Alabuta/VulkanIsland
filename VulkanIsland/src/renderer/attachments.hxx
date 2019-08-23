@@ -90,13 +90,14 @@ struct ColorBlendState final {
 
 namespace graphics
 {
-    struct color_attachment final {
-        std::uint32_t index;
-        graphics::IMAGE_LAYOUT layout;
-    };
+    struct render_pass_attachment final {
+        graphics::FORMAT view_format;
+        std::uint32_t samples_count{1};
 
-    struct depth_attachment final {
-        std::uint32_t index;
-        graphics::IMAGE_LAYOUT layout;
+        graphics::ATTACHMENT_LOAD_TREATMENT load_op;
+        graphics::ATTACHMENT_STORE_TREATMENT store_op;
+
+        graphics::IMAGE_LAYOUT initial_layout;
+        graphics::IMAGE_LAYOUT final_layout;
     };
 }
