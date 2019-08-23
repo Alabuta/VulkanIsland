@@ -50,12 +50,22 @@ set(SOURCE_FILES
     src/input/mouseInput.hxx                    	src/input/mouseInput.cxx
 
 	src/loaders/loaderGLTF.hxx                      src/loaders/loaderGLTF.cxx
-	src/loaders/loaderSPIRV.hxx
-	src/loaders/loaderTARGA.hxx                     src/loaders/loaderTARGA.cxx
+    src/loaders/loaderTARGA.hxx                     src/loaders/loaderTARGA.cxx
+
+	src/loaders/SPIRV_loader.hxx                    src/loaders/SPIRV_loader.cxx
+	src/loaders/material_loader.hxx                 src/loaders/material_loader.cxx
 
     src/platform/window.hxx                         src/platform/window.cxx
 
     src/renderer/attachments.hxx
+    src/renderer/descriptor.hxx
+    src/renderer/graphics.hxx
+    src/renderer/graphics_api.hxx                   src/renderer/graphics_api.cxx
+    src/renderer/graphics_pipeline.hxx              src/renderer/graphics_pipeline.cxx
+    src/renderer/pipeline_states.hxx
+    src/renderer/render_pass.hxx
+    src/renderer/shader_program.hxx                 src/renderer/shader_program.cxx
+
     src/renderer/material.hxx                       src/renderer/material.cxx
     src/renderer/pipelines.hxx                      src/renderer/pipelines.cxx
     src/renderer/pipelineVertexInputState.hxx       src/renderer/pipelineVertexInputState.cxx
