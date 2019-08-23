@@ -72,40 +72,40 @@ namespace loader
     std::optional<vertex::attribute_type> attribute_type(std::string_view type)
     {
         if (type == "float"sv)
-            return static_array<1, boost::float32_t>{};
+            return vertex::static_array<1, boost::float32_t>{};
 
         else if (type == "vec2"sv)
-            return static_array<2, boost::float32_t>{};
+            return vertex::static_array<2, boost::float32_t>{};
 
         else if (type == "vec3"sv)
-            return static_array<3, boost::float32_t>{};
+            return vertex::static_array<3, boost::float32_t>{};
 
         else if (type == "vec4"sv)
-            return static_array<4, boost::float32_t>{};
+            return vertex::static_array<4, boost::float32_t>{};
 
         else if (type == "int"sv)
-            return static_array<1, std::int32_t>{};
+            return vertex::static_array<1, std::int32_t>{};
 
         else if (type == "ivec2"sv)
-            return static_array<2, std::int32_t>{};
+            return vertex::static_array<2, std::int32_t>{};
 
         else if (type == "ivec3"sv)
-            return static_array<3, std::int32_t>{};
+            return vertex::static_array<3, std::int32_t>{};
 
         else if (type == "ivec4"sv)
-            return static_array<4, std::int32_t>{};
+            return vertex::static_array<4, std::int32_t>{};
 
         else if (type == "uint"sv)
-            return static_array<1, std::uint32_t>{};
+            return vertex::static_array<1, std::uint32_t>{};
 
         else if (type == "uvec2"sv)
-            return static_array<2, std::uint32_t>{};
+            return vertex::static_array<2, std::uint32_t>{};
 
         else if (type == "uvec3"sv)
-            return static_array<3, std::uint32_t>{};
+            return vertex::static_array<3, std::uint32_t>{};
 
         else if (type == "uvec4"sv)
-            return static_array<4, std::uint32_t>{};
+            return vertex::static_array<4, std::uint32_t>{};
 
         return { };
     }

@@ -8,7 +8,7 @@
 #include "graphics.hxx"
 
 
-namespace
+namespace vertex
 {
     enum class eSEMANTIC_INDEX : std::uint32_t {
         POSITION = 0,

@@ -90,7 +90,7 @@ namespace graphics
         using cba_info = VkPipelineColorBlendAttachmentState;
 
         std::unordered_map<rasterization_state, r_info, hash<rasterization_state>> rasterization_states_;
-        std::unordered_map<depth_stencil_state, ds_info, hash<color_blend_attachment_state>> depth_stencil_states_;
+        std::unordered_map<depth_stencil_state, ds_info, hash<depth_stencil_state>> depth_stencil_states_;
 
         std::unordered_map<color_blend_state, cb_info, hash<color_blend_state>> color_blend_states_;
         std::unordered_map<color_blend_attachment_state, cba_info, hash<color_blend_attachment_state>> color_blend_attachment_states_;
