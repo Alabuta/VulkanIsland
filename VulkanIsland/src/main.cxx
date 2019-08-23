@@ -66,7 +66,7 @@ struct per_object_t final {
 struct renderable_t final {
     PRIMITIVE_TOPOLOGY topology;
 
-    std::shared_ptr<Material2> material;
+    std::shared_ptr<Material> material;
     std::shared_ptr<VertexBuffer> vertexBuffer;
 
     std::uint32_t vertexCount{0};
@@ -718,7 +718,7 @@ void stageXformat(app_t &app, xformat const &_model)
         auto materialIndex = meshlet.materialIndex;
         auto [technique, name] = _model.materials[materialIndex];
 
-        auto material = app.materialFactory->CreateMaterial2(name, technique);
+        auto material = app.materialFactory->CreateMaterial(name);
 
         if (!material)
             throw std::runtime_error("failed to get material"s);

@@ -27,7 +27,7 @@ namespace graphics
         auto const shader_byte_code = loader::load_SPIRV(hashed_name);
 
         if (shader_byte_code.empty())
-            throw std::runtime_error("failed to open vertex shader file"s);
+            throw std::runtime_error("failed to open shader file"s);
 
         if (std::size(shader_byte_code) % sizeof(std::uint32_t) != 0)
             std::cerr << "invalid byte code buffer size\n"s;

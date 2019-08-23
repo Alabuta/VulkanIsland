@@ -371,13 +371,13 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial(std::string_view type)
 
     std::shared_ptr<Material> material;
 
-    if (type == "TexCoordsDebugMaterial"s)
+    if (type == "debug/texture-coordinate-debug"s)
         material = std::make_shared<TexCoordsDebugMaterial>();
 
-    else if (type == "ColorsDebugMaterial"s)
+    else if (type == "debug/color-debug-material"s)
         material = std::make_shared<ColorsDebugMaterial>();
 
-    else if (type == "NormalsDebugMaterial"s)
+    else if (type == "debug/normal-debug"s)
         material = std::make_shared<NormalsDebugMaterial>();
 
     else if (type == "TestMaterial"s)
@@ -401,122 +401,6 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial(std::string_view type)
     materials_.emplace(std::string{type}, material);
 
     return material;
-}
-
-std::shared_ptr<Material2> MaterialFactory::material_by_techique(std::string_view name, std::uint32_t technique_index)
-{
-#if 0
-    auto const key = std::pair{std::string{name}, technique_index};
-    
-    if (materials_by_techinques_.count(key) != 0)
-        return materials_by_techinques_.at(key);
-
-    auto const description = material_description(name);
-
-    auto &&techniques = description->techniques;
-    auto &&technique = techniques.at(technique_index);
-
-    auto &&shader_modules = description->shader_modules;
-    auto &&shaders_bundle = technique.shaders_bundle;
-
-    std::vector<program::shader_stage> shader_stages;
-
-    std::transform(std::cbegin(shaders_bundle), std::cend(shaders_bundle),
-                   std::back_inserter(shader_stages), [&shader_modules] (auto shader_bundle)
-    {
-        auto [shader_module_index, shader_technique_index] = shader_bundle;
-
-        auto &&[shader_semantic, shader_name] = shader_modules.at(shader_module_index);
-
-        return program::shader_stage{shader_semantic, shader_name};
-    });
-
-    auto material = std::make_shared<Material2>();
-
-    material->shader_stages = std::move(shader_stages);
-
-    materials_by_techinques_.emplace(key, material);
-
-    return material;
-#endif
-
-    return { };
-}
-
-std::shared_ptr<loader::material_description> MaterialFactory::material_description(std::string_view name)
-{
-#if 0
-    auto _name = std::string{name};
-
-    if (material_descriptions_.count(_name) != 0)
-        return material_descriptions_.at(_name);
-
-    auto description = loader::load_material_description(name);
-
-    material_descriptions_.emplace(_name, description);
-#endif
-
-    return { };
-}
-
-void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material2> material)
-{
-    auto &&properties = materialProperties2_[material];
-
-    properties.rasterizationState = VkPipelineRasterizationStateCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
-        nullptr, 0,
-        VK_TRUE,
-        VK_FALSE,
-        ConvertToGAPI(material->rasterization_state.polygonMode),
-        ConvertToGAPI(material->rasterization_state.cullMode),
-        ConvertToGAPI(material->rasterization_state.frontFace),
-        VK_FALSE,
-        0.f, 0.f, 0.f,
-        material->rasterization_state.lineWidth
-    };
-
-    properties.depthStencilState = VkPipelineDepthStencilStateCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
-        nullptr, 0,
-        VkBool32(material->depth_stencil_state.depthTestEnable),
-        VkBool32(material->depth_stencil_state.depthWriteEnable),
-        ConvertToGAPI(material->depth_stencil_state.depthCompareOperation),//kREVERSED_DEPTH ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_LESS,
-        VK_FALSE,
-        VkBool32(material->depth_stencil_state.stencilTestEnable),
-        VkStencilOpState{}, VkStencilOpState{},
-        0, 1
-    };
-
-    for (auto &&attachment : material->colorBlendState.attachments) {
-        properties.colorBlendAttachmentStates.push_back(VkPipelineColorBlendAttachmentState{
-            VkBool32(attachment.blendEnable),
-            ConvertToGAPI(attachment.srcColorBlendFactor),
-            ConvertToGAPI(attachment.dstColorBlendFactor),
-
-            ConvertToGAPI(attachment.colorBlendOperation),
-
-            ConvertToGAPI(attachment.srcAlphaBlendFactor),
-            ConvertToGAPI(attachment.dstAlphaBlendFactor),
-
-            ConvertToGAPI(attachment.alphaBlendOperation),
-
-            ConvertToGAPI(attachment.colorWriteMask)
-        });
-    }
-
-    properties.colorBlendState = VkPipelineColorBlendStateCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
-        nullptr, 0,
-        VK_FALSE,
-        VK_LOGIC_OP_COPY,
-        static_cast<std::uint32_t>(std::size(properties.colorBlendAttachmentStates)),
-        std::data(properties.colorBlendAttachmentStates),
-        {}
-    };
-
-    std::copy(std::cbegin(material->colorBlendState.blendConstants), std::cend(material->colorBlendState.blendConstants),
-              std::begin(properties.colorBlendState.blendConstants));
 }
 
 
@@ -546,7 +430,9 @@ namespace graphics
 
             auto &&[shader_semantic, shader_name] = shader_modules.at(shader_module_index);
 
-            return graphics::shader_stage{shader_name, static_cast<std::uint32_t>(shader_technique_index), shader_semantic};
+            return graphics::shader_stage{
+                shader_name, static_cast<std::uint32_t>(shader_technique_index), shader_semantic, { }
+            };
         });
 
         return std::shared_ptr<graphics::material>{};
