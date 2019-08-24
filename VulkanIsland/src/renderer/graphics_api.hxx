@@ -31,6 +31,10 @@ namespace convert_to
         VkImageTiling operator() (graphics::IMAGE_TILING image_tiling) const noexcept;
 
         VkFormat operator() (graphics::FORMAT format) const noexcept;
+
+        VkAttachmentLoadOp operator() (graphics::ATTACHMENT_LOAD_TREATMENT load_treatment) const noexcept;
+
+        VkAttachmentStoreOp operator() (graphics::ATTACHMENT_STORE_TREATMENT store_treatment) const noexcept;
     };
 
     vulkan_api constexpr vulkan;

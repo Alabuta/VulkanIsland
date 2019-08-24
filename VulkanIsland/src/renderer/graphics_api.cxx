@@ -356,4 +356,35 @@ namespace convert_to
                 return VkFormat::VK_FORMAT_MAX_ENUM;
         }
     }
+
+    VkAttachmentLoadOp vulkan_api::operator() (graphics::ATTACHMENT_LOAD_TREATMENT load_treatment) const noexcept
+    {
+        switch (load_treatment) {
+            case graphics::ATTACHMENT_LOAD_TREATMENT::LOAD:
+                return VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_LOAD;
+
+            case graphics::ATTACHMENT_LOAD_TREATMENT::CLEAR:
+                return VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_CLEAR;
+
+            case graphics::ATTACHMENT_LOAD_TREATMENT::DONT_CARE:
+                return VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+
+            default:
+                return VkAttachmentLoadOp::VK_ATTACHMENT_LOAD_OP_MAX_ENUM;
+        }
+    }
+
+    VkAttachmentStoreOp vulkan_api::operator() (graphics::ATTACHMENT_STORE_TREATMENT store_treatment) const noexcept
+    {
+        switch (store_treatment) {
+            case graphics::ATTACHMENT_STORE_TREATMENT::STORE:
+                return VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_STORE;
+
+            case graphics::ATTACHMENT_STORE_TREATMENT::DONT_CARE:
+                return VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_DONT_CARE;
+
+            default:
+                return VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_MAX_ENUM;
+        }
+    }
 }
