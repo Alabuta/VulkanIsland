@@ -8,6 +8,9 @@ namespace graphics
     template<class T>
     struct hash;
 
+    template<class T>
+    struct compatibility;
+
     enum class PRIMITIVE_TOPOLOGY {
         POINTS = 0,
         LINES, LINE_STRIP,
