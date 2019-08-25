@@ -239,8 +239,10 @@ void CleanupFrameData(app_t &app)
 
     app.commandBuffers.clear();
 
+#if !USE_DYNAMIC_PIPELINE_STATE
     if (app.renderPass != VK_NULL_HANDLE)
         vkDestroyRenderPass(device.handle(), app.renderPass, nullptr);
+#endif
 
     CleanupSwapchain(device, app.swapchain);
 }
@@ -303,34 +305,6 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
                            std::data(writeDescriptorsSet), 0, nullptr);
 }
 
-void CreateFramebuffers(VulkanDevice const &device, VkRenderPass renderPass, VulkanSwapchain &swapchain)
-{
-    auto &&framebuffers = swapchain.framebuffers;
-    auto &&views = swapchain.views;
-
-    framebuffers.clear();
-
-    std::transform(std::cbegin(views), std::cend(views), std::back_inserter(framebuffers), [&device, renderPass, &swapchain] (auto &&view)
-    {
-        auto const attachements = std::array{swapchain.colorTexture.view.handle(), swapchain.depthTexture.view.handle(), view};
-
-        VkFramebufferCreateInfo const createInfo{
-            VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-            nullptr, 0,
-            renderPass,
-            static_cast<std::uint32_t>(std::size(attachements)), std::data(attachements),
-            swapchain.extent.width, swapchain.extent.height,
-            1
-        };
-
-        VkFramebuffer framebuffer;
-
-        if (auto result = vkCreateFramebuffer(device.handle(), &createInfo, nullptr, &framebuffer); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to create a framebuffer: {0:#x}\n"s, result));
-
-        return framebuffer;
-    });
-}
 
 void CreateGraphicsPipelines(app_t &app)
 {
@@ -504,12 +478,12 @@ void RecreateSwapChain(app_t &app)
 
     else throw std::runtime_error("failed to create the swapchain"s);
 
+#if !USE_DYNAMIC_PIPELINE_STATE
     if (auto renderPass = CreateRenderPass(*app.vulkanDevice, app.swapchain); !renderPass)
         throw std::runtime_error("failed to create the render pass"s);
 
     else app.renderPass = std::move(renderPass.value());
 
-#if !USE_DYNAMIC_PIPELINE_STATE
     CreateGraphicsPipelines(app);
 #endif
 

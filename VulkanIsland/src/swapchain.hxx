@@ -36,3 +36,6 @@ CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width,
                 TransferQueue transferQueue, VkCommandPool transferCommandPool);
 
 void CleanupSwapchain(VulkanDevice const &device, VulkanSwapchain &swapchain) noexcept;
+
+
+void CreateFramebuffers(VulkanDevice const &device, VkRenderPass renderPass, VulkanSwapchain &swapchain);

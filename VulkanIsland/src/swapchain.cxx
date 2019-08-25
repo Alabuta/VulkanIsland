@@ -1,3 +1,5 @@
+#include <fmt/format.h>
+
 #include "swapchain.hxx"
 #include "commandBuffer.hxx"
 
@@ -157,26 +159,26 @@ CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
     SwapChainSupportDetails details;
 
     if (auto result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &details.capabilities); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface capabilities: "s + std::to_string(result));
+        throw std::runtime_error(fmt::format("failed to retrieve device surface capabilities: {0:#x}\n"s, result));
 
     std::uint32_t formatsCount = 0;
     if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, nullptr); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface formats count: "s + std::to_string(result));
+        throw std::runtime_error(fmt::format("failed to retrieve device surface formats count: {0:#x}\n"s, result));
 
     details.formats.resize(formatsCount);
     if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, std::data(details.formats)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface formats: "s + std::to_string(result));
+        throw std::runtime_error(fmt::format("failed to retrieve device surface formats: {0:#x}\n"s, result));
 
     if (details.formats.empty())
         return { };
 
     std::uint32_t presentModeCount = 0;
     if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface presentation modes count: "s + std::to_string(result));
+        throw std::runtime_error(fmt::format("failed to retrieve device surface presentation modes count: {0:#x}\n"s, result));
 
     details.presentModes.resize(presentModeCount);
     if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, std::data(details.presentModes)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device surface presentation modes: "s + std::to_string(result));
+        throw std::runtime_error(fmt::format("failed to retrieve device surface presentation modes: {0:#x}\n"s, result));
 
     if (details.presentModes.empty())
         return { };
@@ -234,21 +236,21 @@ CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width,
     }
 
     if (auto result = vkCreateSwapchainKHR(device.handle(), &swapchainCreateInfo, nullptr, &swapchain.handle); result != VK_SUCCESS) {
-        std::cerr << "failed to create required swap chain: "s << result << '\n';
+        std::cerr << fmt::format("failed to create required swap chain: {0:#x}\n"s, result);
         return { };
     }
     
     std::uint32_t imagesCount = 0;
 
     if (auto result = vkGetSwapchainImagesKHR(device.handle(), swapchain.handle, &imagesCount, nullptr); result != VK_SUCCESS) {
-        std::cerr << "failed to retrieve swap chain images count: "s << result << '\n';
+        std::cerr << fmt::format("failed to retrieve swap chain images count: {0:#x}\n"s, result);
         return { };
     }
 
     swapchain.images.resize(imagesCount);
 
     if (auto result = vkGetSwapchainImagesKHR(device.handle(), swapchain.handle, &imagesCount, std::data(swapchain.images)); result != VK_SUCCESS) {
-        std::cerr << "failed to retrieve swap chain images: "s << result << '\n';
+        std::cerr << fmt::format("failed to retrieve swap chain images: {0:#x}\n"s, result);
         return { };
     }
 
@@ -299,4 +301,34 @@ void CleanupSwapchain(VulkanDevice const &device, VulkanSwapchain &swapchain) no
     swapchain.depthTexture.image.reset();
 
     swapchain.images.clear();
+}
+
+
+void CreateFramebuffers(VulkanDevice const &device, VkRenderPass renderPass, VulkanSwapchain &swapchain)
+{
+    auto &&framebuffers = swapchain.framebuffers;
+    auto &&views = swapchain.views;
+
+    framebuffers.clear();
+
+    std::transform(std::cbegin(views), std::cend(views), std::back_inserter(framebuffers), [&device, renderPass, &swapchain] (auto &&view)
+    {
+        auto const attachements = std::array{swapchain.colorTexture.view.handle(), swapchain.depthTexture.view.handle(), view};
+
+        VkFramebufferCreateInfo const createInfo{
+            VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            nullptr, 0,
+            renderPass,
+            static_cast<std::uint32_t>(std::size(attachements)), std::data(attachements),
+            swapchain.extent.width, swapchain.extent.height,
+            1
+        };
+
+        VkFramebuffer framebuffer;
+
+        if (auto result = vkCreateFramebuffer(device.handle(), &createInfo, nullptr, &framebuffer); result != VK_SUCCESS)
+            throw std::runtime_error(fmt::format("failed to create a framebuffer: {0:#x}\n"s, result));
+
+        return framebuffer;
+    });
 }
