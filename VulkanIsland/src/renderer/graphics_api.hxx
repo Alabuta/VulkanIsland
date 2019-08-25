@@ -12,6 +12,8 @@ namespace convert_to
 
         VkShaderStageFlagBits operator() (graphics::SHADER_STAGE shader_stage) const noexcept;
 
+        VkPipelineStageFlagBits operator() (graphics::PIPELINE_STAGE pipeline_stage) const noexcept;
+
         VkCullModeFlags operator() (graphics::CULL_MODE cull_mode) const noexcept;
 
         VkPolygonMode operator() (graphics::POLYGON_MODE polygon_mode) const noexcept;

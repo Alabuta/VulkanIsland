@@ -55,6 +55,65 @@ namespace convert_to
         }
     }
 
+    VkPipelineStageFlagBits vulkan_api::operator() (graphics::PIPELINE_STAGE pipeline_stage) const noexcept
+    {
+        switch (pipeline_stage) {
+            case graphics::PIPELINE_STAGE::TOP_OF_PIPE:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+
+            case graphics::PIPELINE_STAGE::DRAW_INDIRECT:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+
+            case graphics::PIPELINE_STAGE::VERTEX_INPUT:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+
+            case graphics::PIPELINE_STAGE::VERTEX_SHADER:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+
+            case graphics::PIPELINE_STAGE::TESSELLATION_CONTROL_SHADER:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
+
+            case graphics::PIPELINE_STAGE::TESSELLATION_EVALUATION_SHADER:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
+
+            case graphics::PIPELINE_STAGE::GEOMETRY_SHADER:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
+
+            case graphics::PIPELINE_STAGE::FRAGMENT_SHADER:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+
+            case graphics::PIPELINE_STAGE::EARLY_FRAGMENT_TESTS:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+
+            case graphics::PIPELINE_STAGE::LATE_FRAGMENT_TESTS:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+
+            case graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+
+            case graphics::PIPELINE_STAGE::COMPUTE_SHADER:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+            case graphics::PIPELINE_STAGE::TRANSFER:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+            case graphics::PIPELINE_STAGE::BOTTOM_OF_PIPE:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+
+            case graphics::PIPELINE_STAGE::HOST:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_HOST_BIT;
+
+            case graphics::PIPELINE_STAGE::ALL_GRAPHICS:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+
+            case graphics::PIPELINE_STAGE::ALL_COMMANDS:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+            default:
+                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
+        }
+    }
+
     VkCullModeFlags vulkan_api::operator() (graphics::CULL_MODE cull_mode) const noexcept
     {
         switch (cull_mode) {
