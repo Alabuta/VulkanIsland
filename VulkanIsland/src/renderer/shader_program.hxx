@@ -57,7 +57,7 @@ namespace graphics
         std::string module_name;
         std::uint32_t techique_index;
 
-        graphics::PIPELINE_SHADER_STAGE semantic;
+        graphics::SHADER_STAGE semantic;
 
         std::set<graphics::specialization_constant> constants;
 

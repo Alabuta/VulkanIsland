@@ -15,7 +15,7 @@ namespace graphics
         std::uint32_t descriptor_count;
 
         graphics::DESCRIPTOR_TYPE descriptor_type;
-        graphics::PIPELINE_SHADER_STAGE shader_stages;
+        graphics::SHADER_STAGE shader_stages;
 
         template<class T, typename std::enable_if_t<std::is_same_v<descriptor_set_binding, std::decay_t<T>>>* = nullptr>
         auto constexpr operator== (T &&rhs) const

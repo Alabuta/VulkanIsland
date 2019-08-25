@@ -18,7 +18,7 @@ namespace loader
         std::string name;
 
         struct shader_module final {
-            graphics::PIPELINE_SHADER_STAGE stage;
+            graphics::SHADER_STAGE stage;
             std::string name;
         };
 

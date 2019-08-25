@@ -29,6 +29,32 @@ namespace convert_to
         }
     }
 
+    VkShaderStageFlagBits vulkan_api::operator() (graphics::SHADER_STAGE shader_stage) const noexcept
+    {
+        switch (shader_stage) {
+            case graphics::SHADER_STAGE::VERTEX:
+                return VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+
+            case graphics::SHADER_STAGE::TESS_CONTROL:
+                return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+
+            case graphics::SHADER_STAGE::TESS_EVAL:
+                return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+
+            case graphics::SHADER_STAGE::GEOMETRY:
+                return VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT;
+
+            case graphics::SHADER_STAGE::FRAGMENT:
+                return VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+
+            case graphics::SHADER_STAGE::COMPUTE:
+                return VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT;
+
+            default:
+                return VkShaderStageFlagBits::VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
+        }
+    }
+
     VkCullModeFlags vulkan_api::operator() (graphics::CULL_MODE cull_mode) const noexcept
     {
         switch (cull_mode) {
@@ -223,32 +249,6 @@ namespace convert_to
             default:
                 return
                     VkColorComponentFlagBits::VK_COLOR_COMPONENT_FLAG_BITS_MAX_ENUM;
-        }
-    }
-
-    VkShaderStageFlagBits vulkan_api::operator() (graphics::PIPELINE_SHADER_STAGE shader_stage) const noexcept
-    {
-        switch (shader_stage) {
-            case graphics::PIPELINE_SHADER_STAGE::VERTEX:
-                return VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
-
-            case graphics::PIPELINE_SHADER_STAGE::TESS_CONTROL:
-                return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-
-            case graphics::PIPELINE_SHADER_STAGE::TESS_EVAL:
-                return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-
-            case graphics::PIPELINE_SHADER_STAGE::GEOMETRY:
-                return VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT;
-
-            case graphics::PIPELINE_SHADER_STAGE::FRAGMENT:
-                return VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
-
-            case graphics::PIPELINE_SHADER_STAGE::COMPUTE:
-                return VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT;
-
-            default:
-                return VkShaderStageFlagBits::VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
         }
     }
 

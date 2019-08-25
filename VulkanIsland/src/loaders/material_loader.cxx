@@ -17,25 +17,25 @@ using namespace std::string_literals;
 
 namespace loader
 {
-    std::optional<graphics::PIPELINE_SHADER_STAGE> shader_stage_semantic(std::string_view name)
+    std::optional<graphics::SHADER_STAGE> shader_stage_semantic(std::string_view name)
     {
         if (name == "vertex"sv)
-            return graphics::PIPELINE_SHADER_STAGE::VERTEX;
+            return graphics::SHADER_STAGE::VERTEX;
 
         else if (name == "tesselation_control"sv)
-            return graphics::PIPELINE_SHADER_STAGE::TESS_CONTROL;
+            return graphics::SHADER_STAGE::TESS_CONTROL;
 
         else if (name == "tesselation_evaluation"sv)
-            return graphics::PIPELINE_SHADER_STAGE::TESS_EVAL;
+            return graphics::SHADER_STAGE::TESS_EVAL;
 
         else if (name == "geometry"sv)
-            return graphics::PIPELINE_SHADER_STAGE::GEOMETRY;
+            return graphics::SHADER_STAGE::GEOMETRY;
 
         else if (name == "fragment"sv)
-            return graphics::PIPELINE_SHADER_STAGE::FRAGMENT;
+            return graphics::SHADER_STAGE::FRAGMENT;
 
         else if (name == "compute"sv)
-            return graphics::PIPELINE_SHADER_STAGE::COMPUTE;
+            return graphics::SHADER_STAGE::COMPUTE;
 
         return { };
     }

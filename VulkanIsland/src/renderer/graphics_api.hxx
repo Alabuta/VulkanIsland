@@ -10,6 +10,8 @@ namespace convert_to
 
         VkPrimitiveTopology operator() (graphics::PRIMITIVE_TOPOLOGY topology) const noexcept;
 
+        VkShaderStageFlagBits operator() (graphics::SHADER_STAGE shader_stage) const noexcept;
+
         VkCullModeFlags operator() (graphics::CULL_MODE cull_mode) const noexcept;
 
         VkPolygonMode operator() (graphics::POLYGON_MODE polygon_mode) const noexcept;
@@ -23,8 +25,6 @@ namespace convert_to
         VkBlendOp operator() (graphics::BLEND_OPERATION blend_operation) const noexcept;
 
         VkColorComponentFlags operator() (graphics::COLOR_COMPONENT color_component) const noexcept;
-
-        VkShaderStageFlagBits operator() (graphics::PIPELINE_SHADER_STAGE shader_stage) const noexcept;
 
         VkImageLayout operator() (graphics::IMAGE_LAYOUT image_layout) const noexcept;
 

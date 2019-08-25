@@ -17,7 +17,7 @@ namespace graphics
         TRIANGLES, TRIANGLE_STRIP, TRIANGLE_FAN
     };
 
-    enum class PIPELINE_SHADER_STAGE {
+    enum class SHADER_STAGE {
         VERTEX = 0x01,
         TESS_CONTROL = 0x02,
         TESS_EVAL = 0x04,
