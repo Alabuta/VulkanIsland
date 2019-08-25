@@ -259,12 +259,14 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
         VkDescriptorBufferInfo{app.perObjectBuffer->handle(), 0, sizeof(per_object_t)}
     };
 
+#if TEMPORARILY_DISABLED
     // TODO: descriptor info typed by VkDescriptorType.
     auto const images = std::array{
         VkDescriptorImageInfo{app.texture.sampler->handle(), app.texture.view.handle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}
     };
+#endif
 
-    std::array<VkWriteDescriptorSet, 3> const writeDescriptorsSet{{
+    std::array<VkWriteDescriptorSet, 2> const writeDescriptorsSet{{
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,
@@ -281,23 +283,25 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
             nullptr,
             descriptorSet,
             1,
-            0, static_cast<std::uint32_t>(std::size(images)),
-            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            std::data(images),
-            nullptr,
-            nullptr
-        },
-        {
-            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
-            nullptr,
-            descriptorSet,
-            2,
             0, static_cast<std::uint32_t>(std::size(objects)),
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
             nullptr,
             std::data(objects),
             nullptr
         },
+#if TEMPORARILY_DISABLED
+        {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            nullptr,
+            descriptorSet,
+            2,
+            0, static_cast<std::uint32_t>(std::size(images)),
+            VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            std::data(images),
+            nullptr,
+            nullptr
+        }
+#endif
     }};
 
     // WARN:: remember about potential race condition with the related executing command buffer
@@ -768,8 +772,10 @@ void InitVulkan(Window &window, app_t &app)
 
     else app.renderPass = std::move(renderPass.value());
 
+#if TEMPORARILY_DISABLED
     if (auto result = glTF::load(sceneName, app.scene, app.nodeSystem); !result)
         throw std::runtime_error("failed to load a mesh"s);
+#endif
 
     if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); !pipelineLayout)
         throw std::runtime_error("failed to create the pipeline layout"s);
@@ -784,6 +790,7 @@ void InitVulkan(Window &window, app_t &app)
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
+#if TEMPORARILY_DISABLED
     // "chalet/textures/chalet.tga"sv
     // "Hebe/textures/HebehebemissinSG1_metallicRoughness.tga"sv
     if (auto result = LoadTexture(app, *app.vulkanDevice, "sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
@@ -795,6 +802,7 @@ void InitVulkan(Window &window, app_t &app)
         throw std::runtime_error("failed to create a texture sampler"s);
 
     else app.texture.sampler = result;
+#endif
 
     auto alignment = static_cast<std::size_t>(app.vulkanDevice->properties().limits.minStorageBufferOffsetAlignment);
 
