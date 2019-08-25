@@ -96,7 +96,7 @@ namespace graphics
     };
 
     struct attachment_description final {
-        graphics::FORMAT view_format;
+        graphics::FORMAT format;
         std::uint32_t samples_count{1};
 
         graphics::ATTACHMENT_LOAD_TREATMENT load_op;

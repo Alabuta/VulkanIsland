@@ -54,6 +54,7 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
 
     VkSubpassDependency constexpr subpassDependency{
         VK_SUBPASS_EXTERNAL, 0,
+        // .srcStageMask needs to be a part of pWaitDstStageMask in the WSI semaphore.
         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
         0, VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
         0

@@ -15,6 +15,7 @@
 #include <execution>
 #endif
 
+#include <fmt/format.h>
 #include <boost/align/aligned_alloc.hpp>
 
 #include "main.hxx"
@@ -325,7 +326,7 @@ void CreateFramebuffers(VulkanDevice const &device, VkRenderPass renderPass, Vul
         VkFramebuffer framebuffer;
 
         if (auto result = vkCreateFramebuffer(device.handle(), &createInfo, nullptr, &framebuffer); result != VK_SUCCESS)
-            throw std::runtime_error("failed to create a framebuffer: "s + std::to_string(result));
+            throw std::runtime_error(fmt::format("failed to create a framebuffer: {0:#x}\n"s, result));
 
         return framebuffer;
     });
@@ -356,7 +357,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
     };
 
     if (auto result = vkAllocateCommandBuffers(app.vulkanDevice->handle(), &allocateInfo, std::data(app.commandBuffers)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create allocate command buffers: "s + std::to_string(result));
+        throw std::runtime_error(fmt::format("failed to create allocate command buffers: {0:#x}\n"s, result));
 
     auto &&resourceManager = app.vulkanDevice->resourceManager();
     auto &&vertexBuffers = resourceManager.vertexBuffers();
@@ -414,7 +415,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
         };
 
         if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
-            throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
+            throw std::runtime_error(fmt::format("failed to record command buffer: {0:#x}\n"s, result));
 
         VkRenderPassBeginInfo const renderPassInfo{
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
@@ -470,7 +471,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
         vkCmdEndRenderPass(commandBuffer);
 
         if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS)
-            throw std::runtime_error("failed to end command buffer: "s + std::to_string(result));
+            throw std::runtime_error(fmt::format("failed to end command buffer: {0:#x}\n"s, result));
     }
 }
 
@@ -746,7 +747,7 @@ void InitVulkan(Window &window, app_t &app)
     vkCreateWin32SurfaceKHR(app.vulkanInstance->handle(), &win32CreateInfo, nullptr, &app.surface);
 #else
     if (auto result = glfwCreateWindowSurface(app.vulkanInstance->handle(), window.handle(), nullptr, &app.surface); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create window surface: "s + std::to_string(result));
+        throw std::runtime_error(fmt::format("failed to create window surface: {0:#x}\n"s, result));
 #endif
 
     QueuePool<
@@ -836,7 +837,7 @@ void InitVulkan(Window &window, app_t &app)
         auto size = buffer.memory()->size();
 
         if (auto result = vkMapMemory(app.vulkanDevice->handle(), buffer.memory()->handle(), offset, size, 0, &app.perObjectsMappedPtr); result != VK_SUCCESS)
-            throw std::runtime_error("failed to map per object uniform buffer memory: "s + std::to_string(result));
+            throw std::runtime_error(fmt::format("failed to map per object uniform buffer memory: {0:#x}\n"s, result));
     }
 
     else throw std::runtime_error("failed to init per object uniform buffer"s);
@@ -877,7 +878,7 @@ void Update(app_t &app)
         void *data;
 
         if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
-            throw std::runtime_error("failed to map per camera uniform buffer memory: "s + std::to_string(result));
+            throw std::runtime_error(fmt::format("failed to map per camera uniform buffer memory: {0:#x}\n"s, result));
 
         std::uninitialized_copy_n(&app.camera->data, 1, reinterpret_cast<Camera::data_t *>(data));
 
@@ -928,8 +929,8 @@ void DrawFrame(app_t &app)
 
     std::uint32_t imageIndex;
 
-    switch (auto result = vkAcquireNextImageKHR(vulkanDevice.handle(), app.swapchain.handle,
-            std::numeric_limits<std::uint64_t>::max(),app.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex); result) {
+    switch (auto result = vkAcquireNextImageKHR(vulkanDevice.handle(), app.swapchain.handle, std::numeric_limits<std::uint64_t>::max(),
+            app.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex); result) {
         case VK_ERROR_OUT_OF_DATE_KHR:
             RecreateSwapChain(app);
             return;
@@ -939,7 +940,7 @@ void DrawFrame(app_t &app)
             break;
 
         default:
-            throw std::runtime_error("failed to acquire next image index: "s + std::to_string(result));
+            throw std::runtime_error(fmt::format("failed to acquire next image index: {0:#x}\n"s, result));
     }
 
     auto const waitSemaphores = std::array{app.imageAvailableSemaphore};
@@ -959,7 +960,7 @@ void DrawFrame(app_t &app)
     };
 
     if (auto result = vkQueueSubmit(app.graphicsQueue.handle(), 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS)
-        throw std::runtime_error("failed to submit draw command buffer: "s + std::to_string(result));
+        throw std::runtime_error(fmt::format("failed to submit draw command buffer: {0:#x}\n"s, result));
 
     VkPresentInfoKHR const presentInfo{
         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -979,7 +980,7 @@ void DrawFrame(app_t &app)
             break;
 
         default:
-            throw std::runtime_error("failed to submit request to present framebuffer: "s + std::to_string(result));
+            throw std::runtime_error(fmt::format("failed to submit request to present framebuffer: {0:#x}\n"s, result));
     }
 }
 
