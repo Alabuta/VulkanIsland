@@ -288,6 +288,9 @@ namespace convert_to
             case graphics::IMAGE_LAYOUT::DEPTH_ATTACHMENT_STENCIL_READ_ONLY:
                 return VkImageLayout::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL;
 
+            case graphics::IMAGE_LAYOUT::PRESENT_SOURCE:
+                return VkImageLayout::VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
             default:
                 return VkImageLayout::VK_IMAGE_LAYOUT_MAX_ENUM;
         }
