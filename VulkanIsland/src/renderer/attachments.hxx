@@ -2,6 +2,7 @@
 
 #include <array>
 #include <vector>
+#include <variant>
 
 #include "graphics.hxx"
 
@@ -91,9 +92,15 @@ struct ColorBlendState final {
 
 namespace graphics
 {
-    struct render_pass_attachment final {
-        ;
+    struct color_attachment final {
+        graphics::FORMAT format;
     };
+
+    struct depth_stencil_attachment final {
+        graphics::FORMAT format;
+    };
+
+    using attachment = std::variant<graphics::color_attachment, graphics::depth_stencil_attachment>;
 
     struct attachment_description final {
         graphics::FORMAT format;
