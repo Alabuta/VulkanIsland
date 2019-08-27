@@ -7,6 +7,7 @@ using namespace std::string_view_literals;
 #include <boost/uuid/name_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
+#include "graphics_api.hxx"
 #include "material.hxx"
 #include "shader_program.hxx"
 #include "loaders/material_loader.hxx"
@@ -14,89 +15,6 @@ using namespace std::string_view_literals;
 
 namespace
 {
-VkCullModeFlags constexpr ConvertToGAPI(CULL_MODE cullMode) noexcept
-{
-    switch (cullMode) {
-        case CULL_MODE::NONE:
-            return VkCullModeFlagBits::VK_CULL_MODE_NONE;
-
-        case CULL_MODE::FRONT:
-            return VkCullModeFlagBits::VK_CULL_MODE_FRONT_BIT;
-
-        case CULL_MODE::BACK:
-            return VkCullModeFlagBits::VK_CULL_MODE_BACK_BIT;
-
-        case CULL_MODE::FRONT_AND_BACK:
-            return VkCullModeFlagBits::VK_CULL_MODE_FRONT_AND_BACK;
-
-        default:
-            return VkCullModeFlagBits::VK_CULL_MODE_NONE;
-    }
-}
-
-VkPolygonMode constexpr ConvertToGAPI(POLYGON_MODE polygonMode) noexcept
-{
-    switch (polygonMode) {
-        case POLYGON_MODE::FILL:
-            return VkPolygonMode::VK_POLYGON_MODE_FILL;
-
-        case POLYGON_MODE::LINE:
-            return VkPolygonMode::VK_POLYGON_MODE_LINE;
-
-        case POLYGON_MODE::POINT:
-            return VkPolygonMode::VK_POLYGON_MODE_POINT;
-
-        default:
-            return VkPolygonMode::VK_POLYGON_MODE_FILL;
-    }
-}
-
-VkFrontFace constexpr ConvertToGAPI(POLYGON_FRONT_FACE frontFace) noexcept
-{
-    switch (frontFace) {
-        case POLYGON_FRONT_FACE::COUNTER_CLOCKWISE:
-            return VkFrontFace::VK_FRONT_FACE_COUNTER_CLOCKWISE;
-
-        case POLYGON_FRONT_FACE::CLOCKWISE:
-            return VkFrontFace::VK_FRONT_FACE_CLOCKWISE;
-
-        default:
-            return VkFrontFace::VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    }
-}
-
-VkCompareOp constexpr ConvertToGAPI(COMPARE_OPERATION compareOperation) noexcept
-{
-    switch (compareOperation) {
-        case COMPARE_OPERATION::NEVER:
-            return VkCompareOp::VK_COMPARE_OP_NEVER;
-
-        case COMPARE_OPERATION::LESS:
-            return VkCompareOp::VK_COMPARE_OP_LESS;
-
-        case COMPARE_OPERATION::EQUAL:
-            return VkCompareOp::VK_COMPARE_OP_EQUAL;
-
-        case COMPARE_OPERATION::LESS_OR_EQUAL:
-            return VkCompareOp::VK_COMPARE_OP_LESS_OR_EQUAL;
-
-        case COMPARE_OPERATION::GREATER:
-            return VkCompareOp::VK_COMPARE_OP_GREATER;
-
-        case COMPARE_OPERATION::NOT_EQUAL:
-            return VkCompareOp::VK_COMPARE_OP_NOT_EQUAL;
-
-        case COMPARE_OPERATION::GREATER_OR_EQUAL:
-            return VkCompareOp::VK_COMPARE_OP_GREATER_OR_EQUAL;
-
-        case COMPARE_OPERATION::ALWAYS:
-            return VkCompareOp::VK_COMPARE_OP_ALWAYS;
-
-        default:
-            return VkCompareOp::VK_COMPARE_OP_NEVER;
-    }
-}
-
 VkBlendFactor constexpr ConvertToGAPI(BLEND_FACTOR blendFactor) noexcept
 {
     switch (blendFactor) {
@@ -313,9 +231,9 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material> material)
         nullptr, 0,
         VK_TRUE,
         VK_FALSE,
-        ConvertToGAPI(material->rasterizationState.polygonMode),
-        ConvertToGAPI(material->rasterizationState.cullMode),
-        ConvertToGAPI(material->rasterizationState.frontFace),
+        convert_to::vulkan(material->rasterizationState.polygonMode),
+        convert_to::vulkan(material->rasterizationState.cullMode),
+        convert_to::vulkan(material->rasterizationState.frontFace),
         VK_FALSE,
         0.f, 0.f, 0.f,
         material->rasterizationState.lineWidth
@@ -324,18 +242,18 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material> material)
     properties.depthStencilState = VkPipelineDepthStencilStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         nullptr, 0,
-        VkBool32(material->depthStencilState.depthTestEnable),
-        VkBool32(material->depthStencilState.depthWriteEnable),
-        ConvertToGAPI(material->depthStencilState.depthCompareOperation),//kREVERSED_DEPTH ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_LESS,
+        convert_to::vulkan(material->depthStencilState.depthTestEnable),
+        convert_to::vulkan(material->depthStencilState.depthWriteEnable),
+        convert_to::vulkan(material->depthStencilState.depthCompareOperation),//kREVERSED_DEPTH ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_LESS,
         VK_FALSE,
-        VkBool32(material->depthStencilState.stencilTestEnable),
+        convert_to::vulkan(material->depthStencilState.stencilTestEnable),
         VkStencilOpState{}, VkStencilOpState{},
         0, 1
     };
 
     for (auto &&attachment : material->colorBlendState.attachments) {
         properties.colorBlendAttachmentStates.push_back(VkPipelineColorBlendAttachmentState{
-            VkBool32(attachment.blendEnable),
+            convert_to::vulkan(attachment.blendEnable),
             ConvertToGAPI(attachment.srcColorBlendFactor),
             ConvertToGAPI(attachment.dstColorBlendFactor),
 

@@ -8,6 +8,8 @@ namespace convert_to
 {
     struct vulkan_api final {
 
+        VkBool32 operator() (bool boolean) const noexcept;
+
         VkPrimitiveTopology operator() (graphics::PRIMITIVE_TOPOLOGY topology) const noexcept;
 
         VkShaderStageFlagBits operator() (graphics::SHADER_STAGE shader_stage) const noexcept;

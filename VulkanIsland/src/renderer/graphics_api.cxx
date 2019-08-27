@@ -3,6 +3,11 @@
 
 namespace convert_to
 {
+    VkBool32 vulkan_api::operator() (bool boolean) const noexcept
+    {
+        return static_cast<VkBool32>(boolean);
+    }
+
     VkPrimitiveTopology vulkan_api::operator() (graphics::PRIMITIVE_TOPOLOGY topology) const noexcept
     {
         switch (topology) {

@@ -7,6 +7,7 @@
 #include "device/device.hxx"
 #include "resources/resource.hxx"
 
+#include "graphics.hxx"
 #include "graphics_pipeline.hxx"
 #include "attachments.hxx"
 #include "loaders/material_loader.hxx"
@@ -14,44 +15,20 @@
 
 
 
-enum class CULL_MODE {
-    NONE, FRONT, BACK, FRONT_AND_BACK = FRONT | BACK
-};
-
-enum class POLYGON_FRONT_FACE {
-    COUNTER_CLOCKWISE, CLOCKWISE
-};
-
-enum class POLYGON_MODE {
-    FILL, LINE, POINT
-};
-
-
 struct RasterizationState final {
-    CULL_MODE cullMode{CULL_MODE::BACK};
-    POLYGON_FRONT_FACE frontFace{POLYGON_FRONT_FACE::COUNTER_CLOCKWISE};
-    POLYGON_MODE polygonMode{POLYGON_MODE::FILL};
+    graphics::CULL_MODE cullMode{graphics::CULL_MODE::BACK};
+    graphics::POLYGON_FRONT_FACE frontFace{graphics::POLYGON_FRONT_FACE::COUNTER_CLOCKWISE};
+    graphics::POLYGON_MODE polygonMode{graphics::POLYGON_MODE::FILL};
 
     float lineWidth{1.f};
 };
 
 
-enum class COMPARE_OPERATION {
-    NEVER,
-    LESS,
-    EQUAL,
-    LESS_OR_EQUAL,
-    GREATER,
-    NOT_EQUAL,
-    GREATER_OR_EQUAL,
-    ALWAYS
-};
-
 struct DepthStencilState final {
     bool depthTestEnable{true};
     bool depthWriteEnable{true};
 
-    COMPARE_OPERATION depthCompareOperation{COMPARE_OPERATION::GREATER};
+    graphics::COMPARE_OPERATION depthCompareOperation{graphics::COMPARE_OPERATION::GREATER};
 
     bool stencilTestEnable{false};
 };
