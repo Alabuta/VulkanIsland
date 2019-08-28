@@ -8,6 +8,7 @@
 #include "main.hxx"
 #include "device/device.hxx"
 #include "resources/resource.hxx"
+#include "renderer/graphics.hxx"
 
 
 namespace shader
@@ -77,7 +78,7 @@ private:
 
 
 struct ShaderStage final {
-    shader::STAGE semantic;
+    graphics::SHADER_STAGE semantic;
 
     std::string moduleName;
     std::string entryPoint;

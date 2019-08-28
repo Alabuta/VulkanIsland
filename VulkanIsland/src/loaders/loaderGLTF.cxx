@@ -21,6 +21,7 @@ namespace fs = std::filesystem;
 #include "staging.hxx"
 #include "loaders/loaderGLTF.hxx"
 #include "sceneTree.hxx"
+#include "renderer/graphics.hxx"
 
 namespace glTF
 {
@@ -79,26 +80,26 @@ std::optional<semantics_t> get_semantic(std::string_view name)
 
 namespace glTF
 {
-std::optional<PRIMITIVE_TOPOLOGY> constexpr get_primitive_topology(glTF::PRIMITIVE_MODE mode)
+std::optional<graphics::PRIMITIVE_TOPOLOGY> constexpr get_primitive_topology(glTF::PRIMITIVE_MODE mode)
 {
     switch (mode) {
         case  glTF::PRIMITIVE_MODE::POINTS:
-            return PRIMITIVE_TOPOLOGY::POINTS;
+            return graphics::PRIMITIVE_TOPOLOGY::POINTS;
 
         case  glTF::PRIMITIVE_MODE::LINES:
-            return PRIMITIVE_TOPOLOGY::LINES;
+            return graphics::PRIMITIVE_TOPOLOGY::LINES;
 
         case  glTF::PRIMITIVE_MODE::LINE_STRIP:
-            return PRIMITIVE_TOPOLOGY::LINE_STRIP;
+            return graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP;
 
         case  glTF::PRIMITIVE_MODE::TRIANGLES:
-            return PRIMITIVE_TOPOLOGY::TRIANGLES;
+            return graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
         case  glTF::PRIMITIVE_MODE::TRIANGLE_STRIP:
-            return PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
+            return graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
 
         case  glTF::PRIMITIVE_MODE::TRIANGLE_FAN:
-            return PRIMITIVE_TOPOLOGY::TRIANGLE_FAN;
+            return graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_FAN;
 
         default:
             return { };

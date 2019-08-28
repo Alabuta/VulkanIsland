@@ -40,13 +40,13 @@ public:
         vulkanDevice_{vulkanDevice}, materialFactory_{materialFactory}, pipelineVertexInputStatesManager_{pipelineVertexInputStatesManager} { }
 
     [[nodiscard]] std::shared_ptr<GraphicsPipeline>
-    CreateGraphicsPipeline(xformat::vertex_layout const &layout, std::shared_ptr<Material> material, PRIMITIVE_TOPOLOGY topology,
+    CreateGraphicsPipeline(xformat::vertex_layout const &layout, std::shared_ptr<Material> material, graphics::PRIMITIVE_TOPOLOGY topology,
                            VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkExtent2D extent);
 
     auto const &graphicsPipelines() const noexcept { return graphicsPipelineProperties_; }
 
     struct GraphicsPipelinePropertiesKey final {
-        PRIMITIVE_TOPOLOGY topology_;
+        graphics::PRIMITIVE_TOPOLOGY topology_;
         xformat::vertex_layout layout_;
         std::shared_ptr<Material> material_;
 

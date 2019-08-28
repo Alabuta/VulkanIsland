@@ -13,125 +13,6 @@ using namespace std::string_view_literals;
 #include "loaders/material_loader.hxx"
 
 
-namespace
-{
-VkBlendFactor constexpr ConvertToGAPI(BLEND_FACTOR blendFactor) noexcept
-{
-    switch (blendFactor) {
-        case BLEND_FACTOR::ZERO:
-            return VkBlendFactor::VK_BLEND_FACTOR_ZERO;
-
-        case BLEND_FACTOR::ONE:
-            return VkBlendFactor::VK_BLEND_FACTOR_ONE;
-
-        case BLEND_FACTOR::SRC_COLOR:
-            return VkBlendFactor::VK_BLEND_FACTOR_SRC_COLOR;
-
-        case BLEND_FACTOR::ONE_MINUS_SRC_COLOR:
-            return VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR;
-
-        case BLEND_FACTOR::DST_COLOR:
-            return VkBlendFactor::VK_BLEND_FACTOR_DST_COLOR;
-
-        case BLEND_FACTOR::ONE_MINUS_DST_COLOR:
-            return VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR;
-
-        case BLEND_FACTOR::SRC_ALPHA:
-            return VkBlendFactor::VK_BLEND_FACTOR_SRC_ALPHA;
-
-        case BLEND_FACTOR::ONE_MINUS_SRC_ALPHA:
-            return VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA;
-
-        case BLEND_FACTOR::DST_ALPHA:
-            return VkBlendFactor::VK_BLEND_FACTOR_DST_ALPHA;
-
-        case BLEND_FACTOR::ONE_MINUS_DST_ALPHA:
-            return VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA;
-
-        case BLEND_FACTOR::CONSTANT_COLOR:
-            return VkBlendFactor::VK_BLEND_FACTOR_CONSTANT_COLOR;
-
-        case BLEND_FACTOR::ONE_MINUS_CONSTANT_COLOR:
-            return VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR;
-
-        case BLEND_FACTOR::CONSTANT_ALPHA:
-            return VkBlendFactor::VK_BLEND_FACTOR_CONSTANT_ALPHA;
-
-        case BLEND_FACTOR::ONE_MINUS_CONSTANT_ALPHA:
-            return VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA;
-
-        case BLEND_FACTOR::SRC_ALPHA_SATURATE:
-            return VkBlendFactor::VK_BLEND_FACTOR_SRC_ALPHA_SATURATE;
-
-        case BLEND_FACTOR::SRC1_COLOR:
-            return VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
-
-        case BLEND_FACTOR::ONE_MINUS_SRC1_COLOR:
-            return VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR;
-
-        case BLEND_FACTOR::SRC1_ALPHA:
-            return VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
-
-        case BLEND_FACTOR::ONE_MINUS_SRC1_ALPHA:
-            return VkBlendFactor::VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
-
-        default:
-            return VkBlendFactor::VK_BLEND_FACTOR_ZERO;
-
-    }
-}
-
-VkBlendOp constexpr ConvertToGAPI(BLEND_OPERATION blendOperation) noexcept
-{
-    switch (blendOperation) {
-        case BLEND_OPERATION::ADD:
-            return VkBlendOp::VK_BLEND_OP_ADD;
-
-        case BLEND_OPERATION::SUBTRACT:
-            return VkBlendOp::VK_BLEND_OP_SUBTRACT;
-
-        default:
-            return VkBlendOp::VK_BLEND_OP_ADD;
-    }
-}
-
-VkColorComponentFlags constexpr ConvertToGAPI(COLOR_COMPONENT colorComponent) noexcept
-{
-    switch (colorComponent) {
-        case COLOR_COMPONENT::R:
-            return VkColorComponentFlagBits::VK_COLOR_COMPONENT_R_BIT;
-
-        case COLOR_COMPONENT::G:
-            return VkColorComponentFlagBits::VK_COLOR_COMPONENT_G_BIT;
-
-        case COLOR_COMPONENT::B:
-            return VkColorComponentFlagBits::VK_COLOR_COMPONENT_B_BIT;
-
-        case COLOR_COMPONENT::A:
-            return VkColorComponentFlagBits::VK_COLOR_COMPONENT_A_BIT;
-
-        case COLOR_COMPONENT::RGB:
-            return
-                VkColorComponentFlagBits::VK_COLOR_COMPONENT_R_BIT |
-                VkColorComponentFlagBits::VK_COLOR_COMPONENT_G_BIT |
-                VkColorComponentFlagBits::VK_COLOR_COMPONENT_B_BIT;
-
-        case COLOR_COMPONENT::RGBA:
-            return
-                VkColorComponentFlagBits::VK_COLOR_COMPONENT_R_BIT |
-                VkColorComponentFlagBits::VK_COLOR_COMPONENT_G_BIT |
-                VkColorComponentFlagBits::VK_COLOR_COMPONENT_B_BIT |
-                VkColorComponentFlagBits::VK_COLOR_COMPONENT_A_BIT;
-
-        default:
-            return
-                VkColorComponentFlagBits::VK_COLOR_COMPONENT_R_BIT |
-                VkColorComponentFlagBits::VK_COLOR_COMPONENT_G_BIT |
-                VkColorComponentFlagBits::VK_COLOR_COMPONENT_B_BIT |
-                VkColorComponentFlagBits::VK_COLOR_COMPONENT_A_BIT;
-    }
-}
-}
 
 namespace
 {
@@ -141,8 +22,8 @@ public:
     [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
-            ShaderStage{shader::STAGE::VERTEX, R"(test/shader.vert)"s, "main"s, std::vector<std::int32_t>{1}},
-            ShaderStage{shader::STAGE::FRAGMENT, R"(test/shader.frag)"s, "main"s}
+            ShaderStage{graphics::SHADER_STAGE::VERTEX, R"(test/shader.vert)"s, "main"s, std::vector<std::int32_t>{1}},
+            ShaderStage{graphics::SHADER_STAGE::FRAGMENT, R"(test/shader.frag)"s, "main"s}
 
         };
 
@@ -156,8 +37,8 @@ public:
     [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
-            ShaderStage{shader::STAGE::VERTEX, R"(test/shader.vert)"s, "main"s, std::vector<std::int32_t>{0}},
-            ShaderStage{shader::STAGE::FRAGMENT, R"(test/shader.frag)"s, "main"s}
+            ShaderStage{graphics::SHADER_STAGE::VERTEX, R"(test/shader.vert)"s, "main"s, std::vector<std::int32_t>{0}},
+            ShaderStage{graphics::SHADER_STAGE::FRAGMENT, R"(test/shader.frag)"s, "main"s}
         };
 
         return shaderStages;
@@ -170,8 +51,8 @@ public:
     [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
-            ShaderStage{shader::STAGE::VERTEX, R"(test/shader.vert)"s, "main"s, std::vector<std::int32_t>{2}},
-            ShaderStage{shader::STAGE::FRAGMENT, R"(test/shader.frag)"s, "main"s}
+            ShaderStage{graphics::SHADER_STAGE::VERTEX, R"(test/shader.vert)"s, "main"s, std::vector<std::int32_t>{2}},
+            ShaderStage{graphics::SHADER_STAGE::FRAGMENT, R"(test/shader.frag)"s, "main"s}
         };
 
         return shaderStages;
@@ -184,8 +65,8 @@ public:
     [[nodiscard]] std::vector<ShaderStage> const &shaderStages() const override
     {
         thread_local static std::vector<ShaderStage> shaderStages{
-            ShaderStage{shader::STAGE::VERTEX, R"(shader.vert)"s, "main"s},
-            ShaderStage{shader::STAGE::FRAGMENT, R"(shader.frag)"s, "main"s}
+            ShaderStage{graphics::SHADER_STAGE::VERTEX, R"(shader.vert)"s, "main"s},
+            ShaderStage{graphics::SHADER_STAGE::FRAGMENT, R"(shader.frag)"s, "main"s}
         };
 
         return shaderStages;
@@ -254,17 +135,17 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material> material)
     for (auto &&attachment : material->colorBlendState.attachments) {
         properties.colorBlendAttachmentStates.push_back(VkPipelineColorBlendAttachmentState{
             convert_to::vulkan(attachment.blendEnable),
-            ConvertToGAPI(attachment.srcColorBlendFactor),
-            ConvertToGAPI(attachment.dstColorBlendFactor),
+            convert_to::vulkan(attachment.srcColorBlendFactor),
+            convert_to::vulkan(attachment.dstColorBlendFactor),
 
-            ConvertToGAPI(attachment.colorBlendOperation),
+            convert_to::vulkan(attachment.colorBlendOperation),
 
-            ConvertToGAPI(attachment.srcAlphaBlendFactor),
-            ConvertToGAPI(attachment.dstAlphaBlendFactor),
+            convert_to::vulkan(attachment.srcAlphaBlendFactor),
+            convert_to::vulkan(attachment.dstAlphaBlendFactor),
 
-            ConvertToGAPI(attachment.alphaBlendOperation),
+            convert_to::vulkan(attachment.alphaBlendOperation),
 
-            ConvertToGAPI(attachment.colorWriteMask)
+            convert_to::vulkan(attachment.colorWriteMask)
         });
     }
 
@@ -303,13 +184,13 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial(std::string_view type)
 
     material->colorBlendState.attachments.push_back(ColorBlendAttachmentState{
         false,
-        BLEND_FACTOR::ONE,
-        BLEND_FACTOR::ZERO,
-        BLEND_OPERATION::ADD,
-        BLEND_FACTOR::ONE,
-        BLEND_FACTOR::ZERO,
-        BLEND_OPERATION::ADD,
-        COLOR_COMPONENT::RGBA
+        graphics::BLEND_FACTOR::ONE,
+        graphics::BLEND_FACTOR::ZERO,
+        graphics::BLEND_OPERATION::ADD,
+        graphics::BLEND_FACTOR::ONE,
+        graphics::BLEND_FACTOR::ZERO,
+        graphics::BLEND_OPERATION::ADD,
+        graphics::COLOR_COMPONENT::RGBA
     });
 
     InitMaterialProperties(material);

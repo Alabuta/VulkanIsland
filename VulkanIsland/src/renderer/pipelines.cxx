@@ -4,41 +4,12 @@
 
 #include <boost/functional/hash_fwd.hpp>
 
+#include "graphics_api.hxx"
 #include "pipelines.hxx"
 
 
-namespace
-{
-VkPrimitiveTopology constexpr ConvertToGAPI(PRIMITIVE_TOPOLOGY topology) noexcept
-{
-    switch (topology) {
-        case PRIMITIVE_TOPOLOGY::POINTS:
-            return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-
-        case PRIMITIVE_TOPOLOGY::LINES:
-            return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-
-        case PRIMITIVE_TOPOLOGY::LINE_STRIP:
-            return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
-
-        case PRIMITIVE_TOPOLOGY::TRIANGLES:
-            return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-
-        case PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-            return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-
-        case PRIMITIVE_TOPOLOGY::TRIANGLE_FAN:
-            return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
-
-        default:
-            return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
-    }
-}
-}
-
-
 std::shared_ptr<GraphicsPipeline>
-GraphicsPipelineManager::CreateGraphicsPipeline(xformat::vertex_layout const &layout, std::shared_ptr<Material> material, PRIMITIVE_TOPOLOGY topology,
+GraphicsPipelineManager::CreateGraphicsPipeline(xformat::vertex_layout const &layout, std::shared_ptr<Material> material, graphics::PRIMITIVE_TOPOLOGY topology,
                                                 VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkExtent2D extent)
 {
     auto viewportExtent = std::array{static_cast<float>(extent.width), static_cast<float>(extent.height)};
@@ -63,7 +34,7 @@ GraphicsPipelineManager::CreateGraphicsPipeline(xformat::vertex_layout const &la
         VkPipelineInputAssemblyStateCreateInfo const vertexAssemblyStateCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
             nullptr, 0,
-            ConvertToGAPI(topology),
+            convert_to::vulkan(topology),
             VK_FALSE
         };
 

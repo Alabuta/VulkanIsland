@@ -6,37 +6,7 @@
 #include "loaders/SPIRV_loader.hxx"
 #include "program.hxx"
 #include "renderer/material.hxx"
-
-
-
-namespace
-{
-VkShaderStageFlagBits constexpr ConvertToGAPI(shader::STAGE stage) noexcept
-{
-    switch (stage) {
-        case shader::STAGE::VERTEX:
-            return VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
-
-        case shader::STAGE::TESS_CONTROL:
-            return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
-
-        case shader::STAGE::TESS_EVAL:
-            return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
-
-        case shader::STAGE::GEOMETRY:
-            return VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT;
-
-        case shader::STAGE::FRAGMENT:
-            return VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
-
-        case shader::STAGE::COMPUTE:
-            return VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT;
-
-        default:
-            return VkShaderStageFlagBits::VK_SHADER_STAGE_ALL;
-    }
-}
-}
+#include "renderer/graphics_api.hxx"
 
 
 void ShaderManager::CreateShaderPrograms(Material const *const material)
@@ -92,7 +62,7 @@ void ShaderManager::CreateShaderPrograms(Material const *const material)
                 shaderStagePrograms_.emplace(shaderStage, VkPipelineShaderStageCreateInfo{
                     VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                     nullptr, 0,
-                    ConvertToGAPI(shaderStage.semantic),
+                    convert_to::vulkan(shaderStage.semantic),
                     shaderModule->handle(),
                     shaderStage.entryPoint.c_str(),
                     &specializationInfo
@@ -103,7 +73,7 @@ void ShaderManager::CreateShaderPrograms(Material const *const material)
                 shaderStagePrograms_.emplace(shaderStage, VkPipelineShaderStageCreateInfo{
                     VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                     nullptr, 0,
-                    ConvertToGAPI(shaderStage.semantic),
+                    convert_to::vulkan(shaderStage.semantic),
                     shaderModule->handle(),
                     shaderStage.entryPoint.c_str(),
                     nullptr

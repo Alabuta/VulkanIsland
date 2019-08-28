@@ -15,13 +15,9 @@ namespace ex = entityx;
 #include "math.hxx"
 
 #include "vertexFormat.hxx"
+#include "renderer/graphics.hxx"
 
 
-enum class PRIMITIVE_TOPOLOGY {
-    POINTS = 0,
-    LINES, LINE_STRIP,
-    TRIANGLES, TRIANGLE_STRIP, TRIANGLE_FAN
-};
 
 namespace staging
 {
@@ -93,7 +89,7 @@ namespace staging
     };
 
     struct submesh_t final {
-        PRIMITIVE_TOPOLOGY topology;
+        graphics::PRIMITIVE_TOPOLOGY topology;
 
         vertices_t  vertices;
         indices_t indices;
@@ -285,7 +281,7 @@ struct xformat final {
     std::vector<material> materials;
 
     struct non_indexed_meshlet final {
-        PRIMITIVE_TOPOLOGY topology;
+        graphics::PRIMITIVE_TOPOLOGY topology;
 
         std::size_t vertexBufferIndex;
 
@@ -300,7 +296,7 @@ struct xformat final {
     std::vector<non_indexed_meshlet> nonIndexedMeshlets;
 
     struct indexed_meshlet final {
-        PRIMITIVE_TOPOLOGY topology;
+        graphics::PRIMITIVE_TOPOLOGY topology;
 
         std::size_t vertexBufferIndex;
         std::size_t indexBufferIndex;
@@ -374,32 +370,6 @@ struct MeshSytem final : public ex::System<Mesh> {
     }
 };*/
 
-
-auto constexpr get_primitive_topology(PRIMITIVE_TOPOLOGY mode)
-{
-    switch (mode) {
-        case PRIMITIVE_TOPOLOGY::POINTS:
-            return VK_PRIMITIVE_TOPOLOGY_POINT_LIST;
-
-        case PRIMITIVE_TOPOLOGY::LINES:
-            return VK_PRIMITIVE_TOPOLOGY_LINE_LIST;
-
-        case PRIMITIVE_TOPOLOGY::LINE_STRIP:
-            return VK_PRIMITIVE_TOPOLOGY_LINE_STRIP;
-
-        case PRIMITIVE_TOPOLOGY::TRIANGLES:
-            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-
-        case PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
-
-        case PRIMITIVE_TOPOLOGY::TRIANGLE_FAN:
-            return VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
-
-        default:
-            return VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
-    }
-}
 
 template<std::size_t N, class T>
 auto constexpr getFormat([[maybe_unused]] bool normalized = false)
