@@ -380,24 +380,143 @@ namespace convert_to
             case graphics::FORMAT::UNDEFINED:
                 return VkFormat::VK_FORMAT_UNDEFINED;
 
+            // Signed and usigned byte integer formats.
+            case graphics::FORMAT::R8_SNORM:
+                return VkFormat::VK_FORMAT_R8_SNORM;
+
+            case graphics::FORMAT::RG8_SNORM:
+                return VkFormat::VK_FORMAT_R8G8_SNORM;
+
+            case graphics::FORMAT::RGB8_SNORM:
+                return VkFormat::VK_FORMAT_R8G8B8_SNORM;
+
+            case graphics::FORMAT::RGBA8_SNORM:
+                return VkFormat::VK_FORMAT_R8G8B8A8_SNORM;
+
+            case graphics::FORMAT::R8_UNORM:
+                return VkFormat::VK_FORMAT_R8_UNORM;
+
+            case graphics::FORMAT::RG8_UNORM:
+                return VkFormat::VK_FORMAT_R8G8_UNORM;
+
             case graphics::FORMAT::RGB8_UNORM:
                 return VkFormat::VK_FORMAT_R8G8B8_UNORM;
 
             case graphics::FORMAT::RGBA8_UNORM:
                 return VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
 
-            case graphics::FORMAT::B10GR11_UFLOAT_PACK32:
-                return VkFormat::VK_FORMAT_B10G11R11_UFLOAT_PACK32;
+            case graphics::FORMAT::R8_SINT:
+                return VkFormat::VK_FORMAT_R8_SINT;
 
+            case graphics::FORMAT::RG8_SINT:
+                return VkFormat::VK_FORMAT_R8G8_SINT;
+
+            case graphics::FORMAT::RGB8_SINT:
+                return VkFormat::VK_FORMAT_R8G8B8_SINT;
+
+            case graphics::FORMAT::RGBA8_SINT:
+                return VkFormat::VK_FORMAT_R8G8B8A8_SINT;
+
+            case graphics::FORMAT::R8_UINT:
+                return VkFormat::VK_FORMAT_R8_UINT;
+
+            case graphics::FORMAT::RG8_UINT:
+                return VkFormat::VK_FORMAT_R8G8_UINT;
+
+            case graphics::FORMAT::RGB8_UINT:
+                return VkFormat::VK_FORMAT_R8G8B8_UINT;
+
+            case graphics::FORMAT::RGBA8_UINT:
+                return VkFormat::VK_FORMAT_R8G8B8A8_UINT;
+
+            // Signed and unsigned two byte integer formats.
+            case graphics::FORMAT::R16_SNORM:
+                return VkFormat::VK_FORMAT_R16_SNORM;
+
+            case graphics::FORMAT::RG16_SNORM:
+                return VkFormat::VK_FORMAT_R16G16_SNORM;
+
+            case graphics::FORMAT::RGB16_SNORM:
+                return VkFormat::VK_FORMAT_R16G16B16_SNORM;
+
+            case graphics::FORMAT::RGBA16_SNORM:
+                return VkFormat::VK_FORMAT_R16G16B16A16_SNORM;
+
+            case graphics::FORMAT::R16_UNORM:
+                return VkFormat::VK_FORMAT_R16_UNORM;
+
+            case graphics::FORMAT::RG16_UNORM:
+                return VkFormat::VK_FORMAT_R16G16_UNORM;
+
+            case graphics::FORMAT::RGB16_UNORM:
+                return VkFormat::VK_FORMAT_R16G16B16_UNORM;
+
+            case graphics::FORMAT::RGBA16_UNORM:
+                return VkFormat::VK_FORMAT_R16G16B16A16_UNORM;
+
+            case graphics::FORMAT::R16_SINT:
+                return VkFormat::VK_FORMAT_R16_SINT;
+
+            case graphics::FORMAT::RG16_SINT:
+                return VkFormat::VK_FORMAT_R16G16_SINT;
+
+            case graphics::FORMAT::RGB16_SINT:
+                return VkFormat::VK_FORMAT_R16G16B16_SINT;
+
+            case graphics::FORMAT::RGBA16_SINT:
+                return VkFormat::VK_FORMAT_R16G16B16A16_SINT;
+
+            case graphics::FORMAT::R16_UINT:
+                return VkFormat::VK_FORMAT_R16_UINT;
+
+            case graphics::FORMAT::RG16_UINT:
+                return VkFormat::VK_FORMAT_R16G16_UINT;
+
+            case graphics::FORMAT::RGB16_UINT:
+                return VkFormat::VK_FORMAT_R16G16B16_UINT;
+
+            case graphics::FORMAT::RGBA16_UINT:
+                return VkFormat::VK_FORMAT_R16G16B16A16_UINT;
+
+            // Signed and unsigned four byte integer formats.
+            case graphics::FORMAT::R32_SINT:
+                return VkFormat::VK_FORMAT_R32_SINT;
+
+            case graphics::FORMAT::RG32_SINT:
+                return VkFormat::VK_FORMAT_R32G32_SINT;
+
+            case graphics::FORMAT::RGB32_SINT:
+                return VkFormat::VK_FORMAT_R32G32B32_SINT;
+
+            case graphics::FORMAT::RGBA32_SINT:
+                return VkFormat::VK_FORMAT_R32G32B32A32_SINT;
+
+            case graphics::FORMAT::R32_UINT:
+                return VkFormat::VK_FORMAT_R32_UINT;
+
+            case graphics::FORMAT::RG32_UINT:
+                return VkFormat::VK_FORMAT_R32G32_UINT;
+
+            case graphics::FORMAT::RGB32_UINT:
+                return VkFormat::VK_FORMAT_R32G32B32_UINT;
+
+            case graphics::FORMAT::RGBA32_UINT:
+                return VkFormat::VK_FORMAT_R32G32B32A32_UINT;
+
+            // Two byte float formats.
             case graphics::FORMAT::R16_SFLOAT:
                 return VkFormat::VK_FORMAT_R16_SFLOAT;
 
             case graphics::FORMAT::RG16_SFLOAT:
                 return VkFormat::VK_FORMAT_R16G16_SFLOAT;
 
+            case graphics::FORMAT::RGB16_SFLOAT:
+                return VkFormat::VK_FORMAT_R16G16B16_SFLOAT;
+
             case graphics::FORMAT::RGBA16_SFLOAT:
                 return VkFormat::VK_FORMAT_R16G16B16A16_SFLOAT;
 
+            // Four byte float formats.
             case graphics::FORMAT::R32_SFLOAT:
                 return VkFormat::VK_FORMAT_R32_SFLOAT;
 
@@ -410,6 +529,7 @@ namespace convert_to
             case graphics::FORMAT::RGBA32_SFLOAT:
                 return VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT;
 
+            // Depth-stenci formats.
             case graphics::FORMAT::D24_UNORM_S8_UINT:
                 return VkFormat::VK_FORMAT_D24_UNORM_S8_UINT;
 
@@ -418,6 +538,10 @@ namespace convert_to
 
             case graphics::FORMAT::D32_SFLOAT_S8_UINT:
                 return VkFormat::VK_FORMAT_D32_SFLOAT_S8_UINT;
+
+            // Special formats.
+            case graphics::FORMAT::B10GR11_UFLOAT_PACK32:
+                return VkFormat::VK_FORMAT_B10G11R11_UFLOAT_PACK32;
 
             default:
                 return VkFormat::VK_FORMAT_MAX_ENUM;

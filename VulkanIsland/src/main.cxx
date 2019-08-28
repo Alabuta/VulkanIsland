@@ -65,7 +65,7 @@ struct per_object_t final {
 };
 
 struct renderable_t final {
-    PRIMITIVE_TOPOLOGY topology;
+    graphics::PRIMITIVE_TOPOLOGY topology;
 
     std::shared_ptr<Material> material;
     std::shared_ptr<VertexBuffer> vertexBuffer;
@@ -537,7 +537,7 @@ xformat populate()
 
         xformat::non_indexed_meshlet meshlet;
 
-        meshlet.topology = PRIMITIVE_TOPOLOGY::TRIANGLES;
+        meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
         {
             auto const vertexSize = sizeof(vertex);
@@ -623,7 +623,7 @@ xformat populate()
             // Second triangle
             xformat::non_indexed_meshlet meshlet;
 
-            meshlet.topology = PRIMITIVE_TOPOLOGY::TRIANGLES;
+            meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
             meshlet.vertexBufferIndex = vertexLayoutIndex;
             meshlet.vertexCount = static_cast<std::uint32_t>(vertexCountPerMeshlet);
@@ -640,7 +640,7 @@ xformat populate()
             // Third triangle
             xformat::non_indexed_meshlet meshlet;
 
-            meshlet.topology = PRIMITIVE_TOPOLOGY::TRIANGLES;
+            meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
             meshlet.vertexBufferIndex = vertexLayoutIndex;
             meshlet.vertexCount = static_cast<std::uint32_t>(vertexCountPerMeshlet);
