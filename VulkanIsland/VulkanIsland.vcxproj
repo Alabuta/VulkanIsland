@@ -262,6 +262,7 @@
     <ClCompile Include="src\renderer\pipelines.cxx" />
     <ClCompile Include="src\renderer\renderPass.cxx" />
     <ClCompile Include="src\renderer\pipelineVertexInputState.cxx" />
+    <ClCompile Include="src\renderer\render_flow.cxx" />
     <ClCompile Include="src\renderer\render_pass.cxx" />
     <ClCompile Include="src\renderer\shader_program.cxx" />
     <ClCompile Include="src\resources\buffer.cxx" />

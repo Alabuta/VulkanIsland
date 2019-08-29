@@ -42,27 +42,28 @@ private:
 
     VkPipeline handle_;
 
-    std::vector<graphics::shader_stage> shader_stages_;
-
     graphics::PRIMITIVE_TOPOLOGY primitive_topology_;
 
     graphics::vertex_input_state vertex_input_state_;
 
-    graphics::rasterization_state rasterization_state_;
-    graphics::depth_stencil_state depth_stencil_state_;
+    // TODO:: move to material
+        std::vector<graphics::shader_stage> shader_stages_;
 
-    graphics::color_blend_state color_blend_state_;
-    std::vector<graphics::color_blend_attachment_state> color_blend_attachments_;
+        graphics::rasterization_state rasterization_state_;
+        graphics::depth_stencil_state depth_stencil_state_;
+
+        graphics::color_blend_state color_blend_state_;
+        std::vector<graphics::color_blend_attachment_state> color_blend_attachments_;
 
     // TODO:: add tesselation, viewport, multisample and dynamic states.
 
-    // TODO:: replace by an abstraction.
+    // TODO:: replace by an abstraction from material.
     VkPipelineLayout layout_;
 
     VkRenderPass render_pass_;
     std::uint32_t subpass_index;
 
-    friend graphics::hash<pipeline>;
+    friend graphics::hash<graphics::pipeline>;
 };
 }
 
