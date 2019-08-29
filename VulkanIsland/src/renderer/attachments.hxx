@@ -6,33 +6,6 @@
 
 #include "graphics.hxx"
 
-struct ColorBlendAttachmentState final {
-    bool blendEnable{false};
-
-    graphics::BLEND_FACTOR srcColorBlendFactor{graphics::BLEND_FACTOR::ONE};
-    graphics::BLEND_FACTOR dstColorBlendFactor{graphics::BLEND_FACTOR::ZERO};
-
-    graphics::BLEND_OPERATION colorBlendOperation{graphics::BLEND_OPERATION::ADD};
-
-    graphics::BLEND_FACTOR srcAlphaBlendFactor{graphics::BLEND_FACTOR::ONE};
-    graphics::BLEND_FACTOR dstAlphaBlendFactor{graphics::BLEND_FACTOR::ZERO};
-
-    graphics::BLEND_OPERATION alphaBlendOperation{graphics::BLEND_OPERATION::ADD};
-
-    graphics::COLOR_COMPONENT colorWriteMask{graphics::COLOR_COMPONENT::RGBA};
-};
-
-struct ColorBlendState final {
-    bool logicOperationEnable{false};
-
-    graphics::BLEND_STATE_OPERATION logicOperation{graphics::BLEND_STATE_OPERATION::COPY};
-
-    std::array<float, 4> blendConstants{0, 0, 0, 0};
-
-    std::vector<ColorBlendAttachmentState> attachments;
-};
-
-
 
 namespace graphics
 {

@@ -9,6 +9,7 @@
 
 #include "graphics.hxx"
 #include "graphics_pipeline.hxx"
+#include "pipeline_states.hxx"
 #include "attachments.hxx"
 #include "loaders/material_loader.hxx"
 #include "resources/program.hxx"
@@ -53,7 +54,8 @@ public:
 
     RasterizationState rasterizationState;
     DepthStencilState depthStencilState;
-    ColorBlendState colorBlendState;
+    graphics::color_blend_state colorBlendState;
+    std::vector<graphics::color_blend_attachment_state> color_blend_attachments;
 
 
 private:

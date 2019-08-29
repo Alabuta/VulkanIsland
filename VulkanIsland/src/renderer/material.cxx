@@ -132,20 +132,22 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material> material)
         0, 1
     };
 
-    for (auto &&attachment : material->colorBlendState.attachments) {
+    for (auto attachment_index : material->colorBlendState.attachments) {
+        auto &&attachment = material->color_blend_attachments.at(attachment_index);
+
         properties.colorBlendAttachmentStates.push_back(VkPipelineColorBlendAttachmentState{
-            convert_to::vulkan(attachment.blendEnable),
-            convert_to::vulkan(attachment.srcColorBlendFactor),
-            convert_to::vulkan(attachment.dstColorBlendFactor),
+            convert_to::vulkan(attachment.blend_enable),
+            convert_to::vulkan(attachment.src_color_blend_factor),
+            convert_to::vulkan(attachment.dst_color_blend_factor),
 
-            convert_to::vulkan(attachment.colorBlendOperation),
+            convert_to::vulkan(attachment.color_blend_operation),
 
-            convert_to::vulkan(attachment.srcAlphaBlendFactor),
-            convert_to::vulkan(attachment.dstAlphaBlendFactor),
+            convert_to::vulkan(attachment.src_alpha_blend_factor),
+            convert_to::vulkan(attachment.dst_alpha_blend_factor),
 
-            convert_to::vulkan(attachment.alphaBlendOperation),
+            convert_to::vulkan(attachment.alpha_blend_operation),
 
-            convert_to::vulkan(attachment.colorWriteMask)
+            convert_to::vulkan(attachment.color_write_mask)
         });
     }
 
@@ -159,7 +161,7 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material> material)
         {}
     };
 
-    std::copy(std::cbegin(material->colorBlendState.blendConstants), std::cend(material->colorBlendState.blendConstants),
+    std::copy(std::cbegin(material->colorBlendState.blend_constants), std::cend(material->colorBlendState.blend_constants),
               std::begin(properties.colorBlendState.blendConstants));
 }
 
@@ -182,7 +184,7 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial(std::string_view type)
     else if (type == "TestMaterial"s)
         material = std::make_shared<TestMaterial>();
 
-    material->colorBlendState.attachments.push_back(ColorBlendAttachmentState{
+    material->color_blend_attachments.push_back(graphics::color_blend_attachment_state{
         false,
         graphics::BLEND_FACTOR::ONE,
         graphics::BLEND_FACTOR::ZERO,
@@ -192,6 +194,8 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial(std::string_view type)
         graphics::BLEND_OPERATION::ADD,
         graphics::COLOR_COMPONENT::RGBA
     });
+
+    material->colorBlendState.attachments.push_back(0);
 
     InitMaterialProperties(material);
 
