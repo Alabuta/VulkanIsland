@@ -15,26 +15,6 @@
 #include "resources/program.hxx"
 
 
-
-struct RasterizationState final {
-    graphics::CULL_MODE cullMode{graphics::CULL_MODE::BACK};
-    graphics::POLYGON_FRONT_FACE frontFace{graphics::POLYGON_FRONT_FACE::COUNTER_CLOCKWISE};
-    graphics::POLYGON_MODE polygonMode{graphics::POLYGON_MODE::FILL};
-
-    float lineWidth{1.f};
-};
-
-
-struct DepthStencilState final {
-    bool depthTestEnable{true};
-    bool depthWriteEnable{true};
-
-    graphics::COMPARE_OPERATION depthCompareOperation{graphics::COMPARE_OPERATION::GREATER};
-
-    bool stencilTestEnable{false};
-};
-
-
 struct MaterialProperties final {
     VkPipelineRasterizationStateCreateInfo rasterizationState;
 
@@ -44,7 +24,6 @@ struct MaterialProperties final {
     VkPipelineColorBlendStateCreateInfo colorBlendState;
 };
 
-
 class Material {
 public:
 
@@ -52,8 +31,9 @@ public:
 
     [[nodiscard]] virtual std::vector<ShaderStage> const &shaderStages() const = 0;
 
-    RasterizationState rasterizationState;
-    DepthStencilState depthStencilState;
+    graphics::rasterization_state rasterizationState;
+    graphics::depth_stencil_state depthStencilState;
+
     graphics::color_blend_state colorBlendState;
     std::vector<graphics::color_blend_attachment_state> color_blend_attachments;
 

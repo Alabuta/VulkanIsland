@@ -57,9 +57,6 @@ namespace shader
     >;
 }
 
-namespace program
-{ }
-
 class VulkanShaderModule final {
 public:
 
@@ -75,7 +72,6 @@ private:
     VulkanShaderModule(VulkanShaderModule const &) = delete;
     VulkanShaderModule(VulkanShaderModule &&) = delete;
 };
-
 
 struct ShaderStage final {
     graphics::SHADER_STAGE semantic;
@@ -120,61 +116,60 @@ struct ShaderStage final {
 
 namespace program
 {
-struct specialization_constant final {
-    std::uint32_t id;
-    std::variant<std::uint32_t, float> value;
+    struct specialization_constant final {
+        std::uint32_t id;
+        std::variant<std::uint32_t, float> value;
 
-    template<class T, typename std::enable_if_t<std::is_same_v<specialization_constant, std::decay_t<T>>>* = nullptr>
-    auto constexpr operator== (T && constant) const
-    {
-        return value == constant.value && id == constant.id;
-    }
-
-    template<class T, typename std::enable_if_t<std::is_same_v<specialization_constant, std::decay_t<T>>>* = nullptr>
-    auto constexpr operator< (T && constant) const
-    {
-        return id < constant.id;
-    }
-};
-
-struct shader_stage final {
-    shader::STAGE semantic;
-
-    std::string module_name;
-    std::uint32_t techique_index;
-
-    std::set<program::specialization_constant> constants;
-
-    template<class T, typename std::enable_if_t<std::is_same_v<shader_stage, std::decay_t<T>>>* = nullptr>
-    auto constexpr operator== (T &&stage) const
-    {
-        return semantic == stage.semantic &&
-            module_name == stage.module_name &&
-            techique_index == stage.techique_index &&
-            constants == stage.constants;
-    }
-
-    struct hash final {
-        template<class T, typename std::enable_if_t<std::is_same_v<shader_stage, std::decay_t<T>>>* = nullptr>
-        auto constexpr operator() (T &&stage) const noexcept
+        template<class T, typename std::enable_if_t<std::is_same_v<specialization_constant, std::decay_t<T>>>* = nullptr>
+        auto constexpr operator== (T && constant) const
         {
-            std::size_t seed = 0;
+            return value == constant.value && id == constant.id;
+        }
 
-            boost::hash_combine(seed, stage.semantic);
-            boost::hash_combine(seed, stage.module_name);
-            boost::hash_combine(seed, stage.techique_index);
-
-            for (auto [id, value] : stage.constants) {
-                boost::hash_combine(seed, id);
-                boost::hash_combine(seed, value);
-            }
-
-            return seed;
+        template<class T, typename std::enable_if_t<std::is_same_v<specialization_constant, std::decay_t<T>>>* = nullptr>
+        auto constexpr operator< (T && constant) const
+        {
+            return id < constant.id;
         }
     };
-};
-}
 
+    struct shader_stage final {
+        shader::STAGE semantic;
+
+        std::string module_name;
+        std::uint32_t techique_index;
+
+        std::set<program::specialization_constant> constants;
+
+        template<class T, typename std::enable_if_t<std::is_same_v<shader_stage, std::decay_t<T>>>* = nullptr>
+        auto constexpr operator== (T &&stage) const
+        {
+            return semantic == stage.semantic &&
+                module_name == stage.module_name &&
+                techique_index == stage.techique_index &&
+                constants == stage.constants;
+        }
+
+        struct hash final {
+            template<class T, typename std::enable_if_t<std::is_same_v<shader_stage, std::decay_t<T>>>* = nullptr>
+            auto constexpr operator() (T &&stage) const noexcept
+            {
+                std::size_t seed = 0;
+
+                boost::hash_combine(seed, stage.semantic);
+                boost::hash_combine(seed, stage.module_name);
+                boost::hash_combine(seed, stage.techique_index);
+
+                for (auto [id, value] : stage.constants) {
+                    boost::hash_combine(seed, id);
+                    boost::hash_combine(seed, value);
+                }
+
+                return seed;
+            }
+        };
+    };
+}
 
 
 class ShaderManager final {

@@ -112,22 +112,22 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material> material)
         nullptr, 0,
         VK_TRUE,
         VK_FALSE,
-        convert_to::vulkan(material->rasterizationState.polygonMode),
-        convert_to::vulkan(material->rasterizationState.cullMode),
-        convert_to::vulkan(material->rasterizationState.frontFace),
+        convert_to::vulkan(material->rasterizationState.polygon_mode),
+        convert_to::vulkan(material->rasterizationState.cull_mode),
+        convert_to::vulkan(material->rasterizationState.front_face),
         VK_FALSE,
         0.f, 0.f, 0.f,
-        material->rasterizationState.lineWidth
+        material->rasterizationState.line_width
     };
 
     properties.depthStencilState = VkPipelineDepthStencilStateCreateInfo{
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         nullptr, 0,
-        convert_to::vulkan(material->depthStencilState.depthTestEnable),
-        convert_to::vulkan(material->depthStencilState.depthWriteEnable),
-        convert_to::vulkan(material->depthStencilState.depthCompareOperation),//kREVERSED_DEPTH ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_LESS,
+        convert_to::vulkan(material->depthStencilState.depth_test_enable),
+        convert_to::vulkan(material->depthStencilState.depth_write_enable),
+        convert_to::vulkan(material->depthStencilState.depth_compare_operation),//kREVERSED_DEPTH ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_LESS,
         VK_FALSE,
-        convert_to::vulkan(material->depthStencilState.stencilTestEnable),
+        convert_to::vulkan(material->depthStencilState.stencil_test_enable),
         VkStencilOpState{}, VkStencilOpState{},
         0, 1
     };
