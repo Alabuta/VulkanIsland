@@ -202,6 +202,38 @@ namespace convert_to
         }
     }
 
+    VkStencilOp vulkan_api::operator() (graphics::STENCIL_OPERATION stencil_operation) const noexcept
+    {
+        switch (stencil_operation) {
+            case graphics::STENCIL_OPERATION::KEEP:
+                return VkStencilOp::VK_STENCIL_OP_KEEP;
+
+            case graphics::STENCIL_OPERATION::ZERO:
+                return VkStencilOp::VK_STENCIL_OP_ZERO;
+
+            case graphics::STENCIL_OPERATION::REPLACE:
+                return VkStencilOp::VK_STENCIL_OP_REPLACE;
+
+            case graphics::STENCIL_OPERATION::INCREMENT_AND_CLAMP:
+                return VkStencilOp::VK_STENCIL_OP_INCREMENT_AND_CLAMP;
+
+            case graphics::STENCIL_OPERATION::DECREMENT_AND_CLAMP:
+                return VkStencilOp::VK_STENCIL_OP_DECREMENT_AND_CLAMP;
+
+            case graphics::STENCIL_OPERATION::INVERT:
+                return VkStencilOp::VK_STENCIL_OP_INVERT;
+
+            case graphics::STENCIL_OPERATION::INCREMENT_AND_WRAP:
+                return VkStencilOp::VK_STENCIL_OP_INCREMENT_AND_WRAP;
+
+            case graphics::STENCIL_OPERATION::DECREMENT_AND_WRAP:
+                return VkStencilOp::VK_STENCIL_OP_DECREMENT_AND_WRAP;
+
+            default:
+                return VkStencilOp::VK_STENCIL_OP_MAX_ENUM;
+        }
+    }
+
     VkBlendFactor vulkan_api::operator() (graphics::BLEND_FACTOR blend_factor) const noexcept
     {
         switch (blend_factor) {

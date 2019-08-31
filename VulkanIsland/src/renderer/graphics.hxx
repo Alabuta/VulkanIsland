@@ -86,6 +86,17 @@ namespace graphics
         ALWAYS
     };
 
+    enum class STENCIL_OPERATION {
+        KEEP = 0,
+        ZERO,
+        REPLACE,
+        INCREMENT_AND_CLAMP,
+        DECREMENT_AND_CLAMP,
+        INVERT,
+        INCREMENT_AND_WRAP,
+        DECREMENT_AND_WRAP
+    };
+
     enum class BLEND_STATE_OPERATION {
         CLEAR,
         AND,

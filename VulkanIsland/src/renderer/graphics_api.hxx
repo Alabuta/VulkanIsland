@@ -24,6 +24,8 @@ namespace convert_to
 
         VkCompareOp operator() (graphics::COMPARE_OPERATION compare_operation) const noexcept;
 
+        VkStencilOp operator() (graphics::STENCIL_OPERATION stencil_operation) const noexcept;
+
         VkBlendFactor operator() (graphics::BLEND_FACTOR blend_factor) const noexcept;
 
         VkBlendOp operator() (graphics::BLEND_OPERATION blend_operation) const noexcept;
