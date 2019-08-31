@@ -170,6 +170,35 @@ namespace loader
         return { };
     }
 
+    std::optional<graphics::STENCIL_OPERATION> stencil_operation(std::string_view name)
+    {
+        if (name == "keep"sv)
+            return graphics::STENCIL_OPERATION::KEEP;
+
+        else if (name == "zero"sv)
+            return graphics::STENCIL_OPERATION::ZERO;
+
+        else if (name == "replace"sv)
+            return graphics::STENCIL_OPERATION::REPLACE;
+
+        else if (name == "increment_and_clamp"sv)
+            return graphics::STENCIL_OPERATION::INCREMENT_AND_CLAMP;
+
+        else if (name == "decrement_and_clamp"sv)
+            return graphics::STENCIL_OPERATION::DECREMENT_AND_CLAMP;
+
+        else if (name == "invert"sv)
+            return graphics::STENCIL_OPERATION::INVERT;
+
+        else if (name == "increment_and_wrap"sv)
+            return graphics::STENCIL_OPERATION::INCREMENT_AND_WRAP;
+
+        else if (name == "decrement_and_wrap"sv)
+            return graphics::STENCIL_OPERATION::DECREMENT_AND_WRAP;
+
+        return { };
+    }
+
     std::optional<graphics::BLEND_STATE_OPERATION> logic_operation(std::string_view name)
     {
         if (name == "clear"sv)
@@ -380,6 +409,33 @@ namespace nlohmann
         rasterization_state.front_face = front_face_clockwise ? pff::CLOCKWISE : pff::COUNTER_CLOCKWISE;
     }
 
+    void from_json(nlohmann::json const &j, graphics::stencil_state &stencil_state)
+    {
+        if (auto stencil_operation = loader::stencil_operation(j.at("fail"s).get<std::string>()); stencil_operation)
+            stencil_state.fail = *stencil_operation;
+
+        else throw std::runtime_error("unsupported stencil fail operation"s);
+
+        if (auto stencil_operation = loader::stencil_operation(j.at("pass"s).get<std::string>()); stencil_operation)
+            stencil_state.pass = *stencil_operation;
+
+        else throw std::runtime_error("unsupported stencil pass operation"s);
+
+        if (auto stencil_operation = loader::stencil_operation(j.at("depthFail"s).get<std::string>()); stencil_operation)
+            stencil_state.depth_fail = *stencil_operation;
+
+        else throw std::runtime_error("unsupported stencil depth fail operation"s);
+
+        if (auto compare_operation = loader::compare_operation(j.at("compareOperation"s).get<std::string>()); compare_operation)
+            stencil_state.compare_operation = *compare_operation;
+
+        else throw std::runtime_error("unsupported stencil compare operation"s);
+
+        stencil_state.compare_mask = j.at("compareMask"s).get<std::uint32_t>();
+        stencil_state.write_mask = j.at("writeMask"s).get<std::uint32_t>();
+        stencil_state.reference = j.at("reference"s).get<std::uint32_t>();
+    }
+
     void from_json(nlohmann::json const &j, graphics::depth_stencil_state &depth_stencil_state)
     {
         if (auto compare_operation = loader::compare_operation(j.at("depthCompareOperation"s).get<std::string>()); compare_operation)
@@ -389,7 +445,14 @@ namespace nlohmann
 
         depth_stencil_state.depth_test_enable = j.at("depthTestEnable"s).get<bool>();
         depth_stencil_state.depth_write_enable = j.at("depthWriteEnable"s).get<bool>();
-        depth_stencil_state.stencil_test_enable = j.at("stencilTestEnable"s).get<bool>();
+
+        depth_stencil_state.depth_bounds_test_enable = j.at("depthBoundsTestEnable"s).get<bool>();
+        depth_stencil_state.depth_bounds = j.at("depthBounds"s).get<std::array<float, 2>>();
+
+        depth_stencil_state.stencil_test_enable = j.at("frontStencilTest"s).get<bool>();
+
+        depth_stencil_state.front_stencil_state = j.at("stencilTestEnable"s).get<graphics::stencil_state>();
+        depth_stencil_state.back_stencil_state = j.at("backStencilTest"s).get<graphics::stencil_state>();
     }
 
     void from_json(nlohmann::json const &j, graphics::color_blend_state &color_blend_state)
