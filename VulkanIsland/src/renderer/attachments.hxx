@@ -11,7 +11,7 @@ namespace graphics
 {
     struct attachment_description final {
         graphics::FORMAT format;
-        std::uint32_t samples_count{1};
+        std::uint32_t samples_count;
 
         graphics::ATTACHMENT_LOAD_TREATMENT load_op;
         graphics::ATTACHMENT_STORE_TREATMENT store_op;

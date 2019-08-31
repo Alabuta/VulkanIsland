@@ -43,16 +43,14 @@ private:
     VkPipeline handle_;
 
     graphics::PRIMITIVE_TOPOLOGY primitive_topology_;
-
     graphics::vertex_input_state vertex_input_state_;
 
     // TODO:: move to render flow node
-        std::vector<graphics::shader_stage> shader_stages_;
+    std::vector<graphics::shader_stage> shader_stages_;
 
-        graphics::rasterization_state rasterization_state_;
-        graphics::depth_stencil_state depth_stencil_state_;
-
-        graphics::color_blend_state color_blend_state_;
+    graphics::rasterization_state rasterization_state_;
+    graphics::depth_stencil_state depth_stencil_state_;
+    graphics::color_blend_state color_blend_state_;
 
     // TODO:: add tesselation, viewport, multisample and dynamic states.
 
