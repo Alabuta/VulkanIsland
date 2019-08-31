@@ -35,7 +35,6 @@ public:
     graphics::depth_stencil_state depthStencilState;
 
     graphics::color_blend_state colorBlendState;
-    std::vector<graphics::color_blend_attachment_state> color_blend_attachments;
 
 
 private:

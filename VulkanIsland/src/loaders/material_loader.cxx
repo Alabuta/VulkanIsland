@@ -444,29 +444,18 @@ namespace nlohmann
         else throw std::runtime_error("unsupported depth compare operation"s);
 
         depth_stencil_state.depth_test_enable = j.at("depthTestEnable"s).get<bool>();
+
         depth_stencil_state.depth_write_enable = j.at("depthWriteEnable"s).get<bool>();
 
         depth_stencil_state.depth_bounds_test_enable = j.at("depthBoundsTestEnable"s).get<bool>();
+
         depth_stencil_state.depth_bounds = j.at("depthBounds"s).get<std::array<float, 2>>();
 
-        depth_stencil_state.stencil_test_enable = j.at("frontStencilTest"s).get<bool>();
+        depth_stencil_state.stencil_test_enable = j.at("stencilTestEnable"s).get<bool>();
 
-        depth_stencil_state.front_stencil_state = j.at("stencilTestEnable"s).get<graphics::stencil_state>();
+        depth_stencil_state.front_stencil_state = j.at("frontStencilTest"s).get<graphics::stencil_state>();
+
         depth_stencil_state.back_stencil_state = j.at("backStencilTest"s).get<graphics::stencil_state>();
-    }
-
-    void from_json(nlohmann::json const &j, graphics::color_blend_state &color_blend_state)
-    {
-        if (auto logic_operation = loader::logic_operation(j.at("logicOperation"s).get<std::string>()); logic_operation)
-            color_blend_state.logic_operation = *logic_operation;
-
-        else throw std::runtime_error("unsupported logic operation"s);
-
-        color_blend_state.logic_operation_enable = j.at("logicOperationEnable"s).get<bool>();
-
-        color_blend_state.blend_constants = j.at("blendConstants"s).get<std::array<float, 4>>();
-
-        color_blend_state.attachments = j.at("attachments"s).get<std::vector<std::size_t>>();
     }
 
     void from_json(nlohmann::json const &j, graphics::color_blend_attachment_state &color_blend_attachment_state)
@@ -508,6 +497,20 @@ namespace nlohmann
 
         color_blend_attachment_state.blend_enable = j.at("blendEnable"s).get<bool>();
     }
+
+    void from_json(nlohmann::json const &j, graphics::color_blend_state &color_blend_state)
+    {
+        if (auto logic_operation = loader::logic_operation(j.at("logicOperation"s).get<std::string>()); logic_operation)
+            color_blend_state.logic_operation = *logic_operation;
+
+        else throw std::runtime_error("unsupported logic operation"s);
+
+        color_blend_state.logic_operation_enable = j.at("logicOperationEnable"s).get<bool>();
+
+        color_blend_state.blend_constants = j.at("blendConstants"s).get<std::array<float, 4>>();
+
+        color_blend_state.attachment_states = j.at("attachmentStates"s).get<std::vector<graphics::color_blend_attachment_state>>();
+    }
 }
 
 namespace loader
@@ -542,9 +545,7 @@ namespace loader
 
         auto rasterization_states = json.at("rasterizationStates"s).get<std::vector<graphics::rasterization_state>>();
         auto depth_stencil_states = json.at("depthStencilStates"s).get<std::vector<graphics::depth_stencil_state>>();
-
         auto color_blend_states = json.at("colorBlendStates"s).get<std::vector<graphics::color_blend_state>>();
-        auto attachment_states = json.at("colorBlendAttachmentStates"s).get<std::vector<graphics::color_blend_attachment_state>>();
 
         return loader::material_description{
             std::string{name},
@@ -553,8 +554,7 @@ namespace loader
             techniques,
             rasterization_states,
             depth_stencil_states,
-            color_blend_states,
-            attachment_states
+            color_blend_states
         };
     }
 }

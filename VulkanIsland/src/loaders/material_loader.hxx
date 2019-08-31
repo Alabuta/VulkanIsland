@@ -49,9 +49,7 @@ namespace loader
 
         std::vector<graphics::rasterization_state> rasterization_states;
         std::vector<graphics::depth_stencil_state> depth_stencil_states;
-
         std::vector<graphics::color_blend_state> color_blend_states;
-        std::vector<graphics::color_blend_attachment_state> color_blend_attachment_states;
     };
 
     [[nodiscard]] loader::material_description load_material_description(std::string_view name);

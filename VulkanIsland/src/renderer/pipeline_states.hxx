@@ -39,9 +39,9 @@ namespace graphics
     };
 
     struct stencil_state final {
-        graphics::STENCIL_OPERATION fail;
-        graphics::STENCIL_OPERATION pass;
-        graphics::STENCIL_OPERATION depth_fail;
+        graphics::STENCIL_OPERATION fail{graphics::STENCIL_OPERATION::KEEP};
+        graphics::STENCIL_OPERATION pass{graphics::STENCIL_OPERATION::KEEP};
+        graphics::STENCIL_OPERATION depth_fail{graphics::STENCIL_OPERATION::KEEP};
 
         graphics::COMPARE_OPERATION compare_operation{graphics::COMPARE_OPERATION::GREATER};
 
@@ -126,7 +126,7 @@ namespace graphics
 
         std::array<float, 4> blend_constants{0, 0, 0, 0};
 
-        std::vector<std::size_t> attachments;
+        std::vector<graphics::color_blend_attachment_state> attachment_states;
 
         template<class T, typename std::enable_if_t<std::is_same_v<color_blend_state, std::decay_t<T>>>* = nullptr>
         auto constexpr operator== (T &&rhs) const
@@ -134,7 +134,7 @@ namespace graphics
             return logic_operation_enable == rhs.logic_operation_enable &&
                 logic_operation == rhs.logic_operation &&
                 blend_constants == rhs.blend_constants &&
-                attachments == rhs.attachments;
+                attachment_states == rhs.attachments;
         }
     };
 
@@ -143,9 +143,7 @@ namespace graphics
 
         graphics::rasterization_state rasterization_state;
         graphics::depth_stencil_state depth_stencil_state;
-
         graphics::color_blend_state color_blend_state;
-        std::vector<graphics::color_blend_attachment_state> color_blend_attachments;
     };
 }
 
@@ -259,8 +257,10 @@ namespace graphics
             boost::hash_combine(seed, state.logic_operation);
             boost::hash_combine(seed, state.blend_constants);
 
-            for (auto &&attachment : state.attachments)
-                boost::hash_combine(seed, attachment);
+            graphics::hash<graphics::color_blend_attachment_state> constexpr hasher;
+
+            for (auto &&attachment : state.attachment_states)
+                boost::hash_combine(seed, hasher(attachment));
 
             return seed;
         }

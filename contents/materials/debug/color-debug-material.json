@@ -73,39 +73,43 @@
             "depthCompareOperation": "greater",
             "depthBoundsTestEnable": false,
             "depthBounds": [ 0, 1 ],
-            "frontStencilTest": 0,
-            "backStencilTest": 0
+            "frontStencilTest": {
+                "fail": "keep",
+                "pass": "keep",
+                "depthFail": "keep",
+                "compareOperation": "greater",
+                "compareMask": 0,
+                "writeMask": 0,
+                "reference": 0
+            },
+            "backStencilTest": {
+                "fail": "keep",
+                "pass": "keep",
+                "depthFail": "keep",
+                "compareOperation": "greater",
+                "compareMask": 0,
+                "writeMask": 0,
+                "reference": 0
+            }
         }
     ],
-    "stencilStates": [
-        {
-            "fail": "keep",
-            "pass": "keep",
-            "depthFail": "keep",
-            "compareOperation": "greater",
-            "compareMask": 0,
-            "writeMask": 0,
-            "reference": 0
-        }
-    ]
     "colorBlendStates": [
         {
             "logicOperationEnable": false,
             "logicOperation": "copy",
             "blendConstants": [ 0, 0, 0, 0 ],
-            "attachments": [ 0 ]
-        }
-    ],
-    "colorBlendAttachmentStates": [
-        {
-            "blendEnable": false,
-            "srcColorBlendFactor": "one",
-            "dstColorBlendFactor": "zero",
-            "colorBlendOperation": "add",
-            "srcAlphaBlendFactor": "one",
-            "dstAlphaBlendFactor": "zero",
-            "alphaBlendOperation": "add",
-            "colorWriteMask": "rgba"
+            "attachmentStates": [
+                {
+                    "blendEnable": false,
+                    "srcColorBlendFactor": "one",
+                    "dstColorBlendFactor": "zero",
+                    "colorBlendOperation": "add",
+                    "srcAlphaBlendFactor": "one",
+                    "dstAlphaBlendFactor": "zero",
+                    "alphaBlendOperation": "add",
+                    "colorWriteMask": "rgba"
+                }
+            ]
         }
     ]
 }

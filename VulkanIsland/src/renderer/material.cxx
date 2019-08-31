@@ -132,9 +132,7 @@ void MaterialFactory::InitMaterialProperties(std::shared_ptr<Material> material)
         0, 1
     };
 
-    for (auto attachment_index : material->colorBlendState.attachments) {
-        auto &&attachment = material->color_blend_attachments.at(attachment_index);
-
+    for (auto &&attachment : material->colorBlendState.attachment_states) {
         properties.colorBlendAttachmentStates.push_back(VkPipelineColorBlendAttachmentState{
             convert_to::vulkan(attachment.blend_enable),
             convert_to::vulkan(attachment.src_color_blend_factor),
@@ -184,7 +182,7 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial(std::string_view type)
     else if (type == "TestMaterial"s)
         material = std::make_shared<TestMaterial>();
 
-    material->color_blend_attachments.push_back(graphics::color_blend_attachment_state{
+    material->colorBlendState.attachment_states.push_back(graphics::color_blend_attachment_state{
         false,
         graphics::BLEND_FACTOR::ONE,
         graphics::BLEND_FACTOR::ZERO,
@@ -194,8 +192,6 @@ std::shared_ptr<Material> MaterialFactory::CreateMaterial(std::string_view type)
         graphics::BLEND_OPERATION::ADD,
         graphics::COLOR_COMPONENT::RGBA
     });
-
-    material->colorBlendState.attachments.push_back(0);
 
     InitMaterialProperties(material);
 

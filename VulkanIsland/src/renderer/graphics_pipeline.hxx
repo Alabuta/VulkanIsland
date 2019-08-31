@@ -53,7 +53,6 @@ private:
         graphics::depth_stencil_state depth_stencil_state_;
 
         graphics::color_blend_state color_blend_state_;
-        std::vector<graphics::color_blend_attachment_state> color_blend_attachments_;
 
     // TODO:: add tesselation, viewport, multisample and dynamic states.
 
