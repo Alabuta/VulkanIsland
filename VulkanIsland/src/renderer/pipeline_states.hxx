@@ -38,13 +38,43 @@ namespace graphics
         }
     };
 
+    struct stencil_state final {
+        graphics::STENCIL_OPERATION fail;
+        graphics::STENCIL_OPERATION pass;
+        graphics::STENCIL_OPERATION depth_fail;
+
+        graphics::COMPARE_OPERATION compare_operation{graphics::COMPARE_OPERATION::GREATER};
+
+        std::uint32_t compare_mask{0};
+        std::uint32_t write_mask{0};
+        std::uint32_t reference{0};
+
+        template<class T, typename std::enable_if_t<std::is_same_v<stencil_state, std::decay_t<T>>>* = nullptr>
+        auto constexpr operator== (T &&rhs) const
+        {
+            return fail == rhs.fail &&
+                pass == rhs.pass &&
+                depth_fail == rhs.depthFail &&
+                compare_operation == rhs.compare_operation &&
+                compare_mask == rhs.compare_mask &&
+                write_mask == rhs.write_mask &&
+                reference == rhs.reference;
+        }
+    };
+
     struct depth_stencil_state final {
         bool depth_test_enable{true};
         bool depth_write_enable{true};
 
         graphics::COMPARE_OPERATION depth_compare_operation{graphics::COMPARE_OPERATION::GREATER};
 
+        bool depth_bounds_test_enable{false};
+        std::array<float, 2> depth_bounds{0, 1};
+
         bool stencil_test_enable{false};
+
+        graphics::stencil_state front_stencil_state;
+        graphics::stencil_state back_stencil_state;
 
         template<class T, typename std::enable_if_t<std::is_same_v<depth_stencil_state, std::decay_t<T>>>* = nullptr>
         auto constexpr operator== (T &&rhs) const
@@ -52,7 +82,11 @@ namespace graphics
             return depth_test_enable == rhs.depth_test_enable &&
                 depth_write_enable == rhs.depth_write_enable &&
                 depth_compare_operation == rhs.depth_compare_operation &&
-                stencil_test_enable == rhs.stencil_test_enable;
+                depth_bounds_test_enable == rhs.depth_bounds_test_enable &&
+                depth_bounds == rhs.depth_bounds &&
+                stencil_test_enable == rhs.stencil_test_enable &&
+                front_stencil_state == rhs.front_stencil_state &&
+                back_stencil_state == rhs.back_stencil_state;
         }
     };
 
@@ -92,7 +126,6 @@ namespace graphics
 
         std::array<float, 4> blend_constants{0, 0, 0, 0};
 
-        //std::vector<color_blend_attachment_state> attachments;
         std::vector<std::size_t> attachments;
 
         template<class T, typename std::enable_if_t<std::is_same_v<color_blend_state, std::decay_t<T>>>* = nullptr>
@@ -103,6 +136,16 @@ namespace graphics
                 blend_constants == rhs.blend_constants &&
                 attachments == rhs.attachments;
         }
+    };
+
+    struct pipeline_states final {
+        graphics::vertex_input_state vertex_input_state;
+
+        graphics::rasterization_state rasterization_state;
+        graphics::depth_stencil_state depth_stencil_state;
+
+        graphics::color_blend_state color_blend_state;
+        std::vector<graphics::color_blend_attachment_state> color_blend_attachments;
     };
 }
 
@@ -144,6 +187,26 @@ namespace graphics
     };
 
     template<>
+    struct hash<graphics::stencil_state> {
+        std::size_t operator() (graphics::stencil_state const &state) const
+        {
+            std::size_t seed = 0;
+
+            boost::hash_combine(seed, state.fail);
+            boost::hash_combine(seed, state.pass);
+            boost::hash_combine(seed, state.depth_fail);
+
+            boost::hash_combine(seed, state.compare_operation);
+
+            boost::hash_combine(seed, state.compare_mask);
+            boost::hash_combine(seed, state.write_mask);
+            boost::hash_combine(seed, state.reference);
+
+            return seed;
+        }
+    };
+
+    template<>
     struct hash<graphics::depth_stencil_state> {
         std::size_t operator() (graphics::depth_stencil_state const &state) const
         {
@@ -152,7 +215,16 @@ namespace graphics
             boost::hash_combine(seed, state.depth_test_enable);
             boost::hash_combine(seed, state.depth_write_enable);
             boost::hash_combine(seed, state.depth_compare_operation);
+
+            boost::hash_combine(seed, state.depth_bounds_test_enable);
+            boost::hash_combine(seed, state.depth_bounds);
+
             boost::hash_combine(seed, state.stencil_test_enable);
+
+            graphics::hash<graphics::stencil_state> constexpr stencil_state_hasher;
+
+            boost::hash_combine(seed, stencil_state_hasher(state.front_stencil_state));
+            boost::hash_combine(seed, stencil_state_hasher(state.back_stencil_state));
 
             return seed;
         }
@@ -186,8 +258,6 @@ namespace graphics
             boost::hash_combine(seed, state.logic_operation_enable);
             boost::hash_combine(seed, state.logic_operation);
             boost::hash_combine(seed, state.blend_constants);
-
-            // graphics::hash<graphics::color_blend_attachment_state> constexpr color_blend_attachment_state_hasher;
 
             for (auto &&attachment : state.attachments)
                 boost::hash_combine(seed, attachment);
