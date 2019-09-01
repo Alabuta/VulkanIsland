@@ -2,6 +2,7 @@
 
 #include "swapchain.hxx"
 #include "commandBuffer.hxx"
+#include "renderer/graphics_api.hxx"
 
 
 #if USE_WIN32
@@ -51,20 +52,21 @@ namespace {
 }
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>* = nullptr>
-[[nodiscard]] VkSurfaceFormatKHR ChooseSwapSurfaceFormat(T &&surfaceFormats)
+[[nodiscard]] std::pair<graphics::FORMAT, graphics::COLOR_SPACE>
+ChooseSwapSurfaceFormat(T &&surfaceFormats, graphics::FORMAT format, graphics::COLOR_SPACE color_space)
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkSurfaceFormatKHR>, "iterable object does not contain VkSurfaceFormatKHR elements");
 
-    if (surfaceFormats.size() == 1 && surfaceFormats.at(0).format == VK_FORMAT_UNDEFINED)
-        return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+    if (std::size(surfaceFormats) == 1 && surfaceFormats.at(0).format == VK_FORMAT_UNDEFINED)
+        return { graphics::FORMAT::BGRA8_UNORM, graphics::COLOR_SPACE::SRGB_NONLINEAR };
 
-    auto supported = std::any_of(surfaceFormats.cbegin(), surfaceFormats.cend(), [] (auto &&surfaceFormat)
+    auto supported = std::any_of(std::cbegin(surfaceFormats), std::cend(surfaceFormats), [format, color_space] (auto &&surfaceFormat)
     {
-        return surfaceFormat.format == VK_FORMAT_B8G8R8A8_UNORM && surfaceFormat.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+        return surfaceFormat.format == convert_to::vulkan(format) && surfaceFormat.colorSpace == convert_to::vulkan(color_space);
     });
 
     if (supported)
-        return {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR};
+        return { format, color_space };
 
     return surfaceFormats.at(0);
 }
@@ -165,12 +167,13 @@ CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
     if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, nullptr); result != VK_SUCCESS)
         throw std::runtime_error(fmt::format("failed to retrieve device surface formats count: {0:#x}\n"s, result));
 
+    if (formatsCount == 0)
+        return { };
+
     details.formats.resize(formatsCount);
+
     if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &formatsCount, std::data(details.formats)); result != VK_SUCCESS)
         throw std::runtime_error(fmt::format("failed to retrieve device surface formats: {0:#x}\n"s, result));
-
-    if (details.formats.empty())
-        return { };
 
     std::uint32_t presentModeCount = 0;
     if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(physicalDevice, surface, &presentModeCount, nullptr); result != VK_SUCCESS)
@@ -196,7 +199,7 @@ CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width,
     
     auto swapChainSupportDetails = QuerySwapChainSupportDetails(device.physical_handle(), surface);
 
-    auto surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupportDetails.formats);
+    auto surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupportDetails.formats, graphics::FORMAT::BGRA8_UNORM, graphics::COLOR_SPACE::SRGB_NONLINEAR);
     auto presentMode = ChooseSwapPresentMode(swapChainSupportDetails.presentModes);
 
     swapchain.format = surfaceFormat.format;

@@ -4,10 +4,13 @@
 #include "device/device.hxx"
 #include "resources/buffer.hxx"
 #include "resources/image.hxx"
+#include "renderer/graphics.hxx"
+
 
 struct VulkanSwapchain final {
     VkSwapchainKHR handle;
 
+    //graphics::FORMAT format;
     VkFormat format{VK_FORMAT_UNDEFINED};
     VkExtent2D extent;
 

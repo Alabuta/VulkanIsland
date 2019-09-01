@@ -1,10 +1,13 @@
+#include "renderer/graphics_api.hxx"
 #include "renderPass.hxx"
+
 
 std::optional<VkRenderPass>
 CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) noexcept
 {
     VkAttachmentDescription const colorAttachment{
         0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
+        //convert_to::vulkan(swapchain.format),
         swapchain.format,
         device.samplesCount(),
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
@@ -31,6 +34,7 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
 
     VkAttachmentDescription const colorAttachmentResolve{
         0,
+        //convert_to::vulkan(swapchain.format),
         swapchain.format,
         VK_SAMPLE_COUNT_1_BIT,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE,
