@@ -139,11 +139,22 @@ namespace graphics
     };
 
     struct pipeline_states final {
+        graphics::PRIMITIVE_TOPOLOGY primitive_topology;
         graphics::vertex_input_state vertex_input_state;
 
         graphics::rasterization_state rasterization_state;
         graphics::depth_stencil_state depth_stencil_state;
         graphics::color_blend_state color_blend_state;
+
+        template<class T, typename std::enable_if_t<std::is_same_v<pipeline_states, std::decay_t<T>>>* = nullptr>
+        auto constexpr operator== (T &&rhs) const
+        {
+            return primitive_topology == rhs.primitive_topology &&
+                vertex_input_state == rhs.vertex_input_state &&
+                rasterization_state == rhs.rasterization_state &&
+                depth_stencil_state == rhs.depth_stencil_state &&
+                color_blend_state == rhs.color_blend_state;
+        }
     };
 }
 
@@ -261,6 +272,30 @@ namespace graphics
 
             for (auto &&attachment : state.attachment_states)
                 boost::hash_combine(seed, hasher(attachment));
+
+            return seed;
+        }
+    };
+
+    template<>
+    struct hash<graphics::pipeline_states> {
+        std::size_t operator() (graphics::pipeline_states const &states) const
+        {
+            std::size_t seed = 0;
+
+            boost::hash_combine(seed, states.primitive_topology);
+
+            graphics::hash<graphics::vertex_input_state> constexpr vertex_input_state_hasher;
+            boost::hash_combine(seed, vertex_input_state_hasher(states.vertex_input_state));
+
+            graphics::hash<graphics::rasterization_state> constexpr rasterization_state_hasher;
+            boost::hash_combine(seed, rasterization_state_hasher(states.rasterization_state));
+
+            graphics::hash<graphics::depth_stencil_state> constexpr depth_stencil_state_hasher;
+            boost::hash_combine(seed, depth_stencil_state_hasher(states.depth_stencil_state));
+
+            graphics::hash<graphics::color_blend_state> constexpr color_blend_state_hasher;
+            boost::hash_combine(seed, color_blend_state_hasher(states.color_blend_state));
 
             return seed;
         }
