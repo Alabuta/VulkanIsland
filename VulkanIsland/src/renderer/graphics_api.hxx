@@ -41,6 +41,8 @@ namespace convert_to
         VkAttachmentLoadOp operator() (graphics::ATTACHMENT_LOAD_TREATMENT load_treatment) const noexcept;
 
         VkAttachmentStoreOp operator() (graphics::ATTACHMENT_STORE_TREATMENT store_treatment) const noexcept;
+
+        VkColorSpaceKHR operator() (graphics::COLOR_SPACE color_space) const noexcept;
     };
 
     vulkan_api constexpr vulkan;

@@ -382,4 +382,17 @@ namespace graphics
         STORE = 0,
         DONT_CARE
     };
+
+    enum class COLOR_SPACE {
+        SRGB_NONLINEAR = 0,
+        EXTENDED_SRGB_LINEAR,
+        EXTENDED_SRGB_NONLINEAR,
+        BT709_LINEAR,
+        BT709_NONLINEAR,
+        ADOBE_RGB_LINEAR,
+        ADOBE_RGB_NONLINEAR,
+        HDR10_ST2084,
+        HDR10_HLG,
+        PASS_THROUGH
+    };
 }

@@ -610,4 +610,42 @@ namespace convert_to
                 return VkAttachmentStoreOp::VK_ATTACHMENT_STORE_OP_MAX_ENUM;
         }
     }
+
+    VkColorSpaceKHR vulkan_api::operator()(graphics::COLOR_SPACE color_space) const noexcept
+    {
+        switch (color_space) {
+            case graphics::COLOR_SPACE::SRGB_NONLINEAR:
+                return VkColorSpaceKHR::VK_COLOR_SPACE_SRGB_NONLINEAR_KHR;
+
+            case graphics::COLOR_SPACE::EXTENDED_SRGB_LINEAR:
+                return VkColorSpaceKHR::VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT;
+
+            case graphics::COLOR_SPACE::EXTENDED_SRGB_NONLINEAR:
+                return VkColorSpaceKHR::VK_COLOR_SPACE_EXTENDED_SRGB_NONLINEAR_EXT;
+
+            case graphics::COLOR_SPACE::BT709_LINEAR:
+                return VkColorSpaceKHR::VK_COLOR_SPACE_BT709_LINEAR_EXT;
+
+            case graphics::COLOR_SPACE::BT709_NONLINEAR:
+                return VkColorSpaceKHR::VK_COLOR_SPACE_BT709_NONLINEAR_EXT;
+
+            case graphics::COLOR_SPACE::ADOBE_RGB_LINEAR:
+                return VkColorSpaceKHR::VK_COLOR_SPACE_ADOBERGB_LINEAR_EXT;
+
+            case graphics::COLOR_SPACE::ADOBE_RGB_NONLINEAR:
+                return VkColorSpaceKHR::VK_COLOR_SPACE_ADOBERGB_NONLINEAR_EXT;
+
+            case graphics::COLOR_SPACE::HDR10_ST2084:
+                return VkColorSpaceKHR::VK_COLOR_SPACE_HDR10_ST2084_EXT;
+
+            case graphics::COLOR_SPACE::HDR10_HLG:
+                return VkColorSpaceKHR::VK_COLOR_SPACE_HDR10_HLG_EXT;
+
+            case graphics::COLOR_SPACE::PASS_THROUGH:
+                return VkColorSpaceKHR::VK_COLOR_SPACE_PASS_THROUGH_EXT;
+
+            default:
+                return VkColorSpaceKHR::VK_COLOR_SPACE_MAX_ENUM_KHR;
+        }
+    }
 }
