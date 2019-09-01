@@ -37,6 +37,8 @@
 #include "renderer/pipelineVertexInputState.hxx"
 #include "renderer/material.hxx"
 
+#include "renderer/render_flow.hxx"
+
 #include "ecs/ecs.hxx"
 #include "ecs/node.hxx"
 #include "ecs/mesh.hxx"
@@ -761,6 +763,20 @@ void InitVulkan(Window &window, app_t &app)
         app.swapchain = std::move(swapchain.value());
 
     else throw std::runtime_error("failed to create the swapchain"s);
+
+    /*graphics::render_flow render_flow;
+    render_flow.add_nodes({
+        graphics::render_flow_node{
+            {},
+            {
+                {
+                    graphics::attachment_description{
+                        swapchain.format
+                    }
+                }
+            }
+        }
+    });*/
 
     if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkanDevice); !descriptorSetLayout)
         throw std::runtime_error("failed to create the descriptor set layout"s);
