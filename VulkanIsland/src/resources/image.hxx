@@ -4,6 +4,8 @@
 #include "device/device.hxx"
 #include "buffer.hxx"
 #include "loaders/loaderTARGA.hxx"
+#include "renderer/graphics.hxx"
+#include "renderer/graphics_api.hxx"
 
 
 class VulkanImageView;
@@ -85,35 +87,35 @@ struct VulkanTexture final {
 };
 
 
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>* = nullptr>
-[[nodiscard]] std::optional<VkFormat>
-FindSupportedImageFormat(VulkanDevice const &device, T &&candidates, VkImageTiling tiling, VkFormatFeatureFlags features) noexcept
-{
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkFormat>, "iterable object does not contain 'VkFormat' elements");
+//[[nodiscard]] std::optional<VkFormat>
+//FindSupportedImageFormat(VulkanDevice const &device, std::vector<VkFormat> const &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) noexcept
+//{
+//    auto physicalDevice = device.physical_handle();
+//
+//    auto it_format = std::find_if(std::cbegin(candidates), std::cend(candidates), [physicalDevice, tiling, features] (auto candidate)
+//    {
+//        VkFormatProperties properties;
+//        vkGetPhysicalDeviceFormatProperties(physicalDevice, candidate, &properties);
+//
+//        switch (tiling) {
+//            case VK_IMAGE_TILING_LINEAR:
+//                return (properties.linearTilingFeatures & features) == features;
+//
+//            case VK_IMAGE_TILING_OPTIMAL:
+//                return (properties.optimalTilingFeatures & features) == features;
+//
+//            default:
+//                return false;
+//        }
+//    });
+//
+//    return it_format != std::cend(candidates) ? *it_format : std::optional<VkFormat>();
+//}
 
-    auto physicalDevice = device.physical_handle();
+[[nodiscard]] std::optional<graphics::FORMAT>
+FindSupportedImageFormat(VulkanDevice const &device, std::vector<graphics::FORMAT> const &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) noexcept;
 
-    auto it_format = std::find_if(std::cbegin(candidates), std::cend(candidates), [physicalDevice, tiling, features] (auto candidate)
-    {
-        VkFormatProperties properties;
-        vkGetPhysicalDeviceFormatProperties(physicalDevice, candidate, &properties);
-
-        switch (tiling) {
-            case VK_IMAGE_TILING_LINEAR:
-                return (properties.linearTilingFeatures & features) == features;
-
-            case VK_IMAGE_TILING_OPTIMAL:
-                return (properties.optimalTilingFeatures & features) == features;
-
-            default:
-                return false;
-        }
-    });
-
-    return it_format != std::cend(candidates) ? *it_format : std::optional<VkFormat>();
-}
-
-[[nodiscard]] std::optional<VkFormat> FindDepthImageFormat(VulkanDevice const &device) noexcept;
+[[nodiscard]] std::optional<graphics::FORMAT> FindDepthImageFormat(VulkanDevice const &device) noexcept;
 
 
 [[nodiscard]] std::optional<VulkanTexture>

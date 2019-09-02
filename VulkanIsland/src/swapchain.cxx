@@ -137,7 +137,7 @@ CreateColorAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
     return texture;
 }
 
-[[nodiscard]] std::optional<VulkanTexture>
+[[nodiscard]]std::pair<std::optional<VulkanTexture>, std::optional<graphics::FORMAT>>
 CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, std::uint16_t width, std::uint16_t height)
 {
     std::optional<VulkanTexture> texture;
@@ -150,17 +150,19 @@ CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
 
         auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
 
-        texture = CreateTexture(device, *format, VK_IMAGE_VIEW_TYPE_2D, width, height, mipLevels, device.samplesCount(),
+        texture = CreateTexture(device, convert_to::vulkan(*format), VK_IMAGE_VIEW_TYPE_2D, width, height, mipLevels, device.samplesCount(),
                                 tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
 
         if (texture)
             TransitionImageLayout(device, transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
                                   VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, transferCommandPool);
+
+        return std::make_pair(texture, format);
     }
 
     else std::cerr << "failed to find format for depth attachement\n"s;
 
-    return texture;
+    return { };
 }
 
 }
@@ -290,12 +292,15 @@ CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width,
 
     else swapchain.colorTexture = std::move(result.value());
 
-    if (auto result = CreateDepthAttachement(device, transferQueue, transferCommandPool, swapchainWidth, swapchainHeight); !result) {
+    if (auto [texture, format] = CreateDepthAttachement(device, transferQueue, transferCommandPool, swapchainWidth, swapchainHeight); !texture) {
         std::cerr << "failed to create depth texture\n"s;
         return { };
     }
 
-    else swapchain.depthTexture = std::move(result.value());
+    else {
+        swapchain.depthTexture = std::move(*texture);
+        swapchain.depth_format = *format;
+    }
 
     return swapchain;
 }
