@@ -764,20 +764,6 @@ void InitVulkan(Window &window, app_t &app)
 
     else throw std::runtime_error("failed to create the swapchain"s);
 
-    /*graphics::render_flow render_flow;
-    render_flow.add_nodes({
-        graphics::render_flow_node{
-            {},
-            {
-                {
-                    graphics::attachment_description{
-                        swapchain.format
-                    }
-                }
-            }
-        }
-    });*/
-
     if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkanDevice); !descriptorSetLayout)
         throw std::runtime_error("failed to create the descriptor set layout"s);
 
@@ -800,6 +786,56 @@ void InitVulkan(Window &window, app_t &app)
 
     temp::model = temp::populate();
     temp::stageXformat(app, temp::model);
+
+    graphics::render_flow render_flow;
+
+    {
+        std::vector<graphics::attachment> input_attachments;
+        std::vector<graphics::attachment> color_attachments;
+        std::vector<graphics::attachment> depth_stencil_attachments;
+
+        color_attachments.push_back(
+            graphics::attachment_description{
+                swapchain->format,
+                1,
+                graphics::ATTACHMENT_LOAD_TREATMENT::CLEAR,
+                graphics::ATTACHMENT_STORE_TREATMENT::STORE,
+                graphics::IMAGE_LAYOUT::UNDEFINED,
+                graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT
+            }
+        );
+
+        depth_stencil_attachments.push_back(
+            graphics::attachment_description{
+                swapchain->depth_format,
+                1,
+                graphics::ATTACHMENT_LOAD_TREATMENT::CLEAR,
+                graphics::ATTACHMENT_STORE_TREATMENT::DONT_CARE,
+                graphics::IMAGE_LAYOUT::UNDEFINED,
+                graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT
+            }
+        );
+
+        graphics::pipeline_states pipeline_states{
+            graphics::PRIMITIVE_TOPOLOGY::TRIANGLES,
+            graphics::vertex_input_state{},
+            graphics::rasterization_state{},
+            graphics::depth_stencil_state{},
+            graphics::color_blend_state{}
+        };
+
+        render_flow.add_nodes({
+            graphics::render_flow_node{
+                input_attachments,
+                color_attachments,
+                depth_stencil_attachments,
+                std::make_shared<graphics::material>(),
+                pipeline_states
+            }
+        });
+
+
+    }
 
     app.vulkanDevice->resourceManager().TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
     CreateGraphicsPipelines(app);

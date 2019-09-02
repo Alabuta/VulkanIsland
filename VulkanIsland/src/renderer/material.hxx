@@ -94,11 +94,13 @@ namespace graphics
     class material final {
     public:
 
-        material(graphics::pipeline const &pipeline) : pipeline_{pipeline} { }
+        material() = default;
+
+        //material(graphics::pipeline const &pipeline) : pipeline_{pipeline} { }
 
     private:
 
-        graphics::pipeline const &pipeline_;
+        //graphics::pipeline const &pipeline_;
 
         std::vector<graphics::shader_stage> shader_stages_;
     };

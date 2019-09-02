@@ -5,6 +5,6 @@ namespace graphics
 {
     void render_flow::add_nodes(std::vector<graphics::render_flow_node> const &nodes)
     {
-        ;
+        nodes_ = nodes;
     }
 }
