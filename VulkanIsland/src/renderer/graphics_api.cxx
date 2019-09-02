@@ -437,6 +437,15 @@ namespace convert_to
             case graphics::FORMAT::RGBA8_UNORM:
                 return VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
 
+            case graphics::FORMAT::BGRA8_UNORM:
+                return VkFormat::VK_FORMAT_B8G8R8A8_UNORM;
+
+            case graphics::FORMAT::RGBA8_SRGB:
+                return VkFormat::VK_FORMAT_R8G8B8A8_SRGB;
+
+            case graphics::FORMAT::BGRA8_SRGB:
+                return VkFormat::VK_FORMAT_B8G8R8A8_SRGB;
+
             case graphics::FORMAT::R8_SINT:
                 return VkFormat::VK_FORMAT_R8_SINT;
 

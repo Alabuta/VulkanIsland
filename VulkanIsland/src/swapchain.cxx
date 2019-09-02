@@ -1,3 +1,4 @@
+#include <vector>
 #include <fmt/format.h>
 
 #include "swapchain.hxx"
@@ -17,6 +18,16 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
     return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
 #endif
+
+
+namespace presentation
+{
+    struct surface_format final {
+        graphics::FORMAT format;
+        graphics::COLOR_SPACE color_space;
+    };
+}
+
 
 namespace {
 
@@ -51,24 +62,23 @@ namespace {
     };
 }
 
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>* = nullptr>
-[[nodiscard]] std::pair<graphics::FORMAT, graphics::COLOR_SPACE>
-ChooseSwapSurfaceFormat(T &&surfaceFormats, graphics::FORMAT format, graphics::COLOR_SPACE color_space)
+[[nodiscard]] presentation::surface_format
+ChooseSwapSurfaceFormat(std::vector<VkSurfaceFormatKHR> const &supported, std::vector<presentation::surface_format> const &required)
 {
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkSurfaceFormatKHR>, "iterable object does not contain VkSurfaceFormatKHR elements");
-
-    if (std::size(surfaceFormats) == 1 && surfaceFormats.at(0).format == VK_FORMAT_UNDEFINED)
+    if (std::size(supported) == 1 && supported.at(0).format == VK_FORMAT_UNDEFINED)
         return { graphics::FORMAT::BGRA8_UNORM, graphics::COLOR_SPACE::SRGB_NONLINEAR };
 
-    auto supported = std::any_of(std::cbegin(surfaceFormats), std::cend(surfaceFormats), [format, color_space] (auto &&surfaceFormat)
-    {
-        return surfaceFormat.format == convert_to::vulkan(format) && surfaceFormat.colorSpace == convert_to::vulkan(color_space);
-    });
+    for (auto [format, color_space] : required) {
+        auto exist = std::any_of(std::cbegin(supported), std::cend(supported), [format, color_space] (auto &&surfaceFormat)
+        {
+            return surfaceFormat.format == convert_to::vulkan(format) && surfaceFormat.colorSpace == convert_to::vulkan(color_space);
+        });
 
-    if (supported)
-        return { format, color_space };
+        if (exist)
+            return { format, color_space };
+    }
 
-    return surfaceFormats.at(0);
+    throw std::runtime_error("required surface formats is not supported"s);
 }
 
 template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>* = nullptr>
@@ -199,7 +209,13 @@ CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width,
     
     auto swapChainSupportDetails = QuerySwapChainSupportDetails(device.physical_handle(), surface);
 
-    auto surfaceFormat = ChooseSwapSurfaceFormat(swapChainSupportDetails.formats, graphics::FORMAT::BGRA8_UNORM, graphics::COLOR_SPACE::SRGB_NONLINEAR);
+    auto surfaceFormat = ChooseSwapSurfaceFormat(
+        swapChainSupportDetails.formats,
+        {
+            { graphics::FORMAT::RGBA8_SRGB, graphics::COLOR_SPACE::SRGB_NONLINEAR },
+            { graphics::FORMAT::BGRA8_SRGB, graphics::COLOR_SPACE::SRGB_NONLINEAR }
+        }
+    );
     auto presentMode = ChooseSwapPresentMode(swapChainSupportDetails.presentModes);
 
     swapchain.format = surfaceFormat.format;
@@ -215,7 +231,7 @@ CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width,
         nullptr, 0,
         surface,
         imageCount,
-        surfaceFormat.format, surfaceFormat.colorSpace,
+        convert_to::vulkan(surfaceFormat.format), convert_to::vulkan(surfaceFormat.color_space),
         swapchain.extent,
         1,
         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT,
@@ -260,14 +276,14 @@ CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width,
     swapchain.views.clear();
 
     for (auto &&swapChainImage : swapchain.images) {
-        auto imageView = CreateImageView(device.handle(), swapChainImage, swapchain.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        auto imageView = CreateImageView(device.handle(), swapChainImage, convert_to::vulkan(swapchain.format), VK_IMAGE_ASPECT_COLOR_BIT, 1);
         swapchain.views.emplace_back(std::move(imageView));
     }
 
     auto const swapchainWidth = static_cast<std::uint16_t>(swapchain.extent.width);
     auto const swapchainHeight = static_cast<std::uint16_t>(swapchain.extent.height);
 
-    if (auto result = CreateColorAttachement(device, transferQueue, transferCommandPool, swapchain.format, swapchainWidth, swapchainHeight); !result) {
+    if (auto result = CreateColorAttachement(device, transferQueue, transferCommandPool, convert_to::vulkan(swapchain.format), swapchainWidth, swapchainHeight); !result) {
         std::cerr << "failed to create color texture\n"s;
         return { };
     }

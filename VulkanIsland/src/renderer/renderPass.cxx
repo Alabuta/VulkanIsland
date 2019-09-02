@@ -7,8 +7,7 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
 {
     VkAttachmentDescription const colorAttachment{
         0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
-        //convert_to::vulkan(swapchain.format),
-        swapchain.format,
+        convert_to::vulkan(swapchain.format),
         device.samplesCount(),
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
@@ -34,8 +33,7 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
 
     VkAttachmentDescription const colorAttachmentResolve{
         0,
-        //convert_to::vulkan(swapchain.format),
-        swapchain.format,
+        convert_to::vulkan(swapchain.format),
         VK_SAMPLE_COUNT_1_BIT,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_STORE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
