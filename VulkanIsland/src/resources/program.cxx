@@ -17,7 +17,7 @@ void ShaderManager::CreateShaderPrograms(Material const *const material)
                 auto const shaderByteCode = loader::load_SPIRV(shaderStage.moduleName);
 
                 if (shaderByteCode.empty())
-                    throw std::runtime_error("failed to load SPIR-V shader file"s);
+                    throw std::runtime_error(fmt::format("failed to load SPIR-V shader file: {}"s, shaderStage.moduleName));
 
                 auto shaderModule = create_shader_module(shaderByteCode);
 

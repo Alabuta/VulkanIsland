@@ -58,18 +58,20 @@ set(SOURCE_FILES
     src/platform/window.hxx                         src/platform/window.cxx
 
     src/renderer/attachments.hxx
+    src/renderer/compatibility.hxx
     src/renderer/descriptor.hxx
-    src/renderer/graphics.hxx
     src/renderer/graphics_api.hxx                   src/renderer/graphics_api.cxx
     src/renderer/graphics_pipeline.hxx              src/renderer/graphics_pipeline.cxx
-    src/renderer/pipeline_states.hxx
-    src/renderer/render_pass.hxx
-    src/renderer/shader_program.hxx                 src/renderer/shader_program.cxx
-
+    src/renderer/graphics.hxx
     src/renderer/material.hxx                       src/renderer/material.cxx
     src/renderer/pipelines.hxx                      src/renderer/pipelines.cxx
+    src/renderer/pipeline_states.hxx
     src/renderer/pipelineVertexInputState.hxx       src/renderer/pipelineVertexInputState.cxx
+    src/renderer/render_flow.hxx                    src/renderer/render_flow.cxx
+    src/renderer/render_pass.hxx                    src/renderer/render_pass.cxx
     src/renderer/renderPass.hxx                     src/renderer/renderPass.cxx
+    src/renderer/shader_program.hxx                 src/renderer/shader_program.cxx
+    src/renderer/vertex.hxx
 
 	src/resources/buffer.hxx                        src/resources/buffer.cxx
 	src/resources/image.hxx                         src/resources/image.cxx
