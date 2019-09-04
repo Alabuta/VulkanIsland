@@ -165,7 +165,7 @@ bool TransitionImageLayout(VulkanDevice const &device, Q &queue, VulkanImage con
     if (dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
-        if (image.format() == VK_FORMAT_D32_SFLOAT_S8_UINT || image.format() == VK_FORMAT_D24_UNORM_S8_UINT)
+        if (image.format() == graphics::FORMAT::D32_SFLOAT_S8_UINT || image.format() == graphics::FORMAT::D24_UNORM_S8_UINT)
             barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
     }
 

@@ -20,7 +20,7 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
 
     VkAttachmentDescription const depthAttachement{
         0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
-        swapchain.depthTexture.image->format(),
+        convert_to::vulkan(swapchain.depthTexture.image->format()),
         device.samplesCount(),
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,

@@ -40,8 +40,8 @@ public:
     ResourceManager(VulkanDevice &device) noexcept : device_{device} { }
 
     [[nodiscard]] std::shared_ptr<VulkanImage>
-    CreateImage(VkFormat format, std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels,
-                VkSampleCountFlagBits samplesCount, VkImageTiling tiling, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags);
+    CreateImage(graphics::FORMAT format, std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels,
+                VkSampleCountFlagBits samplesCount, graphics::IMAGE_TILING tiling, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags);
 
     [[nodiscard]] std::optional<VulkanImageView>
     CreateImageView(VulkanImage const &image, VkImageViewType type, VkImageAspectFlags aspectFlags) noexcept;

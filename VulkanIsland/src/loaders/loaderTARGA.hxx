@@ -6,6 +6,8 @@
 #include <variant>
 
 #include "math.hxx"
+#include "renderer/graphics.hxx"
+
 
 enum class ePIXEL_LAYOUT {
     nUNDEFINED = 0, nRED, nRG, nRGB, nBGR, nRGBA, nBGRA
@@ -23,7 +25,7 @@ using texel_t = std::variant<
 using texel_buffer_t = wrap_variant_by_vector<texel_t>::type;
 
 struct RawImage {
-    VkFormat format{VK_FORMAT_UNDEFINED};
+    graphics::FORMAT format{graphics::FORMAT::UNDEFINED};
     VkImageViewType type;
 
     std::int16_t width{0}, height{0};

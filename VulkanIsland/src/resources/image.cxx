@@ -10,7 +10,7 @@
     auto format = FindSupportedImageFormat(
         device,
         { graphics::FORMAT::D32_SFLOAT, graphics::FORMAT::D24_UNORM_S8_UINT },
-        VK_IMAGE_TILING_OPTIMAL,
+        graphics::IMAGE_TILING::OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
     );
 
@@ -19,7 +19,7 @@
 
 
 [[nodiscard]] std::optional<graphics::FORMAT>
-FindSupportedImageFormat(VulkanDevice const &device, std::vector<graphics::FORMAT> const &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) noexcept
+FindSupportedImageFormat(VulkanDevice const &device, std::vector<graphics::FORMAT> const &candidates, graphics::IMAGE_TILING tiling, VkFormatFeatureFlags features) noexcept
 {
     auto physicalDevice = device.physical_handle();
 
@@ -29,10 +29,10 @@ FindSupportedImageFormat(VulkanDevice const &device, std::vector<graphics::FORMA
         vkGetPhysicalDeviceFormatProperties(physicalDevice, convert_to::vulkan(candidate), &properties);
 
         switch (tiling) {
-            case VK_IMAGE_TILING_LINEAR:
+            case graphics::IMAGE_TILING::LINEAR:
                 return (properties.linearTilingFeatures & features) == features;
 
-            case VK_IMAGE_TILING_OPTIMAL:
+            case graphics::IMAGE_TILING::OPTIMAL:
                 return (properties.optimalTilingFeatures & features) == features;
 
             default:
@@ -44,8 +44,8 @@ FindSupportedImageFormat(VulkanDevice const &device, std::vector<graphics::FORMA
 }
 
 std::optional<VulkanTexture>
-CreateTexture(VulkanDevice &device, VkFormat format, VkImageViewType type,
-              std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, VkSampleCountFlagBits samplesCount, VkImageTiling tiling,
+CreateTexture(VulkanDevice &device, graphics::FORMAT format, VkImageViewType type,
+              std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, VkSampleCountFlagBits samplesCount, graphics::IMAGE_TILING tiling,
               VkImageAspectFlags aspectFlags, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags)
 {
     std::optional<VulkanTexture> texture;

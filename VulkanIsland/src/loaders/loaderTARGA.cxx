@@ -2,6 +2,7 @@
 #include <istream>
 
 #include "main.hxx"
+
 #include "loaderTARGA.hxx"
 
 
@@ -56,30 +57,30 @@ constexpr ePIXEL_LAYOUT GetPixelLayout(std::uint8_t pixelDepth) noexcept
     }
 }
 
-constexpr VkFormat GetPixelFormat(ePIXEL_LAYOUT pixelLayout) noexcept
+constexpr graphics::FORMAT GetPixelFormat(ePIXEL_LAYOUT pixelLayout) noexcept
 {
     switch (pixelLayout) {
         case ePIXEL_LAYOUT::nRED:
-            return VK_FORMAT_R8_UNORM;
+            return graphics::FORMAT::R8_UNORM;
 
         case ePIXEL_LAYOUT::nRG:
-            return VK_FORMAT_R8G8_UNORM;
+            return graphics::FORMAT::RG8_UNORM;
 
         case ePIXEL_LAYOUT::nRGB:
-            return VK_FORMAT_R8G8B8_UNORM;
+            return graphics::FORMAT::RGB8_UNORM;
 
         case ePIXEL_LAYOUT::nBGR:
-            return VK_FORMAT_B8G8R8_UNORM;
+            return graphics::FORMAT::BGR8_UNORM;
 
         case ePIXEL_LAYOUT::nRGBA:
-            return VK_FORMAT_R8G8B8A8_UNORM;
+            return graphics::FORMAT::RGBA8_UNORM;
 
         case ePIXEL_LAYOUT::nBGRA:
-            return VK_FORMAT_B8G8R8A8_UNORM;
+            return graphics::FORMAT::BGRA8_UNORM;
 
         case ePIXEL_LAYOUT::nUNDEFINED:
         default:
-            return VK_FORMAT_UNDEFINED;
+            return graphics::FORMAT::UNDEFINED;
     }
 }
 

@@ -13,7 +13,7 @@ class VulkanImageView;
 class VulkanImage final {
 public:
 
-    VulkanImage(std::shared_ptr<DeviceMemory> memory, VkImage handle, VkFormat format, VkImageTiling tiling,
+    VulkanImage(std::shared_ptr<DeviceMemory> memory, VkImage handle, graphics::FORMAT format, graphics::IMAGE_TILING tiling,
                 std::uint32_t mipLevels, std::uint16_t width, std::uint16_t height) noexcept :
         memory_{memory}, handle_{handle}, format_{format}, tiling_{tiling}, mipLevels_{mipLevels}, width_{width}, height_{height} { }
 
@@ -21,8 +21,8 @@ public:
     std::shared_ptr<DeviceMemory> &memory() noexcept { return memory_; }
 
     VkImage handle() const noexcept { return handle_; }
-    VkFormat format() const noexcept { return format_; }
-    VkImageTiling tiling() const noexcept { return tiling_; }
+    graphics::FORMAT format() const noexcept { return format_; }
+    graphics::IMAGE_TILING tiling() const noexcept { return tiling_; }
 
     std::uint32_t mipLevels() const noexcept { return mipLevels_; }
 
@@ -33,8 +33,8 @@ private:
     std::shared_ptr<DeviceMemory> memory_;
 
     VkImage handle_{VK_NULL_HANDLE};
-    VkFormat format_{VK_FORMAT_UNDEFINED};
-    VkImageTiling tiling_{VK_IMAGE_TILING_LINEAR};
+    graphics::FORMAT format_{graphics::FORMAT::UNDEFINED};
+    graphics::IMAGE_TILING tiling_{graphics::IMAGE_TILING::LINEAR};
 
     std::uint32_t mipLevels_{1};
     std::uint16_t width_{0}, height_{0};
@@ -113,12 +113,12 @@ struct VulkanTexture final {
 //}
 
 [[nodiscard]] std::optional<graphics::FORMAT>
-FindSupportedImageFormat(VulkanDevice const &device, std::vector<graphics::FORMAT> const &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) noexcept;
+FindSupportedImageFormat(VulkanDevice const &device, std::vector<graphics::FORMAT> const &candidates, graphics::IMAGE_TILING tiling, VkFormatFeatureFlags features) noexcept;
 
 [[nodiscard]] std::optional<graphics::FORMAT> FindDepthImageFormat(VulkanDevice const &device) noexcept;
 
 
 [[nodiscard]] std::optional<VulkanTexture>
-CreateTexture(VulkanDevice &device, VkFormat format, VkImageViewType type,
-              std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, VkSampleCountFlagBits samplesCount, VkImageTiling tiling,
+CreateTexture(VulkanDevice &device, graphics::FORMAT format, VkImageViewType type,
+              std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, VkSampleCountFlagBits samplesCount, graphics::IMAGE_TILING tiling,
               VkImageAspectFlags aspectFlags, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags);

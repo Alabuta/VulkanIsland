@@ -1150,7 +1150,7 @@ LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
             auto constexpr usageFlags = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
             auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-            auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
+            auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
             texture = CreateTexture(device, rawImage->format, rawImage->type, width, height, rawImage->mipLevels,
                                     VK_SAMPLE_COUNT_1_BIT, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);

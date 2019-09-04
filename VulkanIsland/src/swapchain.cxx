@@ -116,7 +116,7 @@ template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>* = n
 }
 
 [[nodiscard]] std::optional<VulkanTexture>
-CreateColorAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, VkFormat format, std::uint16_t width, std::uint16_t height)
+CreateColorAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, graphics::FORMAT format, std::uint16_t width, std::uint16_t height)
 {
     std::optional<VulkanTexture> texture;
 
@@ -125,7 +125,7 @@ CreateColorAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
     auto constexpr usageFlags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-    auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
+    auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
     texture = CreateTexture(device, format, VK_IMAGE_VIEW_TYPE_2D, width, height, mipLevels, device.samplesCount(),
                             tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
@@ -148,9 +148,9 @@ CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
         auto constexpr usageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-        auto constexpr tiling = VK_IMAGE_TILING_OPTIMAL;
+        auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
-        texture = CreateTexture(device, convert_to::vulkan(*format), VK_IMAGE_VIEW_TYPE_2D, width, height, mipLevels, device.samplesCount(),
+        texture = CreateTexture(device, *format, VK_IMAGE_VIEW_TYPE_2D, width, height, mipLevels, device.samplesCount(),
                                 tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
 
         if (texture)
@@ -285,7 +285,7 @@ CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width,
     auto const swapchainWidth = static_cast<std::uint16_t>(swapchain.extent.width);
     auto const swapchainHeight = static_cast<std::uint16_t>(swapchain.extent.height);
 
-    if (auto result = CreateColorAttachement(device, transferQueue, transferCommandPool, convert_to::vulkan(swapchain.format), swapchainWidth, swapchainHeight); !result) {
+    if (auto result = CreateColorAttachement(device, transferQueue, transferCommandPool, swapchain.format, swapchainWidth, swapchainHeight); !result) {
         std::cerr << "failed to create color texture\n"s;
         return { };
     }

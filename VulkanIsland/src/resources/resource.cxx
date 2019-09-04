@@ -32,18 +32,18 @@ CreateBufferHandle(VulkanDevice const &device, VkDeviceSize size, VkBufferUsageF
 
 [[nodiscard]] std::optional<VkImage>
 CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
-                  VkSampleCountFlagBits samplesCount, VkFormat format, VkImageTiling tiling, VkBufferUsageFlags usage) noexcept
+                  VkSampleCountFlagBits samplesCount, graphics::FORMAT format, graphics::IMAGE_TILING tiling, VkBufferUsageFlags usage) noexcept
 {
     VkImageCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         nullptr, 0,
         VK_IMAGE_TYPE_2D,
-        format,
+        convert_to::vulkan(format),
         { width, height, 1 },
         mipLevels,
         1,
         samplesCount,
-        tiling,
+        convert_to::vulkan(tiling),
         usage,
         VK_SHARING_MODE_EXCLUSIVE,
         0, nullptr,
@@ -79,15 +79,15 @@ CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::ui
 }
 
 std::shared_ptr<VulkanImage>
-ResourceManager::CreateImage(VkFormat format, std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels,
-                             VkSampleCountFlagBits samplesCount, VkImageTiling tiling, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags)
+ResourceManager::CreateImage(graphics::FORMAT format, std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels,
+                             VkSampleCountFlagBits samplesCount, graphics::IMAGE_TILING tiling, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags)
 {
     std::shared_ptr<VulkanImage> image;
 
     auto handle = CreateImageHandle(device_, width, height, mipLevels, samplesCount, format, tiling, usageFlags);
 
     if (handle) {
-        auto const linearMemory = tiling == VK_IMAGE_TILING_LINEAR;
+        auto const linearMemory = tiling == graphics::IMAGE_TILING::LINEAR;
 
         auto memory = device_.memoryManager().AllocateMemory(*handle, propertyFlags, linearMemory);
 
@@ -120,7 +120,7 @@ ResourceManager::CreateImageView(VulkanImage const &image, VkImageViewType type,
         nullptr, 0,
         image.handle(),
         type,
-        image.format(),
+        convert_to::vulkan(image.format()),
         { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
         { aspectFlags, 0, image.mipLevels(), 0, 1 }
     };
