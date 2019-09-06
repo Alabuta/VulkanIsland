@@ -36,87 +36,85 @@ namespace convert_to
 
     VkShaderStageFlagBits vulkan_api::operator() (graphics::SHADER_STAGE shader_stage) const noexcept
     {
-        switch (shader_stage) {
-            case graphics::SHADER_STAGE::VERTEX:
-                return VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+        VkShaderStageFlags result = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
 
-            case graphics::SHADER_STAGE::TESS_CONTROL:
-                return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+        if ((shader_stage & graphics::SHADER_STAGE::VERTEX) == 0)
+            result ^= VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
 
-            case graphics::SHADER_STAGE::TESS_EVAL:
-                return VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
+        if (shader_stage & graphics::SHADER_STAGE::TESS_CONTROL)
+            result |= VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 
-            case graphics::SHADER_STAGE::GEOMETRY:
-                return VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT;
+        if (shader_stage & graphics::SHADER_STAGE::TESS_EVAL)
+            result |= VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 
-            case graphics::SHADER_STAGE::FRAGMENT:
-                return VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
+        if (shader_stage & graphics::SHADER_STAGE::GEOMETRY)
+            result |= VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT;
 
-            case graphics::SHADER_STAGE::COMPUTE:
-                return VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT;
+        if (shader_stage & graphics::SHADER_STAGE::FRAGMENT)
+            result |= VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
 
-            default:
-                return VkShaderStageFlagBits::VK_SHADER_STAGE_FLAG_BITS_MAX_ENUM;
-        }
+        if (shader_stage & graphics::SHADER_STAGE::COMPUTE)
+            result |= VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT;
+
+        return static_cast<VkShaderStageFlagBits>(result);
     }
 
     VkPipelineStageFlagBits vulkan_api::operator() (graphics::PIPELINE_STAGE pipeline_stage) const noexcept
     {
-        switch (pipeline_stage) {
-            case graphics::PIPELINE_STAGE::TOP_OF_PIPE:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        VkPipelineStageFlags result = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
-            case graphics::PIPELINE_STAGE::DRAW_INDIRECT:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
+        if ((pipeline_stage & graphics::PIPELINE_STAGE::TOP_OF_PIPE) == 0)
+            result ^= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
-            case graphics::PIPELINE_STAGE::VERTEX_INPUT:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+        if (pipeline_stage & graphics::PIPELINE_STAGE::DRAW_INDIRECT)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
 
-            case graphics::PIPELINE_STAGE::VERTEX_SHADER:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
+        if (pipeline_stage & graphics::PIPELINE_STAGE::VERTEX_INPUT)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
 
-            case graphics::PIPELINE_STAGE::TESSELLATION_CONTROL_SHADER:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
+        if (pipeline_stage & graphics::PIPELINE_STAGE::VERTEX_SHADER)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
 
-            case graphics::PIPELINE_STAGE::TESSELLATION_EVALUATION_SHADER:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
+        if (pipeline_stage & graphics::PIPELINE_STAGE::TESSELLATION_CONTROL_SHADER)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
 
-            case graphics::PIPELINE_STAGE::GEOMETRY_SHADER:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
+        if (pipeline_stage & graphics::PIPELINE_STAGE::TESSELLATION_EVALUATION_SHADER)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
 
-            case graphics::PIPELINE_STAGE::FRAGMENT_SHADER:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        if (pipeline_stage & graphics::PIPELINE_STAGE::GEOMETRY_SHADER)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
 
-            case graphics::PIPELINE_STAGE::EARLY_FRAGMENT_TESTS:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        if (pipeline_stage & graphics::PIPELINE_STAGE::FRAGMENT_SHADER)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
-            case graphics::PIPELINE_STAGE::LATE_FRAGMENT_TESTS:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+        if (pipeline_stage & graphics::PIPELINE_STAGE::EARLY_FRAGMENT_TESTS)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 
-            case graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        if (pipeline_stage & graphics::PIPELINE_STAGE::LATE_FRAGMENT_TESTS)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 
-            case graphics::PIPELINE_STAGE::COMPUTE_SHADER:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        if (pipeline_stage & graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-            case graphics::PIPELINE_STAGE::TRANSFER:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
+        if (pipeline_stage & graphics::PIPELINE_STAGE::COMPUTE_SHADER)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 
-            case graphics::PIPELINE_STAGE::BOTTOM_OF_PIPE:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
+        if (pipeline_stage & graphics::PIPELINE_STAGE::TRANSFER)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
 
-            case graphics::PIPELINE_STAGE::HOST:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_HOST_BIT;
+        if (pipeline_stage & graphics::PIPELINE_STAGE::BOTTOM_OF_PIPE)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 
-            case graphics::PIPELINE_STAGE::ALL_GRAPHICS:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
+        if (pipeline_stage & graphics::PIPELINE_STAGE::HOST)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_HOST_BIT;
 
-            case graphics::PIPELINE_STAGE::ALL_COMMANDS:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+        if (pipeline_stage & graphics::PIPELINE_STAGE::ALL_GRAPHICS_PIPELINE_STAGES)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
 
-            default:
-                return VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM;
-        }
+        if (pipeline_stage & graphics::PIPELINE_STAGE::ALL_COMMANDS)
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
+
+        return static_cast<VkPipelineStageFlagBits>(result);
     }
 
     VkCullModeFlags vulkan_api::operator() (graphics::CULL_MODE cull_mode) const noexcept
@@ -620,7 +618,7 @@ namespace convert_to
         }
     }
 
-    VkColorSpaceKHR vulkan_api::operator()(graphics::COLOR_SPACE color_space) const noexcept
+    VkColorSpaceKHR vulkan_api::operator() (graphics::COLOR_SPACE color_space) const noexcept
     {
         switch (color_space) {
             case graphics::COLOR_SPACE::SRGB_NONLINEAR:
@@ -658,7 +656,7 @@ namespace convert_to
         }
     }
 
-    VkSampleCountFlagBits vulkan_api::operator()(std::uint32_t samples_count) const noexcept
+    VkSampleCountFlagBits vulkan_api::operator() (std::uint32_t samples_count) const noexcept
     {
         switch (samples_count) {
             case 1:
