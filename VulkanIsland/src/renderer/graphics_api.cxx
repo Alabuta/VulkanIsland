@@ -686,4 +686,38 @@ namespace convert_to
                 return VkSampleCountFlagBits::VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM;
         }
     }
+
+    VkBufferUsageFlagBits vulkan_api::operator() (graphics::BUFFER_USAGE buffer_usage) const noexcept
+    {
+        VkBufferUsageFlags result = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+        if ((buffer_usage & graphics::BUFFER_USAGE::TRANSFER_SRC) == 0)
+            result ^= VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+        if (buffer_usage & graphics::BUFFER_USAGE::TRANSFER_DST)
+            result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+
+        if (buffer_usage & graphics::BUFFER_USAGE::UNIFORM_TEXEL_BUFFER)
+            result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
+
+        if (buffer_usage & graphics::BUFFER_USAGE::STORAGE_TEXEL_BUFFER)
+            result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+
+        if (buffer_usage & graphics::BUFFER_USAGE::UNIFORM_BUFFER)
+            result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+
+        if (buffer_usage & graphics::BUFFER_USAGE::STORAGE_BUFFER)
+            result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+        if (buffer_usage & graphics::BUFFER_USAGE::INDEX_BUFFER)
+            result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+
+        if (buffer_usage & graphics::BUFFER_USAGE::VERTEX_BUFFER)
+            result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+
+        if (buffer_usage & graphics::BUFFER_USAGE::INDIRECT_BUFFER)
+            result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
+
+        return static_cast<VkBufferUsageFlagBits>(result);
+    }
 }

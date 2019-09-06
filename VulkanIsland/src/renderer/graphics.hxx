@@ -395,4 +395,16 @@ namespace graphics
         HDR10_HLG,
         PASS_THROUGH
     };
+
+    enum BUFFER_USAGE {
+        TRANSFER_SRC = 0x01,
+        TRANSFER_DST = 0x02,
+        UNIFORM_TEXEL_BUFFER = 0x04,
+        STORAGE_TEXEL_BUFFER = 0x08,
+        UNIFORM_BUFFER = 0x10,
+        STORAGE_BUFFER = 0x20,
+        INDEX_BUFFER = 0x40,
+        VERTEX_BUFFER = 0x80,
+        INDIRECT_BUFFER = 0x100
+    };
 }

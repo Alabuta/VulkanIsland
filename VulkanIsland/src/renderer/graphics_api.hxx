@@ -45,6 +45,8 @@ namespace convert_to
         VkColorSpaceKHR operator() (graphics::COLOR_SPACE color_space) const noexcept;
 
         VkSampleCountFlagBits operator() (std::uint32_t samples_count) const noexcept;
+
+        VkBufferUsageFlagBits operator() (graphics::BUFFER_USAGE buffer_usage) const noexcept;
     };
 
     vulkan_api constexpr vulkan;
