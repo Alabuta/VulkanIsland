@@ -82,7 +82,7 @@ GraphicsPipelineManager::CreateGraphicsPipeline(xformat::vertex_layout const &la
         VkPipelineMultisampleStateCreateInfo const multisampleCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
             nullptr, 0,
-            vulkanDevice_.samplesCount(),//VK_SAMPLE_COUNT_1_BIT
+            convert_to::vulkan(vulkanDevice_.samplesCount()),//VK_SAMPLE_COUNT_1_BIT
             VK_FALSE, 1,
             nullptr,
             VK_FALSE,

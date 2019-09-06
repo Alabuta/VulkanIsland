@@ -32,7 +32,7 @@ CreateBufferHandle(VulkanDevice const &device, VkDeviceSize size, VkBufferUsageF
 
 [[nodiscard]] std::optional<VkImage>
 CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
-                  VkSampleCountFlagBits samplesCount, graphics::FORMAT format, graphics::IMAGE_TILING tiling, VkBufferUsageFlags usage) noexcept
+                  std::uint32_t samplesCount, graphics::FORMAT format, graphics::IMAGE_TILING tiling, VkBufferUsageFlags usage) noexcept
 {
     VkImageCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -42,7 +42,7 @@ CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::ui
         { width, height, 1 },
         mipLevels,
         1,
-        samplesCount,
+        convert_to::vulkan(samplesCount),
         convert_to::vulkan(tiling),
         usage,
         VK_SHARING_MODE_EXCLUSIVE,
@@ -80,7 +80,7 @@ CreateImageHandle(VulkanDevice const &vulkanDevice, std::uint32_t width, std::ui
 
 std::shared_ptr<VulkanImage>
 ResourceManager::CreateImage(graphics::FORMAT format, std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels,
-                             VkSampleCountFlagBits samplesCount, graphics::IMAGE_TILING tiling, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags)
+                             std::uint32_t samplesCount, graphics::IMAGE_TILING tiling, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags)
 {
     std::shared_ptr<VulkanImage> image;
 

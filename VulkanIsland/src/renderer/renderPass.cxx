@@ -8,7 +8,7 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
     VkAttachmentDescription const colorAttachment{
         0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
         convert_to::vulkan(swapchain.format),
-        device.samplesCount(),
+        convert_to::vulkan(device.samplesCount()),
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
@@ -21,7 +21,7 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
     VkAttachmentDescription const depthAttachement{
         0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
         convert_to::vulkan(swapchain.depthTexture.image->format()),
-        device.samplesCount(),
+        convert_to::vulkan(device.samplesCount()),
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL

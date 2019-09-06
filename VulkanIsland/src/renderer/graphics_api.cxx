@@ -657,4 +657,33 @@ namespace convert_to
                 return VkColorSpaceKHR::VK_COLOR_SPACE_MAX_ENUM_KHR;
         }
     }
+
+    VkSampleCountFlagBits vulkan_api::operator()(std::uint32_t samples_count) const noexcept
+    {
+        switch (samples_count) {
+            case 1:
+                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+
+            case 2:
+                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_2_BIT;
+
+            case 4:
+                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_4_BIT;
+
+            case 8:
+                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_8_BIT;
+
+            case 16:
+                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_16_BIT;
+
+            case 32:
+                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_32_BIT;
+
+            case 64:
+                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_64_BIT;
+
+            default:
+                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM;
+        }
+    }
 }

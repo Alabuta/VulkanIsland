@@ -87,31 +87,6 @@ struct VulkanTexture final {
 };
 
 
-//[[nodiscard]] std::optional<VkFormat>
-//FindSupportedImageFormat(VulkanDevice const &device, std::vector<VkFormat> const &candidates, VkImageTiling tiling, VkFormatFeatureFlags features) noexcept
-//{
-//    auto physicalDevice = device.physical_handle();
-//
-//    auto it_format = std::find_if(std::cbegin(candidates), std::cend(candidates), [physicalDevice, tiling, features] (auto candidate)
-//    {
-//        VkFormatProperties properties;
-//        vkGetPhysicalDeviceFormatProperties(physicalDevice, candidate, &properties);
-//
-//        switch (tiling) {
-//            case VK_IMAGE_TILING_LINEAR:
-//                return (properties.linearTilingFeatures & features) == features;
-//
-//            case VK_IMAGE_TILING_OPTIMAL:
-//                return (properties.optimalTilingFeatures & features) == features;
-//
-//            default:
-//                return false;
-//        }
-//    });
-//
-//    return it_format != std::cend(candidates) ? *it_format : std::optional<VkFormat>();
-//}
-
 [[nodiscard]] std::optional<graphics::FORMAT>
 FindSupportedImageFormat(VulkanDevice const &device, std::vector<graphics::FORMAT> const &candidates, graphics::IMAGE_TILING tiling, VkFormatFeatureFlags features) noexcept;
 
@@ -120,5 +95,5 @@ FindSupportedImageFormat(VulkanDevice const &device, std::vector<graphics::FORMA
 
 [[nodiscard]] std::optional<VulkanTexture>
 CreateTexture(VulkanDevice &device, graphics::FORMAT format, VkImageViewType type,
-              std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, VkSampleCountFlagBits samplesCount, graphics::IMAGE_TILING tiling,
+              std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, std::uint32_t samplesCount, graphics::IMAGE_TILING tiling,
               VkImageAspectFlags aspectFlags, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags);

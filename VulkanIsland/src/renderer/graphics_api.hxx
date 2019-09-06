@@ -43,6 +43,8 @@ namespace convert_to
         VkAttachmentStoreOp operator() (graphics::ATTACHMENT_STORE_TREATMENT store_treatment) const noexcept;
 
         VkColorSpaceKHR operator() (graphics::COLOR_SPACE color_space) const noexcept;
+
+        VkSampleCountFlagBits operator() (std::uint32_t samples_count) const noexcept;
     };
 
     vulkan_api constexpr vulkan;

@@ -9,7 +9,7 @@
 {
     auto format = FindSupportedImageFormat(
         device,
-        { graphics::FORMAT::D32_SFLOAT, graphics::FORMAT::D24_UNORM_S8_UINT },
+        { graphics::FORMAT::D32_SFLOAT, graphics::FORMAT::D32_SFLOAT_S8_UINT, graphics::FORMAT::D24_UNORM_S8_UINT },
         graphics::IMAGE_TILING::OPTIMAL,
         VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT
     );
@@ -45,7 +45,7 @@ FindSupportedImageFormat(VulkanDevice const &device, std::vector<graphics::FORMA
 
 std::optional<VulkanTexture>
 CreateTexture(VulkanDevice &device, graphics::FORMAT format, VkImageViewType type,
-              std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, VkSampleCountFlagBits samplesCount, graphics::IMAGE_TILING tiling,
+              std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, std::uint32_t samplesCount, graphics::IMAGE_TILING tiling,
               VkImageAspectFlags aspectFlags, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags)
 {
     std::optional<VulkanTexture> texture;

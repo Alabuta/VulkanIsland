@@ -266,9 +266,7 @@ void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<char const *> 
 
     auto samplesCountBits = std::min(properties_.limits.framebufferColorSampleCounts, properties_.limits.framebufferDepthSampleCounts);
 
-    auto samplesCount = static_cast<VkFlags>(std::pow(2.0, std::floor(std::log2(samplesCountBits))));
-
-    samplesCount_ = static_cast<VkSampleCountFlagBits>(samplesCount);
+    samplesCount_ = static_cast<std::uint32_t>(std::pow(2, std::floor(std::log2(samplesCountBits))));
 
     QueueHelper queueHelper;
 

@@ -53,7 +53,7 @@ public:
     ResourceManager &resourceManager() noexcept { return *resourceManager_; }
     ResourceManager const &resourceManager() const noexcept { return *resourceManager_; }
 
-    VkSampleCountFlagBits samplesCount() const noexcept { return samplesCount_; }
+    std::uint32_t samplesCount() const noexcept { return samplesCount_; }
 
     VkPhysicalDeviceProperties const &properties() const noexcept { return properties_; };
 
@@ -98,7 +98,7 @@ private:
     std::unique_ptr<MemoryManager> memoryManager_;
     std::unique_ptr<ResourceManager> resourceManager_;
 
-    VkSampleCountFlagBits samplesCount_{VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT};
+    std::uint32_t samplesCount_{1};
 
     VkPhysicalDeviceProperties properties_;
 
