@@ -1,6 +1,33 @@
 #include "graphics_api.hxx"
 
 
+namespace graphics
+{
+    enum SHADER_STAGE constexpr operator& (enum SHADER_STAGE lhs, enum SHADER_STAGE rhs)
+    {
+        using E = std::underlying_type_t<SHADER_STAGE>;
+        return static_cast<SHADER_STAGE>(static_cast<E>(lhs) & static_cast<E>(rhs));
+    }
+
+    enum PIPELINE_STAGE constexpr operator& (enum PIPELINE_STAGE lhs, enum PIPELINE_STAGE rhs)
+    {
+        using E = std::underlying_type_t<PIPELINE_STAGE>;
+        return static_cast<PIPELINE_STAGE>(static_cast<E>(lhs) & static_cast<E>(rhs));
+    }
+
+    enum BUFFER_USAGE constexpr operator& (enum BUFFER_USAGE lhs, enum BUFFER_USAGE rhs)
+    {
+        using E = std::underlying_type_t<BUFFER_USAGE>;
+        return static_cast<BUFFER_USAGE>(static_cast<E>(lhs) & static_cast<E>(rhs));
+    }
+
+    enum IMAGE_USAGE constexpr operator& (enum IMAGE_USAGE lhs, enum IMAGE_USAGE rhs)
+    {
+        using E = std::underlying_type_t<IMAGE_USAGE>;
+        return static_cast<IMAGE_USAGE>(static_cast<E>(lhs) & static_cast<E>(rhs));
+    }
+}
+
 namespace convert_to
 {
     VkBool32 vulkan_api::operator() (bool boolean) const noexcept
@@ -38,22 +65,24 @@ namespace convert_to
     {
         VkShaderStageFlags result = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
 
-        if ((shader_stage & graphics::SHADER_STAGE::VERTEX) == 0)
+        using E = std::underlying_type_t<graphics::SHADER_STAGE>;
+
+        if (static_cast<E>(shader_stage & graphics::SHADER_STAGE::VERTEX) == 0)
             result ^= VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
 
-        if (shader_stage & graphics::SHADER_STAGE::TESS_CONTROL)
+        if (static_cast<E>(shader_stage & graphics::SHADER_STAGE::TESS_CONTROL))
             result |= VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
 
-        if (shader_stage & graphics::SHADER_STAGE::TESS_EVAL)
+        if (static_cast<E>(shader_stage & graphics::SHADER_STAGE::TESS_EVAL))
             result |= VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT;
 
-        if (shader_stage & graphics::SHADER_STAGE::GEOMETRY)
+        if (static_cast<E>(shader_stage & graphics::SHADER_STAGE::GEOMETRY))
             result |= VkShaderStageFlagBits::VK_SHADER_STAGE_GEOMETRY_BIT;
 
-        if (shader_stage & graphics::SHADER_STAGE::FRAGMENT)
+        if (static_cast<E>(shader_stage & graphics::SHADER_STAGE::FRAGMENT))
             result |= VkShaderStageFlagBits::VK_SHADER_STAGE_FRAGMENT_BIT;
 
-        if (shader_stage & graphics::SHADER_STAGE::COMPUTE)
+        if (static_cast<E>(shader_stage & graphics::SHADER_STAGE::COMPUTE))
             result |= VkShaderStageFlagBits::VK_SHADER_STAGE_COMPUTE_BIT;
 
         return static_cast<VkShaderStageFlagBits>(result);
@@ -63,55 +92,57 @@ namespace convert_to
     {
         VkPipelineStageFlags result = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
-        if ((pipeline_stage & graphics::PIPELINE_STAGE::TOP_OF_PIPE) == 0)
+        using E = std::underlying_type_t<graphics::PIPELINE_STAGE>;
+
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::TOP_OF_PIPE) == 0)
             result ^= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::DRAW_INDIRECT)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::DRAW_INDIRECT))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::VERTEX_INPUT)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::VERTEX_INPUT))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::VERTEX_SHADER)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::VERTEX_SHADER))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_VERTEX_SHADER_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::TESSELLATION_CONTROL_SHADER)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::TESSELLATION_CONTROL_SHADER))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_CONTROL_SHADER_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::TESSELLATION_EVALUATION_SHADER)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::TESSELLATION_EVALUATION_SHADER))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TESSELLATION_EVALUATION_SHADER_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::GEOMETRY_SHADER)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::GEOMETRY_SHADER))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::FRAGMENT_SHADER)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::FRAGMENT_SHADER))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::EARLY_FRAGMENT_TESTS)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::EARLY_FRAGMENT_TESTS))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::LATE_FRAGMENT_TESTS)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::LATE_FRAGMENT_TESTS))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::COMPUTE_SHADER)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::COMPUTE_SHADER))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::TRANSFER)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::TRANSFER))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TRANSFER_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::BOTTOM_OF_PIPE)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::BOTTOM_OF_PIPE))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::HOST)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::HOST))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_HOST_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::ALL_GRAPHICS_PIPELINE_STAGES)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::ALL_GRAPHICS_PIPELINE_STAGES))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT;
 
-        if (pipeline_stage & graphics::PIPELINE_STAGE::ALL_COMMANDS)
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::ALL_COMMANDS))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
         return static_cast<VkPipelineStageFlagBits>(result);
@@ -689,31 +720,33 @@ namespace convert_to
     {
         VkBufferUsageFlags result = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
-        if ((buffer_usage & graphics::BUFFER_USAGE::TRANSFER_SRC) == 0)
+        using E = std::underlying_type_t<graphics::BUFFER_USAGE>;
+
+        if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::TRANSFER_SRC) == 0)
             result ^= VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
-        if (buffer_usage & graphics::BUFFER_USAGE::TRANSFER_DST)
+        if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::TRANSFER_DST))
             result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
-        if (buffer_usage & graphics::BUFFER_USAGE::UNIFORM_TEXEL_BUFFER)
+        if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::UNIFORM_TEXEL_BUFFER))
             result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_TEXEL_BUFFER_BIT;
 
-        if (buffer_usage & graphics::BUFFER_USAGE::STORAGE_TEXEL_BUFFER)
+        if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::STORAGE_TEXEL_BUFFER))
             result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
 
-        if (buffer_usage & graphics::BUFFER_USAGE::UNIFORM_BUFFER)
+        if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::UNIFORM_BUFFER))
             result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
-        if (buffer_usage & graphics::BUFFER_USAGE::STORAGE_BUFFER)
+        if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::STORAGE_BUFFER))
             result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
 
-        if (buffer_usage & graphics::BUFFER_USAGE::INDEX_BUFFER)
+        if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::INDEX_BUFFER))
             result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
 
-        if (buffer_usage & graphics::BUFFER_USAGE::VERTEX_BUFFER)
+        if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::VERTEX_BUFFER))
             result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
 
-        if (buffer_usage & graphics::BUFFER_USAGE::INDIRECT_BUFFER)
+        if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::INDIRECT_BUFFER))
             result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
 
         return static_cast<VkBufferUsageFlagBits>(result);

@@ -17,7 +17,7 @@ namespace graphics
         TRIANGLES, TRIANGLE_STRIP, TRIANGLE_FAN
     };
 
-    enum SHADER_STAGE {
+    enum class SHADER_STAGE {
         VERTEX = 0x01,
         TESS_CONTROL = 0x02,
         TESS_EVAL = 0x04,
@@ -29,7 +29,7 @@ namespace graphics
         ALL_SHADER_STAGES = VERTEX | TESS_CONTROL | TESS_EVAL | GEOMETRY | FRAGMENT | COMPUTE
     };
 
-    enum PIPELINE_STAGE {
+    enum class PIPELINE_STAGE {
         TOP_OF_PIPE = 0x01,
         DRAW_INDIRECT = 0x02,
         VERTEX_INPUT = 0x04,
@@ -396,7 +396,7 @@ namespace graphics
         PASS_THROUGH
     };
 
-    enum BUFFER_USAGE {
+    enum class BUFFER_USAGE {
         TRANSFER_SRC = 0x01,
         TRANSFER_DST = 0x02,
         UNIFORM_TEXEL_BUFFER = 0x04,
@@ -418,4 +418,31 @@ namespace graphics
         TRANSIENT_ATTACHMENT = 0x40,
         INPUT_ATTACHMENT = 0x80
     };
+}
+
+namespace graphics
+{
+    enum SHADER_STAGE constexpr operator| (enum SHADER_STAGE lhs, enum SHADER_STAGE rhs)
+    {
+        using E = std::underlying_type_t<SHADER_STAGE>;
+        return static_cast<SHADER_STAGE>(static_cast<E>(lhs) | static_cast<E>(rhs));
+    }
+
+    enum PIPELINE_STAGE constexpr operator| (enum PIPELINE_STAGE lhs, enum PIPELINE_STAGE rhs)
+    {
+        using E = std::underlying_type_t<PIPELINE_STAGE>;
+        return static_cast<PIPELINE_STAGE>(static_cast<E>(lhs) | static_cast<E>(rhs));
+    }
+
+    enum BUFFER_USAGE constexpr operator| (enum BUFFER_USAGE lhs, enum BUFFER_USAGE rhs)
+    {
+        using E = std::underlying_type_t<BUFFER_USAGE>;
+        return static_cast<BUFFER_USAGE>(static_cast<E>(lhs) | static_cast<E>(rhs));
+    }
+
+    enum IMAGE_USAGE constexpr operator| (enum IMAGE_USAGE lhs, enum IMAGE_USAGE rhs)
+    {
+        using E = std::underlying_type_t<IMAGE_USAGE>;
+        return static_cast<IMAGE_USAGE>(static_cast<E>(lhs) | static_cast<E>(rhs));
+    }
 }
