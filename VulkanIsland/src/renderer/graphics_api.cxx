@@ -718,4 +718,37 @@ namespace convert_to
 
         return static_cast<VkBufferUsageFlagBits>(result);
     }
+
+    VkImageUsageFlagBits vulkan_api::operator() (graphics::IMAGE_USAGE image_usage) const noexcept
+    {
+        VkImageUsageFlags result = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+        using E = std::underlying_type_t<graphics::IMAGE_USAGE>;
+
+        if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::TRANSFER_SRC) == 0)
+            result ^= VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+        if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::TRANSFER_DST))
+            result |= VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+        if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::SAMPLED))
+            result |= VkImageUsageFlagBits::VK_IMAGE_USAGE_SAMPLED_BIT;
+
+        if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::STORAGE))
+            result |= VkImageUsageFlagBits::VK_IMAGE_USAGE_STORAGE_BIT;
+
+        if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::COLOR_ATTACHMENT))
+            result |= VkImageUsageFlagBits::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+        if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT))
+            result |= VkImageUsageFlagBits::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+        if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT))
+            result |= VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT;
+
+        if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::INPUT_ATTACHMENT))
+            result |= VkImageUsageFlagBits::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+
+        return static_cast<VkImageUsageFlagBits>(result);
+    }
 }

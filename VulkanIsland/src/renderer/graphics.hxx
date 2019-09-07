@@ -407,4 +407,15 @@ namespace graphics
         VERTEX_BUFFER = 0x80,
         INDIRECT_BUFFER = 0x100
     };
+
+    enum class IMAGE_USAGE {
+        TRANSFER_SRC = 0x01,
+        TRANSFER_DST = 0x02,
+        SAMPLED = 0x04,
+        STORAGE = 0x08,
+        COLOR_ATTACHMENT = 0x10,
+        DEPTH_STENCIL_ATTACHMENT = 0x20,
+        TRANSIENT_ATTACHMENT = 0x40,
+        INPUT_ATTACHMENT = 0x80
+    };
 }
