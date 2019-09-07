@@ -31,14 +31,14 @@ namespace presentation
 
 namespace {
 
-[[nodiscard]] VkImageView CreateImageView(VkDevice device, VkImage &image, VkFormat format, VkImageAspectFlags aspectFlags, std::uint32_t mipLevels)
+[[nodiscard]] VkImageView CreateImageView(VkDevice device, VkImage &image, graphics::FORMAT format, VkImageAspectFlags aspectFlags, std::uint32_t mipLevels)
 {
     VkImageViewCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         nullptr, 0,
         image,
         VK_IMAGE_VIEW_TYPE_2D,
-        format,
+        convert_to::vulkan(format),
         { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
         { aspectFlags, 0, mipLevels, 0, 1 }
     };
@@ -278,7 +278,7 @@ CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width,
     swapchain.views.clear();
 
     for (auto &&swapChainImage : swapchain.images) {
-        auto imageView = CreateImageView(device.handle(), swapChainImage, convert_to::vulkan(swapchain.format), VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        auto imageView = CreateImageView(device.handle(), swapChainImage, swapchain.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
         swapchain.views.emplace_back(std::move(imageView));
     }
 
