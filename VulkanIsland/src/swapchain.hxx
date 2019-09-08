@@ -10,10 +10,10 @@
 struct VulkanSwapchain final {
     VkSwapchainKHR handle;
 
-    graphics::FORMAT format;
-    VkExtent2D extent;
+    graphics::FORMAT format{graphics::FORMAT::UNDEFINED};
+    graphics::FORMAT depth_format{graphics::FORMAT::UNDEFINED};
 
-    graphics::FORMAT depth_format;
+    VkExtent2D extent;
 
     VulkanTexture colorTexture, depthTexture;
 

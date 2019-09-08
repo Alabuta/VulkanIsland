@@ -37,8 +37,8 @@ namespace graphics
 
         VkRenderPass handle_;
 
-        //std::vector<graphics::render_pass_attachment> attachments_;
+        // std::vector<graphics::render_pass_attachment> attachments_;
 
-        std::vector<graphics::render_subpass> subpasses_;
+        // std::vector<graphics::render_subpass> subpasses_;
     };
 }

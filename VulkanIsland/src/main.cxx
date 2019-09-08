@@ -833,8 +833,6 @@ void InitVulkan(Window &window, app_t &app)
                 pipeline_states
             }
         });
-
-
     }
 
     app.vulkanDevice->resourceManager().TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
