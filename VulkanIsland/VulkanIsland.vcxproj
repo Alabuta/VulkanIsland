@@ -294,6 +294,7 @@
     <ClInclude Include="src\renderer\attachments.hxx" />
     <ClInclude Include="src\renderer\compatibility.hxx" />
     <ClInclude Include="src\renderer\descriptor.hxx" />
+    <ClInclude Include="src\renderer\framebuffer.hxx" />
     <ClInclude Include="src\renderer\graphics.hxx" />
     <ClInclude Include="src\renderer\graphics_api.hxx" />
     <ClInclude Include="src\renderer\graphics_pipeline.hxx" />
