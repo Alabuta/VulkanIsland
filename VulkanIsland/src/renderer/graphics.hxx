@@ -422,27 +422,17 @@ namespace graphics
 
 namespace graphics
 {
-    enum SHADER_STAGE constexpr operator| (enum SHADER_STAGE lhs, enum SHADER_STAGE rhs)
+    template<class T, typename std::enable_if_t<std::is_enum_v<T>>* = nullptr>
+    auto constexpr operator| (T lhs, T rhs)
     {
-        using E = std::underlying_type_t<SHADER_STAGE>;
-        return static_cast<SHADER_STAGE>(static_cast<E>(lhs) | static_cast<E>(rhs));
+        using E = std::underlying_type_t<T>;
+        return static_cast<T>(static_cast<E>(lhs) | static_cast<E>(rhs));
     }
 
-    enum PIPELINE_STAGE constexpr operator| (enum PIPELINE_STAGE lhs, enum PIPELINE_STAGE rhs)
+    template<class T, typename std::enable_if_t<std::is_enum_v<T>>* = nullptr>
+    auto constexpr operator& (T lhs, T rhs)
     {
-        using E = std::underlying_type_t<PIPELINE_STAGE>;
-        return static_cast<PIPELINE_STAGE>(static_cast<E>(lhs) | static_cast<E>(rhs));
-    }
-
-    enum BUFFER_USAGE constexpr operator| (enum BUFFER_USAGE lhs, enum BUFFER_USAGE rhs)
-    {
-        using E = std::underlying_type_t<BUFFER_USAGE>;
-        return static_cast<BUFFER_USAGE>(static_cast<E>(lhs) | static_cast<E>(rhs));
-    }
-
-    enum IMAGE_USAGE constexpr operator| (enum IMAGE_USAGE lhs, enum IMAGE_USAGE rhs)
-    {
-        using E = std::underlying_type_t<IMAGE_USAGE>;
-        return static_cast<IMAGE_USAGE>(static_cast<E>(lhs) | static_cast<E>(rhs));
+        using E = std::underlying_type_t<T>;
+        return static_cast<T>(static_cast<E>(lhs) & static_cast<E>(rhs));
     }
 }
