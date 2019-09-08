@@ -7,7 +7,7 @@
 namespace
 {
 [[nodiscard]] std::optional<VkBuffer>
-CreateBufferHandle(VulkanDevice const &device, VkDeviceSize size, VkBufferUsageFlags usage) noexcept
+CreateBufferHandle(VulkanDevice const &device, VkDeviceSize size, graphics::BUFFER_USAGE usage) noexcept
 {
     std::optional<VkBuffer> buffer;
 
@@ -15,7 +15,7 @@ CreateBufferHandle(VulkanDevice const &device, VkDeviceSize size, VkBufferUsageF
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         nullptr, 0,
         size,
-        usage,
+        convert_to::vulkan(usage),
         VK_SHARING_MODE_EXCLUSIVE,
         0, nullptr
     };
@@ -176,7 +176,7 @@ ResourceManager::CreateImageSampler(std::uint32_t mipLevels) noexcept
 
 
 std::shared_ptr<VulkanBuffer>
-ResourceManager::CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) noexcept
+ResourceManager::CreateBuffer(VkDeviceSize size, graphics::BUFFER_USAGE usage, VkMemoryPropertyFlags properties) noexcept
 {
     std::shared_ptr<VulkanBuffer> buffer;
 
@@ -283,7 +283,7 @@ std::shared_ptr<VertexBuffer> ResourceManager::CreateVertexBuffer(xformat::verte
         auto const capacityInBytes = sizeInBytes * kVertexBufferIncreaseValue;
 
         {
-            auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+            auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
             auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
             stagingBuffer = device_.resourceManager().CreateBuffer(sizeInBytes, usageFlags, propertyFlags);
@@ -295,7 +295,7 @@ std::shared_ptr<VertexBuffer> ResourceManager::CreateVertexBuffer(xformat::verte
         }
 
         {
-            auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+            auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER;
             auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
             deviceBuffer = device_.resourceManager().CreateBuffer(capacityInBytes, usageFlags, propertyFlags);
@@ -312,7 +312,7 @@ std::shared_ptr<VertexBuffer> ResourceManager::CreateVertexBuffer(xformat::verte
     auto &vertexBuffer = vertexBuffers_[layout];
 
     if (vertexBuffer->stagingBufferSizeInBytes_ < sizeInBytes) {
-        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
         vertexBuffer->stagingBuffer_ = device_.resourceManager().CreateBuffer(sizeInBytes, usageFlags, propertyFlags);
@@ -380,7 +380,7 @@ void ResourceManager::TransferStagedVertexData(VkCommandPool transferCommandPool
 std::shared_ptr<VulkanBuffer>
 CreateUniformBuffer(VulkanDevice &device, std::size_t size)
 {
-    auto constexpr usageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+    auto constexpr usageFlags = graphics::BUFFER_USAGE::UNIFORM_BUFFER;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
     return device.resourceManager().CreateBuffer(size, usageFlags, propertyFlags);
@@ -389,7 +389,7 @@ CreateUniformBuffer(VulkanDevice &device, std::size_t size)
 std::shared_ptr<VulkanBuffer>
 CreateCoherentStorageBuffer(VulkanDevice &device, std::size_t size)
 {
-    auto constexpr usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
     return device.resourceManager().CreateBuffer(size, usageFlags, propertyFlags);
@@ -398,7 +398,7 @@ CreateCoherentStorageBuffer(VulkanDevice &device, std::size_t size)
 std::shared_ptr<VulkanBuffer>
 CreateStorageBuffer(VulkanDevice &device, std::size_t size)
 {
-    auto constexpr usageFlags = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 
     return device.resourceManager().CreateBuffer(size, usageFlags, propertyFlags);

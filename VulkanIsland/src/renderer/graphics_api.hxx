@@ -46,7 +46,7 @@ namespace convert_to
 
         VkSampleCountFlagBits operator() (std::uint32_t samples_count) const noexcept;
 
-        VkBufferUsageFlagBits operator() (graphics::BUFFER_USAGE buffer_usage) const noexcept;
+        VkBufferUsageFlags operator() (graphics::BUFFER_USAGE buffer_usage) const noexcept;
 
         VkImageUsageFlagBits operator() (graphics::IMAGE_USAGE image_usage) const noexcept;
     };

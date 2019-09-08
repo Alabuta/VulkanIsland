@@ -3,6 +3,8 @@
 #include "main.hxx"
 #include "device/device.hxx"
 #include "resources/image.hxx"
+#include "renderer/graphics.hxx"
+#include "renderer/graphics_api.hxx"
 
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>* = nullptr>

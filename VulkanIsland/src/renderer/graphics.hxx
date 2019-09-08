@@ -1,5 +1,7 @@
 #pragma once
 
+#include <type_traits>
+
 #include <boost/functional/hash_fwd.hpp>
 
 
@@ -397,8 +399,8 @@ namespace graphics
     };
 
     enum class BUFFER_USAGE {
-        TRANSFER_SRC = 0x01,
-        TRANSFER_DST = 0x02,
+        TRANSFER_SOURCE = 0x01,
+        TRANSFER_DESTINATION = 0x02,
         UNIFORM_TEXEL_BUFFER = 0x04,
         STORAGE_TEXEL_BUFFER = 0x08,
         UNIFORM_BUFFER = 0x10,

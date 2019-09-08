@@ -1103,7 +1103,7 @@ template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
 [[nodiscard]] std::shared_ptr<VulkanBuffer>
 StageData(VulkanDevice &device, T &&container)
 {
-    auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
     using type = typename std::decay_t<T>::value_type;

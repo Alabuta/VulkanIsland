@@ -8,6 +8,8 @@
 #include "program.hxx"
 #include "vertexFormat.hxx"
 #include "staging.hxx"
+#include "renderer/graphics_api.hxx"
+
 
 class VulkanImage;
 class VulkanImageView;
@@ -50,7 +52,7 @@ public:
     CreateImageSampler(std::uint32_t mipLevels) noexcept;
     
     [[nodiscard]] std::shared_ptr<VulkanBuffer>
-    CreateBuffer(VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties) noexcept;
+    CreateBuffer(VkDeviceSize size, graphics::BUFFER_USAGE usage, VkMemoryPropertyFlags properties) noexcept;
 
     [[nodiscard]] std::shared_ptr<VulkanShaderModule>
     CreateShaderModule(std::vector<std::byte> const &shaderByteCode) noexcept;

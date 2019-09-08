@@ -689,16 +689,16 @@ namespace convert_to
         }
     }
 
-    VkBufferUsageFlagBits vulkan_api::operator() (graphics::BUFFER_USAGE buffer_usage) const noexcept
+    VkBufferUsageFlags vulkan_api::operator() (graphics::BUFFER_USAGE buffer_usage) const noexcept
     {
         VkBufferUsageFlags result = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
         using E = std::underlying_type_t<graphics::BUFFER_USAGE>;
 
-        if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::TRANSFER_SRC) == 0)
+        if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::TRANSFER_SOURCE) == 0)
             result ^= VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
-        if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::TRANSFER_DST))
+        if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::TRANSFER_DESTINATION))
             result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
 
         if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::UNIFORM_TEXEL_BUFFER))
@@ -722,7 +722,7 @@ namespace convert_to
         if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::INDIRECT_BUFFER))
             result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
 
-        return static_cast<VkBufferUsageFlagBits>(result);
+        return static_cast<VkBufferUsageFlags>(result);
     }
 
     VkImageUsageFlagBits vulkan_api::operator() (graphics::IMAGE_USAGE image_usage) const noexcept
