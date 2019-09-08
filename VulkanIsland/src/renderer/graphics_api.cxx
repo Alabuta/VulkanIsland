@@ -725,16 +725,16 @@ namespace convert_to
         return static_cast<VkBufferUsageFlags>(result);
     }
 
-    VkImageUsageFlagBits vulkan_api::operator() (graphics::IMAGE_USAGE image_usage) const noexcept
+    VkImageUsageFlags vulkan_api::operator() (graphics::IMAGE_USAGE image_usage) const noexcept
     {
         VkImageUsageFlags result = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
         using E = std::underlying_type_t<graphics::IMAGE_USAGE>;
 
-        if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::TRANSFER_SRC) == 0)
+        if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::TRANSFER_SOURCE) == 0)
             result ^= VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
-        if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::TRANSFER_DST))
+        if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::TRANSFER_DESTINATION))
             result |= VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
         if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::SAMPLED))
@@ -755,6 +755,6 @@ namespace convert_to
         if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::INPUT_ATTACHMENT))
             result |= VkImageUsageFlagBits::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 
-        return static_cast<VkImageUsageFlagBits>(result);
+        return static_cast<VkImageUsageFlags>(result);
     }
 }

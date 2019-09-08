@@ -48,7 +48,7 @@ namespace convert_to
 
         VkBufferUsageFlags operator() (graphics::BUFFER_USAGE buffer_usage) const noexcept;
 
-        VkImageUsageFlagBits operator() (graphics::IMAGE_USAGE image_usage) const noexcept;
+        VkImageUsageFlags operator() (graphics::IMAGE_USAGE image_usage) const noexcept;
     };
 
     vulkan_api constexpr vulkan;

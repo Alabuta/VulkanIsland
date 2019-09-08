@@ -1147,7 +1147,7 @@ LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
             auto const width = static_cast<std::uint16_t>(rawImage->width);
             auto const height = static_cast<std::uint16_t>(rawImage->height);
 
-            auto constexpr usageFlags = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
+            auto constexpr usageFlags = graphics::IMAGE_USAGE::TRANSFER_SOURCE | graphics::IMAGE_USAGE::TRANSFER_DESTINATION | graphics::IMAGE_USAGE::SAMPLED;
             auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
             auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
@@ -1156,16 +1156,16 @@ LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
                                     VK_SAMPLE_COUNT_1_BIT, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
             if (texture) {
-                TransitionImageLayout(device, app.transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
-                                      VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, app.transferCommandPool);
+                TransitionImageLayout(device, app.transferQueue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
+                                      graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION, app.transferCommandPool);
 
                 CopyBufferToImage(device, app.transferQueue, stagingBuffer->handle(), texture->image->handle(), width, height, app.transferCommandPool);
 
                 if (generateMipMaps)
                     GenerateMipMaps(device, app.transferQueue, *texture->image, app.transferCommandPool);
 
-                else TransitionImageLayout(device, app.transferQueue, *texture->image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, app.transferCommandPool);
+                else TransitionImageLayout(device, app.transferQueue, *texture->image, graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION,
+                                           graphics::IMAGE_LAYOUT::SHADER_READ_ONLY, app.transferCommandPool);
             }
         }
     }

@@ -43,7 +43,7 @@ public:
 
     [[nodiscard]] std::shared_ptr<VulkanImage>
     CreateImage(graphics::FORMAT format, std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels,
-                std::uint32_t samplesCount, graphics::IMAGE_TILING tiling, VkBufferUsageFlags usageFlags, VkMemoryPropertyFlags propertyFlags);
+                std::uint32_t samplesCount, graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags);
 
     [[nodiscard]] std::optional<VulkanImageView>
     CreateImageView(VulkanImage const &image, VkImageViewType type, VkImageAspectFlags aspectFlags) noexcept;

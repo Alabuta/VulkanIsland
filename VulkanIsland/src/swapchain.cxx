@@ -122,7 +122,7 @@ CreateColorAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
 
     auto constexpr mipLevels = 1u;
 
-    auto constexpr usageFlags = VK_IMAGE_USAGE_TRANSIENT_ATTACHMENT_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    auto constexpr usageFlags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT| graphics::IMAGE_USAGE::COLOR_ATTACHMENT;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
     auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
@@ -131,8 +131,8 @@ CreateColorAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
                             tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
     if (texture)
-        TransitionImageLayout(device, transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
-                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, transferCommandPool);
+        TransitionImageLayout(device, transferQueue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
+                              graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT, transferCommandPool);
 
     return texture;
 }
@@ -145,7 +145,7 @@ CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
     if (auto const format = FindDepthImageFormat(device); format) {
         auto constexpr mipLevels = 1u;
 
-        auto constexpr usageFlags = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+        auto constexpr usageFlags = graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
         auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
@@ -154,8 +154,8 @@ CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
                                 tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
 
         if (texture)
-            TransitionImageLayout(device, transferQueue, *texture->image, VK_IMAGE_LAYOUT_UNDEFINED,
-                                  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, transferCommandPool);
+            TransitionImageLayout(device, transferQueue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
+                                  graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT, transferCommandPool);
 
         return std::make_pair(texture, format);
     }

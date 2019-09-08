@@ -411,8 +411,8 @@ namespace graphics
     };
 
     enum class IMAGE_USAGE {
-        TRANSFER_SRC = 0x01,
-        TRANSFER_DST = 0x02,
+        TRANSFER_SOURCE = 0x01,
+        TRANSFER_DESTINATION = 0x02,
         SAMPLED = 0x04,
         STORAGE = 0x08,
         COLOR_ATTACHMENT = 0x10,

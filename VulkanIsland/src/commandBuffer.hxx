@@ -152,57 +152,57 @@ void GenerateMipMaps(VulkanDevice const &device, Q &queue, VulkanImage const &im
 
 template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, std::decay_t<Q>>>* = nullptr>
 bool TransitionImageLayout(VulkanDevice const &device, Q &queue, VulkanImage const &image,
-                           VkImageLayout srcLayout, VkImageLayout dstLayout, VkCommandPool commandPool) noexcept
+                           graphics::IMAGE_LAYOUT srcLayout, graphics::IMAGE_LAYOUT dstLayout, VkCommandPool commandPool) noexcept
 {
     VkImageMemoryBarrier barrier{
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
         nullptr,
         0, 0,
-        srcLayout, dstLayout,
+        convert_to::vulkan(srcLayout), convert_to::vulkan(dstLayout),
         VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
         image.handle(),
         { VK_IMAGE_ASPECT_COLOR_BIT, 0, image.mipLevels(), 0, 1 }
     };
 
-    if (dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+    if (dstLayout == graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT) {
         barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
 
         if (image.format() == graphics::FORMAT::D32_SFLOAT_S8_UINT || image.format() == graphics::FORMAT::D24_UNORM_S8_UINT)
             barrier.subresourceRange.aspectMask |= VK_IMAGE_ASPECT_STENCIL_BIT;
     }
 
-    VkPipelineStageFlags srcStageFlags, dstStageFlags;
+    graphics::PIPELINE_STAGE srcStageFlags, dstStageFlags;
 
-    if (srcLayout == VK_IMAGE_LAYOUT_UNDEFINED && dstLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+    if (srcLayout == graphics::IMAGE_LAYOUT::UNDEFINED && dstLayout == graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION) {
         barrier.srcAccessMask = 0;
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
 
-        srcStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        dstStageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        srcStageFlags = graphics::PIPELINE_STAGE::TOP_OF_PIPE;
+        dstStageFlags = graphics::PIPELINE_STAGE::TRANSFER;
     }
 
-    else if (srcLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && dstLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+    else if (srcLayout == graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION && dstLayout == graphics::IMAGE_LAYOUT::SHADER_READ_ONLY) {
         barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-        srcStageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
-        dstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        srcStageFlags = graphics::PIPELINE_STAGE::TRANSFER;
+        dstStageFlags = graphics::PIPELINE_STAGE::FRAGMENT_SHADER;
     }
 
-    else if (srcLayout == VK_IMAGE_LAYOUT_UNDEFINED && dstLayout == VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL) {
+    else if (srcLayout == graphics::IMAGE_LAYOUT::UNDEFINED && dstLayout == graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT) {
         barrier.srcAccessMask = 0;
         barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-        srcStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        dstStageFlags = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+        srcStageFlags = graphics::PIPELINE_STAGE::TOP_OF_PIPE;
+        dstStageFlags = graphics::PIPELINE_STAGE::EARLY_FRAGMENT_TESTS;
     }
 
-    else if (srcLayout == VK_IMAGE_LAYOUT_UNDEFINED && dstLayout == VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) {
+    else if (srcLayout == graphics::IMAGE_LAYOUT::UNDEFINED && dstLayout == graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT) {
         barrier.srcAccessMask = 0;
         barrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-        srcStageFlags = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        dstStageFlags = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+        srcStageFlags = graphics::PIPELINE_STAGE::TOP_OF_PIPE;
+        dstStageFlags = graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT;
     }
 
     else {
@@ -212,7 +212,7 @@ bool TransitionImageLayout(VulkanDevice const &device, Q &queue, VulkanImage con
 
     auto commandBuffer = BeginSingleTimeCommand(device, queue, commandPool);
 
-    vkCmdPipelineBarrier(commandBuffer, srcStageFlags, dstStageFlags, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+    vkCmdPipelineBarrier(commandBuffer, convert_to::vulkan(srcStageFlags), convert_to::vulkan(dstStageFlags), 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
     EndSingleTimeCommand(device, queue, commandBuffer, commandPool);
 
