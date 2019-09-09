@@ -722,7 +722,7 @@ namespace convert_to
         if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::INDIRECT_BUFFER))
             result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
 
-        return static_cast<VkBufferUsageFlags>(result);
+        return result;
     }
 
     VkImageUsageFlags vulkan_api::operator() (graphics::IMAGE_USAGE image_usage) const noexcept
@@ -755,6 +755,6 @@ namespace convert_to
         if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::INPUT_ATTACHMENT))
             result |= VkImageUsageFlagBits::VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
 
-        return static_cast<VkImageUsageFlags>(result);
+        return result;
     }
 }
