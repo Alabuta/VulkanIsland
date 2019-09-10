@@ -62,7 +62,7 @@ CreateRenderPass(VulkanDevice const &device, VulkanSwapchain const &swapchain) n
         0
     };
 
-    auto const attachments = std::array{colorAttachment, depthAttachement, colorAttachmentResolve};
+    auto const attachments = std::array{ colorAttachment, depthAttachement, colorAttachmentResolve };
 
 #if NOT_YET_IMPLEMENTED
     VkInputAttachmentAspectReference const depthAttachmentAspectReference{

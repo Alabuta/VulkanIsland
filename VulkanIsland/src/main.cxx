@@ -816,12 +816,37 @@ void InitVulkan(Window &window, app_t &app)
             }
         );
 
+        using vertex_attribute_t = vertex::static_array<3, boost::float32_t>;
+
+        std::vector<graphics::vertex_input_binding> binding_descriptions{{
+            0, sizeof(vertex_attribute_t), vertex::INPUT_RATE::VERTEX
+        }};
+
+        std::vector<graphics::vertex_input_attribute> attribute_descriptions{{
+            0, 0, sizeof(vertex_attribute_t), vertex_attribute_t{ }
+        }};
+
         graphics::pipeline_states pipeline_states{
             graphics::PRIMITIVE_TOPOLOGY::TRIANGLES,
-            graphics::vertex_input_state{},
-            graphics::rasterization_state{},
-            graphics::depth_stencil_state{},
-            graphics::color_blend_state{}
+            graphics::vertex_input_state{
+                binding_descriptions, attribute_descriptions
+            },
+            graphics::rasterization_state{
+                graphics::CULL_MODE::BACK,
+                graphics::POLYGON_FRONT_FACE::COUNTER_CLOCKWISE,
+                graphics::POLYGON_MODE::FILL,
+                1.f
+            },
+            graphics::depth_stencil_state{
+                true, true, graphics::COMPARE_OPERATION::GREATER,
+                false, { 0.f, 0.f },
+                false, graphics::stencil_state{ }, graphics::stencil_state{ }
+            },
+            graphics::color_blend_state{
+                false, graphics::BLEND_STATE_OPERATION::COPY,
+                { 0.f, 0.f, 0.f, 0.f },
+                { graphics::color_blend_attachment_state{ } }
+            }
         };
 
         render_flow.add_nodes({
@@ -831,6 +856,12 @@ void InitVulkan(Window &window, app_t &app)
                 depth_stencil_attachments,
                 std::make_shared<graphics::material>(),
                 pipeline_states
+            }
+        });
+
+        render_flow.output_layout({
+            graphics::render_flow_output{
+                graphics::attachment_reference{0, 0}
             }
         });
     }

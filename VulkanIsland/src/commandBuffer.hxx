@@ -120,9 +120,9 @@ void GenerateMipMaps(VulkanDevice const &device, Q &queue, VulkanImage const &im
 
         VkImageBlit const imageBlit{
             { VK_IMAGE_ASPECT_COLOR_BIT, i - 1, 0, 1 },
-            {{ 0, 0, 0 }, {width, height, 1 }},
+            {{ 0, 0, 0 }, { width, height, 1 }},
             { VK_IMAGE_ASPECT_COLOR_BIT, i, 0, 1 },
-            {{ 0, 0, 0 }, {width / 2, height / 2, 1 }}
+            {{ 0, 0, 0 }, { width / 2, height / 2, 1 }}
         };
 
         vkCmdBlitImage(commandBuffer, image.handle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image.handle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);

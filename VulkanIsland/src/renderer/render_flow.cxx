@@ -7,4 +7,7 @@ namespace graphics
     {
         nodes_ = nodes;
     }
+
+    void render_flow::output_layout(std::vector<graphics::render_flow_output> const &output)
+    { }
 }
