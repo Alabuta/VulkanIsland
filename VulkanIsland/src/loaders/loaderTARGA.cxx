@@ -269,7 +269,7 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
     RawImage image;
 
     image.format = GetPixelFormat(targa.pixelLayout);
-    image.type = VK_IMAGE_VIEW_TYPE_2D;
+    image.view_type = graphics::IMAGE_VIEW_TYPE::TYPE_2D;
 
     image.width = targa.width;
     image.height = targa.height;

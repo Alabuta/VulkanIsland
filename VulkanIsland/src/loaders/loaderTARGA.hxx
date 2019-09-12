@@ -26,7 +26,7 @@ using texel_buffer_t = wrap_variant_by_vector<texel_t>::type;
 
 struct RawImage {
     graphics::FORMAT format{graphics::FORMAT::UNDEFINED};
-    VkImageViewType type;
+    graphics::IMAGE_VIEW_TYPE view_type;
 
     std::int16_t width{0}, height{0};
     std::uint32_t mipLevels{1};

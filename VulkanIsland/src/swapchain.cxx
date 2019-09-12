@@ -122,12 +122,12 @@ CreateColorAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
 
     auto constexpr mipLevels = 1u;
 
-    auto constexpr usageFlags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT| graphics::IMAGE_USAGE::COLOR_ATTACHMENT;
+    auto constexpr usageFlags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT | graphics::IMAGE_USAGE::COLOR_ATTACHMENT | graphics::IMAGE_USAGE::TRANSFER_DESTINATION;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
     auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
-    texture = CreateTexture(device, format, VK_IMAGE_VIEW_TYPE_2D, width, height, mipLevels, device.samplesCount(),
+    texture = CreateTexture(device, format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, device.samplesCount(),
                             tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
     if (texture)
@@ -150,7 +150,7 @@ CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
 
         auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
-        texture = CreateTexture(device, *format, VK_IMAGE_VIEW_TYPE_2D, width, height, mipLevels, device.samplesCount(),
+        texture = CreateTexture(device, *format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, device.samplesCount(),
                                 tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
 
         if (texture)

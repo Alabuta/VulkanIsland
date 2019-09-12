@@ -46,7 +46,7 @@ public:
                 std::uint32_t samplesCount, graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags);
 
     [[nodiscard]] std::optional<VulkanImageView>
-    CreateImageView(VulkanImage const &image, VkImageViewType type, VkImageAspectFlags aspectFlags) noexcept;
+    CreateImageView(VulkanImage const &image, graphics::IMAGE_VIEW_TYPE view_type, VkImageAspectFlags aspectFlags) noexcept;
 
     [[nodiscard]] std::shared_ptr<VulkanSampler>
     CreateImageSampler(std::uint32_t mipLevels) noexcept;

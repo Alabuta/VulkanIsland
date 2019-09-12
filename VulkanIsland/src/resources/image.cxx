@@ -44,14 +44,14 @@ FindSupportedImageFormat(VulkanDevice const &device, std::vector<graphics::FORMA
 }
 
 std::optional<VulkanTexture>
-CreateTexture(VulkanDevice &device, graphics::FORMAT format, VkImageViewType type,
+CreateTexture(VulkanDevice &device, graphics::FORMAT format, graphics::IMAGE_VIEW_TYPE view_type,
               std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, std::uint32_t samplesCount, graphics::IMAGE_TILING tiling,
               VkImageAspectFlags aspectFlags, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags)
 {
     std::optional<VulkanTexture> texture;
 
     if (auto image = device.resourceManager().CreateImage(format, width, height, mipLevels, samplesCount, tiling, usageFlags, propertyFlags); image)
-        if (auto view = device.resourceManager().CreateImageView(*image, type, aspectFlags); view)
+        if (auto view = device.resourceManager().CreateImageView(*image, view_type, aspectFlags); view)
 #if NOT_YET_IMPLEMENTED
             if (auto sampler = device.resourceManager().CreateImageSampler(image->mipLevels()); sampler)
                 texture.emplace(image, *view, sampler);

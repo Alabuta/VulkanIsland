@@ -111,7 +111,7 @@ ResourceManager::CreateImage(graphics::FORMAT format, std::uint16_t width, std::
 }
 
 std::optional<VulkanImageView>
-ResourceManager::CreateImageView(VulkanImage const &image, VkImageViewType type, VkImageAspectFlags aspectFlags) noexcept
+ResourceManager::CreateImageView(VulkanImage const &image, graphics::IMAGE_VIEW_TYPE view_type, VkImageAspectFlags aspectFlags) noexcept
 {
     std::optional<VulkanImageView> view;
 
@@ -119,7 +119,7 @@ ResourceManager::CreateImageView(VulkanImage const &image, VkImageViewType type,
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         nullptr, 0,
         image.handle(),
-        type,
+        convert_to::vulkan(view_type),
         convert_to::vulkan(image.format()),
         { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
         { aspectFlags, 0, image.mipLevels(), 0, 1 }
@@ -130,7 +130,7 @@ ResourceManager::CreateImageView(VulkanImage const &image, VkImageViewType type,
     if (auto result = vkCreateImageView(device_.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
         std::cerr << "failed to create image view: "s << result << '\n';
 
-    else view.emplace(handle, type);
+    else view.emplace(handle, convert_to::vulkan(view_type));
 
     return view;
 }
