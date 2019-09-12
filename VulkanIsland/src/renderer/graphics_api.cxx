@@ -394,6 +394,52 @@ namespace convert_to
         }
     }
 
+    VkImageType vulkan_api::operator() (graphics::IMAGE_TYPE image_type) const noexcept
+    {
+        switch (image_type) {
+            case graphics::IMAGE_TYPE::TYPE_1D:
+                return VkImageType::VK_IMAGE_TYPE_1D;
+
+            case graphics::IMAGE_TYPE::TYPE_2D:
+                return VkImageType::VK_IMAGE_TYPE_2D;
+
+            case graphics::IMAGE_TYPE::TYPE_3D:
+                return VkImageType::VK_IMAGE_TYPE_3D;
+
+            default:
+                return VkImageType::VK_IMAGE_TYPE_MAX_ENUM;
+        }
+    }
+
+    VkImageViewType vulkan_api::operator() (graphics::IMAGE_VIEW_TYPE image_view_type) const noexcept
+    {
+        switch (image_view_type) {
+            case graphics::IMAGE_VIEW_TYPE::TYPE_1D:
+                return VkImageViewType::VK_IMAGE_VIEW_TYPE_1D;
+
+            case graphics::IMAGE_VIEW_TYPE::TYPE_2D:
+                return VkImageViewType::VK_IMAGE_VIEW_TYPE_2D;
+
+            case graphics::IMAGE_VIEW_TYPE::TYPE_3D:
+                return VkImageViewType::VK_IMAGE_VIEW_TYPE_3D;
+
+            case graphics::IMAGE_VIEW_TYPE::TYPE_CUBE:
+                return VkImageViewType::VK_IMAGE_VIEW_TYPE_CUBE;
+
+            case graphics::IMAGE_VIEW_TYPE::TYPE_1D_ARRAY:
+                return VkImageViewType::VK_IMAGE_VIEW_TYPE_1D_ARRAY;
+
+            case graphics::IMAGE_VIEW_TYPE::TYPE_2D_ARRAY:
+                return VkImageViewType::VK_IMAGE_VIEW_TYPE_2D_ARRAY;
+
+            case graphics::IMAGE_VIEW_TYPE::TYPE_CUBE_ARRAY:
+                return VkImageViewType::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY;
+
+            default:
+                return VkImageViewType::VK_IMAGE_VIEW_TYPE_MAX_ENUM;
+        }
+    }
+
     VkImageTiling vulkan_api::operator() (graphics::IMAGE_TILING image_tiling) const noexcept
     {
         switch (image_tiling) {

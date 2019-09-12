@@ -176,6 +176,22 @@ namespace graphics
         LINEAR
     };
 
+    enum class IMAGE_TYPE {
+        TYPE_1D = 0,
+        TYPE_2D,
+        TYPE_3D
+    };
+
+    enum class IMAGE_VIEW_TYPE {
+        TYPE_1D = 0,
+        TYPE_2D,
+        TYPE_3D,
+        TYPE_CUBE,
+        TYPE_1D_ARRAY,
+        TYPE_2D_ARRAY,
+        TYPE_CUBE_ARRAY
+    };
+
     enum class FORMAT {
         UNDEFINED = 0,
 
