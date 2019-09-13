@@ -851,6 +851,7 @@ void InitVulkan(Window &window, app_t &app)
 
         render_flow.add_nodes({
             graphics::render_flow_node{
+                app.width, app.height,
                 input_attachments,
                 color_attachments,
                 depth_stencil_attachments,
@@ -1181,7 +1182,7 @@ LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
 
             auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
-            texture = CreateTexture(device, rawImage->format, rawImage->type, width, height, rawImage->mipLevels,
+            texture = CreateTexture(device, rawImage->format, rawImage->view_type, width, height, rawImage->mipLevels,
                                     VK_SAMPLE_COUNT_1_BIT, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
             if (texture) {
