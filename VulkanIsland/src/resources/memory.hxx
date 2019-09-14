@@ -10,6 +10,7 @@
 #include <boost/functional/hash.hpp>
 
 #include "main.hxx"
+#include "utility/mpl.hxx"
 #include "device/device.hxx"
 
 
@@ -21,7 +22,7 @@ public:
     MemoryManager(VulkanDevice const &vulkanDevice, VkDeviceSize bufferImageGranularity);
     ~MemoryManager();
 
-    template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>* = nullptr>
+    template<class T> requires mpl::one_of<T, VkBuffer, VkImage>
     [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(T buffer, VkMemoryPropertyFlags properties, bool linear)
     {
         return CheckRequirementsAndAllocate(buffer, properties, linear);
@@ -41,7 +42,7 @@ private:
         bool linear{true};
 
         struct hash_value final {
-            template<class T, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>>>* = nullptr>
+            template<class T> requires std::same_as<std::decay_t<T>, Pool>
             constexpr std::size_t operator() (T &&pool) const noexcept
             {
                 std::size_t seed = 0;
@@ -54,7 +55,7 @@ private:
             }
         };
 
-        template<class T, typename std::enable_if_t<std::is_same_v<Pool, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<std::decay_t<T>, Pool>
         constexpr bool operator== (T &&rhs) const noexcept
         {
             return memoryTypeIndex == rhs.memoryTypeIndex && properties == rhs.properties && linear == rhs.linear;
@@ -71,19 +72,19 @@ private:
                 struct comparator final {
                     using is_transparent = void;
 
-                    template<class L, class R, std::enable_if_t<are_same_v<Chunk, L, R>>* = nullptr>
+                    template<class L, class R> requires mpl::all_same<Chunk, L, R>
                     auto operator() (L &&lhs, R &&rhs) const noexcept
                     {
                         return lhs.size < rhs.size;
                     }
 
-                    template<class T, class S, typename std::enable_if_t<std::is_same_v<Chunk, std::decay_t<T>> && std::is_integral_v<S>>* = nullptr>
+                    template<class T, class S> requires std::same_as<Chunk, std::decay_t<T>> && std::integral<S>
                     auto operator() (T &&chunk, S size) const noexcept
                     {
                         return chunk.size < size;
                     }
 
-                    template<class S, class T, typename std::enable_if_t<std::is_same_v<Chunk, std::decay_t<T>> && std::is_integral_v<S>>* = nullptr>
+                    template<class S, class T> requires std::same_as<Chunk, std::decay_t<T>> && std::integral<S>
                     auto operator() (S size, T &&chunk) const noexcept
                     {
                         return chunk.size < size;
@@ -104,7 +105,7 @@ private:
 
     std::unordered_map<std::size_t, Pool> pools_;
 
-    template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
+    template<class T> requires mpl::one_of<T, VkBuffer, VkImage>
     [[nodiscard]] std::shared_ptr<DeviceMemory>
     CheckRequirementsAndAllocate(T resource, VkMemoryPropertyFlags properties, bool linear);
 
@@ -117,7 +118,7 @@ private:
     void DeallocateMemory(DeviceMemory const &deviceMemory);
 };
 
-template<class T, typename std::enable_if_t<is_one_of_v<T, VkBuffer, VkImage>>...>
+template<class T> requires mpl::one_of<T, VkBuffer, VkImage>
 [[nodiscard]] std::shared_ptr<DeviceMemory>
 MemoryManager::CheckRequirementsAndAllocate(T resource, VkMemoryPropertyFlags properties, bool linear)
 {

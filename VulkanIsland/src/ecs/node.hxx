@@ -1,7 +1,7 @@
 #pragma once
 
 #include "main.hxx"
-#include "helpers.hxx"
+#include "utility/mpl.hxx"
 #include "math.hxx"
 
 #include "ecs.hxx"
@@ -20,7 +20,7 @@ struct node final {
 
     node(entity_type parent, std::uint32_t depth, std::string_view name) noexcept : parent{parent}, depth{depth}, name{name} { }
 
-    template<class T1, class T2, typename std::enable_if_t<are_same_v<node, T1, T2>>* = nullptr>
+    template<class T1, class T2> requires mpl::all_same<node, T1, T2>
     bool constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
     {
         if (lhs.depth == rhs.depth)

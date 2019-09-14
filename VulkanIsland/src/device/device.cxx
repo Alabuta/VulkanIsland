@@ -73,35 +73,7 @@ template<bool check_on_duplicates = false>
     return std::includes(supportedExtensions.begin(), supportedExtensions.end(), requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
 }
 
-template<class T, class U, typename std::enable_if_t<is_iterable_v<std::decay_t<T>> && std::is_same_v<std::decay_t<U>, VkQueueFamilyProperties>>* = nullptr>
-[[nodiscard]] std::optional<std::uint32_t> GetRequiredQueueFamilyIndex(T &&queueFamilies, U &&requiredQueue)
-{
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkQueueFamilyProperties>, "iterable object does not contain VkQueueFamilyProperties elements");
-
-#if TEMPORARILY_DISABLED
-    // Strict matching.
-    auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&requiredQueue] (auto &&queueFamily)
-    {
-        return queueFamily.queueCount > 0 && queueFamily.queueFlags == requiredQueue.queueFlags;
-    });
-
-    if (it_family != queueFamilies.cend())
-        return static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family));
-#endif
-
-    // Tolerant matching.
-    auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [&requiredQueue] (auto &&queueFamily)
-    {
-        return queueFamily.queueCount > 0 && (queueFamily.queueFlags & requiredQueue.queueFlags) == requiredQueue.queueFlags;
-    });
-
-    if (it_family != queueFamilies.cend())
-        return static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_family));
-
-    return {};
-}
-
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>* = nullptr>
+template<class T> requires iterable<std::decay_t<T>>
 [[nodiscard]] std::optional<std::uint32_t> GetPresentationQueueFamilyIndex(T &&queueFamilies, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkQueueFamilyProperties>, "iterable object does not contain VkQueueFamilyProperties elements");
@@ -239,7 +211,7 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
     if (devices.empty())
         throw std::runtime_error("failed to pick physical device"s);
 
-    auto constexpr deviceTypesPriority = make_array(
+    auto constexpr deviceTypesPriority = mpl::make_array(
         VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU, VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU, VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU, VK_PHYSICAL_DEVICE_TYPE_CPU
     );
 

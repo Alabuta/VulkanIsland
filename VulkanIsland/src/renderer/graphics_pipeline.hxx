@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <concepts>
 #include <optional>
 #include <vector>
 #include <array>
@@ -28,7 +29,7 @@ public:
 
     VkPipeline handle() const noexcept { return handle_; }
 
-    template<class T, typename std::enable_if_t<std::is_same_v<pipeline, std::decay_t<T>>>* = nullptr>
+    template<class T> requires std::same_as<std::decay_t<T>, pipeline>
     auto constexpr operator== (T &&rhs) const
     {
         return primitive_topology_ == rhs.topology_ &&

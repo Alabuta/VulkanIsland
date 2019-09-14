@@ -4,6 +4,7 @@
 #include <vector>
 #include <variant>
 
+#include "utility/mpl.hxx"
 #include "graphics.hxx"
 
 
@@ -21,7 +22,7 @@ namespace graphics
         // At the end of a render pass.
         graphics::IMAGE_LAYOUT final_layout;
 
-        template<class T, typename std::enable_if_t<std::is_same_v<attachment_description, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<std::decay_t<T>, attachment_description>
         auto constexpr operator== (T &&rhs) const
         {
             return format == rhs.format && samples_count == rhs.samples_count &&
@@ -37,7 +38,7 @@ namespace graphics
         // During a subpass.
         graphics::IMAGE_LAYOUT subpass_layout;
 
-        template<class T, typename std::enable_if_t<std::is_same_v<attachment_reference, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<std::decay_t<T>, attachment_reference>
         auto constexpr operator== (T &&rhs) const
         {
             return pass_index == rhs.pass_index && attachment_index == rhs.attachment_index && subpass_layout == rhs.subpass_layout;

@@ -1,7 +1,9 @@
 #pragma once
+
 #include <map>
 
 #include "main.hxx"
+#include "utility/mpl.hxx"
 #include "device/device.hxx"
 #include "queues.hxx"
 
@@ -9,7 +11,7 @@
 class QueueHelper final {
 public:
 
-    template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
+    template<class Q> requires mpl::derived_from<VulkanQueue<Q>, Q>
     [[nodiscard]] Q Find(VkPhysicalDevice physicalDevice, [[maybe_unused]] VkSurfaceKHR surface)
     {
         Q queue;
@@ -46,7 +48,7 @@ public:
         return families;
     }
 
-    template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
+    template<class Q> requires mpl::derived_from<VulkanQueue<Q>, Q>
     [[nodiscard]] static bool IsSupportedByDevice(VkPhysicalDevice physicalDevice, [[maybe_unused]] VkSurfaceKHR surface)
     {
         if constexpr (std::is_same_v<Q, PresentationQueue>)
@@ -57,8 +59,8 @@ public:
 
 private:
     std::map<std::uint32_t, std::uint32_t> family_and_index;
-
-    template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
+    
+    template<class Q> requires mpl::derived_from<VulkanQueue<Q>, Q>
     [[nodiscard]] static std::optional<std::pair<VkQueueFamilyProperties, std::uint32_t>>
     GetQueueFamily(VkPhysicalDevice physicalDevice)
     {
@@ -94,7 +96,7 @@ private:
         return {};
     }
 
-    template<class Q, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
+    template<class Q> requires mpl::derived_from<VulkanQueue<Q>, Q>
     [[nodiscard]] static std::optional<std::pair<VkQueueFamilyProperties, std::uint32_t>>
     GetPresentationQueueFamily(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
     {

@@ -4,6 +4,7 @@
 #include <memory>
 
 #include "main.hxx"
+#include "utility/mpl.hxx"
 #include "device/device.hxx"
 #include "program.hxx"
 #include "vertexFormat.hxx"
@@ -21,7 +22,7 @@ class VertexBuffer;
 class IndexBuffer;
 
 
-template<class T, std::enable_if_t<is_one_of_v<std::decay_t<T>, VulkanImage, VulkanBuffer>>...>
+template<class T> requires mpl::one_of<std::decay_t<T>, VulkanImage, VulkanBuffer>
 bool IsResourceLinear(T &&resource)
 {
     using type = std::decay_t<T>;
@@ -57,7 +58,7 @@ public:
     [[nodiscard]] std::shared_ptr<VulkanShaderModule>
     CreateShaderModule(std::vector<std::byte> const &shaderByteCode) noexcept;
 
-    template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>* = nullptr>
+    template<class T> requires mpl::one_of<T, std::uint16_t, std::uint32_t>
     [[nodiscard]] std::shared_ptr<IndexBuffer> CreateIndexBuffer(std::size_t sizeInBytes) noexcept;
 
     [[nodiscard]] std::shared_ptr<VertexBuffer> CreateVertexBuffer(xformat::vertex_layout const &layout, std::size_t sizeInBytes) noexcept;
@@ -74,9 +75,9 @@ private:
 
     VulkanDevice &device_;
 
-    template<class T, std::enable_if_t<is_one_of_v<std::decay_t<T>,
+    template<class T> requires mpl::one_of<std::decay_t<T>,
         VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, VulkanShaderModule
-    >>...>
+    >
     void ReleaseResource(T &&resource) noexcept;
 
     ResourceManager() = delete;

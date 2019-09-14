@@ -7,7 +7,7 @@
 #include <string_view>
 #include <algorithm>
 
-#include "helpers.hxx"
+#include "utility/mpl.hxx"
 
 #define GLFW_EXPOSE_NATIVE_WIN32
 
@@ -24,7 +24,7 @@
 
 
 namespace config {
-auto constexpr extensions = make_array(
+auto constexpr extensions = mpl::make_array(
     VK_KHR_SURFACE_EXTENSION_NAME,
 #ifdef _MSC_VER
     #if USE_WIN32
@@ -38,7 +38,7 @@ auto constexpr extensions = make_array(
     VK_EXT_DEBUG_REPORT_EXTENSION_NAME
 );
 
-auto constexpr layers = make_array(
+auto constexpr layers = mpl::make_array(
 #if TEMPORARILY_DISABLED
     "VK_LAYER_NV_nsight",
     "VK_LAYER_LUNARG_api_dump",
@@ -89,8 +89,8 @@ inline VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
     if constexpr (use_extensions)
     {
         using T = std::decay_t<E>;
-        static_assert(is_container_v<T>, "'extensions' must be a container");
-        static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *>, "'extensions' must contain null-terminated strings");
+        static_assert(mpl::container<T>, "'extensions' must be a container");
+        static_assert(std::same_as<typename std::decay_t<T>::value_type, char const *>, "'extensions' must contain null-terminated strings");
 
         if constexpr (use_layers)
         {
@@ -113,8 +113,8 @@ inline VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
     if constexpr (use_layers)
     {
         using T = std::decay_t<L>;
-        static_assert(is_container_v<T>, "'layers' must be a container");
-        static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *>, "'layers' must contain null-terminated strings");
+        static_assert(mpl::container<T>, "'layers' must be a container");
+        static_assert(std::same_as<typename std::decay_t<T>::value_type, char const *>, "'layers' must contain null-terminated strings");
 
         if constexpr (std::is_rvalue_reference_v<T>)
             std::move(layers.begin(), layers.end(), std::back_inserter(layers_));

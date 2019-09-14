@@ -8,7 +8,7 @@
 
 #include <boost/functional/hash.hpp>
 
-#include "helpers.hxx"
+#include "utility/mpl.hxx"
 
 
 namespace semantic2
@@ -131,7 +131,7 @@ struct attribute_description_t {
 
 using vertex_layout_t = std::vector<attribute_description_t>;
 
-template<class L, class R, typename std::enable_if_t<are_same_v<vertex_layout_t, std::decay_t<L>, std::decay_t<R>>>* = nullptr>
+template<class L, class R> requires mpl::all_same<vertex_layout_t, std::decay_t<L>, std::decay_t<R>>
 constexpr bool operator== (L &&lhs, R &&rhs) noexcept
 {
     if (std::size(lhs) != std::size(rhs))
@@ -146,7 +146,7 @@ constexpr bool operator== (L &&lhs, R &&rhs) noexcept
 namespace std
 {
     template<> struct hash<vertex_layout_t> {
-        template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout_t, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<vertex_layout_t, std::decay_t<T>>
         constexpr std::size_t operator() (T &&layout) const noexcept
         {
             std::size_t seed = 0;
@@ -161,7 +161,7 @@ namespace std
     };
 }
 
-template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout_t, std::decay_t<T>>>* = nullptr>
+template<class T> requires std::same_as<vertex_layout_t, std::decay_t<T>>
 constexpr std::size_t hash_value(T &&layout) noexcept
 {
     std::size_t seed = 0;
@@ -176,7 +176,7 @@ constexpr std::size_t hash_value(T &&layout) noexcept
 
 
 using indices2_t = std::variant<std::uint16_t, std::uint32_t>;
-using index_buffer_t = wrap_variant_by_vector<indices2_t>::type;
+using index_buffer_t = mpl::wrap_variant_by_vector<indices2_t>::type;
 
 struct indices_t {
     std::size_t begin{0}, end{0};

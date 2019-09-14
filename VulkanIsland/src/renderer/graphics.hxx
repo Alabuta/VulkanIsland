@@ -4,6 +4,8 @@
 
 #include <boost/functional/hash_fwd.hpp>
 
+#include "utility/mpl.hxx"
+
 
 namespace graphics
 {
@@ -443,14 +445,14 @@ namespace graphics
 
 namespace graphics
 {
-    template<class T, typename std::enable_if_t<std::is_enum_v<T>>* = nullptr>
+    template<class T> requires mpl::enumeration<T>
     auto constexpr operator| (T lhs, T rhs)
     {
         using E = std::underlying_type_t<T>;
         return static_cast<T>(static_cast<E>(lhs) | static_cast<E>(rhs));
     }
 
-    template<class T, typename std::enable_if_t<std::is_enum_v<T>>* = nullptr>
+    template<class T> requires mpl::enumeration<T>
     auto constexpr operator& (T lhs, T rhs)
     {
         using E = std::underlying_type_t<T>;

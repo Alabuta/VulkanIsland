@@ -24,6 +24,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/hash.hpp>
 
+#include "utility/mpl.hxx"
+
 
 namespace math {
 template<std::size_t N, class T>
@@ -62,7 +64,7 @@ glm::mat4 reversedPerspective(float yFOV, float aspect, float znear, float zfar)
 }
 
 
-template<class T, std::enable_if_t<std::is_same_v<std::decay_t<T>, glm::mat4>>* = nullptr>
+template<class T> requires std::same_as<std::decay_t<T>, glm::mat4>
 inline std::ostream &operator<< (std::ostream &stream, T &&m)
 {
     stream << std::setprecision(4) << std::fixed;

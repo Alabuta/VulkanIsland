@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_map>
+#include <concepts>
 #include <variant>
 #include <memory>
 #include <vector>
@@ -18,13 +19,13 @@ namespace graphics
         std::uint32_t id;
         std::variant<std::uint32_t, boost::float32_t> value;
 
-        template<class T, typename std::enable_if_t<std::is_same_v<specialization_constant, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<std::decay_t<T>, specialization_constant>
         auto constexpr operator== (T && constant) const
         {
             return value == constant.value && id == constant.id;
         }
 
-        template<class T, typename std::enable_if_t<std::is_same_v<specialization_constant, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<std::decay_t<T>, specialization_constant>
         auto constexpr operator< (T && constant) const
         {
             return id < constant.id;
@@ -61,7 +62,7 @@ namespace graphics
 
         std::set<graphics::specialization_constant> constants;
 
-        template<class T, typename std::enable_if_t<std::is_same_v<shader_stage, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<std::decay_t<T>, shader_stage>
         auto constexpr operator== (T &&stage) const
         {
             return module_name == stage.module_name &&
@@ -74,7 +75,7 @@ namespace graphics
     struct shader_program final {
         std::vector<graphics::shader_stage> stages;
 
-        template<class T, typename std::enable_if_t<std::is_same_v<shader_program, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<std::decay_t<T>, shader_program>
         auto constexpr operator== (T &&program) const
         {
             return stages == program.stages;

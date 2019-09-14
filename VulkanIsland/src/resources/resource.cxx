@@ -241,7 +241,7 @@ ResourceManager::CreateShaderModule(std::vector<std::byte> const &shaderByteCode
     return shaderModule;
 }
 
-template<class T, std::enable_if_t<is_one_of_v<std::decay_t<T>, VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, VulkanShaderModule>>...>
+template<class T> requires mpl::one_of<std::decay_t<T>, VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, VulkanShaderModule>
 void ResourceManager::ReleaseResource(T &&resource) noexcept
 {
     using R = std::decay_t<T>;

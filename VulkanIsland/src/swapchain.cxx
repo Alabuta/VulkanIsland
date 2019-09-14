@@ -1,6 +1,8 @@
 #include <vector>
+
 #include <fmt/format.h>
 
+#include "utility/mpl.hxx"
 #include "swapchain.hxx"
 #include "commandBuffer.hxx"
 #include "renderer/graphics_api.hxx"
@@ -81,7 +83,7 @@ ChooseSwapSurfaceFormat(std::vector<VkSurfaceFormatKHR> const &supported, std::v
     throw std::runtime_error("required surface formats is not supported"s);
 }
 
-template<class T, typename std::enable_if_t<is_iterable_v<std::decay_t<T>>>* = nullptr>
+template<class T> requires mpl::iterable<std::decay_t<T>>
 [[nodiscard]] VkPresentModeKHR ChooseSwapPresentMode(T &&presentModes)
 {
     static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkPresentModeKHR>, "iterable object does not contain VkPresentModeKHR elements");
@@ -246,7 +248,7 @@ CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width,
         nullptr
     };
 
-    auto const queueFamilyIndices = make_array(
+    auto const queueFamilyIndices = mpl::make_array(
         graphicsQueue.family(), presentationQueue.family()
     );
 

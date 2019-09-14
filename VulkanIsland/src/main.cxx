@@ -19,6 +19,7 @@
 #include <boost/align/aligned_alloc.hpp>
 
 #include "main.hxx"
+#include "utility/mpl.hxx"
 #include "math.hxx"
 #include "instance.hxx"
 #include "device/device.hxx"
@@ -38,6 +39,7 @@
 #include "renderer/material.hxx"
 
 #include "renderer/render_flow.hxx"
+#include "renderer/compatibility.hxx"
 
 #include "ecs/ecs.hxx"
 #include "ecs/node.hxx"
@@ -208,7 +210,7 @@ struct app_t final {
 
 void RecreateSwapChain(app_t &app);
 
-template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
+template<class T> requires mpl::container<std::decay_t<T>>
 [[nodiscard]] std::shared_ptr<VulkanBuffer> StageData(VulkanDevice &device, T &&container);
 
 [[nodiscard]] std::optional<VulkanTexture>
@@ -731,9 +733,9 @@ void InitVulkan(Window &window, app_t &app)
 #endif
 
     QueuePool<
-        instances_number<GraphicsQueue>,
-        instances_number<TransferQueue>,
-        instances_number<PresentationQueue>
+        mpl::instances_number<GraphicsQueue>,
+        mpl::instances_number<TransferQueue>,
+        mpl::instances_number<PresentationQueue>
     > qpool;
 
     app.vulkanDevice = std::make_unique<VulkanDevice>(*app.vulkanInstance, app.surface, config::deviceExtensions, std::move(qpool));
@@ -866,6 +868,9 @@ void InitVulkan(Window &window, app_t &app)
             }
         });
     }
+
+    auto x = graphics::vertex_input_state{};
+    bool y = x == graphics::vertex_input_state{};
 
     app.vulkanDevice->resourceManager().TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
     CreateGraphicsPipelines(app);
@@ -1059,6 +1064,15 @@ try {
 
     glfwInit();
 
+    auto x = graphics::compatibility<graphics::FORMAT>{};
+    std::cout << std::boolalpha << x(graphics::FORMAT::RG4_UNORM_PACK8, graphics::FORMAT::R8_SSCALED) << '\n';
+    std::cout << std::boolalpha << x(graphics::FORMAT::R5G6B5_UNORM_PACK16, graphics::FORMAT::R16_SNORM) << '\n';
+    std::cout << std::boolalpha << x(graphics::FORMAT::RGB8_SNORM, graphics::FORMAT::BGR8_SINT) << '\n';
+
+    std::cout << std::boolalpha << x(graphics::FORMAT::R8_SSCALED, graphics::FORMAT::R16_SNORM) << '\n';
+    std::cout << std::boolalpha << x(graphics::FORMAT::A1RGB5_UNORM_PACK16, graphics::FORMAT::BGR8_SNORM) << '\n';
+    std::cout << std::boolalpha << x(graphics::FORMAT::RG8_SRGB, graphics::FORMAT::R8_UINT) << '\n';
+
     app_t app;
 
     Window window{"VulkanIsland"sv, static_cast<std::int32_t>(app.width), static_cast<std::int32_t>(app.height)};
@@ -1129,7 +1143,7 @@ try {
 }
 
 
-template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>...>
+template<class T> requires mpl::container<std::decay_t<T>>
 [[nodiscard]] std::shared_ptr<VulkanBuffer>
 StageData(VulkanDevice &device, T &&container)
 {

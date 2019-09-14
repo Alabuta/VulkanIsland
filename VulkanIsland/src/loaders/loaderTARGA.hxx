@@ -6,6 +6,7 @@
 #include <variant>
 
 #include "math.hxx"
+#include "utility/mpl.hxx"
 #include "renderer/graphics.hxx"
 
 
@@ -22,7 +23,7 @@ using texel_t = std::variant<
     math::vec<4, std::uint8_t>
 >;
 
-using texel_buffer_t = wrap_variant_by_vector<texel_t>::type;
+using texel_buffer_t = mpl::wrap_variant_by_vector<texel_t>::type;
 
 struct RawImage {
     graphics::FORMAT format{graphics::FORMAT::UNDEFINED};

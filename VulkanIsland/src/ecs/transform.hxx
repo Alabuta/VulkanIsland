@@ -5,6 +5,7 @@
 #include "main.hxx"
 #include "helpers.hxx"
 #include "math.hxx"
+#include "utility/mpl.hxx"
 
 #include "ecs.hxx"
 
@@ -14,7 +15,7 @@ struct Transform final {
 
     Transform() noexcept = default;
 
-    template<class T1, class T2, std::enable_if_t<are_same_v<glm::mat4, T1, T2>>* = nullptr>
+    template<class T1, class T2> requires mpl::all_same<glm::mat4, T1, T2>
     Transform(T1 &&localMatrix, T2 &&worldMatrix) noexcept : localMatrix{std::forward<T1>(localMatrix)}, worldMatrix{std::forward<T2>(worldMatrix)} { }
 };
 

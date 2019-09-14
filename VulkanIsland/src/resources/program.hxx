@@ -6,6 +6,7 @@
 #include <boost/functional/hash_fwd.hpp>
 
 #include "main.hxx"
+#include "utility/mpl.hxx"
 #include "device/device.hxx"
 #include "resources/resource.hxx"
 #include "renderer/graphics.hxx"
@@ -82,7 +83,7 @@ struct ShaderStage final {
     std::vector<std::int32_t> constants{};
 
     struct hash_value final {
-        template<class T, typename std::enable_if_t<std::is_same_v<ShaderStage, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<ShaderStage, std::decay_t<T>>
         auto constexpr operator() (T &&shaderStage) const noexcept
         {
             std::size_t seed = 0;
@@ -102,7 +103,7 @@ struct ShaderStage final {
     };
 
     struct equal_comparator final {
-        template<class T1, class T2, typename std::enable_if_t<are_same_v<struct ShaderStage, T1, T2>>* = nullptr>
+        template<class T1, class T2> requires mpl::all_same<struct ShaderStage, T1, T2>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
             auto constansAreEqual = std::size(lhs.constants) == std::size(rhs.constants) &&
@@ -120,14 +121,14 @@ namespace program
         std::uint32_t id;
         std::variant<std::uint32_t, float> value;
 
-        template<class T, typename std::enable_if_t<std::is_same_v<specialization_constant, std::decay_t<T>>>* = nullptr>
-        auto constexpr operator== (T && constant) const
+        template<class T> requires std::same_as<std::decay_t<T>, specialization_constant>
+        auto constexpr operator== (T &&constant) const
         {
             return value == constant.value && id == constant.id;
         }
 
-        template<class T, typename std::enable_if_t<std::is_same_v<specialization_constant, std::decay_t<T>>>* = nullptr>
-        auto constexpr operator< (T && constant) const
+        template<class T> requires std::same_as<std::decay_t<T>, specialization_constant>
+        auto constexpr operator< (T &&constant) const
         {
             return id < constant.id;
         }
@@ -141,7 +142,7 @@ namespace program
 
         std::set<program::specialization_constant> constants;
 
-        template<class T, typename std::enable_if_t<std::is_same_v<shader_stage, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<std::decay_t<T>, shader_stage>
         auto constexpr operator== (T &&stage) const
         {
             return semantic == stage.semantic &&
@@ -151,7 +152,7 @@ namespace program
         }
 
         struct hash final {
-            template<class T, typename std::enable_if_t<std::is_same_v<shader_stage, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<std::decay_t<T>, shader_stage>
             auto constexpr operator() (T &&stage) const noexcept
             {
                 std::size_t seed = 0;

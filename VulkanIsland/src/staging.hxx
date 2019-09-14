@@ -12,6 +12,7 @@ namespace ex = entityx;
 
 #include "main.hxx"
 #include "helpers.hxx"
+#include "utility/mpl.hxx"
 #include "math.hxx"
 
 #include "vertexFormat.hxx"
@@ -27,11 +28,11 @@ namespace staging
         std::size_t offset{0};
         std::vector<std::byte> buffer;
 
-        template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout_t, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<std::decay_t<T>, vertex_layout_t>
         vertex_buffer_t(T &&layout) noexcept : layout{std::forward<T>(layout)} { }
 
         struct hash_value final {
-            template<class T, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>>>* = nullptr>
+            template<class T> requires std::same_as<std::decay_t<T>, vertex_buffer_t>
             constexpr std::size_t operator() (T &&vertexBuffer) const noexcept
             {
                 std::size_t seed = 0;
@@ -45,7 +46,7 @@ namespace staging
             }
         };
 
-        template<class T, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<std::decay_t<T>, vertex_buffer_t>
         constexpr bool operator== (T &&rhs) const noexcept
         {
             if (std::size(buffer) != std::size(rhs.buffer))
@@ -164,7 +165,7 @@ struct xformat final {
 
 
     struct hash_value final {
-        template<class T, typename std::enable_if_t<std::is_same_v<vertex_attribute, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<std::decay_t<T>, vertex_attribute>
         auto constexpr operator() (T &&attribute) const noexcept
         {
             std::size_t seed = 0;
@@ -179,7 +180,7 @@ struct xformat final {
             return seed;
         }
 
-        template<class T, typename std::enable_if_t<std::is_same_v<vertex_layout, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<std::decay_t<T>, vertex_layout>
         auto constexpr operator() (T &&layout) const noexcept
         {
             std::size_t seed = 0;
@@ -196,7 +197,7 @@ struct xformat final {
     };
 
     struct equal_comparator final {
-        template<class T1, class T2, typename std::enable_if_t<are_same_v<struct vertex_attribute, T1, T2>>* = nullptr>
+        template<class T1, class T2> requires mpl::all_same<struct vertex_attribute, T1, T2>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
             if (lhs.offsetInBytes != rhs.offsetInBytes)
@@ -211,7 +212,7 @@ struct xformat final {
             return lhs.normalized == rhs.normalized;
         }
 
-        template<class T1, class T2, typename std::enable_if_t<are_same_v<vertex_layout, T1, T2>>* = nullptr>
+        template<class T1, class T2> requires mpl::all_same<vertex_layout, T1, T2>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
             if (lhs.sizeInBytes != rhs.sizeInBytes)
@@ -230,13 +231,13 @@ struct xformat final {
     };
 
     struct less_comparator final {
-        template<class T1, class T2, typename std::enable_if_t<are_same_v<struct vertex_attribute, T1, T2>>* = nullptr>
+        template<class T1, class T2> requires mpl::all_same<struct vertex_attribute, T1, T2>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
             return lhs.offsetInBytes < rhs.offsetInBytes && lhs.semantic < rhs.semantic && lhs.type < rhs.type && lhs.normalized < rhs.normalized;
         }
 
-        template<class T1, class T2, typename std::enable_if_t<are_same_v<vertex_layout, T1, T2>>* = nullptr>
+        template<class T1, class T2> requires mpl::all_same<struct vertex_layout, T1, T2>
         auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
         {
             auto lessSize = lhs.sizeInBytes < rhs.sizeInBytes;

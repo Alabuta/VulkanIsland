@@ -1,5 +1,7 @@
 #pragma once
 
+#include <concepts>
+
 #include "main.hxx"
 #include "memory.hxx"
 #include "staging.hxx"
@@ -27,10 +29,10 @@ private:
 class IndexBuffer final {
 public:
 
-    template<class T, typename std::enable_if_t<is_one_of_v<T, std::uint16_t, std::uint32_t>>* = nullptr>
+    template<class T> requires mpl::one_of<T, std::uint16_t, std::uint32_t>
     IndexBuffer(std::shared_ptr<VulkanBuffer> buffer, [[maybe_unused]] std::size_t size) noexcept : buffer{buffer}/* , size{size} */, type{T{}} { }
 
-    template<class T, typename std::enable_if_t<std::is_same_v<IndexBuffer, std::decay_t<T>>>* = nullptr>
+    template<class T> requires std::same_as<std::decay_t<T>, IndexBuffer>
     bool constexpr operator< (T &&rhs) const noexcept
     {
         return buffer->handle() < rhs.buffer->handle();

@@ -12,7 +12,7 @@ FindMemoryType(VulkanDevice const &vulkanDevice, std::uint32_t filter, VkMemoryP
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(vulkanDevice.physical_handle(), &memoryProperties);
 
-    auto const memoryTypes = to_array(memoryProperties.memoryTypes);
+    auto const memoryTypes = mpl::to_array(memoryProperties.memoryTypes);
 
     auto it_type = std::find_if(std::cbegin(memoryTypes), std::cend(memoryTypes), [filter, propertyFlags, i = 0u] (auto type) mutable
     {

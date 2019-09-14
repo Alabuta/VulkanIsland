@@ -327,6 +327,7 @@
     <ClInclude Include="src\resources\image.hxx" />
     <ClInclude Include="src\resources\program.hxx" />
     <ClInclude Include="src\sceneTree.hxx" />
+    <ClInclude Include="src\utility\mpl.hxx" />
     <ClInclude Include="src\vertexFormat.hxx" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -1,5 +1,7 @@
 #pragma once
 
+#include "main.hxx"
+#include "utility/mpl.hxx"
 #include "instance.hxx"
 #include "queues.hxx"
 #include "queueBuilder.hxx"
@@ -11,7 +13,7 @@ class ResourceManager;
 
 
 namespace config {
-auto constexpr deviceExtensions = make_array(
+auto constexpr deviceExtensions = mpl::make_array(
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 
     VK_KHR_MAINTENANCE1_EXTENSION_NAME,
@@ -44,7 +46,7 @@ public:
     VkDevice handle() const noexcept { return device_; };
     VkPhysicalDevice physical_handle() const noexcept { return physicalDevice_; };
 
-    template<class Q, std::size_t I = 0, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
+    template<class Q, std::size_t I = 0> requires mpl::derived_from<VulkanQueue<Q>, Q>
     Q const &queue() const noexcept;
 
     MemoryManager &memoryManager() noexcept { return *memoryManager_; }
@@ -121,8 +123,8 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
     if constexpr (use_extensions)
     {
         using T = std::decay_t<E>;
-        static_assert(is_container_v<T>, "'extensions' must be a container");
-        static_assert(std::is_same_v<typename std::decay_t<T>::value_type, char const *>, "'extensions' must contain null-terminated strings");
+        static_assert(mpl::container<T>, "'extensions' must be a container");
+        static_assert(std::same_as<typename std::decay_t<T>::value_type, char const *>, "'extensions' must contain null-terminated strings");
 
         if constexpr (std::is_rvalue_reference_v<T>)
             std::move(extensions.begin(), extensions.end(), std::back_inserter(extensions_));
@@ -138,10 +140,10 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
 
     using Queues = typename std::decay_t<decltype(qpool)>::Tuple;
 
-    queuePool_.computeQueues_.resize(get_type_instances_number<ComputeQueue, Queues>());
-    queuePool_.graphicsQueues_.resize(get_type_instances_number<GraphicsQueue, Queues>());
-    queuePool_.transferQueues_.resize(get_type_instances_number<TransferQueue, Queues>());
-    queuePool_.presentationQueues_.resize(get_type_instances_number<PresentationQueue, Queues>());
+    queuePool_.computeQueues_.resize(mpl::get_type_instances_number<ComputeQueue, Queues>());
+    queuePool_.graphicsQueues_.resize(mpl::get_type_instances_number<GraphicsQueue, Queues>());
+    queuePool_.transferQueues_.resize(mpl::get_type_instances_number<TransferQueue, Queues>());
+    queuePool_.presentationQueues_.resize(mpl::get_type_instances_number<PresentationQueue, Queues>());
 
     PickPhysicalDevice(instance.handle(), surface, std::move(extensions_view));
     CreateDevice(surface, std::move(extensions_));
@@ -153,7 +155,7 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
     resourceManager_ = std::make_unique<ResourceManager>(*this);
 }
 
-template<class Q, std::size_t I, typename std::enable_if_t<std::is_base_of_v<VulkanQueue<Q>, Q>>...>
+template<class Q, std::size_t I> requires mpl::derived_from<VulkanQueue<Q>, Q>
 inline Q const &VulkanDevice::queue() const noexcept
 {
     if constexpr (std::is_same_v<Q, GraphicsQueue>)

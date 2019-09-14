@@ -1,12 +1,13 @@
 #pragma once
 
+#include <array>
 #include <optional>
 #include <functional>
-#include <array>
 
 #include <boost/functional/hash_fwd.hpp>
 
 #include "main.hxx"
+#include "utility/mpl.hxx"
 #include "helpers.hxx"
 #include "device/device.hxx"
 #include "graphics.hxx"
@@ -119,7 +120,7 @@ private:
 };
 
 
-template<class T, typename std::enable_if_t<is_container_v<std::decay_t<T>>>* = nullptr>
+template<class T> requires mpl::container<std::decay_t<T>>
 [[nodiscard]] std::optional<VkPipelineLayout>
 CreatePipelineLayout(VulkanDevice const &vulkanDevice, T &&descriptorSetLayouts) noexcept
 {

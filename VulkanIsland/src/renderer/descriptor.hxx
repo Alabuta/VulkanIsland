@@ -4,6 +4,7 @@
 
 #include "graphics.hxx"
 #include "pipelines.hxx"
+#include "utility/mpl.hxx"
 
 
 namespace graphics
@@ -17,7 +18,7 @@ namespace graphics
         graphics::DESCRIPTOR_TYPE descriptor_type;
         graphics::SHADER_STAGE shader_stages;
 
-        template<class T, typename std::enable_if_t<std::is_same_v<descriptor_set_binding, std::decay_t<T>>>* = nullptr>
+        template<class T> requires std::same_as<std::decay_t<T>, descriptor_set_binding>
         auto constexpr operator== (T &&rhs) const
         {
             return binding_index == rhs.binding_index &&
