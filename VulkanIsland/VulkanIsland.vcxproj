@@ -280,7 +280,7 @@
     <ClInclude Include="src/device.hxx" />
     <ClInclude Include="src\camera\camera.hxx" />
     <ClInclude Include="src\deviceConfig.hxx" />
-    <ClInclude Include="src/helpers.hxx" />
+    <ClInclude Include="src\utility\helpers.hxx" />
     <ClInclude Include="src/input/inputDataTypes.hxx" />
     <ClInclude Include="src/input/inputManager.hxx" />
     <ClInclude Include="src/input/mouseInput.hxx" />

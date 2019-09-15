@@ -8,7 +8,7 @@
 namespace ex = entityx;
 
 #include "main.hxx"
-#include "helpers.hxx"
+#include "utility/helpers.hxx"
 #include "math.hxx"
 #include "ecs/transform.hxx"
 

@@ -3,7 +3,7 @@
 #include <optional>
 
 #include "main.hxx"
-#include "helpers.hxx"
+#include "utility/helpers.hxx"
 #include "device/device.hxx"
 #include "staging.hxx"
 

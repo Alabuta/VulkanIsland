@@ -11,7 +11,7 @@
 namespace ex = entityx;
 
 #include "main.hxx"
-#include "helpers.hxx"
+#include "utility/helpers.hxx"
 #include "utility/mpl.hxx"
 #include "math.hxx"
 
