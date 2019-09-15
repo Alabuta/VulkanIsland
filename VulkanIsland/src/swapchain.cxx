@@ -83,10 +83,10 @@ ChooseSwapSurfaceFormat(std::vector<VkSurfaceFormatKHR> const &supported, std::v
     throw std::runtime_error("required surface formats is not supported"s);
 }
 
-template<class T> requires mpl::iterable<std::decay_t<T>>
+template<class T> requires mpl::iterable<std::remove_cvref_t<T>>
 [[nodiscard]] VkPresentModeKHR ChooseSwapPresentMode(T &&presentModes)
 {
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkPresentModeKHR>, "iterable object does not contain VkPresentModeKHR elements");
+    static_assert(std::is_same_v<typename std::remove_cvref_t<T>::value_type, VkPresentModeKHR>, "iterable object does not contain VkPresentModeKHR elements");
 
 #ifndef _DEBUG
     auto mailbox = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)

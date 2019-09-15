@@ -130,7 +130,7 @@ std::optional<NodeHandle> SceneTree::AttachNode(NodeHandle parentHandle, std::st
             auto it_new_begin = std::next(std::begin(childrenLayer), new_begin_index);
             auto it_new_end = std::next(it_new_begin, requestedSize);
 
-            std::vector<std::decay_t<decltype(layerChunks)>::value_type> newChunks(childrenCount);
+            std::vector<std::remove_cvref_t<decltype(layerChunks)>::value_type> newChunks(childrenCount);
             std::iota(std::begin(newChunks), std::end(newChunks), parentChildren.begin);
 
             parentChildren.begin = static_cast<std::size_t>(new_begin_index);

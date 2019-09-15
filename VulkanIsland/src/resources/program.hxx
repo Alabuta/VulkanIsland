@@ -83,7 +83,7 @@ struct ShaderStage final {
     std::vector<std::int32_t> constants{};
 
     struct hash_value final {
-        template<class T> requires std::same_as<ShaderStage, std::decay_t<T>>
+        template<class T> requires std::same_as<ShaderStage, std::remove_cvref_t<T>>
         auto constexpr operator() (T &&shaderStage) const noexcept
         {
             std::size_t seed = 0;
@@ -121,13 +121,13 @@ namespace program
         std::uint32_t id;
         std::variant<std::uint32_t, float> value;
 
-        template<class T> requires std::same_as<std::decay_t<T>, specialization_constant>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, specialization_constant>
         auto constexpr operator== (T &&constant) const
         {
             return value == constant.value && id == constant.id;
         }
 
-        template<class T> requires std::same_as<std::decay_t<T>, specialization_constant>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, specialization_constant>
         auto constexpr operator< (T &&constant) const
         {
             return id < constant.id;
@@ -142,7 +142,7 @@ namespace program
 
         std::set<program::specialization_constant> constants;
 
-        template<class T> requires std::same_as<std::decay_t<T>, shader_stage>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, shader_stage>
         auto constexpr operator== (T &&stage) const
         {
             return semantic == stage.semantic &&
@@ -152,7 +152,7 @@ namespace program
         }
 
         struct hash final {
-        template<class T> requires std::same_as<std::decay_t<T>, shader_stage>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, shader_stage>
             auto constexpr operator() (T &&stage) const noexcept
             {
                 std::size_t seed = 0;

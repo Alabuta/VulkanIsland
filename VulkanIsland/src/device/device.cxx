@@ -73,10 +73,10 @@ template<bool check_on_duplicates = false>
     return std::includes(supportedExtensions.begin(), supportedExtensions.end(), requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
 }
 
-template<class T> requires iterable<std::decay_t<T>>
+template<class T> requires iterable<std::remove_cvref_t<T>>
 [[nodiscard]] std::optional<std::uint32_t> GetPresentationQueueFamilyIndex(T &&queueFamilies, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
 {
-    static_assert(std::is_same_v<typename std::decay_t<T>::value_type, VkQueueFamilyProperties>, "iterable object does not contain VkQueueFamilyProperties elements");
+    static_assert(std::is_same_v<typename std::remove_cvref_t<T>::value_type, VkQueueFamilyProperties>, "iterable object does not contain VkQueueFamilyProperties elements");
 
     auto it_presentationQueue = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [physicalDevice, surface, size = queueFamilies.size()] (auto /*queueFamily*/)
     {
@@ -161,7 +161,7 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
             if (queuePool.empty())
                 return true;
             
-            return QueueHelper::IsSupportedByDevice<typename std::decay_t<decltype(queuePool)>::value_type>(device, surface);
+            return QueueHelper::IsSupportedByDevice<typename std::remove_cvref_t<decltype(queuePool)>::value_type>(device, surface);
         };
 
         if (!check_queue_pool_support(queuePool.computeQueues_))
@@ -186,7 +186,7 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
         for (auto &&queue : queues) {
             auto supported = std::visit([=] (auto &&q)
             {
-                return QueueHelper<std::decay_t<decltype(q)>>::IsSupportedByDevice(device, surface);
+                return QueueHelper<std::remove_cvref_t<decltype(q)>>::IsSupportedByDevice(device, surface);
             }, queue);
 
             if (!supported)
@@ -243,16 +243,16 @@ void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<char const *> 
     QueueHelper queueHelper;
 
     for (auto &&queue : queuePool_.computeQueues_)
-        queue = queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface);
+        queue = queueHelper.Find<std::remove_cvref_t<decltype(queue)>>(physicalDevice_, surface);
 
     for (auto &&queue : queuePool_.graphicsQueues_)
-        queue = queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface);
+        queue = queueHelper.Find<std::remove_cvref_t<decltype(queue)>>(physicalDevice_, surface);
 
     for (auto &&queue : queuePool_.transferQueues_)
-        queue = queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface);
+        queue = queueHelper.Find<std::remove_cvref_t<decltype(queue)>>(physicalDevice_, surface);
 
     for (auto &&queue : queuePool_.presentationQueues_)
-        queue = queueHelper.Find<std::decay_t<decltype(queue)>>(physicalDevice_, surface);
+        queue = queueHelper.Find<std::remove_cvref_t<decltype(queue)>>(physicalDevice_, surface);
 
     std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
     std::vector<std::vector<float>> priorities;
@@ -320,7 +320,7 @@ void VulkanDevice::CreateDevice(VkSurfaceKHR surface, std::vector<char const *> 
     for (auto &&queue : queues) {
         std::visit([=] (auto &&q)
         {
-            using Q = std::decay_t<decltype(q)>;
+            using Q = std::remove_cvref_t<decltype(q)>;
             q = std::move(QueueHelper::Find<Q>(physicalDevice_, device_, surface));
 
             if constexpr (std::is_same_v<Q, GraphicsQueue>)

@@ -32,7 +32,7 @@ public:
     template<class T> requires mpl::one_of<T, std::uint16_t, std::uint32_t>
     IndexBuffer(std::shared_ptr<VulkanBuffer> buffer, [[maybe_unused]] std::size_t size) noexcept : buffer{buffer}/* , size{size} */, type{T{}} { }
 
-    template<class T> requires std::same_as<std::decay_t<T>, IndexBuffer>
+    template<class T> requires std::same_as<std::remove_cvref_t<T>, IndexBuffer>
     bool constexpr operator< (T &&rhs) const noexcept
     {
         return buffer->handle() < rhs.buffer->handle();

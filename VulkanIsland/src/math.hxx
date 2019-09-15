@@ -38,7 +38,7 @@ struct vec {
     vec() = default;
 
     template<class... Ts, typename = std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == size>>
-    constexpr vec(Ts... values) noexcept : array{static_cast<typename std::decay_t<decltype(array)>::value_type>(values)...} { }
+    constexpr vec(Ts... values) noexcept : array{static_cast<typename std::remove_cvref_t<decltype(array)>::value_type>(values)...} { }
 };
 
 template<class U, class V>
@@ -64,7 +64,7 @@ glm::mat4 reversedPerspective(float yFOV, float aspect, float znear, float zfar)
 }
 
 
-template<class T> requires std::same_as<std::decay_t<T>, glm::mat4>
+template<class T> requires std::same_as<std::remove_cvref_t<T>, glm::mat4>
 inline std::ostream &operator<< (std::ostream &stream, T &&m)
 {
     stream << std::setprecision(4) << std::fixed;

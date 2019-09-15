@@ -19,13 +19,13 @@ namespace graphics
         std::uint32_t id;
         std::variant<std::uint32_t, boost::float32_t> value;
 
-        template<class T> requires std::same_as<std::decay_t<T>, specialization_constant>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, specialization_constant>
         auto constexpr operator== (T && constant) const
         {
             return value == constant.value && id == constant.id;
         }
 
-        template<class T> requires std::same_as<std::decay_t<T>, specialization_constant>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, specialization_constant>
         auto constexpr operator< (T && constant) const
         {
             return id < constant.id;
@@ -62,7 +62,7 @@ namespace graphics
 
         std::set<graphics::specialization_constant> constants;
 
-        template<class T> requires std::same_as<std::decay_t<T>, shader_stage>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, shader_stage>
         auto constexpr operator== (T &&stage) const
         {
             return module_name == stage.module_name &&
@@ -75,7 +75,7 @@ namespace graphics
     struct shader_program final {
         std::vector<graphics::shader_stage> stages;
 
-        template<class T> requires std::same_as<std::decay_t<T>, shader_program>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, shader_program>
         auto constexpr operator== (T &&program) const
         {
             return stages == program.stages;

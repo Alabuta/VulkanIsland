@@ -7,7 +7,7 @@
 #include "renderer/graphics_api.hxx"
 
 
-template<class Q> requires mpl::derived_from<VulkanQueue<Q>, std::decay_t<Q>>
+template<class Q> requires mpl::derived_from<VulkanQueue<Q>, std::remove_cvref_t<Q>>
 [[nodiscard]] VkCommandBuffer BeginSingleTimeCommand(VulkanDevice const &device, [[maybe_unused]] Q &queue, VkCommandPool commandPool)
 {
     VkCommandBuffer commandBuffer;
@@ -36,7 +36,7 @@ template<class Q> requires mpl::derived_from<VulkanQueue<Q>, std::decay_t<Q>>
     return commandBuffer;
 }
 
-template<class Q> requires mpl::derived_from<VulkanQueue<Q>, std::decay_t<Q>>
+template<class Q> requires mpl::derived_from<VulkanQueue<Q>, std::remove_cvref_t<Q>>
 void EndSingleTimeCommand(VulkanDevice const &device, Q &queue, VkCommandBuffer commandBuffer, VkCommandPool commandPool)
 {
     if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS)
@@ -60,10 +60,10 @@ void EndSingleTimeCommand(VulkanDevice const &device, Q &queue, VkCommandBuffer 
 }
 
 
-template<class Q, class R> requires mpl::derived_from<VulkanQueue<Q>, std::decay_t<Q>> && mpl::container<std::decay_t<R>>
+template<class Q, class R> requires mpl::derived_from<VulkanQueue<Q>, std::remove_cvref_t<Q>> && mpl::container<std::remove_cvref_t<R>>
 void CopyBufferToBuffer(VulkanDevice const &device, Q &queue, VkBuffer srcBuffer, VkBuffer dstBuffer, R &&copyRegion, VkCommandPool commandPool)
 {
-    static_assert(std::is_same_v<typename std::decay_t<R>::value_type, VkBufferCopy>, "'copyRegion' argument does not contain 'VkBufferCopy' elements");
+    static_assert(std::is_same_v<typename std::remove_cvref_t<R>::value_type, VkBufferCopy>, "'copyRegion' argument does not contain 'VkBufferCopy' elements");
 
     auto commandBuffer = BeginSingleTimeCommand(device, queue, commandPool);
 
@@ -72,7 +72,7 @@ void CopyBufferToBuffer(VulkanDevice const &device, Q &queue, VkBuffer srcBuffer
     EndSingleTimeCommand(device, queue, commandBuffer, commandPool);
 }
 
-template<class Q> requires mpl::derived_from<VulkanQueue<Q>, std::decay_t<Q>>
+template<class Q> requires mpl::derived_from<VulkanQueue<Q>, std::remove_cvref_t<Q>>
 void CopyBufferToImage(VulkanDevice const &device, Q &queue, VkBuffer srcBuffer, VkImage dstImage, std::uint16_t width, std::uint16_t height, VkCommandPool commandPool)
 {
     auto commandBuffer = BeginSingleTimeCommand(device, queue, commandPool);
@@ -91,7 +91,7 @@ void CopyBufferToImage(VulkanDevice const &device, Q &queue, VkBuffer srcBuffer,
 }
 
 
-template<class Q> requires mpl::derived_from<VulkanQueue<Q>, std::decay_t<Q>>
+template<class Q> requires mpl::derived_from<VulkanQueue<Q>, std::remove_cvref_t<Q>>
 void GenerateMipMaps(VulkanDevice const &device, Q &queue, VulkanImage const &image, VkCommandPool commandPool) noexcept
 {
     auto commandBuffer = BeginSingleTimeCommand(device, queue, commandPool);
@@ -150,7 +150,7 @@ void GenerateMipMaps(VulkanDevice const &device, Q &queue, VulkanImage const &im
 }
 
 
-template<class Q> requires mpl::derived_from<VulkanQueue<Q>, std::decay_t<Q>>
+template<class Q> requires mpl::derived_from<VulkanQueue<Q>, std::remove_cvref_t<Q>>
 bool TransitionImageLayout(VulkanDevice const &device, Q &queue, VulkanImage const &image,
                            graphics::IMAGE_LAYOUT srcLayout, graphics::IMAGE_LAYOUT dstLayout, VkCommandPool commandPool) noexcept
 {
@@ -220,7 +220,7 @@ bool TransitionImageLayout(VulkanDevice const &device, Q &queue, VulkanImage con
 }
 
 
-template<class Q> requires mpl::derived_from<VulkanQueue<Q>, std::decay_t<Q>>
+template<class Q> requires mpl::derived_from<VulkanQueue<Q>, std::remove_cvref_t<Q>>
 std::optional<VkCommandPool> CreateCommandPool(VkDevice device, Q &queue, VkCommandPoolCreateFlags flags)
 {
     VkCommandPoolCreateInfo const createInfo{

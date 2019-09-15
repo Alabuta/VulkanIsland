@@ -125,14 +125,14 @@ private:
             }
 
             template<class T, class S>
-            std::enable_if_t<std::is_same_v<chunk_t, std::decay_t<T>> && std::is_integral_v<S>, bool>
+            std::enable_if_t<std::is_same_v<chunk_t, std::remove_cvref_t<T>> && std::is_integral_v<S>, bool>
                 operator() (T &&chunk, S size) const noexcept
             {
                 return chunk.size < size;
             }
 
             template<class S, class T>
-            std::enable_if_t<std::is_same_v<chunk_t, std::decay_t<T>> && std::is_integral_v<S>, bool>
+            std::enable_if_t<std::is_same_v<chunk_t, std::remove_cvref_t<T>> && std::is_integral_v<S>, bool>
                 operator() (S size, T &&chunk) const noexcept
             {
                 return chunk.size < size;

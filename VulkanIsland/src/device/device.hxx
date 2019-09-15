@@ -122,9 +122,9 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
 
     if constexpr (use_extensions)
     {
-        using T = std::decay_t<E>;
+        using T = std::remove_cvref_t<E>;
         static_assert(mpl::container<T>, "'extensions' must be a container");
-        static_assert(std::same_as<typename std::decay_t<T>::value_type, char const *>, "'extensions' must contain null-terminated strings");
+        static_assert(std::same_as<typename std::remove_cvref_t<T>::value_type, char const *>, "'extensions' must contain null-terminated strings");
 
         if constexpr (std::is_rvalue_reference_v<T>)
             std::move(extensions.begin(), extensions.end(), std::back_inserter(extensions_));
@@ -138,7 +138,7 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
         std::copy(extensions_.begin(), extensions_.end(), std::back_inserter(extensions_view));
     }
 
-    using Queues = typename std::decay_t<decltype(qpool)>::Tuple;
+    using Queues = typename std::remove_cvref_t<decltype(qpool)>::Tuple;
 
     queuePool_.computeQueues_.resize(mpl::get_type_instances_number<ComputeQueue, Queues>());
     queuePool_.graphicsQueues_.resize(mpl::get_type_instances_number<GraphicsQueue, Queues>());

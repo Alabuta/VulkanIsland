@@ -33,14 +33,14 @@ void PipelineVertexInputStatesManager::createPipelineVertexInputState(xformat::v
     {
         auto format = std::visit([normalized = attribute.normalized] (auto &&type)
         {
-            using T = std::decay_t<decltype(type)>;
+            using T = std::remove_cvref_t<decltype(type)>;
             return getFormat<T::number, typename T::type>(normalized);
 
         }, attribute.type);
 
         auto location = std::visit([] (auto semantic)
         {
-            using S = std::decay_t<decltype(semantic)>;
+            using S = std::remove_cvref_t<decltype(semantic)>;
             return S::index;
 
         }, attribute.semantic);

@@ -51,11 +51,11 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
 
     using R = VkMemoryRequirements;
 
-    auto constexpr kSUB_ALLOCATION = std::is_same_v<std::decay_t<R>, VkMemoryRequirements>;
+    auto constexpr kSUB_ALLOCATION = std::is_same_v<std::remove_cvref_t<R>, VkMemoryRequirements>;
 
     auto &&memoryRequirements = [] (auto &&memoryRequirements2)
     {
-        if constexpr (std::is_same_v<std::decay_t<decltype(memoryRequirements2)>, VkMemoryRequirements>)
+        if constexpr (std::is_same_v<std::remove_cvref_t<decltype(memoryRequirements2)>, VkMemoryRequirements>)
             return memoryRequirements2;
 
         else return memoryRequirements2.memoryRequirements;
@@ -99,7 +99,7 @@ MemoryManager::AllocateMemory(VkMemoryRequirements const &memoryRequirements2, V
 
         auto &&availableChunks = memoryBlock.availableChunks;
 
-        if constexpr (std::is_same_v<std::decay_t<R>, VkMemoryRequirements>) {
+        if constexpr (std::is_same_v<std::remove_cvref_t<R>, VkMemoryRequirements>) {
             //auto [it_chunk_begin, it_chunk_end] = availableChunks.equal_range(memoryRequirements.size);
             auto it_chunk_begin = availableChunks.lower_bound(memoryRequirements.size);
             auto it_chunk_end = availableChunks.upper_bound(memoryRequirements.size);

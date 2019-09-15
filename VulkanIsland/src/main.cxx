@@ -210,7 +210,7 @@ struct app_t final {
 
 void RecreateSwapChain(app_t &app);
 
-template<class T> requires mpl::container<std::decay_t<T>>
+template<class T> requires mpl::container<std::remove_cvref_t<T>>
 [[nodiscard]] std::shared_ptr<VulkanBuffer> StageData(VulkanDevice &device, T &&container);
 
 [[nodiscard]] std::optional<VulkanTexture>
@@ -550,7 +550,7 @@ xformat populate()
 
             auto &&vertexBuffer = _model.vertexBuffers[vertexLayoutIndex];
 
-            using buffer_type_t = std::decay_t<decltype(vertexBuffer.buffer)>;
+            using buffer_type_t = std::remove_cvref_t<decltype(vertexBuffer.buffer)>;
 
             meshlet.vertexBufferIndex = vertexLayoutIndex;
             meshlet.vertexCount = static_cast<std::uint32_t>(vertexCountPerMeshlet);
@@ -621,7 +621,7 @@ xformat populate()
 
         auto &&vertexBuffer = _model.vertexBuffers[vertexLayoutIndex];
 
-        using buffer_type_t = std::decay_t<decltype(vertexBuffer.buffer)>;
+        using buffer_type_t = std::remove_cvref_t<decltype(vertexBuffer.buffer)>;
 
         {
             // Second triangle
@@ -1143,14 +1143,14 @@ try {
 }
 
 
-template<class T> requires mpl::container<std::decay_t<T>>
+template<class T> requires mpl::container<std::remove_cvref_t<T>>
 [[nodiscard]] std::shared_ptr<VulkanBuffer>
 StageData(VulkanDevice &device, T &&container)
 {
     auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-    using type = typename std::decay_t<T>::value_type;
+    using type = typename std::remove_cvref_t<T>::value_type;
 
     auto const bufferSize = static_cast<VkDeviceSize>(sizeof(type) * std::size(container));
 

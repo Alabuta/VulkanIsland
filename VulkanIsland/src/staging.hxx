@@ -28,11 +28,11 @@ namespace staging
         std::size_t offset{0};
         std::vector<std::byte> buffer;
 
-        template<class T> requires std::same_as<std::decay_t<T>, vertex_layout_t>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_layout_t>
         vertex_buffer_t(T &&layout) noexcept : layout{std::forward<T>(layout)} { }
 
         struct hash_value final {
-            template<class T> requires std::same_as<std::decay_t<T>, vertex_buffer_t>
+            template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_buffer_t>
             constexpr std::size_t operator() (T &&vertexBuffer) const noexcept
             {
                 std::size_t seed = 0;
@@ -46,7 +46,7 @@ namespace staging
             }
         };
 
-        template<class T> requires std::same_as<std::decay_t<T>, vertex_buffer_t>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_buffer_t>
         constexpr bool operator== (T &&rhs) const noexcept
         {
             if (std::size(buffer) != std::size(rhs.buffer))
@@ -74,13 +74,13 @@ namespace staging
                 });
             }
 
-            /*template<class T, class S, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>> && std::is_integral_v<S>>* = nullptr>
+            /*template<class T, class S, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::remove_cvref_t<T>> && std::is_integral_v<S>>* = nullptr>
             auto operator() (T &&chunk, S size) const noexcept
             {
                 return chunk.size < size;
             }
 
-            template<class S, class T, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::decay_t<T>> && std::is_integral_v<S>>* = nullptr>
+            template<class S, class T, typename std::enable_if_t<std::is_same_v<vertex_buffer_t, std::remove_cvref_t<T>> && std::is_integral_v<S>>* = nullptr>
             auto operator() (S size, T &&chunk) const noexcept
             {
                 return chunk.size < size;
@@ -165,7 +165,7 @@ struct xformat final {
 
 
     struct hash_value final {
-        template<class T> requires std::same_as<std::decay_t<T>, vertex_attribute>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_attribute>
         auto constexpr operator() (T &&attribute) const noexcept
         {
             std::size_t seed = 0;
@@ -180,7 +180,7 @@ struct xformat final {
             return seed;
         }
 
-        template<class T> requires std::same_as<std::decay_t<T>, vertex_layout>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_layout>
         auto constexpr operator() (T &&layout) const noexcept
         {
             std::size_t seed = 0;
@@ -342,7 +342,7 @@ xformat::vertex_layout CreateVertexLayout(Ts... args)
     for (auto &&vertexAttribute : vertexAttributes) {
         auto sizeInBytes = std::visit([] (auto &&type)
         {
-            return sizeof(std::decay_t<decltype(type)>);
+            return sizeof(std::remove_cvref_t<decltype(type)>);
 
         }, vertexAttribute.type);
 

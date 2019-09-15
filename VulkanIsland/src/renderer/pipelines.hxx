@@ -120,12 +120,12 @@ private:
 };
 
 
-template<class T> requires mpl::container<std::decay_t<T>>
+template<class T> requires mpl::container<std::remove_cvref_t<T>>
 [[nodiscard]] std::optional<VkPipelineLayout>
 CreatePipelineLayout(VulkanDevice const &vulkanDevice, T &&descriptorSetLayouts) noexcept
 {
     static_assert(
-        std::is_same_v<typename std::decay_t<T>::value_type, VkDescriptorSetLayout>,
+        std::is_same_v<typename std::remove_cvref_t<T>::value_type, VkDescriptorSetLayout>,
         "container has to contain VkDescriptorSetLayout elements"
     );
 

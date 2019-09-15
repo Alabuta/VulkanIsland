@@ -22,10 +22,10 @@ class VertexBuffer;
 class IndexBuffer;
 
 
-template<class T> requires mpl::one_of<std::decay_t<T>, VulkanImage, VulkanBuffer>
+template<class T> requires mpl::one_of<std::remove_cvref_t<T>, VulkanImage, VulkanBuffer>
 bool IsResourceLinear(T &&resource)
 {
-    using type = std::decay_t<T>;
+    using type = std::remove_cvref_t<T>;
    
     if constexpr (std::is_same_v<type, VulkanBuffer>)
         return true;
@@ -75,7 +75,7 @@ private:
 
     VulkanDevice &device_;
 
-    template<class T> requires mpl::one_of<std::decay_t<T>,
+    template<class T> requires mpl::one_of<std::remove_cvref_t<T>,
         VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, VulkanShaderModule
     >
     void ReleaseResource(T &&resource) noexcept;

@@ -21,13 +21,13 @@ public:
 
     VulkanQueue &operator= (VulkanQueue const &) = default;
 
-    template<class Q> requires std::same_as<T, std::decay_t<Q>>
+    template<class Q> requires std::same_as<T, std::remove_cvref_t<Q>>
     [[nodiscard]] constexpr bool operator== (Q &&queue) const noexcept
     {
         return family_ == queue.family_ && index_ == queue.index_;
     }
 
-    template<class Q> requires std::same_as<T, std::decay_t<Q>>
+    template<class Q> requires std::same_as<T, std::remove_cvref_t<Q>>
     [[nodiscard]] constexpr bool operator!= (Q &&queue) const noexcept
     {
         return !(*this == queue);

@@ -29,7 +29,7 @@ public:
 
     VkPipeline handle() const noexcept { return handle_; }
 
-    template<class T> requires std::same_as<std::decay_t<T>, pipeline>
+    template<class T> requires std::same_as<std::remove_cvref_t<T>, pipeline>
     auto constexpr operator== (T &&rhs) const
     {
         return primitive_topology_ == rhs.topology_ &&

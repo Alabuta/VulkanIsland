@@ -56,7 +56,7 @@ std::optional<VkDescriptorPool> CreateDescriptorPool(VulkanDevice const &device)
 
 std::optional<VkDescriptorSetLayout> CreateDescriptorSetLayout(VulkanDevice const &device);
 
-template<class T> requires mpl::container<std::decay_t<T>>
+template<class T> requires mpl::container<std::remove_cvref_t<T>>
 std::optional<VkDescriptorSet> CreateDescriptorSet(VulkanDevice const &device, VkDescriptorPool descriptorPool, T &&descriptorSetLayouts)
 {
     std::optional<VkDescriptorSet> descriptorSet;

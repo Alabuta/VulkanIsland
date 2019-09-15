@@ -88,9 +88,9 @@ inline VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
 
     if constexpr (use_extensions)
     {
-        using T = std::decay_t<E>;
+        using T = std::remove_cvref_t<E>;
         static_assert(mpl::container<T>, "'extensions' must be a container");
-        static_assert(std::same_as<typename std::decay_t<T>::value_type, char const *>, "'extensions' must contain null-terminated strings");
+        static_assert(std::same_as<typename std::remove_cvref_t<T>::value_type, char const *>, "'extensions' must contain null-terminated strings");
 
         if constexpr (use_layers)
         {
@@ -112,9 +112,9 @@ inline VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
 
     if constexpr (use_layers)
     {
-        using T = std::decay_t<L>;
+        using T = std::remove_cvref_t<L>;
         static_assert(mpl::container<T>, "'layers' must be a container");
-        static_assert(std::same_as<typename std::decay_t<T>::value_type, char const *>, "'layers' must contain null-terminated strings");
+        static_assert(std::same_as<typename std::remove_cvref_t<T>::value_type, char const *>, "'layers' must contain null-terminated strings");
 
         if constexpr (std::is_rvalue_reference_v<T>)
             std::move(layers.begin(), layers.end(), std::back_inserter(layers_));

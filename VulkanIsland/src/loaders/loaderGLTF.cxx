@@ -405,7 +405,7 @@ void from_json(nlohmann::json const &j, node_t &node)
 
     if (j.count("matrix"s)) {
         std::array<float, 16> matrix;
-        matrix = j.at("matrix"s).get<std::decay_t<decltype(matrix)>>();
+        matrix = j.at("matrix"s).get<std::remove_cvref_t<decltype(matrix)>>();
 
         // :TODO:
         // If the determinant of the transform is a negative value,
@@ -420,13 +420,13 @@ void from_json(nlohmann::json const &j, node_t &node)
         std::array<float, 3> scale{{1.f, 1.f, 1.f}};
 
         if (j.count("translation"s))
-            translation = j.at("translation"s).get<std::decay_t<decltype(translation)>>();
+            translation = j.at("translation"s).get<std::remove_cvref_t<decltype(translation)>>();
 
         if (j.count("rotation"s))
-            rotation = j.at("rotation"s).get<std::decay_t<decltype(rotation)>>();
+            rotation = j.at("rotation"s).get<std::remove_cvref_t<decltype(rotation)>>();
 
         if (j.count("scale"s))
-            scale = j.at("scale"s).get<std::decay_t<decltype(scale)>>();
+            scale = j.at("scale"s).get<std::remove_cvref_t<decltype(scale)>>();
 
         node.transform = std::make_tuple(
             glm::make_vec3(std::data(translation)), glm::make_quat(std::data(rotation)), glm::make_vec3(std::data(scale))
@@ -434,13 +434,13 @@ void from_json(nlohmann::json const &j, node_t &node)
     }
 
     if (j.count("children"s))
-        node.children = j.at("children"s).get<std::decay_t<decltype(node.children)>>();
+        node.children = j.at("children"s).get<std::remove_cvref_t<decltype(node.children)>>();
 
     if (j.count("mesh"s))
-        node.mesh = j.at("mesh"s).get<std::decay_t<decltype(node.mesh)::value_type>>();
+        node.mesh = j.at("mesh"s).get<std::remove_cvref_t<decltype(node.mesh)::value_type>>();
 
     if (j.count("camera"s))
-        node.camera = j.at("camera"s).get<std::decay_t<decltype(node.camera)::value_type>>();
+        node.camera = j.at("camera"s).get<std::remove_cvref_t<decltype(node.camera)::value_type>>();
 }
 
 void from_json(nlohmann::json const &j, mesh_t &mesh)
@@ -688,7 +688,7 @@ std::vector<SceneTree> initSceneTree(std::vector<glTF::scene_t> const &scenes, s
 
                         std::visit([&sceneTree, handle] (auto &&transform)
                         {
-                            using T = std::decay_t<decltype(transform)>;
+                            using T = std::remove_cvref_t<decltype(transform)>;
 
                             if constexpr (std::is_same_v<T, glm::mat4>)
                                 sceneTree.AddComponent<Transform>(*handle, transform, glm::mat4{1.f});
@@ -771,7 +771,7 @@ void initNodeGraph(std::vector<glTF::scene_t> const &scenes, std::vector<glTF::n
 
                         std::visit([&registry, entity] (auto &&transform)
                         {
-                            using T = std::decay_t<decltype(transform)>;
+                            using T = std::remove_cvref_t<decltype(transform)>;
 
                             if constexpr (std::is_same_v<T, glm::mat4>)
                                 registry.replace<Transform>(entity, transform, glm::mat4{1});
@@ -936,7 +936,7 @@ bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &)
 
                     auto indexTypeSize = std::visit([] (auto indexInstance)
                     {
-                        return sizeof(std::decay_t<decltype(indexInstance)>);
+                        return sizeof(std::remove_cvref_t<decltype(indexInstance)>);
 
                     }, *indexInstance);
 
@@ -976,7 +976,7 @@ bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &)
 
                     std::visit([begin, count = accessor.count, byteStride = bufferView.byteStride, &binBuffer] (auto &&indices)
                     {
-                        using T = std::decay_t<decltype(indices)>::value_type;
+                        using T = std::remove_cvref_t<decltype(indices)>::value_type;
 
                         auto size = sizeof(T);
                         std::size_t const end = begin + count * size;
@@ -1041,7 +1041,7 @@ bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &)
                 if (auto _attribute = glTF::instantiate_attribute(accessor.type, accessor.componentType); _attribute) {
                     auto attributeSize = std::visit([dstOffset, semantic = semantic, normalized, &layout] (auto &&attribute)
                     {
-                        using A = std::decay_t<decltype(attribute)>;
+                        using A = std::remove_cvref_t<decltype(attribute)>;
 
                         layout.emplace_back(dstOffset, semantic, std::move(attribute), normalized);
 

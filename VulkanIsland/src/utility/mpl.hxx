@@ -34,7 +34,7 @@ namespace mpl
 
     template<class T, class... Ts>
     struct are_same {
-        static auto constexpr value_type = std::conjunction_v<std::is_same<T, std::decay_t<Ts>>...>;
+        static auto constexpr value_type = std::conjunction_v<std::is_same<T, std::remove_cvref_t<Ts>>...>;
     };
 
     template<class T, class... Ts>
@@ -53,7 +53,7 @@ namespace mpl
     {
         std::get<i>(tuple) = value;
 
-        if constexpr (i + 1 < std::tuple_size_v<std::decay_t<T>>)
+        if constexpr (i + 1 < std::tuple_size_v<std::remove_cvref_t<T>>)
             set_tuple<i + 1>(std::forward<T>(tuple), value);
     }
 

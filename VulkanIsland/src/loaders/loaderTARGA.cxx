@@ -100,7 +100,7 @@ void LoadUncompressedTrueColorImage(TARGA &targa, std::ifstream &file)
     {
         buffer.resize(static_cast<std::size_t>(targa.width * targa.height));
 
-        using texel_type = typename std::decay_t<decltype(buffer)>::value_type;
+        using texel_type = typename std::remove_cvref_t<decltype(buffer)>::value_type;
 
         file.read(reinterpret_cast<char *>(std::data(buffer)), static_cast<std::int64_t>(std::size(buffer) * sizeof(texel_type)));
 
@@ -140,7 +140,7 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
 
     targa.pixelLayout = GetPixelLayout(targa.colorMapDepth);
 
-    using pos_type_t = std::decay_t<decltype(file)>::pos_type;
+    using pos_type_t = std::remove_cvref_t<decltype(file)>::pos_type;
 
     auto colorMapStart = static_cast<pos_type_t>((targa.header.colorMapSpec.at(1) << 8) + targa.header.colorMapSpec.at(0));
     auto colorMapLength = static_cast<std::size_t>((targa.header.colorMapSpec.at(3) << 8) + targa.header.colorMapSpec.at(2));
@@ -151,7 +151,7 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
     {
         palette.resize(colorMapLength);
 
-        using texel_type = typename std::decay_t<decltype(palette)>::value_type;
+        using texel_type = typename std::remove_cvref_t<decltype(palette)>::value_type;
 
         file.read(reinterpret_cast<char *>(std::data(palette)), static_cast<std::streamsize>(std::size(palette) * sizeof(texel_type)));
 
@@ -179,7 +179,7 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
         std::vector<std::size_t> indices(static_cast<std::size_t>(targa.width * targa.height));
         file.read(reinterpret_cast<char *>(std::data(indices)), static_cast<std::streamsize>(std::size(indices) * sizeof(std::byte)));
 
-        std::decay_t<decltype(palette)> buffer(static_cast<std::size_t>(targa.width * targa.height));
+        std::remove_cvref_t<decltype(palette)> buffer(static_cast<std::size_t>(targa.width * targa.height));
 
         std::ptrdiff_t begin, end;
         std::size_t colorIndex;

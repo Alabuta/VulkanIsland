@@ -52,7 +52,7 @@ void ShaderManager::CreateShaderPrograms(Material const *const material)
                     specializationInfos_.emplace(shaderStage, VkSpecializationInfo{
                         static_cast<std::uint32_t>(std::size(specializationMapEntry)),
                         std::data(specializationMapEntry),
-                        std::size(constants) * sizeof(std::decay_t<decltype(constants)>::value_type),
+                        std::size(constants) * sizeof(std::remove_cvref_t<decltype(constants)>::value_type),
                         std::data(constants)
                     });
                 }

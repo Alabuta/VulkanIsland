@@ -129,7 +129,7 @@ namespace graphics
 
         bool normalized;
 
-        template<class T> requires std::same_as<std::decay_t<T>, vertex_attribute>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_attribute>
         auto constexpr operator== (T &&rhs) const
         {
             return offset_in_bytes == rhs.offset_in_bytes &&
@@ -144,7 +144,7 @@ namespace graphics
 
         std::vector<graphics::vertex_attribute> attributes;
 
-        template<class T> requires std::same_as<std::decay_t<T>, vertex_layout>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_layout>
         auto constexpr operator== (T &&rhs) const
         {
             return size_in_bytes == rhs.size_in_bytes && attributes == rhs.attributes;
@@ -157,7 +157,7 @@ namespace graphics
 
         vertex::INPUT_RATE input_rate;
 
-        template<class T> requires std::same_as<std::decay_t<T>, vertex_input_binding>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_input_binding>
         auto constexpr operator== (T &&rhs) const
         {
             return binding_index == rhs.binding_index &&
@@ -173,7 +173,7 @@ namespace graphics
 
         vertex::attribute_type type;
 
-        template<class T> requires std::same_as<std::decay_t<T>, vertex_input_attribute>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_input_attribute>
         auto constexpr operator== (T &&rhs) const
         {
             return location_index == rhs.location_index &&

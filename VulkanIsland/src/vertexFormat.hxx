@@ -131,7 +131,7 @@ struct attribute_description_t {
 
 using vertex_layout_t = std::vector<attribute_description_t>;
 
-template<class L, class R> requires mpl::all_same<vertex_layout_t, std::decay_t<L>, std::decay_t<R>>
+template<class L, class R> requires mpl::all_same<vertex_layout_t, std::remove_cvref_t<L>, std::remove_cvref_t<R>>
 constexpr bool operator== (L &&lhs, R &&rhs) noexcept
 {
     if (std::size(lhs) != std::size(rhs))
@@ -146,7 +146,7 @@ constexpr bool operator== (L &&lhs, R &&rhs) noexcept
 namespace std
 {
     template<> struct hash<vertex_layout_t> {
-        template<class T> requires std::same_as<vertex_layout_t, std::decay_t<T>>
+        template<class T> requires std::same_as<vertex_layout_t, std::remove_cvref_t<T>>
         constexpr std::size_t operator() (T &&layout) const noexcept
         {
             std::size_t seed = 0;
@@ -161,7 +161,7 @@ namespace std
     };
 }
 
-template<class T> requires std::same_as<vertex_layout_t, std::decay_t<T>>
+template<class T> requires std::same_as<vertex_layout_t, std::remove_cvref_t<T>>
 constexpr std::size_t hash_value(T &&layout) noexcept
 {
     std::size_t seed = 0;

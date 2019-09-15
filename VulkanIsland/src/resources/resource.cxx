@@ -241,10 +241,10 @@ ResourceManager::CreateShaderModule(std::vector<std::byte> const &shaderByteCode
     return shaderModule;
 }
 
-template<class T> requires mpl::one_of<std::decay_t<T>, VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, VulkanShaderModule>
+template<class T> requires mpl::one_of<std::remove_cvref_t<T>, VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, VulkanShaderModule>
 void ResourceManager::ReleaseResource(T &&resource) noexcept
 {
-    using R = std::decay_t<T>;
+    using R = std::remove_cvref_t<T>;
 
     if constexpr (std::is_same_v<R, VulkanImage>)
     {
