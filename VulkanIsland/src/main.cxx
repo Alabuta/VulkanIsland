@@ -142,6 +142,8 @@ struct app_t final {
     std::unique_ptr<ShaderManager> shaderManager;
     std::unique_ptr<GraphicsPipelineManager> graphicsPipelineManager;
 
+    std::unique_ptr<graphics::material_factory> material_factory;
+
     ~app_t()
     {
         cleanUp();
@@ -681,6 +683,32 @@ xformat populate()
     return _model;
 }
 
+void build_render_pipelines(app_t &app, xformat const &_model)
+{
+    std::vector<graphics::render_pipeline> render_pipelines;
+
+    auto &&material_factory = *app.material_factory;
+
+    for (auto &&meshlet : _model.nonIndexedMeshlets) {
+        auto primitive_topology = meshlet.topology;
+
+        auto vertex_layout_index = meshlet.vertexBufferIndex;
+        auto &&vertex_layout = _model.vertexLayouts[vertex_layout_index];
+
+        std::vector<graphics::vertex_input_binding> binding_descriptions;
+        std::vector<graphics::vertex_input_attribute> attribute_descriptions;
+
+        graphics::vertex_input_state vertex_input_state{
+            binding_descriptions, attribute_descriptions
+        };
+
+        auto material_index = meshlet.materialIndex;
+        auto [technique_index, name] = _model.materials[material_index];
+
+        auto material = material_factory.material(name, technique_index);
+    }
+}
+
 void stageXformat(app_t &app, xformat const &_model)
 {
     auto &&resourceManager = app.vulkanDevice->resourceManager();
@@ -744,6 +772,8 @@ void InitVulkan(Window &window, app_t &app)
     app.materialFactory = std::make_unique<MaterialFactory>(*app.shaderManager);
     app.graphicsPipelineManager = std::make_unique<GraphicsPipelineManager>(*app.vulkanDevice, *app.materialFactory, app.pipelineVertexInputStatesManager);
 
+    app.material_factory = std::make_unique<graphics::material_factory>();
+
     app.graphicsQueue = app.vulkanDevice->queue<GraphicsQueue>();
     app.transferQueue = app.vulkanDevice->queue<TransferQueue>();
     app.presentationQueue = app.vulkanDevice->queue<PresentationQueue>();
@@ -788,8 +818,10 @@ void InitVulkan(Window &window, app_t &app)
 
     temp::model = temp::populate();
     temp::stageXformat(app, temp::model);
+    temp::build_render_pipelines(app, temp::model);
 
-    graphics::render_flow render_flow;
+    graphics::render_flow_manager render_flow_manager;
+    graphics::render_pipeline render_pipeline;
 
     {
         std::vector<graphics::attachment> input_attachments;
@@ -851,26 +883,24 @@ void InitVulkan(Window &window, app_t &app)
             }
         };
 
-        render_flow.add_nodes({
-            graphics::render_flow_node{
-                app.width, app.height,
-                input_attachments,
-                color_attachments,
-                depth_stencil_attachments,
-                std::make_shared<graphics::material>(),
-                pipeline_states
+        render_pipeline = render_flow_manager.create_render_flow(
+            {
+                graphics::render_pipeline_node{
+                    app.width, app.height,
+                    input_attachments,
+                    color_attachments,
+                    depth_stencil_attachments,
+                    std::make_shared<graphics::material>(),
+                    pipeline_states
+                }
+            },
+            {
+                graphics::render_pipeline_output{
+                    graphics::attachment_reference{0, 0}
+                }
             }
-        });
-
-        render_flow.output_layout({
-            graphics::render_flow_output{
-                graphics::attachment_reference{0, 0}
-            }
-        });
+        );
     }
-
-    auto x = graphics::vertex_input_state{};
-    bool y = x == graphics::vertex_input_state{};
 
     app.vulkanDevice->resourceManager().TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
     CreateGraphicsPipelines(app);
@@ -1063,15 +1093,6 @@ try {
 #endif
 
     glfwInit();
-
-    auto x = graphics::compatibility<graphics::FORMAT>{};
-    std::cout << std::boolalpha << x(graphics::FORMAT::RG4_UNORM_PACK8, graphics::FORMAT::R8_SSCALED) << '\n';
-    std::cout << std::boolalpha << x(graphics::FORMAT::R5G6B5_UNORM_PACK16, graphics::FORMAT::R16_SNORM) << '\n';
-    std::cout << std::boolalpha << x(graphics::FORMAT::RGB8_SNORM, graphics::FORMAT::BGR8_SINT) << '\n';
-
-    std::cout << std::boolalpha << x(graphics::FORMAT::R8_SSCALED, graphics::FORMAT::R16_SNORM) << '\n';
-    std::cout << std::boolalpha << x(graphics::FORMAT::A1RGB5_UNORM_PACK16, graphics::FORMAT::BGR8_SNORM) << '\n';
-    std::cout << std::boolalpha << x(graphics::FORMAT::RG8_SRGB, graphics::FORMAT::R8_UINT) << '\n';
 
     app_t app;
 

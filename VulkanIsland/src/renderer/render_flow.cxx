@@ -3,11 +3,9 @@
 
 namespace graphics
 {
-    void render_flow::add_nodes(std::vector<graphics::render_flow_node> const &nodes)
+    graphics::render_pipeline
+    render_flow_manager::create_render_flow(std::vector<graphics::render_pipeline_node> const &nodes, std::vector<graphics::render_pipeline_output> const &output)
     {
-        nodes_ = nodes;
+        return graphics::render_pipeline();
     }
-
-    void render_flow::output_layout(std::vector<graphics::render_flow_output> const &output)
-    { }
 }

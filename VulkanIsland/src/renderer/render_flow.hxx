@@ -12,11 +12,11 @@
 
 namespace graphics
 {
-    struct render_flow_output final {
+    struct render_pipeline_output final {
         graphics::attachment_reference attachment_reference;
     };
 
-    struct render_flow_node final {
+    struct render_pipeline_node final {
         std::uint32_t width, height;
 
         std::vector<graphics::attachment> input_attachments;
@@ -28,15 +28,22 @@ namespace graphics
         graphics::pipeline_states pipeline_states;
     };
 
-    class render_flow final {
+    class render_pipeline final {
     public:
-
-        void add_nodes(std::vector<graphics::render_flow_node> const &nodes);
-
-        void output_layout(std::vector<graphics::render_flow_output> const &output);
 
     private:
 
-        std::vector<graphics::render_flow_node> nodes_;
+        std::vector<graphics::render_pipeline_node> nodes_;
+    };
+
+    class render_flow_manager final {
+    public:
+
+        [[nodiscard]] graphics::render_pipeline
+        create_render_flow(std::vector<graphics::render_pipeline_node> const &nodes, std::vector<graphics::render_pipeline_output> const &output);
+
+    private:
+
+        ;
     };
 }
