@@ -6,18 +6,13 @@
 
 #include <boost/functional/hash_fwd.hpp>
 
+#include "utility/helpers.hxx"
 #include "inputDataTypes.hxx"
 #include "inputManager.hxx"
 
 
 using namespace std::string_literals;
 using namespace std::string_view_literals;
-
-namespace
-{
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
-}
 
 
 void InputManager::onUpdate(input::RawData &data)

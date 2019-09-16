@@ -1,3 +1,4 @@
+#include "utility/helpers.hxx"
 #include "mouseInput.hxx"
 
 namespace
@@ -9,9 +10,6 @@ std::bitset<16> constexpr kPRESSED_MASK{
 std::bitset<16> constexpr kDEPRESSED_MASK{
     0x02 | 0x08 | 0x20 | 0x80 | 0x200
 };
-
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 }
 
 void MouseInput::connectHandler(std::shared_ptr<IHandler> slot)
