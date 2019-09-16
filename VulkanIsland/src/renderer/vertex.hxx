@@ -171,7 +171,7 @@ namespace graphics
         std::uint32_t binding_index;
         std::uint32_t offset_in_bytes;
 
-        vertex::attribute_type type;
+        graphics::FORMAT format;
 
         template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_input_attribute>
         auto constexpr operator== (T &&rhs) const
@@ -179,18 +179,13 @@ namespace graphics
             return location_index == rhs.location_index &&
                 binding_index == rhs.binding_index &&
                 offset_in_bytes == rhs.offset_in_bytes &&
-                type == rhs.type;
+                format == rhs.format;
         }
     };
 
-    graphics::FORMAT get_vertex_attribute_format(graphics::vertex_attribute const &vertex_attribute)
-    {
-        auto &&attribute_type = vertex_attribute.attribute_type;
+    std::uint32_t get_vertex_attribute_semantic_index(graphics::vertex_attribute const &vertex_attribute);
 
-        using type = variant_alternative_t<std::index(attribute_type), vertex::attribute_type>
-
-        return graphics::FORMAT::R8_SNORM;
-    }
+    graphics::FORMAT get_vertex_attribute_format(graphics::vertex_attribute const &vertex_attribute);
 }
 
 namespace graphics
@@ -250,7 +245,7 @@ namespace graphics
             boost::hash_combine(seed, input_attribute.location_index);
             boost::hash_combine(seed, input_attribute.binding_index);
             boost::hash_combine(seed, input_attribute.offset_in_bytes);
-            boost::hash_combine(seed, input_attribute.type.index());
+            boost::hash_combine(seed, input_attribute.format);
 
             return seed;
         }

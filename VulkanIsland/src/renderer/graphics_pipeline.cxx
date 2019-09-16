@@ -39,23 +39,17 @@ namespace graphics
 
         std::transform(std::cbegin(attributes), std::cend(attributes), std::back_inserter(attribute_descriptions), [binding_index] (auto &&attribute)
         {
-            auto format = std::visit([normalized = attribute.normalized](auto &&type)
-            {
-                using T = std::remove_cvref_t<decltype(type)>;
-                return getFormat<T::number, typename T::type>(normalized);
+            auto format = graphics::get_vertex_attribute_format(attribute);
 
-            }, attribute.type);
-
-            auto location = std::visit([] (auto semantic)
-            {
-                using S = std::remove_cvref_t<decltype(semantic)>;
-                return S::index;
-
-            }, attribute.semantic);
+            auto location_index = graphics::get_vertex_attribute_semantic_index(attribute);
 
             return graphics::vertex_input_attribute{
-                location, binding_index, format, static_cast<std::uint32_t>(attribute.offset_in_bytes)
+                location_index, binding_index, static_cast<std::uint32_t>(attribute.offset_in_bytes), format
             };
         });
+
+        vertex_input_states_.emplace(vertex_layout, graphics::vertex_input_state{ binding_description, attribute_descriptions });
+
+        return vertex_input_states_.at(vertex_layout);
     }
 }

@@ -695,13 +695,6 @@ void build_render_pipelines(app_t &app, xformat const &_model)
         auto vertex_layout_index = meshlet.vertexBufferIndex;
         auto &&vertex_layout = _model.vertexLayouts[vertex_layout_index];
 
-        graphics::vertex_input_binding binding_description{};
-        std::vector<graphics::vertex_input_attribute> attribute_descriptions;
-
-        graphics::vertex_input_state vertex_input_state{
-            binding_description, attribute_descriptions
-        };
-
         auto material_index = meshlet.materialIndex;
         auto [technique_index, name] = _model.materials[material_index];
 
@@ -852,13 +845,9 @@ void InitVulkan(Window &window, app_t &app)
 
         using vertex_attribute_t = vertex::static_array<3, boost::float32_t>;
 
-        graphics::vertex_input_binding binding_description{
-            0, sizeof(vertex_attribute_t), vertex::INPUT_RATE::VERTEX
-        };
+        graphics::vertex_input_binding binding_description{};
 
-        std::vector<graphics::vertex_input_attribute> attribute_descriptions{{
-            0, 0, sizeof(vertex_attribute_t), vertex_attribute_t{ }
-        }};
+        std::vector<graphics::vertex_input_attribute> attribute_descriptions{{}};
 
         graphics::pipeline_states pipeline_states{
             graphics::PRIMITIVE_TOPOLOGY::TRIANGLES,
