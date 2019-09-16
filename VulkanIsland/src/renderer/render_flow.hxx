@@ -36,7 +36,7 @@ namespace graphics
         std::vector<graphics::render_pipeline_node> nodes_;
     };
 
-    class render_flow_manager final {
+    class render_pipeline_manager final {
     public:
 
         [[nodiscard]] graphics::render_pipeline

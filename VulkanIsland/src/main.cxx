@@ -820,7 +820,7 @@ void InitVulkan(Window &window, app_t &app)
     temp::stageXformat(app, temp::model);
     temp::build_render_pipelines(app, temp::model);
 
-    graphics::render_flow_manager render_flow_manager;
+    graphics::render_pipeline_manager render_pipeline_manager;
     graphics::render_pipeline render_pipeline;
 
     {
@@ -883,7 +883,7 @@ void InitVulkan(Window &window, app_t &app)
             }
         };
 
-        render_pipeline = render_flow_manager.create_render_flow(
+        render_pipeline = render_pipeline_manager.create_render_flow(
             {
                 graphics::render_pipeline_node{
                     app.width, app.height,
