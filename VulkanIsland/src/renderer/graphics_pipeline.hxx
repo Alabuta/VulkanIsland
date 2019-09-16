@@ -98,6 +98,22 @@ namespace graphics
 
 namespace graphics
 {
+    class vertex_input_state_manager final {
+    public:
+
+        [[nodiscard]] std::uint32_t binding_index(graphics::vertex_layout const &vertex_layout);
+
+        [[nodiscard]] graphics::vertex_input_state const &vertex_input_state(graphics::vertex_layout const &vertex_layout);
+
+    private:
+
+        std::unordered_map<graphics::vertex_layout, graphics::vertex_input_state, hash<graphics::vertex_layout>> vertex_input_states_;
+
+    };
+}
+
+namespace graphics
+{
     template<>
     struct hash<graphics::pipeline> {
         std::size_t operator() (graphics::pipeline const &pipeline) const

@@ -182,6 +182,15 @@ namespace graphics
                 type == rhs.type;
         }
     };
+
+    graphics::FORMAT get_vertex_attribute_format(graphics::vertex_attribute const &vertex_attribute)
+    {
+        auto &&attribute_type = vertex_attribute.attribute_type;
+
+        using type = variant_alternative_t<std::index(attribute_type), vertex::attribute_type>
+
+        return graphics::FORMAT::R8_SNORM;
+    }
 }
 
 namespace graphics

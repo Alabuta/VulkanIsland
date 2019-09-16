@@ -11,13 +11,14 @@
 namespace graphics
 {
     struct vertex_input_state final {
-        std::vector<graphics::vertex_input_binding> binding_descriptions;
+        graphics::vertex_input_binding binding_description;
+        //std::vector<graphics::vertex_input_binding> binding_descriptions;
         std::vector<graphics::vertex_input_attribute> attribute_descriptions;
 
         template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_input_state>
         auto constexpr operator== (T &&rhs) const
         {
-            return binding_descriptions == rhs.binding_descriptions &&
+            return binding_description == rhs.binding_description &&
                 attribute_descriptions == rhs.attribute_descriptions;
         }
     };
@@ -169,8 +170,10 @@ namespace graphics
 
             graphics::hash<graphics::vertex_input_binding> constexpr binding_hasher;
 
-            for (auto &&binding_description : state.binding_descriptions)
-                boost::hash_combine(seed, binding_hasher(binding_description));
+            boost::hash_combine(seed, binding_hasher(state.binding_description));
+
+            /*for (auto &&binding_description : state.binding_descriptions)
+                boost::hash_combine(seed, binding_hasher(binding_description));*/
 
             graphics::hash<graphics::vertex_input_attribute> constexpr attribute_hasher;
 
