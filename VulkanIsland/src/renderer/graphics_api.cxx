@@ -803,4 +803,22 @@ namespace convert_to
 
         return result;
     }
+
+    VkQueueFlagBits vulkan_api::operator()(graphics::QUEUE_CAPABILITY queue_capability) const noexcept
+    {
+        VkQueueFlags result = VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT;
+
+        using E = std::underlying_type_t<graphics::QUEUE_CAPABILITY>;
+
+        if (static_cast<E>(queue_capability & graphics::QUEUE_CAPABILITY::GRAPHICS) == 0)
+            result ^= VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT;
+
+        if (static_cast<E>(queue_capability & graphics::QUEUE_CAPABILITY::COMPUTE))
+            result |= VkQueueFlagBits::VK_QUEUE_COMPUTE_BIT;
+
+        if (static_cast<E>(queue_capability & graphics::QUEUE_CAPABILITY::TRANSFER))
+            result |= VkQueueFlagBits::VK_QUEUE_TRANSFER_BIT;
+
+        return static_cast<VkQueueFlagBits>(result);
+    }
 }

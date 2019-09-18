@@ -5,6 +5,7 @@
 #include "main.hxx"
 #include "utility/mpl.hxx"
 #include "device/device.hxx"
+#include "renderer/graphics.hxx"
 
 class VulkanDevice;
 
@@ -12,6 +13,7 @@ template<class T>
 class VulkanQueue;
 
 class QueueHelper;
+
 
 template<class T>
 class VulkanQueue {
@@ -50,17 +52,17 @@ private:
 
 class GraphicsQueue final : public VulkanQueue<GraphicsQueue> {
 public:
-    static auto constexpr kFLAGS{VK_QUEUE_GRAPHICS_BIT};
+    static auto constexpr kCAPABILITY{ graphics::QUEUE_CAPABILITY::GRAPHICS };
 };
 
 class ComputeQueue final : public VulkanQueue<ComputeQueue> {
 public:
-    static auto constexpr kFLAGS{VK_QUEUE_COMPUTE_BIT};
+    static auto constexpr kCAPABILITY{ graphics::QUEUE_CAPABILITY::COMPUTE };
 };
 
 class TransferQueue final : public VulkanQueue<TransferQueue> {
 public:
-    static auto constexpr kFLAGS{VK_QUEUE_TRANSFER_BIT};
+    static auto constexpr kCAPABILITY{ graphics::QUEUE_CAPABILITY::TRANSFER };
 };
 
 class PresentationQueue final : public VulkanQueue<PresentationQueue> {};

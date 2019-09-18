@@ -441,6 +441,12 @@ namespace graphics
         TRANSIENT_ATTACHMENT = 0x40,
         INPUT_ATTACHMENT = 0x80
     };
+
+    enum class QUEUE_CAPABILITY {
+        GRAPHICS = 0x01,
+        COMPUTE = 0x02,
+        TRANSFER = 0x04
+    };
 }
 
 namespace graphics

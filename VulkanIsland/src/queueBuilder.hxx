@@ -6,6 +6,7 @@
 #include "utility/mpl.hxx"
 #include "device/device.hxx"
 #include "queues.hxx"
+#include "renderer/graphics_api.hxx"
 
 
 class QueueHelper final {
@@ -87,7 +88,8 @@ private:
         // Tolerant matching.
         auto it_family = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [] (auto &&queueFamily)
         {
-            return queueFamily.queueCount > 0 && (queueFamily.queueFlags & Q::kFLAGS) == Q::kFLAGS;
+            auto const capability = convert_to::vulkan(Q::kCAPABILITY);
+            return queueFamily.queueCount > 0 && (queueFamily.queueFlags & capability) == capability;
         });
 
         if (it_family != queueFamilies.cend())
