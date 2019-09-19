@@ -234,7 +234,11 @@ namespace graphics
             };
         });
 
-        return std::shared_ptr<graphics::material>{};
+        auto material = std::make_shared<graphics::material>(shader_stages);
+
+        materials_.emplace(key, material);
+
+        return material;
     }
 
     loader::material_description const &material_factory::material_description(std::string_view name)

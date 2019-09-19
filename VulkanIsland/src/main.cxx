@@ -143,6 +143,7 @@ struct app_t final {
     std::unique_ptr<GraphicsPipelineManager> graphicsPipelineManager;
 
     std::unique_ptr<graphics::material_factory> material_factory;
+    std::unique_ptr<graphics::vertex_input_state_manager> vertex_input_state_manager;
 
     ~app_t()
     {
@@ -687,7 +688,27 @@ void build_render_pipelines(app_t &app, xformat const &_model)
 {
     std::vector<graphics::render_pipeline> render_pipelines;
 
+    graphics::rasterization_state rasterization_state{
+        graphics::CULL_MODE::BACK,
+        graphics::POLYGON_FRONT_FACE::COUNTER_CLOCKWISE,
+        graphics::POLYGON_MODE::FILL,
+        1.f
+    };
+
+    graphics::depth_stencil_state depth_stencil_state{
+        true, true, graphics::COMPARE_OPERATION::GREATER,
+        false, { 0.f, 0.f },
+        false, graphics::stencil_state{ }, graphics::stencil_state{ }
+    };
+
+    graphics::color_blend_state color_blend_state{
+        false, graphics::BLEND_STATE_OPERATION::COPY,
+        { 0.f, 0.f, 0.f, 0.f },
+        { graphics::color_blend_attachment_state{ } }
+    };
+
     auto &&material_factory = *app.material_factory;
+    auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
 
     for (auto &&meshlet : _model.nonIndexedMeshlets) {
         auto primitive_topology = meshlet.topology;
@@ -699,6 +720,14 @@ void build_render_pipelines(app_t &app, xformat const &_model)
         auto [technique_index, name] = _model.materials[material_index];
 
         auto material = material_factory.material(name, technique_index);
+
+        graphics::pipeline_states pipeline_states{
+            primitive_topology,
+            vertex_input_state_manager.vertex_input_state(vertex_layout),
+            rasterization_state,
+            depth_stencil_state,
+            color_blend_state
+        };
     }
 }
 

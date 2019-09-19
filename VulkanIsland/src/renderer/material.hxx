@@ -91,18 +91,11 @@ private:
 
 namespace graphics
 {
-    class material final {
-    public:
+    struct material final {
 
-        material() = default;
+        std::vector<graphics::shader_stage> shader_stages;
 
-        //material(graphics::pipeline const &pipeline) : pipeline_{pipeline} { }
-
-    private:
-
-        //graphics::pipeline const &pipeline_;
-
-        std::vector<graphics::shader_stage> shader_stages_;
+        // TODO:: descriptor set and pipeline layout.
     };
 }
 
