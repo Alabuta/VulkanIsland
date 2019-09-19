@@ -67,6 +67,22 @@ private:
 
 namespace graphics
 {
+    class vertex_input_state_manager final {
+    public:
+
+        [[nodiscard]] std::uint32_t binding_index(graphics::vertex_layout const &vertex_layout);
+
+        [[nodiscard]] graphics::vertex_input_state const &vertex_input_state(graphics::vertex_layout const &vertex_layout);
+
+    private:
+
+        std::unordered_map<graphics::vertex_layout, graphics::vertex_input_state, hash<graphics::vertex_layout>> vertex_input_states_;
+
+    };
+}
+
+namespace graphics
+{
     class pipeline_manager final {
     public:
 
@@ -93,22 +109,6 @@ namespace graphics
 
         std::unordered_map<color_blend_state, cb_info, hash<color_blend_state>> color_blend_states_;
         std::unordered_map<color_blend_attachment_state, cba_info, hash<color_blend_attachment_state>> color_blend_attachment_states_;
-    };
-}
-
-namespace graphics
-{
-    class vertex_input_state_manager final {
-    public:
-
-        [[nodiscard]] std::uint32_t binding_index(graphics::vertex_layout const &vertex_layout);
-
-        [[nodiscard]] graphics::vertex_input_state const &vertex_input_state(graphics::vertex_layout const &vertex_layout);
-
-    private:
-
-        std::unordered_map<graphics::vertex_layout, graphics::vertex_input_state, hash<graphics::vertex_layout>> vertex_input_states_;
-
     };
 }
 

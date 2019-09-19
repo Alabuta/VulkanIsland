@@ -71,16 +71,6 @@ namespace graphics
                 constants == stage.constants;
         }
     };
-
-    struct shader_program final {
-        std::vector<graphics::shader_stage> stages;
-
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, shader_program>
-        auto constexpr operator== (T &&program) const
-        {
-            return stages == program.stages;
-        }
-    };
 }
 
 namespace graphics
@@ -116,21 +106,6 @@ namespace graphics
             return seed;
         }
     };
-
-    template<>
-    struct hash<graphics::shader_program> {
-        std::size_t operator() (graphics::shader_program const &program) const
-        {
-            std::size_t seed = 0;
-
-            graphics::hash<graphics::shader_stage> constexpr shader_stage_hasher;
-
-            for (auto &&stage : program.stages)
-                boost::hash_combine(seed, shader_stage_hasher(stage));
-
-            return seed;
-        }
-    };
 }
 
 namespace graphics
@@ -145,13 +120,13 @@ namespace graphics
         VulkanDevice &vulkan_device_;
 
         // GAPI
-        std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<shader_module>> modules_by_techinques_;
-
-        using sc_map_entry = VkSpecializationMapEntry;
+        /*using sc_map_entry = VkSpecializationMapEntry;
         using sc_info = VkSpecializationInfo;
 
         std::unordered_map<shader_stage, std::vector<sc_map_entry>, hash<shader_stage>> specialization_map_entries_;
-        std::unordered_map<shader_stage, sc_info, hash<shader_stage>> specializations_;
+        std::unordered_map<shader_stage, sc_info, hash<shader_stage>> specializations_;*/
+
+        std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<graphics::shader_module>> modules_by_techinques_;
 
         [[nodiscard]] std::shared_ptr<graphics::shader_module> create_shader_module(std::string_view name, std::uint32_t technique_index);
     };
