@@ -70,7 +70,7 @@ set(SOURCE_FILES
     src/renderer/render_flow.hxx                    src/renderer/render_flow.cxx
     src/renderer/render_pass.hxx                    src/renderer/render_pass.cxx
     src/renderer/shader_program.hxx                 src/renderer/shader_program.cxx
-    src/renderer/vertex.hxx
+    src/renderer/vertex.hxx                         src/renderer/vertex.cxx
 
     src/renderer/pipelineVertexInputState.hxx       src/renderer/pipelineVertexInputState.cxx
     src/renderer/renderPass.hxx                     src/renderer/renderPass.cxx
@@ -80,11 +80,13 @@ set(SOURCE_FILES
     src/resources/memory.hxx                        src/resources/memory.cxx
     src/resources/program.hxx                       src/resources/program.cxx
     src/resources/resource.hxx                      src/resources/resource.cxx
+
+	src/utility/mpl.hxx
+	src/utility/helpers.hxx
 	
 	src/commandBuffer.hxx
 	src/debug.hxx                                   src/debug.cxx
     src/descriptor.hxx                              src/descriptor.cxx
-	src/helpers.hxx
 	src/instance.hxx                                src/instance.cxx
     src/main.hxx                                    src/main.cxx
     src/math.hxx                                    src/math.cxx
@@ -130,7 +132,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-	target_compile_options(${PROJECT_NAME} PRIVATE
+    target_compile_options(${PROJECT_NAME} PRIVATE
         -Wpedantic
         -Wall
         -Wextra
