@@ -723,7 +723,11 @@ void build_render_pipelines(app_t &app, xformat const &_model)
 
         graphics::pipeline_states pipeline_states{
             primitive_topology,
-            vertex_input_state_manager.vertex_input_state(vertex_layout),
+            vertex_input_state_manager.vertex_input_state(
+                graphics::vertex_layout{
+                    1, std::vector<graphics::vertex_attribute>{ { 0, vertex::position{}, vertex::static_array<1, std::int8_t>{}, false }}
+                }
+            ),
             rasterization_state,
             depth_stencil_state,
             color_blend_state
@@ -795,6 +799,7 @@ void InitVulkan(Window &window, app_t &app)
     app.graphicsPipelineManager = std::make_unique<GraphicsPipelineManager>(*app.vulkanDevice, *app.materialFactory, app.pipelineVertexInputStatesManager);
 
     app.material_factory = std::make_unique<graphics::material_factory>();
+    app.vertex_input_state_manager = std::make_unique<graphics::vertex_input_state_manager>();
 
     app.graphicsQueue = app.vulkanDevice->queue<GraphicsQueue>();
     app.transferQueue = app.vulkanDevice->queue<TransferQueue>();

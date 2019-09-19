@@ -19,7 +19,7 @@
 
 namespace graphics
 {
-    class material;
+    struct material;
 }
 
 namespace graphics
