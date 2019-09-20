@@ -9,7 +9,7 @@
 
 
 std::shared_ptr<GraphicsPipeline>
-GraphicsPipelineManager::CreateGraphicsPipeline(xformat::vertex_layout const &layout, std::shared_ptr<Material> material, graphics::PRIMITIVE_TOPOLOGY topology,
+GraphicsPipelineManager::CreateGraphicsPipeline(graphics::vertex_layout const &layout, std::shared_ptr<Material> material, graphics::PRIMITIVE_TOPOLOGY topology,
                                                 VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkExtent2D extent)
 {
     auto viewportExtent = std::array{static_cast<float>(extent.width), static_cast<float>(extent.height)};

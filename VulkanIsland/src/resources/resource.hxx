@@ -61,7 +61,7 @@ public:
     template<class T> requires mpl::one_of<T, std::uint16_t, std::uint32_t>
     [[nodiscard]] std::shared_ptr<IndexBuffer> CreateIndexBuffer(std::size_t sizeInBytes) noexcept;
 
-    [[nodiscard]] std::shared_ptr<VertexBuffer> CreateVertexBuffer(xformat::vertex_layout const &layout, std::size_t sizeInBytes) noexcept;
+    [[nodiscard]] std::shared_ptr<VertexBuffer> CreateVertexBuffer(graphics::vertex_layout const &layout, std::size_t sizeInBytes) noexcept;
 
     void StageVertexData(std::shared_ptr<VertexBuffer> vertexBuffer, std::vector<std::byte> const &container) const;
 
@@ -85,7 +85,7 @@ private:
     ResourceManager(ResourceManager &&) = delete;
     
     // TODO:: unordered_miltimap
-    std::unordered_map<xformat::vertex_layout, std::shared_ptr<VertexBuffer>, xformat::hash_value, xformat::equal_comparator> vertexBuffers_;
+    std::unordered_map<graphics::vertex_layout, std::shared_ptr<VertexBuffer>, graphics::hash<graphics::vertex_layout>> vertexBuffers_;
 };
 
 

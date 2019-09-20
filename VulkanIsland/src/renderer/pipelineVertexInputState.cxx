@@ -1,8 +1,9 @@
+#include "renderer/graphics_api.hxx"
 #include "pipelineVertexInputState.hxx"
 #include "vertexFormat.hxx"
 
 
-std::uint32_t PipelineVertexInputStatesManager::binding(xformat::vertex_layout const &layout) noexcept
+std::uint32_t PipelineVertexInputStatesManager::binding(graphics::vertex_layout const &layout) noexcept
 {
     if (layouts_.count(layout) == 0)
         createPipelineVertexInputState(layout);
@@ -10,7 +11,7 @@ std::uint32_t PipelineVertexInputStatesManager::binding(xformat::vertex_layout c
     return layouts_[layout].binding;
 }
 
-VkPipelineVertexInputStateCreateInfo const &PipelineVertexInputStatesManager::info(xformat::vertex_layout const &layout) noexcept
+VkPipelineVertexInputStateCreateInfo const &PipelineVertexInputStatesManager::info(graphics::vertex_layout const &layout) noexcept
 {
     if (layouts_.count(layout) == 0)
         createPipelineVertexInputState(layout);
@@ -18,35 +19,25 @@ VkPipelineVertexInputStateCreateInfo const &PipelineVertexInputStatesManager::in
     return layouts_[layout].info;
 }
 
-void PipelineVertexInputStatesManager::createPipelineVertexInputState(xformat::vertex_layout const &layout) noexcept
+void PipelineVertexInputStatesManager::createPipelineVertexInputState(graphics::vertex_layout const &layout) noexcept
 {
     auto const binding = static_cast<std::uint32_t>(std::size(layouts_));
 
     PipelineVertexInputState inputState;
 
     inputState.bindingDescriptions.push_back(
-        VkVertexInputBindingDescription{binding, static_cast<std::uint32_t>(layout.sizeInBytes), VK_VERTEX_INPUT_RATE_VERTEX}
+        VkVertexInputBindingDescription{binding, static_cast<std::uint32_t>(layout.size_in_bytes), VK_VERTEX_INPUT_RATE_VERTEX}
     );
 
     std::transform(std::cbegin(layout.attributes), std::cend(layout.attributes),
                    std::back_inserter(inputState.attributeDescriptions), [binding] (auto &&attribute)
     {
-        auto format = std::visit([normalized = attribute.normalized] (auto &&type)
-        {
-            using T = std::remove_cvref_t<decltype(type)>;
-            return getFormat<T::number, typename T::type>(normalized);
+        auto format = graphics::get_vertex_attribute_format(attribute);
 
-        }, attribute.type);
-
-        auto location = std::visit([] (auto semantic)
-        {
-            using S = std::remove_cvref_t<decltype(semantic)>;
-            return S::index;
-
-        }, attribute.semantic);
+        auto location = graphics::get_vertex_attribute_semantic_index(attribute);
 
         return VkVertexInputAttributeDescription{
-            location, binding, format, static_cast<std::uint32_t>(attribute.offsetInBytes)
+            location, binding, convert_to::vulkan(format), static_cast<std::uint32_t>(attribute.offset_in_bytes)
         };
     });
 

@@ -41,14 +41,14 @@ public:
         vulkanDevice_{vulkanDevice}, materialFactory_{materialFactory}, pipelineVertexInputStatesManager_{pipelineVertexInputStatesManager} { }
 
     [[nodiscard]] std::shared_ptr<GraphicsPipeline>
-    CreateGraphicsPipeline(xformat::vertex_layout const &layout, std::shared_ptr<Material> material, graphics::PRIMITIVE_TOPOLOGY topology,
+    CreateGraphicsPipeline(graphics::vertex_layout const &layout, std::shared_ptr<Material> material, graphics::PRIMITIVE_TOPOLOGY topology,
                            VkPipelineLayout pipelineLayout, VkRenderPass renderPass, VkExtent2D extent);
 
     auto const &graphicsPipelines() const noexcept { return graphicsPipelineProperties_; }
 
     struct GraphicsPipelinePropertiesKey final {
         graphics::PRIMITIVE_TOPOLOGY topology_;
-        xformat::vertex_layout layout_;
+        graphics::vertex_layout layout_;
         std::shared_ptr<Material> material_;
 
         std::array<float, 2> viewport_;
@@ -57,7 +57,7 @@ public:
             template<class T>
             std::size_t constexpr operator() (T &&graphicsPipeline) const noexcept
             {
-                auto seed = xformat::hash_value{}(graphicsPipeline.layout_);
+                auto seed = graphics::hash<graphics::vertex_layout>{}(graphicsPipeline.layout_);
 
                 boost::hash_combine(seed, graphicsPipeline.topology_);
 
@@ -78,7 +78,7 @@ public:
             {
                 auto topology = lhs.topology_ == rhs.topology_;
 
-                auto layout = xformat::equal_comparator{}(lhs.layout_, rhs.layout_);
+                auto layout = lhs.layout_ == rhs.layout_;
 
                 auto material = lhs.material_ == rhs.material_;
 

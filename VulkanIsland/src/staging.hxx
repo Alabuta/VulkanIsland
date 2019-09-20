@@ -17,6 +17,7 @@ namespace ex = entityx;
 
 #include "vertexFormat.hxx"
 #include "renderer/graphics.hxx"
+#include "renderer/vertex.hxx"
 
 
 
@@ -148,111 +149,7 @@ struct xformat final {
     };
 #endif
 
-    struct vertex_attribute final {
-        std::size_t offsetInBytes{0};
-
-        semantics_t semantic;
-        attribute_t type;
-
-        bool normalized;
-    };
-
-    struct vertex_layout final {
-        std::vector<vertex_attribute> attributes;
-
-        std::size_t sizeInBytes{0};
-    };
-
-
-    struct hash_value final {
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_attribute>
-        auto constexpr operator() (T &&attribute) const noexcept
-        {
-            std::size_t seed = 0;
-
-            boost::hash_combine(seed, attribute.offsetInBytes);
-
-            boost::hash_combine(seed, attribute.semantic.index());
-            boost::hash_combine(seed, attribute.type.index());
-
-            boost::hash_combine(seed, attribute.normalized);
-
-            return seed;
-        }
-
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_layout>
-        auto constexpr operator() (T &&layout) const noexcept
-        {
-            std::size_t seed = 0;
-
-            hash_value hasher;
-
-            for (auto &&attribute : layout.attributes)
-                boost::hash_combine(seed, hasher(attribute));
-
-            boost::hash_combine(seed, layout.sizeInBytes);
-
-            return seed;
-        }
-    };
-
-    struct equal_comparator final {
-        template<class T1, class T2> requires mpl::all_same<struct vertex_attribute, T1, T2>
-        auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
-        {
-            if (lhs.offsetInBytes != rhs.offsetInBytes)
-                return false;
-
-            if (lhs.semantic != rhs.semantic)
-                return false;
-
-            if (lhs.type != rhs.type)
-                return false;
-
-            return lhs.normalized == rhs.normalized;
-        }
-
-        template<class T1, class T2> requires mpl::all_same<vertex_layout, T1, T2>
-        auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
-        {
-            if (lhs.sizeInBytes != rhs.sizeInBytes)
-                return false;
-
-            if (std::size(lhs.attributes) != std::size(rhs.attributes))
-                return false;
-
-            equal_comparator comparator;
-
-            return std::equal(std::begin(lhs.attributes), std::end(lhs.attributes), std::begin(rhs.attributes), [comparator] (auto &&lhs, auto &&rhs)
-            {
-                return comparator(lhs, rhs);
-            });
-        }
-    };
-
-    struct less_comparator final {
-        template<class T1, class T2> requires mpl::all_same<struct vertex_attribute, T1, T2>
-        auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
-        {
-            return lhs.offsetInBytes < rhs.offsetInBytes && lhs.semantic < rhs.semantic && lhs.type < rhs.type && lhs.normalized < rhs.normalized;
-        }
-
-        template<class T1, class T2> requires mpl::all_same<struct vertex_layout, T1, T2>
-        auto constexpr operator() (T1 &&lhs, T2 &&rhs) const noexcept
-        {
-            auto lessSize = lhs.sizeInBytes < rhs.sizeInBytes;
-
-            less_comparator comparator;
-
-            return std::equal(std::begin(lhs.attributes), std::end(lhs.attributes), std::begin(rhs.attributes), [comparator] (auto &&lhs, auto &&rhs)
-            {
-                return comparator(lhs, rhs);
-            }) && lessSize;
-        }
-    };
-
-
-    std::vector<vertex_layout> vertexLayouts;
+    std::vector<graphics::vertex_layout> vertexLayouts;
 
     struct vertex_buffer final {
         std::size_t vertexLayoutIndex;
@@ -315,38 +212,38 @@ struct xformat final {
 };
 
 template<class S, class T, class N>
-void AddVertexAttributes(std::vector<xformat::vertex_attribute> &attributes, std::size_t offsetInBytes, S semantic, T type, N normalized)
+void AddVertexAttributes(std::vector<graphics::vertex_attribute> &attributes, std::size_t offset_in_bytes, S semantic, T type, N normalized)
 {
-    attributes.push_back({offsetInBytes, semantic, type, normalized});
+    attributes.push_back(graphics::vertex_attribute{ offset_in_bytes, semantic, type, normalized});
 }
 
 template<class S, class T, class N, class... Ts>
-void AddVertexAttributes(std::vector<xformat::vertex_attribute> &attributes, std::size_t offsetInBytes, S semantic, T type, N normalized, Ts... args)
+void AddVertexAttributes(std::vector<graphics::vertex_attribute> &attributes, std::size_t offset_in_bytes, S semantic, T type, N normalized, Ts... args)
 {
-    attributes.push_back({offsetInBytes, semantic, type, normalized});
+    attributes.push_back(graphics::vertex_attribute{ offset_in_bytes, semantic, type, normalized});
 
-    AddVertexAttributes(attributes, offsetInBytes + sizeof(type), args...);
+    AddVertexAttributes(attributes, offset_in_bytes + sizeof(type), args...);
 }
 
 template<class... Ts>
-xformat::vertex_layout CreateVertexLayout(Ts... args)
+graphics::vertex_layout CreateVertexLayout(Ts... args)
 {
-    xformat::vertex_layout vertexLayout;
+    graphics::vertex_layout vertexLayout;
 
     auto &&vertexAttributes = vertexLayout.attributes;
 
     AddVertexAttributes(vertexAttributes, 0, args...);
 
-    vertexLayout.sizeInBytes = 0;
+    vertexLayout.size_in_bytes = 0;
 
     for (auto &&vertexAttribute : vertexAttributes) {
-        auto sizeInBytes = std::visit([] (auto &&type)
+        auto size_in_bytes = std::visit([] (auto &&type)
         {
             return sizeof(std::remove_cvref_t<decltype(type)>);
 
         }, vertexAttribute.type);
 
-        vertexLayout.sizeInBytes += sizeInBytes;
+        vertexLayout.size_in_bytes += size_in_bytes;
     }
 
     return vertexLayout;

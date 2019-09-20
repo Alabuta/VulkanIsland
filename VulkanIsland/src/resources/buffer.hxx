@@ -49,7 +49,7 @@ class VertexBuffer final {
 public:
 
     VertexBuffer(std::shared_ptr<VulkanBuffer> deviceBuffer, std::shared_ptr<VulkanBuffer> stagingBuffer,
-                 std::size_t capacityInBytes, xformat::vertex_layout const &vertexLayout) noexcept
+                 std::size_t capacityInBytes, graphics::vertex_layout const &vertexLayout) noexcept
         : deviceBuffer_{deviceBuffer}, stagingBuffer_{stagingBuffer}, capacityInBytes_{capacityInBytes}, vertexLayout_{vertexLayout} { }
 
     VulkanBuffer const &deviceBuffer() const noexcept { return *deviceBuffer_; }
@@ -60,7 +60,7 @@ public:
 
     std::size_t availableMemorySize() const noexcept { return capacityInBytes_ - offset_; }
 
-    xformat::vertex_layout const &vertexLayout() const noexcept { return vertexLayout_; }
+    graphics::vertex_layout const &vertexLayout() const noexcept { return vertexLayout_; }
 
 private:
 
@@ -69,7 +69,7 @@ private:
 
     std::size_t capacityInBytes_{0};
 
-    xformat::vertex_layout vertexLayout_;
+    graphics::vertex_layout vertexLayout_;
 
     std::size_t offset_{0};
     std::size_t stagingBufferSizeInBytes_{0};

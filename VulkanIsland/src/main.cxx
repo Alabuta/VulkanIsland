@@ -38,6 +38,7 @@
 #include "renderer/pipelineVertexInputState.hxx"
 #include "renderer/material.hxx"
 
+#include "renderer/vertex.hxx"
 #include "renderer/render_flow.hxx"
 #include "renderer/compatibility.hxx"
 
@@ -514,31 +515,31 @@ xformat populate()
 
     {
         // First triangle
-        struct vertex final {
-            vec<3, float> position;
-            vec<2, float> texCoord;
+        struct vertex_struct final {
+            vertex::static_array<3, boost::float32_t> position;
+            vertex::static_array<2, boost::float32_t> texCoord;
         };
 
         auto const vertexLayoutIndex = std::size(_model.vertexLayouts);
 
         _model.vertexLayouts.push_back(
             CreateVertexLayout(
-                semantic2::position{}, decltype(vertex::position){}, false,
-                semantic2::tex_coord_0{}, decltype(vertex::texCoord){}, false
+                vertex::position{}, decltype(vertex_struct::position){}, false,
+                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false
             )
         );
 
-        std::vector<vertex> vertices;
+        std::vector<vertex_struct> vertices;
 
-        vertices.push_back(vertex{
+        vertices.push_back(vertex_struct{
             {{0.f, 0.f, 0.f}}, {{.5f, .5f}}
         });
 
-        vertices.push_back(vertex{
+        vertices.push_back(vertex_struct{
             {{-1.f, 0.f, 1.f}}, {{0.f, 0.f}}
         });
 
-        vertices.push_back(vertex{
+        vertices.push_back(vertex_struct{
             {{1.f, 0.f, 1.f}}, {{1.f, 0.f}}
         });
 
@@ -547,7 +548,7 @@ xformat populate()
         meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
         {
-            auto const vertexSize = sizeof(vertex);
+            auto const vertexSize = sizeof(vertex_struct);
             auto const vertexCount = std::size(vertices);
             auto const bytesCount = vertexSize * vertexCount;
 
@@ -578,47 +579,47 @@ xformat populate()
     }
 
     {
-        struct vertex final {
-            vec<3, float> position;
-            vec<2, float> texCoord;
-            vec<4, float> color;
+        struct vertex_struct final {
+            vertex::static_array<3, boost::float32_t> position;
+            vertex::static_array<2, boost::float32_t> texCoord;
+            vertex::static_array<4, boost::float32_t> color;
         };
 
         auto const vertexLayoutIndex = std::size(_model.vertexLayouts);
 
         _model.vertexLayouts.push_back(
             CreateVertexLayout(
-                semantic2::position{}, decltype(vertex::position){}, false,
-                semantic2::tex_coord_0{}, decltype(vertex::texCoord){}, false,
-                semantic2::color_0{}, decltype(vertex::color){}, false
+                vertex::position{}, decltype(vertex_struct::position){}, false,
+                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
+                vertex::color_0{}, decltype(vertex_struct::color){}, false
             )
         );
 
-        std::vector<vertex> vertices;
+        std::vector<vertex_struct> vertices;
 
         // Second triangle
-        vertices.push_back(vertex{
+        vertices.push_back(vertex_struct{
             {{0.f, 0.f, 0.f}}, {{.5f, .5f}}, {{0.f, 0.f, 0.f, 1.f}}
         });
 
-        vertices.push_back(vertex{
+        vertices.push_back(vertex_struct{
             {{1.f, 0.f, -1.f}}, {{1.f, 1.f}}, {{1.f, 0.f, 1.f, 1.f}}
         });
 
-        vertices.push_back(vertex{
+        vertices.push_back(vertex_struct{
             {{0.f, 0.f, -1.f}}, {{.5f, 1.f}}, {{0.f, 0.f, 1.f, 1.f}}
         });
 
         // Third triangle
-        vertices.push_back(vertex{
+        vertices.push_back(vertex_struct{
             {{0.f, 0.f, 0.f}}, {{.5f, .5f}}, {{1.f, 0.f, 1.f, 1.f}}
         });
 
-        vertices.push_back(vertex{
+        vertices.push_back(vertex_struct{
             {{-1.f, 0.f, -1.f}}, {{0.f, 1.f}}, {{0.f, 1.f, 1.f, 1.f}}
         });
 
-        vertices.push_back(vertex{
+        vertices.push_back(vertex_struct{
             {{-1.f, 0.f, 0.f}}, {{0.f, .5f}}, {{1.f, 1.f, 0.f, 1.f}}
         });
 
@@ -661,7 +662,7 @@ xformat populate()
         }
 
         {
-            auto const vertexSize = sizeof(vertex);
+            auto const vertexSize = sizeof(vertex_struct);
             auto const vertexCount = std::size(vertices);
             auto const bytesCount = vertexSize * vertexCount;
 
@@ -723,11 +724,7 @@ void build_render_pipelines(app_t &app, xformat const &_model)
 
         graphics::pipeline_states pipeline_states{
             primitive_topology,
-            vertex_input_state_manager.vertex_input_state(
-                graphics::vertex_layout{
-                    1, std::vector<graphics::vertex_attribute>{ { 0, vertex::position{}, vertex::static_array<1, std::int8_t>{}, false }}
-                }
-            ),
+            vertex_input_state_manager.vertex_input_state(vertex_layout),
             rasterization_state,
             depth_stencil_state,
             color_blend_state

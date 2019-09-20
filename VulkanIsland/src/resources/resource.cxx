@@ -274,7 +274,7 @@ void ResourceManager::ReleaseResource(T &&resource) noexcept
     }
 }
 
-std::shared_ptr<VertexBuffer> ResourceManager::CreateVertexBuffer(xformat::vertex_layout const &layout, std::size_t sizeInBytes) noexcept
+std::shared_ptr<VertexBuffer> ResourceManager::CreateVertexBuffer(graphics::vertex_layout const &layout, std::size_t sizeInBytes) noexcept
 {
     if (vertexBuffers_.count(layout) == 0) {
         std::shared_ptr<VulkanBuffer> stagingBuffer;
