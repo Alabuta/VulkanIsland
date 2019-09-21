@@ -75,8 +75,8 @@ struct renderable_t final {
     std::shared_ptr<Material> material;
     std::shared_ptr<VertexBuffer> vertexBuffer;
 
-    std::uint32_t vertexCount{0};
-    std::uint32_t firstVertex{0};
+    std::uint32_t vertex_count{0};
+    std::uint32_t first_vertex{0};
 };
 
 std::vector<renderable_t> renderables;
@@ -346,20 +346,20 @@ void CreateGraphicsCommandBuffers(app_t &app)
         throw std::runtime_error(fmt::format("failed to create allocate command buffers: {0:#x}\n"s, result));
 
     auto &&resourceManager = app.vulkanDevice->resourceManager();
-    auto &&vertexBuffers = resourceManager.vertexBuffers();
+    auto &&vertex_buffers = resourceManager.vertex_buffers();
 
     auto &&pipelineVertexInputStatesManager = app.pipelineVertexInputStatesManager;
 
     std::set<std::pair<std::uint32_t, VkBuffer>> vertexBindingsAndBuffers;
 
-    std::uint32_t firstBinding = std::numeric_limits<std::uint32_t>::max();
+    std::uint32_t first_binding = std::numeric_limits<std::uint32_t>::max();
 
-    for (auto &&[layout, vertexBuffer] : vertexBuffers) {
+    for (auto &&[layout, vertex_buffer] : vertex_buffers) {
         auto binding = pipelineVertexInputStatesManager.binding(layout);
 
-        firstBinding = std::min(binding, firstBinding);
+        first_binding = std::min(binding, first_binding);
 
-        vertexBindingsAndBuffers.emplace(binding, vertexBuffer->deviceBuffer().handle());
+        vertexBindingsAndBuffers.emplace(binding, vertex_buffer->deviceBuffer().handle());
     }
 
     std::vector<VkBuffer> vertexBuffersHandles;
@@ -429,12 +429,12 @@ void CreateGraphicsCommandBuffers(app_t &app)
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
     #endif
 
-        vkCmdBindVertexBuffers(commandBuffer, firstBinding, bindingCount, std::data(vertexBuffersHandles), std::data(vertexBuffersOffsets));
+        vkCmdBindVertexBuffers(commandBuffer, first_binding, bindingCount, std::data(vertexBuffersHandles), std::data(vertexBuffersOffsets));
 
         auto &&graphicsPipelines = app.graphicsPipelineManager->graphicsPipelines();
 
         for (auto &&renderable : renderables) {
-            auto [topology, material, vertexBuffer, vertexCount, firstVertex] = renderable;
+            auto [topology, material, vertexBuffer, vertex_count, first_vertex] = renderable;
 
             GraphicsPipelineManager::GraphicsPipelinePropertiesKey key{
                 topology, vertexBuffer->vertexLayout(), material,
@@ -451,7 +451,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
             vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, app.pipelineLayout,
                                     0, 1, &app.descriptorSet, 1, &dynamicOffset);
 
-            vkCmdDraw(commandBuffer, vertexCount, 1, firstVertex, 0);
+            vkCmdDraw(commandBuffer, vertex_count, 1, first_vertex, 0);
         }
 
         vkCmdEndRenderPass(commandBuffer);
@@ -520,10 +520,10 @@ xformat populate()
             vertex::static_array<2, boost::float32_t> texCoord;
         };
 
-        auto const vertexLayoutIndex = std::size(_model.vertexLayouts);
+        auto const vertex_layout_index = std::size(_model.vertex_layouts);
 
-        _model.vertexLayouts.push_back(
-            CreateVertexLayout(
+        _model.vertex_layouts.push_back(
+            create_vertex_layout(
                 vertex::position{}, decltype(vertex_struct::position){}, false,
                 vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false
             )
@@ -549,33 +549,33 @@ xformat populate()
 
         {
             auto const vertexSize = sizeof(vertex_struct);
-            auto const vertexCount = std::size(vertices);
-            auto const bytesCount = vertexSize * vertexCount;
+            auto const vertex_count = std::size(vertices);
+            auto const bytesCount = vertexSize * vertex_count;
 
-            auto &&vertexBuffer = _model.vertexBuffers[vertexLayoutIndex];
+            auto &&vertexBuffer = _model.vertex_buffers[vertex_layout_index];
 
             using buffer_type_t = std::remove_cvref_t<decltype(vertexBuffer.buffer)>;
 
-            meshlet.vertexBufferIndex = vertexLayoutIndex;
-            meshlet.vertexCount = static_cast<std::uint32_t>(vertexCountPerMeshlet);
-            meshlet.firstVertex = static_cast<std::uint32_t>(vertexBuffer.count);
+            meshlet.vertex_buffer_index = vertex_layout_index;
+            meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
+            meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count);
 
             vertexBuffer.buffer.resize(std::size(vertexBuffer.buffer) + bytesCount);
 
             auto writeOffset = static_cast<buffer_type_t::difference_type>(vertexBuffer.count * vertexSize);
 
-            vertexBuffer.count += vertexCount;
+            vertexBuffer.count += vertex_count;
 
             auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
 
             std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
         }
 
-        meshlet.materialIndex = 0;
-        meshlet.instanceCount = 1;
-        meshlet.firstInstance = 0;
+        meshlet.material_index = 0;
+        meshlet.instance_count = 1;
+        meshlet.first_instance = 0;
 
-        _model.nonIndexedMeshlets.push_back(std::move(meshlet));
+        _model.non_indexed_meshlets.push_back(std::move(meshlet));
     }
 
     {
@@ -585,10 +585,10 @@ xformat populate()
             vertex::static_array<4, boost::float32_t> color;
         };
 
-        auto const vertexLayoutIndex = std::size(_model.vertexLayouts);
+        auto const vertex_layout_index = std::size(_model.vertex_layouts);
 
-        _model.vertexLayouts.push_back(
-            CreateVertexLayout(
+        _model.vertex_layouts.push_back(
+            create_vertex_layout(
                 vertex::position{}, decltype(vertex_struct::position){}, false,
                 vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
                 vertex::color_0{}, decltype(vertex_struct::color){}, false
@@ -623,7 +623,7 @@ xformat populate()
             {{-1.f, 0.f, 0.f}}, {{0.f, .5f}}, {{1.f, 1.f, 0.f, 1.f}}
         });
 
-        auto &&vertexBuffer = _model.vertexBuffers[vertexLayoutIndex];
+        auto &&vertexBuffer = _model.vertex_buffers[vertex_layout_index];
 
         using buffer_type_t = std::remove_cvref_t<decltype(vertexBuffer.buffer)>;
 
@@ -633,15 +633,15 @@ xformat populate()
 
             meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
-            meshlet.vertexBufferIndex = vertexLayoutIndex;
-            meshlet.vertexCount = static_cast<std::uint32_t>(vertexCountPerMeshlet);
-            meshlet.firstVertex = static_cast<std::uint32_t>(vertexBuffer.count + 0u);
+            meshlet.vertex_buffer_index = vertex_layout_index;
+            meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
+            meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count + 0u);
 
-            meshlet.materialIndex = 1;
-            meshlet.instanceCount = 1;
-            meshlet.firstInstance = 0;
+            meshlet.material_index = 1;
+            meshlet.instance_count = 1;
+            meshlet.first_instance = 0;
 
-            _model.nonIndexedMeshlets.push_back(std::move(meshlet));
+            _model.non_indexed_meshlets.push_back(std::move(meshlet));
         }
 
         {
@@ -650,27 +650,27 @@ xformat populate()
 
             meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
-            meshlet.vertexBufferIndex = vertexLayoutIndex;
-            meshlet.vertexCount = static_cast<std::uint32_t>(vertexCountPerMeshlet);
-            meshlet.firstVertex = static_cast<std::uint32_t>(vertexBuffer.count + vertexCountPerMeshlet);
+            meshlet.vertex_buffer_index = vertex_layout_index;
+            meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
+            meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count + vertexCountPerMeshlet);
 
-            meshlet.materialIndex = 0;
-            meshlet.instanceCount = 1;
-            meshlet.firstInstance = 0;
+            meshlet.material_index = 0;
+            meshlet.instance_count = 1;
+            meshlet.first_instance = 0;
 
-            _model.nonIndexedMeshlets.push_back(std::move(meshlet));
+            _model.non_indexed_meshlets.push_back(std::move(meshlet));
         }
 
         {
             auto const vertexSize = sizeof(vertex_struct);
-            auto const vertexCount = std::size(vertices);
-            auto const bytesCount = vertexSize * vertexCount;
+            auto const vertex_count = std::size(vertices);
+            auto const bytesCount = vertexSize * vertex_count;
 
             vertexBuffer.buffer.resize(std::size(vertexBuffer.buffer) + bytesCount);
 
             auto writeOffset = static_cast<buffer_type_t::difference_type>(vertexBuffer.count * vertexSize);
 
-            vertexBuffer.count += vertexCount;
+            vertexBuffer.count += vertex_count;
 
             auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
 
@@ -711,13 +711,13 @@ void build_render_pipelines(app_t &app, xformat const &_model)
     auto &&material_factory = *app.material_factory;
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
 
-    for (auto &&meshlet : _model.nonIndexedMeshlets) {
+    for (auto &&meshlet : _model.non_indexed_meshlets) {
         auto primitive_topology = meshlet.topology;
 
-        auto vertex_layout_index = meshlet.vertexBufferIndex;
-        auto &&vertex_layout = _model.vertexLayouts[vertex_layout_index];
+        auto vertex_layout_index = meshlet.vertex_buffer_index;
+        auto &&vertex_layout = _model.vertex_layouts[vertex_layout_index];
 
-        auto material_index = meshlet.materialIndex;
+        auto material_index = meshlet.material_index;
         auto [technique_index, name] = _model.materials[material_index];
 
         auto material = material_factory.material(name, technique_index);
@@ -736,11 +736,11 @@ void stageXformat(app_t &app, xformat const &_model)
 {
     auto &&resourceManager = app.vulkanDevice->resourceManager();
 
-    for (auto &&meshlet : _model.nonIndexedMeshlets) {
-        auto vertexLayoutIndex = meshlet.vertexBufferIndex;
-        auto &&vertexLayout = _model.vertexLayouts[vertexLayoutIndex];
+    for (auto &&meshlet : _model.non_indexed_meshlets) {
+        auto vertex_layout_index = meshlet.vertex_buffer_index;
+        auto &&vertexLayout = _model.vertex_layouts[vertex_layout_index];
 
-        auto &&_vertexBuffer = _model.vertexBuffers.at(vertexLayoutIndex);
+        auto &&_vertexBuffer = _model.vertex_buffers.at(vertex_layout_index);
 
         auto vertexBuffer = resourceManager.CreateVertexBuffer(vertexLayout, std::size(_vertexBuffer.buffer));
 
@@ -749,8 +749,8 @@ void stageXformat(app_t &app, xformat const &_model)
 
         else throw std::runtime_error("failed to get vertex buffer"s);
 
-        auto materialIndex = meshlet.materialIndex;
-        auto [technique, name] = _model.materials[materialIndex];
+        auto material_index = meshlet.material_index;
+        auto [technique, name] = _model.materials[material_index];
 
         auto material = app.materialFactory->CreateMaterial(name);
 
@@ -758,7 +758,7 @@ void stageXformat(app_t &app, xformat const &_model)
             throw std::runtime_error("failed to get material"s);
 
         renderables.push_back({
-            meshlet.topology, material, vertexBuffer, meshlet.vertexCount, meshlet.firstVertex
+            meshlet.topology, material, vertexBuffer, meshlet.vertex_count, meshlet.first_vertex
         });
     }
 }

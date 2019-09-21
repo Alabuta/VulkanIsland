@@ -67,7 +67,7 @@ public:
 
     void TransferStagedVertexData(VkCommandPool transferCommandPool, TransferQueue &transferQueue) const;
 
-    [[nodiscard]] auto &vertexBuffers() const noexcept { return vertexBuffers_; }
+    [[nodiscard]] auto &vertex_buffers() const noexcept { return vertexBuffers_; }
 
 private:
 

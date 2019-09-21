@@ -109,7 +109,7 @@ namespace staging
         std::vector<std::byte> vertexBuffer;
         std::vector<std::byte> indexBuffer;
 
-        std::vector<vertex_buffer_t> vertexBuffers;
+        std::vector<vertex_buffer_t> vertex_buffers;
         //std::unordered_map<vertex_layout_t, std::vector<std::byte>, vertex_buffer_t::hash_value> vertexBuffers;
     };
 }
@@ -149,17 +149,17 @@ struct xformat final {
     };
 #endif
 
-    std::vector<graphics::vertex_layout> vertexLayouts;
+    std::vector<graphics::vertex_layout> vertex_layouts;
 
     struct vertex_buffer final {
-        std::size_t vertexLayoutIndex;
+        std::size_t vertex_layout_index;
 
         std::size_t count{0};
 
         std::vector<std::byte> buffer;
     };
 
-    std::unordered_map<std::size_t, vertex_buffer> vertexBuffers;
+    std::unordered_map<std::size_t, vertex_buffer> vertex_buffers;
 
     struct index_buffer final {
         std::variant<std::uint16_t, std::uint32_t> type;
@@ -169,7 +169,7 @@ struct xformat final {
         std::vector<std::byte> buffer;
     };
 
-    std::vector<index_buffer> indexBuffers;
+    std::vector<index_buffer> index_buffers;
 
     struct material final {
         std::uint32_t technique;
@@ -181,72 +181,72 @@ struct xformat final {
     struct non_indexed_meshlet final {
         graphics::PRIMITIVE_TOPOLOGY topology;
 
-        std::size_t vertexBufferIndex;
+        std::size_t vertex_buffer_index;
 
-        std::size_t materialIndex;
+        std::size_t material_index;
 
-        std::uint32_t vertexCount{0};
-        std::uint32_t instanceCount{0};
-        std::uint32_t firstVertex{0};
-        std::uint32_t firstInstance{0};
+        std::uint32_t vertex_count{0};
+        std::uint32_t instance_count{0};
+        std::uint32_t first_vertex{0};
+        std::uint32_t first_instance{0};
     };
 
-    std::vector<non_indexed_meshlet> nonIndexedMeshlets;
+    std::vector<non_indexed_meshlet> non_indexed_meshlets;
 
     struct indexed_meshlet final {
         graphics::PRIMITIVE_TOPOLOGY topology;
 
-        std::size_t vertexBufferIndex;
-        std::size_t indexBufferIndex;
+        std::size_t vertex_buffer_index;
+        std::size_t index_buffer_index;
 
-        std::size_t materialIndex;
+        std::size_t material_index;
 
-        std::uint32_t indexCount{0};
-        std::uint32_t instanceCount{0};
-        std::uint32_t firstIndex{0};
-        std::uint32_t vertexOffset{0};
-        std::uint32_t firstInstance{0};
+        std::uint32_t index_count{0};
+        std::uint32_t instance_count{0};
+        std::uint32_t first_index{0};
+        std::uint32_t vertex_offset{0};
+        std::uint32_t first_instance{0};
     };
 
-    std::vector<indexed_meshlet> indexedMeshlets;
+    std::vector<indexed_meshlet> indexed_meshlets;
 };
 
 template<class S, class T, class N>
-void AddVertexAttributes(std::vector<graphics::vertex_attribute> &attributes, std::size_t offset_in_bytes, S semantic, T type, N normalized)
+void add_vertex_attributes(std::vector<graphics::vertex_attribute> &attributes, std::size_t offset_in_bytes, S semantic, T type, N normalized)
 {
-    attributes.push_back(graphics::vertex_attribute{ offset_in_bytes, semantic, type, normalized});
+    attributes.push_back(graphics::vertex_attribute{ offset_in_bytes, semantic, type, normalized });
 }
 
 template<class S, class T, class N, class... Ts>
-void AddVertexAttributes(std::vector<graphics::vertex_attribute> &attributes, std::size_t offset_in_bytes, S semantic, T type, N normalized, Ts... args)
+void add_vertex_attributes(std::vector<graphics::vertex_attribute> &attributes, std::size_t offset_in_bytes, S semantic, T type, N normalized, Ts... args)
 {
-    attributes.push_back(graphics::vertex_attribute{ offset_in_bytes, semantic, type, normalized});
+    attributes.push_back(graphics::vertex_attribute{ offset_in_bytes, semantic, type, normalized });
 
-    AddVertexAttributes(attributes, offset_in_bytes + sizeof(type), args...);
+    add_vertex_attributes(attributes, offset_in_bytes + sizeof(type), args...);
 }
 
 template<class... Ts>
-graphics::vertex_layout CreateVertexLayout(Ts... args)
+graphics::vertex_layout create_vertex_layout(Ts... args)
 {
-    graphics::vertex_layout vertexLayout;
+    graphics::vertex_layout vertex_layout;
 
-    auto &&vertexAttributes = vertexLayout.attributes;
+    auto &&vertex_attributes = vertex_layout.attributes;
 
-    AddVertexAttributes(vertexAttributes, 0, args...);
+    add_vertex_attributes(vertex_attributes, 0, args...);
 
-    vertexLayout.size_in_bytes = 0;
+    vertex_layout.size_in_bytes = 0;
 
-    for (auto &&vertexAttribute : vertexAttributes) {
+    for (auto &&vertex_attribute : vertex_attributes) {
         auto size_in_bytes = std::visit([] (auto &&type)
         {
             return sizeof(std::remove_cvref_t<decltype(type)>);
 
-        }, vertexAttribute.type);
+        }, vertex_attribute.type);
 
-        vertexLayout.size_in_bytes += size_in_bytes;
+        vertex_layout.size_in_bytes += size_in_bytes;
     }
 
-    return vertexLayout;
+    return vertex_layout;
 }
 
 
@@ -267,128 +267,3 @@ struct MeshSytem final : public ex::System<Mesh> {
         });
     }
 };*/
-
-
-template<std::size_t N, class T>
-auto constexpr getFormat([[maybe_unused]] bool normalized = false)
-{
-    if constexpr (std::is_same_v<T, std::int8_t>) {
-        if (normalized) {
-            switch (N) {
-                case 1: return VK_FORMAT_R8_SNORM;
-                case 2: return VK_FORMAT_R8G8_SNORM;
-                case 3: return VK_FORMAT_R8G8B8_SNORM;
-                case 4: return VK_FORMAT_R8G8B8A8_SNORM;
-                default: break;
-            }
-        }
-
-        else {
-            switch (N) {
-                case 1: return VK_FORMAT_R8_SINT;
-                case 2: return VK_FORMAT_R8G8_SINT;
-                case 3: return VK_FORMAT_R8G8B8_SINT;
-                case 4: return VK_FORMAT_R8G8B8A8_SINT;
-                default: break;
-            }
-        }
-    }
-
-    else if constexpr (std::is_same_v<T, std::uint8_t>) {
-        if (normalized) {
-            switch (N) {
-                case 1: return VK_FORMAT_R8_UNORM;
-                case 2: return VK_FORMAT_R8G8_UNORM;
-                case 3: return VK_FORMAT_R8G8B8_UNORM;
-                case 4: return VK_FORMAT_R8G8B8A8_UNORM;
-                default: break;
-            }
-        }
-
-        else {
-            switch (N) {
-                case 1: return VK_FORMAT_R8_UINT;
-                case 2: return VK_FORMAT_R8G8_UINT;
-                case 3: return VK_FORMAT_R8G8B8_UINT;
-                case 4: return VK_FORMAT_R8G8B8A8_UINT;
-                default: break;
-            }
-        }
-    }
-
-    else if constexpr (std::is_same_v<T, std::int16_t>) {
-        if (normalized) {
-            switch (N) {
-                case 1: return VK_FORMAT_R16_SNORM;
-                case 2: return VK_FORMAT_R16G16_SNORM;
-                case 3: return VK_FORMAT_R16G16B16_SNORM;
-                case 4: return VK_FORMAT_R16G16B16A16_SNORM;
-                default: break;
-            }
-        }
-
-        else {
-            switch (N) {
-                case 1: return VK_FORMAT_R16_SINT;
-                case 2: return VK_FORMAT_R16G16_SINT;
-                case 3: return VK_FORMAT_R16G16B16_SINT;
-                case 4: return VK_FORMAT_R16G16B16A16_SINT;
-                default: break;
-            }
-        }
-    }
-
-    else if constexpr (std::is_same_v<T, std::uint16_t>) {
-        if (normalized) {
-            switch (N) {
-                case 1: return VK_FORMAT_R16_UNORM;
-                case 2: return VK_FORMAT_R16G16_UNORM;
-                case 3: return VK_FORMAT_R16G16B16_UNORM;
-                case 4: return VK_FORMAT_R16G16B16A16_UNORM;
-                default: break;
-            }
-        }
-
-        else {
-            switch (N) {
-                case 1: return VK_FORMAT_R16_UINT;
-                case 2: return VK_FORMAT_R16G16_UINT;
-                case 3: return VK_FORMAT_R16G16B16_UINT;
-                case 4: return VK_FORMAT_R16G16B16A16_UINT;
-                default: break;
-            }
-        }
-    }
-
-    else if constexpr (std::is_same_v<T, std::int32_t>) {
-        switch (N) {
-            case 1: return VK_FORMAT_R32_SINT;
-            case 2: return VK_FORMAT_R32G32_SINT;
-            case 3: return VK_FORMAT_R32G32B32_SINT;
-            case 4: return VK_FORMAT_R32G32B32A32_SINT;
-            default: break;
-        }
-    }
-
-    else if constexpr (std::is_same_v<T, std::uint32_t>) {
-        switch (N) {
-            case 1: return VK_FORMAT_R32_UINT;
-            case 2: return VK_FORMAT_R32G32_UINT;
-            case 3: return VK_FORMAT_R32G32B32_UINT;
-            case 4: return VK_FORMAT_R32G32B32A32_UINT;
-            default: break;
-        }
-    }
-
-    else if constexpr (std::is_same_v<T, float>) {
-        switch (N) {
-            case 1: return VK_FORMAT_R32_SFLOAT;
-            case 2: return VK_FORMAT_R32G32_SFLOAT;
-            case 3: return VK_FORMAT_R32G32B32_SFLOAT;
-            case 4: return VK_FORMAT_R32G32B32A32_SFLOAT;
-            default: break;
-        }
-    }
-
-    throw std::runtime_error("undefined format"s);
-}
