@@ -10,6 +10,7 @@
 #include "vertexFormat.hxx"
 #include "staging.hxx"
 #include "renderer/graphics_api.hxx"
+#include "semaphore.hxx"
 
 
 class VulkanImage;
@@ -20,6 +21,11 @@ class VulkanShaderModule;
 
 class VertexBuffer;
 class IndexBuffer;
+
+namespace resource
+{
+    class semaphore;
+}
 
 
 template<class T> requires mpl::one_of<std::remove_cvref_t<T>, VulkanImage, VulkanBuffer>
@@ -69,6 +75,8 @@ public:
 
     [[nodiscard]] auto &vertex_buffers() const noexcept { return vertexBuffers_; }
 
+    [[nodiscard]] std::shared_ptr<resource::semaphore> create_semaphore();
+
 private:
 
     static auto constexpr kVertexBufferIncreaseValue{4};
@@ -76,7 +84,7 @@ private:
     VulkanDevice &device_;
 
     template<class T> requires mpl::one_of<std::remove_cvref_t<T>,
-        VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, VulkanShaderModule
+        VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, VulkanShaderModule, resource::semaphore
     >
     void ReleaseResource(T &&resource) noexcept;
 

@@ -241,7 +241,7 @@ ResourceManager::CreateShaderModule(std::vector<std::byte> const &shaderByteCode
     return shaderModule;
 }
 
-template<class T> requires mpl::one_of<std::remove_cvref_t<T>, VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, VulkanShaderModule>
+template<class T> requires mpl::one_of<std::remove_cvref_t<T>, VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, VulkanShaderModule, resource::semaphore>
 void ResourceManager::ReleaseResource(T &&resource) noexcept
 {
     using R = std::remove_cvref_t<T>;
@@ -271,6 +271,11 @@ void ResourceManager::ReleaseResource(T &&resource) noexcept
     else if constexpr (std::is_same_v<R, VulkanShaderModule>)
     {
         vkDestroyShaderModule(device_.handle(), resource.handle(), nullptr);
+    }
+
+    else if constexpr (std::is_same_v<R, resource::semaphore>)
+    {
+        vkDestroySemaphore(device_.handle(), resource.handle(), nullptr);
     }
 }
 
@@ -402,4 +407,31 @@ CreateStorageBuffer(VulkanDevice &device, std::size_t size)
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 
     return device.resourceManager().CreateBuffer(size, usageFlags, propertyFlags);
+}
+
+std::shared_ptr<resource::semaphore> ResourceManager::create_semaphore()
+{
+    std::shared_ptr<resource::semaphore> semaphore;
+
+    VkSemaphoreCreateInfo constexpr createInfo{
+        VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO,
+        nullptr, 0
+    };
+
+    VkSemaphore handle;
+
+    if (auto result = vkCreateSemaphore(device_.handle(), &createInfo, nullptr, &handle); result == VK_SUCCESS) {
+        semaphore.reset(
+            new resource::semaphore{ handle }, [this] (resource::semaphore *ptr_semaphore)
+            {
+                ReleaseResource(*ptr_semaphore);
+
+                delete ptr_semaphore;
+            }
+        );
+    }
+
+    else std::cerr << "failed to create a semaphore: "s << result << '\n';
+
+    return semaphore;
 }

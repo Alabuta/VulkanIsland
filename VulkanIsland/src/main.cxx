@@ -28,11 +28,11 @@
 #include "resources/buffer.hxx"
 #include "resources/image.hxx"
 #include "resources/resource.hxx"
+#include "resources/semaphore.hxx"
 #include "descriptor.hxx"
 #include "commandBuffer.hxx"
 #include "renderer/pipelines.hxx"
 #include "renderer/renderPass.hxx"
-#include "semaphore.hxx"
 
 #include "renderer/graphics.hxx"
 #include "renderer/pipelineVertexInputState.hxx"
@@ -119,7 +119,7 @@ struct app_t final {
 
     std::vector<VkCommandBuffer> commandBuffers;
 
-    VkSemaphore imageAvailableSemaphore{VK_NULL_HANDLE}, renderFinishedSemaphore{VK_NULL_HANDLE};
+    std::shared_ptr<resource::semaphore> imageAvailableSemaphore, renderFinishedSemaphore;
 
     std::shared_ptr<VulkanBuffer> perObjectBuffer, perCameraBuffer;
     void *perObjectsMappedPtr{nullptr};
@@ -169,10 +169,10 @@ struct app_t final {
             shaderManager.reset();
 
         if (renderFinishedSemaphore)
-            vkDestroySemaphore(vulkanDevice->handle(), renderFinishedSemaphore, nullptr);
+            renderFinishedSemaphore.reset();
 
         if (imageAvailableSemaphore)
-            vkDestroySemaphore(vulkanDevice->handle(), imageAvailableSemaphore, nullptr);
+            imageAvailableSemaphore.reset();
 
         if (graphicsPipelineManager)
             graphicsPipelineManager.reset();
@@ -463,15 +463,17 @@ void CreateGraphicsCommandBuffers(app_t &app)
 
 void CreateSemaphores(app_t &app)
 {
-    if (auto semaphore = CreateSemaphore(*app.vulkanDevice); !semaphore)
+    auto &&resourceManager = app.vulkanDevice->resourceManager();
+
+    if (auto semaphore = resourceManager.create_semaphore(); !semaphore)
         throw std::runtime_error("failed to create image semaphore"s);
 
-    else app.imageAvailableSemaphore = *semaphore;
+    else app.imageAvailableSemaphore = semaphore;
 
-    if (auto semaphore = CreateSemaphore(*app.vulkanDevice); !semaphore)
+    if (auto semaphore = resourceManager.create_semaphore(); !semaphore)
         throw std::runtime_error("failed to create render semaphore"s);
 
-    else app.renderFinishedSemaphore = *semaphore;
+    else app.renderFinishedSemaphore = semaphore;
 }
 
 void RecreateSwapChain(app_t &app)
@@ -1049,7 +1051,7 @@ void DrawFrame(app_t &app)
     std::uint32_t imageIndex;
 
     switch (auto result = vkAcquireNextImageKHR(vulkanDevice.handle(), app.swapchain.handle, std::numeric_limits<std::uint64_t>::max(),
-            app.imageAvailableSemaphore, VK_NULL_HANDLE, &imageIndex); result) {
+            app.imageAvailableSemaphore->handle(), VK_NULL_HANDLE, &imageIndex); result) {
         case VK_ERROR_OUT_OF_DATE_KHR:
             RecreateSwapChain(app);
             return;
@@ -1062,8 +1064,8 @@ void DrawFrame(app_t &app)
             throw std::runtime_error(fmt::format("failed to acquire next image index: {0:#x}\n"s, result));
     }
 
-    auto const waitSemaphores = std::array{app.imageAvailableSemaphore};
-    auto const signalSemaphores = std::array{app.renderFinishedSemaphore};
+    auto const waitSemaphores = std::array{ app.imageAvailableSemaphore->handle() };
+    auto const signalSemaphores = std::array{ app.renderFinishedSemaphore->handle() };
 
     std::array<VkPipelineStageFlags, 1> constexpr waitStages{
         { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
