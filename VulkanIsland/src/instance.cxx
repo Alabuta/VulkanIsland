@@ -122,5 +122,5 @@ void VulkanInstance::CreateInstance(std::vector<char const *> &&extensions, std:
         throw std::runtime_error("failed to create instance"s);
 
     if (!layers.empty())
-        CreateDebugReportCallback(instance_, debugReportCallback_);
+        create_debug_report_callback(instance_, debugReportCallback_);
 }

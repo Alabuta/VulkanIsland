@@ -11,21 +11,20 @@
 #include <execinfo.h>
 #endif
 
-using namespace std::string_literals;
-using namespace std::string_view_literals;
-
 #ifndef GLFW_INCLUDE_VULKAN
 #define GLFW_INCLUDE_VULKAN
 #include <GLFW/glfw3.h>
 #endif
 
+#include <fmt/format.h>
+
 
 [[nodiscard]] VKAPI_ATTR VkBool32 VKAPI_CALL
-DebugCallback([[maybe_unused]] VkDebugReportFlagsEXT flags, [[maybe_unused]] VkDebugReportObjectTypeEXT objectType,
-              [[maybe_unused]] std::uint64_t object, [[maybe_unused]] std::size_t location, [[maybe_unused]] std::int32_t messageCode,
-              [[maybe_unused]] const char *pLayerPrefix, const char *pMessage, [[maybe_unused]] void *pUserData)
+debug_callback([[maybe_unused]] VkDebugReportFlagsEXT flags, [[maybe_unused]] VkDebugReportObjectTypeEXT object_type,
+              [[maybe_unused]] std::uint64_t object, [[maybe_unused]] std::size_t location, [[maybe_unused]] std::int32_t message_code,
+              [[maybe_unused]] const char *layer_prefix, const char *message, [[maybe_unused]] void *user_data)
 {
-    std::cerr << pMessage << std::endl;
+    std::cerr << message << std::endl;
 
     return VK_FALSE;
 }
@@ -50,46 +49,50 @@ VKAPI_ATTR void VKAPI_CALL vkDestroyDebugReportCallbackEXT(
         func(instance, callback, pAllocator);
 }
 
-void CreateDebugReportCallback(VkInstance instance, VkDebugReportCallbackEXT &callback)
+void create_debug_report_callback(VkInstance instance, VkDebugReportCallbackEXT &callback)
 {
-    VkDebugReportCallbackCreateInfoEXT constexpr createInfo{
+    using namespace std::string_literals;
+
+    VkDebugReportCallbackCreateInfoEXT constexpr create_info{
         VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
         nullptr,
         VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT,
-        DebugCallback,
+        debug_callback,
         nullptr
     };
 
-    if (auto result = vkCreateDebugReportCallbackEXT(instance, &createInfo, nullptr, &callback); result != VK_SUCCESS)
-        throw std::runtime_error("failed to set up debug callback: "s + std::to_string(result));
+    if (auto result = vkCreateDebugReportCallbackEXT(instance, &create_info, nullptr, &callback); result != VK_SUCCESS)
+        throw std::runtime_error(fmt::format("failed to set up debug callback: {0:#x}\n"s, result));
 }
 
 #if !defined(_WIN32) 
-void PosixSignalHandler(int signum)
+void posix_signal_handler(int signum)
 {
-	auto currentThread = std::this_thread::get_id();
+    using namespace std::string_literals;
 
-	auto name = "unknown"s;
+    auto current_thread = std::this_thread::get_id();
 
-	switch (signum) {
-		case SIGABRT: name = "SIGABRT"s;  break;
-		case SIGSEGV: name = "SIGSEGV"s;  break;
-		case SIGBUS:  name = "SIGBUS"s;   break;
-		case SIGILL:  name = "SIGILL"s;   break;
-		case SIGFPE:  name = "SIGFPE"s;   break;
+    auto name = "unknown"s;
+
+    switch (signum) {
+        case SIGABRT: name = "SIGABRT"s;  break;
+        case SIGSEGV: name = "SIGSEGV"s;  break;
+        case SIGBUS:  name = "SIGBUS"s;   break;
+        case SIGILL:  name = "SIGILL"s;   break;
+        case SIGFPE:  name = "SIGFPE"s;   break;
         case SIGTRAP: name = "SIGTRAP"s;  break;
-	}
+    }
 
     std::array<void *, 32> callStack;
 
     auto size = backtrace(std::data(callStack), std::size(callStack));
 
-    std::cerr << "Error: signal " << name << '\n';
+    std::cerr << fmt::format("Error: signal {}\n"s, name);
 
     auto symbollist = backtrace_symbols(std::data(callStack), size);
 
     for (auto i = 0; i < size; ++i)
-        std::cerr << i << ' ' << currentThread << ' ' << symbollist[i] << '\n';
+        std::cerr << fmt::format("{} {} {}\n"s, i, current_thread, symbollist[i]);
 
     free(symbollist);
 

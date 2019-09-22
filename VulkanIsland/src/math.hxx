@@ -42,7 +42,7 @@ struct vec {
 };
 
 template<class U, class V>
-inline glm::quat fromTwoVec3(U &&u, V &&v)
+inline glm::quat from_two_vec3(U &&u, V &&v)
 {
     auto norm_uv = std::sqrt(glm::dot(u, u) * glm::dot(v, v));
     auto real_part = norm_uv + glm::dot(u, v);

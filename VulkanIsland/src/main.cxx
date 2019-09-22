@@ -1108,8 +1108,8 @@ try {
 #if defined(_MSC_VER)
     _CrtSetDbgFlag(_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #else
-	std::signal(SIGSEGV, PosixSignalHandler);
-	std::signal(SIGTRAP, PosixSignalHandler);
+	std::signal(SIGSEGV, posix_signal_handler);
+	std::signal(SIGTRAP, posix_signal_handler);
 #endif
 
     glfwInit();
