@@ -96,8 +96,6 @@ struct app_t final {
 
     std::vector<per_object_t> objects;
 
-    staging::scene_t scene;
-
     std::unique_ptr<VulkanInstance> vulkanInstance;
     std::unique_ptr<VulkanDevice> vulkanDevice;
 

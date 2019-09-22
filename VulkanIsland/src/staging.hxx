@@ -15,12 +15,11 @@ namespace ex = entityx;
 #include "utility/mpl.hxx"
 #include "math.hxx"
 
-#include "vertexFormat.hxx"
 #include "renderer/graphics.hxx"
 #include "renderer/vertex.hxx"
 
 
-
+#if OBSOLETE
 namespace staging
 {
     struct vertex_buffer_t final {
@@ -113,6 +112,7 @@ namespace staging
         //std::unordered_map<vertex_layout_t, std::vector<std::byte>, vertex_buffer_t::hash_value> vertexBuffers;
     };
 }
+#endif
 
 
 struct xformat final {

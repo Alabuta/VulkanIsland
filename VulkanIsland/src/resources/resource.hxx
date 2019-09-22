@@ -7,7 +7,6 @@
 #include "utility/mpl.hxx"
 #include "device/device.hxx"
 #include "program.hxx"
-#include "vertexFormat.hxx"
 #include "staging.hxx"
 #include "renderer/graphics_api.hxx"
 #include "semaphore.hxx"

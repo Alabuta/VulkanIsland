@@ -1,6 +1,5 @@
 #include "renderer/graphics_api.hxx"
 #include "pipelineVertexInputState.hxx"
-#include "vertexFormat.hxx"
 
 
 std::uint32_t PipelineVertexInputStatesManager::binding(graphics::vertex_layout const &layout) noexcept

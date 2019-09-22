@@ -1,3 +1,4 @@
+#if OBSOLETE
 #include <optional>
 #include <variant>
 #include <set>
@@ -1092,3 +1093,4 @@ bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &)
     return true;
 }
 }
+#endif
