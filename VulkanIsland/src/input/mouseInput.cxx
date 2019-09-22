@@ -31,19 +31,19 @@ void MouseInput::connectHandler(std::shared_ptr<IHandler> slot)
     ).track_foreign(slot));
 }
 
-void MouseInput::update(input::mouse::RawData &data)
+void MouseInput::update(input::mouse::raw_data &data)
 {
     std::visit(overloaded{
-        [this] (input::mouse::RelativeCoords &coords)
+        [this] (input::mouse::relative_coords &coords)
         {
             if (coords.x != 0.f || coords.y != 0.f)
                 onMove_(coords.x, coords.y);
         },
-        [this] (input::mouse::Wheel wheel)
+        [this] (input::mouse::wheel_data wheel)
         {
             onWheel_(wheel.xoffset, wheel.yoffset);
         },
-        [this] (input::mouse::Buttons &buttons)
+        [this] (input::mouse::buttons &buttons)
         {
             if (buttons.value.any()) {
                 auto const buttonsBitCount = kPRESSED_MASK.count();

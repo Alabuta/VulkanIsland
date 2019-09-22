@@ -17,6 +17,6 @@ private:
 
     MouseInput mouse_;
 
-    void onUpdate(input::RawData &data) override;
+    void onUpdate(input::raw_data &data) override;
 
 };

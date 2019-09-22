@@ -33,7 +33,7 @@ public:
 
     void connectHandler(std::shared_ptr<IHandler> slot);
 
-    void update(input::mouse::RawData &data);
+    void update(input::mouse::raw_data &data);
 
 private:
 

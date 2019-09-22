@@ -8,27 +8,27 @@ namespace input
 {
     namespace mouse
     {
-        struct Buttons final {
+        struct buttons final {
             std::bitset<16> value;
         };
 
-        struct RelativeCoords final {
+        struct relative_coords final {
             float x, y;
         };
 
-        struct Wheel final {
+        struct wheel_data final {
             float xoffset, yoffset;
         };
 
-        using RawData = std::variant<
-            Buttons, RelativeCoords, Wheel
+        using raw_data = std::variant<
+            buttons, relative_coords, wheel_data
         >;
     }
 
     namespace keyboard
     {
-        using RawData = bool;
+        using raw_data = bool;
     }
 
-    using RawData = std::variant<mouse::RawData, keyboard::RawData>;
+    using raw_data = std::variant<mouse::raw_data, keyboard::raw_data>;
 }

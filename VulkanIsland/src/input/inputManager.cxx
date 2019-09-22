@@ -15,10 +15,10 @@ using namespace std::string_literals;
 using namespace std::string_view_literals;
 
 
-void InputManager::onUpdate(input::RawData &data)
+void InputManager::onUpdate(input::raw_data &data)
 {
     std::visit(overloaded{
-        [this] (input::mouse::RawData &data)
+        [this] (input::mouse::raw_data &data)
         {
             mouse_.update(data);
         },

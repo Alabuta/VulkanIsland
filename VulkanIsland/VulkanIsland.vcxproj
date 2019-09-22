@@ -151,10 +151,12 @@
       </Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)compile-shaders.py"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
+      <Message>
+      </Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -230,10 +232,12 @@
       </Message>
     </PreBuildEvent>
     <PostBuildEvent>
-      <Command>"$(SolutionDir)compile-shaders.py"</Command>
+      <Command>
+      </Command>
     </PostBuildEvent>
     <PostBuildEvent>
-      <Message>GLSL shaders to SPIR-V compilation is being performed...</Message>
+      <Message>
+      </Message>
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>

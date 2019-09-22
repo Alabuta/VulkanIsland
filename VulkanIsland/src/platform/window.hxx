@@ -34,7 +34,7 @@ public:
     struct IInputHandler {
         virtual ~IInputHandler() = default;
 
-        virtual void onUpdate(input::RawData &data) = 0;
+        virtual void onUpdate(input::raw_data &data) = 0;
     };
 
     void connectInputHandler(std::shared_ptr<IInputHandler> handler);
@@ -48,7 +48,7 @@ private:
 
     boost::signals2::signal<void(std::int32_t, std::int32_t)> resizeCallback_;
 
-    boost::signals2::signal<void(input::RawData &)> inputUpdateCallback_;
+    boost::signals2::signal<void(input::raw_data &)> inputUpdateCallback_;
 
     void setCallbacks();
 };

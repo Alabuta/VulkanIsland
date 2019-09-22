@@ -66,12 +66,12 @@ void Window::setCallbacks()
         auto instance = reinterpret_cast<Window *>(glfwGetWindowUserPointer(handle));
 
         if (instance) {
-            auto coords = input::mouse::RelativeCoords{
-                static_cast<decltype(input::mouse::RelativeCoords::x)>(x),
-                static_cast<decltype(input::mouse::RelativeCoords::y)>(y)
+            auto coords = input::mouse::relative_coords{
+                static_cast<decltype(input::mouse::relative_coords::x)>(x),
+                static_cast<decltype(input::mouse::relative_coords::y)>(y)
             };
 
-            input::RawData data = input::mouse::RawData{std::move(coords)};
+            input::raw_data data = input::mouse::raw_data{std::move(coords)};
 
             instance->inputUpdateCallback_(data);
         }
@@ -82,13 +82,13 @@ void Window::setCallbacks()
         auto instance = reinterpret_cast<Window *>(glfwGetWindowUserPointer(handle));
 
         if (instance) {
-            auto buttons = input::mouse::Buttons{};
+            auto buttons = input::mouse::buttons{};
 
             std::size_t offset = action == GLFW_PRESS ? 0 : 1;
 
             buttons.value[static_cast<std::size_t>(button) * 2 + offset] = 1;
 
-            input::RawData data = input::mouse::RawData{std::move(buttons)};
+            input::raw_data data = input::mouse::raw_data{std::move(buttons)};
 
             instance->inputUpdateCallback_(data);
         }
@@ -100,12 +100,12 @@ void Window::setCallbacks()
         auto instance = reinterpret_cast<Window *>(glfwGetWindowUserPointer(handle));
 
         if (instance) {
-            auto wheel = input::mouse::Wheel{
-                static_cast<decltype(input::mouse::Wheel::xoffset)>(xoffset),
-                static_cast<decltype(input::mouse::Wheel::yoffset)>(yoffset)
+            auto wheel = input::mouse::wheel_data{
+                static_cast<decltype(input::mouse::wheel_data::xoffset)>(xoffset),
+                static_cast<decltype(input::mouse::wheel_data::yoffset)>(yoffset)
             };
 
-            input::RawData data = input::mouse::RawData{std::move(wheel)};
+            input::raw_data data = input::mouse::raw_data{std::move(wheel)};
 
             instance->inputUpdateCallback_(data);
         }
