@@ -42,17 +42,6 @@
 #include "renderer/render_flow.hxx"
 #include "renderer/compatibility.hxx"
 
-#include "ecs/ecs.hxx"
-#include "ecs/node.hxx"
-#include "ecs/mesh.hxx"
-#include "ecs/transform.hxx"
-
-#include "loaders/loaderGLTF.hxx"
-#include "loaders/loaderTARGA.hxx"
-
-#include "staging.hxx"
-#include "sceneTree.hxx"
-
 #include "input/inputManager.hxx"
 #include "camera/camera.hxx"
 #include "camera/cameraController.hxx"
@@ -128,11 +117,13 @@ struct app_t final {
 
     VulkanTexture texture;
 
+#if TEMPORARILY_DISABLED
     ecs::entity_registry registry;
 
     ecs::NodeSystem nodeSystem{registry};
 #if NOT_YET_IMPLEMENTED
     ecs::MeshSystem meshSystem{registry};
+#endif
 #endif
 
     PipelineVertexInputStatesManager pipelineVertexInputStatesManager;
@@ -1161,14 +1152,16 @@ try {
     {
         glfwPollEvents();
 
+    #if TEMPORARILY_DISABLED
         app.registry.sort<ecs::node>(ecs::node());
-    #if NOT_YET_IMPLEMENTED
-        app.registry.sort<ecs::mesh>(ecs::mesh());
-    #endif
+        #if NOT_YET_IMPLEMENTED
+            app.registry.sort<ecs::mesh>(ecs::mesh());
+        #endif
 
-        app.nodeSystem.update();
-    #if NOT_YET_IMPLEMENTED
-        app.meshSystem.update();
+            app.nodeSystem.update();
+        #if NOT_YET_IMPLEMENTED
+            app.meshSystem.update();
+        #endif
     #endif
         Update(app);
 
@@ -1259,68 +1252,3 @@ LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
 
     return texture;
 }
-
-
-#if 0
-[[nodiscard]] std::shared_ptr<VulkanBuffer> InitVertexBuffer(app_t &app)
-{
-    if (std::empty(app.scene.vertexBuffer))
-        return { };
-
-    std::shared_ptr<VulkanBuffer> buffer;
-
-    auto &&vertices = app.scene.vertexBuffer;
-
-    if (auto stagingBuffer = StageData(*app.vulkanDevice, vertices); stagingBuffer) {
-        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
-        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-        buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
-
-        if (buffer) {
-            auto copyRegions = std::array{
-                VkBufferCopy{
-                /*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/
-                0, 0, stagingBuffer->memory()->size()
-            }
-            };
-
-            CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
-                               buffer->handle(), std::move(copyRegions), app.transferCommandPool);
-        }
-    }
-
-    return buffer;
-}
-
-[[nodiscard]] std::shared_ptr<VulkanBuffer> InitIndexBuffer(app_t &app)
-{
-    auto &&indices = app.scene.indexBuffer;
-
-    if (std::empty(indices))
-        return { };
-
-    std::shared_ptr<VulkanBuffer> buffer;
-
-    if (auto stagingBuffer = StageData(*app.vulkanDevice, indices); stagingBuffer) {
-        auto constexpr usageFlags = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
-        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-        buffer = app.vulkanDevice->resourceManager().CreateBuffer(stagingBuffer->memory()->size(), usageFlags, propertyFlags);
-
-        if (buffer) {
-            auto copyRegions = std::array{
-                VkBufferCopy{
-                /*stagingBuffer->memory()->offset(), stagingBuffer->memory()->offset()*/
-                0, 0, stagingBuffer->memory()->size()
-            }
-            };
-
-            CopyBufferToBuffer(*app.vulkanDevice, app.transferQueue, stagingBuffer->handle(),
-                               buffer->handle(), std::move(copyRegions), app.transferCommandPool);
-        }
-    }
-
-    return buffer;
-}
-#endif

@@ -21,7 +21,7 @@ namespace fs = std::filesystem;
 #include "math.hxx"
 #include "staging.hxx"
 #include "loaders/loaderGLTF.hxx"
-#include "sceneTree.hxx"
+
 #include "renderer/graphics.hxx"
 
 namespace glTF

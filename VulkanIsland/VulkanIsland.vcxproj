@@ -275,7 +275,6 @@
     <ClCompile Include="src\resources\memory.cxx" />
     <ClCompile Include="src\resources\program.cxx" />
     <ClCompile Include="src\resources\resource.cxx" />
-    <ClCompile Include="src\sceneTree.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\config.hxx" />
@@ -331,7 +330,6 @@
     <ClInclude Include="src\resources\buffer.hxx" />
     <ClInclude Include="src\resources\image.hxx" />
     <ClInclude Include="src\resources\program.hxx" />
-    <ClInclude Include="src\sceneTree.hxx" />
     <ClInclude Include="src\utility\mpl.hxx" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

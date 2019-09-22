@@ -23,34 +23,35 @@
 #include "debug.hxx"
 
 
-namespace config {
-auto constexpr extensions = mpl::make_array(
-    VK_KHR_SURFACE_EXTENSION_NAME,
-#ifdef _MSC_VER
-    #if USE_WIN32
-        VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+namespace config
+{
+    auto constexpr extensions = mpl::make_array(
+        VK_KHR_SURFACE_EXTENSION_NAME,
+    #ifdef _MSC_VER
+        #if USE_WIN32
+            VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
+        #else
+            "VK_KHR_win32_surface",
+        #endif
     #else
-        "VK_KHR_win32_surface",
+        "VK_KHR_xcb_surface",
     #endif
-#else
-    "VK_KHR_xcb_surface",
-#endif
-    VK_EXT_DEBUG_REPORT_EXTENSION_NAME
-);
+        VK_EXT_DEBUG_REPORT_EXTENSION_NAME
+    );
 
-auto constexpr layers = mpl::make_array(
-#if TEMPORARILY_DISABLED
-    "VK_LAYER_NV_nsight",
-    "VK_LAYER_LUNARG_api_dump",
-#endif
+    auto constexpr layers = mpl::make_array(
+    #if TEMPORARILY_DISABLED
+        "VK_LAYER_NV_nsight",
+        "VK_LAYER_LUNARG_api_dump",
+    #endif
 
-    "VK_LAYER_LUNARG_assistant_layer",
-    "VK_LAYER_LUNARG_core_validation",
-    "VK_LAYER_LUNARG_object_tracker",
-    "VK_LAYER_LUNARG_parameter_validation",
-    "VK_LAYER_GOOGLE_threading",
-    "VK_LAYER_GOOGLE_unique_objects"
-);
+        "VK_LAYER_LUNARG_assistant_layer",
+        "VK_LAYER_LUNARG_core_validation",
+        "VK_LAYER_LUNARG_object_tracker",
+        "VK_LAYER_LUNARG_parameter_validation",
+        "VK_LAYER_GOOGLE_threading",
+        "VK_LAYER_GOOGLE_unique_objects"
+    );
 }
 
 class VulkanInstance final {
@@ -78,7 +79,6 @@ template<class E, class L>
 inline VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
 {
     using namespace std::string_literals;
-    using namespace std::string_view_literals;
 
     auto constexpr use_extensions = !std::is_same_v<std::false_type, E>;
     auto constexpr use_layers = !std::is_same_v<std::false_type, L>;
@@ -86,14 +86,13 @@ inline VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
     std::vector<char const *> extensions_;
     std::vector<char const *> layers_;
 
-    if constexpr (use_extensions)
-    {
+    if constexpr (use_extensions) {
         using T = std::remove_cvref_t<E>;
+
         static_assert(mpl::container<T>, "'extensions' must be a container");
         static_assert(std::same_as<typename std::remove_cvref_t<T>::value_type, char const *>, "'extensions' must contain null-terminated strings");
 
-        if constexpr (use_layers)
-        {
+        if constexpr (use_layers) {
             auto present = std::any_of(std::cbegin(extensions), std::cend(extensions), [] (auto &&name)
             {
                 return std::strcmp(name, VK_EXT_DEBUG_REPORT_EXTENSION_NAME) == 0;
@@ -107,12 +106,11 @@ inline VulkanInstance::VulkanInstance(E &&extensions, L &&layers)
             std::move(extensions.begin(), extensions.end(), std::back_inserter(extensions_));
 
         else std::copy(extensions.begin(), extensions.end(), std::back_inserter(extensions_));
-
     }
 
-    if constexpr (use_layers)
-    {
+    if constexpr (use_layers) {
         using T = std::remove_cvref_t<L>;
+
         static_assert(mpl::container<T>, "'layers' must be a container");
         static_assert(std::same_as<typename std::remove_cvref_t<T>::value_type, char const *>, "'layers' must contain null-terminated strings");
 
