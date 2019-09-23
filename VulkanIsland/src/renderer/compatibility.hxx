@@ -12,7 +12,7 @@ namespace graphics
 {
     template<>
     struct compatibility<graphics::render_pass> {
-        auto operator() (graphics::render_pass const &lhs, graphics::render_pass const &rhs) const
+        auto operator() (graphics::render_pass const &, graphics::render_pass const &) const
         {
             // https://www.khronos.org/registry/vulkan/specs/1.1-extensions/html/vkspec.html#renderpass-compatibility
 

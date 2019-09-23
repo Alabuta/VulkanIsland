@@ -249,8 +249,8 @@
     <ClCompile Include="src/main.cxx" />
     <ClCompile Include="src/platform/window.cxx" />
     <ClCompile Include="src/swapchain.cxx" />
-    <ClCompile Include="src/camera/cameraController.cxx" />
-    <ClCompile Include="src/camera/handlers/mouseHandler.cxx" />
+    <ClCompile Include="src\camera\camera_controller.cxx" />
+    <ClCompile Include="src\camera\handlers\mouse_handler.cxx" />
     <ClCompile Include="src\camera\camera.cxx" />
     <ClCompile Include="src\device\device.cxx" />
     <ClCompile Include="src\ecs\node.cxx" />
@@ -319,8 +319,8 @@
     <ClInclude Include="src/queues.hxx" />
     <ClInclude Include="src/queueBuilder.hxx" />
     <ClInclude Include="src/swapchain.hxx" />
-    <ClInclude Include="src/camera/cameraController.hxx" />
-    <ClInclude Include="src/camera/handlers/mouseHandler.hxx" />
+    <ClInclude Include="src\camera\camera_controller.hxx" />
+    <ClInclude Include="src\camera\handlers\mouse_handler.hxx" />
     <ClInclude Include="src\ecs\ecs.hxx" />
     <ClInclude Include="src\ecs\mesh.hxx" />
     <ClInclude Include="src\ecs\node.hxx" />

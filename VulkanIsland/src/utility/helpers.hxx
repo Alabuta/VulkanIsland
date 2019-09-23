@@ -34,7 +34,7 @@ struct measure {
 };
 
 
-[[nodiscard]] constexpr std::size_t aligned_size(std::size_t size, std::size_t alignment) noexcept
+[[nodiscard]] std::size_t constexpr aligned_size(std::size_t size, std::size_t alignment) noexcept
 {
     if (alignment > 0)
         return (size + alignment - 1) & ~(alignment - 1);

@@ -11,6 +11,8 @@
 #include <array>
 #include <iomanip>
 
+auto constexpr kPI = 3.14159265358979323846f;
+
 #define GLM_FORCE_CXX17
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_RADIANS
@@ -60,7 +62,7 @@ inline glm::quat from_two_vec3(U &&u, V &&v)
     return glm::normalize(glm::quat{real_part, w});
 }
 
-glm::mat4 reversedPerspective(float yFOV, float aspect, float znear, float zfar);
+glm::mat4 reversed_perspective(float vertical_fov, float aspect, float znear, float zfar);
 }
 
 

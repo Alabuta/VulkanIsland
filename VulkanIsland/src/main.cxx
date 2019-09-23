@@ -44,7 +44,7 @@
 
 #include "input/inputManager.hxx"
 #include "camera/camera.hxx"
-#include "camera/cameraController.hxx"
+#include "camera/camera_controller.hxx"
 
 
 auto constexpr sceneName{"unlit-test"sv};
@@ -78,10 +78,10 @@ struct app_t final {
     std::uint32_t width{800u};
     std::uint32_t height{600u};
 
-    CameraSystem cameraSystem;
-    std::shared_ptr<Camera> camera;
+    camera_system cameraSystem;
+    std::shared_ptr<camera> camera;
 
-    std::unique_ptr<OrbitController> cameraController;
+    std::unique_ptr<orbit_controller> cameraController;
 
     std::vector<per_object_t> objects;
 
@@ -248,7 +248,7 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
 {
     // TODO: descriptor info typed by VkDescriptorType.
     auto const cameras = std::array{
-        VkDescriptorBufferInfo{app.perCameraBuffer->handle(), 0, sizeof(Camera::data_t)}
+        VkDescriptorBufferInfo{app.perCameraBuffer->handle(), 0, sizeof(camera::data_t)}
     };
 
     // TODO: descriptor info typed by VkDescriptorType.
@@ -952,7 +952,7 @@ void InitVulkan(Window &window, app_t &app)
 
     else throw std::runtime_error("failed to init per object uniform buffer"s);
 
-    if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.vulkanDevice, sizeof(Camera::data_t)); !app.perCameraBuffer)
+    if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.vulkanDevice, sizeof(camera::data_t)); !app.perCameraBuffer)
         throw std::runtime_error("failed to init per camera uniform buffer"s);
 
     if (auto descriptorPool = CreateDescriptorPool(*app.vulkanDevice); !descriptorPool)
@@ -990,7 +990,7 @@ void Update(app_t &app)
         if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to map per camera uniform buffer memory: {0:#x}\n"s, result));
 
-        std::uninitialized_copy_n(&app.camera->data, 1, reinterpret_cast<Camera::data_t *>(data));
+        std::uninitialized_copy_n(&app.camera->data, 1, reinterpret_cast<camera::data_t *>(data));
 
         vkUnmapMemory(device.handle(), buffer.memory()->handle());
     }
@@ -1115,11 +1115,11 @@ try {
     auto inputManager = std::make_shared<InputManager>();
     window.connectInputHandler(inputManager);
 
-    app.camera = app.cameraSystem.createCamera();
+    app.camera = app.cameraSystem.create_camera();
     app.camera->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
 
-    app.cameraController = std::make_unique<OrbitController>(app.camera, *inputManager);
-    app.cameraController->lookAt(glm::vec3{0, 2, 1}, {0, 0, 0});
+    app.cameraController = std::make_unique<orbit_controller>(app.camera, *inputManager);
+    app.cameraController->look_at(glm::vec3{0, 2, 1}, {0, 0, 0});
 
     std::cout << measure<>::execution(InitVulkan, window, std::ref(app)) << " ms\n"s;
 

@@ -5,8 +5,8 @@
 #include "math.hxx"
 
 
-struct Camera {
-    float yFOV{glm::radians(75.f)};
+struct camera {
+    float vertical_fov{glm::radians(75.f)};
     float znear{.01f}, zfar{1000.f};
     float aspect{1.f};
 
@@ -16,23 +16,21 @@ struct Camera {
         glm::mat4 view{1.f};
         glm::mat4 projection{1.f};
 
-        glm::mat4 projectionView{1.f};
+        glm::mat4 projection_view{1.f};
 
-        glm::mat4 invertedView{1.f};
-        glm::mat4 invertedProjection{1.f};
+        glm::mat4 inverted_view{1.f};
+        glm::mat4 inverted_projection{1.f};
     } data;
 
     glm::mat4 world{1.f};
 };
 
-class CameraSystem {
+class camera_system {
 public:
 
-    std::shared_ptr<Camera> createCamera()
+    std::shared_ptr<camera> create_camera()
     {
-        auto camera = std::make_shared<Camera>();
-
-        cameras_.push_back(std::move(camera));
+        cameras_.push_back(std::move(std::make_shared<camera>()));
 
         return cameras_.back();
     }
@@ -41,5 +39,5 @@ public:
 
 private:
 
-    std::vector<std::shared_ptr<Camera>> cameras_;
+    std::vector<std::shared_ptr<camera>> cameras_;
 };
