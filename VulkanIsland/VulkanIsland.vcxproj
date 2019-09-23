@@ -243,8 +243,8 @@
   <ItemGroup>
     <ClCompile Include="src/debug.cxx" />
     <ClCompile Include="src/descriptor.cxx" />
-    <ClCompile Include="src/input/inputManager.cxx" />
-    <ClCompile Include="src/input/mouseInput.cxx" />
+    <ClCompile Include="src\platform\input\input_manager.cxx" />
+    <ClCompile Include="src\platform\input\mouse.cxx" />
     <ClCompile Include="src/instance.cxx" />
     <ClCompile Include="src/main.cxx" />
     <ClCompile Include="src/platform/window.cxx" />
@@ -285,9 +285,9 @@
     <ClInclude Include="src\camera\camera.hxx" />
     <ClInclude Include="src\deviceConfig.hxx" />
     <ClInclude Include="src\utility\helpers.hxx" />
-    <ClInclude Include="src/input/inputDataTypes.hxx" />
-    <ClInclude Include="src/input/inputManager.hxx" />
-    <ClInclude Include="src/input/mouseInput.hxx" />
+    <ClInclude Include="src\platform\input\input_data.hxx" />
+    <ClInclude Include="src\platform\input\input_manager.hxx" />
+    <ClInclude Include="src\platform\input\mouse.hxx" />
     <ClInclude Include="src/instance.hxx" />
     <ClInclude Include="src/math.hxx" />
     <ClInclude Include="src/main.hxx" />

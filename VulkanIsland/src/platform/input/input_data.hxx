@@ -4,9 +4,9 @@
 #include <variant>
 
 
-namespace input
+namespace platform
 {
-    namespace mouse
+    namespace mouse_data
     {
         struct buttons final {
             std::bitset<16> value;
@@ -16,19 +16,19 @@ namespace input
             float x, y;
         };
 
-        struct wheel_data final {
+        struct wheel final {
             float xoffset, yoffset;
         };
 
-        using raw_data = std::variant<
-            buttons, relative_coords, wheel_data
+        using raw = std::variant<
+            buttons, relative_coords, wheel
         >;
     }
 
-    namespace keyboard
+    namespace keyboard_data
     {
-        using raw_data = bool;
+        using raw = bool;
     }
 
-    using raw_data = std::variant<mouse::raw_data, keyboard::raw_data>;
+    using raw = std::variant<mouse_data::raw, keyboard_data::raw>;
 }

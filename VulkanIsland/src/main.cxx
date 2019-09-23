@@ -42,7 +42,7 @@
 #include "renderer/render_flow.hxx"
 #include "renderer/compatibility.hxx"
 
-#include "input/inputManager.hxx"
+#include "platform/input/input_manager.hxx"
 #include "camera/camera.hxx"
 #include "camera/camera_controller.hxx"
 
@@ -210,12 +210,12 @@ template<class T> requires mpl::container<std::remove_cvref_t<T>>
 LoadTexture(app_t &app, VulkanDevice &device, std::string_view name);
 
 
-struct ResizeHandler final : public Window::IEventHandler {
+struct ResizeHandler final : public platform::window::event_handler_interface {
     ResizeHandler(app_t &app) : app{app} { }
 
     app_t &app;
 
-    void onResize(std::int32_t width, std::int32_t height) override
+    void on_resize(std::int32_t width, std::int32_t height) override
     {
         app.width = static_cast<std::uint32_t>(width);
         app.height = static_cast<std::uint32_t>(height);
@@ -756,7 +756,7 @@ void stageXformat(app_t &app, xformat const &_model)
 }
 
 
-void InitVulkan(Window &window, app_t &app)
+void InitVulkan(platform::window &window, app_t &app)
 {
     app.vulkanInstance = std::make_unique<VulkanInstance>(config::extensions, config::layers);
 
@@ -1107,13 +1107,13 @@ try {
 
     app_t app;
 
-    Window window{"VulkanIsland"sv, static_cast<std::int32_t>(app.width), static_cast<std::int32_t>(app.height)};
+    platform::window window{"VulkanIsland"sv, static_cast<std::int32_t>(app.width), static_cast<std::int32_t>(app.height)};
 
     auto resizeHandler = std::make_shared<ResizeHandler>(app);
-    window.connectEventHandler(resizeHandler);
+    window.connect_event_handler(resizeHandler);
 
-    auto inputManager = std::make_shared<InputManager>();
-    window.connectInputHandler(inputManager);
+    auto inputManager = std::make_shared<platform::input_manager>();
+    window.connect_input_handler(inputManager);
 
     app.camera = app.cameraSystem.create_camera();
     app.camera->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
