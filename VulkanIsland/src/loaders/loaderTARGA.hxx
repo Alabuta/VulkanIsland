@@ -10,7 +10,7 @@
 #include "renderer/graphics.hxx"
 
 
-enum class ePIXEL_LAYOUT {
+enum class PIXEL_LAYOUT {
     nUNDEFINED = 0, nRED, nRG, nRGB, nBGR, nRGBA, nBGRA
 };
 
@@ -44,7 +44,7 @@ struct TARGA {
         std::array<byte_t, 10> imageSpec;
     } header;
 
-    ePIXEL_LAYOUT pixelLayout{ePIXEL_LAYOUT::nUNDEFINED};
+    PIXEL_LAYOUT pixelLayout{PIXEL_LAYOUT::nUNDEFINED};
 
     std::int16_t width{0}, height{0};
     std::uint8_t pixelDepth{0}, colorMapDepth{0};

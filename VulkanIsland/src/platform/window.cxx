@@ -9,7 +9,7 @@ using namespace std::string_literals;
 namespace platform
 {
     window::window(std::string_view name, std::int32_t width, std::int32_t height)
-        : handle_{ nullptr }, width_{ width }, height_{ height }, name_{ name }
+        : handle_{nullptr}, width_{width}, height_{height}, name_{name}
     {
         glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 
@@ -74,7 +74,7 @@ namespace platform
                     static_cast<decltype(platform::mouse_data::relative_coords::y)>(y)
                 };
 
-                platform::raw data = platform::mouse_data::raw{ std::move(coords) };
+                platform::raw data = platform::mouse_data::raw{std::move(coords)};
 
                 instance->input_update_callback_(data);
             }
@@ -91,7 +91,7 @@ namespace platform
 
                 buttons.value[static_cast<std::size_t>(button) * 2 + offset] = 1;
 
-                platform::raw data = platform::mouse_data::raw{ std::move(buttons) };
+                platform::raw data = platform::mouse_data::raw{std::move(buttons)};
 
                 instance->input_update_callback_(data);
             }
@@ -108,7 +108,7 @@ namespace platform
                     static_cast<decltype(platform::mouse_data::wheel::yoffset)>(yoffset)
                 };
 
-                platform::raw data = platform::mouse_data::raw{ std::move(wheel) };
+                platform::raw data = platform::mouse_data::raw{std::move(wheel)};
 
                 instance->input_update_callback_(data);
             }

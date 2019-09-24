@@ -43,7 +43,7 @@ namespace platform
     private:
         GLFWwindow *handle_;
 
-        std::int32_t width_{ 0 }, height_{ 0 };
+        std::int32_t width_{0}, height_{0};
 
         std::string name_;
 

@@ -33,52 +33,52 @@ std::optional<texel_buffer_t> instantiate_texel_buffer(std::uint8_t pixelDepth) 
     }
 }
 
-constexpr ePIXEL_LAYOUT GetPixelLayout(std::uint8_t pixelDepth) noexcept
+constexpr PIXEL_LAYOUT GetPixelLayout(std::uint8_t pixelDepth) noexcept
 {
     switch (pixelDepth) {
         case 8:
-            return ePIXEL_LAYOUT::nRED;
+            return PIXEL_LAYOUT::nRED;
             break;
 
         case 16:
-            return ePIXEL_LAYOUT::nRG;
+            return PIXEL_LAYOUT::nRG;
             break;
 
         case 24:
-            return ePIXEL_LAYOUT::nBGR;
+            return PIXEL_LAYOUT::nBGR;
             break;
 
         case 32:
-            return ePIXEL_LAYOUT::nBGRA;
+            return PIXEL_LAYOUT::nBGRA;
             break;
 
         default:
-            return ePIXEL_LAYOUT::nUNDEFINED;
+            return PIXEL_LAYOUT::nUNDEFINED;
     }
 }
 
-constexpr graphics::FORMAT GetPixelFormat(ePIXEL_LAYOUT pixelLayout) noexcept
+constexpr graphics::FORMAT GetPixelFormat(PIXEL_LAYOUT pixelLayout) noexcept
 {
     switch (pixelLayout) {
-        case ePIXEL_LAYOUT::nRED:
+        case PIXEL_LAYOUT::nRED:
             return graphics::FORMAT::R8_UNORM;
 
-        case ePIXEL_LAYOUT::nRG:
+        case PIXEL_LAYOUT::nRG:
             return graphics::FORMAT::RG8_UNORM;
 
-        case ePIXEL_LAYOUT::nRGB:
+        case PIXEL_LAYOUT::nRGB:
             return graphics::FORMAT::RGB8_UNORM;
 
-        case ePIXEL_LAYOUT::nBGR:
+        case PIXEL_LAYOUT::nBGR:
             return graphics::FORMAT::BGR8_UNORM;
 
-        case ePIXEL_LAYOUT::nRGBA:
+        case PIXEL_LAYOUT::nRGBA:
             return graphics::FORMAT::RGBA8_UNORM;
 
-        case ePIXEL_LAYOUT::nBGRA:
+        case PIXEL_LAYOUT::nBGRA:
             return graphics::FORMAT::BGRA8_UNORM;
 
-        case ePIXEL_LAYOUT::nUNDEFINED:
+        case PIXEL_LAYOUT::nUNDEFINED:
         default:
             return graphics::FORMAT::UNDEFINED;
     }
@@ -104,9 +104,8 @@ void LoadUncompressedTrueColorImage(TARGA &targa, std::ifstream &file)
 
         file.read(reinterpret_cast<char *>(std::data(buffer)), static_cast<std::int64_t>(std::size(buffer) * sizeof(texel_type)));
 
-        if constexpr (texel_type::size == 3)
-        {
-            targa.pixelLayout = targa.pixelLayout == ePIXEL_LAYOUT::nRGB ? ePIXEL_LAYOUT::nRGBA : ePIXEL_LAYOUT::nBGRA;
+        if constexpr (texel_type::size == 3) {
+            targa.pixelLayout = targa.pixelLayout == PIXEL_LAYOUT::nRGB ? PIXEL_LAYOUT::nRGBA : PIXEL_LAYOUT::nBGRA;
 
             using vec_type = math::vec<4, typename texel_type::value_type>;
 
@@ -155,9 +154,8 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
 
         file.read(reinterpret_cast<char *>(std::data(palette)), static_cast<std::streamsize>(std::size(palette) * sizeof(texel_type)));
 
-        if constexpr (texel_type::size == 3)
-        {
-            targa.pixelLayout = targa.pixelLayout == ePIXEL_LAYOUT::nRGB ? ePIXEL_LAYOUT::nRGBA : ePIXEL_LAYOUT::nBGRA;
+        if constexpr (texel_type::size == 3) {
+            targa.pixelLayout = targa.pixelLayout == PIXEL_LAYOUT::nRGB ? PIXEL_LAYOUT::nRGBA : PIXEL_LAYOUT::nBGRA;
 
             using vec_type = math::vec<4, typename texel_type::value_type>;
 
@@ -235,25 +233,18 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
         file.read(reinterpret_cast<char *>(std::data(imageID)), sizeof(std::size(imageID)));
 
     switch (targa.header.imageType) {
-        // No image data is present
-        case 0x00:
-        // Uncompressed monochrome image
-        case 0x03:
-        // Run-length encoded color-mapped image
-        case 0x09:
-        // Run-length encoded monochrome image
-        case 0x0B:
-        // Run-length encoded true-color image
-        case 0x0A:
+        case 0x00:        // No image data is present
+        case 0x03:        // Uncompressed monochrome image
+        case 0x09:        // Run-length encoded color-mapped image
+        case 0x0B:        // Run-length encoded monochrome image
+        case 0x0A:        // Run-length encoded true-color image
             return { };
 
-        // Uncompressed color-mapped image
-        case 0x01:
+        case 0x01:        // Uncompressed color-mapped image
             LoadUncompressedColorMappedImage(targa, file);
             break;
 
-        // Uncompressed true-color image
-        case 0x02:
+        case 0x02:        // Uncompressed true-color image
             LoadUncompressedTrueColorImage(targa, file);
             break;
 
@@ -263,7 +254,7 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
 
     file.close();
 
-    if (targa.pixelLayout == ePIXEL_LAYOUT::nUNDEFINED)
+    if (targa.pixelLayout == PIXEL_LAYOUT::nUNDEFINED)
         return { };
 
     RawImage image;

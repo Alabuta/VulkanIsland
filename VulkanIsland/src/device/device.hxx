@@ -120,8 +120,7 @@ inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface
     std::vector<std::string_view> extensions_view;
     std::vector<char const *> extensions_;
 
-    if constexpr (use_extensions)
-    {
+    if constexpr (use_extensions) {
         using T = std::remove_cvref_t<E>;
         static_assert(mpl::container<T>, "'extensions' must be a container");
         static_assert(std::same_as<typename std::remove_cvref_t<T>::value_type, char const *>, "'extensions' must contain null-terminated strings");

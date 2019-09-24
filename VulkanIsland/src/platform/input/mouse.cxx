@@ -4,13 +4,13 @@
 
 namespace
 {
-std::bitset<16> constexpr kPRESSED_MASK{
-    0x01 | 0x04 | 0x10 | 0x40 | 0x100
-};
+    std::bitset<16> constexpr kPRESSED_MASK{
+        0x01 | 0x04 | 0x10 | 0x40 | 0x100
+    };
 
-std::bitset<16> constexpr kDEPRESSED_MASK{
-    0x02 | 0x08 | 0x20 | 0x80 | 0x200
-};
+    std::bitset<16> constexpr kDEPRESSED_MASK{
+        0x02 | 0x08 | 0x20 | 0x80 | 0x200
+    };
 }
 
 namespace platform

@@ -14,92 +14,91 @@ using namespace std::string_literals;
 using namespace std::string_view_literals;
 
 
-namespace {
-
-template<class T, std::size_t I = 0>
-constexpr bool check_all_queues_support(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+namespace
 {
-    using Q = std::variant_alternative_t<I, T>;
 
-    if (!QueueHelper::IsSupportedByDevice<Q>(physicalDevice, surface))
+    template<class T, std::size_t I = 0>
+    constexpr bool check_all_queues_support(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+    {
+        using Q = std::variant_alternative_t<I, T>;
+
+        if (!QueueHelper::IsSupportedByDevice<Q>(physicalDevice, surface))
+            return false;
+
+        if constexpr (I + 1 < std::variant_size_v<T>)
+            return check_all_queues_support<T, I + 1>(physicalDevice, surface);
+
         return false;
-
-    if constexpr (I + 1 < std::variant_size_v<T>)
-        return check_all_queues_support<T, I + 1>(physicalDevice, surface);
-
-    return false;
-}
-
-template<bool check_on_duplicates = false>
-[[nodiscard]] bool CheckRequiredDeviceExtensions(VkPhysicalDevice physicalDevice, std::vector<std::string_view> &&extensions)
-{
-    std::vector<VkExtensionProperties> requiredExtensions;
-
-    auto constexpr extensionsComp = [] (auto &&lhs, auto &&rhs)
-    {
-        return std::lexicographical_compare(std::cbegin(lhs.extensionName), std::cend(lhs.extensionName), std::cbegin(rhs.extensionName), std::cend(rhs.extensionName));
-    };
-
-    std::transform(extensions.begin(), extensions.end(), std::back_inserter(requiredExtensions), [] (auto &&name)
-    {
-        VkExtensionProperties prop{};
-        std::uninitialized_copy_n(std::begin(name), std::size(name), prop.extensionName);
-
-        return prop;
-    });
-
-    std::sort(requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
-
-    if constexpr (check_on_duplicates)
-    {
-        auto it = std::unique(requiredExtensions.begin(), requiredExtensions.end(), [] (auto &&lhs, auto &&rhs)
-        {
-            return std::equal(std::cbegin(lhs.extensionName), std::cend(lhs.extensionName), std::cbegin(rhs.extensionName), std::cend(rhs.extensionName));
-        });
-
-        requiredExtensions.erase(it, requiredExtensions.end());
     }
 
-    std::uint32_t extensionsCount = 0;
-    if (auto result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionsCount, nullptr); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device extensions count: "s + std::to_string(result));
-
-    std::vector<VkExtensionProperties> supportedExtensions(extensionsCount);
-    if (auto result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionsCount, std::data(supportedExtensions)); result != VK_SUCCESS)
-        throw std::runtime_error("failed to retrieve device extensions: "s + std::to_string(result));
-
-    std::sort(supportedExtensions.begin(), supportedExtensions.end(), extensionsComp);
-
-    return std::includes(supportedExtensions.begin(), supportedExtensions.end(), requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
-}
-
-template<class T> requires iterable<std::remove_cvref_t<T>>
-[[nodiscard]] std::optional<std::uint32_t> GetPresentationQueueFamilyIndex(T &&queueFamilies, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
-{
-    static_assert(std::is_same_v<typename std::remove_cvref_t<T>::value_type, VkQueueFamilyProperties>, "iterable object does not contain VkQueueFamilyProperties elements");
-
-    auto it_presentationQueue = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [physicalDevice, surface, size = queueFamilies.size()] (auto /*queueFamily*/)
+    template<bool check_on_duplicates = false>
+    [[nodiscard]] bool CheckRequiredDeviceExtensions(VkPhysicalDevice physicalDevice, std::vector<std::string_view> &&extensions)
     {
-        std::vector<std::uint32_t> queueFamiliesIndices(size);
-        std::iota(queueFamiliesIndices.begin(), queueFamiliesIndices.end(), 0);
+        std::vector<VkExtensionProperties> requiredExtensions;
 
-        return std::find_if(queueFamiliesIndices.cbegin(), queueFamiliesIndices.cend(), [physicalDevice, surface] (auto queueIndex)
+        auto constexpr extensionsComp = [] (auto &&lhs, auto &&rhs)
         {
-            VkBool32 surfaceSupported = VK_FALSE;
-            if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueIndex, surface, &surfaceSupported); result != VK_SUCCESS)
-                throw std::runtime_error("failed to retrieve surface support: "s + std::to_string(result));
+            return std::lexicographical_compare(std::cbegin(lhs.extensionName), std::cend(lhs.extensionName), std::cbegin(rhs.extensionName), std::cend(rhs.extensionName));
+        };
 
-            return surfaceSupported == VK_TRUE;
+        std::transform(extensions.begin(), extensions.end(), std::back_inserter(requiredExtensions), [] (auto &&name)
+        {
+            VkExtensionProperties prop{};
+            std::uninitialized_copy_n(std::begin(name), std::size(name), prop.extensionName);
 
-        }) != queueFamiliesIndices.cend();
-    });
+            return prop;
+        });
 
-    if (it_presentationQueue != queueFamilies.cend())
-        return static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_presentationQueue));
+        std::sort(requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
 
-    return {};
-}
+        if constexpr (check_on_duplicates) {
+            auto it = std::unique(requiredExtensions.begin(), requiredExtensions.end(), [] (auto &&lhs, auto &&rhs)
+            {
+                return std::equal(std::cbegin(lhs.extensionName), std::cend(lhs.extensionName), std::cbegin(rhs.extensionName), std::cend(rhs.extensionName));
+            });
 
+            requiredExtensions.erase(it, requiredExtensions.end());
+        }
+
+        std::uint32_t extensionsCount = 0;
+        if (auto result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionsCount, nullptr); result != VK_SUCCESS)
+            throw std::runtime_error("failed to retrieve device extensions count: "s + std::to_string(result));
+
+        std::vector<VkExtensionProperties> supportedExtensions(extensionsCount);
+        if (auto result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionsCount, std::data(supportedExtensions)); result != VK_SUCCESS)
+            throw std::runtime_error("failed to retrieve device extensions: "s + std::to_string(result));
+
+        std::sort(supportedExtensions.begin(), supportedExtensions.end(), extensionsComp);
+
+        return std::includes(supportedExtensions.begin(), supportedExtensions.end(), requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
+    }
+
+    template<class T> requires iterable<std::remove_cvref_t<T>>
+    [[nodiscard]] std::optional<std::uint32_t> GetPresentationQueueFamilyIndex(T &&queueFamilies, VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+    {
+        static_assert(std::is_same_v<typename std::remove_cvref_t<T>::value_type, VkQueueFamilyProperties>, "iterable object does not contain VkQueueFamilyProperties elements");
+
+        auto it_presentationQueue = std::find_if(queueFamilies.cbegin(), queueFamilies.cend(), [physicalDevice, surface, size = queueFamilies.size()](auto /*queueFamily*/)
+        {
+            std::vector<std::uint32_t> queueFamiliesIndices(size);
+            std::iota(queueFamiliesIndices.begin(), queueFamiliesIndices.end(), 0);
+
+            return std::find_if(queueFamiliesIndices.cbegin(), queueFamiliesIndices.cend(), [physicalDevice, surface] (auto queueIndex)
+            {
+                VkBool32 surfaceSupported = VK_FALSE;
+                if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueIndex, surface, &surfaceSupported); result != VK_SUCCESS)
+                    throw std::runtime_error("failed to retrieve surface support: "s + std::to_string(result));
+
+                return surfaceSupported == VK_TRUE;
+
+            }) != queueFamiliesIndices.cend();
+        });
+
+        if (it_presentationQueue != queueFamilies.cend())
+            return static_cast<std::uint32_t>(std::distance(queueFamilies.cbegin(), it_presentationQueue));
+
+        return {};
+    }
 }
 
 VulkanDevice::~VulkanDevice()
@@ -160,7 +159,7 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
         {
             if (queuePool.empty())
                 return true;
-            
+
             return QueueHelper::IsSupportedByDevice<typename std::remove_cvref_t<decltype(queuePool)>::value_type>(device, surface);
         };
 
@@ -178,11 +177,11 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
 
         return false;
 
-#if NOT_YET_IMPLEMENTED
+    #if NOT_YET_IMPLEMENTED
         return !check_all_queues_support<Queues>(device, surface);
-#endif
+    #endif
 
-#if TEMPORARILY_DISABLED
+    #if TEMPORARILY_DISABLED
         for (auto &&queue : queues) {
             auto supported = std::visit([=] (auto &&q)
             {
@@ -194,7 +193,7 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
         }
 
         return false;
-#endif
+    #endif
     });
 
     devices.erase(it_end, devices.end());

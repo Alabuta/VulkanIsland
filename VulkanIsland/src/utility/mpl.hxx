@@ -69,7 +69,7 @@ namespace mpl
     template<class T = void, class... Ts>
     constexpr std::array<detail::return_type_helper_t<T, Ts...>, sizeof...(Ts)> make_array(Ts &&...t)
     {
-        return { { std::forward<Ts>(t)... } };
+        return {{ std::forward<Ts>(t)... }};
     }
 
     namespace detail
@@ -77,7 +77,7 @@ namespace mpl
         template <class T, std::size_t N, std::size_t... I>
         constexpr std::array<std::remove_cv_t<T>, N> to_array_impl(T(&a)[N], std::index_sequence<I...>)
         {
-            return { { a[I]... } };
+            return {{ a[I]... }};
         }
     }
 

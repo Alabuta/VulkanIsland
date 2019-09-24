@@ -13,7 +13,7 @@ namespace platform
     void input_manager::update(platform::raw &data)
     {
         std::visit(overloaded{
-            [this](platform::mouse_data::raw &data)
+            [this] (platform::mouse_data::raw &data)
             {
                 mouse_.update(data);
             },

@@ -31,7 +31,7 @@ namespace platform
 
     private:
 
-        handler_interface::buttons_t buttons_{ 0 };
+        handler_interface::buttons_t buttons_{0};
 
         boost::signals2::signal<void(float, float)> on_move_;
         boost::signals2::signal<void(float, float)> on_wheel_;
