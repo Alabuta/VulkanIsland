@@ -8,11 +8,10 @@
 #include "resources/resource.hxx"
 
 #include "graphics.hxx"
-#include "graphics_pipeline.hxx"
-#include "pipeline_states.hxx"
 #include "attachments.hxx"
 #include "loaders/material_loader.hxx"
 #include "resources/program.hxx"
+#include "shader_program.hxx"
 
 
 struct MaterialProperties final {
@@ -46,16 +45,6 @@ private:
     //// blending
     // pipeline layout (descriptor set layout)
 };
-
-
-struct material_properties final {
-    VkPipelineRasterizationStateCreateInfo rasterizationState;
-    VkPipelineDepthStencilStateCreateInfo depthStencilState;
-
-    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates;
-    VkPipelineColorBlendStateCreateInfo colorBlendState;
-};
-
 
 class MaterialFactory final {
 public:
@@ -93,6 +82,8 @@ namespace graphics
 {
     struct material final {
 
+        material(std::vector<graphics::shader_stage> shader_stages) : shader_stages{shader_stages} { }
+
         std::vector<graphics::shader_stage> shader_stages;
 
         // TODO:: descriptor set and pipeline layout.
@@ -108,11 +99,29 @@ namespace graphics
 
     private:
 
+        std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<graphics::material>> materials_;
+
         // TODO:: move to general loader manager.
         std::map<std::string, loader::material_description> material_descriptions_;
 
-        std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<graphics::material>> materials_;
-
         [[nodiscard]] loader::material_description const &material_description(std::string_view name);
+    };
+}
+
+namespace graphics
+{
+    template<>
+    struct hash<graphics::material> {
+        std::size_t operator() (graphics::material const &material) const
+        {
+            std::size_t seed = 0;
+
+            graphics::hash<graphics::shader_stage> constexpr shader_stage_hasher;
+
+            for (auto &&shader_stage : material.shader_stages)
+                boost::hash_combine(seed, shader_stage_hasher(shader_stage));
+
+            return seed;
+        }
     };
 }

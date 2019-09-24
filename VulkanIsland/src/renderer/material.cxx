@@ -234,8 +234,7 @@ namespace graphics
             };
         });
 
-        auto material = std::make_shared<graphics::material>();
-        material->shader_stages = shader_stages;
+        auto material = std::make_shared<graphics::material>(shader_stages);
 
         materials_.emplace(key, material);
 

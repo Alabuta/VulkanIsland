@@ -902,7 +902,7 @@ void init_vulkan(platform::window &window, app_t &app)
                     input_attachments,
                     color_attachments,
                     depth_stencil_attachments,
-                    std::make_shared<graphics::material>(),
+                    std::shared_ptr<graphics::material>{},
                     pipeline_states
                 }
             },

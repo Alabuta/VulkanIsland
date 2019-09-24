@@ -3,13 +3,20 @@
 
 namespace graphics
 {
-    std::shared_ptr<graphics::pipeline> pipeline_manager::create_pipeline(std::shared_ptr<graphics::material> material)
+    std::shared_ptr<graphics::pipeline> pipeline_factory::create_pipeline(
+        std::shared_ptr<graphics::material> material, graphics::pipeline_states const &pipeline_states,
+        VkPipelineLayout layout, VkRenderPass render_pass, std::uint32_t subpass_index
+    )
     {
-        if (pipelines_.count(material) == 0) {
+        graphics::hash<graphics::material> constexpr material_hasher;
+
+        /*if (pipelines_.count(material) == 0) {
             ;
         }
 
-        return pipelines_.at(material);
+        return pipelines_.at(material);*/
+
+        return { };
     }
 }
 

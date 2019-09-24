@@ -152,10 +152,10 @@ namespace graphics
         auto constexpr operator== (T &&rhs) const
         {
             return primitive_topology == rhs.primitive_topology &&
-                vertex_input_state == rhs.vertex_input_state &&
-                rasterization_state == rhs.rasterization_state &&
-                depth_stencil_state == rhs.depth_stencil_state &&
-                color_blend_state == rhs.color_blend_state;
+                   vertex_input_state == rhs.vertex_input_state &&
+                   rasterization_state == rhs.rasterization_state &&
+                   depth_stencil_state == rhs.depth_stencil_state &&
+                   color_blend_state == rhs.color_blend_state;
         }
     };
 }

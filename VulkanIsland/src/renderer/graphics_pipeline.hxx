@@ -14,56 +14,8 @@
 #include "graphics.hxx"
 #include "vertex.hxx"
 #include "pipeline_states.hxx"
-#include "shader_program.hxx"
+#include "material.hxx"
 
-
-namespace graphics
-{
-    struct material;
-}
-
-namespace graphics
-{
-class pipeline final {
-public:
-
-    VkPipeline handle() const noexcept { return handle_; }
-
-    template<class T> requires std::same_as<std::remove_cvref_t<T>, pipeline>
-    auto constexpr operator== (T &&rhs) const
-    {
-        return primitive_topology_ == rhs.topology_ &&
-            vertex_input_state_ == rhs.vertex_input_state_ &&
-            rasterization_state_ == rhs.rasterization_state &&
-            depth_stencil_state_ == rhs.depth_stencil_state &&
-            color_blend_state_ == rhs.color_blend_state;
-    }
-
-private:
-
-    VkPipeline handle_;
-
-    graphics::PRIMITIVE_TOPOLOGY primitive_topology_;
-    graphics::vertex_input_state vertex_input_state_;
-
-    // TODO:: move to render flow node
-    std::vector<graphics::shader_stage> shader_stages_;
-
-    graphics::rasterization_state rasterization_state_;
-    graphics::depth_stencil_state depth_stencil_state_;
-    graphics::color_blend_state color_blend_state_;
-
-    // TODO:: add tesselation, viewport, multisample and dynamic states.
-
-    // TODO:: replace by an abstraction from material.
-    VkPipelineLayout layout_;
-
-    VkRenderPass render_pass_;
-    std::uint32_t subpass_index;
-
-    friend graphics::hash<graphics::pipeline>;
-};
-}
 
 namespace graphics
 {
@@ -81,64 +33,113 @@ namespace graphics
     };
 }
 
+
 namespace graphics
 {
-    class pipeline_manager final {
+    class pipeline final {
     public:
 
-        pipeline_manager(VulkanDevice &vulkan_device) noexcept : vulkan_device_{vulkan_device} { }
+        VkPipeline handle() const noexcept { return handle_; }
 
-        [[nodiscard]] std::shared_ptr<graphics::pipeline> create_pipeline(std::shared_ptr<graphics::material> material);
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, pipeline>
+            auto constexpr operator== (T &&rhs) const
+            {
+                return handle_ == pipeline.handle_ &&
+                       pipeline_states_ == rhs.pipeline_states_ &&
+                       layout_ == rhs.layout_ &&
+                       render_pass_ == rhs.render_pass_ &&
+                       subpass_index_ == rhs.subpass_index_;
+            }
 
     private:
 
-        VulkanDevice &vulkan_device_;
+        VkPipeline handle_;
 
-        using shared_material = std::shared_ptr<graphics::material>;
+        std::shared_ptr<graphics::material> material_;
 
-        std::map<shared_material, std::shared_ptr<graphics::pipeline>, std::owner_less<shared_material>> pipelines_;
+        // TODO:: add tesselation, viewport, multisample and dynamic states.
+        graphics::pipeline_states pipeline_states_;
 
-        // GAPI
-        using r_info = VkPipelineRasterizationStateCreateInfo;
-        using ds_info = VkPipelineDepthStencilStateCreateInfo;
-        using cb_info = VkPipelineColorBlendStateCreateInfo;
-        using cba_info = VkPipelineColorBlendAttachmentState;
+        // TODO:: replace by an abstraction from material.
+        VkPipelineLayout layout_;
 
-        std::unordered_map<rasterization_state, r_info, hash<rasterization_state>> rasterization_states_;
-        std::unordered_map<depth_stencil_state, ds_info, hash<depth_stencil_state>> depth_stencil_states_;
+        VkRenderPass render_pass_;
+        std::uint32_t subpass_index_;
 
-        std::unordered_map<color_blend_state, cb_info, hash<color_blend_state>> color_blend_states_;
-        std::unordered_map<color_blend_attachment_state, cba_info, hash<color_blend_attachment_state>> color_blend_attachment_states_;
+        friend graphics::hash<graphics::pipeline>;
     };
-}
 
-namespace graphics
-{
     template<>
     struct hash<graphics::pipeline> {
         std::size_t operator() (graphics::pipeline const &pipeline) const
         {
             std::size_t seed = 0;
 
-            boost::hash_combine(seed, pipeline.primitive_topology_);
+            boost::hash_combine(seed, pipeline.handle_);
 
-            graphics::hash<graphics::vertex_input_state> constexpr vertex_input_state_hasher;
-            boost::hash_combine(seed, vertex_input_state_hasher(pipeline.vertex_input_state_));
+            graphics::hash<graphics::material> constexpr material_hasher;
+            boost::hash_combine(seed, material_hasher(*pipeline.material_));
 
-            graphics::hash<graphics::rasterization_state> constexpr rasterization_state_hasher;
-            boost::hash_combine(seed, rasterization_state_hasher(pipeline.rasterization_state_));
-
-            graphics::hash<graphics::depth_stencil_state> constexpr depth_stencil_state_hasher;
-            boost::hash_combine(seed, depth_stencil_state_hasher(pipeline.depth_stencil_state_));
-
-            graphics::hash<graphics::color_blend_state> constexpr color_blend_state_hasher;
-            boost::hash_combine(seed, color_blend_state_hasher(pipeline.color_blend_state_));
+            graphics::hash<graphics::pipeline_states> constexpr pipeline_states_hasher;
+            boost::hash_combine(seed, pipeline_states_hasher(pipeline.pipeline_states_));
 
             boost::hash_combine(seed, pipeline.layout_);
             boost::hash_combine(seed, pipeline.render_pass_);
-            boost::hash_combine(seed, pipeline.subpass_index);
+            boost::hash_combine(seed, pipeline.subpass_index_);
 
             return seed;
         }
+    };
+}
+namespace graphics
+{
+    class pipeline_factory final {
+    public:
+
+        pipeline_factory(VulkanDevice &vulkan_device) noexcept : vulkan_device_{vulkan_device} { }
+
+        [[nodiscard]] std::shared_ptr<graphics::pipeline>
+        create_pipeline(std::shared_ptr<graphics::material> material, graphics::pipeline_states const &pipeline_states,
+                        VkPipelineLayout layout, VkRenderPass render_pass, std::uint32_t subpass_index);
+
+    private:
+
+        VulkanDevice &vulkan_device_;
+
+        struct pipeline_key final {
+
+            pipeline_key(graphics::material const &material, graphics::pipeline_states const &pipeline_states,
+                         VkPipelineLayout layout, VkRenderPass render_pass, std::uint32_t subpass_index) noexcept
+                : material_{material}, pipeline_states_{pipeline_states},
+                  layout_{layout}, render_pass_{render_pass}, subpass_index_{subpass_index} { };
+
+            graphics::material const &material_;
+
+            graphics::pipeline_states const &pipeline_states_;
+
+            VkPipelineLayout layout_;
+
+            VkRenderPass render_pass_;
+            std::uint32_t subpass_index_;
+
+            std::size_t operator() () const
+            {
+                std::size_t seed = 0;
+
+                graphics::hash<graphics::material> constexpr material_hasher;
+                boost::hash_combine(seed, material_hasher(material_));
+
+                graphics::hash<graphics::pipeline_states> constexpr pipeline_states_hasher;
+                boost::hash_combine(seed, pipeline_states_hasher(pipeline_states_));
+
+                boost::hash_combine(seed, layout_);
+                boost::hash_combine(seed, render_pass_);
+                boost::hash_combine(seed, subpass_index_);
+
+                return seed;
+            }
+        };
+
+        std::unordered_map<pipeline_key, std::shared_ptr<graphics::pipeline>> pipelines_;
     };
 }
