@@ -47,10 +47,11 @@
 #include "camera/camera_controller.hxx"
 
 
-auto constexpr sceneName{"unlit-test"sv};
+auto constexpr kSCENE_NAME{"unlit-test"sv};
 
-namespace temp {
-xformat model;
+namespace temp
+{
+    xformat model;
 }
 
 struct per_object_t final {
@@ -71,7 +72,7 @@ struct renderable_t final {
 std::vector<renderable_t> renderables;
 
 
-void CleanupFrameData(struct app_t &app);
+void cleanup_frame_data(struct app_t &app);
 
 
 struct app_t final {
@@ -137,10 +138,10 @@ struct app_t final {
 
     ~app_t()
     {
-        cleanUp();
+        clean_up();
     }
 
-    void cleanUp()
+    void clean_up()
     {
         if (vulkanDevice == nullptr)
             return;
@@ -149,7 +150,7 @@ struct app_t final {
 
         renderables.clear();
 
-        CleanupFrameData(*this);
+        cleanup_frame_data(*this);
 
         if (materialFactory)
             materialFactory.reset();
@@ -201,17 +202,18 @@ struct app_t final {
 };
 
 
-void RecreateSwapChain(app_t &app);
+void recreate_swap_chain(app_t &app);
 
 template<class T> requires mpl::container<std::remove_cvref_t<T>>
-[[nodiscard]] std::shared_ptr<VulkanBuffer> StageData(VulkanDevice &device, T &&container);
+[[nodiscard]] std::shared_ptr<VulkanBuffer> stage_data(VulkanDevice &device, T &&container);
 
 [[nodiscard]] std::optional<VulkanTexture>
-LoadTexture(app_t &app, VulkanDevice &device, std::string_view name);
+load_texture(app_t &app, VulkanDevice &device, std::string_view name);
 
 
-struct ResizeHandler final : public platform::window::event_handler_interface {
-    ResizeHandler(app_t &app) : app{app} { }
+struct window_events_handler final : public platform::window::event_handler_interface {
+
+    window_events_handler(app_t &app) : app{app} { }
 
     app_t &app;
 
@@ -220,14 +222,14 @@ struct ResizeHandler final : public platform::window::event_handler_interface {
         app.width = static_cast<std::uint32_t>(width);
         app.height = static_cast<std::uint32_t>(height);
 
-        RecreateSwapChain(app);
+        recreate_swap_chain(app);
 
         app.camera->aspect = static_cast<float>(width) / static_cast<float>(height);
     }
 };
 
 
-void CleanupFrameData(app_t &app)
+void cleanup_frame_data(app_t &app)
 {
     auto &&device = *app.vulkanDevice;
 
@@ -244,7 +246,7 @@ void CleanupFrameData(app_t &app)
     CleanupSwapchain(device, app.swapchain);
 }
 
-void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet &descriptorSet)
+void update_descriptor_set(app_t &app, VulkanDevice const &device, VkDescriptorSet &descriptorSet)
 {
     // TODO: descriptor info typed by VkDescriptorType.
     auto const cameras = std::array{
@@ -306,8 +308,7 @@ void UpdateDescriptorSet(app_t &app, VulkanDevice const &device, VkDescriptorSet
                            std::data(writeDescriptorsSet), 0, nullptr);
 }
 
-
-void CreateGraphicsPipelines(app_t &app)
+void create_graphics_pipelines(app_t &app)
 {
     for (auto &&renderable : renderables) {
         auto pipeline = app.graphicsPipelineManager->CreateGraphicsPipeline(
@@ -319,7 +320,7 @@ void CreateGraphicsPipelines(app_t &app)
     }
 }
 
-void CreateGraphicsCommandBuffers(app_t &app)
+void create_graphics_command_buffers(app_t &app)
 {
     app.commandBuffers.resize(std::size(app.swapchain.framebuffers));
 
@@ -450,7 +451,7 @@ void CreateGraphicsCommandBuffers(app_t &app)
     }
 }
 
-void CreateSemaphores(app_t &app)
+void create_semaphores(app_t &app)
 {
     auto &&resourceManager = app.vulkanDevice->resourceManager();
 
@@ -465,13 +466,13 @@ void CreateSemaphores(app_t &app)
     else app.renderFinishedSemaphore = semaphore;
 }
 
-void RecreateSwapChain(app_t &app)
+void recreate_swap_chain(app_t &app)
 {
     if (app.width < 1 || app.height < 1) return;
 
     vkDeviceWaitIdle(app.vulkanDevice->handle());
 
-    CleanupFrameData(app);
+    cleanup_frame_data(app);
 
     auto swapchain = CreateSwapchain(*app.vulkanDevice, app.surface, app.width, app.height,
                                      app.presentationQueue, app.graphicsQueue, app.transferQueue, app.transferCommandPool);
@@ -492,7 +493,7 @@ void RecreateSwapChain(app_t &app)
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
-    CreateGraphicsCommandBuffers(app);
+    create_graphics_command_buffers(app);
 }
 
 
@@ -756,7 +757,7 @@ void stageXformat(app_t &app, xformat const &_model)
 }
 
 
-void InitVulkan(platform::window &window, app_t &app)
+void init_vulkan(platform::window &window, app_t &app)
 {
     app.vulkanInstance = std::make_unique<VulkanInstance>(config::extensions, config::layers);
 
@@ -914,14 +915,14 @@ void InitVulkan(platform::window &window, app_t &app)
     }
 
     app.vulkanDevice->resourceManager().TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
-    CreateGraphicsPipelines(app);
+    create_graphics_pipelines(app);
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
 #if TEMPORARILY_DISABLED
     // "chalet/textures/chalet.tga"sv
     // "Hebe/textures/HebehebemissinSG1_metallicRoughness.tga"sv
-    if (auto result = LoadTexture(app, *app.vulkanDevice, "sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
+    if (auto result = load_texture(app, *app.vulkanDevice, "sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
         throw std::runtime_error("failed to load a texture"s);
 
     else app.texture = std::move(result.value());
@@ -965,14 +966,14 @@ void InitVulkan(platform::window &window, app_t &app)
 
     else app.descriptorSet = std::move(descriptorSet.value());
 
-    UpdateDescriptorSet(app, *app.vulkanDevice, app.descriptorSet);
+    update_descriptor_set(app, *app.vulkanDevice, app.descriptorSet);
 
-    CreateGraphicsCommandBuffers(app);
+    create_graphics_command_buffers(app);
 
-    CreateSemaphores(app);
+    create_semaphores(app);
 }
 
-void Update(app_t &app)
+void update(app_t &app)
 {
     app.cameraController->update();
     app.cameraSystem.update();
@@ -1031,7 +1032,7 @@ void Update(app_t &app)
     vkFlushMappedMemoryRanges(app.vulkanDevice->handle(), static_cast<std::uint32_t>(std::size(mappedRanges)), std::data(mappedRanges));
 }
 
-void DrawFrame(app_t &app)
+void render_frame(app_t &app)
 {
     auto &&vulkanDevice = *app.vulkanDevice;
 
@@ -1042,7 +1043,7 @@ void DrawFrame(app_t &app)
     switch (auto result = vkAcquireNextImageKHR(vulkanDevice.handle(), app.swapchain.handle, std::numeric_limits<std::uint64_t>::max(),
             app.imageAvailableSemaphore->handle(), VK_NULL_HANDLE, &imageIndex); result) {
         case VK_ERROR_OUT_OF_DATE_KHR:
-            RecreateSwapChain(app);
+            recreate_swap_chain(app);
             return;
 
         case VK_SUBOPTIMAL_KHR:
@@ -1083,7 +1084,7 @@ void DrawFrame(app_t &app)
     switch (auto result = vkQueuePresentKHR(app.presentationQueue.handle(), &presentInfo); result) {
         case VK_ERROR_OUT_OF_DATE_KHR:
         case VK_SUBOPTIMAL_KHR:
-            RecreateSwapChain(app);
+            recreate_swap_chain(app);
             return;
 
         case VK_SUCCESS:
@@ -1109,8 +1110,8 @@ try {
 
     platform::window window{"VulkanIsland"sv, static_cast<std::int32_t>(app.width), static_cast<std::int32_t>(app.height)};
 
-    auto resizeHandler = std::make_shared<ResizeHandler>(app);
-    window.connect_event_handler(resizeHandler);
+    auto app_window_events_handler = std::make_shared<window_events_handler>(app);
+    window.connect_event_handler(app_window_events_handler);
 
     auto inputManager = std::make_shared<platform::input_manager>();
     window.connect_input_handler(inputManager);
@@ -1121,7 +1122,7 @@ try {
     app.cameraController = std::make_unique<orbit_controller>(app.camera, *inputManager);
     app.cameraController->look_at(glm::vec3{0, 2, 1}, {0, 0, 0});
 
-    std::cout << measure<>::execution(InitVulkan, window, std::ref(app)) << " ms\n"s;
+    std::cout << measure<>::execution(init_vulkan, window, std::ref(app)) << " ms\n"s;
 
     /*auto root = app.registry.create();
 
@@ -1163,12 +1164,12 @@ try {
             app.meshSystem.update();
         #endif
     #endif
-        Update(app);
+        update(app);
 
-        DrawFrame(app);
+        render_frame(app);
     });
 
-    app.cleanUp();
+    app.clean_up();
 
     glfwTerminate();
 } catch (std::exception const &ex) {
@@ -1179,7 +1180,7 @@ try {
 
 template<class T> requires mpl::container<std::remove_cvref_t<T>>
 [[nodiscard]] std::shared_ptr<VulkanBuffer>
-StageData(VulkanDevice &device, T &&container)
+stage_data(VulkanDevice &device, T &&container)
 {
     auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -1209,7 +1210,7 @@ StageData(VulkanDevice &device, T &&container)
 }
 
 [[nodiscard]] std::optional<VulkanTexture>
-LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
+load_texture(app_t &app, VulkanDevice &device, std::string_view name)
 {
     std::optional<VulkanTexture> texture;
 
@@ -1218,7 +1219,7 @@ LoadTexture(app_t &app, VulkanDevice &device, std::string_view name)
     if (auto rawImage = LoadTARGA(name); rawImage) {
         auto stagingBuffer = std::visit([&device] (auto &&data)
         {
-            return StageData(device, std::forward<decltype(data)>(data));
+            return stage_data(device, std::forward<decltype(data)>(data));
         }, std::move(rawImage->data));
 
         if (stagingBuffer) {
