@@ -2,7 +2,7 @@
 
 #include "image.hxx"
 #include "resource.hxx"
-#include "commandBuffer.hxx"
+#include "command_buffer.hxx"
 
 
 [[nodiscard]] std::optional<graphics::FORMAT> FindDepthImageFormat(VulkanDevice const &device) noexcept

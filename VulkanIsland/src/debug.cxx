@@ -21,8 +21,8 @@
 
 [[nodiscard]] VKAPI_ATTR VkBool32 VKAPI_CALL
 debug_callback([[maybe_unused]] VkDebugReportFlagsEXT flags, [[maybe_unused]] VkDebugReportObjectTypeEXT object_type,
-              [[maybe_unused]] std::uint64_t object, [[maybe_unused]] std::size_t location, [[maybe_unused]] std::int32_t message_code,
-              [[maybe_unused]] const char *layer_prefix, const char *message, [[maybe_unused]] void *user_data)
+               [[maybe_unused]] std::uint64_t object, [[maybe_unused]] std::size_t location, [[maybe_unused]] std::int32_t message_code,
+               [[maybe_unused]] const char *layer_prefix, const char *message, [[maybe_unused]] void *user_data)
 {
     std::cerr << message << std::endl;
 

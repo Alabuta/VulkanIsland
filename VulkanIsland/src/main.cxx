@@ -30,7 +30,7 @@
 #include "resources/resource.hxx"
 #include "resources/semaphore.hxx"
 #include "descriptor.hxx"
-#include "commandBuffer.hxx"
+#include "command_buffer.hxx"
 #include "renderer/pipelines.hxx"
 #include "renderer/renderPass.hxx"
 

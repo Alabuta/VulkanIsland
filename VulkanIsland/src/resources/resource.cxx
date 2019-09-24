@@ -1,7 +1,7 @@
 #include "buffer.hxx"
 #include "image.hxx"
 #include "resource.hxx"
-#include "commandBuffer.hxx"
+#include "command_buffer.hxx"
 
 
 namespace

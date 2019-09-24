@@ -278,7 +278,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\config.hxx" />
-    <ClInclude Include="src/commandBuffer.hxx" />
+    <ClInclude Include="src\command_buffer.hxx" />
     <ClInclude Include="src/debug.hxx" />
     <ClInclude Include="src/descriptor.hxx" />
     <ClInclude Include="src/device.hxx" />
@@ -317,7 +317,7 @@
     <ClInclude Include="src\staging.hxx" />
     <ClInclude Include="src/platform/window.hxx" />
     <ClInclude Include="src/queues.hxx" />
-    <ClInclude Include="src/queueBuilder.hxx" />
+    <ClInclude Include="src\queue_builder.hxx" />
     <ClInclude Include="src/swapchain.hxx" />
     <ClInclude Include="src\camera\camera_controller.hxx" />
     <ClInclude Include="src\camera\handlers\mouse_handler.hxx" />

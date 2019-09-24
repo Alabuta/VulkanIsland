@@ -4,7 +4,7 @@
 #include "utility/mpl.hxx"
 #include "instance.hxx"
 #include "queues.hxx"
-#include "queueBuilder.hxx"
+#include "queue_builder.hxx"
 
 #define USE_DEBUG_MARKERS 0
 
