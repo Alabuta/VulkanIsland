@@ -32,6 +32,8 @@
 #include "descriptor.hxx"
 #include "command_buffer.hxx"
 #include "renderer/pipelines.hxx"
+#include "renderer/graphics_pipeline.hxx"
+#include "renderer/pipeline_states.hxx"
 #include "renderer/renderPass.hxx"
 
 #include "renderer/graphics.hxx"

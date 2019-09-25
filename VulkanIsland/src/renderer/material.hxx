@@ -102,7 +102,7 @@ namespace graphics
         std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<graphics::material>> materials_;
 
         // TODO:: move to general loader manager.
-        std::map<std::string, loader::material_description> material_descriptions_;
+        std::unordered_map<std::string, loader::material_description> material_descriptions_;
 
         [[nodiscard]] loader::material_description const &material_description(std::string_view name);
     };

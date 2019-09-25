@@ -8,15 +8,13 @@ namespace graphics
         VkPipelineLayout layout, VkRenderPass render_pass, std::uint32_t subpass_index
     )
     {
-        graphics::hash<graphics::material> constexpr material_hasher;
+        graphics::pipeline_invariant key{material, pipeline_states, layout, render_pass, subpass_index};
 
-        /*if (pipelines_.count(material) == 0) {
+        if (pipelines_.count(key) == 0) {
             ;
         }
 
-        return pipelines_.at(material);*/
-
-        return { };
+        return pipelines_.at(key);
     }
 }
 

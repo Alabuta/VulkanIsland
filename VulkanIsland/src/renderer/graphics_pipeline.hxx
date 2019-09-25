@@ -41,20 +41,15 @@ namespace graphics
 
         VkPipeline handle() const noexcept { return handle_; }
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, pipeline>
-            auto constexpr operator== (T &&rhs) const
-            {
-                return handle_ == pipeline.handle_ &&
-                       pipeline_states_ == rhs.pipeline_states_ &&
-                       layout_ == rhs.layout_ &&
-                       render_pass_ == rhs.render_pass_ &&
-                       subpass_index_ == rhs.subpass_index_;
-            }
-
     private:
 
         VkPipeline handle_;
+    };
+}
 
+namespace graphics
+{
+    struct pipeline_invariant final {
         std::shared_ptr<graphics::material> material_;
 
         // TODO:: add tesselation, viewport, multisample and dynamic states.
@@ -66,31 +61,38 @@ namespace graphics
         VkRenderPass render_pass_;
         std::uint32_t subpass_index_;
 
-        friend graphics::hash<graphics::pipeline>;
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, pipeline_invariant>
+        auto constexpr operator== (T &&rhs) const
+        {
+            return material_ == rhs.material_ &&
+                    pipeline_states_ == rhs.pipeline_states_ &&
+                    layout_ == rhs.layout_ &&
+                    render_pass_ == rhs.render_pass_ &&
+                    subpass_index_ == rhs.subpass_index_;
+        }
     };
 
     template<>
-    struct hash<graphics::pipeline> {
-        std::size_t operator() (graphics::pipeline const &pipeline) const
+    struct graphics::hash<pipeline_invariant> {
+        std::size_t operator() (pipeline_invariant const &pipeline_invariant) const
         {
             std::size_t seed = 0;
 
-            boost::hash_combine(seed, pipeline.handle_);
-
             graphics::hash<graphics::material> constexpr material_hasher;
-            boost::hash_combine(seed, material_hasher(*pipeline.material_));
+            boost::hash_combine(seed, material_hasher(*pipeline_invariant.material_));
 
             graphics::hash<graphics::pipeline_states> constexpr pipeline_states_hasher;
-            boost::hash_combine(seed, pipeline_states_hasher(pipeline.pipeline_states_));
+            boost::hash_combine(seed, pipeline_states_hasher(pipeline_invariant.pipeline_states_));
 
-            boost::hash_combine(seed, pipeline.layout_);
-            boost::hash_combine(seed, pipeline.render_pass_);
-            boost::hash_combine(seed, pipeline.subpass_index_);
+            boost::hash_combine(seed, pipeline_invariant.layout_);
+            boost::hash_combine(seed, pipeline_invariant.render_pass_);
+            boost::hash_combine(seed, pipeline_invariant.subpass_index_);
 
             return seed;
         }
     };
 }
+
 namespace graphics
 {
     class pipeline_factory final {
@@ -106,40 +108,7 @@ namespace graphics
 
         VulkanDevice &vulkan_device_;
 
-        struct pipeline_key final {
-
-            pipeline_key(graphics::material const &material, graphics::pipeline_states const &pipeline_states,
-                         VkPipelineLayout layout, VkRenderPass render_pass, std::uint32_t subpass_index) noexcept
-                : material_{material}, pipeline_states_{pipeline_states},
-                  layout_{layout}, render_pass_{render_pass}, subpass_index_{subpass_index} { };
-
-            graphics::material const &material_;
-
-            graphics::pipeline_states const &pipeline_states_;
-
-            VkPipelineLayout layout_;
-
-            VkRenderPass render_pass_;
-            std::uint32_t subpass_index_;
-
-            std::size_t operator() () const
-            {
-                std::size_t seed = 0;
-
-                graphics::hash<graphics::material> constexpr material_hasher;
-                boost::hash_combine(seed, material_hasher(material_));
-
-                graphics::hash<graphics::pipeline_states> constexpr pipeline_states_hasher;
-                boost::hash_combine(seed, pipeline_states_hasher(pipeline_states_));
-
-                boost::hash_combine(seed, layout_);
-                boost::hash_combine(seed, render_pass_);
-                boost::hash_combine(seed, subpass_index_);
-
-                return seed;
-            }
-        };
-
-        std::unordered_map<pipeline_key, std::shared_ptr<graphics::pipeline>> pipelines_;
+        std::unordered_map<graphics::pipeline_invariant, std::shared_ptr<graphics::pipeline>, graphics::hash<pipeline_invariant>> pipelines_;
+        std::unordered_map<std::shared_ptr<graphics::pipeline>, graphics::pipeline_invariant> invariants_;
     };
 }
