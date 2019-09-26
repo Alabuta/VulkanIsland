@@ -16,6 +16,8 @@
 #include "pipeline_states.hxx"
 #include "material.hxx"
 
+#define USE_DYNAMIC_PIPELINE_STATE 1
+
 
 namespace graphics
 {
@@ -38,6 +40,8 @@ namespace graphics
 {
     class pipeline final {
     public:
+
+        pipeline(VkPipeline handle) noexcept : handle_{handle} { }
 
         VkPipeline handle() const noexcept { return handle_; }
 
