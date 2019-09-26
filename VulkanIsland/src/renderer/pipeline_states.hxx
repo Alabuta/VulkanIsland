@@ -56,7 +56,7 @@ namespace graphics
         {
             return fail == rhs.fail &&
                 pass == rhs.pass &&
-                depth_fail == rhs.depthFail &&
+                depth_fail == rhs.depth_fail &&
                 compare_operation == rhs.compare_operation &&
                 compare_mask == rhs.compare_mask &&
                 write_mask == rhs.write_mask &&
@@ -134,9 +134,9 @@ namespace graphics
         auto constexpr operator== (T &&rhs) const
         {
             return logic_operation_enable == rhs.logic_operation_enable &&
-                logic_operation == rhs.logic_operation &&
-                blend_constants == rhs.blend_constants &&
-                attachment_states == rhs.attachments;
+                   logic_operation == rhs.logic_operation &&
+                   blend_constants == rhs.blend_constants &&
+                   attachment_states == rhs.attachment_states;
         }
     };
 

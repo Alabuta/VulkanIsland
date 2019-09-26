@@ -17,21 +17,21 @@ GraphicsPipelineManager::CreateGraphicsPipeline(graphics::vertex_layout const &l
     GraphicsPipelinePropertiesKey key{topology, layout, material, viewportExtent};
 
     if (graphicsPipelineProperties_.count(key) == 0) {
-        auto materialProperties = materialFactory_.properties(material);
+        auto material_properties = materialFactory_.properties(material);
 
-        if (!materialProperties)
+        if (!material_properties)
             throw std::runtime_error("failed to get a material properties"s);
 
-        auto &&shaderStages = materialFactory_.pipelineShaderStages(material);
+        auto &&shader_stages = materialFactory_.pipelineShaderStages(material);
 
-        if (std::empty(shaderStages))
+        if (std::empty(shader_stages))
             throw std::runtime_error("material's shader stages are empty"s);
 
         // Vertex layout
-        auto &&pipelineVertexInputInfo = pipelineVertexInputStatesManager_.info(layout);
+        auto &&pipeline_vertex = pipelineVertexInputStatesManager_.info(layout);
 
         // TODO:: primitive topology
-        VkPipelineInputAssemblyStateCreateInfo const vertexAssemblyStateCreateInfo{
+        VkPipelineInputAssemblyStateCreateInfo const input_assembly_state{
             VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
             nullptr, 0,
             convert_to::vulkan(topology),
@@ -40,19 +40,19 @@ GraphicsPipelineManager::CreateGraphicsPipeline(graphics::vertex_layout const &l
 
         // Render pass
     #if USE_DYNAMIC_PIPELINE_STATE
-        auto const dynamicStates = std::array{
+        auto const dynamic_states = std::array{
             VkDynamicState::VK_DYNAMIC_STATE_VIEWPORT,
             VkDynamicState::VK_DYNAMIC_STATE_SCISSOR,
         };
 
-        VkPipelineDynamicStateCreateInfo const dynamicStateCreateInfo{
+        VkPipelineDynamicStateCreateInfo const dynamic_state{
             VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
             nullptr, 0,
-            static_cast<std::uint32_t>(std::size(dynamicStates)),
-            std::data(dynamicStates)
+            static_cast<std::uint32_t>(std::size(dynamic_states)),
+            std::data(dynamic_states)
         };
 
-        VkPipelineViewportStateCreateInfo const viewportStateCreateInfo{
+        VkPipelineViewportStateCreateInfo const viewport_state{
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
             nullptr, 0,
             1, nullptr,
@@ -71,7 +71,7 @@ GraphicsPipelineManager::CreateGraphicsPipeline(graphics::vertex_layout const &l
             {0, 0}, extent
         };
 
-        VkPipelineViewportStateCreateInfo const viewportStateCreateInfo{
+        VkPipelineViewportStateCreateInfo const viewport_state{
             VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO,
             nullptr, 0,
             1, &viewport,
@@ -79,7 +79,7 @@ GraphicsPipelineManager::CreateGraphicsPipeline(graphics::vertex_layout const &l
         };
     #endif
 
-        VkPipelineMultisampleStateCreateInfo const multisampleCreateInfo{
+        VkPipelineMultisampleStateCreateInfo const multisample_state{
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
             nullptr, 0,
             convert_to::vulkan(vulkanDevice_.samplesCount()),//VK_SAMPLE_COUNT_1_BIT
@@ -93,17 +93,17 @@ GraphicsPipelineManager::CreateGraphicsPipeline(graphics::vertex_layout const &l
             VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             nullptr,
             VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,
-            static_cast<std::uint32_t>(std::size(shaderStages)), std::data(shaderStages),
-            &pipelineVertexInputInfo,
-            &vertexAssemblyStateCreateInfo,
+            static_cast<std::uint32_t>(std::size(shader_stages)), std::data(shader_stages),
+            &pipeline_vertex,
+            &input_assembly_state,
             nullptr,
-            &viewportStateCreateInfo,
-            &materialProperties->rasterizationState,
-            &multisampleCreateInfo,
-            &materialProperties->depthStencilState,
-            &materialProperties->colorBlendState,
+            &viewport_state,
+            &material_properties->rasterizationState,
+            &multisample_state,
+            &material_properties->depthStencilState,
+            &material_properties->colorBlendState,
     #if USE_DYNAMIC_PIPELINE_STATE
-            &dynamicStateCreateInfo,
+            &dynamic_state,
     #else
             nullptr,
     #endif
