@@ -199,55 +199,55 @@ namespace loader
         return { };
     }
 
-    std::optional<graphics::BLEND_STATE_OPERATION> logic_operation(std::string_view name)
+    std::optional<graphics::LOGIC_OPERATION> logic_operation(std::string_view name)
     {
         if (name == "clear"sv)
-            return graphics::BLEND_STATE_OPERATION::CLEAR;
+            return graphics::LOGIC_OPERATION::CLEAR;
 
         else if (name == "and"sv)
-            return graphics::BLEND_STATE_OPERATION::AND;
+            return graphics::LOGIC_OPERATION::AND;
 
         else if (name == "and_reverse"sv)
-            return graphics::BLEND_STATE_OPERATION::AND_REVERSE;
+            return graphics::LOGIC_OPERATION::AND_REVERSE;
 
         else if (name == "copy"sv)
-            return graphics::BLEND_STATE_OPERATION::COPY;
+            return graphics::LOGIC_OPERATION::COPY;
 
         else if (name == "and_inverted"sv)
-            return graphics::BLEND_STATE_OPERATION::AND_INVERTED;
+            return graphics::LOGIC_OPERATION::AND_INVERTED;
 
         else if (name == "no_op"sv)
-            return graphics::BLEND_STATE_OPERATION::NO_OP;
+            return graphics::LOGIC_OPERATION::NO_OP;
 
         else if (name == "xor"sv)
-            return graphics::BLEND_STATE_OPERATION::XOR;
+            return graphics::LOGIC_OPERATION::XOR;
 
         else if (name == "or"sv)
-            return graphics::BLEND_STATE_OPERATION::OR;
+            return graphics::LOGIC_OPERATION::OR;
 
         else if (name == "nor"sv)
-            return graphics::BLEND_STATE_OPERATION::NOR;
+            return graphics::LOGIC_OPERATION::NOR;
 
         else if (name == "equivalent"sv)
-            return graphics::BLEND_STATE_OPERATION::EQUIVALENT;
+            return graphics::LOGIC_OPERATION::EQUIVALENT;
 
         else if (name == "invert"sv)
-            return graphics::BLEND_STATE_OPERATION::INVERT;
+            return graphics::LOGIC_OPERATION::INVERT;
 
         else if (name == "OR_REVERSE"sv)
-            return graphics::BLEND_STATE_OPERATION::OR_REVERSE;
+            return graphics::LOGIC_OPERATION::OR_REVERSE;
 
         else if (name == "copy_inverted"sv)
-            return graphics::BLEND_STATE_OPERATION::COPY_INVERTED;
+            return graphics::LOGIC_OPERATION::COPY_INVERTED;
 
         else if (name == "or_inverted"sv)
-            return graphics::BLEND_STATE_OPERATION::OR_INVERTED;
+            return graphics::LOGIC_OPERATION::OR_INVERTED;
 
         else if (name == "nand"sv)
-            return graphics::BLEND_STATE_OPERATION::NAND;
+            return graphics::LOGIC_OPERATION::NAND;
 
         else if (name == "set"sv)
-            return graphics::BLEND_STATE_OPERATION::SET;
+            return graphics::LOGIC_OPERATION::SET;
 
         return { };
     }

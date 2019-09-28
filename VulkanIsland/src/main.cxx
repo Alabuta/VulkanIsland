@@ -697,7 +697,7 @@ void build_render_pipelines(app_t &app, xformat const &_model)
     };
 
     graphics::color_blend_state color_blend_state{
-        false, graphics::BLEND_STATE_OPERATION::COPY,
+        false, graphics::LOGIC_OPERATION::COPY,
         { 0.f, 0.f, 0.f, 0.f },
         { graphics::color_blend_attachment_state{ } }
     };
@@ -891,7 +891,7 @@ void init_vulkan(platform::window &window, app_t &app)
                 false, graphics::stencil_state{ }, graphics::stencil_state{ }
             },
             graphics::color_blend_state{
-                false, graphics::BLEND_STATE_OPERATION::COPY,
+                false, graphics::LOGIC_OPERATION::COPY,
                 { 0.f, 0.f, 0.f, 0.f },
                 { graphics::color_blend_attachment_state{ } }
             }

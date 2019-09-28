@@ -30,6 +30,8 @@ namespace convert_to
 
     VkBlendOp vulkan(graphics::BLEND_OPERATION blend_operation) noexcept;
 
+    VkLogicOp vulkan(graphics::LOGIC_OPERATION logic_operation) noexcept;
+
     VkColorComponentFlags vulkan(graphics::COLOR_COMPONENT color_component) noexcept;
 
     VkImageLayout vulkan(graphics::IMAGE_LAYOUT image_layout) noexcept;

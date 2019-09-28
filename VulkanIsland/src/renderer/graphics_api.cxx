@@ -330,6 +330,62 @@ namespace convert_to
         }
     }
 
+    VkLogicOp vulkan(graphics::LOGIC_OPERATION logic_operation) noexcept
+    {
+        switch (logic_operation) {
+            case graphics::LOGIC_OPERATION::CLEAR:
+                return VkLogicOp::VK_LOGIC_OP_CLEAR;
+
+            case graphics::LOGIC_OPERATION::AND:
+                return VkLogicOp::VK_LOGIC_OP_AND;
+
+            case graphics::LOGIC_OPERATION::AND_REVERSE:
+                return VkLogicOp::VK_LOGIC_OP_AND_REVERSE;
+
+            case graphics::LOGIC_OPERATION::COPY:
+                return VkLogicOp::VK_LOGIC_OP_COPY;
+
+            case graphics::LOGIC_OPERATION::AND_INVERTED:
+                return VkLogicOp::VK_LOGIC_OP_AND_INVERTED;
+
+            case graphics::LOGIC_OPERATION::NO_OP:
+                return VkLogicOp::VK_LOGIC_OP_NO_OP;
+
+            case graphics::LOGIC_OPERATION::XOR:
+                return VkLogicOp::VK_LOGIC_OP_XOR;
+
+            case graphics::LOGIC_OPERATION::OR:
+                return VkLogicOp::VK_LOGIC_OP_OR;
+
+            case graphics::LOGIC_OPERATION::NOR:
+                return VkLogicOp::VK_LOGIC_OP_NOR;
+
+            case graphics::LOGIC_OPERATION::EQUIVALENT:
+                return VkLogicOp::VK_LOGIC_OP_EQUIVALENT;
+
+            case graphics::LOGIC_OPERATION::INVERT:
+                return VkLogicOp::VK_LOGIC_OP_INVERT;
+
+            case graphics::LOGIC_OPERATION::OR_REVERSE:
+                return VkLogicOp::VK_LOGIC_OP_OR_REVERSE;
+
+            case graphics::LOGIC_OPERATION::COPY_INVERTED:
+                return VkLogicOp::VK_LOGIC_OP_COPY_INVERTED;
+
+            case graphics::LOGIC_OPERATION::OR_INVERTED:
+                return VkLogicOp::VK_LOGIC_OP_OR_INVERTED;
+
+            case graphics::LOGIC_OPERATION::NAND:
+                return VkLogicOp::VK_LOGIC_OP_NAND;
+
+            case graphics::LOGIC_OPERATION::SET:
+                return VkLogicOp::VK_LOGIC_OP_SET;
+
+            default:
+                return VkLogicOp::VK_LOGIC_OP_MAX_ENUM;
+        }
+    }
+
     VkColorComponentFlags vulkan(graphics::COLOR_COMPONENT color_component) noexcept
     {
         switch (color_component) {

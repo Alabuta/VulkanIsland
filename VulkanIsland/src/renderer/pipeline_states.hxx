@@ -124,7 +124,7 @@ namespace graphics
     struct color_blend_state final {
         bool logic_operation_enable{false};
 
-        graphics::BLEND_STATE_OPERATION logic_operation{graphics::BLEND_STATE_OPERATION::COPY};
+        graphics::LOGIC_OPERATION logic_operation{graphics::LOGIC_OPERATION::COPY};
 
         std::array<float, 4> blend_constants{0, 0, 0, 0};
 

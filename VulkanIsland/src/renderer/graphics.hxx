@@ -105,7 +105,7 @@ namespace graphics
         DECREMENT_AND_WRAP
     };
 
-    enum class BLEND_STATE_OPERATION {
+    enum class LOGIC_OPERATION {
         CLEAR,
         AND,
         AND_REVERSE,
