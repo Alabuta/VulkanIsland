@@ -10,7 +10,7 @@ namespace convert_to
 
     VkPrimitiveTopology vulkan(graphics::PRIMITIVE_TOPOLOGY topology) noexcept;
 
-        VkPrimitiveTopology operator() (graphics::PRIMITIVE_TOPOLOGY topology) const noexcept;
+    VkVertexInputRate vulkan(graphics::VERTEX_INPUT_RATE input_rate) noexcept;
 
     VkShaderStageFlagBits vulkan(graphics::SHADER_STAGE shader_stage) noexcept;
 

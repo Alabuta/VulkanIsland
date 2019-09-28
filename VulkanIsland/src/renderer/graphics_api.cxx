@@ -34,7 +34,21 @@ namespace convert_to
         }
     }
 
-    VkShaderStageFlagBits vulkan_api::operator() (graphics::SHADER_STAGE shader_stage) const noexcept
+    VkVertexInputRate vulkan(graphics::VERTEX_INPUT_RATE input_rate) noexcept
+    {
+        switch (input_rate) {
+            case graphics::VERTEX_INPUT_RATE::PER_VERTEX:
+                return VK_VERTEX_INPUT_RATE_VERTEX;
+
+            case graphics::VERTEX_INPUT_RATE::PER_INSTANCE:
+                return VK_VERTEX_INPUT_RATE_INSTANCE;
+
+            default:
+                return VK_VERTEX_INPUT_RATE_MAX_ENUM;
+        }
+    }
+
+    VkShaderStageFlagBits vulkan(graphics::SHADER_STAGE shader_stage) noexcept
     {
         VkShaderStageFlags result = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
 

@@ -7,19 +7,6 @@
 
 namespace convert_to
 {
-    VkVertexInputRate vulkan1(vertex::INPUT_RATE input_rate)
-    {
-        switch (input_rate) {
-            case vertex::INPUT_RATE::VERTEX:
-                return VK_VERTEX_INPUT_RATE_VERTEX;
-
-            case vertex::INPUT_RATE::INSTANCE:
-                return VK_VERTEX_INPUT_RATE_INSTANCE;
-
-            default:
-                return VK_VERTEX_INPUT_RATE_MAX_ENUM;
-        }
-    }
 
     [[nodiscard]] std::tuple<VkPipelineVertexInputStateCreateInfo, VkVertexInputBindingDescription, std::vector<VkVertexInputAttributeDescription>>
     vulkan1(graphics::vertex_input_state const &vertex_input_state)
@@ -27,7 +14,7 @@ namespace convert_to
         auto [binding_index, size_in_bytes, input_rate] = vertex_input_state.binding_description;
 
         VkVertexInputBindingDescription binding_description{
-            binding_index, size_in_bytes, convert_to::vulkan1(input_rate)
+            binding_index, size_in_bytes, convert_to::vulkan(input_rate)
         };
 
         std::vector<VkVertexInputAttributeDescription> attribute_descriptions;
@@ -189,7 +176,7 @@ namespace graphics
         auto &&[size_in_bytes, attributes] = vertex_layout;
 
         graphics::vertex_input_binding binding_description{
-            binding_index, static_cast<std::uint32_t>(size_in_bytes), vertex::INPUT_RATE::VERTEX
+            binding_index, static_cast<std::uint32_t>(size_in_bytes), graphics::VERTEX_INPUT_RATE::PER_VERTEX
         };
 
         std::vector<graphics::vertex_input_attribute> attribute_descriptions;

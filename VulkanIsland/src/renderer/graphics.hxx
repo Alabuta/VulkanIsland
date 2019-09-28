@@ -21,6 +21,10 @@ namespace graphics
         TRIANGLES, TRIANGLE_STRIP, TRIANGLE_FAN
     };
 
+    enum class VERTEX_INPUT_RATE {
+        PER_VERTEX, PER_INSTANCE
+    };
+
     enum class SHADER_STAGE {
         VERTEX = 0x01,
         TESS_CONTROL = 0x02,

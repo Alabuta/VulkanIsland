@@ -113,10 +113,6 @@ namespace vertex
         static_array<3, boost::float32_t>,
         static_array<4, boost::float32_t>
     >;
-
-    enum class INPUT_RATE {
-        VERTEX, INSTANCE
-    };
 }
 
 namespace graphics
@@ -155,7 +151,7 @@ namespace graphics
         std::uint32_t binding_index;
         std::uint32_t stride_in_bytes;
 
-        vertex::INPUT_RATE input_rate;
+        graphics::VERTEX_INPUT_RATE input_rate;
 
         template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_input_binding>
         auto constexpr operator== (T &&rhs) const
