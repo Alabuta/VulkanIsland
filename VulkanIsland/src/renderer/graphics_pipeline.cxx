@@ -7,13 +7,12 @@
 
 namespace convert_to
 {
-
     [[nodiscard]] std::tuple<VkPipelineVertexInputStateCreateInfo, VkVertexInputBindingDescription, std::vector<VkVertexInputAttributeDescription>>
-    vulkan1(graphics::vertex_input_state const &vertex_input_state)
+    vulkan(graphics::vertex_input_state const &vertex_input_state)
     {
         auto [binding_index, size_in_bytes, input_rate] = vertex_input_state.binding_description;
 
-        VkVertexInputBindingDescription binding_description{
+        VkVertexInputBindingDescription const binding_description{
             binding_index, size_in_bytes, convert_to::vulkan(input_rate)
         };
 
@@ -31,9 +30,103 @@ namespace convert_to
             };
         });
 
-        VkPipelineVertexInputStateCreateInfo info;
+        VkPipelineVertexInputStateCreateInfo const info{
+            VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+            nullptr, 0,
+            1u, &binding_description,
+            static_cast<std::uint32_t>(std::size(attribute_descriptions)), std::data(attribute_descriptions),
+        };
 
-        return std::make_tuple(info, binding_description, attribute_descriptions);
+        return std::tuple{info, binding_description, attribute_descriptions};
+    }
+
+    [[nodiscard]] VkPipelineRasterizationStateCreateInfo vulkan(graphics::rasterization_state const &rasterization_state)
+    {
+        return VkPipelineRasterizationStateCreateInfo{
+            VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
+            nullptr, 0,
+            VK_TRUE,
+            VK_FALSE,
+            convert_to::vulkan(rasterization_state.polygon_mode),
+            convert_to::vulkan(rasterization_state.cull_mode),
+            convert_to::vulkan(rasterization_state.front_face),
+            VK_FALSE,
+            0.f, 0.f, 0.f,
+            rasterization_state.line_width
+        };
+    }
+
+    [[nodiscard]] VkStencilOpState vulkan(graphics::stencil_state const &stencil_state)
+    {
+        return VkStencilOpState{
+            convert_to::vulkan(stencil_state.fail),
+            convert_to::vulkan(stencil_state.pass),
+            convert_to::vulkan(stencil_state.depth_fail),
+
+            convert_to::vulkan(stencil_state.compare_operation),
+
+            stencil_state.compare_mask,
+            stencil_state.write_mask,
+            stencil_state.reference
+        };
+    }
+
+    [[nodiscard]] VkPipelineDepthStencilStateCreateInfo vulkan(graphics::depth_stencil_state const &depth_stencil_state)
+    {
+        return VkPipelineDepthStencilStateCreateInfo{
+            VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+            nullptr, 0,
+
+            convert_to::vulkan(depth_stencil_state.depth_test_enable),
+            convert_to::vulkan(depth_stencil_state.depth_write_enable),
+            convert_to::vulkan(depth_stencil_state.depth_compare_operation), // kREVERSED_DEPTH ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_LESS,
+
+            convert_to::vulkan(depth_stencil_state.depth_bounds_test_enable),
+
+            convert_to::vulkan(depth_stencil_state.stencil_test_enable),
+            convert_to::vulkan(depth_stencil_state.front_stencil_state),
+            convert_to::vulkan(depth_stencil_state.back_stencil_state),
+
+            depth_stencil_state.depth_bounds[0], depth_stencil_state.depth_bounds[1]
+        };
+    }
+
+    [[nodiscard]] std::pair<VkPipelineColorBlendStateCreateInfo, std::vector<VkPipelineColorBlendAttachmentState>>
+    vulkan(graphics::color_blend_state const &color_blend_state)
+    {
+        std::vector<VkPipelineColorBlendAttachmentState> attachment_states;
+
+        for (auto &&attachment_state : color_blend_state.attachment_states) {
+            attachment_states.push_back(VkPipelineColorBlendAttachmentState{
+                convert_to::vulkan(attachment_state.blend_enable),
+                convert_to::vulkan(attachment_state.src_color_blend_factor),
+                convert_to::vulkan(attachment_state.dst_color_blend_factor),
+
+                convert_to::vulkan(attachment_state.color_blend_operation),
+
+                convert_to::vulkan(attachment_state.src_alpha_blend_factor),
+                convert_to::vulkan(attachment_state.dst_alpha_blend_factor),
+
+                convert_to::vulkan(attachment_state.alpha_blend_operation),
+
+                convert_to::vulkan(attachment_state.color_write_mask)
+            });
+        }
+
+        VkPipelineColorBlendStateCreateInfo /*const */create_info{
+            VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+            nullptr, 0,
+            convert_to::vulkan(color_blend_state.logic_operation_enable),
+            convert_to::vulkan(color_blend_state.logic_operation),
+            static_cast<std::uint32_t>(std::size(attachment_states)),
+            std::data(attachment_states),
+            { }
+        };
+
+        std::copy(std::cbegin(color_blend_state.blend_constants), std::cend(color_blend_state.blend_constants),
+                  std::begin(create_info.blendConstants));
+
+        return std::make_pair(create_info, attachment_states);
     }
 }
 
