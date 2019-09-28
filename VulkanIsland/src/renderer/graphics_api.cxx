@@ -3,12 +3,12 @@
 
 namespace convert_to
 {
-    VkBool32 vulkan_api::operator() (bool boolean) const noexcept
+    VkBool32 vulkan(bool boolean) noexcept
     {
         return static_cast<VkBool32>(boolean);
     }
 
-    VkPrimitiveTopology vulkan_api::operator() (graphics::PRIMITIVE_TOPOLOGY topology) const noexcept
+    VkPrimitiveTopology vulkan(graphics::PRIMITIVE_TOPOLOGY topology) noexcept
     {
         switch (topology) {
             case graphics::PRIMITIVE_TOPOLOGY::POINTS:
@@ -61,7 +61,7 @@ namespace convert_to
         return static_cast<VkShaderStageFlagBits>(result);
     }
 
-    VkPipelineStageFlagBits vulkan_api::operator() (graphics::PIPELINE_STAGE pipeline_stage) const noexcept
+    VkPipelineStageFlagBits vulkan(graphics::PIPELINE_STAGE pipeline_stage) noexcept
     {
         VkPipelineStageFlags result = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
@@ -121,7 +121,7 @@ namespace convert_to
         return static_cast<VkPipelineStageFlagBits>(result);
     }
 
-    VkCullModeFlags vulkan_api::operator() (graphics::CULL_MODE cull_mode) const noexcept
+    VkCullModeFlags vulkan(graphics::CULL_MODE cull_mode) noexcept
     {
         switch (cull_mode) {
             case graphics::CULL_MODE::NONE:
@@ -141,7 +141,7 @@ namespace convert_to
         }
     }
 
-    VkPolygonMode vulkan_api::operator() (graphics::POLYGON_MODE polygon_mode) const noexcept
+    VkPolygonMode vulkan(graphics::POLYGON_MODE polygon_mode) noexcept
     {
         switch (polygon_mode) {
             case graphics::POLYGON_MODE::FILL:
@@ -158,7 +158,7 @@ namespace convert_to
         }
     }
 
-    VkFrontFace vulkan_api::operator() (graphics::POLYGON_FRONT_FACE front_face) const noexcept
+    VkFrontFace vulkan(graphics::POLYGON_FRONT_FACE front_face) noexcept
     {
         switch (front_face) {
             case graphics::POLYGON_FRONT_FACE::COUNTER_CLOCKWISE:
@@ -172,7 +172,7 @@ namespace convert_to
         }
     }
 
-    VkCompareOp vulkan_api::operator() (graphics::COMPARE_OPERATION compare_operation) const noexcept
+    VkCompareOp vulkan(graphics::COMPARE_OPERATION compare_operation) noexcept
     {
         switch (compare_operation) {
             case graphics::COMPARE_OPERATION::NEVER:
@@ -204,7 +204,7 @@ namespace convert_to
         }
     }
 
-    VkStencilOp vulkan_api::operator() (graphics::STENCIL_OPERATION stencil_operation) const noexcept
+    VkStencilOp vulkan(graphics::STENCIL_OPERATION stencil_operation) noexcept
     {
         switch (stencil_operation) {
             case graphics::STENCIL_OPERATION::KEEP:
@@ -236,7 +236,7 @@ namespace convert_to
         }
     }
 
-    VkBlendFactor vulkan_api::operator() (graphics::BLEND_FACTOR blend_factor) const noexcept
+    VkBlendFactor vulkan(graphics::BLEND_FACTOR blend_factor) noexcept
     {
         switch (blend_factor) {
             case graphics::BLEND_FACTOR::ZERO:
@@ -302,7 +302,7 @@ namespace convert_to
         }
     }
 
-    VkBlendOp vulkan_api::operator() (graphics::BLEND_OPERATION blend_operation) const noexcept
+    VkBlendOp vulkan(graphics::BLEND_OPERATION blend_operation) noexcept
     {
         switch (blend_operation) {
             case graphics::BLEND_OPERATION::ADD:
@@ -316,7 +316,7 @@ namespace convert_to
         }
     }
 
-    VkColorComponentFlags vulkan_api::operator() (graphics::COLOR_COMPONENT color_component) const noexcept
+    VkColorComponentFlags vulkan(graphics::COLOR_COMPONENT color_component) noexcept
     {
         switch (color_component) {
             case graphics::COLOR_COMPONENT::R:
@@ -350,7 +350,7 @@ namespace convert_to
         }
     }
 
-    VkImageLayout vulkan_api::operator() (graphics::IMAGE_LAYOUT image_layout) const noexcept
+    VkImageLayout vulkan(graphics::IMAGE_LAYOUT image_layout) noexcept
     {
         switch (image_layout) {
             case graphics::IMAGE_LAYOUT::UNDEFINED:
@@ -394,7 +394,7 @@ namespace convert_to
         }
     }
 
-    VkImageType vulkan_api::operator() (graphics::IMAGE_TYPE image_type) const noexcept
+    VkImageType vulkan(graphics::IMAGE_TYPE image_type) noexcept
     {
         switch (image_type) {
             case graphics::IMAGE_TYPE::TYPE_1D:
@@ -411,7 +411,7 @@ namespace convert_to
         }
     }
 
-    VkImageViewType vulkan_api::operator() (graphics::IMAGE_VIEW_TYPE image_view_type) const noexcept
+    VkImageViewType vulkan(graphics::IMAGE_VIEW_TYPE image_view_type) noexcept
     {
         switch (image_view_type) {
             case graphics::IMAGE_VIEW_TYPE::TYPE_1D:
@@ -440,7 +440,7 @@ namespace convert_to
         }
     }
 
-    VkImageTiling vulkan_api::operator() (graphics::IMAGE_TILING image_tiling) const noexcept
+    VkImageTiling vulkan(graphics::IMAGE_TILING image_tiling) noexcept
     {
         switch (image_tiling) {
             case graphics::IMAGE_TILING::OPTIMAL:
@@ -454,7 +454,7 @@ namespace convert_to
         }
     }
 
-    VkFormat vulkan_api::operator() (graphics::FORMAT format) const noexcept
+    VkFormat vulkan(graphics::FORMAT format) noexcept
     {
         switch (format) {
             case graphics::FORMAT::UNDEFINED:
@@ -637,7 +637,7 @@ namespace convert_to
         }
     }
 
-    VkAttachmentLoadOp vulkan_api::operator() (graphics::ATTACHMENT_LOAD_TREATMENT load_treatment) const noexcept
+    VkAttachmentLoadOp vulkan(graphics::ATTACHMENT_LOAD_TREATMENT load_treatment) noexcept
     {
         switch (load_treatment) {
             case graphics::ATTACHMENT_LOAD_TREATMENT::LOAD:
@@ -654,7 +654,7 @@ namespace convert_to
         }
     }
 
-    VkAttachmentStoreOp vulkan_api::operator() (graphics::ATTACHMENT_STORE_TREATMENT store_treatment) const noexcept
+    VkAttachmentStoreOp vulkan(graphics::ATTACHMENT_STORE_TREATMENT store_treatment) noexcept
     {
         switch (store_treatment) {
             case graphics::ATTACHMENT_STORE_TREATMENT::STORE:
@@ -668,7 +668,7 @@ namespace convert_to
         }
     }
 
-    VkColorSpaceKHR vulkan_api::operator() (graphics::COLOR_SPACE color_space) const noexcept
+    VkColorSpaceKHR vulkan(graphics::COLOR_SPACE color_space) noexcept
     {
         switch (color_space) {
             case graphics::COLOR_SPACE::SRGB_NONLINEAR:
@@ -706,7 +706,7 @@ namespace convert_to
         }
     }
 
-    VkSampleCountFlagBits vulkan_api::operator() (std::uint32_t samples_count) const noexcept
+    VkSampleCountFlagBits vulkan(std::uint32_t samples_count) noexcept
     {
         switch (samples_count) {
             case 1:
@@ -735,7 +735,7 @@ namespace convert_to
         }
     }
 
-    VkBufferUsageFlags vulkan_api::operator() (graphics::BUFFER_USAGE buffer_usage) const noexcept
+    VkBufferUsageFlags vulkan(graphics::BUFFER_USAGE buffer_usage) noexcept
     {
         VkBufferUsageFlags result = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
@@ -771,7 +771,7 @@ namespace convert_to
         return result;
     }
 
-    VkImageUsageFlags vulkan_api::operator() (graphics::IMAGE_USAGE image_usage) const noexcept
+    VkImageUsageFlags vulkan(graphics::IMAGE_USAGE image_usage) noexcept
     {
         VkImageUsageFlags result = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
@@ -804,7 +804,7 @@ namespace convert_to
         return result;
     }
 
-    VkQueueFlagBits vulkan_api::operator()(graphics::QUEUE_CAPABILITY queue_capability) const noexcept
+    VkQueueFlagBits vulkan(graphics::QUEUE_CAPABILITY queue_capability) noexcept
     {
         VkQueueFlags result = VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT;
 

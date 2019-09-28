@@ -6,56 +6,53 @@
 
 namespace convert_to
 {
-    struct vulkan_api final {
+    VkBool32 vulkan(bool boolean) noexcept;
 
-        VkBool32 operator() (bool boolean) const noexcept;
+    VkPrimitiveTopology vulkan(graphics::PRIMITIVE_TOPOLOGY topology) noexcept;
 
         VkPrimitiveTopology operator() (graphics::PRIMITIVE_TOPOLOGY topology) const noexcept;
 
-        VkShaderStageFlagBits operator() (graphics::SHADER_STAGE shader_stage) const noexcept;
+    VkShaderStageFlagBits vulkan(graphics::SHADER_STAGE shader_stage) noexcept;
 
-        VkPipelineStageFlagBits operator() (graphics::PIPELINE_STAGE pipeline_stage) const noexcept;
+    VkPipelineStageFlagBits vulkan(graphics::PIPELINE_STAGE pipeline_stage) noexcept;
 
-        VkCullModeFlags operator() (graphics::CULL_MODE cull_mode) const noexcept;
+    VkCullModeFlags vulkan(graphics::CULL_MODE cull_mode) noexcept;
 
-        VkPolygonMode operator() (graphics::POLYGON_MODE polygon_mode) const noexcept;
+    VkPolygonMode vulkan(graphics::POLYGON_MODE polygon_mode) noexcept;
 
-        VkFrontFace operator() (graphics::POLYGON_FRONT_FACE front_face) const noexcept;
+    VkFrontFace vulkan(graphics::POLYGON_FRONT_FACE front_face) noexcept;
 
-        VkCompareOp operator() (graphics::COMPARE_OPERATION compare_operation) const noexcept;
+    VkCompareOp vulkan(graphics::COMPARE_OPERATION compare_operation) noexcept;
 
-        VkStencilOp operator() (graphics::STENCIL_OPERATION stencil_operation) const noexcept;
+    VkStencilOp vulkan(graphics::STENCIL_OPERATION stencil_operation) noexcept;
 
-        VkBlendFactor operator() (graphics::BLEND_FACTOR blend_factor) const noexcept;
+    VkBlendFactor vulkan(graphics::BLEND_FACTOR blend_factor) noexcept;
 
-        VkBlendOp operator() (graphics::BLEND_OPERATION blend_operation) const noexcept;
+    VkBlendOp vulkan(graphics::BLEND_OPERATION blend_operation) noexcept;
 
-        VkColorComponentFlags operator() (graphics::COLOR_COMPONENT color_component) const noexcept;
+    VkColorComponentFlags vulkan(graphics::COLOR_COMPONENT color_component) noexcept;
 
-        VkImageLayout operator() (graphics::IMAGE_LAYOUT image_layout) const noexcept;
+    VkImageLayout vulkan(graphics::IMAGE_LAYOUT image_layout) noexcept;
 
-        VkImageTiling operator() (graphics::IMAGE_TILING image_tiling) const noexcept;
+    VkImageTiling vulkan(graphics::IMAGE_TILING image_tiling) noexcept;
 
-        VkImageType operator() (graphics::IMAGE_TYPE image_type) const noexcept;
+    VkImageType vulkan(graphics::IMAGE_TYPE image_type) noexcept;
 
-        VkImageViewType operator() (graphics::IMAGE_VIEW_TYPE image_view_type) const noexcept;
+    VkImageViewType vulkan(graphics::IMAGE_VIEW_TYPE image_view_type) noexcept;
 
-        VkFormat operator() (graphics::FORMAT format) const noexcept;
+    VkFormat vulkan(graphics::FORMAT format) noexcept;
 
-        VkAttachmentLoadOp operator() (graphics::ATTACHMENT_LOAD_TREATMENT load_treatment) const noexcept;
+    VkAttachmentLoadOp vulkan(graphics::ATTACHMENT_LOAD_TREATMENT load_treatment) noexcept;
 
-        VkAttachmentStoreOp operator() (graphics::ATTACHMENT_STORE_TREATMENT store_treatment) const noexcept;
+    VkAttachmentStoreOp vulkan(graphics::ATTACHMENT_STORE_TREATMENT store_treatment) noexcept;
 
-        VkColorSpaceKHR operator() (graphics::COLOR_SPACE color_space) const noexcept;
+    VkColorSpaceKHR vulkan(graphics::COLOR_SPACE color_space) noexcept;
 
-        VkSampleCountFlagBits operator() (std::uint32_t samples_count) const noexcept;
+    VkSampleCountFlagBits vulkan(std::uint32_t samples_count) noexcept;
 
-        VkBufferUsageFlags operator() (graphics::BUFFER_USAGE buffer_usage) const noexcept;
+    VkBufferUsageFlags vulkan(graphics::BUFFER_USAGE buffer_usage) noexcept;
 
-        VkImageUsageFlags operator() (graphics::IMAGE_USAGE image_usage) const noexcept;
+    VkImageUsageFlags vulkan(graphics::IMAGE_USAGE image_usage) noexcept;
 
-        VkQueueFlagBits operator() (graphics::QUEUE_CAPABILITY queue_capability) const noexcept;
-    };
-
-    vulkan_api constexpr vulkan;
+    VkQueueFlagBits vulkan(graphics::QUEUE_CAPABILITY queue_capability) noexcept;
 }
