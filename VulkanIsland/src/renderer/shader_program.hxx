@@ -115,6 +115,8 @@ namespace graphics
 
         shader_manager(VulkanDevice &vulkan_device) noexcept : vulkan_device_{vulkan_device} { }
 
+        [[nodiscard]] std::shared_ptr<graphics::shader_module> shader_module(std::string_view name, std::uint32_t technique_index);
+
     private:
 
         VulkanDevice &vulkan_device_;

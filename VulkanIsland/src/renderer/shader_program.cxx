@@ -9,15 +9,18 @@
 
 namespace graphics
 {
-    std::shared_ptr<graphics::shader_module> shader_manager::create_shader_module(std::string_view name, std::uint32_t technique_index)
+    std::shared_ptr<graphics::shader_module> shader_manager::shader_module(std::string_view name, std::uint32_t technique_index)
     {
         auto const key = std::pair{std::string{name}, technique_index};
 
         if (modules_by_techinques_.count(key) != 0)
             return modules_by_techinques_.at(key);
 
-        std::shared_ptr<graphics::shader_module> shader_module;
+        else return create_shader_module(name, technique_index);
+    }
 
+    std::shared_ptr<graphics::shader_module> shader_manager::create_shader_module(std::string_view name, std::uint32_t technique_index)
+    {
         auto full_name = fmt::format("{}.{}"s, name, technique_index);
 
         boost::uuids::name_generator_sha1 gen(boost::uuids::ns::dns());
@@ -28,6 +31,8 @@ namespace graphics
 
         if (shader_byte_code.empty())
             throw std::runtime_error("failed to open shader file"s);
+
+        std::shared_ptr<graphics::shader_module> shader_module;
 
         if (std::size(shader_byte_code) % sizeof(std::uint32_t) != 0)
             std::cerr << "invalid byte code buffer size\n"s;
@@ -45,17 +50,18 @@ namespace graphics
             if (auto result = vkCreateShaderModule(vulkan_device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
                 std::cerr << fmt::format("failed to create shader module: {0:#x}\n"s, result);
 
-            else shader_module.reset(
-                new graphics::shader_module{handle},
-                [this] (graphics::shader_module *ptr_module) {
-                    vkDestroyShaderModule(vulkan_device_.handle(), ptr_module->handle(), nullptr);
+            else {
+                shader_module.reset(new graphics::shader_module{handle}, [this] (graphics::shader_module *ptr_module)
+                    {
+                        vkDestroyShaderModule(vulkan_device_.handle(), ptr_module->handle(), nullptr);
 
-                    delete ptr_module;
-                }
-            );
+                        delete ptr_module;
+                    }
+                );
+
+                modules_by_techinques_.emplace(std::pair{std::string{name}, technique_index}, shader_module);
+            }
         }
-
-        modules_by_techinques_.emplace(key, shader_module);
 
         return shader_module;
     }
