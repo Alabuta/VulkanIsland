@@ -15,6 +15,7 @@
 #include "vertex.hxx"
 #include "pipeline_states.hxx"
 #include "material.hxx"
+#include "shader_program.hxx"
 
 #define USE_DYNAMIC_PIPELINE_STATE 1
 
@@ -102,7 +103,8 @@ namespace graphics
     class pipeline_factory final {
     public:
 
-        pipeline_factory(VulkanDevice &vulkan_device) noexcept : vulkan_device_{vulkan_device} { }
+        pipeline_factory(VulkanDevice &vulkan_device, graphics::shader_manager &shader_manager) noexcept
+            : vulkan_device_{vulkan_device}, shader_manager_{shader_manager} { }
 
         [[nodiscard]] std::shared_ptr<graphics::pipeline>
         create_pipeline(std::shared_ptr<graphics::material> material, graphics::pipeline_states const &pipeline_states,
@@ -111,6 +113,7 @@ namespace graphics
     private:
 
         VulkanDevice &vulkan_device_;
+        graphics::shader_manager &shader_manager_;
 
         std::unordered_map<graphics::pipeline_invariant, std::shared_ptr<graphics::pipeline>, graphics::hash<pipeline_invariant>> pipelines_;
         std::unordered_map<std::shared_ptr<graphics::pipeline>, graphics::pipeline_invariant> invariants_;

@@ -144,17 +144,29 @@ namespace graphics
 
         auto &&shader_stages = material->shader_stages;
 
-        auto &&[
-            primitive_topology, vertex_input_state,
-            rasterization_state, depth_stencil_state, color_blend_state
-        ] = pipeline_states;
+        std::vector<VkPipelineShaderStageCreateInfo> pipeline_shader_stages;
 
-        auto &&[vertex_input_state1, binding_description, attribute_descriptions] = convert_to::vulkan1(vertex_input_state);
+        std::transform(std::cbegin(shader_stages), std::cend(shader_stages), std::back_inserter(pipeline_shader_stages),
+                       [this] (auto &&shader_stage)
+        {
+            auto shader_module = shader_manager_.shader_module(shader_stage.module_name, shader_stage.techique_index);
+
+            return VkPipelineShaderStageCreateInfo{
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                nullptr, 0,
+                convert_to::vulkan(shader_stage.semantic),
+                shader_module->handle(),
+                "main",
+                nullptr
+            };
+        });
+
+        auto [vertex_input_state, binding_description, attribute_descriptions] = convert_to::vulkan(pipeline_states.vertex_input_state);
 
         VkPipelineInputAssemblyStateCreateInfo const input_assembly_state{
             VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
             nullptr, 0,
-            convert_to::vulkan(primitive_topology),
+            convert_to::vulkan(pipeline_states.primitive_topology),
             VK_FALSE
         };
 
@@ -198,6 +210,11 @@ namespace graphics
         };
     #endif
 
+        auto rasterization_state = convert_to::vulkan(pipeline_states.rasterization_state);
+        auto depth_stencil_state = convert_to::vulkan(pipeline_states.depth_stencil_state);
+        auto [color_blend_state, color_blend_attachment_states] = convert_to::vulkan(pipeline_states.color_blend_state);
+        color_blend_state.pAttachments = std::data(color_blend_attachment_states);
+
         VkPipelineMultisampleStateCreateInfo const multisample_state{
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
             nullptr, 0,
@@ -212,15 +229,15 @@ namespace graphics
             VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO,
             nullptr,
             VK_PIPELINE_CREATE_DISABLE_OPTIMIZATION_BIT,
-            0, nullptr,//static_cast<std::uint32_t>(std::size(shader_stages)), std::data(shader_stages),
-            &vertex_input_state1,
+            static_cast<std::uint32_t>(std::size(pipeline_shader_stages)), std::data(pipeline_shader_stages),
+            &vertex_input_state,
             &input_assembly_state,
             nullptr,
             &viewport_state,
-            &convert_to::vulkan(rasterization_state),
+            &rasterization_state,
             &multisample_state,
-            &convert_to::vulkan(depth_stencil_state),
-            &convert_to::vulkan(color_blend_state),
+            &depth_stencil_state,
+            &color_blend_state,
     #if USE_DYNAMIC_PIPELINE_STATE
             &dynamic_state,
     #else

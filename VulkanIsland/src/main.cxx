@@ -135,8 +135,10 @@ struct app_t final {
     std::unique_ptr<ShaderManager> shaderManager;
     std::unique_ptr<GraphicsPipelineManager> graphicsPipelineManager;
 
+    std::unique_ptr<graphics::shader_manager> shader_manager;
     std::unique_ptr<graphics::material_factory> material_factory;
     std::unique_ptr<graphics::vertex_input_state_manager> vertex_input_state_manager;
+    std::unique_ptr<graphics::pipeline_factory> pipeline_factory;
 
     ~app_t()
     {
@@ -165,6 +167,18 @@ struct app_t final {
 
         if (imageAvailableSemaphore)
             imageAvailableSemaphore.reset();
+
+        if (pipeline_factory)
+            pipeline_factory.reset();
+
+        if (vertex_input_state_manager)
+            vertex_input_state_manager.reset();
+
+        if (material_factory)
+            material_factory.reset();
+
+        if (shader_manager)
+            shader_manager.reset();
 
         if (graphicsPipelineManager)
             graphicsPipelineManager.reset();
@@ -704,6 +718,7 @@ void build_render_pipelines(app_t &app, xformat const &_model)
 
     auto &&material_factory = *app.material_factory;
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
+    auto &&pipeline_factory = *app.pipeline_factory;
 
     for (auto &&meshlet : _model.non_indexed_meshlets) {
         auto primitive_topology = meshlet.topology;
@@ -723,6 +738,8 @@ void build_render_pipelines(app_t &app, xformat const &_model)
             depth_stencil_state,
             color_blend_state
         };
+
+        auto pipeline = pipeline_factory.create_pipeline(material, pipeline_states, app.pipelineLayout, app.renderPass, 0u);
     }
 }
 
@@ -789,8 +806,10 @@ void init_vulkan(platform::window &window, app_t &app)
     app.materialFactory = std::make_unique<MaterialFactory>(*app.shaderManager);
     app.graphicsPipelineManager = std::make_unique<GraphicsPipelineManager>(*app.vulkanDevice, *app.materialFactory, app.pipelineVertexInputStatesManager);
 
+    app.shader_manager = std::make_unique<graphics::shader_manager>(*app.vulkanDevice);
     app.material_factory = std::make_unique<graphics::material_factory>();
     app.vertex_input_state_manager = std::make_unique<graphics::vertex_input_state_manager>();
+    app.pipeline_factory = std::make_unique<graphics::pipeline_factory>(*app.vulkanDevice, *app.shader_manager);
 
     app.graphicsQueue = app.vulkanDevice->queue<GraphicsQueue>();
     app.transferQueue = app.vulkanDevice->queue<TransferQueue>();
@@ -838,6 +857,7 @@ void init_vulkan(platform::window &window, app_t &app)
     temp::stageXformat(app, temp::model);
     temp::build_render_pipelines(app, temp::model);
 
+#if 0
     graphics::render_pipeline_manager render_pipeline_manager;
     graphics::render_pipeline render_pipeline;
 
@@ -915,6 +935,7 @@ void init_vulkan(platform::window &window, app_t &app)
             }
         );
     }
+#endif
 
     app.vulkanDevice->resourceManager().TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
     create_graphics_pipelines(app);
