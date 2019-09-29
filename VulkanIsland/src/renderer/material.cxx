@@ -234,7 +234,29 @@ namespace graphics
             };
         });
 
-        auto material = std::make_shared<graphics::material>(shader_stages);
+        auto &&vertex_attributes = description.vertex_attributes;
+
+        graphics::vertex_layout vertex_layout;
+        vertex_layout.size_in_bytes = 0;
+
+        std::transform(std::cbegin(technique.vertex_layout), std::cend(technique.vertex_layout),
+                       std::back_inserter(vertex_layout.attributes),
+                       [vertex_attributes, &offset_in_bytes = vertex_layout.size_in_bytes] (auto vertex_layout_index) mutable
+        {
+            auto [semantic, type, normalized] = vertex_attributes.at(vertex_layout_index);
+
+            graphics::vertex_attribute const vertex_attribute{offset_in_bytes, semantic, type, normalized};
+
+            offset_in_bytes += std::visit([] (auto &&type)
+            {
+                return sizeof(std::remove_cvref_t<decltype(type)>);
+
+            }, type);
+
+            return vertex_attribute;
+        });
+
+        auto material = std::make_shared<graphics::material>(shader_stages, vertex_layout);
 
         materials_.emplace(key, material);
 

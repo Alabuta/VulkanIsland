@@ -728,18 +728,18 @@ void build_render_pipelines(app_t &app, xformat const &_model)
     for (auto &&meshlet : _model.non_indexed_meshlets) {
         auto primitive_topology = meshlet.topology;
 
-        auto vertex_layout_index = meshlet.vertex_buffer_index;
-        auto &&vertex_layout = _model.vertex_layouts[vertex_layout_index];
+        /*auto vertex_layout_index = meshlet.vertex_buffer_index;
+        auto &&vertex_layout = _model.vertex_layouts[vertex_layout_index];*/
 
         auto material_index = meshlet.material_index;
         auto [technique_index, name] = _model.materials[material_index];
 
         auto material = material_factory.material(name, technique_index);
-        material->vertex_layout = vertex_layout;
+        auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(material->vertex_layout);
 
         graphics::pipeline_states pipeline_states{
             primitive_topology,
-            vertex_input_state_manager.vertex_input_state(vertex_layout),
+            vertex_input_state,
             rasterization_state,
             depth_stencil_state,
             color_blend_state

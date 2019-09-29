@@ -83,7 +83,8 @@ namespace graphics
 {
     struct material final {
 
-        material(std::vector<graphics::shader_stage> shader_stages) : shader_stages{shader_stages} { }
+        material(std::vector<graphics::shader_stage> shader_stages, graphics::vertex_layout vertex_layout)
+            : shader_stages{shader_stages}, vertex_layout{vertex_layout}  { }
 
         std::vector<graphics::shader_stage> shader_stages;
 
