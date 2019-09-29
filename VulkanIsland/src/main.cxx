@@ -189,6 +189,11 @@ struct app_t final {
         vkDestroyDescriptorSetLayout(vulkanDevice->handle(), descriptorSetLayout, nullptr);
         vkDestroyDescriptorPool(vulkanDevice->handle(), descriptorPool, nullptr);
 
+    #if USE_DYNAMIC_PIPELINE_STATE
+        if (renderPass != VK_NULL_HANDLE)
+            vkDestroyRenderPass(vulkanDevice->handle(), renderPass, nullptr);
+    #endif
+
         texture.sampler.reset();
         if (texture.view.handle() != VK_NULL_HANDLE)
             vkDestroyImageView(vulkanDevice->handle(), texture.view.handle(), nullptr);

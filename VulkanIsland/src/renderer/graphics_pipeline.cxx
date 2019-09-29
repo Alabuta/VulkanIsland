@@ -1,9 +1,17 @@
+#include <iostream>
 #include <tuple>
 
 #include <fmt/format.h>
 
 #include "graphics_pipeline.hxx"
 
+
+auto const kENTRY_POINTS = std::array{
+    "technique0"s,
+    "technique1"s,
+    "technique2"s,
+    "technique3"s
+};
 
 namespace convert_to
 {
@@ -142,6 +150,8 @@ namespace graphics
         if (pipelines_.count(key) != 0)
             return pipelines_.at(key);
 
+        VkExtent2D const extent{600u, 400u};
+
         auto &&shader_stages = material->shader_stages;
 
         std::vector<VkPipelineShaderStageCreateInfo> pipeline_shader_stages;
@@ -156,12 +166,14 @@ namespace graphics
                 nullptr, 0,
                 convert_to::vulkan(shader_stage.semantic),
                 shader_module->handle(),
-                "main",
+                kENTRY_POINTS.at(shader_stage.techique_index).c_str(),
                 nullptr
             };
         });
 
         auto [vertex_input_state, binding_description, attribute_descriptions] = convert_to::vulkan(pipeline_states.vertex_input_state);
+        vertex_input_state.pVertexBindingDescriptions = &binding_description;
+        vertex_input_state.pVertexAttributeDescriptions = std::data(attribute_descriptions);
 
         VkPipelineInputAssemblyStateCreateInfo const input_assembly_state{
             VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -218,7 +230,7 @@ namespace graphics
         VkPipelineMultisampleStateCreateInfo const multisample_state{
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
             nullptr, 0,
-            convert_to::vulkan(1u), // vulkan_device_.samplesCount()
+            convert_to::vulkan(vulkan_device_.samplesCount()),
             VK_FALSE, 1,
             nullptr,
             VK_FALSE,
