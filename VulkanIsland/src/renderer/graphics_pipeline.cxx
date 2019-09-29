@@ -1,33 +1,49 @@
-#include <iostream>
-#include <tuple>
+#include <algorithm>
+#include <string>
+using namespace std::string_literals;
 
 #include <fmt/format.h>
 
 #include "graphics_pipeline.hxx"
 
 
-auto const kENTRY_POINTS = std::array{
-    "technique0"s,
-    "technique1"s,
-    "technique2"s,
-    "technique3"s
-};
+namespace
+{
+    auto const kENTRY_POINTS = std::array{
+        "technique0"s,
+        "technique1"s,
+        "technique2"s,
+        "technique3"s
+    };
+}
 
 namespace convert_to
 {
-    [[nodiscard]] std::tuple<VkPipelineVertexInputStateCreateInfo, VkVertexInputBindingDescription, std::vector<VkVertexInputAttributeDescription>>
-    vulkan(graphics::vertex_input_state const &vertex_input_state)
+    [[nodiscard]] VkPipelineVertexInputStateCreateInfo
+    vulkan(graphics::vertex_input_state const &vertex_input_state,
+           std::vector<VkVertexInputBindingDescription> &binding_descriptions,
+           std::vector<VkVertexInputAttributeDescription> &attribute_descriptions)
     {
         auto [binding_index, size_in_bytes, input_rate] = vertex_input_state.binding_description;
 
-        VkVertexInputBindingDescription const binding_description{
+        binding_descriptions.push_back(VkVertexInputBindingDescription{
             binding_index, size_in_bytes, convert_to::vulkan(input_rate)
-        };
+        });
 
-        std::vector<VkVertexInputAttributeDescription> attribute_descriptions;
+        /*std::vector<graphics::vertex_input_attribute> _attribute_descriptions;
+
+        std::set_intersection(std::cbegin(vertex_input_state.attribute_descriptions), std::cend(vertex_input_state.attribute_descriptions),
+                              std::cbegin(material.vertex_layout.attributes), std::cend(material.vertex_layout.attributes),
+                              std::back_inserter(_attribute_descriptions),
+                              [] (auto &&lhs, auto &&rhs)
+        {
+            if (lhs.location_index < )
+            return ;
+        });*/
 
         std::transform(std::cbegin(vertex_input_state.attribute_descriptions), std::cend(vertex_input_state.attribute_descriptions),
-                       std::back_inserter(attribute_descriptions), [binding_index] (auto &&attribute_description)
+                       std::back_inserter(attribute_descriptions),
+                       [binding_index] (auto &&attribute_description)
         {
             auto [
                 location_index, binding_index, offset_in_bytes, format
@@ -38,14 +54,12 @@ namespace convert_to
             };
         });
 
-        VkPipelineVertexInputStateCreateInfo const info{
+        return VkPipelineVertexInputStateCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
             nullptr, 0,
-            1u, &binding_description,
-            static_cast<std::uint32_t>(std::size(attribute_descriptions)), std::data(attribute_descriptions),
+            static_cast<std::uint32_t>(std::size(binding_descriptions)), std::data(binding_descriptions),
+            static_cast<std::uint32_t>(std::size(attribute_descriptions)), std::data(attribute_descriptions)
         };
-
-        return std::tuple{info, binding_description, attribute_descriptions};
     }
 
     [[nodiscard]] VkPipelineRasterizationStateCreateInfo vulkan(graphics::rasterization_state const &rasterization_state)
@@ -99,11 +113,9 @@ namespace convert_to
         };
     }
 
-    [[nodiscard]] std::pair<VkPipelineColorBlendStateCreateInfo, std::vector<VkPipelineColorBlendAttachmentState>>
-    vulkan(graphics::color_blend_state const &color_blend_state)
+    [[nodiscard]] VkPipelineColorBlendStateCreateInfo
+    vulkan(graphics::color_blend_state const &color_blend_state, std::vector<VkPipelineColorBlendAttachmentState> &attachment_states)
     {
-        std::vector<VkPipelineColorBlendAttachmentState> attachment_states;
-
         for (auto &&attachment_state : color_blend_state.attachment_states) {
             attachment_states.push_back(VkPipelineColorBlendAttachmentState{
                 convert_to::vulkan(attachment_state.blend_enable),
@@ -134,7 +146,7 @@ namespace convert_to
         std::copy(std::cbegin(color_blend_state.blend_constants), std::cend(color_blend_state.blend_constants),
                   std::begin(create_info.blendConstants));
 
-        return std::make_pair(create_info, attachment_states);
+        return create_info;
     }
 }
 
@@ -171,9 +183,10 @@ namespace graphics
             };
         });
 
-        auto [vertex_input_state, binding_description, attribute_descriptions] = convert_to::vulkan(pipeline_states.vertex_input_state);
-        vertex_input_state.pVertexBindingDescriptions = &binding_description;
-        vertex_input_state.pVertexAttributeDescriptions = std::data(attribute_descriptions);
+        std::vector<VkVertexInputBindingDescription> binding_descriptions;
+        std::vector<VkVertexInputAttributeDescription> attribute_descriptions;
+
+        auto vertex_input_state = convert_to::vulkan(pipeline_states.vertex_input_state, binding_descriptions, attribute_descriptions);
 
         VkPipelineInputAssemblyStateCreateInfo const input_assembly_state{
             VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO,
@@ -224,8 +237,9 @@ namespace graphics
 
         auto rasterization_state = convert_to::vulkan(pipeline_states.rasterization_state);
         auto depth_stencil_state = convert_to::vulkan(pipeline_states.depth_stencil_state);
-        auto [color_blend_state, color_blend_attachment_states] = convert_to::vulkan(pipeline_states.color_blend_state);
-        color_blend_state.pAttachments = std::data(color_blend_attachment_states);
+
+        std::vector<VkPipelineColorBlendAttachmentState> color_blend_attachment_states;
+        auto color_blend_state = convert_to::vulkan(pipeline_states.color_blend_state, color_blend_attachment_states);
 
         VkPipelineMultisampleStateCreateInfo const multisample_state{
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,

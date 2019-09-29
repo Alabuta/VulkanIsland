@@ -735,6 +735,7 @@ void build_render_pipelines(app_t &app, xformat const &_model)
         auto [technique_index, name] = _model.materials[material_index];
 
         auto material = material_factory.material(name, technique_index);
+        material->vertex_layout = vertex_layout;
 
         graphics::pipeline_states pipeline_states{
             primitive_topology,

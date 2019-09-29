@@ -9,6 +9,7 @@
 
 #include "graphics.hxx"
 #include "attachments.hxx"
+#include "vertex.hxx"
 #include "loaders/material_loader.hxx"
 #include "resources/program.hxx"
 #include "shader_program.hxx"
@@ -85,6 +86,8 @@ namespace graphics
         material(std::vector<graphics::shader_stage> shader_stages) : shader_stages{shader_stages} { }
 
         std::vector<graphics::shader_stage> shader_stages;
+
+        graphics::vertex_layout vertex_layout;
 
         // TODO:: descriptor set and pipeline layout.
     };
