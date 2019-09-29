@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <string>
 using namespace std::string_literals;
 
@@ -29,17 +28,6 @@ namespace convert_to
         binding_descriptions.push_back(VkVertexInputBindingDescription{
             binding_index, size_in_bytes, convert_to::vulkan(input_rate)
         });
-
-        /*std::vector<graphics::vertex_input_attribute> _attribute_descriptions;
-
-        std::set_intersection(std::cbegin(vertex_input_state.attribute_descriptions), std::cend(vertex_input_state.attribute_descriptions),
-                              std::cbegin(material.vertex_layout.attributes), std::cend(material.vertex_layout.attributes),
-                              std::back_inserter(_attribute_descriptions),
-                              [] (auto &&lhs, auto &&rhs)
-        {
-            if (lhs.location_index < )
-            return ;
-        });*/
 
         std::transform(std::cbegin(vertex_input_state.attribute_descriptions), std::cend(vertex_input_state.attribute_descriptions),
                        std::back_inserter(attribute_descriptions),
