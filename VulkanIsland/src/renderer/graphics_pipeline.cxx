@@ -145,10 +145,10 @@ namespace graphics
         VkPipelineLayout layout, VkRenderPass render_pass, std::uint32_t subpass_index
     )
     {
-        graphics::pipeline_invariant key{material, pipeline_states, layout, render_pass, subpass_index};
+        graphics::pipeline_invariant invariant{material, pipeline_states, layout, render_pass, subpass_index};
 
-        if (pipelines_.count(key) != 0)
-            return pipelines_.at(key);
+        if (pipelines_.count(invariant) != 0)
+            return pipelines_.at(invariant);
 
         VkExtent2D const extent{600u, 400u};
 
@@ -276,6 +276,9 @@ namespace graphics
                 delete ptr_pipeline;
             }
         );
+
+        pipelines_.emplace(invariant, pipeline);
+        invariants_.emplace(pipeline, invariant);
 
         return pipeline;
     }

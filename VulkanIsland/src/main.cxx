@@ -76,6 +76,17 @@ std::vector<renderable_t> renderables;
 
 void cleanup_frame_data(struct app_t &app);
 
+struct draw_command final {
+    std::shared_ptr<graphics::material> material;
+    std::shared_ptr<graphics::pipeline> pipeline;
+
+    std::uint32_t vertex_count{0};
+    std::uint32_t first_vertex{0};
+
+    VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
+    VkRenderPass renderPass{VK_NULL_HANDLE};
+    VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
+};
 
 struct app_t final {
     std::uint32_t width{800u};
@@ -140,6 +151,8 @@ struct app_t final {
     std::unique_ptr<graphics::vertex_input_state_manager> vertex_input_state_manager;
     std::unique_ptr<graphics::pipeline_factory> pipeline_factory;
 
+    std::vector<draw_command> draw_commands;
+
     ~app_t()
     {
         clean_up();
@@ -151,6 +164,8 @@ struct app_t final {
             return;
 
         vkDeviceWaitIdle(vulkanDevice->handle());
+
+        draw_commands.clear();
 
         renderables.clear();
 
@@ -690,9 +705,80 @@ xformat populate()
             std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
         }
     }
+    
+    {
+        struct vertex_struct final {
+            vertex::static_array<3, boost::float32_t> position;
+            vertex::static_array<2, boost::float32_t> texCoord;
+            vertex::static_array<3, boost::float32_t> color;
+        };
+
+        auto const vertex_layout_index = std::size(_model.vertex_layouts);
+
+        _model.vertex_layouts.push_back(
+            create_vertex_layout(
+                vertex::position{}, decltype(vertex_struct::position){}, false,
+                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
+                vertex::color_0{}, decltype(vertex_struct::color){}, false
+            )
+        );
+
+        std::vector<vertex_struct> vertices;
+
+        // Fourth triangle
+        vertices.push_back(vertex_struct{
+            {{0.f, 0.f, 0.f}}, {{.5f, .5f}}, {{0.f, 0.f, 0.f}}
+        });
+
+        vertices.push_back(vertex_struct{
+            {{1.f, 0.f, -1.f}}, {{1.f, 1.f}}, {{1.f, 0.f, 1.f}}
+        });
+
+        vertices.push_back(vertex_struct{
+            {{0.f, 0.f, -1.f}}, {{.5f, 1.f}}, {{0.f, 0.f, 1.f}}
+        });
+
+        auto &&vertexBuffer = _model.vertex_buffers[vertex_layout_index];
+
+        using buffer_type_t = std::remove_cvref_t<decltype(vertexBuffer.buffer)>;
+
+        {
+            // Fourth triangle
+            xformat::non_indexed_meshlet meshlet;
+
+            meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
+
+            meshlet.vertex_buffer_index = vertex_layout_index;
+            meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
+            meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count + vertexCountPerMeshlet * 2);
+
+            meshlet.material_index = 2;
+            meshlet.instance_count = 1;
+            meshlet.first_instance = 0;
+
+            _model.non_indexed_meshlets.push_back(std::move(meshlet));
+        }
+
+        {
+            auto const vertexSize = sizeof(vertex_struct);
+            auto const vertex_count = std::size(vertices);
+            auto const bytesCount = vertexSize * vertex_count;
+
+            vertexBuffer.buffer.resize(std::size(vertexBuffer.buffer) + bytesCount);
+
+            auto writeOffset = static_cast<buffer_type_t::difference_type>(vertexBuffer.count * vertexSize);
+
+            vertexBuffer.count += vertex_count;
+
+            auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
+
+            std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
+        }
+    }
 
     _model.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
     _model.materials.push_back(xformat::material{0, "debug/color-debug-material"s});
+    _model.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
     //_model.materials.push_back(xformat::material{0, "debug/normal-debug"s});
 
     return _model;
@@ -711,7 +797,7 @@ void build_render_pipelines(app_t &app, xformat const &_model)
 
     graphics::depth_stencil_state depth_stencil_state{
         true, true, graphics::COMPARE_OPERATION::GREATER,
-        false, { 0.f, 0.f },
+        false, { 0.f, 1.f },
         false, graphics::stencil_state{ }, graphics::stencil_state{ }
     };
 
@@ -728,9 +814,6 @@ void build_render_pipelines(app_t &app, xformat const &_model)
     for (auto &&meshlet : _model.non_indexed_meshlets) {
         auto primitive_topology = meshlet.topology;
 
-        /*auto vertex_layout_index = meshlet.vertex_buffer_index;
-        auto &&vertex_layout = _model.vertex_layouts[vertex_layout_index];*/
-
         auto material_index = meshlet.material_index;
         auto [technique_index, name] = _model.materials[material_index];
 
@@ -746,6 +829,13 @@ void build_render_pipelines(app_t &app, xformat const &_model)
         };
 
         auto pipeline = pipeline_factory.create_pipeline(material, pipeline_states, app.pipelineLayout, app.renderPass, 0u);
+
+        /*auto vertex_layout_index = meshlet.vertex_buffer_index;
+        auto &&vertex_layout = _model.vertex_layouts[vertex_layout_index];*/
+
+        app.draw_commands.push_back(
+            draw_command{material, pipeline, meshlet.vertex_count, meshlet.first_vertex, app.pipelineLayout, app.renderPass, app.descriptorSet}
+        );
     }
 }
 
@@ -1125,7 +1215,7 @@ void render_frame(app_t &app)
 }
 
 int main()
-try {
+/*try */{
 #if defined(_MSC_VER)
     _CrtSetDbgFlag(_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 #else
@@ -1201,10 +1291,10 @@ try {
     app.clean_up();
 
     glfwTerminate();
-} catch (std::exception const &ex) {
+}/* catch (std::exception const &ex) {
     std::cout << ex.what() << std::endl;
     std::cin.get();
-}
+}*/
 
 
 template<class T> requires mpl::container<std::remove_cvref_t<T>>
