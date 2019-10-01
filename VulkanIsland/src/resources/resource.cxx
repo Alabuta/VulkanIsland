@@ -381,6 +381,14 @@ void ResourceManager::TransferStagedVertexData(VkCommandPool transferCommandPool
     }
 }
 
+std::shared_ptr<VertexBuffer> ResourceManager::vertex_buffer(graphics::vertex_layout const &layout) const
+{
+    if (vertexBuffers_.count(layout) == 0)
+        return { };
+
+    return vertexBuffers_.at(layout);
+}
+
 
 std::shared_ptr<VulkanBuffer>
 CreateUniformBuffer(VulkanDevice &device, std::size_t size)

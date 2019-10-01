@@ -11,7 +11,7 @@
 
 
 struct PipelineVertexInputState final {
-    std::uint32_t binding;
+    std::uint32_t binding_index;
 
     VkPipelineVertexInputStateCreateInfo info;
 
@@ -23,7 +23,7 @@ struct PipelineVertexInputState final {
 class PipelineVertexInputStatesManager final {
 public:
 
-    [[nodiscard]] std::uint32_t binding(graphics::vertex_layout const &layout) noexcept;
+    [[nodiscard]] std::uint32_t binding_index(graphics::vertex_layout const &layout) noexcept;
     [[nodiscard]] VkPipelineVertexInputStateCreateInfo const &info(graphics::vertex_layout const &layout) noexcept;
 
 private:

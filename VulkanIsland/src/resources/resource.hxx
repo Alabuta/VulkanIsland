@@ -74,6 +74,8 @@ public:
 
     [[nodiscard]] auto &vertex_buffers() const noexcept { return vertexBuffers_; }
 
+    [[nodiscard]] std::shared_ptr<VertexBuffer> vertex_buffer(graphics::vertex_layout const &layout) const;
+
     [[nodiscard]] std::shared_ptr<resource::semaphore> create_semaphore();
 
 private:
