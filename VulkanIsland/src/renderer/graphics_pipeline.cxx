@@ -278,7 +278,6 @@ namespace graphics
         );
 
         pipelines_.emplace(invariant, pipeline);
-        invariants_.emplace(pipeline, invariant);
 
         return pipeline;
     }

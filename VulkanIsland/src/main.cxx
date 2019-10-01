@@ -79,6 +79,7 @@ void cleanup_frame_data(struct app_t &app);
 struct draw_command final {
     std::shared_ptr<graphics::material> material;
     std::shared_ptr<graphics::pipeline> pipeline;
+    std::shared_ptr<VertexBuffer> vertex_buffer;
 
     std::uint32_t vertex_count{0};
     std::uint32_t first_vertex{0};
@@ -327,18 +328,6 @@ void update_descriptor_set(app_t &app, VulkanDevice const &device, VkDescriptorS
                            std::data(writeDescriptorsSet), 0, nullptr);
 }
 
-void create_graphics_pipelines(app_t &app)
-{
-    for (auto &&renderable : renderables) {
-        auto pipeline = app.graphicsPipelineManager->CreateGraphicsPipeline(
-            renderable.vertexBuffer->vertexLayout(), renderable.material, renderable.topology, app.pipelineLayout, app.renderPass, app.swapchain.extent
-        );
-
-        if (!pipeline)
-            throw std::runtime_error("failed to get graphics pipeline"s);
-    }
-}
-
 void create_graphics_command_buffers(app_t &app)
 {
     app.commandBuffers.resize(std::size(app.swapchain.framebuffers));
@@ -357,18 +346,19 @@ void create_graphics_command_buffers(app_t &app)
     auto &&resourceManager = app.vulkanDevice->resourceManager();
     auto &&vertex_buffers = resourceManager.vertex_buffers();
 
-    auto &&pipelineVertexInputStatesManager = app.pipelineVertexInputStatesManager;
+    auto &&vertex_input_state_manager = app.pipelineVertexInputStatesManager;
+    //auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
 
     std::set<std::pair<std::uint32_t, VkBuffer>> vertexBindingsAndBuffers;
 
     std::uint32_t first_binding = std::numeric_limits<std::uint32_t>::max();
 
-    for (auto &&[layout, vertex_buffer] : vertex_buffers) {
-        auto binding = pipelineVertexInputStatesManager.binding(layout);
+    for (auto &&[vertex_layout, vertex_buffer] : vertex_buffers) {
+        auto binding_index = vertex_input_state_manager.binding_index(vertex_layout);
 
-        first_binding = std::min(binding, first_binding);
+        first_binding = std::min(binding_index, first_binding);
 
-        vertexBindingsAndBuffers.emplace(binding, vertex_buffer->deviceBuffer().handle());
+        vertexBindingsAndBuffers.emplace(binding_index, vertex_buffer->deviceBuffer().handle());
     }
 
     std::vector<VkBuffer> vertexBuffersHandles;
@@ -462,6 +452,23 @@ void create_graphics_command_buffers(app_t &app)
 
             vkCmdDraw(commandBuffer, vertex_count, 1, first_vertex, 0);
         }
+
+        /*for (auto &&draw_command : app.draw_commands) {
+            auto [
+                material, pipeline, vertex_buffer,
+                vertex_count, first_vertex,
+                pipelineLayout, renderPass, descriptorSet
+            ] = draw_command;
+
+            vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
+
+            std::uint32_t const dynamicOffset = 0;
+
+            vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout,
+                                    0, 1, &descriptorSet, 1, &dynamicOffset);
+
+            vkCmdDraw(commandBuffer, vertex_count, 1, first_vertex, 0);
+        }*/
 
         vkCmdEndRenderPass(commandBuffer);
 
@@ -568,7 +575,7 @@ xformat populate()
         });
 
         vertices.push_back(vertex_struct{
-            {{1.f, 0.f, 1.f}}, {{1.f, 0.f}}
+            {{0.f, 0.f, 1.f}}, {{1.f, 0.f}}
         });
 
         xformat::non_indexed_meshlet meshlet;
@@ -727,15 +734,15 @@ xformat populate()
 
         // Fourth triangle
         vertices.push_back(vertex_struct{
-            {{0.f, 0.f, 0.f}}, {{.5f, .5f}}, {{0.f, 0.f, 0.f}}
+            {{0.f, 0.f, 0.f}}, {{.5f, .5f}}, {{1.f, 0.f, 0.f}}
         });
 
         vertices.push_back(vertex_struct{
-            {{1.f, 0.f, -1.f}}, {{1.f, 1.f}}, {{1.f, 0.f, 1.f}}
+            {{1.f, 0.f, 1.f}}, {{1.f, 1.f}}, {{0.f, 0.5f, 0.5f}}
         });
 
         vertices.push_back(vertex_struct{
-            {{0.f, 0.f, -1.f}}, {{.5f, 1.f}}, {{0.f, 0.f, 1.f}}
+            {{1.f, 0.f, 0.f}}, {{.5f, 1.f}}, {{.8f, .5f, 0.f}}
         });
 
         auto &&vertexBuffer = _model.vertex_buffers[vertex_layout_index];
@@ -750,7 +757,7 @@ xformat populate()
 
             meshlet.vertex_buffer_index = vertex_layout_index;
             meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
-            meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count + vertexCountPerMeshlet * 2);
+            meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count);
 
             meshlet.material_index = 2;
             meshlet.instance_count = 1;
@@ -811,6 +818,8 @@ void build_render_pipelines(app_t &app, xformat const &_model)
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
     auto &&pipeline_factory = *app.pipeline_factory;
 
+    auto &&resource_manager = app.vulkanDevice->resourceManager();
+
     for (auto &&meshlet : _model.non_indexed_meshlets) {
         auto primitive_topology = meshlet.topology;
 
@@ -830,11 +839,17 @@ void build_render_pipelines(app_t &app, xformat const &_model)
 
         auto pipeline = pipeline_factory.create_pipeline(material, pipeline_states, app.pipelineLayout, app.renderPass, 0u);
 
-        /*auto vertex_layout_index = meshlet.vertex_buffer_index;
-        auto &&vertex_layout = _model.vertex_layouts[vertex_layout_index];*/
+        auto vertex_layout_index = meshlet.vertex_buffer_index;
+        auto &&vertex_layout = _model.vertex_layouts[vertex_layout_index];
+
+        auto vertex_buffer = resource_manager.vertex_buffer(vertex_layout);
 
         app.draw_commands.push_back(
-            draw_command{material, pipeline, meshlet.vertex_count, meshlet.first_vertex, app.pipelineLayout, app.renderPass, app.descriptorSet}
+            draw_command{
+                material, pipeline, vertex_buffer,
+                meshlet.vertex_count, meshlet.first_vertex,
+                app.pipelineLayout, app.renderPass, app.descriptorSet
+            }
         );
     }
 }
@@ -863,6 +878,13 @@ void stageXformat(app_t &app, xformat const &_model)
 
         if (!material)
             throw std::runtime_error("failed to get material"s);
+
+        auto pipeline = app.graphicsPipelineManager->CreateGraphicsPipeline(
+            vertexBuffer->vertexLayout(), material, meshlet.topology, app.pipelineLayout, app.renderPass, app.swapchain.extent
+        );
+
+        if (!pipeline)
+            throw std::runtime_error("failed to get graphics pipeline"s);
 
         renderables.push_back({
             meshlet.topology, material, vertexBuffer, meshlet.vertex_count, meshlet.first_vertex
@@ -1083,7 +1105,6 @@ void init_vulkan(platform::window &window, app_t &app)
 #endif
 
     app.vulkanDevice->resourceManager().TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
-    create_graphics_pipelines(app);
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 

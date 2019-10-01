@@ -116,6 +116,5 @@ namespace graphics
         graphics::shader_manager &shader_manager_;
 
         std::unordered_map<graphics::pipeline_invariant, std::shared_ptr<graphics::pipeline>, graphics::hash<pipeline_invariant>> pipelines_;
-        std::unordered_map<std::shared_ptr<graphics::pipeline>, graphics::pipeline_invariant> invariants_;
     };
 }
