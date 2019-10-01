@@ -95,7 +95,7 @@ struct app_t final {
     camera_system cameraSystem;
     std::shared_ptr<camera> camera;
 
-    std::unique_ptr<orbit_controller> cameraController;
+    std::unique_ptr<orbit_controller> camera_controller;
 
     std::vector<per_object_t> objects;
 
@@ -264,23 +264,6 @@ struct window_events_handler final : public platform::window::event_handler_inte
     }
 };
 
-
-void cleanup_frame_data(app_t &app)
-{
-    auto &&device = *app.vulkanDevice;
-
-    if (app.graphicsCommandPool)
-        vkFreeCommandBuffers(device.handle(), app.graphicsCommandPool, static_cast<std::uint32_t>(std::size(app.commandBuffers)), std::data(app.commandBuffers));
-
-    app.commandBuffers.clear();
-
-#if !USE_DYNAMIC_PIPELINE_STATE
-    if (app.renderPass != VK_NULL_HANDLE)
-        vkDestroyRenderPass(device.handle(), app.renderPass, nullptr);
-#endif
-
-    CleanupSwapchain(device, app.swapchain);
-}
 
 void update_descriptor_set(app_t &app, VulkanDevice const &device, VkDescriptorSet &descriptorSet)
 {
@@ -500,6 +483,23 @@ void create_semaphores(app_t &app)
         throw std::runtime_error("failed to create render semaphore"s);
 
     else app.renderFinishedSemaphore = semaphore;
+}
+
+void cleanup_frame_data(app_t &app)
+{
+    auto &&device = *app.vulkanDevice;
+
+    if (app.graphicsCommandPool)
+        vkFreeCommandBuffers(device.handle(), app.graphicsCommandPool, static_cast<std::uint32_t>(std::size(app.commandBuffers)), std::data(app.commandBuffers));
+
+    app.commandBuffers.clear();
+
+#if !USE_DYNAMIC_PIPELINE_STATE
+    if (app.renderPass != VK_NULL_HANDLE)
+        vkDestroyRenderPass(device.handle(), app.renderPass, nullptr);
+#endif
+
+    CleanupSwapchain(device, app.swapchain);
 }
 
 void recreate_swap_chain(app_t &app)
@@ -949,6 +949,55 @@ void init_vulkan(platform::window &window, app_t &app)
 
     else app.pipelineLayout = std::move(pipelineLayout.value());
 
+#if TEMPORARILY_DISABLED
+    // "chalet/textures/chalet.tga"sv
+    // "Hebe/textures/HebehebemissinSG1_metallicRoughness.tga"sv
+    if (auto result = load_texture(app, *app.vulkanDevice, "sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
+        throw std::runtime_error("failed to load a texture"s);
+
+    else app.texture = std::move(result.value());
+
+    if (auto result = app.vulkanDevice->resourceManager().CreateImageSampler(app.texture.image->mipLevels()); !result)
+        throw std::runtime_error("failed to create a texture sampler"s);
+
+    else app.texture.sampler = result;
+#endif
+
+    auto alignment = static_cast<std::size_t>(app.vulkanDevice->properties().limits.minStorageBufferOffsetAlignment);
+
+    app.alignedBufferSize = aligned_size(sizeof(per_object_t), alignment) * app.objectsNumber;
+
+    app.alignedBuffer = boost::alignment::aligned_alloc(alignment, app.alignedBufferSize);
+
+    app.objects.resize(app.objectsNumber);
+
+    if (app.perObjectBuffer = CreateStorageBuffer(*app.vulkanDevice, app.alignedBufferSize); app.perObjectBuffer) {
+        auto &&buffer = *app.perObjectBuffer;
+
+        auto offset = buffer.memory()->offset();
+        auto size = buffer.memory()->size();
+
+        if (auto result = vkMapMemory(app.vulkanDevice->handle(), buffer.memory()->handle(), offset, size, 0, &app.perObjectsMappedPtr); result != VK_SUCCESS)
+            throw std::runtime_error(fmt::format("failed to map per object uniform buffer memory: {0:#x}\n"s, result));
+    }
+
+    else throw std::runtime_error("failed to init per object uniform buffer"s);
+
+    if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.vulkanDevice, sizeof(camera::data_t)); !app.perCameraBuffer)
+        throw std::runtime_error("failed to init per camera uniform buffer"s);
+
+    if (auto descriptorPool = CreateDescriptorPool(*app.vulkanDevice); !descriptorPool)
+        throw std::runtime_error("failed to create the descriptor pool"s);
+
+    else app.descriptorPool = std::move(descriptorPool.value());
+
+    if (auto descriptorSet = CreateDescriptorSet(*app.vulkanDevice, app.descriptorPool, std::array{app.descriptorSetLayout}); !descriptorSet)
+        throw std::runtime_error("failed to create the descriptor pool"s);
+
+    else app.descriptorSet = std::move(descriptorSet.value());
+
+    update_descriptor_set(app, *app.vulkanDevice, app.descriptorSet);
+
     temp::model = temp::populate();
     temp::stageXformat(app, temp::model);
     temp::build_render_pipelines(app, temp::model);
@@ -1038,55 +1087,6 @@ void init_vulkan(platform::window &window, app_t &app)
 
     CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
 
-#if TEMPORARILY_DISABLED
-    // "chalet/textures/chalet.tga"sv
-    // "Hebe/textures/HebehebemissinSG1_metallicRoughness.tga"sv
-    if (auto result = load_texture(app, *app.vulkanDevice, "sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
-        throw std::runtime_error("failed to load a texture"s);
-
-    else app.texture = std::move(result.value());
-
-    if (auto result = app.vulkanDevice->resourceManager().CreateImageSampler(app.texture.image->mipLevels()); !result)
-        throw std::runtime_error("failed to create a texture sampler"s);
-
-    else app.texture.sampler = result;
-#endif
-
-    auto alignment = static_cast<std::size_t>(app.vulkanDevice->properties().limits.minStorageBufferOffsetAlignment);
-
-    app.alignedBufferSize = aligned_size(sizeof(per_object_t), alignment) * app.objectsNumber;
-
-    app.alignedBuffer = boost::alignment::aligned_alloc(alignment, app.alignedBufferSize);
-
-    app.objects.resize(app.objectsNumber);
-
-    if (app.perObjectBuffer = CreateStorageBuffer(*app.vulkanDevice, app.alignedBufferSize); app.perObjectBuffer) {
-        auto &&buffer = *app.perObjectBuffer;
-
-        auto offset = buffer.memory()->offset();
-        auto size = buffer.memory()->size();
-
-        if (auto result = vkMapMemory(app.vulkanDevice->handle(), buffer.memory()->handle(), offset, size, 0, &app.perObjectsMappedPtr); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to map per object uniform buffer memory: {0:#x}\n"s, result));
-    }
-
-    else throw std::runtime_error("failed to init per object uniform buffer"s);
-
-    if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.vulkanDevice, sizeof(camera::data_t)); !app.perCameraBuffer)
-        throw std::runtime_error("failed to init per camera uniform buffer"s);
-
-    if (auto descriptorPool = CreateDescriptorPool(*app.vulkanDevice); !descriptorPool)
-        throw std::runtime_error("failed to create the descriptor pool"s);
-
-    else app.descriptorPool = std::move(descriptorPool.value());
-
-    if (auto descriptorSet = CreateDescriptorSet(*app.vulkanDevice, app.descriptorPool, std::array{app.descriptorSetLayout}); !descriptorSet)
-        throw std::runtime_error("failed to create the descriptor pool"s);
-
-    else app.descriptorSet = std::move(descriptorSet.value());
-
-    update_descriptor_set(app, *app.vulkanDevice, app.descriptorSet);
-
     create_graphics_command_buffers(app);
 
     create_semaphores(app);
@@ -1094,7 +1094,7 @@ void init_vulkan(platform::window &window, app_t &app)
 
 void update(app_t &app)
 {
-    app.cameraController->update();
+    app.camera_controller->update();
     app.cameraSystem.update();
 
     auto &&device = *app.vulkanDevice;
@@ -1232,14 +1232,14 @@ int main()
     auto app_window_events_handler = std::make_shared<window_events_handler>(app);
     window.connect_event_handler(app_window_events_handler);
 
-    auto inputManager = std::make_shared<platform::input_manager>();
-    window.connect_input_handler(inputManager);
+    auto input_manager = std::make_shared<platform::input_manager>();
+    window.connect_input_handler(input_manager);
 
     app.camera = app.cameraSystem.create_camera();
     app.camera->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
 
-    app.cameraController = std::make_unique<orbit_controller>(app.camera, *inputManager);
-    app.cameraController->look_at(glm::vec3{0, 2, 1}, {0, 0, 0});
+    app.camera_controller = std::make_unique<orbit_controller>(app.camera, *input_manager);
+    app.camera_controller->look_at(glm::vec3{0, 2, 1}, {0, 0, 0});
 
     std::cout << measure<>::execution(init_vulkan, window, std::ref(app)) << " ms\n"s;
 
