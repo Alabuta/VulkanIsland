@@ -513,8 +513,9 @@ xformat populate()
         // First triangle
         struct vertex_struct final {
             vertex::static_array<3, boost::float32_t> position;
-            vertex::static_array<2, boost::float32_t> texCoord;
             //vertex::static_array<3, boost::float32_t> normal;
+            vertex::static_array<2, boost::float32_t> texCoord;
+            vertex::static_array<3, boost::float32_t> color;
         };
 
         auto const vertex_layout_index = std::size(_model.vertex_layouts);
@@ -522,23 +523,24 @@ xformat populate()
         _model.vertex_layouts.push_back(
             vertex::create_vertex_layout(
                 vertex::position{}, decltype(vertex_struct::position){}, false,
-                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false
-                //vertex::normal{}, decltype(vertex_struct::normal){}, false
+                //vertex::normal{}, decltype(vertex_struct::normal){}, false,
+                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
+                vertex::color_0{}, decltype(vertex_struct::color){}, false
             )
         );
 
         std::vector<vertex_struct> vertices;
 
         vertices.push_back(vertex_struct{
-            {{0.f, 0.f, 0.f}}, {{.5f, .5f}}//, {{ 0.f, 1.f, 0.f }}
+            {{0.f, 0.f, 0.f}}/*, {{ 0.f, 1.f, 0.f }}*/, {{.5f, .5f}}, {{ .8f, 1.f, .2f }}
         });
 
         vertices.push_back(vertex_struct{
-            {{-1.f, 0.f, 1.f}}, {{0.f, 0.f}}//, {{ 0.f, 1.f, 0.f }}
+            {{-1.f, 0.f, 1.f}}/*, {{ 0.f, 1.f, 0.f }}*/, {{0.f, 0.f}}, {{ 1.f, .8f, .2f }}
         });
 
         vertices.push_back(vertex_struct{
-            {{0.f, 0.f, 1.f}}, {{1.f, 0.f}}//, {{ 0.f, 1.f, 0.f }}
+            {{0.f, 0.f, 1.f}}/*, {{ 0.f, 1.f, 0.f }}*/, {{1.f, 0.f}}, {{ .2f, 0.8f, 1.f }}
         });
 
         xformat::non_indexed_meshlet meshlet;
@@ -569,7 +571,7 @@ xformat populate()
             std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
         }
 
-        meshlet.material_index = 0;
+        meshlet.material_index = 2;
         meshlet.instance_count = 1;
         meshlet.first_instance = 0;
 
@@ -720,7 +722,7 @@ xformat populate()
 
             meshlet.vertex_buffer_index = vertex_layout_index;
             meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
-            meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count);
+            meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count + vertexCountPerMeshlet);
 
             meshlet.material_index = 2;
             meshlet.instance_count = 1;
