@@ -31,13 +31,13 @@
 #include "resources/semaphore.hxx"
 #include "descriptor.hxx"
 #include "command_buffer.hxx"
-#include "renderer/pipelines.hxx"
+
 #include "renderer/graphics_pipeline.hxx"
 #include "renderer/pipeline_states.hxx"
 #include "renderer/renderPass.hxx"
 
 #include "renderer/graphics.hxx"
-#include "renderer/pipelineVertexInputState.hxx"
+
 #include "renderer/material.hxx"
 
 #include "renderer/vertex.hxx"
@@ -128,12 +128,6 @@ struct app_t final {
 #endif
 #endif
 
-    PipelineVertexInputStatesManager pipelineVertexInputStatesManager;
-
-    std::unique_ptr<MaterialFactory> materialFactory;
-    std::unique_ptr<ShaderManager> shaderManager;
-    std::unique_ptr<GraphicsPipelineManager> graphicsPipelineManager;
-
     std::unique_ptr<graphics::shader_manager> shader_manager;
     std::unique_ptr<graphics::material_factory> material_factory;
     std::unique_ptr<graphics::vertex_input_state_manager> vertex_input_state_manager;
@@ -157,12 +151,6 @@ struct app_t final {
 
         cleanup_frame_data(*this);
 
-        if (materialFactory)
-            materialFactory.reset();
-
-        if (shaderManager)
-            shaderManager.reset();
-
         if (renderFinishedSemaphore)
             renderFinishedSemaphore.reset();
 
@@ -180,9 +168,6 @@ struct app_t final {
 
         if (shader_manager)
             shader_manager.reset();
-
-        if (graphicsPipelineManager)
-            graphicsPipelineManager.reset();
 
         if (pipelineLayout != VK_NULL_HANDLE)
             vkDestroyPipelineLayout(vulkanDevice->handle(), pipelineLayout, nullptr);
@@ -859,10 +844,6 @@ void init_vulkan(platform::window &window, app_t &app)
 
     app.vulkanDevice = std::make_unique<VulkanDevice>(*app.vulkanInstance, app.surface, config::deviceExtensions, std::move(qpool));
 
-    app.shaderManager = std::make_unique<ShaderManager>(*app.vulkanDevice);
-    app.materialFactory = std::make_unique<MaterialFactory>(*app.shaderManager);
-    app.graphicsPipelineManager = std::make_unique<GraphicsPipelineManager>(*app.vulkanDevice, *app.materialFactory, app.pipelineVertexInputStatesManager);
-
     app.shader_manager = std::make_unique<graphics::shader_manager>(*app.vulkanDevice);
     app.material_factory = std::make_unique<graphics::material_factory>();
     app.vertex_input_state_manager = std::make_unique<graphics::vertex_input_state_manager>();
@@ -905,7 +886,7 @@ void init_vulkan(platform::window &window, app_t &app)
         throw std::runtime_error("failed to load a mesh"s);
 #endif
 
-    if (auto pipelineLayout = CreatePipelineLayout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); !pipelineLayout)
+    if (auto pipelineLayout = create_pipeline_layout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); !pipelineLayout)
         throw std::runtime_error("failed to create the pipeline layout"s);
 
     else app.pipelineLayout = std::move(pipelineLayout.value());

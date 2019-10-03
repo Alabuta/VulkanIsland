@@ -9,6 +9,7 @@
 #include "renderer/graphics_api.hxx"
 
 
+#if 0
 void ShaderManager::CreateShaderPrograms(Material const *const material)
 {
     for (auto &&shaderStage : material->shaderStages()) {
@@ -157,3 +158,4 @@ std::shared_ptr<VulkanShaderModule> ShaderManager::create_shader_module(std::vec
 
     return shader_module;
 }
+#endif

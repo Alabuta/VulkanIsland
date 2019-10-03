@@ -121,3 +121,31 @@ namespace graphics
         std::unordered_map<graphics::pipeline_invariant, std::shared_ptr<graphics::pipeline>, graphics::hash<pipeline_invariant>> pipelines_;
     };
 }
+
+template<class T> requires mpl::container<std::remove_cvref_t<T>>
+[[nodiscard]] std::optional<VkPipelineLayout>
+create_pipeline_layout(VulkanDevice const &vulkanDevice, T &&descriptorSetLayouts) noexcept
+{
+    static_assert(
+        std::is_same_v<typename std::remove_cvref_t<T>::value_type, VkDescriptorSetLayout>,
+        "container has to contain VkDescriptorSetLayout elements"
+    );
+
+    VkPipelineLayoutCreateInfo const layoutCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        nullptr, 0,
+        static_cast<std::uint32_t>(std::size(descriptorSetLayouts)), std::data(descriptorSetLayouts),
+        0, nullptr
+    };
+
+    std::optional<VkPipelineLayout> pipelineLayout;
+
+    VkPipelineLayout handle;
+
+    if (auto result = vkCreatePipelineLayout(vulkanDevice.handle(), &layoutCreateInfo, nullptr, &handle); result != VK_SUCCESS)
+        std::cerr << "failed to create pipeline layout: "s << result << '\n';
+
+    else pipelineLayout.emplace(handle);
+
+    return pipelineLayout;
+}

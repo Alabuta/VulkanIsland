@@ -6,7 +6,7 @@
 #include "main.hxx"
 #include "utility/mpl.hxx"
 #include "device/device.hxx"
-#include "program.hxx"
+
 #include "staging.hxx"
 #include "renderer/graphics_api.hxx"
 #include "semaphore.hxx"
@@ -16,7 +16,6 @@ class VulkanImage;
 class VulkanImageView;
 class VulkanSampler;
 class VulkanBuffer;
-class VulkanShaderModule;
 
 class VertexBuffer;
 class IndexBuffer;
@@ -60,9 +59,6 @@ public:
     [[nodiscard]] std::shared_ptr<VulkanBuffer>
     CreateBuffer(VkDeviceSize size, graphics::BUFFER_USAGE usage, VkMemoryPropertyFlags properties) noexcept;
 
-    [[nodiscard]] std::shared_ptr<VulkanShaderModule>
-    CreateShaderModule(std::vector<std::byte> const &shaderByteCode) noexcept;
-
     template<class T> requires mpl::one_of<T, std::uint16_t, std::uint32_t>
     [[nodiscard]] std::shared_ptr<IndexBuffer> CreateIndexBuffer(std::size_t sizeInBytes) noexcept;
 
@@ -85,7 +81,7 @@ private:
     VulkanDevice &device_;
 
     template<class T> requires mpl::one_of<std::remove_cvref_t<T>,
-        VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, VulkanShaderModule, resource::semaphore
+        VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, resource::semaphore
     >
     void ReleaseResource(T &&resource) noexcept;
 

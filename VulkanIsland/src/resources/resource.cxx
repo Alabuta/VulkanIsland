@@ -206,42 +206,8 @@ ResourceManager::CreateBuffer(VkDeviceSize size, graphics::BUFFER_USAGE usage, V
     return buffer;
 }
 
-std::shared_ptr<VulkanShaderModule>
-ResourceManager::CreateShaderModule(std::vector<std::byte> const &shaderByteCode) noexcept
-{
-    std::shared_ptr<VulkanShaderModule> shaderModule;
 
-    if (shaderByteCode.size() % sizeof(std::uint32_t) != 0)
-        std::cerr << "invalid byte code buffer size\n"s;
-
-    else {
-        VkShaderModuleCreateInfo const createInfo{
-            VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO,
-            nullptr, 0,
-            std::size(shaderByteCode),
-            reinterpret_cast<std::uint32_t const *>(std::data(shaderByteCode))
-        };
-
-        VkShaderModule handle;
-
-        if (auto result = vkCreateShaderModule(device_.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
-            std::cerr << "failed to create shader module: "s << result << '\n';
-
-        else shaderModule.reset(
-            new VulkanShaderModule{handle},
-            [this] (VulkanShaderModule *ptr_module)
-            {
-                ReleaseResource(*ptr_module);
-
-                delete ptr_module;
-            }
-        );
-    }
-
-    return shaderModule;
-}
-
-template<class T> requires mpl::one_of<std::remove_cvref_t<T>, VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, VulkanShaderModule, resource::semaphore>
+template<class T> requires mpl::one_of<std::remove_cvref_t<T>, VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, resource::semaphore>
 void ResourceManager::ReleaseResource(T &&resource) noexcept
 {
     using R = std::remove_cvref_t<T>;
@@ -266,11 +232,6 @@ void ResourceManager::ReleaseResource(T &&resource) noexcept
     {
         vkDestroyBuffer(device_.handle(), resource.handle(), nullptr);
         resource.memory().reset();
-    }
-
-    else if constexpr (std::is_same_v<R, VulkanShaderModule>)
-    {
-        vkDestroyShaderModule(device_.handle(), resource.handle(), nullptr);
     }
 
     else if constexpr (std::is_same_v<R, resource::semaphore>)

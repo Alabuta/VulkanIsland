@@ -11,7 +11,7 @@
 #include "resources/resource.hxx"
 #include "renderer/graphics.hxx"
 
-
+#if 0
 namespace shader
 {
     enum class STAGE {
@@ -205,3 +205,4 @@ public:
     std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<VulkanShaderModule>> modules_by_techinques_;
     std::unordered_map<program::shader_stage, VkPipelineShaderStageCreateInfo, program::shader_stage::hash> pipeline_shader_stages_;
 };
+#endif
