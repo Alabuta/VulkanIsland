@@ -385,131 +385,6 @@ namespace nlohmann
         technique.shaders_bundle = j.at("shadersBundle"s).get<std::vector<loader::material_description::shader_bundle>>();
 
         technique.vertex_layout = j.at("vertexLayout"s).get<std::vector<std::size_t>>();
-
-        technique.rasterization_state = j.at("rasterizationState"s).get<std::size_t>();
-        technique.depth_stencil_state = j.at("depthStencilState"s).get<std::size_t>();
-        technique.color_blend_state = j.at("colorBlendState"s).get<std::size_t>();
-    }
-
-    void from_json(nlohmann::json const &j, graphics::rasterization_state &rasterization_state)
-    {
-        if (auto cull_mode = loader::cull_mode(j.at("cullMode"s).get<std::string>()); cull_mode)
-            rasterization_state.cull_mode = *cull_mode;
-
-        else throw std::runtime_error("unsupported cull mode"s);
-
-        if (auto polygon_mode = loader::polygon_mode(j.at("polygonMode"s).get<std::string>()); polygon_mode)
-            rasterization_state.polygon_mode = *polygon_mode;
-
-        else throw std::runtime_error("unsupported polygon mode"s);
-
-        using pff = graphics::POLYGON_FRONT_FACE;
-
-        auto front_face_clockwise = j.at("frontFaceClockwise"s).get<bool>();
-        rasterization_state.front_face = front_face_clockwise ? pff::CLOCKWISE : pff::COUNTER_CLOCKWISE;
-    }
-
-    void from_json(nlohmann::json const &j, graphics::stencil_state &stencil_state)
-    {
-        if (auto stencil_operation = loader::stencil_operation(j.at("fail"s).get<std::string>()); stencil_operation)
-            stencil_state.fail = *stencil_operation;
-
-        else throw std::runtime_error("unsupported stencil fail operation"s);
-
-        if (auto stencil_operation = loader::stencil_operation(j.at("pass"s).get<std::string>()); stencil_operation)
-            stencil_state.pass = *stencil_operation;
-
-        else throw std::runtime_error("unsupported stencil pass operation"s);
-
-        if (auto stencil_operation = loader::stencil_operation(j.at("depthFail"s).get<std::string>()); stencil_operation)
-            stencil_state.depth_fail = *stencil_operation;
-
-        else throw std::runtime_error("unsupported stencil depth fail operation"s);
-
-        if (auto compare_operation = loader::compare_operation(j.at("compareOperation"s).get<std::string>()); compare_operation)
-            stencil_state.compare_operation = *compare_operation;
-
-        else throw std::runtime_error("unsupported stencil compare operation"s);
-
-        stencil_state.compare_mask = j.at("compareMask"s).get<std::uint32_t>();
-        stencil_state.write_mask = j.at("writeMask"s).get<std::uint32_t>();
-        stencil_state.reference = j.at("reference"s).get<std::uint32_t>();
-    }
-
-    void from_json(nlohmann::json const &j, graphics::depth_stencil_state &depth_stencil_state)
-    {
-        if (auto compare_operation = loader::compare_operation(j.at("depthCompareOperation"s).get<std::string>()); compare_operation)
-            depth_stencil_state.depth_compare_operation = *compare_operation;
-
-        else throw std::runtime_error("unsupported depth compare operation"s);
-
-        depth_stencil_state.depth_test_enable = j.at("depthTestEnable"s).get<bool>();
-
-        depth_stencil_state.depth_write_enable = j.at("depthWriteEnable"s).get<bool>();
-
-        depth_stencil_state.depth_bounds_test_enable = j.at("depthBoundsTestEnable"s).get<bool>();
-
-        depth_stencil_state.depth_bounds = j.at("depthBounds"s).get<std::array<float, 2>>();
-
-        depth_stencil_state.stencil_test_enable = j.at("stencilTestEnable"s).get<bool>();
-
-        depth_stencil_state.front_stencil_state = j.at("frontStencilTest"s).get<graphics::stencil_state>();
-
-        depth_stencil_state.back_stencil_state = j.at("backStencilTest"s).get<graphics::stencil_state>();
-    }
-
-    void from_json(nlohmann::json const &j, graphics::color_blend_attachment_state &color_blend_attachment_state)
-    {
-        if (auto blend_factor = loader::blend_factor(j.at("srcColorBlendFactor"s).get<std::string>()); blend_factor)
-            color_blend_attachment_state.src_color_blend_factor = *blend_factor;
-
-        else throw std::runtime_error("unsupported source color blend factor"s);
-
-        if (auto blend_factor = loader::blend_factor(j.at("dstColorBlendFactor"s).get<std::string>()); blend_factor)
-            color_blend_attachment_state.dst_color_blend_factor = *blend_factor;
-
-        else throw std::runtime_error("unsupported destination color blend factor"s);
-
-        if (auto blend_operation = loader::blend_operation(j.at("colorBlendOperation"s).get<std::string>()); blend_operation)
-            color_blend_attachment_state.color_blend_operation = *blend_operation;
-
-        else throw std::runtime_error("unsupported color blend factor"s);
-
-        if (auto blend_factor = loader::blend_factor(j.at("srcAlphaBlendFactor"s).get<std::string>()); blend_factor)
-            color_blend_attachment_state.src_alpha_blend_factor = *blend_factor;
-
-        else throw std::runtime_error("unsupported source alpha blend factor"s);
-
-        if (auto blend_factor = loader::blend_factor(j.at("dstAlphaBlendFactor"s).get<std::string>()); blend_factor)
-            color_blend_attachment_state.dst_alpha_blend_factor = *blend_factor;
-
-        else throw std::runtime_error("unsupported destination alpha blend factor"s);
-
-        if (auto blend_operation = loader::blend_operation(j.at("alphaBlendOperation"s).get<std::string>()); blend_operation)
-            color_blend_attachment_state.alpha_blend_operation = *blend_operation;
-
-        else throw std::runtime_error("unsupported alpha blend factor"s);
-
-        if (auto color_component = loader::color_component(j.at("colorWriteMask"s).get<std::string>()); color_component)
-            color_blend_attachment_state.color_write_mask = *color_component;
-
-        else throw std::runtime_error("unsupported color component"s);
-
-        color_blend_attachment_state.blend_enable = j.at("blendEnable"s).get<bool>();
-    }
-
-    void from_json(nlohmann::json const &j, graphics::color_blend_state &color_blend_state)
-    {
-        if (auto logic_operation = loader::logic_operation(j.at("logicOperation"s).get<std::string>()); logic_operation)
-            color_blend_state.logic_operation = *logic_operation;
-
-        else throw std::runtime_error("unsupported logic operation"s);
-
-        color_blend_state.logic_operation_enable = j.at("logicOperationEnable"s).get<bool>();
-
-        color_blend_state.blend_constants = j.at("blendConstants"s).get<std::array<float, 4>>();
-
-        color_blend_state.attachment_states = j.at("attachmentStates"s).get<std::vector<graphics::color_blend_attachment_state>>();
     }
 }
 
@@ -539,22 +414,15 @@ namespace loader
 
         auto shader_modules = json.at("shaderModules"s).get<std::vector<material_description::shader_module>>();
 
-        auto vertex_attributes = json.at("vertexAttributes"s).get<std::vector<material_description::vertex_attribute>>();
-
         auto techniques = json.at("techniques"s).get<std::vector<material_description::technique>>();
 
-        auto rasterization_states = json.at("rasterizationStates"s).get<std::vector<graphics::rasterization_state>>();
-        auto depth_stencil_states = json.at("depthStencilStates"s).get<std::vector<graphics::depth_stencil_state>>();
-        auto color_blend_states = json.at("colorBlendStates"s).get<std::vector<graphics::color_blend_state>>();
+        auto vertex_attributes = json.at("vertexAttributes"s).get<std::vector<material_description::vertex_attribute>>();
 
         return loader::material_description{
             std::string{name},
             shader_modules,
             vertex_attributes,
-            techniques,
-            rasterization_states,
-            depth_stencil_states,
-            color_blend_states
+            techniques
         };
     }
 }

@@ -41,17 +41,9 @@ namespace loader
         struct technique final {
             std::vector<shader_bundle> shaders_bundle;
             std::vector<std::size_t> vertex_layout;
-
-            std::size_t rasterization_state;
-            std::size_t depth_stencil_state;
-            std::size_t color_blend_state;
         };
 
         std::vector<technique> techniques;
-
-        std::vector<graphics::rasterization_state> rasterization_states;
-        std::vector<graphics::depth_stencil_state> depth_stencil_states;
-        std::vector<graphics::color_blend_state> color_blend_states;
     };
 
     [[nodiscard]] loader::material_description load_material_description(std::string_view name);
