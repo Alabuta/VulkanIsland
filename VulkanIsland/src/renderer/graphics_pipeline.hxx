@@ -29,6 +29,9 @@ namespace graphics
 
         [[nodiscard]] graphics::vertex_input_state const &vertex_input_state(graphics::vertex_layout const &vertex_layout);
 
+        [[nodiscard]] graphics::vertex_input_state
+        get_adjusted_vertex_input_state(graphics::vertex_layout const &vertex_layout, graphics::vertex_layout const &required_vertex_layout) const;
+
     private:
 
         std::unordered_map<graphics::vertex_layout, graphics::vertex_input_state, hash<graphics::vertex_layout>> vertex_input_states_;

@@ -1,3 +1,4 @@
+#include <exception>
 #include <string>
 using namespace std::string_literals;
 
@@ -321,5 +322,42 @@ namespace graphics
         vertex_input_states_.emplace(vertex_layout, graphics::vertex_input_state{ binding_description, attribute_descriptions });
 
         return vertex_input_states_.at(vertex_layout);
+    }
+
+    graphics::vertex_input_state vertex_input_state_manager::get_adjusted_vertex_input_state(
+        graphics::vertex_layout const &vertex_layout, graphics::vertex_layout const &required_vertex_layout) const
+    {
+        if (vertex_input_states_.count(vertex_layout) == 0)
+            throw std::runtime_error("failed to find vertex layout"s);
+
+        auto &&vertex_input_state = vertex_input_states_.at(vertex_layout);
+
+        graphics::vertex_input_state adjusted_vertex_input_state;
+        adjusted_vertex_input_state.binding_description = vertex_input_state.binding_description;
+
+        for (auto &&required_attribute : required_vertex_layout.attributes) {
+            auto it = std::find_if(std::cbegin(vertex_input_state.attribute_descriptions), std::cend(vertex_input_state.attribute_descriptions),
+                                   [&required_attribute] (auto &&attribute_description)
+            {
+                auto format = graphics::get_vertex_attribute_format(required_attribute);
+
+                auto location_index = graphics::get_vertex_attribute_semantic_index(required_attribute);
+
+                if (location_index != attribute_description.location_index)
+                    return false;
+
+                if (format != attribute_description.format)
+                    return false;
+
+                return true;
+            });
+
+            if (it == std::cend(vertex_input_state.attribute_descriptions))
+                throw std::runtime_error("original vertex layout doesn't have required vertex attribute."s);
+
+            adjusted_vertex_input_state.attribute_descriptions.push_back(*it);
+        }
+
+        return adjusted_vertex_input_state;
     }
 }

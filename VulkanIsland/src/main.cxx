@@ -74,8 +74,6 @@ struct draw_command final {
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
     VkRenderPass renderPass{VK_NULL_HANDLE};
     VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
-
-    graphics::vertex_layout adjusted_vertex_layout;
 };
 
 struct app_t final {
@@ -339,19 +337,12 @@ void create_graphics_command_buffers(app_t &app)
 
     std::set<std::pair<std::uint32_t, VkBuffer>> vertex_bindings_and_buffers;
 
-    {
-        first_binding = std::numeric_limits<std::uint32_t>::max();
+    for (auto &&[vertex_layout, vertex_buffer] : vertex_buffers) {
+        auto binding_index = vertex_input_state_manager.binding_index(vertex_layout);
 
-        //for (auto &&draw_command : app.draw_commands) {
-        for (auto &&[vertex_layout, vertex_buffer] : vertex_buffers) {
-            //auto binding_index = vertex_input_state_manager.binding_index(draw_command.adjusted_vertex_layout);
-            auto binding_index = vertex_input_state_manager.binding_index(vertex_layout);
+        first_binding = std::min(binding_index, first_binding);
 
-            first_binding = std::min(binding_index, first_binding);
-
-            //vertex_bindings_and_buffers.emplace(binding_index, draw_command.vertex_buffer->deviceBuffer().handle());
-            vertex_bindings_and_buffers.emplace(binding_index, vertex_buffer->deviceBuffer().handle());
-        }
+        vertex_bindings_and_buffers.emplace(binding_index, vertex_buffer->deviceBuffer().handle());
     }
 
     std::vector<VkBuffer> vertex_buffer_handles;
@@ -427,8 +418,7 @@ void create_graphics_command_buffers(app_t &app)
             auto [
                 material, pipeline, vertex_buffer,
                 vertex_count, first_vertex,
-                pipelineLayout, renderPass, descriptorSet,
-                adjusted_vertex_layout
+                pipelineLayout, renderPass, descriptorSet
             ] = draw_command;
 
             vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
@@ -813,61 +803,9 @@ void build_render_pipelines(app_t &app, xformat const &_model)
 
         else throw std::runtime_error("failed to get vertex buffer"s);
 
-        /*graphics::vertex_layout adjusted_vertex_layout;
-
-        adjusted_vertex_layout.size_in_bytes = vertex_layout.size_in_bytes;
-
-        for (auto &&required_attribute : material->vertex_layout.attributes) {
-            auto it = std::find_if(std::cbegin(vertex_layout.attributes), std::cend(vertex_layout.attributes),
-                                   [&required_attribute] (auto &&attribute)
-            {
-                if (required_attribute.semantic != attribute.semantic)
-                    return false;
-
-                if (required_attribute.type != attribute.type)
-                    return false;
-
-                if (required_attribute.normalized != attribute.normalized)
-                    return false;
-
-                return true;
-            });
-
-            if (it == std::cend(vertex_layout.attributes))
-                throw std::runtime_error("renderable doesn't have material required vertex attribute."s);
-
-            adjusted_vertex_layout.attributes.push_back(*it);
-        }*/
-
-        //auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(/*material->*/vertex_layout);
-        //auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(adjusted_vertex_layout);
         auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(vertex_layout);
 
-        graphics::vertex_input_state adjusted_vertex_input_state;
-        adjusted_vertex_input_state.binding_description = vertex_input_state.binding_description;
-
-        for (auto &&required_attribute : material->vertex_layout.attributes) {
-            auto it = std::find_if(std::cbegin(vertex_input_state.attribute_descriptions), std::cend(vertex_input_state.attribute_descriptions),
-                                   [&required_attribute] (auto &&attribute_description)
-            {
-                auto format = graphics::get_vertex_attribute_format(required_attribute);
-
-                auto location_index = graphics::get_vertex_attribute_semantic_index(required_attribute);
-
-                if (location_index != attribute_description.location_index)
-                    return false;
-
-                if (format != attribute_description.format)
-                    return false;
-
-                return true;
-            });
-
-            if (it == std::cend(vertex_input_state.attribute_descriptions))
-                throw std::runtime_error("a renderable doesn't have material required vertex attribute."s);
-
-            adjusted_vertex_input_state.attribute_descriptions.push_back(*it);
-        }
+        auto adjusted_vertex_input_state = vertex_input_state_manager.get_adjusted_vertex_input_state(vertex_layout, material->vertex_layout);
 
         auto primitive_topology = meshlet.topology;
 
@@ -885,9 +823,7 @@ void build_render_pipelines(app_t &app, xformat const &_model)
             draw_command{
                 material, pipeline, vertex_buffer,
                 meshlet.vertex_count, meshlet.first_vertex,
-                app.pipelineLayout, app.renderPass, app.descriptorSet,
-                //adjusted_vertex_layout
-                vertex_layout
+                app.pipelineLayout, app.renderPass, app.descriptorSet
             }
         );
     }
