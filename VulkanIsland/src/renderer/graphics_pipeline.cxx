@@ -1,4 +1,5 @@
 #include <exception>
+#include <cstddef>
 #include <string>
 using namespace std::string_literals;
 
@@ -157,19 +158,53 @@ namespace graphics
 
         std::vector<VkPipelineShaderStageCreateInfo> pipeline_shader_stages;
 
+        std::vector<VkSpecializationMapEntry> specialization_map_entry;
+        std::vector<std::byte> specialization_constants_data;
+        VkSpecializationInfo specialization_info;
+
         std::transform(std::cbegin(shader_stages), std::cend(shader_stages), std::back_inserter(pipeline_shader_stages),
-                       [this] (auto &&shader_stage)
+                       [&specialization_info, &specialization_constants_data, &specialization_map_entry, this] (auto &&shader_stage)
         {
             auto shader_module = shader_manager_.shader_module(shader_stage.module_name, shader_stage.techique_index);
 
-            return VkPipelineShaderStageCreateInfo{
-                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-                nullptr, 0,
-                convert_to::vulkan(shader_stage.semantic),
-                shader_module->handle(),
-                kENTRY_POINTS.at(shader_stage.techique_index).c_str(),
-                nullptr
+            VkPipelineShaderStageCreateInfo create_info{
+                    VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+                    nullptr, 0,
+                    convert_to::vulkan(shader_stage.semantic),
+                    shader_module->handle(),
+                    kENTRY_POINTS.at(shader_stage.techique_index).c_str(),
+                    nullptr
             };
+
+            if (shader_stage.constants.empty())
+                return create_info;
+
+            std::uint32_t offset = 0;
+
+            for (auto [id, value] : shader_stage.constants) {
+                auto constant = std::visit([id, &offset, &specialization_info, &specialization_constants_data, &specialization_map_entry] (auto constant)
+                {
+                    specialization_map_entry.push_back({
+                        id, offset, sizeof(constant)
+                    });
+
+                    auto dst_begin = std::next(std::begin(specialization_constants_data), offset);
+
+                    std::uninitialized_copy_n(reinterpret_cast<std::byte *>(&constant), sizeof(constant), dst_begin);
+
+                    offset += static_cast<std::uint32_t>(sizeof(constant));
+
+                }, value);
+            }
+
+            specialization_info = VkSpecializationInfo{
+                static_cast<std::uint32_t>(std::size(specialization_map_entry)), std::data(specialization_map_entry),
+                std::size(specialization_constants_data), std::data(specialization_constants_data)
+            };
+
+            create_info.pSpecializationInfo = &specialization_info;
+
+            return create_info;
         });
 
         std::vector<VkVertexInputBindingDescription> binding_descriptions;
