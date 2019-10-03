@@ -520,7 +520,7 @@ xformat populate()
         auto const vertex_layout_index = std::size(_model.vertex_layouts);
 
         _model.vertex_layouts.push_back(
-            create_vertex_layout(
+            vertex::create_vertex_layout(
                 vertex::position{}, decltype(vertex_struct::position){}, false,
                 vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false
                 //vertex::normal{}, decltype(vertex_struct::normal){}, false
@@ -586,7 +586,7 @@ xformat populate()
         auto const vertex_layout_index = std::size(_model.vertex_layouts);
 
         _model.vertex_layouts.push_back(
-            create_vertex_layout(
+            vertex::create_vertex_layout(
                 vertex::position{}, decltype(vertex_struct::position){}, false,
                 vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
                 vertex::color_0{}, decltype(vertex_struct::color){}, false
@@ -686,7 +686,7 @@ xformat populate()
         auto const vertex_layout_index = std::size(_model.vertex_layouts);
 
         _model.vertex_layouts.push_back(
-            create_vertex_layout(
+            vertex::create_vertex_layout(
                 vertex::position{}, decltype(vertex_struct::position){}, false,
                 vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
                 vertex::color_0{}, decltype(vertex_struct::color){}, false

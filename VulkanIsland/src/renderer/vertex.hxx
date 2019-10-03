@@ -184,6 +184,47 @@ namespace graphics
     graphics::FORMAT get_vertex_attribute_format(graphics::vertex_attribute const &vertex_attribute);
 }
 
+namespace vertex
+{
+    template<class S, class T, class N>
+    void add_vertex_attributes(std::vector<graphics::vertex_attribute> &attributes, std::size_t offset_in_bytes, S semantic, T type, N normalized)
+    {
+        attributes.push_back(graphics::vertex_attribute{ offset_in_bytes, semantic, type, normalized });
+    }
+
+    template<class S, class T, class N, class... Ts>
+    void add_vertex_attributes(std::vector<graphics::vertex_attribute> &attributes, std::size_t offset_in_bytes, S semantic, T type, N normalized, Ts... args)
+    {
+        attributes.push_back(graphics::vertex_attribute{ offset_in_bytes, semantic, type, normalized });
+
+        add_vertex_attributes(attributes, offset_in_bytes + sizeof(type), args...);
+    }
+
+    template<class... Ts>
+    graphics::vertex_layout create_vertex_layout(Ts... args)
+    {
+        graphics::vertex_layout vertex_layout;
+
+        auto &&vertex_attributes = vertex_layout.attributes;
+
+        add_vertex_attributes(vertex_attributes, 0, args...);
+
+        vertex_layout.size_in_bytes = 0;
+
+        for (auto &&vertex_attribute : vertex_attributes) {
+            auto size_in_bytes = std::visit([] (auto &&type)
+            {
+                return sizeof(std::remove_cvref_t<decltype(type)>);
+
+            }, vertex_attribute.type);
+
+            vertex_layout.size_in_bytes += size_in_bytes;
+        }
+
+        return vertex_layout;
+    }
+}
+
 namespace graphics
 {
     template<>
