@@ -342,15 +342,15 @@ void create_graphics_command_buffers(app_t &app)
     {
         first_binding = std::numeric_limits<std::uint32_t>::max();
 
-        for (auto &&draw_command : app.draw_commands) {
-        //for (auto &&[vertex_layout, vertex_buffer] : vertex_buffers) {
-            auto binding_index = vertex_input_state_manager.binding_index(draw_command.adjusted_vertex_layout);
-            //auto binding_index = vertex_input_state_manager.binding_index(vertex_layout);
+        //for (auto &&draw_command : app.draw_commands) {
+        for (auto &&[vertex_layout, vertex_buffer] : vertex_buffers) {
+            //auto binding_index = vertex_input_state_manager.binding_index(draw_command.adjusted_vertex_layout);
+            auto binding_index = vertex_input_state_manager.binding_index(vertex_layout);
 
             first_binding = std::min(binding_index, first_binding);
 
-            vertex_bindings_and_buffers.emplace(binding_index, draw_command.vertex_buffer->deviceBuffer().handle());
-            //vertex_bindings_and_buffers.emplace(binding_index, vertex_buffer->deviceBuffer().handle());
+            //vertex_bindings_and_buffers.emplace(binding_index, draw_command.vertex_buffer->deviceBuffer().handle());
+            vertex_bindings_and_buffers.emplace(binding_index, vertex_buffer->deviceBuffer().handle());
         }
     }
 
@@ -524,7 +524,7 @@ xformat populate()
         struct vertex_struct final {
             vertex::static_array<3, boost::float32_t> position;
             vertex::static_array<2, boost::float32_t> texCoord;
-            vertex::static_array<3, boost::float32_t> normal;
+            //vertex::static_array<3, boost::float32_t> normal;
         };
 
         auto const vertex_layout_index = std::size(_model.vertex_layouts);
@@ -532,23 +532,23 @@ xformat populate()
         _model.vertex_layouts.push_back(
             create_vertex_layout(
                 vertex::position{}, decltype(vertex_struct::position){}, false,
-                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
-                vertex::normal{}, decltype(vertex_struct::normal){}, false
+                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false
+                //vertex::normal{}, decltype(vertex_struct::normal){}, false
             )
         );
 
         std::vector<vertex_struct> vertices;
 
         vertices.push_back(vertex_struct{
-            {{0.f, 0.f, 0.f}}, {{.5f, .5f}}
+            {{0.f, 0.f, 0.f}}, {{.5f, .5f}}//, {{ 0.f, 1.f, 0.f }}
         });
 
         vertices.push_back(vertex_struct{
-            {{-1.f, 0.f, 1.f}}, {{0.f, 0.f}}
+            {{-1.f, 0.f, 1.f}}, {{0.f, 0.f}}//, {{ 0.f, 1.f, 0.f }}
         });
 
         vertices.push_back(vertex_struct{
-            {{0.f, 0.f, 1.f}}, {{1.f, 0.f}}
+            {{0.f, 0.f, 1.f}}, {{1.f, 0.f}}//, {{ 0.f, 1.f, 0.f }}
         });
 
         xformat::non_indexed_meshlet meshlet;
@@ -732,7 +732,7 @@ xformat populate()
             meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
             meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count);
 
-            meshlet.material_index = 0;
+            meshlet.material_index = 2;
             meshlet.instance_count = 1;
             meshlet.first_instance = 0;
 
@@ -813,11 +813,9 @@ void build_render_pipelines(app_t &app, xformat const &_model)
 
         else throw std::runtime_error("failed to get vertex buffer"s);
 
-        graphics::vertex_layout adjusted_vertex_layout;
+        /*graphics::vertex_layout adjusted_vertex_layout;
 
         adjusted_vertex_layout.size_in_bytes = vertex_layout.size_in_bytes;
-
-        std::size_t offset_in_bytes = 0;
 
         for (auto &&required_attribute : material->vertex_layout.attributes) {
             auto it = std::find_if(std::cbegin(vertex_layout.attributes), std::cend(vertex_layout.attributes),
@@ -839,16 +837,43 @@ void build_render_pipelines(app_t &app, xformat const &_model)
                 throw std::runtime_error("renderable doesn't have material required vertex attribute."s);
 
             adjusted_vertex_layout.attributes.push_back(*it);
-        }
+        }*/
 
         //auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(/*material->*/vertex_layout);
-        auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(adjusted_vertex_layout);
+        //auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(adjusted_vertex_layout);
+        auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(vertex_layout);
+
+        graphics::vertex_input_state adjusted_vertex_input_state;
+        adjusted_vertex_input_state.binding_description = vertex_input_state.binding_description;
+
+        for (auto &&required_attribute : material->vertex_layout.attributes) {
+            auto it = std::find_if(std::cbegin(vertex_input_state.attribute_descriptions), std::cend(vertex_input_state.attribute_descriptions),
+                                   [&required_attribute] (auto &&attribute_description)
+            {
+                auto format = graphics::get_vertex_attribute_format(required_attribute);
+
+                auto location_index = graphics::get_vertex_attribute_semantic_index(required_attribute);
+
+                if (location_index != attribute_description.location_index)
+                    return false;
+
+                if (format != attribute_description.format)
+                    return false;
+
+                return true;
+            });
+
+            if (it == std::cend(vertex_input_state.attribute_descriptions))
+                throw std::runtime_error("a renderable doesn't have material required vertex attribute."s);
+
+            adjusted_vertex_input_state.attribute_descriptions.push_back(*it);
+        }
 
         auto primitive_topology = meshlet.topology;
 
         graphics::pipeline_states pipeline_states{
             primitive_topology,
-            vertex_input_state,
+            adjusted_vertex_input_state,
             rasterization_state,
             depth_stencil_state,
             color_blend_state
@@ -861,7 +886,8 @@ void build_render_pipelines(app_t &app, xformat const &_model)
                 material, pipeline, vertex_buffer,
                 meshlet.vertex_count, meshlet.first_vertex,
                 app.pipelineLayout, app.renderPass, app.descriptorSet,
-                adjusted_vertex_layout
+                //adjusted_vertex_layout
+                vertex_layout
             }
         );
     }
