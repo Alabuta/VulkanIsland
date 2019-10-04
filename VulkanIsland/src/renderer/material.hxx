@@ -49,16 +49,6 @@ namespace graphics
 {
     template<>
     struct hash<graphics::material> {
-        std::size_t operator() (graphics::material const &material) const
-        {
-            std::size_t seed = 0;
-
-            graphics::hash<graphics::shader_stage> constexpr shader_stage_hasher;
-
-            for (auto &&shader_stage : material.shader_stages)
-                boost::hash_combine(seed, shader_stage_hasher(shader_stage));
-
-            return seed;
-        }
+        std::size_t operator() (graphics::material const &material) const;
     };
 }

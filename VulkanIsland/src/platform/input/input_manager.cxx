@@ -1,7 +1,7 @@
 #include <iostream>
 #include <unordered_set>
 
-#include <boost/functional/hash_fwd.hpp>
+#include <boost/functional/hash.hpp>
 
 #include "utility/helpers.hxx"
 #include "input_data.hxx"

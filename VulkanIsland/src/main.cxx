@@ -776,7 +776,7 @@ void build_render_pipelines(app_t &app, xformat const &_model)
 
         else throw std::runtime_error("failed to get vertex buffer"s);
 
-        auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(vertex_layout);
+        [[maybe_unused]] auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(vertex_layout);
 
         auto adjusted_vertex_input_state = vertex_input_state_manager.get_adjusted_vertex_input_state(vertex_layout, material->vertex_layout);
 

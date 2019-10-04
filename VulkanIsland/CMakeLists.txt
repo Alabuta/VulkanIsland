@@ -56,16 +56,15 @@ set(SOURCE_FILES
 
     src/platform/window.hxx                         src/platform/window.cxx
 
-    src/renderer/attachments.hxx
+    src/renderer/attachments.hxx                    src/renderer/attachments.cxx
     src/renderer/compatibility.hxx
-    src/renderer/descriptor.hxx
+    src/renderer/descriptors.hxx		            src/renderer/descriptors.cxx
     src/renderer/framebuffer.hxx
     src/renderer/graphics_api.hxx                   src/renderer/graphics_api.cxx
     src/renderer/graphics_pipeline.hxx              src/renderer/graphics_pipeline.cxx
     src/renderer/graphics.hxx
     src/renderer/material.hxx                       src/renderer/material.cxx
-    src/renderer/pipelines.hxx                      src/renderer/pipelines.cxx
-    src/renderer/pipeline_states.hxx
+    src/renderer/pipeline_states.hxx                src/renderer/pipeline_states.cxx
     src/renderer/render_flow.hxx                    src/renderer/render_flow.cxx
     src/renderer/render_pass.hxx                    src/renderer/render_pass.cxx
     src/renderer/shader_program.hxx                 src/renderer/shader_program.cxx
@@ -83,13 +82,13 @@ set(SOURCE_FILES
 	src/utility/mpl.hxx
 	src/utility/helpers.hxx
 	
-	src/commandBuffer.hxx
+	src/command_buffer.hxx
 	src/debug.hxx                                   src/debug.cxx
     src/descriptor.hxx                              src/descriptor.cxx
 	src/instance.hxx                                src/instance.cxx
     src/main.hxx                                    src/main.cxx
     src/math.hxx                                    src/math.cxx
-    src/queueBuilder.hxx
+    src/queue_builder.hxx
     src/queues.hxx
     src/staging.hxx
 	src/swapchain.hxx                               src/swapchain.cxx

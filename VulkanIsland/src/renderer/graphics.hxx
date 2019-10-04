@@ -2,8 +2,6 @@
 
 #include <type_traits>
 
-#include <boost/functional/hash_fwd.hpp>
-
 #include "utility/mpl.hxx"
 
 

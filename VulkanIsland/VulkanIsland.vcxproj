@@ -260,9 +260,12 @@
     <ClCompile Include="src\loaders\material_loader.cxx" />
     <ClCompile Include="src\loaders\SPIRV_loader.cxx" />
     <ClCompile Include="src\math.cxx" />
+    <ClCompile Include="src\renderer\attachments.cxx" />
+    <ClCompile Include="src\renderer\descriptors.cxx" />
     <ClCompile Include="src\renderer\graphics_api.cxx" />
     <ClCompile Include="src\renderer\graphics_pipeline.cxx" />
     <ClCompile Include="src\renderer\material.cxx" />
+    <ClCompile Include="src\renderer\pipeline_states.cxx" />
     <ClCompile Include="src\renderer\renderPass.cxx" />
     <ClCompile Include="src\renderer\render_flow.cxx" />
     <ClCompile Include="src\renderer\render_pass.cxx" />
@@ -294,7 +297,7 @@
     <ClInclude Include="src\loaders\material_loader.hxx" />
     <ClInclude Include="src\renderer\attachments.hxx" />
     <ClInclude Include="src\renderer\compatibility.hxx" />
-    <ClInclude Include="src\renderer\descriptor.hxx" />
+    <ClInclude Include="src\renderer\descriptors.hxx" />
     <ClInclude Include="src\renderer\framebuffer.hxx" />
     <ClInclude Include="src\renderer\graphics.hxx" />
     <ClInclude Include="src\renderer\graphics_api.hxx" />

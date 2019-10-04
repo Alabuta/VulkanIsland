@@ -2,6 +2,7 @@
 
 #include <boost/uuid/name_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <boost/functional/hash.hpp>
 
 #include "loaders/SPIRV_loader.hxx"
 #include "shader_program.hxx"
@@ -64,5 +65,34 @@ namespace graphics
         }
 
         return shader_module;
+    }
+}
+
+namespace graphics
+{
+    std::size_t hash<graphics::specialization_constant>::operator() (graphics::specialization_constant const &specialization_constant) const
+    {
+        std::size_t seed = 0;
+
+        boost::hash_combine(seed, specialization_constant.id);
+        boost::hash_combine(seed, specialization_constant.value);
+
+        return seed;
+    }
+
+    std::size_t hash<graphics::shader_stage>::operator() (graphics::shader_stage const &stage) const
+    {
+        std::size_t seed = 0;
+
+        boost::hash_combine(seed, stage.module_name);
+        boost::hash_combine(seed, stage.techique_index);
+        boost::hash_combine(seed, stage.semantic);
+
+        for (auto [id, value] : stage.constants) {
+            boost::hash_combine(seed, id);
+            boost::hash_combine(seed, value);
+        }
+
+        return seed;
     }
 }

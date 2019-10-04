@@ -4,9 +4,12 @@
 #include <string>
 using namespace std::string_literals;
 
+#include <boost/functional/hash.hpp>
+
 #include <fmt/format.h>
 
 #include "graphics_pipeline.hxx"
+#include "renderer/graphics_api.hxx"
 
 
 namespace
@@ -33,8 +36,7 @@ namespace convert_to
         });
 
         std::transform(std::cbegin(vertex_input_state.attribute_descriptions), std::cend(vertex_input_state.attribute_descriptions),
-                       std::back_inserter(attribute_descriptions),
-                       [binding_index] (auto &&attribute_description)
+                       std::back_inserter(attribute_descriptions), [] (auto &&attribute_description)
         {
             auto [
                 location_index, binding_index, offset_in_bytes, format
@@ -165,7 +167,7 @@ namespace graphics
             VkSpecializationInfo specialization_info;
             std::vector<VkSpecializationMapEntry> specialization_map_entry;
             std::vector<std::byte> specialization_constants_data;
-        }
+        };
 
         std::vector<pipeline_shader_stage_invariant> pipeline_shader_stage_invariants(std::size(shader_stages));
 
@@ -218,7 +220,7 @@ namespace graphics
             create_info.pSpecializationInfo = &specialization_info;
 
             pipeline_shader_stages.push_back(create_info);
-        });
+        }
 
         std::vector<VkVertexInputBindingDescription> binding_descriptions;
         std::vector<VkVertexInputAttributeDescription> attribute_descriptions;
@@ -407,5 +409,25 @@ namespace graphics
         }
 
         return adjusted_vertex_input_state;
+    }
+}
+
+namespace graphics
+{
+    std::size_t graphics::hash<pipeline_invariant>::operator() (pipeline_invariant const &pipeline_invariant) const
+    {
+        std::size_t seed = 0;
+
+        graphics::hash<graphics::material> constexpr material_hasher;
+        boost::hash_combine(seed, material_hasher(*pipeline_invariant.material_));
+
+        graphics::hash<graphics::pipeline_states> constexpr pipeline_states_hasher;
+        boost::hash_combine(seed, pipeline_states_hasher(pipeline_invariant.pipeline_states_));
+
+        boost::hash_combine(seed, pipeline_invariant.layout_);
+        boost::hash_combine(seed, pipeline_invariant.render_pass_);
+        boost::hash_combine(seed, pipeline_invariant.subpass_index_);
+
+        return seed;
     }
 }

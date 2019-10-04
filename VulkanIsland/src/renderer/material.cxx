@@ -5,6 +5,7 @@ using namespace std::string_literals;
 using namespace std::string_view_literals;
 
 #include <boost/uuid/name_generator.hpp>
+#include <boost/functional/hash.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
 #include "graphics_api.hxx"
@@ -79,5 +80,20 @@ namespace graphics
             material_descriptions_.emplace(key, loader::load_material_description(name));
 
         return material_descriptions_.at(key);
+    }
+}
+
+namespace graphics
+{
+    std::size_t hash<graphics::material>::operator() (graphics::material const &material) const
+    {
+        std::size_t seed = 0;
+
+        graphics::hash<graphics::shader_stage> constexpr shader_stage_hasher;
+
+        for (auto &&shader_stage : material.shader_stages)
+            boost::hash_combine(seed, shader_stage_hasher(shader_stage));
+
+        return seed;
     }
 }

@@ -7,8 +7,6 @@
 #include <array>
 #include <set>
 
-#include <boost/functional/hash_fwd.hpp>
-
 #include "device/device.hxx"
 
 #include "graphics.hxx"
@@ -82,22 +80,7 @@ namespace graphics
 
     template<>
     struct graphics::hash<pipeline_invariant> {
-        std::size_t operator() (pipeline_invariant const &pipeline_invariant) const
-        {
-            std::size_t seed = 0;
-
-            graphics::hash<graphics::material> constexpr material_hasher;
-            boost::hash_combine(seed, material_hasher(*pipeline_invariant.material_));
-
-            graphics::hash<graphics::pipeline_states> constexpr pipeline_states_hasher;
-            boost::hash_combine(seed, pipeline_states_hasher(pipeline_invariant.pipeline_states_));
-
-            boost::hash_combine(seed, pipeline_invariant.layout_);
-            boost::hash_combine(seed, pipeline_invariant.render_pass_);
-            boost::hash_combine(seed, pipeline_invariant.subpass_index_);
-
-            return seed;
-        }
+        std::size_t operator() (pipeline_invariant const &pipeline_invariant) const;
     };
 }
 
