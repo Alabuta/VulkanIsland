@@ -62,6 +62,14 @@ struct per_object_t final {
 };
 
 void cleanup_frame_data(struct app_t &app);
+void create_semaphores(app_t &app);
+void recreate_swap_chain(app_t &app);
+
+template<class T> requires mpl::container<std::remove_cvref_t<T>>
+[[nodiscard]] std::shared_ptr<VulkanBuffer> stage_data(VulkanDevice &device, T &&container);
+
+[[nodiscard]] std::optional<VulkanTexture>
+load_texture(app_t &app, VulkanDevice &device, std::string_view name);
 
 struct draw_command final {
     std::shared_ptr<graphics::material> material;
@@ -209,13 +217,6 @@ struct app_t final {
 };
 
 
-void recreate_swap_chain(app_t &app);
-
-template<class T> requires mpl::container<std::remove_cvref_t<T>>
-[[nodiscard]] std::shared_ptr<VulkanBuffer> stage_data(VulkanDevice &device, T &&container);
-
-[[nodiscard]] std::optional<VulkanTexture>
-load_texture(app_t &app, VulkanDevice &device, std::string_view name);
 
 
 struct window_events_handler final : public platform::window::event_handler_interface {
@@ -421,21 +422,6 @@ void create_graphics_command_buffers(app_t &app)
         if (auto result = vkEndCommandBuffer(command_buffer); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to end command buffer: {0:#x}\n"s, result));
     }
-}
-
-void create_semaphores(app_t &app)
-{
-    auto &&resourceManager = app.vulkanDevice->resourceManager();
-
-    if (auto semaphore = resourceManager.create_semaphore(); !semaphore)
-        throw std::runtime_error("failed to create image semaphore"s);
-
-    else app.imageAvailableSemaphore = semaphore;
-
-    if (auto semaphore = resourceManager.create_semaphore(); !semaphore)
-        throw std::runtime_error("failed to create render semaphore"s);
-
-    else app.renderFinishedSemaphore = semaphore;
 }
 
 void cleanup_frame_data(app_t &app)
@@ -1156,6 +1142,21 @@ int main()
     std::cin.get();
 }*/
 
+
+void create_semaphores(app_t &app)
+{
+    auto &&resourceManager = app.vulkanDevice->resourceManager();
+
+    if (auto semaphore = resourceManager.create_semaphore(); !semaphore)
+        throw std::runtime_error("failed to create image semaphore"s);
+
+    else app.imageAvailableSemaphore = semaphore;
+
+    if (auto semaphore = resourceManager.create_semaphore(); !semaphore)
+        throw std::runtime_error("failed to create render semaphore"s);
+
+    else app.renderFinishedSemaphore = semaphore;
+}
 
 template<class T> requires mpl::container<std::remove_cvref_t<T>>
 [[nodiscard]] std::shared_ptr<VulkanBuffer>

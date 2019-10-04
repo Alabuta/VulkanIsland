@@ -9,8 +9,6 @@ using namespace std::string_view_literals;
 
 #include "graphics_api.hxx"
 #include "material.hxx"
-#include "shader_program.hxx"
-#include "loaders/material_loader.hxx"
 
 
 namespace graphics

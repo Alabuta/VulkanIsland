@@ -3,7 +3,6 @@
 #include <vector>
 
 #include "graphics.hxx"
-#include "pipelines.hxx"
 #include "utility/mpl.hxx"
 
 

@@ -5,13 +5,10 @@
 
 #include "main.hxx"
 #include "device/device.hxx"
-#include "resources/resource.hxx"
 
 #include "graphics.hxx"
-#include "attachments.hxx"
 #include "vertex.hxx"
 #include "loaders/material_loader.hxx"
-#include "resources/program.hxx"
 #include "shader_program.hxx"
 
 
