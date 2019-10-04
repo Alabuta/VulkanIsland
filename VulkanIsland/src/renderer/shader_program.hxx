@@ -20,13 +20,13 @@ namespace graphics
         std::variant<std::uint32_t, boost::float32_t> value;
 
         template<class T> requires std::same_as<std::remove_cvref_t<T>, specialization_constant>
-        auto constexpr operator== (T && constant) const
+        auto constexpr operator== (T &&constant) const
         {
             return value == constant.value && id == constant.id;
         }
 
         template<class T> requires std::same_as<std::remove_cvref_t<T>, specialization_constant>
-        auto constexpr operator< (T && constant) const
+        auto constexpr operator< (T &&constant) const
         {
             return id < constant.id;
         }

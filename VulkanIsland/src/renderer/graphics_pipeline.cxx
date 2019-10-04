@@ -182,7 +182,7 @@ namespace graphics
             std::uint32_t offset = 0;
 
             for (auto [id, value] : shader_stage.constants) {
-                auto constant = std::visit([id, &offset, &specialization_info, &specialization_constants_data, &specialization_map_entry] (auto constant)
+                std::visit([id, &offset, &specialization_info, &specialization_constants_data, &specialization_map_entry] (auto constant)
                 {
                     specialization_map_entry.push_back({
                         id, offset, sizeof(constant)
