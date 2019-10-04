@@ -2,6 +2,7 @@
 #include <cstddef>
 #include <string>
 using namespace std::string_literals;
+#include <tuple>
 
 #include <fmt/format.h>
 
@@ -152,19 +153,25 @@ namespace graphics
         if (pipelines_.count(invariant) != 0)
             return pipelines_.at(invariant);
 
+    #if !USE_DYNAMIC_PIPELINE_STATE
         VkExtent2D const extent{600u, 400u};
+    #endif
 
         auto &&shader_stages = material->shader_stages;
 
         std::vector<VkPipelineShaderStageCreateInfo> pipeline_shader_stages;
 
-        std::vector<VkSpecializationMapEntry> specialization_map_entry;
-        std::vector<std::byte> specialization_constants_data;
-        VkSpecializationInfo specialization_info;
+        struct pipeline_shader_stage_invariant final {
+            VkSpecializationInfo specialization_info;
+            std::vector<VkSpecializationMapEntry> specialization_map_entry;
+            std::vector<std::byte> specialization_constants_data;
+        }
 
-        std::transform(std::cbegin(shader_stages), std::cend(shader_stages), std::back_inserter(pipeline_shader_stages),
-                       [&specialization_info, &specialization_constants_data, &specialization_map_entry, this] (auto &&shader_stage)
-        {
+        std::vector<pipeline_shader_stage_invariant> pipeline_shader_stage_invariants(std::size(shader_stages));
+
+        std::size_t shader_stage_index = 0;
+
+        for (auto &&shader_stage : shader_stages) {
             auto shader_module = shader_manager_.shader_module(shader_stage.module_name, shader_stage.techique_index);
 
             VkPipelineShaderStageCreateInfo create_info{
@@ -176,13 +183,19 @@ namespace graphics
                     nullptr
             };
 
-            if (shader_stage.constants.empty())
-                return create_info;
+            if (shader_stage.constants.empty()) {
+                pipeline_shader_stages.push_back(create_info);
+                continue;
+            }
 
             std::uint32_t offset = 0;
 
+            auto &&[
+                specialization_info, specialization_map_entry, specialization_constants_data
+            ] = pipeline_shader_stage_invariants.at(shader_stage_index++);
+
             for (auto [id, value] : shader_stage.constants) {
-                std::visit([id, &offset, &specialization_info, &specialization_constants_data, &specialization_map_entry] (auto constant)
+                std::visit([id, &offset, &specialization_info, &specialization_map_entry, &specialization_constants_data] (auto constant)
                 {
                     specialization_map_entry.push_back({
                         id, offset, sizeof(constant)
@@ -204,7 +217,7 @@ namespace graphics
 
             create_info.pSpecializationInfo = &specialization_info;
 
-            return create_info;
+            pipeline_shader_stages.push_back(create_info);
         });
 
         std::vector<VkVertexInputBindingDescription> binding_descriptions;
