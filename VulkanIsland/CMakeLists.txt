@@ -32,28 +32,27 @@ include_directories(src)
 
 
 set(SOURCE_FILES
-    src/camera/handlers/mouseHandler.hxx            src/camera/handlers/mouseHandler.cxx
-    src/camera/cameraController.hxx                 src/camera/cameraController.cxx
+    src/camera/handlers/mouse_handler.hxx           src/camera/handlers/mouse_handler.cxx
+    src/camera/camera_controller.hxx                src/camera/camera_controller.cxx
     src/camera/camera.hxx                           src/camera/camera.cxx
 
 	src/device/device.hxx                           src/device/device.cxx
     src/device/deviceConfig.hxx
 
-    # src/ecs/camera.hxx                              src/ecs/camera.cxx
     src/ecs/ecs.hxx
     src/ecs/mesh.hxx
     src/ecs/node.hxx                                src/ecs/node.cxx
     src/ecs/transform.hxx                           src/ecs/transform.cxx
-
-    src/input/inputDataTypes.hxx
-    src/input/inputManager.hxx                      src/input/inputManager.cxx
-    src/input/mouseInput.hxx                    	src/input/mouseInput.cxx
 
 	src/loaders/loaderGLTF.hxx                      src/loaders/loaderGLTF.cxx
     src/loaders/loaderTARGA.hxx                     src/loaders/loaderTARGA.cxx
 
 	src/loaders/SPIRV_loader.hxx                    src/loaders/SPIRV_loader.cxx
 	src/loaders/material_loader.hxx                 src/loaders/material_loader.cxx
+
+    src/platform/input/input_data.hxx
+    src/platform/input/input_manager.hxx            src/platform/input/input_manager.cxx
+    src/platform/input/mouse.hxx                    src/platform/input/mouse.cxx
 
     src/platform/window.hxx                         src/platform/window.cxx
 
@@ -72,7 +71,6 @@ set(SOURCE_FILES
     src/renderer/shader_program.hxx                 src/renderer/shader_program.cxx
     src/renderer/vertex.hxx                         src/renderer/vertex.cxx
 
-    src/renderer/pipelineVertexInputState.hxx       src/renderer/pipelineVertexInputState.cxx
     src/renderer/renderPass.hxx                     src/renderer/renderPass.cxx
 
 	src/resources/buffer.hxx                        src/resources/buffer.cxx
@@ -80,6 +78,7 @@ set(SOURCE_FILES
     src/resources/memory.hxx                        src/resources/memory.cxx
     src/resources/program.hxx                       src/resources/program.cxx
     src/resources/resource.hxx                      src/resources/resource.cxx
+    src/resources/semaphore.hxx
 
 	src/utility/mpl.hxx
 	src/utility/helpers.hxx
@@ -92,11 +91,8 @@ set(SOURCE_FILES
     src/math.hxx                                    src/math.cxx
     src/queueBuilder.hxx
     src/queues.hxx
-    src/sceneTree.hxx                               src/sceneTree.cxx
-    src/semaphore.hxx
     src/staging.hxx
 	src/swapchain.hxx                               src/swapchain.cxx
-    src/vertexFormat.hxx
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
