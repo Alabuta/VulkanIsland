@@ -17,7 +17,10 @@ namespace graphics
 {
     struct specialization_constant final {
         std::uint32_t id;
-        std::variant<std::uint32_t, boost::float32_t> value;
+        std::variant<std::int32_t, boost::float32_t> value;
+
+        template<class T> requires mpl::variant_alternative<std::remove_cvref_t<T>, decltype(value)>
+        specialization_constant(std::uint32_t id, T value) : id{id}, value{value} { }
 
         template<class T> requires std::same_as<std::remove_cvref_t<T>, specialization_constant>
         auto constexpr operator== (T &&constant) const

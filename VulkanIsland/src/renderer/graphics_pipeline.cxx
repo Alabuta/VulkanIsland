@@ -203,6 +203,7 @@ namespace graphics
                         id, offset, sizeof(constant)
                     });
 
+                    specialization_constants_data.resize(sizeof(constant) + offset);
                     auto dst_begin = std::next(std::begin(specialization_constants_data), offset);
 
                     std::uninitialized_copy_n(reinterpret_cast<std::byte *>(&constant), sizeof(constant), dst_begin);
