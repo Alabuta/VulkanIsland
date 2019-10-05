@@ -216,9 +216,6 @@ struct app_t final {
     }
 };
 
-
-
-
 struct window_events_handler final : public platform::window::event_handler_interface {
 
     window_events_handler(app_t &app) : app{app} { }
@@ -471,6 +468,80 @@ void recreate_swap_chain(app_t &app)
     create_graphics_command_buffers(app);
 }
 
+void build_render_pipelines(app_t &app, xformat const &_model)
+{
+    std::vector<graphics::render_pipeline> render_pipelines;
+
+    graphics::rasterization_state rasterization_state{
+        graphics::CULL_MODE::BACK,
+        graphics::POLYGON_FRONT_FACE::COUNTER_CLOCKWISE,
+        graphics::POLYGON_MODE::FILL,
+        1.f
+    };
+
+    graphics::depth_stencil_state depth_stencil_state{
+        true, true, graphics::COMPARE_OPERATION::GREATER,
+        false, { 0.f, 1.f },
+        false, graphics::stencil_state{ }, graphics::stencil_state{ }
+    };
+
+    graphics::color_blend_state color_blend_state{
+        false, graphics::LOGIC_OPERATION::COPY,
+        { 0.f, 0.f, 0.f, 0.f },
+        { graphics::color_blend_attachment_state{ } }
+    };
+
+    auto &&material_factory = *app.material_factory;
+    auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
+    auto &&pipeline_factory = *app.pipeline_factory;
+
+    auto &&resource_manager = app.vulkanDevice->resourceManager();
+
+    for (auto &&meshlet : _model.non_indexed_meshlets) {
+        auto material_index = meshlet.material_index;
+        auto [technique_index, name] = _model.materials[material_index];
+
+        std::cout << fmt::format("{}#{}\n"s, name, technique_index);
+
+        auto material = material_factory.material(name, technique_index);
+
+        auto vertex_layout_index = meshlet.vertex_buffer_index;
+        auto &&vertex_layout = _model.vertex_layouts[vertex_layout_index];
+
+        auto &&vertex_data_buffer = _model.vertex_buffers.at(vertex_layout_index);
+
+        auto vertex_buffer = resource_manager.CreateVertexBuffer(vertex_layout, std::size(vertex_data_buffer.buffer));
+
+        if (vertex_buffer)
+            resource_manager.StageVertexData(vertex_buffer, vertex_data_buffer.buffer);
+
+        else throw std::runtime_error("failed to get vertex buffer"s);
+
+        [[maybe_unused]] auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(vertex_layout);
+
+        auto adjusted_vertex_input_state = vertex_input_state_manager.get_adjusted_vertex_input_state(vertex_layout, material->vertex_layout);
+
+        auto primitive_topology = meshlet.topology;
+
+        graphics::pipeline_states pipeline_states{
+            primitive_topology,
+            adjusted_vertex_input_state,
+            rasterization_state,
+            depth_stencil_state,
+            color_blend_state
+        };
+
+        auto pipeline = pipeline_factory.create_pipeline(material, pipeline_states, app.pipelineLayout, app.renderPass, 0u);
+
+        app.draw_commands.push_back(
+            draw_command{
+                material, pipeline, vertex_buffer,
+                meshlet.vertex_count, meshlet.first_vertex,
+                app.pipelineLayout, app.renderPass, app.descriptorSet
+            }
+        );
+    }
+}
 
 namespace temp
 {
@@ -726,81 +797,6 @@ xformat populate()
 
     return _model;
 }
-
-void build_render_pipelines(app_t &app, xformat const &_model)
-{
-    std::vector<graphics::render_pipeline> render_pipelines;
-
-    graphics::rasterization_state rasterization_state{
-        graphics::CULL_MODE::BACK,
-        graphics::POLYGON_FRONT_FACE::COUNTER_CLOCKWISE,
-        graphics::POLYGON_MODE::FILL,
-        1.f
-    };
-
-    graphics::depth_stencil_state depth_stencil_state{
-        true, true, graphics::COMPARE_OPERATION::GREATER,
-        false, { 0.f, 1.f },
-        false, graphics::stencil_state{ }, graphics::stencil_state{ }
-    };
-
-    graphics::color_blend_state color_blend_state{
-        false, graphics::LOGIC_OPERATION::COPY,
-        { 0.f, 0.f, 0.f, 0.f },
-        { graphics::color_blend_attachment_state{ } }
-    };
-
-    auto &&material_factory = *app.material_factory;
-    auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
-    auto &&pipeline_factory = *app.pipeline_factory;
-
-    auto &&resource_manager = app.vulkanDevice->resourceManager();
-
-    for (auto &&meshlet : _model.non_indexed_meshlets) {
-        auto material_index = meshlet.material_index;
-        auto [technique_index, name] = _model.materials[material_index];
-
-        std::cout << fmt::format("{}#{}\n"s, name, technique_index);
-
-        auto material = material_factory.material(name, technique_index);
-
-        auto vertex_layout_index = meshlet.vertex_buffer_index;
-        auto &&vertex_layout = _model.vertex_layouts[vertex_layout_index];
-
-        auto &&vertex_data_buffer = _model.vertex_buffers.at(vertex_layout_index);
-
-        auto vertex_buffer = resource_manager.CreateVertexBuffer(vertex_layout, std::size(vertex_data_buffer.buffer));
-
-        if (vertex_buffer)
-            resource_manager.StageVertexData(vertex_buffer, vertex_data_buffer.buffer);
-
-        else throw std::runtime_error("failed to get vertex buffer"s);
-
-        [[maybe_unused]] auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(vertex_layout);
-
-        auto adjusted_vertex_input_state = vertex_input_state_manager.get_adjusted_vertex_input_state(vertex_layout, material->vertex_layout);
-
-        auto primitive_topology = meshlet.topology;
-
-        graphics::pipeline_states pipeline_states{
-            primitive_topology,
-            adjusted_vertex_input_state,
-            rasterization_state,
-            depth_stencil_state,
-            color_blend_state
-        };
-
-        auto pipeline = pipeline_factory.create_pipeline(material, pipeline_states, app.pipelineLayout, app.renderPass, 0u);
-
-        app.draw_commands.push_back(
-            draw_command{
-                material, pipeline, vertex_buffer,
-                meshlet.vertex_count, meshlet.first_vertex,
-                app.pipelineLayout, app.renderPass, app.descriptorSet
-            }
-        );
-    }
-}
 }
 
 
@@ -927,7 +923,8 @@ void init_vulkan(platform::window &window, app_t &app)
     update_descriptor_set(app, *app.vulkanDevice, app.descriptorSet);
 
     temp::model = temp::populate();
-    temp::build_render_pipelines(app, temp::model);
+
+    build_render_pipelines(app, temp::model);
 
     app.vulkanDevice->resourceManager().TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
 

@@ -17,10 +17,6 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "debug", "debug", "{B87DB4EC
 	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "shaders", "shaders", "{44F1DF1F-3B41-4EC3-8A88-F9BB152CB57D}"
-	ProjectSection(SolutionItems) = preProject
-		contents\shaders\shader.frag.glsl = contents\shaders\shader.frag.glsl
-		contents\shaders\shader.vert.glsl = contents\shaders\shader.vert.glsl
-	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "common", "common", "{675A947D-6429-473C-AF62-871297F5BC0D}"
 	ProjectSection(SolutionItems) = preProject

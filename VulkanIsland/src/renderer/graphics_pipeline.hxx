@@ -37,7 +37,6 @@ namespace graphics
     };
 }
 
-
 namespace graphics
 {
     class pipeline final {
