@@ -5,7 +5,7 @@
 #include "main.hxx"
 #include "utility/mpl.hxx"
 #include "device/device.hxx"
-#include "renderer/graphics.hxx"
+#include "graphics/graphics.hxx"
 
 class VulkanDevice;
 

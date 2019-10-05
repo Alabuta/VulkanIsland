@@ -4,7 +4,7 @@
 #include "device/device.hxx"
 #include "resources/buffer.hxx"
 #include "resources/image.hxx"
-#include "renderer/graphics.hxx"
+#include "graphics/graphics.hxx"
 
 
 struct VulkanSwapchain final {

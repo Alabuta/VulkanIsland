@@ -24,7 +24,7 @@
 #include "instance.hxx"
 #include "device/device.hxx"
 #include "swapchain.hxx"
-#include "resources/program.hxx"
+
 #include "resources/buffer.hxx"
 #include "resources/image.hxx"
 #include "resources/resource.hxx"
@@ -32,17 +32,17 @@
 #include "descriptor.hxx"
 #include "command_buffer.hxx"
 
-#include "renderer/graphics_pipeline.hxx"
-#include "renderer/pipeline_states.hxx"
-#include "renderer/renderPass.hxx"
+#include "graphics/graphics_pipeline.hxx"
+#include "graphics/pipeline_states.hxx"
+#include "graphics/renderPass.hxx"
 
-#include "renderer/graphics.hxx"
+#include "graphics/graphics.hxx"
 
-#include "renderer/material.hxx"
+#include "graphics/material.hxx"
 
-#include "renderer/vertex.hxx"
-#include "renderer/render_flow.hxx"
-#include "renderer/compatibility.hxx"
+#include "graphics/vertex.hxx"
+#include "graphics/render_flow.hxx"
+#include "graphics/compatibility.hxx"
 
 #include "platform/input/input_manager.hxx"
 #include "camera/camera.hxx"

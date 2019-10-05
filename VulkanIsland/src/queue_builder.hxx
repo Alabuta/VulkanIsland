@@ -6,7 +6,7 @@
 #include "utility/mpl.hxx"
 #include "device/device.hxx"
 #include "queues.hxx"
-#include "renderer/graphics_api.hxx"
+#include "graphics/graphics_api.hxx"
 
 
 class QueueHelper final {

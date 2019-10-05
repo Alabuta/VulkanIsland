@@ -15,8 +15,8 @@ namespace ex = entityx;
 #include "utility/mpl.hxx"
 #include "math.hxx"
 
-#include "renderer/graphics.hxx"
-#include "renderer/vertex.hxx"
+#include "graphics/graphics.hxx"
+#include "graphics/vertex.hxx"
 
 
 #if OBSOLETE

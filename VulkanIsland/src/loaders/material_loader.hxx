@@ -9,9 +9,9 @@ using namespace std::string_view_literals;
 
 #include <boost/cstdfloat.hpp>
 
-#include "renderer/graphics.hxx"
-#include "renderer/vertex.hxx"
-#include "renderer/pipeline_states.hxx"
+#include "graphics/graphics.hxx"
+#include "graphics/vertex.hxx"
+#include "graphics/pipeline_states.hxx"
 
 
 namespace loader

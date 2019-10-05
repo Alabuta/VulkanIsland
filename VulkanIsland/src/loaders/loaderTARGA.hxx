@@ -7,7 +7,7 @@
 
 #include "math.hxx"
 #include "utility/mpl.hxx"
-#include "renderer/graphics.hxx"
+#include "graphics/graphics.hxx"
 
 
 enum class PIXEL_LAYOUT {

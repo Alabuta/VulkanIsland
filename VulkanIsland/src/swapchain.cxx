@@ -5,7 +5,7 @@
 #include "utility/mpl.hxx"
 #include "swapchain.hxx"
 #include "command_buffer.hxx"
-#include "renderer/graphics_api.hxx"
+#include "graphics/graphics_api.hxx"
 
 
 #if USE_WIN32

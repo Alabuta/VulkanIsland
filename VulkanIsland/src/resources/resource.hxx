@@ -8,7 +8,7 @@
 #include "device/device.hxx"
 
 #include "staging.hxx"
-#include "renderer/graphics_api.hxx"
+#include "graphics/graphics_api.hxx"
 #include "semaphore.hxx"
 
 

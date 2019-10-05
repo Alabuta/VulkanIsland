@@ -9,7 +9,7 @@ using namespace std::string_literals;
 #include <fmt/format.h>
 
 #include "graphics_pipeline.hxx"
-#include "renderer/graphics_api.hxx"
+#include "graphics/graphics_api.hxx"
 
 
 namespace

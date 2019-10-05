@@ -102,13 +102,6 @@ namespace graphics
 
         VulkanDevice &vulkan_device_;
 
-        // GAPI
-        /*using sc_map_entry = VkSpecializationMapEntry;
-        using sc_info = VkSpecializationInfo;
-
-        std::unordered_map<shader_stage, std::vector<sc_map_entry>, hash<shader_stage>> specialization_map_entries_;
-        std::unordered_map<shader_stage, sc_info, hash<shader_stage>> specializations_;*/
-
         std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<graphics::shader_module>> modules_by_techinques_;
 
         [[nodiscard]] std::shared_ptr<graphics::shader_module> create_shader_module(std::string_view name, std::uint32_t technique_index);

@@ -22,7 +22,7 @@ namespace fs = std::filesystem;
 #include "staging.hxx"
 #include "loaders/loaderGLTF.hxx"
 
-#include "renderer/graphics.hxx"
+#include "graphics/graphics.hxx"
 
 namespace glTF
 {

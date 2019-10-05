@@ -3,8 +3,8 @@
 #include "main.hxx"
 #include "device/device.hxx"
 #include "resources/image.hxx"
-#include "renderer/graphics.hxx"
-#include "renderer/graphics_api.hxx"
+#include "graphics/graphics.hxx"
+#include "graphics/graphics_api.hxx"
 
 
 template<class Q> requires mpl::derived_from<VulkanQueue<Q>, std::remove_cvref_t<Q>>

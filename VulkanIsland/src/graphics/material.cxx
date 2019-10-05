@@ -54,8 +54,7 @@ namespace graphics
 
         auto &&vertex_attributes = description.vertex_attributes;
 
-        graphics::vertex_layout vertex_layout;
-        vertex_layout.size_in_bytes = 0;
+        graphics::vertex_layout vertex_layout{0, { }};
 
         std::transform(std::cbegin(technique.vertex_layout), std::cend(technique.vertex_layout),
                        std::back_inserter(vertex_layout.attributes),

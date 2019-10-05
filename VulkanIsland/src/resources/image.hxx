@@ -4,8 +4,8 @@
 #include "device/device.hxx"
 #include "buffer.hxx"
 #include "loaders/loaderTARGA.hxx"
-#include "renderer/graphics.hxx"
-#include "renderer/graphics_api.hxx"
+#include "graphics/graphics.hxx"
+#include "graphics/graphics_api.hxx"
 
 
 class VulkanImageView;
