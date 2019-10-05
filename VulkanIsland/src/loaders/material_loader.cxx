@@ -347,6 +347,18 @@ namespace loader
 
         return { };
     }
+
+    std::optional<material_description::specialization_constant> specialization_constant_value(std::string_view type, float value)
+    {
+        if (type == "float"sv)
+            return static_cast<boost::float32_t>(value);
+
+        else if (type == "int"sv)
+            return static_cast<std::int32_t>(value);
+
+        return { };
+    }
+
 }
 
 namespace nlohmann
@@ -374,10 +386,25 @@ namespace nlohmann
         else throw std::runtime_error("unsupported vertex attribute type"s);
     }
 
+    void from_json(nlohmann::json const &j, loader::material_description::specialization_constant &specialization_constant)
+    {
+        auto type = j.at("type"s).get<std::string>();
+
+        if (auto value = loader::specialization_constant_value(type, j.at("value"s).get<float>()); value)
+            specialization_constant = *value;
+
+        else throw std::runtime_error("unsupported specialization constant value"s);
+    }
+
     void from_json(nlohmann::json const &j, loader::material_description::shader_bundle &shader_bundle)
     {
         shader_bundle.module_index = j.at("index"s).get<std::size_t>();
         shader_bundle.technique_index = j.at("technique"s).get<std::size_t>();
+
+        using specialization_constants = std::vector<loader::material_description::specialization_constant>;
+
+        if (j.count("specializationConstants"s))
+            shader_bundle.specialization_constants = j.at("specializationConstants"s).get<specialization_constants>();
     }
 
     void from_json(nlohmann::json const &j, loader::material_description::technique &technique)

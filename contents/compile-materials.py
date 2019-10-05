@@ -28,8 +28,8 @@ class Materials(NamedTuple):
 
 shaders = Shaders(
     compiler_path = 'glslangValidator',
-    source_path = './contents/shaders',
-    include_path = './contents/shaders/include',
+    source_path = './shaders',
+    include_path = './shaders/include',
     file_extensions = ('.vert.glsl', '.tesc.glsl', '.tese.glsl', '.geom.glsl', '.frag.glsl', '.comp.glsl'),
     glsl_settings = GLSLSettings(
         version = 460,
@@ -60,7 +60,7 @@ shaders = Shaders(
 )
 
 materials = Materials(
-    source_path = './contents/materials',
+    source_path = './materials',
     file_extensions = ('.json')
 )
 
@@ -212,6 +212,17 @@ def get_shader_source_code(name):
     return None
 
 
+def get_specialization_constants(specialization_constants):
+    constants = ''
+
+    for specialization_constant in specialization_constants:
+        id, value, type = [ specialization_constant[k] for k in ('id', 'value', 'type') ]
+
+        constants += f'layout(constant_id = {id}) const {type} SPECIALIZATION_CONSTANT_{id} = {type}({value});\n'
+
+    return constants
+
+
 def compile_material(material_data):
     techniques, shader_modules = [
         material_data[k] for k in ('techniques', 'shaderModules')
@@ -236,6 +247,11 @@ def compile_material(material_data):
                 continue
 
             source_code = remove_inactive_techniques(technique_index, source_code)
+
+            if 'specializationConstants' in shader_bundle:
+                constants = get_specialization_constants(shader_bundle['specializationConstants'])
+                source_code = f'{constants}\n{source_code}'
+
             source_code = f'{header}\n{source_code}'
 
             hashed_name = str(uuid.uuid5(uuid.NAMESPACE_DNS, f'{name}.{technique_index}'))

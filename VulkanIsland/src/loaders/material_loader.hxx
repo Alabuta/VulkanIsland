@@ -2,10 +2,12 @@
 
 #include <memory>
 #include <vector>
-
+#include <variant>
 #include <string>
 #include <string_view>
 using namespace std::string_view_literals;
+
+#include <boost/cstdfloat.hpp>
 
 #include "renderer/graphics.hxx"
 #include "renderer/vertex.hxx"
@@ -33,9 +35,13 @@ namespace loader
 
         std::vector<vertex_attribute> vertex_attributes;
 
+        using specialization_constant = std::variant<std::int32_t, boost::float32_t>;
+
         struct shader_bundle final {
             std::size_t module_index;
             std::size_t technique_index;
+
+            std::vector<specialization_constant> specialization_constants;
         };
 
         struct technique final {

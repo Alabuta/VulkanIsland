@@ -28,7 +28,19 @@
             "shadersBundle": [
                 {
                     "index": 0,
-                    "technique": 1
+                    "technique": 1,
+                    "specializationConstants": [
+                        {
+                            "id": 0,
+                            "value": 0,
+                            "type": "int"
+                        },
+                        {
+                            "id": 1,
+                            "value": 1,
+                            "type": "float"
+                        }
+                    ]
                 },
                 {
                     "index": 1,
