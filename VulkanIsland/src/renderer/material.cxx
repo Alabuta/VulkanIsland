@@ -34,12 +34,21 @@ namespace graphics
         std::transform(std::cbegin(shaders_bundle), std::cend(shaders_bundle),
                        std::back_inserter(shader_stages), [&shader_modules] (auto shader_bundle)
         {
-            auto [shader_module_index, shader_technique_index] = shader_bundle;
+            std::set<graphics::specialization_constant> constants;
 
-            auto &&[shader_semantic, shader_name] = shader_modules.at(shader_module_index);
+            std::uint32_t id = 0;
+
+            for (auto &&value : shader_bundle.specialization_constants) {
+                std::visit([&id, &constants] (auto value)
+                {
+                    constants.emplace(id++, value);
+                }, value);
+            }
+
+            auto &&[shader_semantic, shader_name] = shader_modules.at(shader_bundle.module_index);
 
             return graphics::shader_stage{
-                shader_name, static_cast<std::uint32_t>(shader_technique_index), shader_semantic, { }
+                shader_name, static_cast<std::uint32_t>(shader_bundle.technique_index), shader_semantic, constants
             };
         });
 
