@@ -115,6 +115,17 @@ namespace mpl
         using type = std::variant<std::vector<Ts>...>;
     };
 
+    template<class T, class V>
+    struct is_variant_alternative;
+
+    template<class T, class... Ts>
+    struct is_variant_alternative<T, std::variant<Ts...>> {
+        static auto constexpr value = is_one_of_v<T, Ts...>;;
+    };
+
+    template<class T, class... Ts>
+    auto constexpr is_variant_alternative_v = is_variant_alternative<T, Ts...>::value;
+
     template<class T>
     concept iterable = is_iterable_v<T>;
 
@@ -132,4 +143,7 @@ namespace mpl
 
     template<class T>
     concept enumeration = std::is_enum_v<T>;
+
+    template<class T, class... Ts>
+    concept variant_alternative = is_variant_alternative_v<T, Ts...>;
 }
