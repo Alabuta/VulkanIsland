@@ -5,8 +5,8 @@
 
 #include "main.hxx"
 #include "swapchain.hxx"
-#include "device/device.hxx"
-#include "deviceConfig.hxx"
+#include "renderer/device.hxx"
+#include "device_config.hxx"
 #include "resources/buffer.hxx"
 #include "resources/resource.hxx"
 
@@ -130,13 +130,15 @@ void VulkanDevice::PickPhysicalDevice(VkInstance instance, VkSurfaceKHR surface,
     if (auto result = vkEnumeratePhysicalDevices(instance, &devicesCount, std::data(devices)); result != VK_SUCCESS)
         throw std::runtime_error("failed to retrieve physical devices: "s + std::to_string(result));
 
+    auto application_info = vulkan_config::application_info;
+
     // Matching by supported properties, features and extensions.
-    auto it_end = std::remove_if(devices.begin(), devices.end(), [&extensions] (auto &&device)
+    auto it_end = std::remove_if(devices.begin(), devices.end(), [&extensions, &application_info] (auto &&device)
     {
         VkPhysicalDeviceProperties properties;
         vkGetPhysicalDeviceProperties(device, &properties);
 
-        if (properties.apiVersion < app_info.apiVersion)
+        if (properties.apiVersion < application_info.apiVersion)
             return true;
 
         VkPhysicalDeviceFeatures features;

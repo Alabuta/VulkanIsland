@@ -1,11 +1,11 @@
 #pragma once
 
-#include "main.hxx"
-#include "device/device.hxx"
-#include "buffer.hxx"
-#include "loaders/loaderTARGA.hxx"
+#include <memory>
+#include <cstddef>
+
+#include "renderer/device.hxx"
 #include "graphics/graphics.hxx"
-#include "graphics/graphics_api.hxx"
+#include "memory.hxx"
 
 
 class VulkanImageView;

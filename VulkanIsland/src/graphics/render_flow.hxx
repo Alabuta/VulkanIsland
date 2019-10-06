@@ -4,7 +4,7 @@
 #include <map>
 #include <set>
 
-#include "device/device.hxx"
+#include "renderer/device.hxx"
 #include "graphics.hxx"
 #include "attachments.hxx"
 #include "material.hxx"

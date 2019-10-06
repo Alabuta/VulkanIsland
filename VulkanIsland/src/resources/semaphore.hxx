@@ -3,8 +3,7 @@
 #include <iostream>
 #include <optional>
 
-#include "main.hxx"
-#include "device/device.hxx"
+#include "renderer/device.hxx"
 
 
 namespace resource

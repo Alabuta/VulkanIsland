@@ -1,10 +1,15 @@
-
 #include <istream>
+#include <optional>
 
-#include "main.hxx"
+#include <fstream>
+#include <filesystem>
+namespace fs = std::filesystem;
 
-#include "loaderTARGA.hxx"
+#include <string>
+using namespace std::string_literals;
+using namespace std::string_view_literals;
 
+#include "TARGA_loader.hxx"
 
 
 template<std::size_t N>

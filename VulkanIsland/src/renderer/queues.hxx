@@ -2,9 +2,8 @@
 
 #include <variant>
 
-#include "main.hxx"
 #include "utility/mpl.hxx"
-#include "device/device.hxx"
+#include "renderer/device.hxx"
 #include "graphics/graphics.hxx"
 
 class VulkanDevice;

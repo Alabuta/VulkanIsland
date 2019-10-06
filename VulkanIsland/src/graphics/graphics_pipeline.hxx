@@ -7,7 +7,7 @@
 #include <array>
 #include <set>
 
-#include "device/device.hxx"
+#include "renderer/device.hxx"
 
 #include "graphics.hxx"
 #include "vertex.hxx"

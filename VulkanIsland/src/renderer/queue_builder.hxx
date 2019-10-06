@@ -2,11 +2,9 @@
 
 #include <map>
 
-#include "main.hxx"
 #include "utility/mpl.hxx"
-#include "device/device.hxx"
-#include "queues.hxx"
 #include "graphics/graphics_api.hxx"
+#include "queues.hxx"
 
 
 class QueueHelper final {

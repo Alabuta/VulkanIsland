@@ -12,7 +12,7 @@ class MemoryManager;
 class ResourceManager;
 
 
-namespace config {
+namespace vulkan_config {
 auto constexpr deviceExtensions = mpl::make_array(
     VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 

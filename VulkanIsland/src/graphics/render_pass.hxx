@@ -5,7 +5,7 @@
 #include <vector>
 #include <memory>
 
-#include "device/device.hxx"
+#include "renderer/device.hxx"
 #include "graphics.hxx"
 #include "attachments.hxx"
 

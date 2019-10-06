@@ -7,7 +7,7 @@
 #define GLM_GTX_quaternion
 #define GLM_GTX_transform
 
-#include "math.hxx"
+#include "math/math.hxx"
 
 #include "camera/camera.hxx"
 #include "platform/input/input_manager.hxx"

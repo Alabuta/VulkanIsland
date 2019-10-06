@@ -2,7 +2,7 @@
 
 #include "main.hxx"
 #include "utility/mpl.hxx"
-#include "math.hxx"
+#include "math/math.hxx"
 
 #include "ecs.hxx"
 #include "transform.hxx"

@@ -9,7 +9,7 @@
 
 #include <boost/cstdfloat.hpp>
 
-#include "device/device.hxx"
+#include "renderer/device.hxx"
 #include "graphics.hxx"
 
 

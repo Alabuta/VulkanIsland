@@ -2,6 +2,11 @@
 
 #include <csignal>
 
+#ifndef GLFW_INCLUDE_VULKAN
+    #define GLFW_INCLUDE_VULKAN
+    #include <GLFW/glfw3.h>
+#endif
+
 
 [[nodiscard]] inline VKAPI_ATTR VkBool32 VKAPI_CALL
 debug_callback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objectType, std::uint64_t object, std::size_t location, std::int32_t messageCode,

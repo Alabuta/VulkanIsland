@@ -11,7 +11,7 @@
 
 #include "main.hxx"
 #include "utility/mpl.hxx"
-#include "device/device.hxx"
+#include "renderer/device.hxx"
 
 
 class DeviceMemory;

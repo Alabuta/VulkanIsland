@@ -20,17 +20,21 @@
 
 #include "main.hxx"
 #include "utility/mpl.hxx"
-#include "math.hxx"
-#include "instance.hxx"
-#include "device/device.hxx"
-#include "swapchain.hxx"
+#include "math/math.hxx"
+
+#include "renderer/instance.hxx"
+#include "renderer/device.hxx"
+#include "renderer/swapchain.hxx"
+#include "renderer/command_buffer.hxx"
 
 #include "resources/buffer.hxx"
 #include "resources/image.hxx"
 #include "resources/resource.hxx"
 #include "resources/semaphore.hxx"
 #include "descriptor.hxx"
-#include "command_buffer.hxx"
+
+#include "loaders/TARGA_loader.hxx"
+#include "loaders/scene_loader.hxx"
 
 #include "graphics/graphics_pipeline.hxx"
 #include "graphics/pipeline_states.hxx"
@@ -802,7 +806,7 @@ xformat populate()
 
 void init_vulkan(platform::window &window, app_t &app)
 {
-    app.vulkanInstance = std::make_unique<VulkanInstance>(config::extensions, config::layers);
+    app.vulkanInstance = std::make_unique<VulkanInstance>(vulkan_config::extensions, vulkan_config::layers);
 
 #if USE_WIN32
     VkWin32SurfaceCreateInfoKHR const win32CreateInfo{
@@ -824,7 +828,7 @@ void init_vulkan(platform::window &window, app_t &app)
         mpl::instances_number<PresentationQueue>
     > qpool;
 
-    app.vulkanDevice = std::make_unique<VulkanDevice>(*app.vulkanInstance, app.surface, config::deviceExtensions, std::move(qpool));
+    app.vulkanDevice = std::make_unique<VulkanDevice>(*app.vulkanInstance, app.surface, vulkan_config::deviceExtensions, std::move(qpool));
 
     app.shader_manager = std::make_unique<graphics::shader_manager>(*app.vulkanDevice);
     app.material_factory = std::make_unique<graphics::material_factory>();
@@ -853,15 +857,15 @@ void init_vulkan(platform::window &window, app_t &app)
 
     else throw std::runtime_error("failed to create the swapchain"s);
 
-    if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkanDevice); !descriptorSetLayout)
-        throw std::runtime_error("failed to create the descriptor set layout"s);
-
-    else app.descriptorSetLayout = std::move(descriptorSetLayout.value());
-
     if (auto renderPass = CreateRenderPass(*app.vulkanDevice, app.swapchain); !renderPass)
         throw std::runtime_error("failed to create the render pass"s);
 
     else app.renderPass = std::move(renderPass.value());
+
+    if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkanDevice); !descriptorSetLayout)
+        throw std::runtime_error("failed to create the descriptor set layout"s);
+
+    else app.descriptorSetLayout = std::move(descriptorSetLayout.value());
 
 #if TEMPORARILY_DISABLED
     if (auto result = glTF::load(sceneName, app.scene, app.nodeSystem); !result)
@@ -890,7 +894,6 @@ void init_vulkan(platform::window &window, app_t &app)
     auto alignment = static_cast<std::size_t>(app.vulkanDevice->properties().limits.minStorageBufferOffsetAlignment);
 
     app.alignedBufferSize = aligned_size(sizeof(per_object_t), alignment) * app.objectsNumber;
-
     app.alignedBuffer = boost::alignment::aligned_alloc(alignment, app.alignedBufferSize);
 
     app.objects.resize(app.objectsNumber);

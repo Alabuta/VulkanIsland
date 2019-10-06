@@ -18,8 +18,8 @@ namespace fs = std::filesystem;
 
 #include <nlohmann/json.hpp>
 
-#include "math.hxx"
-#include "staging.hxx"
+#include "math/math.hxx"
+#include "loaders/scene_loader.hxx"
 #include "loaders/loaderGLTF.hxx"
 
 #include "graphics/graphics.hxx"

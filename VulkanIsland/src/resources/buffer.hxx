@@ -1,10 +1,10 @@
 #pragma once
 
 #include <concepts>
+#include <memory>
 
-#include "main.hxx"
+#include "graphics/vertex.hxx"
 #include "memory.hxx"
-#include "staging.hxx"
 
 
 class VulkanBuffer final {

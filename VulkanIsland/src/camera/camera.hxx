@@ -2,7 +2,7 @@
 
 #include <memory>
 
-#include "math.hxx"
+#include "math/math.hxx"
 
 
 struct camera {

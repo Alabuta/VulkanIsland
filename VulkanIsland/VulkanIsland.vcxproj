@@ -241,25 +241,25 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src/debug.cxx" />
+    <ClCompile Include="src\renderer\debug.cxx" />
     <ClCompile Include="src/descriptor.cxx" />
     <ClCompile Include="src\platform\input\input_manager.cxx" />
     <ClCompile Include="src\platform\input\mouse.cxx" />
-    <ClCompile Include="src/instance.cxx" />
+    <ClCompile Include="src\renderer\instance.cxx" />
     <ClCompile Include="src/main.cxx" />
     <ClCompile Include="src/platform/window.cxx" />
-    <ClCompile Include="src/swapchain.cxx" />
+    <ClCompile Include="src\renderer\swapchain.cxx" />
     <ClCompile Include="src\camera\camera_controller.cxx" />
     <ClCompile Include="src\camera\handlers\mouse_handler.cxx" />
     <ClCompile Include="src\camera\camera.cxx" />
-    <ClCompile Include="src\device\device.cxx" />
+    <ClCompile Include="src\renderer\device.cxx" />
     <ClCompile Include="src\ecs\node.cxx" />
     <ClCompile Include="src\ecs\transform.cxx" />
     <ClCompile Include="src\loaders\loaderGLTF.cxx" />
-    <ClCompile Include="src\loaders\loaderTARGA.cxx" />
+    <ClCompile Include="src\loaders\TARGA_loader.cxx" />
     <ClCompile Include="src\loaders\material_loader.cxx" />
     <ClCompile Include="src\loaders\SPIRV_loader.cxx" />
-    <ClCompile Include="src\math.cxx" />
+    <ClCompile Include="src\math\math.cxx" />
     <ClCompile Include="src\graphics\attachments.cxx" />
     <ClCompile Include="src\graphics\descriptors.cxx" />
     <ClCompile Include="src\graphics\graphics_api.cxx" />
@@ -278,21 +278,22 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\config.hxx" />
-    <ClInclude Include="src\command_buffer.hxx" />
-    <ClInclude Include="src/debug.hxx" />
+    <ClInclude Include="src\renderer\command_buffer.hxx" />
+    <ClInclude Include="src\renderer\debug.hxx" />
     <ClInclude Include="src/descriptor.hxx" />
     <ClInclude Include="src/device.hxx" />
     <ClInclude Include="src\camera\camera.hxx" />
     <ClInclude Include="src\deviceConfig.hxx" />
+    <ClInclude Include="include\vulkan_config.hxx" />
     <ClInclude Include="src\utility\helpers.hxx" />
     <ClInclude Include="src\platform\input\input_data.hxx" />
     <ClInclude Include="src\platform\input\input_manager.hxx" />
     <ClInclude Include="src\platform\input\mouse.hxx" />
-    <ClInclude Include="src/instance.hxx" />
-    <ClInclude Include="src/math.hxx" />
+    <ClInclude Include="src\renderer\instance.hxx" />
+    <ClInclude Include="src\math\math.hxx" />
     <ClInclude Include="src/main.hxx" />
-    <ClInclude Include="src\device\device.hxx" />
-    <ClInclude Include="src\device\deviceConfig.hxx" />
+    <ClInclude Include="src\renderer\device.hxx" />
+    <ClInclude Include="src\renderer\device_config.hxx" />
     <ClInclude Include="src\loaders\SPIRV_loader.hxx" />
     <ClInclude Include="src\loaders\material_loader.hxx" />
     <ClInclude Include="src\graphics\attachments.hxx" />
@@ -312,11 +313,11 @@
     <ClInclude Include="src\resources\memory.hxx" />
     <ClInclude Include="src\resources\resource.hxx" />
     <ClInclude Include="src\resources\semaphore.hxx" />
-    <ClInclude Include="src\staging.hxx" />
+    <ClInclude Include="src\loaders\scene_loader.hxx" />
     <ClInclude Include="src/platform/window.hxx" />
-    <ClInclude Include="src/queues.hxx" />
-    <ClInclude Include="src\queue_builder.hxx" />
-    <ClInclude Include="src/swapchain.hxx" />
+    <ClInclude Include="src\renderer\queues.hxx" />
+    <ClInclude Include="src\renderer\queue_builder.hxx" />
+    <ClInclude Include="src\renderer\swapchain.hxx" />
     <ClInclude Include="src\camera\camera_controller.hxx" />
     <ClInclude Include="src\camera\handlers\mouse_handler.hxx" />
     <ClInclude Include="src\ecs\ecs.hxx" />
@@ -324,7 +325,7 @@
     <ClInclude Include="src\ecs\node.hxx" />
     <ClInclude Include="src\ecs\transform.hxx" />
     <ClInclude Include="src\loaders\loaderGLTF.hxx" />
-    <ClInclude Include="src\loaders\loaderTARGA.hxx" />
+    <ClInclude Include="src\loaders\TARGA_loader.hxx" />
     <ClInclude Include="src\resources\buffer.hxx" />
     <ClInclude Include="src\resources\image.hxx" />
     <ClInclude Include="src\utility\mpl.hxx" />

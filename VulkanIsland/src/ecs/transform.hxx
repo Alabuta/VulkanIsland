@@ -4,7 +4,7 @@
 
 #include "main.hxx"
 #include "utility/helpers.hxx"
-#include "math.hxx"
+#include "math/math.hxx"
 #include "utility/mpl.hxx"
 
 #include "ecs.hxx"

@@ -2,7 +2,7 @@
 #include <boost/align/align.hpp>
 
 #include "memory.hxx"
-#include "command_buffer.hxx"
+#include "renderer/command_buffer.hxx"
 
 
 namespace {

@@ -1,7 +1,7 @@
 
 #include "main.hxx"
 #include "instance.hxx"
-#include "device/device.hxx"
+#include "renderer/device.hxx"
 
 namespace {
 
@@ -95,13 +95,15 @@ void VulkanInstance::CreateInstance(std::vector<char const *> &&extensions, std:
     if (auto result = vkEnumerateInstanceVersion(&apiVersion); result != VK_SUCCESS)
         throw std::runtime_error("failed to retrieve Vulkan API version"s);
 
-    if (apiVersion != app_info.apiVersion)
+    auto application_info = vulkan_config::application_info;
+
+    if (apiVersion != application_info.apiVersion)
         throw std::runtime_error("unsupported Vulkan API version"s);
 
     VkInstanceCreateInfo createInfo{
         VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
         nullptr, 0,
-        &app_info,
+        &application_info,
         0, nullptr,
         0, nullptr
     };

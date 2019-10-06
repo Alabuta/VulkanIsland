@@ -26,43 +26,41 @@ auto constexpr kPI = 3.14159265358979323846f;
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/hash.hpp>
 
-#include "utility/mpl.hxx"
-
 
 namespace math {
-template<std::size_t N, class T>
-struct vec {
-    static auto constexpr size = N;
-    using value_type = T;
+    template<std::size_t N, class T>
+    struct vec {
+        static auto constexpr size = N;
+        using value_type = T;
 
-    std::array<T, N> array;
+        std::array<T, N> array;
 
-    vec() = default;
+        vec() = default;
 
-    template<class... Ts, typename = std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == size>>
-    constexpr vec(Ts... values) noexcept : array{static_cast<typename std::remove_cvref_t<decltype(array)>::value_type>(values)...} { }
-};
+        template<class... Ts, typename = std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == size>>
+        constexpr vec(Ts... values) noexcept : array{static_cast<typename std::remove_cvref_t<decltype(array)>::value_type>(values)...} { }
+    };
 
-template<class U, class V>
-inline glm::quat from_two_vec3(U &&u, V &&v)
-{
-    auto norm_uv = std::sqrt(glm::dot(u, u) * glm::dot(v, v));
-    auto real_part = norm_uv + glm::dot(u, v);
+    template<class U, class V>
+    inline glm::quat from_two_vec3(U &&u, V &&v)
+    {
+        auto norm_uv = std::sqrt(glm::dot(u, u) * glm::dot(v, v));
+        auto real_part = norm_uv + glm::dot(u, v);
 
-    glm::vec3 w{0};
+        glm::vec3 w{0};
 
-    if (real_part < 1.e-6f * norm_uv) {
-        real_part = 0.f;
+        if (real_part < 1.e-6f * norm_uv) {
+            real_part = 0.f;
 
-        w = std::abs(u.x) > std::abs(u.z) ? glm::vec3{-u.y, u.x, 0} : glm::vec3{0, -u.z, u.y};
+            w = std::abs(u.x) > std::abs(u.z) ? glm::vec3{-u.y, u.x, 0} : glm::vec3{0, -u.z, u.y};
+        }
+
+        else w = glm::cross(u, v);
+
+        return glm::normalize(glm::quat{real_part, w});
     }
 
-    else w = glm::cross(u, v);
-
-    return glm::normalize(glm::quat{real_part, w});
-}
-
-glm::mat4 reversed_perspective(float vertical_fov, float aspect, float znear, float zfar);
+    glm::mat4 reversed_perspective(float vertical_fov, float aspect, float znear, float zfar);
 }
 
 

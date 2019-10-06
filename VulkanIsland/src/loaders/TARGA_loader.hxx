@@ -2,10 +2,10 @@
 
 #include <array>
 #include <vector>
-#include <string_view>
 #include <variant>
+#include <string_view>
 
-#include "math.hxx"
+#include "math/math.hxx"
 #include "utility/mpl.hxx"
 #include "graphics/graphics.hxx"
 
