@@ -241,7 +241,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\renderer\debug.cxx" />
+    <ClCompile Include="src\renderer\vulkan_debug.cxx" />
     <ClCompile Include="src/descriptor.cxx" />
     <ClCompile Include="src\platform\input\input_manager.cxx" />
     <ClCompile Include="src\platform\input\mouse.cxx" />
@@ -279,7 +279,7 @@
   <ItemGroup>
     <ClInclude Include="include\config.hxx" />
     <ClInclude Include="src\renderer\command_buffer.hxx" />
-    <ClInclude Include="src\renderer\debug.hxx" />
+    <ClInclude Include="src\renderer\vulkan_debug.hxx" />
     <ClInclude Include="src/descriptor.hxx" />
     <ClInclude Include="src/device.hxx" />
     <ClInclude Include="src\camera\camera.hxx" />

@@ -10,12 +10,12 @@
 
 #if USE_WIN32
 VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
-    VkInstance vulkanInstance, VkWin32SurfaceCreateInfoKHR const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkSurfaceKHR *pSurface)
+    VkInstance vulkan_instance, VkWin32SurfaceCreateInfoKHR const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkSurfaceKHR *pSurface)
 {
-    auto traverse = reinterpret_cast<PFN_vkCreateWin32SurfaceKHR>(vkGetInstanceProcAddr(vulkanInstance, "vkCreateWin32SurfaceKHR"));
+    auto traverse = reinterpret_cast<PFN_vkCreateWin32SurfaceKHR>(vkGetInstanceProcAddr(vulkan_instance, "vkCreateWin32SurfaceKHR"));
 
     if (traverse)
-        return traverse(vulkanInstance, pCreateInfo, pAllocator, pSurface);
+        return traverse(vulkan_instance, pCreateInfo, pAllocator, pSurface);
 
     return VK_ERROR_EXTENSION_NOT_PRESENT;
 }

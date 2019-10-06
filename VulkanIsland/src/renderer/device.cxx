@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <bitset>
 
-#include "main.hxx"
+#include "vulkan_config.hxx"
 #include "swapchain.hxx"
 #include "renderer/device.hxx"
 #include "device_config.hxx"
@@ -64,13 +64,13 @@ namespace
         if (auto result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionsCount, nullptr); result != VK_SUCCESS)
             throw std::runtime_error("failed to retrieve device extensions count: "s + std::to_string(result));
 
-        std::vector<VkExtensionProperties> supportedExtensions(extensionsCount);
-        if (auto result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionsCount, std::data(supportedExtensions)); result != VK_SUCCESS)
+        std::vector<VkExtensionProperties> supported_extensions(extensionsCount);
+        if (auto result = vkEnumerateDeviceExtensionProperties(physicalDevice, nullptr, &extensionsCount, std::data(supported_extensions)); result != VK_SUCCESS)
             throw std::runtime_error("failed to retrieve device extensions: "s + std::to_string(result));
 
-        std::sort(supportedExtensions.begin(), supportedExtensions.end(), extensionsComp);
+        std::sort(supported_extensions.begin(), supported_extensions.end(), extensionsComp);
 
-        return std::includes(supportedExtensions.begin(), supportedExtensions.end(), requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
+        return std::includes(supported_extensions.begin(), supported_extensions.end(), requiredExtensions.begin(), requiredExtensions.end(), extensionsComp);
     }
 
     template<class T> requires iterable<std::remove_cvref_t<T>>

@@ -99,7 +99,7 @@ struct app_t final {
 
     std::vector<per_object_t> objects;
 
-    std::unique_ptr<VulkanInstance> vulkanInstance;
+    std::unique_ptr<vulkan::instance> vulkan_instance;
     std::unique_ptr<VulkanDevice> vulkanDevice;
 
     VkSurfaceKHR surface{VK_NULL_HANDLE};
@@ -213,10 +213,10 @@ struct app_t final {
             vkDestroyCommandPool(vulkanDevice->handle(), graphicsCommandPool, nullptr);
 
         if (surface != VK_NULL_HANDLE)
-            vkDestroySurfaceKHR(vulkanInstance->handle(), surface, nullptr);
+            vkDestroySurfaceKHR(vulkan_instance->handle(), surface, nullptr);
 
         vulkanDevice.reset();
-        vulkanInstance.reset();
+        vulkan_instance.reset();
     }
 };
 
@@ -806,7 +806,7 @@ xformat populate()
 
 void init_vulkan(platform::window &window, app_t &app)
 {
-    app.vulkanInstance = std::make_unique<VulkanInstance>(vulkan_config::extensions, vulkan_config::layers);
+    app.vulkan_instance = std::make_unique<vulkan::instance>();
 
 #if USE_WIN32
     VkWin32SurfaceCreateInfoKHR const win32CreateInfo{
@@ -816,9 +816,9 @@ void init_vulkan(platform::window &window, app_t &app)
         glfwGetWin32Window(window.handle())
     };
 
-    vkCreateWin32SurfaceKHR(app.vulkanInstance->handle(), &win32CreateInfo, nullptr, &app.surface);
+    vkCreateWin32SurfaceKHR(app.vulkan_instance->handle(), &win32CreateInfo, nullptr, &app.surface);
 #else
-    if (auto result = glfwCreateWindowSurface(app.vulkanInstance->handle(), window.handle(), nullptr, &app.surface); result != VK_SUCCESS)
+    if (auto result = glfwCreateWindowSurface(app.vulkan_instance->handle(), window.handle(), nullptr, &app.surface); result != VK_SUCCESS)
         throw std::runtime_error(fmt::format("failed to create window surface: {0:#x}\n"s, result));
 #endif
 
@@ -828,7 +828,7 @@ void init_vulkan(platform::window &window, app_t &app)
         mpl::instances_number<PresentationQueue>
     > qpool;
 
-    app.vulkanDevice = std::make_unique<VulkanDevice>(*app.vulkanInstance, app.surface, vulkan_config::deviceExtensions, std::move(qpool));
+    app.vulkanDevice = std::make_unique<VulkanDevice>(*app.vulkan_instance, app.surface, vulkan_config::deviceExtensions, std::move(qpool));
 
     app.shader_manager = std::make_unique<graphics::shader_manager>(*app.vulkanDevice);
     app.material_factory = std::make_unique<graphics::material_factory>();

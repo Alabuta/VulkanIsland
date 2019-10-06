@@ -40,7 +40,7 @@ class VulkanDevice final {
 public:
 
     template<class E, class... Qs>
-    VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface, E &&extensions, QueuePool<Qs...> &&qpool);
+    VulkanDevice(vulkan::instance &instance, VkSurfaceKHR surface, E &&extensions, QueuePool<Qs...> &&qpool);
     ~VulkanDevice();
 
     VkDevice handle() const noexcept { return device_; };
@@ -113,7 +113,7 @@ private:
 };
 
 template<class E, class... Qs>
-inline VulkanDevice::VulkanDevice(VulkanInstance &instance, VkSurfaceKHR surface, E &&extensions, QueuePool<Qs...> &&qpool)
+inline VulkanDevice::VulkanDevice(vulkan::instance &instance, VkSurfaceKHR surface, E &&extensions, QueuePool<Qs...> &&qpool)
 {
     auto constexpr use_extensions = !std::is_same_v<std::false_type, E>;
 
