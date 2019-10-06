@@ -293,7 +293,7 @@
     <ClInclude Include="src\math\math.hxx" />
     <ClInclude Include="src/main.hxx" />
     <ClInclude Include="src\renderer\vulkan_device.hxx" />
-    <ClInclude Include="src\renderer\device_config.hxx" />
+    <ClInclude Include="src\renderer\vulkan_device_config.hxx" />
     <ClInclude Include="src\loaders\SPIRV_loader.hxx" />
     <ClInclude Include="src\loaders\material_loader.hxx" />
     <ClInclude Include="src\graphics\attachments.hxx" />

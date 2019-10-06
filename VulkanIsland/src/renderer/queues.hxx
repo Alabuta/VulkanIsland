@@ -7,6 +7,43 @@
 #include "graphics/graphics.hxx"
 
 
+namespace vulkan
+{
+    class device;
+
+    template<graphics::QUEUE_CAPABILITY QC>
+    class queue {
+    public:
+
+        /*template<graphics::QUEUE_CAPABILITY qc>
+        auto constexpr operator< (queue<qc>) const noexcept { return SI < si; }
+
+        template<graphics::QUEUE_CAPABILITY qc>
+        auto constexpr operator== (queue<qc>) const noexcept { return SI == si; }*/
+
+        /*template<class Q> requires std::same_as<queue<QC>, std::remove_cvref_t<Q>>
+        bool constexpr operator== (Q &&queue) const noexcept
+        {
+            return family_ == queue.family_ && index_ == queue.index_;
+        }*/
+
+        VkQueue handle() const noexcept { return handle_; }
+
+        std::uint32_t family() const noexcept { return family_; }
+        std::uint32_t index() const noexcept { return index_; }
+
+    private:
+
+        VkQueue handle_{nullptr};
+        std::uint32_t family_{0}, index_{0};
+
+    };
+
+    class graphics_queue final : public queue<graphics::QUEUE_CAPABILITY::GRAPHICS> { };
+    class compute_queue final : public queue<graphics::QUEUE_CAPABILITY::COMPUTE> { };
+    class transfer_queue final : public queue<graphics::QUEUE_CAPABILITY::TRANSFER> { };
+}
+
 template<class T>
 class VulkanQueue;
 

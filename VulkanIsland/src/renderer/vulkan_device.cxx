@@ -1,46 +1,17 @@
-#include <type_traits>
-#include <functional>
 #include <algorithm>
-#include <bitset>
 
+#include <string>
 using namespace std::string_literals;
-using namespace std::string_view_literals;
 
 #include <fmt/format.h>
 
 #include "vulkan_config.hxx"
-#include "swapchain.hxx"
-#include "renderer/vulkan_device.hxx"
-#include "device_config.hxx"
-#include "resources/buffer.hxx"
-#include "resources/resource.hxx"
+#include "vulkan_device_config.hxx"
+#include "vulkan_device.hxx"
 #include "queue_builder.hxx"
+#include "swapchain.hxx"
+#include "resources/resource.hxx"
 
-
-namespace
-{
-    auto constexpr device_extensions = std::array{
-        VK_KHR_SWAPCHAIN_EXTENSION_NAME,
-
-        VK_KHR_MAINTENANCE1_EXTENSION_NAME,
-        VK_KHR_MAINTENANCE2_EXTENSION_NAME,
-        VK_KHR_MAINTENANCE3_EXTENSION_NAME,
-
-        VK_KHR_MULTIVIEW_EXTENSION_NAME,
-        VK_KHR_SHADER_DRAW_PARAMETERS_EXTENSION_NAME,
-        VK_KHR_STORAGE_BUFFER_STORAGE_CLASS_EXTENSION_NAME,
-        /*VK_KHR_GET_MEMORY_REQUIREMENTS_2_EXTENSION_NAME,
-        VK_KHR_DEDICATED_ALLOCATION_EXTENSION_NAME,*/
-        VK_KHR_DESCRIPTOR_UPDATE_TEMPLATE_EXTENSION_NAME,
-
-        VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME,
-        VK_KHR_8BIT_STORAGE_EXTENSION_NAME,
-        VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME,
-        VK_KHR_16BIT_STORAGE_EXTENSION_NAME
-        //VK_KHR_INLINE_UNIFORM_BLOCK_EXTENSION_NAME
-
-    };
-}
 
 namespace
 {
@@ -112,6 +83,73 @@ namespace
                              std::cbegin(required_extensions), std::cend(required_extensions), extensions_compare);
     }
 
+    bool constexpr compare_physical_device_features(VkPhysicalDeviceFeatures const &lhs, VkPhysicalDeviceFeatures const &rhs)
+    {
+        auto total = VkBool32(VK_TRUE);
+
+    #define COMPARE_FIELDS_BY_LHS(field)                (lhs.field == (lhs.field * rhs.field))
+
+        total *= COMPARE_FIELDS_BY_LHS(robustBufferAccess);
+        total *= COMPARE_FIELDS_BY_LHS(fullDrawIndexUint32);
+        total *= COMPARE_FIELDS_BY_LHS(imageCubeArray);
+        total *= COMPARE_FIELDS_BY_LHS(independentBlend);
+        total *= COMPARE_FIELDS_BY_LHS(geometryShader);
+        total *= COMPARE_FIELDS_BY_LHS(tessellationShader);
+        total *= COMPARE_FIELDS_BY_LHS(sampleRateShading);
+        total *= COMPARE_FIELDS_BY_LHS(dualSrcBlend);
+        total *= COMPARE_FIELDS_BY_LHS(logicOp);
+        total *= COMPARE_FIELDS_BY_LHS(multiDrawIndirect);
+        total *= COMPARE_FIELDS_BY_LHS(drawIndirectFirstInstance);
+        total *= COMPARE_FIELDS_BY_LHS(depthClamp);
+        total *= COMPARE_FIELDS_BY_LHS(depthBiasClamp);
+        total *= COMPARE_FIELDS_BY_LHS(fillModeNonSolid);
+        total *= COMPARE_FIELDS_BY_LHS(depthBounds);
+        total *= COMPARE_FIELDS_BY_LHS(wideLines);
+        total *= COMPARE_FIELDS_BY_LHS(largePoints);
+        total *= COMPARE_FIELDS_BY_LHS(alphaToOne);
+        total *= COMPARE_FIELDS_BY_LHS(multiViewport);
+        total *= COMPARE_FIELDS_BY_LHS(samplerAnisotropy);
+        total *= COMPARE_FIELDS_BY_LHS(textureCompressionETC2);
+        total *= COMPARE_FIELDS_BY_LHS(textureCompressionASTC_LDR);
+        total *= COMPARE_FIELDS_BY_LHS(textureCompressionBC);
+        total *= COMPARE_FIELDS_BY_LHS(occlusionQueryPrecise);
+        total *= COMPARE_FIELDS_BY_LHS(pipelineStatisticsQuery);
+        total *= COMPARE_FIELDS_BY_LHS(vertexPipelineStoresAndAtomics);
+        total *= COMPARE_FIELDS_BY_LHS(fragmentStoresAndAtomics);
+        total *= COMPARE_FIELDS_BY_LHS(shaderTessellationAndGeometryPointSize);
+        total *= COMPARE_FIELDS_BY_LHS(shaderImageGatherExtended);
+        total *= COMPARE_FIELDS_BY_LHS(shaderStorageImageExtendedFormats);
+        total *= COMPARE_FIELDS_BY_LHS(shaderStorageImageMultisample);
+        total *= COMPARE_FIELDS_BY_LHS(shaderStorageImageReadWithoutFormat);
+        total *= COMPARE_FIELDS_BY_LHS(shaderStorageImageWriteWithoutFormat);
+        total *= COMPARE_FIELDS_BY_LHS(shaderUniformBufferArrayDynamicIndexing);
+        total *= COMPARE_FIELDS_BY_LHS(shaderSampledImageArrayDynamicIndexing);
+        total *= COMPARE_FIELDS_BY_LHS(shaderStorageBufferArrayDynamicIndexing);
+        total *= COMPARE_FIELDS_BY_LHS(shaderStorageImageArrayDynamicIndexing);
+        total *= COMPARE_FIELDS_BY_LHS(shaderClipDistance);
+        total *= COMPARE_FIELDS_BY_LHS(shaderCullDistance);
+        total *= COMPARE_FIELDS_BY_LHS(shaderFloat64);
+        total *= COMPARE_FIELDS_BY_LHS(shaderInt64);
+        total *= COMPARE_FIELDS_BY_LHS(shaderInt16);
+        total *= COMPARE_FIELDS_BY_LHS(shaderResourceResidency);
+        total *= COMPARE_FIELDS_BY_LHS(shaderResourceMinLod);
+        total *= COMPARE_FIELDS_BY_LHS(sparseBinding);
+        total *= COMPARE_FIELDS_BY_LHS(sparseResidencyBuffer);
+        total *= COMPARE_FIELDS_BY_LHS(sparseResidencyImage2D);
+        total *= COMPARE_FIELDS_BY_LHS(sparseResidencyImage3D);
+        total *= COMPARE_FIELDS_BY_LHS(sparseResidency2Samples);
+        total *= COMPARE_FIELDS_BY_LHS(sparseResidency4Samples);
+        total *= COMPARE_FIELDS_BY_LHS(sparseResidency8Samples);
+        total *= COMPARE_FIELDS_BY_LHS(sparseResidency16Samples);
+        total *= COMPARE_FIELDS_BY_LHS(sparseResidencyAliased);
+        total *= COMPARE_FIELDS_BY_LHS(variableMultisampleRate);
+        total *= COMPARE_FIELDS_BY_LHS(inheritedQueries);
+
+    #undef COMPARE_BY_FIELDS
+
+        return total != VkBool32(VK_FALSE);
+    }
+
     [[nodiscard]] VkPhysicalDevice
     pick_physical_device(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions, required_device_queues &required_queues)
     {
@@ -125,10 +163,12 @@ namespace
         if (auto result = vkEnumeratePhysicalDevices(instance, &devices_count, std::data(devices)); result != VK_SUCCESS)
             throw std::runtime_error("failed to retrieve physical devices: "s + std::to_string(result));
 
-        auto application_info = vulkan_config::application_info;
+        auto const application_info = vulkan_config::application_info;
+
+        auto const device_features = vulkan::device_features;
 
         // Matching by supported properties, features and extensions.
-        auto it_end = std::remove_if(std::begin(devices), std::end(devices), [&extensions, &application_info] (auto &&device)
+        auto it_end = std::remove_if(std::begin(devices), std::end(devices), [&extensions, &application_info, &device_features] (auto &&device)
         {
             VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(device, &properties);
@@ -139,7 +179,7 @@ namespace
             VkPhysicalDeviceFeatures features;
             vkGetPhysicalDeviceFeatures(device, &features);
 
-            if (!compare_physical_device_features(features))
+            if (!compare_physical_device_features(device_features, features))
                 return true;
 
             return !check_required_device_extensions(device, std::move(extensions));
@@ -171,24 +211,6 @@ namespace
                 return true;
 
             return false;
-
-        #if NOT_YET_IMPLEMENTED
-            return !check_all_queues_support<Queues>(device, surface);
-        #endif
-
-        #if TEMPORARILY_DISABLED
-            for (auto &&queue : queues) {
-                auto supported = std::visit([=] (auto &&q)
-                {
-                    return QueueHelper<std::remove_cvref_t<decltype(q)>>::IsSupportedByDevice(device, surface);
-                }, queue);
-
-                if (!supported)
-                    return true;
-            }
-
-            return false;
-        #endif
         });
 
         devices.erase(it_end, std::end(devices));
@@ -197,6 +219,7 @@ namespace
         it_end = std::remove_if(std::begin(devices), std::end(devices), [surface] (auto &&device)
         {
             auto const details = QuerySwapChainSupportDetails(device, surface);
+
             return details.formats.empty() || details.presentModes.empty();
         });
 
@@ -268,13 +291,13 @@ namespace vulkan
 {
     device::device(vulkan::instance &instance, VkSurfaceKHR surface)
     {
-        auto constexpr use_extensions = !device_extensions.empty();
+        auto constexpr use_extensions = !vulkan::device_extensions.empty();
 
         std::vector<std::string_view> extensions_view;
         std::vector<char const *> extensions;
 
         if constexpr (use_extensions) {
-            auto const _extensions = device_extensions;
+            auto const _extensions = vulkan::device_extensions;
 
             std::copy(_extensions.begin(), _extensions.end(), std::back_inserter(extensions));
 
@@ -300,7 +323,7 @@ namespace vulkan
 
         auto queue_infos = get_queue_infos(physical_handle_, surface, std::move(extensions), required_queues, priorities);
 
-        auto const device_features = kDEVICE_FEATURES;
+        auto const device_features = vulkan::device_features;
 
         VkDeviceCreateInfo const device_info{
             VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,

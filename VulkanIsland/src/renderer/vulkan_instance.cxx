@@ -122,7 +122,7 @@ namespace vulkan
         if (auto result = vkEnumerateInstanceVersion(&api_version); result != VK_SUCCESS)
             throw std::runtime_error("failed to retrieve Vulkan API version"s);
 
-        auto application_info = vulkan_config::application_info;
+        auto const application_info = vulkan_config::application_info;
 
         if (api_version != application_info.apiVersion)
             throw std::runtime_error("unsupported Vulkan API version"s);
