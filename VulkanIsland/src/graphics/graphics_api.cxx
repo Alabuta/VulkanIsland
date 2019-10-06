@@ -778,31 +778,28 @@ namespace convert_to
 
     VkSampleCountFlagBits vulkan(std::uint32_t samples_count) noexcept
     {
-        switch (samples_count) {
-            case 1:
-                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
+        if (samples_count & 0x40u)
+            return VkSampleCountFlagBits::VK_SAMPLE_COUNT_64_BIT;
 
-            case 2:
-                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_2_BIT;
+        if (samples_count & 0x20u)
+            return VkSampleCountFlagBits::VK_SAMPLE_COUNT_32_BIT;
 
-            case 4:
-                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_4_BIT;
+        if (samples_count & 0x10u)
+            return VkSampleCountFlagBits::VK_SAMPLE_COUNT_16_BIT;
 
-            case 8:
-                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_8_BIT;
+        if (samples_count & 0x08u)
+            return VkSampleCountFlagBits::VK_SAMPLE_COUNT_8_BIT;
 
-            case 16:
-                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_16_BIT;
+        if (samples_count & 0x04u)
+            return VkSampleCountFlagBits::VK_SAMPLE_COUNT_4_BIT;
 
-            case 32:
-                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_32_BIT;
+        if (samples_count & 0x02u)
+            return VkSampleCountFlagBits::VK_SAMPLE_COUNT_2_BIT;
 
-            case 64:
-                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_64_BIT;
+        if (samples_count & 0x01u)
+            return VkSampleCountFlagBits::VK_SAMPLE_COUNT_1_BIT;
 
-            default:
-                return VkSampleCountFlagBits::VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM;
-        }
+        return VkSampleCountFlagBits::VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM;
     }
 
     VkBufferUsageFlags vulkan(graphics::BUFFER_USAGE buffer_usage) noexcept
