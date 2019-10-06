@@ -464,19 +464,10 @@ namespace vulkan
             limits.optimalBufferCopyRowPitchAlignment,
             limits.nonCoherentAtomSize
         };
-
-        memory_manager_ = std::make_unique<MemoryManager>(*this);
-        resource_manager_ = std::make_unique<ResourceManager>(*this);
     }
 
     device::~device()
     {
-        if (resource_manager_)
-            resource_manager_.reset();
-
-        if (memory_manager_)
-            memory_manager_.reset();
-
         if (handle_) {
             vkDeviceWaitIdle(handle_);
             vkDestroyDevice(handle_, nullptr);

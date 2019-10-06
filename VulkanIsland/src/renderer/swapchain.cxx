@@ -119,7 +119,8 @@ template<class T> requires mpl::iterable<std::remove_cvref_t<T>>
 }
 
 [[nodiscard]] std::optional<VulkanTexture>
-CreateColorAttachement(vulkan::device &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, graphics::FORMAT format, std::uint16_t width, std::uint16_t height)
+CreateColorAttachement(vulkan::device &device, ResourceManager &resource_manager, TransferQueue transferQueue,
+                       VkCommandPool transferCommandPool, graphics::FORMAT format, std::uint16_t width, std::uint16_t height)
 {
     std::optional<VulkanTexture> texture;
 
@@ -134,7 +135,7 @@ CreateColorAttachement(vulkan::device &device, TransferQueue transferQueue, VkCo
 
     auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
 
-    texture = CreateTexture(device, format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, samples_count_bits,
+    texture = CreateTexture(device, resource_manager, format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, samples_count_bits,
                             tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
     if (texture)
@@ -145,7 +146,7 @@ CreateColorAttachement(vulkan::device &device, TransferQueue transferQueue, VkCo
 }
 
 [[nodiscard]]std::pair<std::optional<VulkanTexture>, std::optional<graphics::FORMAT>>
-CreateDepthAttachement(vulkan::device &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, std::uint16_t width, std::uint16_t height)
+CreateDepthAttachement(vulkan::device &device, ResourceManager &resource_manager, TransferQueue transferQueue, VkCommandPool transferCommandPool, std::uint16_t width, std::uint16_t height)
 {
     std::optional<VulkanTexture> texture;
 
@@ -161,7 +162,7 @@ CreateDepthAttachement(vulkan::device &device, TransferQueue transferQueue, VkCo
 
         auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
 
-        texture = CreateTexture(device, *format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, samples_count_bits,
+        texture = CreateTexture(device, resource_manager, *format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, samples_count_bits,
                                 tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
 
         if (texture)
@@ -214,7 +215,7 @@ CreateDepthAttachement(vulkan::device &device, TransferQueue transferQueue, VkCo
 
 
 [[nodiscard]] std::optional<VulkanSwapchain>
-CreateSwapchain(vulkan::device &device, VkSurfaceKHR surface, std::uint32_t width, std::uint32_t height,
+CreateSwapchain(vulkan::device &device, ResourceManager &resource_manager, VkSurfaceKHR surface, std::uint32_t width, std::uint32_t height,
                 VulkanQueue<PresentationQueue> const &presentationQueue, VulkanQueue<GraphicsQueue> const &graphicsQueue,
                 TransferQueue transferQueue, VkCommandPool transferCommandPool)
 {
@@ -296,14 +297,14 @@ CreateSwapchain(vulkan::device &device, VkSurfaceKHR surface, std::uint32_t widt
     auto const swapchainWidth = static_cast<std::uint16_t>(swapchain.extent.width);
     auto const swapchainHeight = static_cast<std::uint16_t>(swapchain.extent.height);
 
-    if (auto result = CreateColorAttachement(device, transferQueue, transferCommandPool, swapchain.format, swapchainWidth, swapchainHeight); !result) {
+    if (auto result = CreateColorAttachement(device, resource_manager, transferQueue, transferCommandPool, swapchain.format, swapchainWidth, swapchainHeight); !result) {
         std::cerr << "failed to create color texture\n"s;
         return { };
     }
 
     else swapchain.colorTexture = std::move(result.value());
 
-    if (auto [texture, format] = CreateDepthAttachement(device, transferQueue, transferCommandPool, swapchainWidth, swapchainHeight); !texture) {
+    if (auto [texture, format] = CreateDepthAttachement(device, resource_manager, transferQueue, transferCommandPool, swapchainWidth, swapchainHeight); !texture) {
         std::cerr << "failed to create depth texture\n"s;
         return { };
     }

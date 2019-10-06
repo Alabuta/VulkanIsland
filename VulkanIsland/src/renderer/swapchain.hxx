@@ -34,7 +34,7 @@ struct SwapChainSupportDetails {
 
 
 [[nodiscard]] std::optional<VulkanSwapchain>
-CreateSwapchain(vulkan::device &device, VkSurfaceKHR surface, std::uint32_t width, std::uint32_t height,
+CreateSwapchain(vulkan::device &device, ResourceManager &resource_manager, VkSurfaceKHR surface, std::uint32_t width, std::uint32_t height,
                 VulkanQueue<PresentationQueue> const &presentationQueue, VulkanQueue<GraphicsQueue> const &graphicsQueue,
                 TransferQueue transferQueue, VkCommandPool transferCommandPool);
 

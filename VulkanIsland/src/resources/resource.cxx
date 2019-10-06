@@ -91,7 +91,7 @@ ResourceManager::CreateImage(graphics::FORMAT format, std::uint16_t width, std::
     if (handle) {
         auto const linearMemory = tiling == graphics::IMAGE_TILING::LINEAR;
 
-        auto memory = device_.memory_manager().AllocateMemory(*handle, propertyFlags, linearMemory);
+        auto memory = memory_manager_.AllocateMemory(*handle, propertyFlags, linearMemory);
 
         if (memory) {
             if (auto result = vkBindImageMemory(device_.handle(), *handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
@@ -187,7 +187,7 @@ ResourceManager::CreateBuffer(VkDeviceSize size, graphics::BUFFER_USAGE usage, V
     if (handle) {
         auto const linearMemory = true;
 
-        auto memory = device_.memory_manager().AllocateMemory(*handle, properties, linearMemory);
+        auto memory = memory_manager_.AllocateMemory(*handle, properties, linearMemory);
 
         if (memory) {
             if (auto result = vkBindBufferMemory(device_.handle(), *handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
@@ -254,7 +254,7 @@ std::shared_ptr<VertexBuffer> ResourceManager::CreateVertexBuffer(graphics::vert
             auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
             auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-            stagingBuffer = device_.resource_manager().CreateBuffer(sizeInBytes, usageFlags, propertyFlags);
+            stagingBuffer = CreateBuffer(sizeInBytes, usageFlags, propertyFlags);
 
             if (!stagingBuffer) {
                 std::cerr << "failed to create staging vertex buffer\n"s;
@@ -266,7 +266,7 @@ std::shared_ptr<VertexBuffer> ResourceManager::CreateVertexBuffer(graphics::vert
             auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER;
             auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-            deviceBuffer = device_.resource_manager().CreateBuffer(capacityInBytes, usageFlags, propertyFlags);
+            deviceBuffer = CreateBuffer(capacityInBytes, usageFlags, propertyFlags);
 
             if (!deviceBuffer) {
                 std::cerr << "failed to create device vertex buffer\n"s;
@@ -283,7 +283,7 @@ std::shared_ptr<VertexBuffer> ResourceManager::CreateVertexBuffer(graphics::vert
         auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-        vertexBuffer->stagingBuffer_ = device_.resource_manager().CreateBuffer(sizeInBytes, usageFlags, propertyFlags);
+        vertexBuffer->stagingBuffer_ = CreateBuffer(sizeInBytes, usageFlags, propertyFlags);
 
         if (!vertexBuffer->stagingBuffer_) {
             std::cerr << "failed to extend staging vertex buffer\n"s;
@@ -297,7 +297,7 @@ std::shared_ptr<VertexBuffer> ResourceManager::CreateVertexBuffer(graphics::vert
         // TODO: sparse memory binding
 #if NOT_YET_IMPLEMENTED
         auto bufferHandle = vertexBuffer->deviceBuffer_->handle();
-        auto memory = device_.memory_manager().AllocateMemory(bufferHandle, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+        auto memory = memory_manager_.AllocateMemory(bufferHandle, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 #endif
         std::cerr << "not enough device memory for vertex buffer\n"s;
         return { };
@@ -354,30 +354,30 @@ std::shared_ptr<VertexBuffer> ResourceManager::vertex_buffer(graphics::vertex_la
 
 
 std::shared_ptr<VulkanBuffer>
-CreateUniformBuffer(vulkan::device &device, std::size_t size)
+CreateUniformBuffer(ResourceManager &resource_manager, std::size_t size)
 {
     auto constexpr usageFlags = graphics::BUFFER_USAGE::UNIFORM_BUFFER;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-    return device.resource_manager().CreateBuffer(size, usageFlags, propertyFlags);
+    return resource_manager.CreateBuffer(size, usageFlags, propertyFlags);
 }
 
 std::shared_ptr<VulkanBuffer>
-CreateCoherentStorageBuffer(vulkan::device &device, std::size_t size)
+CreateCoherentStorageBuffer(ResourceManager &resource_manager, std::size_t size)
 {
     auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-    return device.resource_manager().CreateBuffer(size, usageFlags, propertyFlags);
+    return resource_manager.CreateBuffer(size, usageFlags, propertyFlags);
 }
 
 std::shared_ptr<VulkanBuffer>
-CreateStorageBuffer(vulkan::device &device, std::size_t size)
+CreateStorageBuffer(ResourceManager &resource_manager, std::size_t size)
 {
     auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
 
-    return device.resource_manager().CreateBuffer(size, usageFlags, propertyFlags);
+    return resource_manager.CreateBuffer(size, usageFlags, propertyFlags);
 }
 
 std::shared_ptr<resource::semaphore> ResourceManager::create_semaphore()

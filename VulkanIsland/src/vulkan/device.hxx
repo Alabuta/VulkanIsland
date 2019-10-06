@@ -30,12 +30,6 @@ namespace vulkan
 
         vulkan::device_limits const &device_limits() const noexcept { return device_limits_; };
 
-        MemoryManager &memory_manager() noexcept { return *memory_manager_; }
-        MemoryManager const &memory_manager() const noexcept { return *memory_manager_; }
-
-        ResourceManager &resource_manager() noexcept { return *resource_manager_; }
-        ResourceManager const &resource_manager() const noexcept { return *resource_manager_; }
-
     private:
 
         VkDevice handle_{nullptr};
@@ -45,9 +39,6 @@ namespace vulkan
         std::vector<ComputeQueue> compute_queues_;
         std::vector<TransferQueue> transfer_queues_;
         std::vector<PresentationQueue> presentation_queues_;
-
-        std::unique_ptr<MemoryManager> memory_manager_;
-        std::unique_ptr<ResourceManager> resource_manager_;
 
         vulkan::device_limits device_limits_;
 

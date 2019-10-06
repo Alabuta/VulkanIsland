@@ -94,6 +94,6 @@ FindSupportedImageFormat(vulkan::device const &device, std::vector<graphics::FOR
 
 
 [[nodiscard]] std::optional<VulkanTexture>
-CreateTexture(vulkan::device &device, graphics::FORMAT format, graphics::IMAGE_VIEW_TYPE view_type,
+CreateTexture(vulkan::device const &device, ResourceManager &resource_manager, graphics::FORMAT format, graphics::IMAGE_VIEW_TYPE view_type,
               std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, std::uint32_t samples_count, graphics::IMAGE_TILING tiling,
               VkImageAspectFlags aspectFlags, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags);

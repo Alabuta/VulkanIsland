@@ -70,10 +70,10 @@ void create_semaphores(app_t &app);
 void recreate_swap_chain(app_t &app);
 
 template<class T> requires mpl::container<std::remove_cvref_t<T>>
-[[nodiscard]] std::shared_ptr<VulkanBuffer> stage_data(vulkan::device &device, T &&container);
+[[nodiscard]] std::shared_ptr<VulkanBuffer> stage_data(vulkan::device &device, ResourceManager &resource_manager, T &&container);
 
 [[nodiscard]] std::optional<VulkanTexture>
-load_texture(app_t &app, vulkan::device &device, std::string_view name);
+load_texture(app_t &app, vulkan::device &device, ResourceManager &resource_manager, std::string_view name);
 
 struct draw_command final {
     std::shared_ptr<graphics::material> material;
@@ -101,6 +101,9 @@ struct app_t final {
 
     std::unique_ptr<vulkan::instance> vulkan_instance;
     std::unique_ptr<vulkan::device> vulkan_device;
+
+    std::unique_ptr<MemoryManager> memory_manager;
+    std::unique_ptr<ResourceManager> resource_manager;
 
     VkSurfaceKHR surface{VK_NULL_HANDLE};
     VulkanSwapchain swapchain;
@@ -215,6 +218,12 @@ struct app_t final {
         if (surface != VK_NULL_HANDLE)
             vkDestroySurfaceKHR(vulkan_instance->handle(), surface, nullptr);
 
+        if (resource_manager)
+            resource_manager.reset();
+
+        if (memory_manager)
+            memory_manager.reset();
+
         vulkan_device.reset();
         vulkan_instance.reset();
     }
@@ -315,7 +324,7 @@ void create_graphics_command_buffers(app_t &app)
     if (auto result = vkAllocateCommandBuffers(app.vulkan_device->handle(), &allocate_info, std::data(app.command_buffers)); result != VK_SUCCESS)
         throw std::runtime_error(fmt::format("failed to create allocate command buffers: {0:#x}\n"s, result));
 
-    auto &&resource_manager = app.vulkan_device->resource_manager();
+    auto &&resource_manager = *app.resource_manager;
     auto &&vertex_buffers = resource_manager.vertex_buffers();
 
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
@@ -450,7 +459,7 @@ void recreate_swap_chain(app_t &app)
 
     cleanup_frame_data(app);
 
-    auto swapchain = CreateSwapchain(*app.vulkan_device, app.surface, app.width, app.height,
+    auto swapchain = CreateSwapchain(*app.vulkan_device, *app.resource_manager, app.surface, app.width, app.height,
                                      app.presentationQueue, app.graphicsQueue, app.transferQueue, app.transferCommandPool);
 
     if (swapchain)
@@ -499,7 +508,7 @@ void build_render_pipelines(app_t &app, xformat const &_model)
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
     auto &&pipeline_factory = *app.pipeline_factory;
 
-    auto &&resource_manager = app.vulkan_device->resource_manager();
+    auto &&resource_manager = *app.resource_manager;
 
     for (auto &&meshlet : _model.non_indexed_meshlets) {
         auto material_index = meshlet.material_index;
@@ -813,6 +822,9 @@ void init_vulkan(platform::window &window, app_t &app)
 
     app.vulkan_device = std::make_unique<vulkan::device>(*app.vulkan_instance, app.surface);
 
+    app.memory_manager = std::make_unique<MemoryManager>(*app.vulkan_device);
+    app.resource_manager = std::make_unique<ResourceManager>(*app.vulkan_device, *app.memory_manager);
+
     app.shader_manager = std::make_unique<graphics::shader_manager>(*app.vulkan_device);
     app.material_factory = std::make_unique<graphics::material_factory>();
     app.vertex_input_state_manager = std::make_unique<graphics::vertex_input_state_manager>();
@@ -832,7 +844,7 @@ void init_vulkan(platform::window &window, app_t &app)
 
     else throw std::runtime_error("failed to graphics command pool"s);
 
-    auto swapchain = CreateSwapchain(*app.vulkan_device, app.surface, app.width, app.height,
+    auto swapchain = CreateSwapchain(*app.vulkan_device, *app.resource_manager, app.surface, app.width, app.height,
                                      app.presentationQueue, app.graphicsQueue, app.transferQueue, app.transferCommandPool);
 
     if (swapchain)
@@ -881,7 +893,7 @@ void init_vulkan(platform::window &window, app_t &app)
 
     app.objects.resize(app.objectsNumber);
 
-    if (app.perObjectBuffer = CreateStorageBuffer(*app.vulkan_device, app.alignedBufferSize); app.perObjectBuffer) {
+    if (app.perObjectBuffer = CreateStorageBuffer(*app.resource_manager, app.alignedBufferSize); app.perObjectBuffer) {
         auto &&buffer = *app.perObjectBuffer;
 
         auto offset = buffer.memory()->offset();
@@ -893,7 +905,7 @@ void init_vulkan(platform::window &window, app_t &app)
 
     else throw std::runtime_error("failed to init per object uniform buffer"s);
 
-    if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.vulkan_device, sizeof(camera::data_t)); !app.perCameraBuffer)
+    if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.resource_manager, sizeof(camera::data_t)); !app.perCameraBuffer)
         throw std::runtime_error("failed to init per camera uniform buffer"s);
 
     if (auto descriptorPool = CreateDescriptorPool(*app.vulkan_device); !descriptorPool)
@@ -912,7 +924,7 @@ void init_vulkan(platform::window &window, app_t &app)
 
     build_render_pipelines(app, temp::model);
 
-    app.vulkan_device->resource_manager().TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
+    app.resource_manager->TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
 
     CreateFramebuffers(*app.vulkan_device, app.renderPass, app.swapchain);
 
@@ -1128,7 +1140,7 @@ int main()
 
 void create_semaphores(app_t &app)
 {
-    auto &&resource_manager = app.vulkan_device->resource_manager();
+    auto &&resource_manager = *app.resource_manager;
 
     if (auto semaphore = resource_manager.create_semaphore(); !semaphore)
         throw std::runtime_error("failed to create image semaphore"s);
@@ -1143,7 +1155,7 @@ void create_semaphores(app_t &app)
 
 template<class T> requires mpl::container<std::remove_cvref_t<T>>
 [[nodiscard]] std::shared_ptr<VulkanBuffer>
-stage_data(vulkan::device &device, T &&container)
+stage_data(vulkan::device &device, ResourceManager &resource_manager, T &&container)
 {
     auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -1152,7 +1164,7 @@ stage_data(vulkan::device &device, T &&container)
 
     auto const bufferSize = static_cast<VkDeviceSize>(sizeof(type) * std::size(container));
 
-    auto buffer = device.resource_manager().CreateBuffer(bufferSize, usageFlags, propertyFlags);
+    auto buffer = resource_manager.CreateBuffer(bufferSize, usageFlags, propertyFlags);
 
     if (buffer) {
         void *data;
@@ -1173,16 +1185,16 @@ stage_data(vulkan::device &device, T &&container)
 }
 
 [[nodiscard]] std::optional<VulkanTexture>
-load_texture(app_t &app, vulkan::device &device, std::string_view name)
+load_texture(app_t &app, vulkan::device &device, ResourceManager &resource_manager, std::string_view name)
 {
     std::optional<VulkanTexture> texture;
 
     auto constexpr generateMipMaps = true;
 
     if (auto rawImage = LoadTARGA(name); rawImage) {
-        auto stagingBuffer = std::visit([&device] (auto &&data)
+        auto stagingBuffer = std::visit([&device, &resource_manager] (auto &&data)
         {
-            return stage_data(device, std::forward<decltype(data)>(data));
+            return stage_data(device, resource_manager, std::forward<decltype(data)>(data));
         }, std::move(rawImage->data));
 
         if (stagingBuffer) {
@@ -1194,7 +1206,7 @@ load_texture(app_t &app, vulkan::device &device, std::string_view name)
 
             auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
-            texture = CreateTexture(device, rawImage->format, rawImage->view_type, width, height, rawImage->mipLevels,
+            texture = CreateTexture(device, resource_manager, rawImage->format, rawImage->view_type, width, height, rawImage->mipLevels,
                                     1u, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
             if (texture) {

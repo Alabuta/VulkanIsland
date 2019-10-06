@@ -45,16 +45,16 @@ FindSupportedImageFormat(vulkan::device const &device, std::vector<graphics::FOR
 }
 
 std::optional<VulkanTexture>
-CreateTexture(vulkan::device &device, graphics::FORMAT format, graphics::IMAGE_VIEW_TYPE view_type,
+CreateTexture(vulkan::device const &device, ResourceManager &resource_manager, graphics::FORMAT format, graphics::IMAGE_VIEW_TYPE view_type,
               std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, std::uint32_t samples_count, graphics::IMAGE_TILING tiling,
               VkImageAspectFlags aspectFlags, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags)
 {
     std::optional<VulkanTexture> texture;
 
-    if (auto image = device.resource_manager().CreateImage(format, width, height, mipLevels, samples_count, tiling, usageFlags, propertyFlags); image)
-        if (auto view = device.resource_manager().CreateImageView(*image, view_type, aspectFlags); view)
+    if (auto image = resource_manager.CreateImage(format, width, height, mipLevels, samples_count, tiling, usageFlags, propertyFlags); image)
+        if (auto view = resource_manager.CreateImageView(*image, view_type, aspectFlags); view)
 #if NOT_YET_IMPLEMENTED
-            if (auto sampler = device.resource_manager().CreateImageSampler(image->mipLevels()); sampler)
+            if (auto sampler = resource_manager.CreateImageSampler(image->mipLevels()); sampler)
                 texture.emplace(image, *view, sampler);
 #else
             texture.emplace(image, *view, nullptr);
