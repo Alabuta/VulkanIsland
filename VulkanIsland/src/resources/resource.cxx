@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "buffer.hxx"
 #include "image.hxx"
 #include "resource.hxx"
@@ -34,7 +36,7 @@ CreateBufferHandle(vulkan::device const &device, VkDeviceSize size, graphics::BU
 CreateImageHandle(vulkan::device const &vulkan_device, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
                   std::uint32_t samples_count, graphics::FORMAT format, graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usage) noexcept
 {
-    VkImageCreateInfo const createInfo{
+        VkImageCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         nullptr, 0,
         VK_IMAGE_TYPE_2D,

@@ -22,8 +22,8 @@
 #include "utility/mpl.hxx"
 #include "math/math.hxx"
 
-#include "renderer/vulkan_instance.hxx"
-#include "renderer/vulkan_device.hxx"
+#include "vulkan/instance.hxx"
+#include "vulkan/device.hxx"
 #include "renderer/swapchain.hxx"
 #include "renderer/command_buffer.hxx"
 
@@ -874,7 +874,7 @@ void init_vulkan(platform::window &window, app_t &app)
     else app.texture.sampler = result;
 #endif
 
-    auto alignment = static_cast<std::size_t>(app.vulkan_device->properties().limits.minStorageBufferOffsetAlignment);
+    auto alignment = static_cast<std::size_t>(app.vulkan_device->device_limits().min_storage_buffer_offset_alignment);
 
     app.alignedBufferSize = aligned_size(sizeof(per_object_t), alignment) * app.objectsNumber;
     app.alignedBuffer = boost::alignment::aligned_alloc(alignment, app.alignedBufferSize);
@@ -1195,7 +1195,7 @@ load_texture(app_t &app, vulkan::device &device, std::string_view name)
             auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
             texture = CreateTexture(device, rawImage->format, rawImage->view_type, width, height, rawImage->mipLevels,
-                                    VK_SAMPLE_COUNT_1_BIT, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
+                                    1u, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
             if (texture) {
                 TransitionImageLayout(device, app.transferQueue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,

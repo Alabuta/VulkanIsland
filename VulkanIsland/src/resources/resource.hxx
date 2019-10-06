@@ -5,7 +5,7 @@
 
 #include "main.hxx"
 #include "utility/mpl.hxx"
-#include "renderer/vulkan_device.hxx"
+#include "vulkan/device.hxx"
 
 #include "graphics/graphics_api.hxx"
 #include "graphics/vertex.hxx"

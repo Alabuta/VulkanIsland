@@ -2,7 +2,7 @@
 
 #include <array>
 
-#include "vulkan_instance.hxx"
+#include "vulkan/instance.hxx"
 
 namespace vulkan
 {

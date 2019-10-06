@@ -1,7 +1,7 @@
 #pragma once
 
 #include "main.hxx"
-#include "renderer/vulkan_device.hxx"
+#include "vulkan/device.hxx"
 #include "renderer/swapchain.hxx"
 
 [[nodiscard]] std::optional<VkRenderPass>

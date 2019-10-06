@@ -1,6 +1,6 @@
 #pragma once
 
-#include "renderer/vulkan_device.hxx"
+#include "vulkan/device.hxx"
 #include "graphics/graphics.hxx"
 #include "resources/buffer.hxx"
 #include "resources/image.hxx"

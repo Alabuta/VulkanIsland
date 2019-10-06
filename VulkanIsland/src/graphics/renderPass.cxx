@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "graphics/graphics_api.hxx"
 #include "renderPass.hxx"
 
@@ -5,10 +7,14 @@
 std::optional<VkRenderPass>
 CreateRenderPass(vulkan::device const &device, VulkanSwapchain const &swapchain) noexcept
 {
+    auto &&device_limits = device.device_limits();
+
+    auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
+
     VkAttachmentDescription const colorAttachment{
         0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
         convert_to::vulkan(swapchain.format),
-        convert_to::vulkan(device.samples_count()),
+        convert_to::vulkan(samples_count_bits),
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
@@ -21,7 +27,7 @@ CreateRenderPass(vulkan::device const &device, VulkanSwapchain const &swapchain)
     VkAttachmentDescription const depthAttachement{
         0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
         convert_to::vulkan(swapchain.depthTexture.image->format()),
-        convert_to::vulkan(device.samples_count()),
+        convert_to::vulkan(samples_count_bits),
         VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL

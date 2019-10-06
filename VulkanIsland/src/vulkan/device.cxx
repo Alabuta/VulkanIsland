@@ -5,11 +5,13 @@ using namespace std::string_literals;
 
 #include <fmt/format.h>
 
+#include "utility/mpl.hxx"
+
 #include "vulkan_config.hxx"
-#include "vulkan_device_config.hxx"
-#include "vulkan_device.hxx"
-#include "queue_builder.hxx"
-#include "swapchain.hxx"
+#include "device_config.hxx"
+#include "device.hxx"
+#include "renderer/queue_builder.hxx"
+#include "renderer/swapchain.hxx"
 #include "resources/resource.hxx"
 
 
@@ -349,12 +351,121 @@ namespace vulkan
         for (auto &&queue : presentation_queues_)
             vkGetDeviceQueue(handle_, queue.family_, queue.index_, &queue.handle_);
 
-        vkGetPhysicalDeviceProperties(physical_handle_, &properties_);
+        VkPhysicalDeviceProperties properties;
+        vkGetPhysicalDeviceProperties(physical_handle_, &properties);
 
-        auto samples_count_bits = std::min(properties_.limits.framebufferColorSampleCounts, properties_.limits.framebufferDepthSampleCounts);
-        samples_count_ = static_cast<std::uint32_t>(std::pow(2, std::floor(std::log2(samples_count_bits))));
+        auto &&limits = properties.limits;
 
-        memory_manager_ = std::make_unique<MemoryManager>(*this, properties_.limits.bufferImageGranularity);
+        device_limits_ = vulkan::device_limits{
+            limits.maxImageDimension1D,
+            limits.maxImageDimension2D,
+            limits.maxImageDimension3D,
+            limits.maxImageDimensionCube,
+            limits.maxImageArrayLayers,
+            limits.maxTexelBufferElements,
+            limits.maxUniformBufferRange,
+            limits.maxStorageBufferRange,
+            limits.maxPushConstantsSize,
+            limits.maxMemoryAllocationCount,
+            limits.maxSamplerAllocationCount,
+            limits.bufferImageGranularity,
+            limits.sparseAddressSpaceSize,
+            limits.maxBoundDescriptorSets,
+            limits.maxPerStageDescriptorSamplers,
+            limits.maxPerStageDescriptorUniformBuffers,
+            limits.maxPerStageDescriptorStorageBuffers,
+            limits.maxPerStageDescriptorSampledImages,
+            limits.maxPerStageDescriptorStorageImages,
+            limits.maxPerStageDescriptorInputAttachments,
+            limits.maxPerStageResources,
+            limits.maxDescriptorSetSamplers,
+            limits.maxDescriptorSetUniformBuffers,
+            limits.maxDescriptorSetUniformBuffersDynamic,
+            limits.maxDescriptorSetStorageBuffers,
+            limits.maxDescriptorSetStorageBuffersDynamic,
+            limits.maxDescriptorSetSampledImages,
+            limits.maxDescriptorSetStorageImages,
+            limits.maxDescriptorSetInputAttachments,
+            limits.maxVertexInputAttributes,
+            limits.maxVertexInputBindings,
+            limits.maxVertexInputAttributeOffset,
+            limits.maxVertexInputBindingStride,
+            limits.maxVertexOutputComponents,
+            limits.maxTessellationGenerationLevel,
+            limits.maxTessellationPatchSize,
+            limits.maxTessellationControlPerVertexInputComponents,
+            limits.maxTessellationControlPerVertexOutputComponents,
+            limits.maxTessellationControlPerPatchOutputComponents,
+            limits.maxTessellationControlTotalOutputComponents,
+            limits.maxTessellationEvaluationInputComponents,
+            limits.maxTessellationEvaluationOutputComponents,
+            limits.maxGeometryShaderInvocations,
+            limits.maxGeometryInputComponents,
+            limits.maxGeometryOutputComponents,
+            limits.maxGeometryOutputVertices,
+            limits.maxGeometryTotalOutputComponents,
+            limits.maxFragmentInputComponents,
+            limits.maxFragmentOutputAttachments,
+            limits.maxFragmentDualSrcAttachments,
+            limits.maxFragmentCombinedOutputResources,
+            limits.maxComputeSharedMemorySize,
+            mpl::to_array(limits.maxComputeWorkGroupCount),
+            limits.maxComputeWorkGroupInvocations,
+            mpl::to_array(limits.maxComputeWorkGroupSize),
+            limits.subPixelPrecisionBits,
+            limits.subTexelPrecisionBits,
+            limits.mipmapPrecisionBits,
+            limits.maxDrawIndexedIndexValue,
+            limits.maxDrawIndirectCount,
+            limits.maxSamplerLodBias,
+            limits.maxSamplerAnisotropy,
+            limits.maxViewports,
+            mpl::to_array(limits.maxViewportDimensions),
+            mpl::to_array(limits.viewportBoundsRange),
+            limits.viewportSubPixelBits,
+            limits.minMemoryMapAlignment,
+            limits.minTexelBufferOffsetAlignment,
+            limits.minUniformBufferOffsetAlignment,
+            limits.minStorageBufferOffsetAlignment,
+            limits.minTexelOffset,
+            limits.maxTexelOffset,
+            limits.minTexelGatherOffset,
+            limits.maxTexelGatherOffset,
+            limits.minInterpolationOffset,
+            limits.maxInterpolationOffset,
+            limits.subPixelInterpolationOffsetBits,
+            limits.maxFramebufferWidth,
+            limits.maxFramebufferHeight,
+            limits.maxFramebufferLayers,
+            limits.framebufferColorSampleCounts,
+            limits.framebufferDepthSampleCounts,
+            limits.framebufferStencilSampleCounts,
+            limits.framebufferNoAttachmentsSampleCounts,
+            limits.maxColorAttachments,
+            limits.sampledImageColorSampleCounts,
+            limits.sampledImageIntegerSampleCounts,
+            limits.sampledImageDepthSampleCounts,
+            limits.sampledImageStencilSampleCounts,
+            limits.storageImageSampleCounts,
+            limits.maxSampleMaskWords,
+            limits.timestampComputeAndGraphics == VK_TRUE,
+            limits.timestampPeriod,
+            limits.maxClipDistances,
+            limits.maxCullDistances,
+            limits.maxCombinedClipAndCullDistances,
+            limits.discreteQueuePriorities,
+            mpl::to_array(limits.pointSizeRange),
+            mpl::to_array(limits.lineWidthRange),
+            limits.pointSizeGranularity,
+            limits.lineWidthGranularity,
+            limits.strictLines == VK_TRUE,
+            limits.standardSampleLocations == VK_TRUE,
+            limits.optimalBufferCopyOffsetAlignment,
+            limits.optimalBufferCopyRowPitchAlignment,
+            limits.nonCoherentAtomSize
+        };
+
+        memory_manager_ = std::make_unique<MemoryManager>(*this);
         resource_manager_ = std::make_unique<ResourceManager>(*this);
     }
 

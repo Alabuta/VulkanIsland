@@ -1,7 +1,7 @@
 #pragma once
 
 #include "main.hxx"
-#include "renderer/vulkan_device.hxx"
+#include "vulkan/device.hxx"
 #include "resources/image.hxx"
 #include "graphics/graphics.hxx"
 #include "graphics/graphics_api.hxx"

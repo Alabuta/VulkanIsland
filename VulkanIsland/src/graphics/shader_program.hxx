@@ -10,7 +10,7 @@
 
 #include <boost/cstdfloat.hpp>
 
-#include "renderer/vulkan_device.hxx"
+#include "vulkan/device.hxx"
 #include "graphics.hxx"
 
 

@@ -8,7 +8,7 @@ using namespace std::string_literals;
 #include <fmt/format.h>
 
 #include "vulkan_config.hxx"
-#include "vulkan_instance.hxx"
+#include "instance.hxx"
 
 
 namespace

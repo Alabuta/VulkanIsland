@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "main.hxx"
-#include "renderer/vulkan_device.hxx"
+#include "vulkan/device.hxx"
 
 class DescriptorManager;
 

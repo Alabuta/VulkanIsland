@@ -3,7 +3,7 @@
 #include <memory>
 #include <cstddef>
 
-#include "renderer/vulkan_device.hxx"
+#include "vulkan/device.hxx"
 #include "graphics/graphics.hxx"
 #include "memory.hxx"
 

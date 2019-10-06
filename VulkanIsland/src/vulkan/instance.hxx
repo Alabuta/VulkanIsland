@@ -5,7 +5,7 @@
     #include <GLFW/glfw3.h>
 #endif
 
-#include "vulkan_debug.hxx"
+#include "vulkan/debug.hxx"
 
 
 namespace vulkan

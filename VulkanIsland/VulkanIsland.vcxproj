@@ -241,18 +241,18 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="src\renderer\vulkan_debug.cxx" />
+    <ClCompile Include="src\vulkan\debug.cxx" />
     <ClCompile Include="src/descriptor.cxx" />
     <ClCompile Include="src\platform\input\input_manager.cxx" />
     <ClCompile Include="src\platform\input\mouse.cxx" />
-    <ClCompile Include="src\renderer\vulkan_instance.cxx" />
+    <ClCompile Include="src\vulkan\instance.cxx" />
     <ClCompile Include="src/main.cxx" />
     <ClCompile Include="src/platform/window.cxx" />
     <ClCompile Include="src\renderer\swapchain.cxx" />
     <ClCompile Include="src\camera\camera_controller.cxx" />
     <ClCompile Include="src\camera\handlers\mouse_handler.cxx" />
     <ClCompile Include="src\camera\camera.cxx" />
-    <ClCompile Include="src\renderer\vulkan_device.cxx" />
+    <ClCompile Include="src\vulkan\device.cxx" />
     <ClCompile Include="src\ecs\node.cxx" />
     <ClCompile Include="src\ecs\transform.cxx" />
     <ClCompile Include="src\loaders\loaderGLTF.cxx" />
@@ -279,21 +279,22 @@
   <ItemGroup>
     <ClInclude Include="include\config.hxx" />
     <ClInclude Include="src\renderer\command_buffer.hxx" />
-    <ClInclude Include="src\renderer\vulkan_debug.hxx" />
+    <ClInclude Include="src\vulkan\debug.hxx" />
     <ClInclude Include="src/descriptor.hxx" />
     <ClInclude Include="src/device.hxx" />
     <ClInclude Include="src\camera\camera.hxx" />
     <ClInclude Include="src\deviceConfig.hxx" />
     <ClInclude Include="include\vulkan_config.hxx" />
+    <ClInclude Include="src\vulkan\device_limits.hxx" />
     <ClInclude Include="src\utility\helpers.hxx" />
     <ClInclude Include="src\platform\input\input_data.hxx" />
     <ClInclude Include="src\platform\input\input_manager.hxx" />
     <ClInclude Include="src\platform\input\mouse.hxx" />
-    <ClInclude Include="src\renderer\vulkan_instance.hxx" />
+    <ClInclude Include="src\vulkan\instance.hxx" />
     <ClInclude Include="src\math\math.hxx" />
     <ClInclude Include="src/main.hxx" />
-    <ClInclude Include="src\renderer\vulkan_device.hxx" />
-    <ClInclude Include="src\renderer\vulkan_device_config.hxx" />
+    <ClInclude Include="src\vulkan\device.hxx" />
+    <ClInclude Include="src\vulkan\device_config.hxx" />
     <ClInclude Include="src\loaders\SPIRV_loader.hxx" />
     <ClInclude Include="src\loaders\material_loader.hxx" />
     <ClInclude Include="src\graphics\attachments.hxx" />

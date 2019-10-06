@@ -7,7 +7,7 @@
 #include <array>
 #include <set>
 
-#include "renderer/vulkan_device.hxx"
+#include "vulkan/device.hxx"
 
 #include "graphics.hxx"
 #include "vertex.hxx"

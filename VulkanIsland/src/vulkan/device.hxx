@@ -3,8 +3,10 @@
 #include <memory>
 
 #include "utility/mpl.hxx"
-#include "vulkan_instance.hxx"
-#include "queues.hxx"
+#include "instance.hxx"
+#include "device_limits.hxx"
+#include "renderer/queues.hxx"
+#include "graphics/graphics.hxx"
 
 #define USE_DEBUG_MARKERS 0
 
@@ -26,9 +28,7 @@ namespace vulkan
         template<class Q> requires mpl::derived_from<VulkanQueue<Q>, Q>
         Q const &queue() const noexcept;
 
-        std::uint32_t samples_count() const noexcept { return samples_count_; }
-
-        VkPhysicalDeviceProperties const &properties() const noexcept { return properties_; };
+        vulkan::device_limits const &device_limits() const noexcept { return device_limits_; };
 
         MemoryManager &memory_manager() noexcept { return *memory_manager_; }
         MemoryManager const &memory_manager() const noexcept { return *memory_manager_; }
@@ -38,8 +38,8 @@ namespace vulkan
 
     private:
 
-        VkPhysicalDevice physical_handle_{nullptr};
         VkDevice handle_{nullptr};
+        VkPhysicalDevice physical_handle_{nullptr};
 
         std::vector<GraphicsQueue> graphics_queues_;
         std::vector<ComputeQueue> compute_queues_;
@@ -49,9 +49,7 @@ namespace vulkan
         std::unique_ptr<MemoryManager> memory_manager_;
         std::unique_ptr<ResourceManager> resource_manager_;
 
-        std::uint32_t samples_count_{1};
-
-        VkPhysicalDeviceProperties properties_;
+        vulkan::device_limits device_limits_;
 
         device() = delete;
         device(vulkan::device const &) = delete;

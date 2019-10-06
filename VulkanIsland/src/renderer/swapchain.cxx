@@ -1,3 +1,4 @@
+#include <cmath>
 #include <vector>
 
 #include <fmt/format.h>
@@ -129,7 +130,11 @@ CreateColorAttachement(vulkan::device &device, TransferQueue transferQueue, VkCo
 
     auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
-    texture = CreateTexture(device, format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, device.samples_count(),
+    auto &&device_limits = device.device_limits();
+
+    auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
+
+    texture = CreateTexture(device, format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, samples_count_bits,
                             tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
     if (texture)
@@ -152,7 +157,11 @@ CreateDepthAttachement(vulkan::device &device, TransferQueue transferQueue, VkCo
 
         auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
-        texture = CreateTexture(device, *format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, device.samples_count(),
+        auto &&device_limits = device.device_limits();
+
+        auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
+
+        texture = CreateTexture(device, *format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, samples_count_bits,
                                 tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
 
         if (texture)

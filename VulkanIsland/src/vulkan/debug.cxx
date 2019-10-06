@@ -11,7 +11,7 @@ using namespace std::string_literals;
 
 #include <fmt/format.h>
 
-#include "vulkan_debug.hxx"
+#include "debug.hxx"
 
 
 [[nodiscard]] VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugReportCallbackEXT(

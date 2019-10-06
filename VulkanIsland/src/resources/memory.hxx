@@ -11,7 +11,7 @@
 
 #include "main.hxx"
 #include "utility/mpl.hxx"
-#include "renderer/vulkan_device.hxx"
+#include "vulkan/device.hxx"
 
 
 class DeviceMemory;
@@ -19,7 +19,7 @@ class DeviceMemory;
 class MemoryManager final {
 public:
 
-    MemoryManager(vulkan::device const &vulkan_device, VkDeviceSize bufferImageGranularity);
+    MemoryManager(vulkan::device const &vulkan_device);
     ~MemoryManager();
 
     template<class T> requires mpl::one_of<T, VkBuffer, VkImage>
@@ -32,7 +32,7 @@ private:
     static VkDeviceSize constexpr kBLOCK_ALLOCATION_SIZE{0x800'0000};   // 128 MB
 
     vulkan::device const &vulkanDevice_;
-    VkDeviceSize totalAllocatedSize_{0}, bufferImageGranularity_{0};
+    VkDeviceSize totalAllocatedSize_{0}, buffer_image_granularity_{0};
 
     struct Pool final {
         std::uint32_t memoryTypeIndex{0};
