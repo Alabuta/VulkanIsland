@@ -1,6 +1,7 @@
 #pragma once
 
 #include <optional>
+#include <iostream>
 #include <memory>
 
 #include "main.hxx"

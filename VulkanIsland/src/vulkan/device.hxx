@@ -6,12 +6,6 @@
 #include "instance.hxx"
 #include "device_limits.hxx"
 #include "renderer/queues.hxx"
-#include "graphics/graphics.hxx"
-
-#define USE_DEBUG_MARKERS 0
-
-class MemoryManager;
-class ResourceManager;
 
 
 namespace vulkan

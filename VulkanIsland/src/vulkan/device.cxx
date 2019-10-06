@@ -7,12 +7,13 @@ using namespace std::string_literals;
 
 #include "utility/mpl.hxx"
 
+#define USE_DEBUG_MARKERS 0
+
 #include "vulkan_config.hxx"
 #include "device_config.hxx"
 #include "device.hxx"
 #include "renderer/queue_builder.hxx"
 #include "renderer/swapchain.hxx"
-#include "resources/resource.hxx"
 
 
 namespace

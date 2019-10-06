@@ -6,6 +6,7 @@
 #include "vulkan/device.hxx"
 #include "graphics/graphics.hxx"
 #include "memory.hxx"
+#include "resource.hxx"
 
 
 class VulkanImageView;

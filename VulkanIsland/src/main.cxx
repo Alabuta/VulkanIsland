@@ -19,6 +19,7 @@
 #include <boost/align/aligned_alloc.hpp>
 
 #include "main.hxx"
+#include "utility/helpers.hxx"
 #include "utility/mpl.hxx"
 #include "math/math.hxx"
 
