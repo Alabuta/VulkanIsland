@@ -7,10 +7,10 @@
 
 namespace {
 [[nodiscard]] std::optional<std::uint32_t>
-FindMemoryType(VulkanDevice const &vulkanDevice, std::uint32_t filter, VkMemoryPropertyFlags propertyFlags) noexcept
+FindMemoryType(vulkan::device const &vulkan_device, std::uint32_t filter, VkMemoryPropertyFlags propertyFlags) noexcept
 {
     VkPhysicalDeviceMemoryProperties memoryProperties;
-    vkGetPhysicalDeviceMemoryProperties(vulkanDevice.physical_handle(), &memoryProperties);
+    vkGetPhysicalDeviceMemoryProperties(vulkan_device.physical_handle(), &memoryProperties);
 
     auto const memoryTypes = mpl::to_array(memoryProperties.memoryTypes);
 
@@ -27,8 +27,8 @@ FindMemoryType(VulkanDevice const &vulkanDevice, std::uint32_t filter, VkMemoryP
 }
 
 
-MemoryManager::MemoryManager(VulkanDevice const &vulkanDevice, VkDeviceSize bufferImageGranularity)
-        : vulkanDevice_{vulkanDevice}, bufferImageGranularity_{bufferImageGranularity}
+MemoryManager::MemoryManager(vulkan::device const &vulkan_device, VkDeviceSize bufferImageGranularity)
+        : vulkanDevice_{vulkan_device}, bufferImageGranularity_{bufferImageGranularity}
 {
     if (kBLOCK_ALLOCATION_SIZE < bufferImageGranularity_)
         throw std::runtime_error("default memory page is less than buffer image granularity size"s);

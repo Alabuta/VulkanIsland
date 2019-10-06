@@ -4,7 +4,7 @@
 #include <unordered_map>
 
 #include "main.hxx"
-#include "renderer/device.hxx"
+#include "renderer/vulkan_device.hxx"
 
 #include "graphics.hxx"
 #include "vertex.hxx"

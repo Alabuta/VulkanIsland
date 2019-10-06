@@ -7,7 +7,7 @@
 #include <array>
 #include <set>
 
-#include "renderer/device.hxx"
+#include "renderer/vulkan_device.hxx"
 
 #include "graphics.hxx"
 #include "vertex.hxx"
@@ -88,7 +88,7 @@ namespace graphics
     class pipeline_factory final {
     public:
 
-        pipeline_factory(VulkanDevice &vulkan_device, graphics::shader_manager &shader_manager) noexcept
+        pipeline_factory(vulkan::device &vulkan_device, graphics::shader_manager &shader_manager) noexcept
             : vulkan_device_{vulkan_device}, shader_manager_{shader_manager} { }
 
         [[nodiscard]] std::shared_ptr<graphics::pipeline>
@@ -97,7 +97,7 @@ namespace graphics
 
     private:
 
-        VulkanDevice &vulkan_device_;
+        vulkan::device &vulkan_device_;
         graphics::shader_manager &shader_manager_;
 
         std::unordered_map<graphics::pipeline_invariant, std::shared_ptr<graphics::pipeline>, graphics::hash<pipeline_invariant>> pipelines_;
@@ -106,7 +106,7 @@ namespace graphics
 
 template<class T> requires mpl::container<std::remove_cvref_t<T>>
 [[nodiscard]] std::optional<VkPipelineLayout>
-create_pipeline_layout(VulkanDevice const &vulkanDevice, T &&descriptorSetLayouts) noexcept
+create_pipeline_layout(vulkan::device const &vulkan_device, T &&descriptorSetLayouts) noexcept
 {
     static_assert(
         std::is_same_v<typename std::remove_cvref_t<T>::value_type, VkDescriptorSetLayout>,
@@ -124,7 +124,7 @@ create_pipeline_layout(VulkanDevice const &vulkanDevice, T &&descriptorSetLayout
 
     VkPipelineLayout handle;
 
-    if (auto result = vkCreatePipelineLayout(vulkanDevice.handle(), &layoutCreateInfo, nullptr, &handle); result != VK_SUCCESS)
+    if (auto result = vkCreatePipelineLayout(vulkan_device.handle(), &layoutCreateInfo, nullptr, &handle); result != VK_SUCCESS)
         std::cerr << "failed to create pipeline layout: "s << result << '\n';
 
     else pipelineLayout.emplace(handle);

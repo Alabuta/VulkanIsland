@@ -4,7 +4,7 @@
 #include <map>
 #include <set>
 
-#include "renderer/device.hxx"
+#include "renderer/vulkan_device.hxx"
 #include "graphics.hxx"
 #include "attachments.hxx"
 #include "material.hxx"

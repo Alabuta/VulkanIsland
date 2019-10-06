@@ -3,7 +3,7 @@
 #include <iostream>
 #include <optional>
 
-#include "renderer/device.hxx"
+#include "renderer/vulkan_device.hxx"
 
 
 namespace resource

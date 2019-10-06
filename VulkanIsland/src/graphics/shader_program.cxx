@@ -1,3 +1,8 @@
+#include <iostream>
+
+#include <string>
+using namespace std::string_literals;
+
 #include <fmt/format.h>
 
 #include <boost/uuid/name_generator.hpp>

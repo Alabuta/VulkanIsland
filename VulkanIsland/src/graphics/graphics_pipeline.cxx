@@ -284,7 +284,7 @@ namespace graphics
         VkPipelineMultisampleStateCreateInfo const multisample_state{
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
             nullptr, 0,
-            convert_to::vulkan(vulkan_device_.samplesCount()),
+            convert_to::vulkan(vulkan_device_.samples_count()),
             VK_FALSE, 1,
             nullptr,
             VK_FALSE,

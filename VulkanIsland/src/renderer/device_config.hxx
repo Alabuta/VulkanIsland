@@ -1,6 +1,6 @@
 #pragma once
 
-#include "instance.hxx"
+#include "vulkan_instance.hxx"
 
 VkPhysicalDeviceFeatures constexpr kDEVICE_FEATURES{
     VkBool32(VK_FALSE), // robustBufferAccess,
@@ -60,7 +60,7 @@ VkPhysicalDeviceFeatures constexpr kDEVICE_FEATURES{
     VkBool32(VK_FALSE), // inheritedQueries
 };
 
-constexpr bool ComparePhysicalDeviceFeatures(VkPhysicalDeviceFeatures const &rhs)
+constexpr bool compare_physical_device_features(VkPhysicalDeviceFeatures const &rhs)
 {
     auto total = VkBool32(VK_TRUE);
 

@@ -3,7 +3,7 @@
 #include <memory>
 #include <cstddef>
 
-#include "renderer/device.hxx"
+#include "renderer/vulkan_device.hxx"
 #include "graphics/graphics.hxx"
 #include "memory.hxx"
 
@@ -88,12 +88,12 @@ struct VulkanTexture final {
 
 
 [[nodiscard]] std::optional<graphics::FORMAT>
-FindSupportedImageFormat(VulkanDevice const &device, std::vector<graphics::FORMAT> const &candidates, graphics::IMAGE_TILING tiling, VkFormatFeatureFlags features) noexcept;
+FindSupportedImageFormat(vulkan::device const &device, std::vector<graphics::FORMAT> const &candidates, graphics::IMAGE_TILING tiling, VkFormatFeatureFlags features) noexcept;
 
-[[nodiscard]] std::optional<graphics::FORMAT> FindDepthImageFormat(VulkanDevice const &device) noexcept;
+[[nodiscard]] std::optional<graphics::FORMAT> FindDepthImageFormat(vulkan::device const &device) noexcept;
 
 
 [[nodiscard]] std::optional<VulkanTexture>
-CreateTexture(VulkanDevice &device, graphics::FORMAT format, graphics::IMAGE_VIEW_TYPE view_type,
-              std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, std::uint32_t samplesCount, graphics::IMAGE_TILING tiling,
+CreateTexture(vulkan::device &device, graphics::FORMAT format, graphics::IMAGE_VIEW_TYPE view_type,
+              std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, std::uint32_t samples_count, graphics::IMAGE_TILING tiling,
               VkImageAspectFlags aspectFlags, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags);

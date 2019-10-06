@@ -5,11 +5,12 @@
 #include <variant>
 #include <memory>
 #include <vector>
+#include <map>
 #include <set>
 
 #include <boost/cstdfloat.hpp>
 
-#include "renderer/device.hxx"
+#include "renderer/vulkan_device.hxx"
 #include "graphics.hxx"
 
 
@@ -94,13 +95,13 @@ namespace graphics
     class shader_manager final {
     public:
 
-        shader_manager(VulkanDevice &vulkan_device) noexcept : vulkan_device_{vulkan_device} { }
+        shader_manager(vulkan::device &vulkan_device) noexcept : vulkan_device_{vulkan_device} { }
 
         [[nodiscard]] std::shared_ptr<graphics::shader_module> shader_module(std::string_view name, std::uint32_t technique_index);
 
     private:
 
-        VulkanDevice &vulkan_device_;
+        vulkan::device &vulkan_device_;
 
         std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<graphics::shader_module>> modules_by_techinques_;
 

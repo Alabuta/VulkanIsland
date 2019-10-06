@@ -118,7 +118,7 @@ template<class T> requires mpl::iterable<std::remove_cvref_t<T>>
 }
 
 [[nodiscard]] std::optional<VulkanTexture>
-CreateColorAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, graphics::FORMAT format, std::uint16_t width, std::uint16_t height)
+CreateColorAttachement(vulkan::device &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, graphics::FORMAT format, std::uint16_t width, std::uint16_t height)
 {
     std::optional<VulkanTexture> texture;
 
@@ -129,7 +129,7 @@ CreateColorAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
 
     auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
-    texture = CreateTexture(device, format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, device.samplesCount(),
+    texture = CreateTexture(device, format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, device.samples_count(),
                             tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
     if (texture)
@@ -140,7 +140,7 @@ CreateColorAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
 }
 
 [[nodiscard]]std::pair<std::optional<VulkanTexture>, std::optional<graphics::FORMAT>>
-CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, std::uint16_t width, std::uint16_t height)
+CreateDepthAttachement(vulkan::device &device, TransferQueue transferQueue, VkCommandPool transferCommandPool, std::uint16_t width, std::uint16_t height)
 {
     std::optional<VulkanTexture> texture;
 
@@ -152,7 +152,7 @@ CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
 
         auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
-        texture = CreateTexture(device, *format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, device.samplesCount(),
+        texture = CreateTexture(device, *format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, device.samples_count(),
                                 tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
 
         if (texture)
@@ -205,7 +205,7 @@ CreateDepthAttachement(VulkanDevice &device, TransferQueue transferQueue, VkComm
 
 
 [[nodiscard]] std::optional<VulkanSwapchain>
-CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width, std::uint32_t height,
+CreateSwapchain(vulkan::device &device, VkSurfaceKHR surface, std::uint32_t width, std::uint32_t height,
                 VulkanQueue<PresentationQueue> const &presentationQueue, VulkanQueue<GraphicsQueue> const &graphicsQueue,
                 TransferQueue transferQueue, VkCommandPool transferCommandPool)
 {
@@ -307,7 +307,7 @@ CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width,
     return swapchain;
 }
 
-void CleanupSwapchain(VulkanDevice const &device, VulkanSwapchain &swapchain) noexcept
+void CleanupSwapchain(vulkan::device const &device, VulkanSwapchain &swapchain) noexcept
 {
     for (auto &&framebuffer : swapchain.framebuffers)
         vkDestroyFramebuffer(device.handle(), framebuffer, nullptr);
@@ -330,7 +330,7 @@ void CleanupSwapchain(VulkanDevice const &device, VulkanSwapchain &swapchain) no
 }
 
 
-void CreateFramebuffers(VulkanDevice const &device, VkRenderPass renderPass, VulkanSwapchain &swapchain)
+void CreateFramebuffers(vulkan::device const &device, VkRenderPass renderPass, VulkanSwapchain &swapchain)
 {
     auto &&framebuffers = swapchain.framebuffers;
     auto &&views = swapchain.views;

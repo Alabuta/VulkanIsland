@@ -3,10 +3,9 @@
 #include <variant>
 
 #include "utility/mpl.hxx"
-#include "renderer/device.hxx"
+#include "renderer/vulkan_device.hxx"
 #include "graphics/graphics.hxx"
 
-class VulkanDevice;
 
 template<class T>
 class VulkanQueue;
@@ -37,15 +36,13 @@ public:
     VkQueue handle() const noexcept { return handle_; }
     std::uint32_t family() const noexcept { return family_; }
 
-protected:
     VulkanQueue() = default;
     VulkanQueue(VulkanQueue &&) = default;
 
-private:
     VkQueue handle_{nullptr};
     std::uint32_t family_{0}, index_{0};
 
-    friend VulkanDevice;
+    friend vulkan::device;
     friend QueueHelper;
 };
 

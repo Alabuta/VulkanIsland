@@ -22,8 +22,8 @@
 #include "utility/mpl.hxx"
 #include "math/math.hxx"
 
-#include "renderer/instance.hxx"
-#include "renderer/device.hxx"
+#include "renderer/vulkan_instance.hxx"
+#include "renderer/vulkan_device.hxx"
 #include "renderer/swapchain.hxx"
 #include "renderer/command_buffer.hxx"
 
@@ -70,10 +70,10 @@ void create_semaphores(app_t &app);
 void recreate_swap_chain(app_t &app);
 
 template<class T> requires mpl::container<std::remove_cvref_t<T>>
-[[nodiscard]] std::shared_ptr<VulkanBuffer> stage_data(VulkanDevice &device, T &&container);
+[[nodiscard]] std::shared_ptr<VulkanBuffer> stage_data(vulkan::device &device, T &&container);
 
 [[nodiscard]] std::optional<VulkanTexture>
-load_texture(app_t &app, VulkanDevice &device, std::string_view name);
+load_texture(app_t &app, vulkan::device &device, std::string_view name);
 
 struct draw_command final {
     std::shared_ptr<graphics::material> material;
@@ -100,7 +100,7 @@ struct app_t final {
     std::vector<per_object_t> objects;
 
     std::unique_ptr<vulkan::instance> vulkan_instance;
-    std::unique_ptr<VulkanDevice> vulkanDevice;
+    std::unique_ptr<vulkan::device> vulkan_device;
 
     VkSurfaceKHR surface{VK_NULL_HANDLE};
     VulkanSwapchain swapchain;
@@ -154,10 +154,10 @@ struct app_t final {
 
     void clean_up()
     {
-        if (vulkanDevice == nullptr)
+        if (vulkan_device == nullptr)
             return;
 
-        vkDeviceWaitIdle(vulkanDevice->handle());
+        vkDeviceWaitIdle(vulkan_device->handle());
 
         draw_commands.clear();
 
@@ -182,23 +182,23 @@ struct app_t final {
             shader_manager.reset();
 
         if (pipelineLayout != VK_NULL_HANDLE)
-            vkDestroyPipelineLayout(vulkanDevice->handle(), pipelineLayout, nullptr);
+            vkDestroyPipelineLayout(vulkan_device->handle(), pipelineLayout, nullptr);
 
-        vkDestroyDescriptorSetLayout(vulkanDevice->handle(), descriptorSetLayout, nullptr);
-        vkDestroyDescriptorPool(vulkanDevice->handle(), descriptorPool, nullptr);
+        vkDestroyDescriptorSetLayout(vulkan_device->handle(), descriptorSetLayout, nullptr);
+        vkDestroyDescriptorPool(vulkan_device->handle(), descriptorPool, nullptr);
 
     #if USE_DYNAMIC_PIPELINE_STATE
         if (renderPass != VK_NULL_HANDLE)
-            vkDestroyRenderPass(vulkanDevice->handle(), renderPass, nullptr);
+            vkDestroyRenderPass(vulkan_device->handle(), renderPass, nullptr);
     #endif
 
         texture.sampler.reset();
         if (texture.view.handle() != VK_NULL_HANDLE)
-            vkDestroyImageView(vulkanDevice->handle(), texture.view.handle(), nullptr);
+            vkDestroyImageView(vulkan_device->handle(), texture.view.handle(), nullptr);
         texture.image.reset();
 
         if (perObjectsMappedPtr)
-            vkUnmapMemory(vulkanDevice->handle(), perObjectBuffer->memory()->handle());
+            vkUnmapMemory(vulkan_device->handle(), perObjectBuffer->memory()->handle());
 
         if (alignedBuffer)
             boost::alignment::aligned_free(alignedBuffer);
@@ -207,15 +207,15 @@ struct app_t final {
         perObjectBuffer.reset();
 
         if (transferCommandPool != VK_NULL_HANDLE)
-            vkDestroyCommandPool(vulkanDevice->handle(), transferCommandPool, nullptr);
+            vkDestroyCommandPool(vulkan_device->handle(), transferCommandPool, nullptr);
 
         if (graphicsCommandPool != VK_NULL_HANDLE)
-            vkDestroyCommandPool(vulkanDevice->handle(), graphicsCommandPool, nullptr);
+            vkDestroyCommandPool(vulkan_device->handle(), graphicsCommandPool, nullptr);
 
         if (surface != VK_NULL_HANDLE)
             vkDestroySurfaceKHR(vulkan_instance->handle(), surface, nullptr);
 
-        vulkanDevice.reset();
+        vulkan_device.reset();
         vulkan_instance.reset();
     }
 };
@@ -238,7 +238,7 @@ struct window_events_handler final : public platform::window::event_handler_inte
 };
 
 
-void update_descriptor_set(app_t &app, VulkanDevice const &device, VkDescriptorSet &descriptorSet)
+void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescriptorSet &descriptorSet)
 {
     // TODO: descriptor info typed by VkDescriptorType.
     auto const cameras = std::array{
@@ -312,10 +312,10 @@ void create_graphics_command_buffers(app_t &app)
         static_cast<std::uint32_t>(std::size(app.command_buffers))
     };
 
-    if (auto result = vkAllocateCommandBuffers(app.vulkanDevice->handle(), &allocate_info, std::data(app.command_buffers)); result != VK_SUCCESS)
+    if (auto result = vkAllocateCommandBuffers(app.vulkan_device->handle(), &allocate_info, std::data(app.command_buffers)); result != VK_SUCCESS)
         throw std::runtime_error(fmt::format("failed to create allocate command buffers: {0:#x}\n"s, result));
 
-    auto &&resource_manager = app.vulkanDevice->resourceManager();
+    auto &&resource_manager = app.vulkan_device->resource_manager();
     auto &&vertex_buffers = resource_manager.vertex_buffers();
 
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
@@ -427,7 +427,7 @@ void create_graphics_command_buffers(app_t &app)
 
 void cleanup_frame_data(app_t &app)
 {
-    auto &&device = *app.vulkanDevice;
+    auto &&device = *app.vulkan_device;
 
     if (app.graphicsCommandPool)
         vkFreeCommandBuffers(device.handle(), app.graphicsCommandPool, static_cast<std::uint32_t>(std::size(app.command_buffers)), std::data(app.command_buffers));
@@ -446,11 +446,11 @@ void recreate_swap_chain(app_t &app)
 {
     if (app.width < 1 || app.height < 1) return;
 
-    vkDeviceWaitIdle(app.vulkanDevice->handle());
+    vkDeviceWaitIdle(app.vulkan_device->handle());
 
     cleanup_frame_data(app);
 
-    auto swapchain = CreateSwapchain(*app.vulkanDevice, app.surface, app.width, app.height,
+    auto swapchain = CreateSwapchain(*app.vulkan_device, app.surface, app.width, app.height,
                                      app.presentationQueue, app.graphicsQueue, app.transferQueue, app.transferCommandPool);
 
     if (swapchain)
@@ -459,7 +459,7 @@ void recreate_swap_chain(app_t &app)
     else throw std::runtime_error("failed to create the swapchain"s);
 
 #if !USE_DYNAMIC_PIPELINE_STATE
-    if (auto renderPass = CreateRenderPass(*app.vulkanDevice, app.swapchain); !renderPass)
+    if (auto renderPass = CreateRenderPass(*app.vulkan_device, app.swapchain); !renderPass)
         throw std::runtime_error("failed to create the render pass"s);
 
     else app.renderPass = std::move(renderPass.value());
@@ -467,7 +467,7 @@ void recreate_swap_chain(app_t &app)
     CreateGraphicsPipelines(app);
 #endif
 
-    CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
+    CreateFramebuffers(*app.vulkan_device, app.renderPass, app.swapchain);
 
     create_graphics_command_buffers(app);
 }
@@ -499,7 +499,7 @@ void build_render_pipelines(app_t &app, xformat const &_model)
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
     auto &&pipeline_factory = *app.pipeline_factory;
 
-    auto &&resource_manager = app.vulkanDevice->resourceManager();
+    auto &&resource_manager = app.vulkan_device->resource_manager();
 
     for (auto &&meshlet : _model.non_indexed_meshlets) {
         auto material_index = meshlet.material_index;
@@ -808,48 +808,31 @@ void init_vulkan(platform::window &window, app_t &app)
 {
     app.vulkan_instance = std::make_unique<vulkan::instance>();
 
-#if USE_WIN32
-    VkWin32SurfaceCreateInfoKHR const win32CreateInfo{
-        VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR,
-        nullptr, 0,
-        GetModuleHandle(nullptr),
-        glfwGetWin32Window(window.handle())
-    };
-
-    vkCreateWin32SurfaceKHR(app.vulkan_instance->handle(), &win32CreateInfo, nullptr, &app.surface);
-#else
     if (auto result = glfwCreateWindowSurface(app.vulkan_instance->handle(), window.handle(), nullptr, &app.surface); result != VK_SUCCESS)
         throw std::runtime_error(fmt::format("failed to create window surface: {0:#x}\n"s, result));
-#endif
 
-    QueuePool<
-        mpl::instances_number<GraphicsQueue>,
-        mpl::instances_number<TransferQueue>,
-        mpl::instances_number<PresentationQueue>
-    > qpool;
+    app.vulkan_device = std::make_unique<vulkan::device>(*app.vulkan_instance, app.surface);
 
-    app.vulkanDevice = std::make_unique<VulkanDevice>(*app.vulkan_instance, app.surface, vulkan_config::deviceExtensions, std::move(qpool));
-
-    app.shader_manager = std::make_unique<graphics::shader_manager>(*app.vulkanDevice);
+    app.shader_manager = std::make_unique<graphics::shader_manager>(*app.vulkan_device);
     app.material_factory = std::make_unique<graphics::material_factory>();
     app.vertex_input_state_manager = std::make_unique<graphics::vertex_input_state_manager>();
-    app.pipeline_factory = std::make_unique<graphics::pipeline_factory>(*app.vulkanDevice, *app.shader_manager);
+    app.pipeline_factory = std::make_unique<graphics::pipeline_factory>(*app.vulkan_device, *app.shader_manager);
 
-    app.graphicsQueue = app.vulkanDevice->queue<GraphicsQueue>();
-    app.transferQueue = app.vulkanDevice->queue<TransferQueue>();
-    app.presentationQueue = app.vulkanDevice->queue<PresentationQueue>();
+    app.graphicsQueue = app.vulkan_device->queue<GraphicsQueue>();
+    app.transferQueue = app.vulkan_device->queue<TransferQueue>();
+    app.presentationQueue = app.vulkan_device->queue<PresentationQueue>();
 
-    if (auto commandPool = CreateCommandPool(app.vulkanDevice->handle(), app.transferQueue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); commandPool)
+    if (auto commandPool = CreateCommandPool(app.vulkan_device->handle(), app.transferQueue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); commandPool)
         app.transferCommandPool = *commandPool;
 
     else throw std::runtime_error("failed to transfer command pool"s);
 
-    if (auto commandPool = CreateCommandPool(app.vulkanDevice->handle(), app.graphicsQueue, 0); commandPool)
+    if (auto commandPool = CreateCommandPool(app.vulkan_device->handle(), app.graphicsQueue, 0); commandPool)
         app.graphicsCommandPool = *commandPool;
 
     else throw std::runtime_error("failed to graphics command pool"s);
 
-    auto swapchain = CreateSwapchain(*app.vulkanDevice, app.surface, app.width, app.height,
+    auto swapchain = CreateSwapchain(*app.vulkan_device, app.surface, app.width, app.height,
                                      app.presentationQueue, app.graphicsQueue, app.transferQueue, app.transferCommandPool);
 
     if (swapchain)
@@ -857,12 +840,12 @@ void init_vulkan(platform::window &window, app_t &app)
 
     else throw std::runtime_error("failed to create the swapchain"s);
 
-    if (auto renderPass = CreateRenderPass(*app.vulkanDevice, app.swapchain); !renderPass)
+    if (auto renderPass = CreateRenderPass(*app.vulkan_device, app.swapchain); !renderPass)
         throw std::runtime_error("failed to create the render pass"s);
 
     else app.renderPass = std::move(renderPass.value());
 
-    if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkanDevice); !descriptorSetLayout)
+    if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkan_device); !descriptorSetLayout)
         throw std::runtime_error("failed to create the descriptor set layout"s);
 
     else app.descriptorSetLayout = std::move(descriptorSetLayout.value());
@@ -872,7 +855,7 @@ void init_vulkan(platform::window &window, app_t &app)
         throw std::runtime_error("failed to load a mesh"s);
 #endif
 
-    if (auto pipelineLayout = create_pipeline_layout(*app.vulkanDevice, std::array{app.descriptorSetLayout}); !pipelineLayout)
+    if (auto pipelineLayout = create_pipeline_layout(*app.vulkan_device, std::array{app.descriptorSetLayout}); !pipelineLayout)
         throw std::runtime_error("failed to create the pipeline layout"s);
 
     else app.pipelineLayout = std::move(pipelineLayout.value());
@@ -880,58 +863,58 @@ void init_vulkan(platform::window &window, app_t &app)
 #if TEMPORARILY_DISABLED
     // "chalet/textures/chalet.tga"sv
     // "Hebe/textures/HebehebemissinSG1_metallicRoughness.tga"sv
-    if (auto result = load_texture(app, *app.vulkanDevice, "sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
+    if (auto result = load_texture(app, *app.vulkan_device, "sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
         throw std::runtime_error("failed to load a texture"s);
 
     else app.texture = std::move(result.value());
 
-    if (auto result = app.vulkanDevice->resourceManager().CreateImageSampler(app.texture.image->mipLevels()); !result)
+    if (auto result = app.vulkan_device->resource_manager().CreateImageSampler(app.texture.image->mipLevels()); !result)
         throw std::runtime_error("failed to create a texture sampler"s);
 
     else app.texture.sampler = result;
 #endif
 
-    auto alignment = static_cast<std::size_t>(app.vulkanDevice->properties().limits.minStorageBufferOffsetAlignment);
+    auto alignment = static_cast<std::size_t>(app.vulkan_device->properties().limits.minStorageBufferOffsetAlignment);
 
     app.alignedBufferSize = aligned_size(sizeof(per_object_t), alignment) * app.objectsNumber;
     app.alignedBuffer = boost::alignment::aligned_alloc(alignment, app.alignedBufferSize);
 
     app.objects.resize(app.objectsNumber);
 
-    if (app.perObjectBuffer = CreateStorageBuffer(*app.vulkanDevice, app.alignedBufferSize); app.perObjectBuffer) {
+    if (app.perObjectBuffer = CreateStorageBuffer(*app.vulkan_device, app.alignedBufferSize); app.perObjectBuffer) {
         auto &&buffer = *app.perObjectBuffer;
 
         auto offset = buffer.memory()->offset();
         auto size = buffer.memory()->size();
 
-        if (auto result = vkMapMemory(app.vulkanDevice->handle(), buffer.memory()->handle(), offset, size, 0, &app.perObjectsMappedPtr); result != VK_SUCCESS)
+        if (auto result = vkMapMemory(app.vulkan_device->handle(), buffer.memory()->handle(), offset, size, 0, &app.perObjectsMappedPtr); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to map per object uniform buffer memory: {0:#x}\n"s, result));
     }
 
     else throw std::runtime_error("failed to init per object uniform buffer"s);
 
-    if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.vulkanDevice, sizeof(camera::data_t)); !app.perCameraBuffer)
+    if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.vulkan_device, sizeof(camera::data_t)); !app.perCameraBuffer)
         throw std::runtime_error("failed to init per camera uniform buffer"s);
 
-    if (auto descriptorPool = CreateDescriptorPool(*app.vulkanDevice); !descriptorPool)
+    if (auto descriptorPool = CreateDescriptorPool(*app.vulkan_device); !descriptorPool)
         throw std::runtime_error("failed to create the descriptor pool"s);
 
     else app.descriptorPool = std::move(descriptorPool.value());
 
-    if (auto descriptorSet = CreateDescriptorSet(*app.vulkanDevice, app.descriptorPool, std::array{app.descriptorSetLayout}); !descriptorSet)
+    if (auto descriptorSet = CreateDescriptorSet(*app.vulkan_device, app.descriptorPool, std::array{app.descriptorSetLayout}); !descriptorSet)
         throw std::runtime_error("failed to create the descriptor pool"s);
 
     else app.descriptorSet = std::move(descriptorSet.value());
 
-    update_descriptor_set(app, *app.vulkanDevice, app.descriptorSet);
+    update_descriptor_set(app, *app.vulkan_device, app.descriptorSet);
 
     temp::model = temp::populate();
 
     build_render_pipelines(app, temp::model);
 
-    app.vulkanDevice->resourceManager().TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
+    app.vulkan_device->resource_manager().TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
 
-    CreateFramebuffers(*app.vulkanDevice, app.renderPass, app.swapchain);
+    CreateFramebuffers(*app.vulkan_device, app.renderPass, app.swapchain);
 
     create_graphics_command_buffers(app);
 
@@ -943,7 +926,7 @@ void update(app_t &app)
     app.camera_controller->update();
     app.cameraSystem.update();
 
-    auto &&device = *app.vulkanDevice;
+    auto &&device = *app.vulkan_device;
 
     {
         auto &&buffer = *app.perCameraBuffer;
@@ -994,18 +977,18 @@ void update(app_t &app)
         }
     };
 
-    vkFlushMappedMemoryRanges(app.vulkanDevice->handle(), static_cast<std::uint32_t>(std::size(mappedRanges)), std::data(mappedRanges));
+    vkFlushMappedMemoryRanges(app.vulkan_device->handle(), static_cast<std::uint32_t>(std::size(mappedRanges)), std::data(mappedRanges));
 }
 
 void render_frame(app_t &app)
 {
-    auto &&vulkanDevice = *app.vulkanDevice;
+    auto &&vulkan_device = *app.vulkan_device;
 
     vkQueueWaitIdle(app.presentationQueue.handle());
 
     std::uint32_t imageIndex;
 
-    switch (auto result = vkAcquireNextImageKHR(vulkanDevice.handle(), app.swapchain.handle, std::numeric_limits<std::uint64_t>::max(),
+    switch (auto result = vkAcquireNextImageKHR(vulkan_device.handle(), app.swapchain.handle, std::numeric_limits<std::uint64_t>::max(),
             app.imageAvailableSemaphore->handle(), VK_NULL_HANDLE, &imageIndex); result) {
         case VK_ERROR_OUT_OF_DATE_KHR:
             recreate_swap_chain(app);
@@ -1145,14 +1128,14 @@ int main()
 
 void create_semaphores(app_t &app)
 {
-    auto &&resourceManager = app.vulkanDevice->resourceManager();
+    auto &&resource_manager = app.vulkan_device->resource_manager();
 
-    if (auto semaphore = resourceManager.create_semaphore(); !semaphore)
+    if (auto semaphore = resource_manager.create_semaphore(); !semaphore)
         throw std::runtime_error("failed to create image semaphore"s);
 
     else app.imageAvailableSemaphore = semaphore;
 
-    if (auto semaphore = resourceManager.create_semaphore(); !semaphore)
+    if (auto semaphore = resource_manager.create_semaphore(); !semaphore)
         throw std::runtime_error("failed to create render semaphore"s);
 
     else app.renderFinishedSemaphore = semaphore;
@@ -1160,7 +1143,7 @@ void create_semaphores(app_t &app)
 
 template<class T> requires mpl::container<std::remove_cvref_t<T>>
 [[nodiscard]] std::shared_ptr<VulkanBuffer>
-stage_data(VulkanDevice &device, T &&container)
+stage_data(vulkan::device &device, T &&container)
 {
     auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
     auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
@@ -1169,7 +1152,7 @@ stage_data(VulkanDevice &device, T &&container)
 
     auto const bufferSize = static_cast<VkDeviceSize>(sizeof(type) * std::size(container));
 
-    auto buffer = device.resourceManager().CreateBuffer(bufferSize, usageFlags, propertyFlags);
+    auto buffer = device.resource_manager().CreateBuffer(bufferSize, usageFlags, propertyFlags);
 
     if (buffer) {
         void *data;
@@ -1190,7 +1173,7 @@ stage_data(VulkanDevice &device, T &&container)
 }
 
 [[nodiscard]] std::optional<VulkanTexture>
-load_texture(app_t &app, VulkanDevice &device, std::string_view name)
+load_texture(app_t &app, vulkan::device &device, std::string_view name)
 {
     std::optional<VulkanTexture> texture;
 

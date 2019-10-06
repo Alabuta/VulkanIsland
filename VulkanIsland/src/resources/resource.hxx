@@ -5,7 +5,7 @@
 
 #include "main.hxx"
 #include "utility/mpl.hxx"
-#include "renderer/device.hxx"
+#include "renderer/vulkan_device.hxx"
 
 #include "graphics/graphics_api.hxx"
 #include "graphics/vertex.hxx"
@@ -45,11 +45,11 @@ bool IsResourceLinear(T &&resource)
 class ResourceManager final {
 public:
 
-    ResourceManager(VulkanDevice &device) noexcept : device_{device} { }
+    ResourceManager(vulkan::device &device) noexcept : device_{device} { }
 
     [[nodiscard]] std::shared_ptr<VulkanImage>
     CreateImage(graphics::FORMAT format, std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels,
-                std::uint32_t samplesCount, graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags);
+                std::uint32_t samples_count, graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags);
 
     [[nodiscard]] std::optional<VulkanImageView>
     CreateImageView(VulkanImage const &image, graphics::IMAGE_VIEW_TYPE view_type, VkImageAspectFlags aspectFlags) noexcept;
@@ -79,7 +79,7 @@ private:
 
     static auto constexpr kVertexBufferIncreaseValue{4};
 
-    VulkanDevice &device_;
+    vulkan::device &device_;
 
     template<class T> requires mpl::one_of<std::remove_cvref_t<T>,
         VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, resource::semaphore
@@ -95,6 +95,6 @@ private:
 };
 
 
-[[nodiscard]] std::shared_ptr<VulkanBuffer> CreateUniformBuffer(VulkanDevice &device, std::size_t size);
-[[nodiscard]] std::shared_ptr<VulkanBuffer> CreateCoherentStorageBuffer(VulkanDevice &device, std::size_t size);
-[[nodiscard]] std::shared_ptr<VulkanBuffer> CreateStorageBuffer(VulkanDevice &device, std::size_t size);
+[[nodiscard]] std::shared_ptr<VulkanBuffer> CreateUniformBuffer(vulkan::device &device, std::size_t size);
+[[nodiscard]] std::shared_ptr<VulkanBuffer> CreateCoherentStorageBuffer(vulkan::device &device, std::size_t size);
+[[nodiscard]] std::shared_ptr<VulkanBuffer> CreateStorageBuffer(vulkan::device &device, std::size_t size);

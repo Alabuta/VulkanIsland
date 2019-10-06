@@ -37,16 +37,16 @@ struct DescriptorPoolDescription {
 class DescriptorPoolManager {
 public:
 
-    DescriptorPoolManager(/*VulkanDevice &device, */std::vector<VkDescriptorPoolSize> &&poolSizes)
+    DescriptorPoolManager(/*vulkan::VulkanDevice &device, */std::vector<VkDescriptorPoolSize> &&poolSizes)
         : /*device_{device}, */poolSizes_{poolSizes} { };
 
 private:
 
-    // VulkanDevice &device_;
+    // vulkan::device &device_;
     std::vector<VkDescriptorPoolSize> poolSizes_;
 };
 
-std::optional<VkDescriptorPool> CreateDescriptorPool(VulkanDevice const &device)
+std::optional<VkDescriptorPool> CreateDescriptorPool(vulkan::device const &device)
 {
     std::optional<VkDescriptorPool> descriptorPool;
 
@@ -77,7 +77,7 @@ std::optional<VkDescriptorPool> CreateDescriptorPool(VulkanDevice const &device)
 
 
 
-std::optional<VkDescriptorSetLayout> CreateDescriptorSetLayout(VulkanDevice const &device)
+std::optional<VkDescriptorSetLayout> CreateDescriptorSetLayout(vulkan::device const &device)
 {
     std::optional<VkDescriptorSetLayout> descriptorSetLayout;
 

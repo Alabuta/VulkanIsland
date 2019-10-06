@@ -1,6 +1,6 @@
 #pragma once
 
-#include "renderer/device.hxx"
+#include "renderer/vulkan_device.hxx"
 #include "graphics/graphics.hxx"
 #include "resources/buffer.hxx"
 #include "resources/image.hxx"
@@ -34,11 +34,11 @@ struct SwapChainSupportDetails {
 
 
 [[nodiscard]] std::optional<VulkanSwapchain>
-CreateSwapchain(VulkanDevice &device, VkSurfaceKHR surface, std::uint32_t width, std::uint32_t height,
+CreateSwapchain(vulkan::device &device, VkSurfaceKHR surface, std::uint32_t width, std::uint32_t height,
                 VulkanQueue<PresentationQueue> const &presentationQueue, VulkanQueue<GraphicsQueue> const &graphicsQueue,
                 TransferQueue transferQueue, VkCommandPool transferCommandPool);
 
-void CleanupSwapchain(VulkanDevice const &device, VulkanSwapchain &swapchain) noexcept;
+void CleanupSwapchain(vulkan::device const &device, VulkanSwapchain &swapchain) noexcept;
 
 
-void CreateFramebuffers(VulkanDevice const &device, VkRenderPass renderPass, VulkanSwapchain &swapchain);
+void CreateFramebuffers(vulkan::device const &device, VkRenderPass renderPass, VulkanSwapchain &swapchain);

@@ -4,7 +4,7 @@
 #include <memory>
 
 #include "main.hxx"
-#include "renderer/device.hxx"
+#include "renderer/vulkan_device.hxx"
 
 class DescriptorManager;
 
@@ -29,13 +29,13 @@ class DescriptorManager final {
 public:
 
 
-    DescriptorManager(VulkanDevice &device) noexcept : device_{device} { }
+    DescriptorManager(vulkan::device &device) noexcept : device_{device} { }
 
     [[nodiscard]] std::optional<VulkanDescriptorPool> CreateDescriptorPool();
 
 private:
 
-    VulkanDevice &device_;
+    vulkan::device &device_;
 };
 
 #if 0
@@ -52,12 +52,12 @@ private:
 };
 #endif
 
-std::optional<VkDescriptorPool> CreateDescriptorPool(VulkanDevice const &device);
+std::optional<VkDescriptorPool> CreateDescriptorPool(vulkan::device const &device);
 
-std::optional<VkDescriptorSetLayout> CreateDescriptorSetLayout(VulkanDevice const &device);
+std::optional<VkDescriptorSetLayout> CreateDescriptorSetLayout(vulkan::device const &device);
 
 template<class T> requires mpl::container<std::remove_cvref_t<T>>
-std::optional<VkDescriptorSet> CreateDescriptorSet(VulkanDevice const &device, VkDescriptorPool descriptorPool, T &&descriptorSetLayouts)
+std::optional<VkDescriptorSet> CreateDescriptorSet(vulkan::device const &device, VkDescriptorPool descriptorPool, T &&descriptorSetLayouts)
 {
     std::optional<VkDescriptorSet> descriptorSet;
 
