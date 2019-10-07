@@ -30,7 +30,7 @@ namespace vulkan
     VkPhysicalDeviceFeatures constexpr device_features{
         VkBool32(VK_FALSE), // robustBufferAccess,
         VkBool32(VK_FALSE), // fullDrawIndexUint32,
-        VkBool32(VK_FALSE), // imageCubeArray,
+        VkBool32(VK_TRUE),  // imageCubeArray,
         VkBool32(VK_FALSE), // independentBlend,
         VkBool32(VK_TRUE),  // geometryShader,
         VkBool32(VK_TRUE),  // tessellationShader,
@@ -38,7 +38,7 @@ namespace vulkan
         VkBool32(VK_FALSE), // dualSrcBlend,
         VkBool32(VK_FALSE), // logicOp,
         VkBool32(VK_TRUE),  // multiDrawIndirect,
-        VkBool32(VK_FALSE), // drawIndirectFirstInstance,
+        VkBool32(VK_TRUE),  // drawIndirectFirstInstance,
         VkBool32(VK_TRUE),  // depthClamp,
         VkBool32(VK_FALSE), // depthBiasClamp,
         VkBool32(VK_TRUE),  // fillModeNonSolid,

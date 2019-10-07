@@ -279,6 +279,7 @@
   <ItemGroup>
     <ClInclude Include="include\config.hxx" />
     <ClInclude Include="src\renderer\command_buffer.hxx" />
+    <ClInclude Include="src\renderer\config.hxx" />
     <ClInclude Include="src\vulkan\debug.hxx" />
     <ClInclude Include="src/descriptor.hxx" />
     <ClInclude Include="src/device.hxx" />

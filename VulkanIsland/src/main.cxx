@@ -25,6 +25,8 @@
 
 #include "vulkan/instance.hxx"
 #include "vulkan/device.hxx"
+
+#include "renderer/config.hxx"
 #include "renderer/swapchain.hxx"
 #include "renderer/command_buffer.hxx"
 
@@ -814,6 +816,19 @@ xformat populate()
 }
 
 
+renderer::config adjust_renderer_config(vulkan::device const &device)
+{
+    auto &&device_limits = device.device_limits();
+
+    auto sample_counts = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
+
+    renderer::config renderer_config;
+
+    renderer_config.framebuffer_sample_counts = std::min(sample_counts, renderer_config.framebuffer_sample_counts);
+
+    return renderer_config;
+}
+
 void init_vulkan(platform::window &window, app_t &app)
 {
     app.vulkan_instance = std::make_unique<vulkan::instance>();
@@ -822,6 +837,8 @@ void init_vulkan(platform::window &window, app_t &app)
         throw std::runtime_error(fmt::format("failed to create window surface: {0:#x}\n"s, result));
 
     app.vulkan_device = std::make_unique<vulkan::device>(*app.vulkan_instance, app.surface);
+
+    auto renderer_config = adjust_renderer_config(*app.vulkan_device);
 
     app.memory_manager = std::make_unique<MemoryManager>(*app.vulkan_device);
     app.resource_manager = std::make_unique<ResourceManager>(*app.vulkan_device, *app.memory_manager);
