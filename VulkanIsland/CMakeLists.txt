@@ -36,41 +36,45 @@ set(SOURCE_FILES
     src/camera/camera_controller.hxx                src/camera/camera_controller.cxx
     src/camera/camera.hxx                           src/camera/camera.cxx
 
-	src/device/device.hxx                           src/device/device.cxx
-    src/device/deviceConfig.hxx
-
     src/ecs/ecs.hxx
     src/ecs/mesh.hxx
     src/ecs/node.hxx                                src/ecs/node.cxx
     src/ecs/transform.hxx                           src/ecs/transform.cxx
 
-	src/loaders/loaderGLTF.hxx                      src/loaders/loaderGLTF.cxx
-    src/loaders/loaderTARGA.hxx                     src/loaders/loaderTARGA.cxx
+    src/graphics/attachments.hxx                    src/graphics/attachments.cxx
+    src/graphics/compatibility.hxx
+    src/graphics/descriptors.hxx		            src/graphics/descriptors.cxx
+    src/graphics/framebuffer.hxx
+    src/graphics/graphics_api.hxx                   src/graphics/graphics_api.cxx
+    src/graphics/graphics_pipeline.hxx              src/graphics/graphics_pipeline.cxx
+    src/graphics/graphics.hxx
+    src/graphics/material.hxx                       src/graphics/material.cxx
+    src/graphics/pipeline_states.hxx                src/graphics/pipeline_states.cxx
+    src/graphics/render_flow.hxx                    src/graphics/render_flow.cxx
+    src/graphics/render_pass.hxx                    src/graphics/render_pass.cxx
+    src/graphics/shader_program.hxx                 src/graphics/shader_program.cxx
+    src/graphics/vertex.hxx                         src/graphics/vertex.cxx
 
-	src/loaders/SPIRV_loader.hxx                    src/loaders/SPIRV_loader.cxx
+    src/graphics/renderPass.hxx                     src/graphics/renderPass.cxx
+
+	src/loaders/loaderGLTF.hxx                      src/loaders/loaderGLTF.cxx
 	src/loaders/material_loader.hxx                 src/loaders/material_loader.cxx
+	src/loaders/scene_loader.hxx                    src/loaders/scene_loader.cxx
+	src/loaders/SPIRV_loader.hxx                    src/loaders/SPIRV_loader.cxx
+    src/loaders/TARGA_loader.hxx                    src/loaders/TARGA_loader.cxx
+
+    src/math/math.hxx                               src/math/math.cxx
 
     src/platform/input/input_data.hxx
     src/platform/input/input_manager.hxx            src/platform/input/input_manager.cxx
     src/platform/input/mouse.hxx                    src/platform/input/mouse.cxx
 
     src/platform/window.hxx                         src/platform/window.cxx
-
-    src/renderer/attachments.hxx                    src/renderer/attachments.cxx
-    src/renderer/compatibility.hxx
-    src/renderer/descriptors.hxx		            src/renderer/descriptors.cxx
-    src/renderer/framebuffer.hxx
-    src/renderer/graphics_api.hxx                   src/renderer/graphics_api.cxx
-    src/renderer/graphics_pipeline.hxx              src/renderer/graphics_pipeline.cxx
-    src/renderer/graphics.hxx
-    src/renderer/material.hxx                       src/renderer/material.cxx
-    src/renderer/pipeline_states.hxx                src/renderer/pipeline_states.cxx
-    src/renderer/render_flow.hxx                    src/renderer/render_flow.cxx
-    src/renderer/render_pass.hxx                    src/renderer/render_pass.cxx
-    src/renderer/shader_program.hxx                 src/renderer/shader_program.cxx
-    src/renderer/vertex.hxx                         src/renderer/vertex.cxx
-
-    src/renderer/renderPass.hxx                     src/renderer/renderPass.cxx
+	
+	src/renderer/command_buffer.hxx
+    src/renderer/queue_builder.hxx
+    src/renderer/queues.hxx
+	src/renderer/swapchain.hxx                      src/swapchain.cxx
 
 	src/resources/buffer.hxx                        src/resources/buffer.cxx
 	src/resources/image.hxx                         src/resources/image.cxx
@@ -81,17 +85,16 @@ set(SOURCE_FILES
 
 	src/utility/mpl.hxx
 	src/utility/helpers.hxx
-	
-	src/command_buffer.hxx
-	src/debug.hxx                                   src/debug.cxx
+
+	src/vulkan/debug.hxx                            src/vulkan/debug.cxx
+    src/vulkan/device_config.hxx
+    src/vulkan/device_limits.hxx
+	src/vulkan/device.hxx                           src/vulkan/device.cxx
+	src/vulkan/instance.hxx                         src/vulkan/instance.cxx
+	src/vulkan/queue_factory.hxx
+
     src/descriptor.hxx                              src/descriptor.cxx
-	src/instance.hxx                                src/instance.cxx
     src/main.hxx                                    src/main.cxx
-    src/math.hxx                                    src/math.cxx
-    src/queue_builder.hxx
-    src/queues.hxx
-    src/staging.hxx
-	src/swapchain.hxx                               src/swapchain.cxx
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
