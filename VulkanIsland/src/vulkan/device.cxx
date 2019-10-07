@@ -288,76 +288,30 @@ namespace
 
         return queue_infos;
     }
-}
 
-namespace vulkan
-{
-    device::device(vulkan::instance &instance, VkSurfaceKHR surface)
+    void get_device_queues(VkDevice handle, required_device_queues &required_queues)
     {
-        auto constexpr use_extensions = !vulkan::device_extensions.empty();
+        for (auto &&queue : required_queues.compute_queues_)
+            vkGetDeviceQueue(handle, queue.family_, queue.index_, &queue.handle_);
 
-        std::vector<std::string_view> extensions_view;
-        std::vector<char const *> extensions;
+        for (auto &&queue : required_queues.graphics_queues_)
+            vkGetDeviceQueue(handle, queue.family_, queue.index_, &queue.handle_);
 
-        if constexpr (use_extensions) {
-            auto const _extensions = vulkan::device_extensions;
+        for (auto &&queue : required_queues.transfer_queues_)
+            vkGetDeviceQueue(handle, queue.family_, queue.index_, &queue.handle_);
 
-            std::copy(_extensions.begin(), _extensions.end(), std::back_inserter(extensions));
+        for (auto &&queue : required_queues.presentation_queues_)
+            vkGetDeviceQueue(handle, queue.family_, queue.index_, &queue.handle_);
+    }
 
-        #if USE_DEBUG_MARKERS
-            extensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
-        #endif
-
-            std::copy(std::begin(extensions), std::end(extensions), std::back_inserter(extensions_view));
-        }
-
-        graphics_queues_.resize(1);
-        compute_queues_.resize(1);
-        transfer_queues_.resize(1);
-        presentation_queues_.resize(1);
-
-        required_device_queues required_queues{
-            graphics_queues_, compute_queues_, transfer_queues_, presentation_queues_
-        };
-
-        physical_handle_ = pick_physical_device(instance.handle(), surface, std::move(extensions_view), required_queues);
-
-        std::vector<std::vector<float>> priorities;
-
-        auto queue_infos = get_queue_infos(physical_handle_, surface, std::move(extensions), required_queues, priorities);
-
-        auto const device_features = vulkan::device_features;
-
-        VkDeviceCreateInfo const device_info{
-            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            nullptr, 0,
-            static_cast<std::uint32_t>(std::size(queue_infos)), std::data(queue_infos),
-            0, nullptr,
-            static_cast<std::uint32_t>(std::size(extensions)), std::data(extensions),
-            &device_features
-        };
-
-        if (auto result = vkCreateDevice(physical_handle_, &device_info, nullptr, &handle_); result != VK_SUCCESS)
-            throw std::runtime_error("failed to create logical device: "s + std::to_string(result));
-
-        for (auto &&queue : compute_queues_)
-            vkGetDeviceQueue(handle_, queue.family_, queue.index_, &queue.handle_);
-
-        for (auto &&queue : graphics_queues_)
-            vkGetDeviceQueue(handle_, queue.family_, queue.index_, &queue.handle_);
-
-        for (auto &&queue : transfer_queues_)
-            vkGetDeviceQueue(handle_, queue.family_, queue.index_, &queue.handle_);
-
-        for (auto &&queue : presentation_queues_)
-            vkGetDeviceQueue(handle_, queue.family_, queue.index_, &queue.handle_);
-
+    [[nodiscard]] vulkan::device_limits get_device_limits(VkPhysicalDevice physical_handle)
+    {
         VkPhysicalDeviceProperties properties;
-        vkGetPhysicalDeviceProperties(physical_handle_, &properties);
+        vkGetPhysicalDeviceProperties(physical_handle, &properties);
 
         auto &&limits = properties.limits;
 
-        device_limits_ = vulkan::device_limits{
+        return vulkan::device_limits{
             limits.maxImageDimension1D,
             limits.maxImageDimension2D,
             limits.maxImageDimension3D,
@@ -466,6 +420,62 @@ namespace vulkan
             limits.nonCoherentAtomSize
         };
     }
+}
+
+namespace vulkan
+{
+    device::device(vulkan::instance &instance, VkSurfaceKHR surface)
+    {
+        auto constexpr use_extensions = !vulkan::device_extensions.empty();
+
+        std::vector<std::string_view> extensions_view;
+        std::vector<char const *> extensions;
+
+        if constexpr (use_extensions) {
+            auto const _extensions = vulkan::device_extensions;
+
+            std::copy(_extensions.begin(), _extensions.end(), std::back_inserter(extensions));
+
+        #if USE_DEBUG_MARKERS
+            extensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
+        #endif
+
+            std::copy(std::begin(extensions), std::end(extensions), std::back_inserter(extensions_view));
+        }
+
+        graphics_queues_.resize(1);
+        compute_queues_.resize(1);
+        transfer_queues_.resize(1);
+        presentation_queues_.resize(1);
+
+        required_device_queues required_queues{
+            graphics_queues_, compute_queues_, transfer_queues_, presentation_queues_
+        };
+
+        physical_handle_ = pick_physical_device(instance.handle(), surface, std::move(extensions_view), required_queues);
+
+        std::vector<std::vector<float>> priorities;
+
+        auto queue_infos = get_queue_infos(physical_handle_, surface, std::move(extensions), required_queues, priorities);
+
+        auto const device_features = vulkan::device_features;
+
+        VkDeviceCreateInfo const device_info{
+            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+            nullptr, 0,
+            static_cast<std::uint32_t>(std::size(queue_infos)), std::data(queue_infos),
+            0, nullptr,
+            static_cast<std::uint32_t>(std::size(extensions)), std::data(extensions),
+            &device_features
+        };
+
+        if (auto result = vkCreateDevice(physical_handle_, &device_info, nullptr, &handle_); result != VK_SUCCESS)
+            throw std::runtime_error("failed to create logical device: "s + std::to_string(result));
+
+        get_device_queues(handle_, required_queues);
+
+        device_limits_ = get_device_limits(physical_handle_);
+    }
 
     device::~device()
     {
@@ -476,5 +486,29 @@ namespace vulkan
 
         handle_ = nullptr;
         physical_handle_ = nullptr;
+    }
+
+    template<GraphicsQueue>
+    GraphicsQueue const &device::queue() const noexcept
+    {
+        return graphics_queues_.at(0);
+    }
+
+    template<ComputeQueue>
+    ComputeQueue const &device::queue() const noexcept
+    {
+        return compute_queues_.at(0);
+    }
+
+    template<TransferQueue>
+    TransferQueue const &device::queue() const noexcept
+    {
+        return transfer_queues_.at(0);
+    }
+
+    template<PresentationQueue>
+    PresentationQueue const &device::queue() const noexcept
+    {
+        return presentation_queues_.at(0);
     }
 }
