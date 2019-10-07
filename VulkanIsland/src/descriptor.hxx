@@ -7,6 +7,7 @@
 #include "main.hxx"
 #include "vulkan/device.hxx"
 
+
 class DescriptorManager;
 
 class VulkanDescriptorPool final {

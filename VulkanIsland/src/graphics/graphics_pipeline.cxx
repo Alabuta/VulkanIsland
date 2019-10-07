@@ -95,7 +95,7 @@ namespace convert_to
 
             convert_to::vulkan(depth_stencil_state.depth_test_enable),
             convert_to::vulkan(depth_stencil_state.depth_write_enable),
-            convert_to::vulkan(depth_stencil_state.depth_compare_operation), // kREVERSED_DEPTH ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_LESS,
+            convert_to::vulkan(depth_stencil_state.depth_compare_operation),
 
             convert_to::vulkan(depth_stencil_state.depth_bounds_test_enable),
 
