@@ -91,6 +91,7 @@ set(SOURCE_FILES
     src/vulkan/device_limits.hxx
 	src/vulkan/device.hxx                           src/vulkan/device.cxx
 	src/vulkan/instance.hxx                         src/vulkan/instance.cxx
+	src/vulkan/queue_factory.hxx
 
     src/descriptor.hxx                              src/descriptor.cxx
     src/main.hxx                                    src/main.cxx
