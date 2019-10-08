@@ -193,7 +193,7 @@ namespace
         // Removing unsuitable devices. Matching by required compute, graphics, transfer and presentation queues.
         it_end = std::remove_if(std::begin(devices), std::end(devices), [&] (auto &&device)
         {
-            auto check_queue_pool_support = [device, surface, &required_queues] (auto &&queue_pool)
+            auto check_queue_pool_support = [device, surface] (auto &&queue_pool)
             {
                 if (queue_pool.empty())
                     return true;
@@ -218,7 +218,7 @@ namespace
 
         devices.erase(it_end, std::end(devices));
 
-        // Matchin by the swap chain properties support.
+        // Matching by the swap chain properties support.
         it_end = std::remove_if(std::begin(devices), std::end(devices), [surface] (auto &&device)
         {
             auto const details = QuerySwapChainSupportDetails(device, surface);
@@ -486,29 +486,5 @@ namespace vulkan
 
         handle_ = nullptr;
         physical_handle_ = nullptr;
-    }
-
-    template<GraphicsQueue>
-    GraphicsQueue const &device::queue() const noexcept
-    {
-        return graphics_queues_.at(0);
-    }
-
-    template<ComputeQueue>
-    ComputeQueue const &device::queue() const noexcept
-    {
-        return compute_queues_.at(0);
-    }
-
-    template<TransferQueue>
-    TransferQueue const &device::queue() const noexcept
-    {
-        return transfer_queues_.at(0);
-    }
-
-    template<PresentationQueue>
-    PresentationQueue const &device::queue() const noexcept
-    {
-        return presentation_queues_.at(0);
     }
 }

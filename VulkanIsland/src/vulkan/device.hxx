@@ -40,4 +40,22 @@ namespace vulkan
         device(vulkan::device const &) = delete;
         device(vulkan::device &&) = delete;
     };
+
+    template<class Q> requires mpl::derived_from<VulkanQueue<Q>, Q>
+    inline Q const &device::queue() const noexcept
+    {
+        if constexpr (std::is_same_v<Q, GraphicsQueue>)
+            return graphics_queues_.at(0);
+
+        else if constexpr (std::is_same_v<Q, ComputeQueue>)
+            return compute_queues_.at(0);
+
+        else if constexpr (std::is_same_v<Q, TransferQueue>)
+            return transfer_queues_.at(0);
+
+        else if constexpr (std::is_same_v<Q, PresentationQueue>)
+            return presentation_queues_.at(0);
+
+        else static_assert(always_false<Q>::value, "unsupported queue type");
+    }
 }
