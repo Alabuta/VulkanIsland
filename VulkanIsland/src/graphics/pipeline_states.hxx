@@ -3,6 +3,7 @@
 #include <array>
 #include <vector>
 
+#include "main.hxx"
 #include "utility/mpl.hxx"
 #include "graphics.hxx"
 #include "vertex.hxx"

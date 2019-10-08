@@ -11,7 +11,6 @@ namespace vulkan
 {
     class device;
 
-    template<graphics::QUEUE_CAPABILITY QC>
     class queue {
     public:
 
@@ -39,9 +38,17 @@ namespace vulkan
 
     };
 
-    class graphics_queue final : public queue<graphics::QUEUE_CAPABILITY::GRAPHICS> { };
-    class compute_queue final : public queue<graphics::QUEUE_CAPABILITY::COMPUTE> { };
-    class transfer_queue final : public queue<graphics::QUEUE_CAPABILITY::TRANSFER> { };
+    struct graphics_queue final : public queue {
+        static auto constexpr capability{graphics::QUEUE_CAPABILITY::GRAPHICS};
+    };
+
+    struct compute_queue final : public queue {
+        static auto constexpr capability{graphics::QUEUE_CAPABILITY::COMPUTE};
+    };
+
+    struct transfer_queue final : public queue {
+        static auto constexpr capability{graphics::QUEUE_CAPABILITY::TRANSFER};
+    };
 }
 
 template<class T>

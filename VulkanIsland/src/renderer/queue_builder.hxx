@@ -135,8 +135,3 @@ private:
         return {};
     }
 };
-
-template<class... Qs>
-struct QueuePool final {
-    using Tuple = std::tuple<Qs...>;
-};
