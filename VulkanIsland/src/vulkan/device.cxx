@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <variant>
 
 #include <string>
 using namespace std::string_literals;
@@ -170,8 +171,21 @@ namespace
 
         auto const device_features = vulkan::device_features;
 
+        using features_t = std::variant<
+            VkPhysicalDevice8BitStorageFeaturesKHR,
+            VkPhysicalDevice16BitStorageFeatures,
+            VkPhysicalDeviceFloat16Int8FeaturesKHR
+        >;
+
+        std::vector<features_t> features{
+            VkPhysicalDevice8BitStorageFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR},
+            VkPhysicalDevice16BitStorageFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES},
+            VkPhysicalDeviceFloat16Int8FeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR}
+        };
+
         // Matching by supported properties, features and extensions.
-        auto it_end = std::remove_if(std::begin(devices), std::end(devices), [&extensions, &application_info, &device_features] (auto &&device)
+        auto it_end = std::remove_if(std::begin(devices), std::end(devices),
+                                     [features, &extensions, &application_info, &device_features] (auto &&device) mutable
         {
             VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(device, &properties);
@@ -179,11 +193,43 @@ namespace
             if (properties.apiVersion < application_info.apiVersion)
                 return true;
 
-            VkPhysicalDeviceFeatures features;
-            vkGetPhysicalDeviceFeatures(device, &features);
+            void *ptr_next = nullptr;
 
+            //std::for_each(std::begin(features), std::end(features));
+
+            for (auto &&feature : features) {
+                std::visit([&ptr_next] (auto &&feature)
+                {
+                    feature.pNext = ptr_next;
+
+                    ptr_next = &feature;
+                }, feature);
+            }
+
+            VkPhysicalDeviceFeatures2 features2{
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+                &features.back()
+            };
+
+        #if 0
+            VkPhysicalDeviceFloat16Int8FeaturesKHR shader_f16_i8_feature{
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR/*,
+                nullptr,
+                VK_TRUE, VK_TRUE*/
+            };
+
+            VkPhysicalDeviceFeatures2 features2{
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+                &shader_f16_i8_feature
+            };
+        #endif
+
+            vkGetPhysicalDeviceFeatures2(device, &features2);
+
+        #if 0
             if (!compare_physical_device_features(device_features, features))
                 return true;
+        #endif
 
             return !check_required_device_extensions(device, std::move(extensions));
         });

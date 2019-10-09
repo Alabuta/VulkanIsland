@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "VulkanIsland", "VulkanIsland\VulkanIsland.vcxproj", "{FF5F9E8B-F482-4B1D-8863-78B8C3551CAF}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "contents", "contents", "{579A4A4B-A81C-42B2-BDC5-5FE5B7AB24F2}"
+	ProjectSection(SolutionItems) = preProject
+		contents\compile-materials.py = contents\compile-materials.py
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "materials", "materials", "{A6A8F520-B8A1-412F-B425-19ACE2FCC55C}"
 EndProject

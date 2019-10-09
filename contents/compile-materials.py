@@ -35,6 +35,9 @@ shaders = Shaders(
         version = 460,
         extensions = {
             'GL_ARB_separate_shader_objects': 'enable',
+            'GL_EXT_shader_16bit_storage': 'enable',
+            'GL_EXT_shader_8bit_storage': 'enable',
+            'VK_KHR_shader_float16_int8 ': 'enable',
             'GL_EXT_scalar_block_layout': 'enable'
         }
     ),
