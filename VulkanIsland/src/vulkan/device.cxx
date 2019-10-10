@@ -6,6 +6,7 @@ using namespace std::string_literals;
 
 #include <fmt/format.h>
 
+#include "utility/helpers.hxx"
 #include "utility/mpl.hxx"
 
 #define USE_DEBUG_MARKERS 0
@@ -19,12 +20,24 @@ using namespace std::string_literals;
 
 namespace
 {
+    using device_extended_feature_t = mpl::variant_from_tuple<std::remove_cvref_t<decltype(vulkan::device_extended_features)>>::type;
+
     struct required_device_queues final {
         std::vector<GraphicsQueue> &graphics_queues_;
         std::vector<ComputeQueue> &compute_queues_;
         std::vector<TransferQueue> &transfer_queues_;
         std::vector<PresentationQueue> &presentation_queues_;
     };
+
+    //template<class L, class R> requires 
+    bool constexpr operator== (VkPhysicalDevice8BitStorageFeaturesKHR const &lhs, VkPhysicalDevice8BitStorageFeaturesKHR const &rhs)
+    {
+        if (lhs.storageBuffer8BitAccess == (lhs.storageBuffer8BitAccess * rhs.storageBuffer8BitAccess))
+            return false;
+
+        if (lhs.uniformAndStorageBuffer8BitAccess == (lhs.uniformAndStorageBuffer8BitAccess * rhs.uniformAndStorageBuffer8BitAccess))
+            return false;
+    }
 
     template<class T, std::size_t I = 0>
     constexpr bool check_all_queues_support(VkPhysicalDevice physical_device, VkSurfaceKHR surface)
@@ -87,7 +100,7 @@ namespace
                              std::cbegin(required_extensions), std::cend(required_extensions), extensions_compare);
     }
 
-    bool constexpr compare_physical_device_features(VkPhysicalDeviceFeatures const &lhs, VkPhysicalDeviceFeatures const &rhs)
+    bool constexpr compare_device_features(VkPhysicalDeviceFeatures &&lhs, VkPhysicalDeviceFeatures &&rhs)
     {
         auto total = VkBool32(VK_TRUE);
 
@@ -154,6 +167,63 @@ namespace
         return total != VkBool32(VK_FALSE);
     }
 
+    bool compare_device_extended_features(std::vector<device_extended_feature_t> const &required_extended_features,
+                                          std::vector<device_extended_feature_t> &&supported_extended_features)
+    {
+        auto compare = overloaded{
+            [] (VkPhysicalDevice8BitStorageFeaturesKHR const &lhs, VkPhysicalDevice8BitStorageFeaturesKHR const &rhs)
+            {
+                if (lhs.storageBuffer8BitAccess != (lhs.storageBuffer8BitAccess * rhs.storageBuffer8BitAccess))
+                    return false;
+
+                if (lhs.uniformAndStorageBuffer8BitAccess != (lhs.uniformAndStorageBuffer8BitAccess * rhs.uniformAndStorageBuffer8BitAccess))
+                    return false;
+
+                if (lhs.storagePushConstant8 != (lhs.storagePushConstant8 * rhs.storagePushConstant8))
+                    return false;
+
+                return true;
+            },
+            [] (VkPhysicalDevice16BitStorageFeatures const &lhs, VkPhysicalDevice16BitStorageFeatures const &rhs)
+            {
+                if (lhs.storageBuffer16BitAccess != (lhs.storageBuffer16BitAccess * rhs.storageBuffer16BitAccess))
+                    return false;
+
+                if (lhs.uniformAndStorageBuffer16BitAccess != (lhs.uniformAndStorageBuffer16BitAccess * rhs.uniformAndStorageBuffer16BitAccess))
+                    return false;
+
+                if (lhs.storagePushConstant16 != (lhs.storagePushConstant16 * rhs.storagePushConstant16))
+                    return false;
+
+                if (lhs.storageInputOutput16 != (lhs.storageInputOutput16 * rhs.storageInputOutput16))
+                    return false;
+
+                return true;
+            },
+            [] (VkPhysicalDeviceFloat16Int8FeaturesKHR const &lhs, VkPhysicalDeviceFloat16Int8FeaturesKHR const &rhs)
+            {
+                if (lhs.shaderFloat16 != (lhs.shaderFloat16 * rhs.shaderFloat16))
+                    return false;
+
+                if (lhs.shaderInt8 != (lhs.shaderInt8 * rhs.shaderInt8))
+                    return false;
+
+                return true;
+            },
+        };
+
+        auto c = [] (auto &&lhs, auto &&rhs)
+        {
+            std::visit();
+        };
+
+        return std::equal(std::cbegin(required_extended_features), std::cend(required_extended_features),
+                          std::cbegin(supported_extended_features), [] (auto &&lhs, auto &&rhs)
+        {
+            return decltype(compare){ }
+        });
+    }
+
     [[nodiscard]] VkPhysicalDevice
     pick_physical_device(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions, required_device_queues &required_queues)
     {
@@ -167,31 +237,25 @@ namespace
         if (auto result = vkEnumeratePhysicalDevices(instance, &devices_count, std::data(devices)); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to retrieve physical devices: {0:#x}\n"s, result));
 
-        auto const application_info = vulkan_config::application_info;
-
-        auto const device_features = vulkan::device_features;
-
-        using device_extended_feature_t = mpl::variant_from_tuple<decltype(device_extended_features)>::type;
-
-        auto const required_extended_features = std::apply(device_extended_features, [] (auto &&...args)
+        auto const required_extended_features = std::apply([] (auto ...args)
         {
-            return std::vector<device_extended_feature_t>{args...};
-        });
+            return std::vector<device_extended_feature_t>{std::move(args)...};
+        }, vulkan::device_extended_features);
 
         // Matching by supported properties, features and extensions.
         auto it_end = std::remove_if(std::begin(devices), std::end(devices),
-                                     [&extensions, &application_info, &device_features, &required_extended_features] (auto &&device)
+                                     [&extensions, &required_extended_features] (auto &&device)
         {
             VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(device, &properties);
 
-            if (properties.apiVersion < application_info.apiVersion)
+            if (properties.apiVersion < vulkan_config::application_info.apiVersion)
                 return true;
 
-            auto supported_extended_features = std::apply(device_extended_features, [] (auto &&...args)
+            auto supported_extended_features = std::apply([] (auto &&...args)
             {
                 return std::vector<device_extended_feature_t>{args...};
-            });
+            }, vulkan::device_extended_features);
 
             void *ptr_next = nullptr;
 
@@ -210,11 +274,15 @@ namespace
             };
 
             vkGetPhysicalDeviceFeatures2(device, &supported_features);
+            vkGetPhysicalDeviceFeatures(device, &supported_features.features); // TODO:: maybe it's a bug
 
-        #if 0
-            if (!compare_physical_device_features(device_features, features))
+            auto required_device_features = vulkan::device_features;
+
+            if (!compare_device_features(std::move(required_device_features), std::move(supported_features.features)))
                 return true;
-        #endif
+
+            if (!compare_device_extended_features(required_extended_features, std::move(supported_extended_features)))
+                return true;
 
             return !check_required_device_extensions(device, std::move(extensions));
         });
@@ -489,15 +557,36 @@ namespace vulkan
 
         auto queue_infos = get_queue_infos(physical_handle_, surface, std::move(extensions), required_queues, priorities);
 
-        auto const device_features = vulkan::device_features;
+        auto required_extended_features = std::apply([] (auto ...args)
+        {
+            return std::vector<device_extended_feature_t>{std::move(args)...};
+        }, vulkan::device_extended_features);
+
+        void *ptr_next = nullptr;
+
+        for (auto &&feature : required_extended_features) {
+            std::visit([&ptr_next] (auto &&feature)
+            {
+                feature.pNext = ptr_next;
+
+                ptr_next = &feature;
+            }, feature);
+        }
+
+        VkPhysicalDeviceFeatures2 required_device_features{
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
+            &required_extended_features.back(),
+            vulkan::device_features
+        };
 
         VkDeviceCreateInfo const device_info{
             VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-            nullptr, 0,
+            &required_device_features,
+            0,
             static_cast<std::uint32_t>(std::size(queue_infos)), std::data(queue_infos),
             0, nullptr,
             static_cast<std::uint32_t>(std::size(extensions)), std::data(extensions),
-            &device_features
+            nullptr
         };
 
         if (auto result = vkCreateDevice(physical_handle_, &device_info, nullptr, &handle_); result != VK_SUCCESS)

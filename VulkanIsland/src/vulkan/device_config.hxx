@@ -91,7 +91,7 @@ namespace vulkan
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR,
             nullptr,
             VK_TRUE, VK_TRUE, VK_TRUE
-        }
+        },
         VkPhysicalDevice16BitStorageFeatures{
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES,
             nullptr,
