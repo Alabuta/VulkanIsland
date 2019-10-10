@@ -127,6 +127,14 @@ namespace mpl
     auto constexpr is_variant_alternative_v = is_variant_alternative<T, Ts...>::value;
 
     template<class T>
+    struct variant_from_tuple;
+
+    template<class... Ts>
+    struct variant_from_tuple<std::tuple<Ts...>> {
+        using type = std::variant<Ts...>;
+    };
+
+    template<class T>
     concept iterable = is_iterable_v<T>;
 
     template<class T>
