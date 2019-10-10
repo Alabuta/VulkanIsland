@@ -160,12 +160,12 @@ namespace
         std::uint32_t devices_count = 0;
 
         if (auto result = vkEnumeratePhysicalDevices(instance, &devices_count, nullptr); result != VK_SUCCESS || devices_count == 0)
-            throw std::runtime_error("failed to find physical device with Vulkan API support: "s + std::to_string(result));
+            throw std::runtime_error(fmt::format("failed to find physical device with Vulkan API support: {0:#x}\n"s, result));
 
         std::vector<VkPhysicalDevice> devices(devices_count);
 
         if (auto result = vkEnumeratePhysicalDevices(instance, &devices_count, std::data(devices)); result != VK_SUCCESS)
-            throw std::runtime_error("failed to retrieve physical devices: "s + std::to_string(result));
+            throw std::runtime_error(fmt::format("failed to retrieve physical devices: {0:#x}\n"s, result));
 
         auto const application_info = vulkan_config::application_info;
 
@@ -516,7 +516,7 @@ namespace vulkan
         };
 
         if (auto result = vkCreateDevice(physical_handle_, &device_info, nullptr, &handle_); result != VK_SUCCESS)
-            throw std::runtime_error("failed to create logical device: "s + std::to_string(result));
+            throw std::runtime_error(fmt::format("failed to create logical device: {0:#x}\n"s, result));
 
         get_device_queues(handle_, required_queues);
 
