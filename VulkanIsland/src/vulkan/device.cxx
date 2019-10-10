@@ -171,21 +171,16 @@ namespace
 
         auto const device_features = vulkan::device_features;
 
-        using features_t = std::variant<
-            VkPhysicalDevice8BitStorageFeaturesKHR,
-            VkPhysicalDevice16BitStorageFeatures,
-            VkPhysicalDeviceFloat16Int8FeaturesKHR
-        >;
+        using device_extended_feature_t = mpl::variant_from_tuple<decltype(device_extended_features)>::type;
 
-        std::vector<features_t> features{
-            VkPhysicalDevice8BitStorageFeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR},
-            VkPhysicalDevice16BitStorageFeatures{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_16BIT_STORAGE_FEATURES},
-            VkPhysicalDeviceFloat16Int8FeaturesKHR{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR}
-        };
+        auto const required_extended_features = std::apply(device_extended_features, [] (auto &&...args)
+        {
+            return std::vector<device_extended_feature_t>{args...};
+        });
 
         // Matching by supported properties, features and extensions.
         auto it_end = std::remove_if(std::begin(devices), std::end(devices),
-                                     [features, &extensions, &application_info, &device_features] (auto &&device) mutable
+                                     [&extensions, &application_info, &device_features, &required_extended_features] (auto &&device)
         {
             VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(device, &properties);
@@ -193,11 +188,14 @@ namespace
             if (properties.apiVersion < application_info.apiVersion)
                 return true;
 
+            auto supported_extended_features = std::apply(device_extended_features, [] (auto &&...args)
+            {
+                return std::vector<device_extended_feature_t>{args...};
+            });
+
             void *ptr_next = nullptr;
 
-            //std::for_each(std::begin(features), std::end(features));
-
-            for (auto &&feature : features) {
+            for (auto &&feature : supported_extended_features) {
                 std::visit([&ptr_next] (auto &&feature)
                 {
                     feature.pNext = ptr_next;
@@ -206,25 +204,12 @@ namespace
                 }, feature);
             }
 
-            VkPhysicalDeviceFeatures2 features2{
+            VkPhysicalDeviceFeatures2 supported_features{
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-                &features.back()
+                &supported_extended_features.back()
             };
 
-        #if 0
-            VkPhysicalDeviceFloat16Int8FeaturesKHR shader_f16_i8_feature{
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT16_INT8_FEATURES_KHR/*,
-                nullptr,
-                VK_TRUE, VK_TRUE*/
-            };
-
-            VkPhysicalDeviceFeatures2 features2{
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-                &shader_f16_i8_feature
-            };
-        #endif
-
-            vkGetPhysicalDeviceFeatures2(device, &features2);
+            vkGetPhysicalDeviceFeatures2(device, &supported_features);
 
         #if 0
             if (!compare_physical_device_features(device_features, features))
