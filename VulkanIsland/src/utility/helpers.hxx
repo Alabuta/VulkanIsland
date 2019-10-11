@@ -9,7 +9,7 @@
 
 
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-template<class... Ts> overloaded(Ts...)->overloaded<Ts...>;
+template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 //template<class T, typename std::enable_if_t<std::is_integral_v<std::remove_cvref_t<T>>>* = nullptr>
 constexpr std::uint16_t operator"" _ui16(unsigned long long value)

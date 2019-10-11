@@ -170,7 +170,7 @@ namespace
     bool compare_device_extended_features(std::vector<device_extended_feature_t> const &required_extended_features,
                                           std::vector<device_extended_feature_t> &&supported_extended_features)
     {
-        auto compare = overloaded{
+        auto overloaded_compare = overloaded{
             [] (VkPhysicalDevice8BitStorageFeaturesKHR const &lhs, VkPhysicalDevice8BitStorageFeaturesKHR const &rhs)
             {
                 if (lhs.storageBuffer8BitAccess != (lhs.storageBuffer8BitAccess * rhs.storageBuffer8BitAccess))
@@ -212,16 +212,18 @@ namespace
             },
         };
 
-        auto c = [] (auto &&lhs, auto &&rhs)
+        auto compare = [&overloaded_compare] (auto &&lhs, auto &&rhs)
         {
-            std::visit();
+            return std::visit([&] (auto &&lhs)
+            {
+                using T = std::remove_cvref_t<decltype(lhs)>;
+
+                return overloaded_compare(lhs, std::get<T>(rhs));
+            }, lhs);
         };
 
         return std::equal(std::cbegin(required_extended_features), std::cend(required_extended_features),
-                          std::cbegin(supported_extended_features), [] (auto &&lhs, auto &&rhs)
-        {
-            return decltype(compare){ }
-        });
+                          std::cbegin(supported_extended_features), compare);
     }
 
     [[nodiscard]] VkPhysicalDevice
@@ -252,6 +254,9 @@ namespace
             if (properties.apiVersion < vulkan_config::application_info.apiVersion)
                 return true;
 
+            if (!check_required_device_extensions(device, std::move(extensions)))
+                return true;
+
             auto supported_extended_features = std::apply([] (auto &&...args)
             {
                 return std::vector<device_extended_feature_t>{args...};
@@ -276,15 +281,15 @@ namespace
             vkGetPhysicalDeviceFeatures2(device, &supported_features);
             vkGetPhysicalDeviceFeatures(device, &supported_features.features); // TODO:: maybe it's a bug
 
-            auto required_device_features = vulkan::device_features;
+            auto required_features = vulkan::device_features;
 
-            if (!compare_device_features(std::move(required_device_features), std::move(supported_features.features)))
+            if (!compare_device_features(std::move(required_features), std::move(supported_features.features)))
                 return true;
 
             if (!compare_device_extended_features(required_extended_features, std::move(supported_extended_features)))
                 return true;
 
-            return !check_required_device_extensions(device, std::move(extensions));
+            return false;
         });
 
         devices.erase(it_end, std::end(devices));
