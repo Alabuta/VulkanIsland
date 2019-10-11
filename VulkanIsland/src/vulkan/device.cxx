@@ -29,16 +29,6 @@ namespace
         std::vector<PresentationQueue> &presentation_queues_;
     };
 
-    //template<class L, class R> requires 
-    bool constexpr operator== (VkPhysicalDevice8BitStorageFeaturesKHR const &lhs, VkPhysicalDevice8BitStorageFeaturesKHR const &rhs)
-    {
-        if (lhs.storageBuffer8BitAccess == (lhs.storageBuffer8BitAccess * rhs.storageBuffer8BitAccess))
-            return false;
-
-        if (lhs.uniformAndStorageBuffer8BitAccess == (lhs.uniformAndStorageBuffer8BitAccess * rhs.uniformAndStorageBuffer8BitAccess))
-            return false;
-    }
-
     template<class T, std::size_t I = 0>
     constexpr bool check_all_queues_support(VkPhysicalDevice physical_device, VkSurfaceKHR surface)
     {
@@ -58,7 +48,7 @@ namespace
     {
         std::vector<VkExtensionProperties> required_extensions;
 
-        auto constexpr extensions_compare = [] (auto &&lhs, auto &&rhs)
+        auto extensions_compare = [] (auto &&lhs, auto &&rhs)
         {
             return std::lexicographical_compare(std::cbegin(lhs.extensionName), std::cend(lhs.extensionName),
                                                 std::cbegin(rhs.extensionName), std::cend(rhs.extensionName));
@@ -100,7 +90,7 @@ namespace
                              std::cbegin(required_extensions), std::cend(required_extensions), extensions_compare);
     }
 
-    bool constexpr compare_device_features(VkPhysicalDeviceFeatures &&lhs, VkPhysicalDeviceFeatures &&rhs)
+    bool compare_device_features(VkPhysicalDeviceFeatures &&lhs, VkPhysicalDeviceFeatures &&rhs)
     {
         auto total = VkBool32(VK_TRUE);
 
