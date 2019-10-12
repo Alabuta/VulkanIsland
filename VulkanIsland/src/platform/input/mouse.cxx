@@ -37,7 +37,7 @@ namespace platform
     void mouse::update(platform::mouse_data::raw &data)
     {
         std::visit(overloaded{
-            [this](platform::mouse_data::relative_coords &coords)
+            [this] (platform::mouse_data::relative_coords &coords)
             {
                 if (coords.x != 0.f || coords.y != 0.f)
                     on_move_(coords.x, coords.y);

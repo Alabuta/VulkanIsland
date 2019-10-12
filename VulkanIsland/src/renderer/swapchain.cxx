@@ -176,7 +176,6 @@ CreateDepthAttachement(vulkan::device &device, ResourceManager &resource_manager
 
     return { };
 }
-
 }
 
 

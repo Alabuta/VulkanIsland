@@ -247,7 +247,7 @@ namespace
             if (!check_required_device_extensions(device, std::move(extensions)))
                 return true;
 
-            auto supported_extended_features = std::apply([] (auto &&...args)
+            auto supported_extended_features = std::apply([] (auto ...args)
             {
                 return std::vector<device_extended_feature_t>{args...};
             }, vulkan::device_extended_features);
@@ -528,7 +528,7 @@ namespace vulkan
         if constexpr (use_extensions) {
             auto const _extensions = vulkan::device_extensions;
 
-            std::copy(_extensions.begin(), _extensions.end(), std::back_inserter(extensions));
+            std::copy(std::begin(_extensions), std::end(_extensions), std::back_inserter(extensions));
 
         #if USE_DEBUG_MARKERS
             extensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
