@@ -22,7 +22,9 @@ namespace vulkan
         vulkan::device_limits const &device_limits() const noexcept { return device_limits_; };
 
         template<class Q> requires mpl::derived_from<VulkanQueue<Q>, Q>
-        Q const &queue() const noexcept;
+        Q const &queue() const;
+
+        //GraphicsQueue const &presentation_queue() const { return graphics_queues_.at(0); }
 
     private:
 
@@ -42,7 +44,7 @@ namespace vulkan
     };
 
     template<class Q> requires mpl::derived_from<VulkanQueue<Q>, Q>
-    inline Q const &device::queue() const noexcept
+    inline Q const &device::queue() const
     {
         if constexpr (std::is_same_v<Q, GraphicsQueue>)
             return graphics_queues_.at(0);

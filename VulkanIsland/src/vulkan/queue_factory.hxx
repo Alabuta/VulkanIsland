@@ -1,21 +1,20 @@
 #pragma once
 
-#include <map>
 #include <optional>
-
-#include <string>
-using namespace std::string_literals;
+#include <map>
 
 #include "utility/mpl.hxx"
-#include "graphics/graphics_api.hxx"
 #include "renderer/queues.hxx"
+#include "device.hxx"
+
 
 namespace vulkan
 {
     class queue_factory final {
     public:
 
-        ;
+        template<class T>
+        [[nodiscard]] T find_queue(vulkan::device const &device, VkSurfaceKHR surface);
 
     private:
 

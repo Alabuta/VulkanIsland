@@ -10,7 +10,10 @@
 namespace vulkan
 {
     class device;
+}
 
+namespace graphics
+{
     class queue {
     public:
 
@@ -106,5 +109,3 @@ public:
 };
 
 class PresentationQueue final : public VulkanQueue<PresentationQueue> {};
-
-using queues_t = std::variant<GraphicsQueue, ComputeQueue, TransferQueue, PresentationQueue>;

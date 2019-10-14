@@ -29,20 +29,6 @@ namespace
         std::vector<PresentationQueue> &presentation_queues_;
     };
 
-    template<class T, std::size_t I = 0>
-    constexpr bool check_all_queues_support(VkPhysicalDevice physical_device, VkSurfaceKHR surface)
-    {
-        using Q = std::variant_alternative_t<I, T>;
-
-        if (!QueueHelper::IsSupportedByDevice<Q>(physical_device, surface))
-            return false;
-
-        if constexpr (I + 1 < std::variant_size_v<T>)
-            return check_all_queues_support<T, I + 1>(physical_device, surface);
-
-        return false;
-    }
-
     template<bool check_on_duplicates = false>
     [[nodiscard]] bool check_required_device_extensions(VkPhysicalDevice physical_device, std::vector<std::string_view> &&extensions)
     {
@@ -216,6 +202,51 @@ namespace
                           std::cbegin(supported_extended_features), compare);
     }
 
+    struct queue_family final {
+        std::uint32_t index;
+        VkQueueFamilyProperties property;
+    };
+
+    template<bool strict_matching, class T>
+    [[nodiscard]] std::optional<queue_family> get_queue_family(VkPhysicalDevice device, VkSurfaceKHR surface = VK_NULL_HANDLE)
+    {
+        std::uint32_t queue_families_count = 0;
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_families_count, nullptr);
+
+        if (queue_families_count == 0)
+            return { };
+
+        std::vector<VkQueueFamilyProperties> queue_families(queue_families_count);
+        vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_families_count, std::data(queue_families));
+
+        auto it_family = std::find_if(std::cbegin(queue_families), std::cend(queue_families),
+                                      [device, surface, queue_index = 0u] (auto &&queue_family) mutable
+        {
+            auto const capability = convert_to::vulkan(T::capability);
+
+            //if constexpr (std::is_same_v<T, graphics::graphics_queue>) {
+            if (surface != VK_NULL_HANDLE) {
+                VkBool32 surface_supported = VK_FALSE;
+
+                if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(device, queue_index++, surface, &surface_supported); result != VK_SUCCESS)
+                    throw std::runtime_error(fmt::format("failed to retrieve surface support: {0:#x}\n"s, result));
+
+                if (surface_supported != VK_TRUE)
+                    return false;
+            }
+
+            if constexpr (strict_matching)
+                return queue_family.queueCount > 0 && queue_family.queueFlags == capability;
+
+            return queue_family.queueCount > 0 && (queue_family.queueFlags & capability) == capability;
+        });
+
+        if (it_family != std::cend(queue_families))
+            return queue_family{ static_cast<std::uint32_t>(std::distance(std::cbegin(queue_families), it_family)), *it_family };
+
+        return { };
+    }
+
     [[nodiscard]] VkPhysicalDevice
     pick_physical_device(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions, required_device_queues &required_queues)
     {
@@ -292,19 +323,37 @@ namespace
                 if (queue_pool.empty())
                     return true;
 
-                return QueueHelper::IsSupportedByDevice<typename std::remove_cvref_t<decltype(queue_pool)>::value_type>(device, surface);
+                auto constexpr strict_matching = false;
+
+                using T = typename std::remove_cvref_t<decltype(queue_pool)>::value_type;
+
+                if constexpr (std::is_same_v<T, GraphicsQueue>)
+                    return !get_queue_family<strict_matching, graphics::graphics_queue>(device);
+
+                else if constexpr (std::is_same_v<T, ComputeQueue>)
+                    return !get_queue_family<strict_matching, graphics::compute_queue>(device);
+
+                else if constexpr (std::is_same_v<T, TransferQueue>)
+                    return !get_queue_family<strict_matching, graphics::transfer_queue>(device);
+
+                if constexpr (std::is_same_v<T, PresentationQueue>)
+                    return !get_queue_family<strict_matching, graphics::graphics_queue>(device, surface);
+
+                return false;
+
+                //return !get_queue_family<T>(device);
             };
 
-            if (!check_queue_pool_support(required_queues.compute_queues_))
+            if (check_queue_pool_support(required_queues.compute_queues_))
                 return true;
 
-            if (!check_queue_pool_support(required_queues.graphics_queues_))
+            if (check_queue_pool_support(required_queues.graphics_queues_))
                 return true;
 
-            if (!check_queue_pool_support(required_queues.presentation_queues_))
-                return true;
+            /*if (check_queue_pool_support(required_queues.presentation_queues_))
+                return true;*/
 
-            if (!check_queue_pool_support(required_queues.transfer_queues_))
+            if (check_queue_pool_support(required_queues.transfer_queues_))
                 return true;
 
             return false;
