@@ -36,5 +36,7 @@ namespace vulkan
         device() = delete;
         device(vulkan::device const &) = delete;
         device(vulkan::device &&) = delete;
+
+        struct helper;
     };
 }

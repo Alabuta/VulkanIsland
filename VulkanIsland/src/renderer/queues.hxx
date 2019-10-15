@@ -17,20 +17,6 @@ namespace graphics
     class queue {
     public:
 
-        /*template<graphics::QUEUE_CAPABILITY qc>
-        auto constexpr operator< (queue<qc>) const noexcept { return SI < si; }
-
-        template<graphics::QUEUE_CAPABILITY qc>
-        auto constexpr operator== (queue<qc>) const noexcept { return SI == si; }*/
-
-        /*template<class Q> requires std::same_as<queue<QC>, std::remove_cvref_t<Q>>
-        bool constexpr operator== (Q &&queue) const noexcept
-        {
-            return family_ == queue.family_ && index_ == queue.index_;
-        }*/
-
-        // queue(VkQueue handle, std::uint32_t family, std::uint32_t index) noexcept : handle_{handle}, family_{family}, index_{index} { }
-
         VkQueue handle() const noexcept { return handle_; }
 
         std::uint32_t family() const noexcept { return family_; }
@@ -38,7 +24,7 @@ namespace graphics
 
     private:
 
-        VkQueue handle_{nullptr};
+        VkQueue handle_{VK_NULL_HANDLE};
         std::uint32_t family_{0}, index_{0};
 
         friend vulkan::device;
