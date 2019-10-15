@@ -21,10 +21,10 @@ namespace vulkan
 
         vulkan::device_limits const &device_limits() const noexcept { return device_limits_; };
 
-        template<class Q> requires mpl::derived_from<VulkanQueue<Q>, Q>
-        Q const &queue() const;
-
-        //GraphicsQueue const &presentation_queue() const { return graphics_queues_.at(0); }
+        graphics::graphics_queue graphics_queue;
+        graphics::compute_queue compute_queue;
+        graphics::transfer_queue transfer_queue;
+        graphics::graphics_queue presentation_queue;
 
     private:
 
@@ -33,31 +33,8 @@ namespace vulkan
 
         vulkan::device_limits device_limits_;
 
-        std::vector<GraphicsQueue> graphics_queues_;
-        std::vector<ComputeQueue> compute_queues_;
-        std::vector<TransferQueue> transfer_queues_;
-        std::vector<PresentationQueue> presentation_queues_;
-
         device() = delete;
         device(vulkan::device const &) = delete;
         device(vulkan::device &&) = delete;
     };
-
-    template<class Q> requires mpl::derived_from<VulkanQueue<Q>, Q>
-    inline Q const &device::queue() const
-    {
-        if constexpr (std::is_same_v<Q, GraphicsQueue>)
-            return graphics_queues_.at(0);
-
-        else if constexpr (std::is_same_v<Q, ComputeQueue>)
-            return compute_queues_.at(0);
-
-        else if constexpr (std::is_same_v<Q, TransferQueue>)
-            return transfer_queues_.at(0);
-
-        else if constexpr (std::is_same_v<Q, PresentationQueue>)
-            return presentation_queues_.at(0);
-
-        else static_assert(always_false<Q>::value, "unsupported queue type");
-    }
 }

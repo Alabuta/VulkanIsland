@@ -20,17 +20,12 @@ using namespace std::string_literals;
 
 namespace
 {
+    auto constexpr queue_strict_matching = false;
+
     using device_extended_feature_t = mpl::variant_from_tuple<std::remove_cvref_t<decltype(vulkan::device_extended_features)>>::type;
 
-    struct required_device_queues final {
-        std::vector<GraphicsQueue> &graphics_queues_;
-        std::vector<ComputeQueue> &compute_queues_;
-        std::vector<TransferQueue> &transfer_queues_;
-        std::vector<PresentationQueue> &presentation_queues_;
-    };
-
     template<bool check_on_duplicates = false>
-    [[nodiscard]] bool check_required_device_extensions(VkPhysicalDevice physical_device, std::vector<std::string_view> &&extensions)
+    bool check_required_device_extensions(VkPhysicalDevice physical_device, std::vector<std::string_view> &&extensions)
     {
         std::vector<VkExtensionProperties> required_extensions;
 
@@ -208,7 +203,7 @@ namespace
     };
 
     template<bool strict_matching, class T>
-    [[nodiscard]] std::optional<queue_family> get_queue_family(VkPhysicalDevice device, VkSurfaceKHR surface = VK_NULL_HANDLE)
+    std::optional<queue_family> get_queue_family(VkPhysicalDevice device, VkSurfaceKHR surface = VK_NULL_HANDLE)
     {
         std::uint32_t queue_families_count = 0;
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_families_count, nullptr);
@@ -220,20 +215,19 @@ namespace
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_families_count, std::data(queue_families));
 
         auto it_family = std::find_if(std::cbegin(queue_families), std::cend(queue_families),
-                                      [device, surface, queue_index = 0u] (auto &&queue_family) mutable
+                                      [device, surface, family_index = 0u] (auto &&queue_family) mutable
         {
-            auto const capability = convert_to::vulkan(T::capability);
-
-            //if constexpr (std::is_same_v<T, graphics::graphics_queue>) {
-            if (surface != VK_NULL_HANDLE) {
+            if constexpr (std::is_same_v<T, graphics::graphics_queue>) {
                 VkBool32 surface_supported = VK_FALSE;
 
-                if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(device, queue_index++, surface, &surface_supported); result != VK_SUCCESS)
+                if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(device, family_index++, surface, &surface_supported); result != VK_SUCCESS)
                     throw std::runtime_error(fmt::format("failed to retrieve surface support: {0:#x}\n"s, result));
 
                 if (surface_supported != VK_TRUE)
                     return false;
             }
+
+            auto const capability = convert_to::vulkan(T::capability);
 
             if constexpr (strict_matching)
                 return queue_family.queueCount > 0 && queue_family.queueFlags == capability;
@@ -247,8 +241,7 @@ namespace
         return { };
     }
 
-    [[nodiscard]] VkPhysicalDevice
-    pick_physical_device(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions, required_device_queues &required_queues)
+    VkPhysicalDevice pick_physical_device(VkInstance instance, VkSurfaceKHR surface, std::vector<std::string_view> &&extensions)
     {
         std::uint32_t devices_count = 0;
 
@@ -318,42 +311,13 @@ namespace
         // Removing unsuitable devices. Matching by required compute, graphics, transfer and presentation queues.
         it_end = std::remove_if(std::begin(devices), std::end(devices), [&] (auto &&device)
         {
-            auto check_queue_pool_support = [device, surface] (auto &&queue_pool)
-            {
-                if (queue_pool.empty())
-                    return true;
-
-                auto constexpr strict_matching = false;
-
-                using T = typename std::remove_cvref_t<decltype(queue_pool)>::value_type;
-
-                if constexpr (std::is_same_v<T, GraphicsQueue>)
-                    return !get_queue_family<strict_matching, graphics::graphics_queue>(device);
-
-                else if constexpr (std::is_same_v<T, ComputeQueue>)
-                    return !get_queue_family<strict_matching, graphics::compute_queue>(device);
-
-                else if constexpr (std::is_same_v<T, TransferQueue>)
-                    return !get_queue_family<strict_matching, graphics::transfer_queue>(device);
-
-                if constexpr (std::is_same_v<T, PresentationQueue>)
-                    return !get_queue_family<strict_matching, graphics::graphics_queue>(device, surface);
-
-                return false;
-
-                //return !get_queue_family<T>(device);
-            };
-
-            if (check_queue_pool_support(required_queues.compute_queues_))
+            if (!get_queue_family<queue_strict_matching, graphics::graphics_queue>(device), surface)
                 return true;
 
-            if (check_queue_pool_support(required_queues.graphics_queues_))
+            if (!get_queue_family<queue_strict_matching, graphics::compute_queue>(device))
                 return true;
 
-            /*if (check_queue_pool_support(required_queues.presentation_queues_))
-                return true;*/
-
-            if (check_queue_pool_support(required_queues.transfer_queues_))
+            if (!get_queue_family<queue_strict_matching, graphics::transfer_queue>(device))
                 return true;
 
             return false;
@@ -396,55 +360,57 @@ namespace
         return devices.front();
     }
 
-    [[nodiscard]] std::vector<VkDeviceQueueCreateInfo>
-    get_queue_infos(VkPhysicalDevice physical_handle, VkSurfaceKHR surface, std::vector<char const *> &&extensions,
-                    required_device_queues &required_queues, std::vector<std::vector<float>> &priorities)
+    std::vector<VkDeviceQueueCreateInfo> get_queue_infos(VkPhysicalDevice device, std::vector<std::vector<float>> &priorities)
     {
-        QueueHelper queue_helper;
+        auto graphics_queue = get_queue_family<queue_strict_matching, graphics::graphics_queue>(device);
 
-        for (auto &&queue : required_queues.compute_queues_)
-            queue = queue_helper.Find<std::remove_cvref_t<decltype(queue)>>(physical_handle, surface);
+        if (!graphics_queue)
+            throw std::runtime_error("failed to get the graphics queue family"s);
 
-        for (auto &&queue : required_queues.graphics_queues_)
-            queue = queue_helper.Find<std::remove_cvref_t<decltype(queue)>>(physical_handle, surface);
+        auto compute_queue = get_queue_family<queue_strict_matching, graphics::compute_queue>(device);
 
-        for (auto &&queue : required_queues.transfer_queues_)
-            queue = queue_helper.Find<std::remove_cvref_t<decltype(queue)>>(physical_handle, surface);
+        if (!compute_queue)
+            throw std::runtime_error("failed to get the compute queue family"s);
 
-        for (auto &&queue : required_queues.presentation_queues_)
-            queue = queue_helper.Find<std::remove_cvref_t<decltype(queue)>>(physical_handle, surface);
+        auto transfer_queue = get_queue_family<queue_strict_matching, graphics::transfer_queue>(device);
+
+        if (!transfer_queue)
+            throw std::runtime_error("failed to get the transfer queue family"s);
+
+        std::map<std::uint32_t, std::uint32_t> requested_families;
+
+        requested_families[graphics_queue->index] += 2;
+        requested_families[compute_queue->index] += 1;
+        requested_families[transfer_queue->index] += 1;
 
         std::vector<VkDeviceQueueCreateInfo> queue_infos;
 
-        for (auto [family, count] : queue_helper.GetRequestedFamilies()) {
+        for (auto [family, count] : requested_families) {
             priorities.emplace_back(count, 1.f);
 
-            VkDeviceQueueCreateInfo queue_info{
+            queue_infos.push_back(VkDeviceQueueCreateInfo{
                 VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,
                 nullptr, 0,
                 family, count,
                 std::data(priorities.back())
-            };
-
-            queue_infos.push_back(std::move(queue_info));
+            });
         }
 
-        return queue_infos;
-    }
+        /*QueueHelper queue_helper;
 
-    void get_device_queues(VkDevice handle, required_device_queues &required_queues)
-    {
         for (auto &&queue : required_queues.compute_queues_)
-            vkGetDeviceQueue(handle, queue.family_, queue.index_, &queue.handle_);
+            queue = queue_helper.Find<std::remove_cvref_t<decltype(queue)>>(physical_handle, surface);
 
         for (auto &&queue : required_queues.graphics_queues_)
-            vkGetDeviceQueue(handle, queue.family_, queue.index_, &queue.handle_);
+            queue = queue_helper.Find<std::remove_cvref_t<decltype(queue)>>(physical_handle, surface);
 
         for (auto &&queue : required_queues.transfer_queues_)
-            vkGetDeviceQueue(handle, queue.family_, queue.index_, &queue.handle_);
+            queue = queue_helper.Find<std::remove_cvref_t<decltype(queue)>>(physical_handle, surface);
 
         for (auto &&queue : required_queues.presentation_queues_)
-            vkGetDeviceQueue(handle, queue.family_, queue.index_, &queue.handle_);
+            queue = queue_helper.Find<std::remove_cvref_t<decltype(queue)>>(physical_handle, surface);*/
+
+        return queue_infos;
     }
 
     [[nodiscard]] vulkan::device_limits get_device_limits(VkPhysicalDevice physical_handle)
@@ -586,20 +552,7 @@ namespace vulkan
             std::copy(std::begin(extensions), std::end(extensions), std::back_inserter(extensions_view));
         }
 
-        graphics_queues_.resize(1);
-        compute_queues_.resize(1);
-        transfer_queues_.resize(1);
-        presentation_queues_.resize(1);
-
-        required_device_queues required_queues{
-            graphics_queues_, compute_queues_, transfer_queues_, presentation_queues_
-        };
-
-        physical_handle_ = pick_physical_device(instance.handle(), surface, std::move(extensions_view), required_queues);
-
-        std::vector<std::vector<float>> priorities;
-
-        auto queue_infos = get_queue_infos(physical_handle_, surface, std::move(extensions), required_queues, priorities);
+        physical_handle_ = pick_physical_device(instance.handle(), surface, std::move(extensions_view));
 
         auto required_extended_features = std::apply([] (auto ...args)
         {
@@ -623,6 +576,9 @@ namespace vulkan
             vulkan::device_features
         };
 
+        std::vector<std::vector<float>> priorities;
+        auto queue_infos = get_queue_infos(physical_handle_, priorities);
+
         VkDeviceCreateInfo const device_info{
             VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
             &required_device_features,
@@ -636,7 +592,10 @@ namespace vulkan
         if (auto result = vkCreateDevice(physical_handle_, &device_info, nullptr, &handle_); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to create logical device: {0:#x}\n"s, result));
 
-        get_device_queues(handle_, required_queues);
+        vkGetDeviceQueue(handle_, graphics_queue.family_, graphics_queue.index_, &graphics_queue.handle_);
+        vkGetDeviceQueue(handle_, compute_queue.family_, compute_queue.index_, &compute_queue.handle_);
+        vkGetDeviceQueue(handle_, transfer_queue.family_, transfer_queue.index_, &transfer_queue.handle_);
+        vkGetDeviceQueue(handle_, presentation_queue.family_, presentation_queue.index_, &presentation_queue.handle_);
 
         device_limits_ = get_device_limits(physical_handle_);
     }
