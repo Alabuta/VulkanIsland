@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <variant>
+#include <memory>
 
 #include <string>
 using namespace std::string_literals;
@@ -576,6 +577,13 @@ namespace vulkan
             vulkan::device_features
         };
 
+        std::vector<std::unique_ptr<graphics::queue>> queues{
+            std::make_unique<graphics::graphics_queue>(),
+            std::make_unique<graphics::compute_queue>(),
+            std::make_unique<graphics::transfer_queue>(),
+            std::make_unique<graphics::graphics_queue>()
+        };
+
         std::vector<std::vector<float>> priorities;
         auto queue_infos = get_queue_infos(physical_handle_, priorities);
 
@@ -592,10 +600,10 @@ namespace vulkan
         if (auto result = vkCreateDevice(physical_handle_, &device_info, nullptr, &handle_); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to create logical device: {0:#x}\n"s, result));
 
-        vkGetDeviceQueue(handle_, graphics_queue.family_, graphics_queue.index_, &graphics_queue.handle_);
-        vkGetDeviceQueue(handle_, compute_queue.family_, compute_queue.index_, &compute_queue.handle_);
-        vkGetDeviceQueue(handle_, transfer_queue.family_, transfer_queue.index_, &transfer_queue.handle_);
-        vkGetDeviceQueue(handle_, presentation_queue.family_, presentation_queue.index_, &presentation_queue.handle_);
+        vkGetDeviceQueue(handle_, graphics_queue.family(), graphics_queue.index(), &graphics_queue.handle_);
+        vkGetDeviceQueue(handle_, compute_queue.family(), compute_queue.index(), &compute_queue.handle_);
+        vkGetDeviceQueue(handle_, transfer_queue.family(), transfer_queue.index(), &transfer_queue.handle_);
+        vkGetDeviceQueue(handle_, presentation_queue.family(), presentation_queue.index(), &presentation_queue.handle_);
 
         device_limits_ = get_device_limits(physical_handle_);
     }

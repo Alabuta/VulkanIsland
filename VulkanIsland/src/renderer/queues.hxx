@@ -29,6 +29,8 @@ namespace graphics
             return family_ == queue.family_ && index_ == queue.index_;
         }*/
 
+        // queue(VkQueue handle, std::uint32_t family, std::uint32_t index) noexcept : handle_{handle}, family_{family}, index_{index} { }
+
         VkQueue handle() const noexcept { return handle_; }
 
         std::uint32_t family() const noexcept { return family_; }
@@ -40,7 +42,6 @@ namespace graphics
         std::uint32_t family_{0}, index_{0};
 
         friend vulkan::device;
-
     };
 
     struct graphics_queue final : public graphics::queue {
