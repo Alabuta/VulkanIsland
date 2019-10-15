@@ -318,7 +318,6 @@
     <ClInclude Include="src\loaders\scene_loader.hxx" />
     <ClInclude Include="src/platform/window.hxx" />
     <ClInclude Include="src\renderer\queues.hxx" />
-    <ClInclude Include="src\renderer\queue_builder.hxx" />
     <ClInclude Include="src\renderer\swapchain.hxx" />
     <ClInclude Include="src\camera\camera_controller.hxx" />
     <ClInclude Include="src\camera\handlers\mouse_handler.hxx" />
@@ -331,7 +330,6 @@
     <ClInclude Include="src\resources\buffer.hxx" />
     <ClInclude Include="src\resources\image.hxx" />
     <ClInclude Include="src\utility\mpl.hxx" />
-    <ClInclude Include="src\vulkan\queue_factory.hxx" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
