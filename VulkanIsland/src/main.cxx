@@ -111,10 +111,6 @@ struct app_t final {
     VkSurfaceKHR surface{VK_NULL_HANDLE};
     VulkanSwapchain swapchain;
 
-    GraphicsQueue graphicsQueue;
-    TransferQueue transferQueue;
-    PresentationQueue presentationQueue;
-
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
     VkRenderPass renderPass{VK_NULL_HANDLE};
 
@@ -458,12 +454,14 @@ void recreate_swap_chain(app_t &app)
 {
     if (app.width < 1 || app.height < 1) return;
 
-    vkDeviceWaitIdle(app.vulkan_device->handle());
+    auto &&vulkan_device = *app.vulkan_device;
+
+    vkDeviceWaitIdle(vulkan_device.handle());
 
     cleanup_frame_data(app);
 
-    auto swapchain = CreateSwapchain(*app.vulkan_device, *app.resource_manager, app.surface, app.width, app.height,
-                                     app.presentationQueue, app.graphicsQueue, app.transferQueue, app.transferCommandPool);
+    auto swapchain = CreateSwapchain(vulkan_device, *app.resource_manager, app.surface, app.width, app.height, vulkan_device.presentation_queue,
+                                     vulkan_device.graphics_queue, vulkan_device.transfer_queue, app.transferCommandPool);
 
     if (swapchain)
         app.swapchain = std::move(swapchain.value());
@@ -848,22 +846,18 @@ void init_vulkan(platform::window &window, app_t &app)
     app.vertex_input_state_manager = std::make_unique<graphics::vertex_input_state_manager>();
     app.pipeline_factory = std::make_unique<graphics::pipeline_factory>(*app.vulkan_device, *app.shader_manager);
 
-    app.graphicsQueue = app.vulkan_device->queue<GraphicsQueue>();
-    app.transferQueue = app.vulkan_device->queue<TransferQueue>();
-    app.presentationQueue = app.vulkan_device->queue<PresentationQueue>();
-
-    if (auto commandPool = CreateCommandPool(app.vulkan_device->handle(), app.transferQueue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); commandPool)
+    if (auto commandPool = CreateCommandPool(app.vulkan_device->handle(), app.vulkan_device->transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); commandPool)
         app.transferCommandPool = *commandPool;
 
     else throw std::runtime_error("failed to transfer command pool"s);
 
-    if (auto commandPool = CreateCommandPool(app.vulkan_device->handle(), app.graphicsQueue, 0); commandPool)
+    if (auto commandPool = CreateCommandPool(app.vulkan_device->handle(), app.vulkan_device->graphics_queue, 0); commandPool)
         app.graphicsCommandPool = *commandPool;
 
     else throw std::runtime_error("failed to graphics command pool"s);
 
-    auto swapchain = CreateSwapchain(*app.vulkan_device, *app.resource_manager, app.surface, app.width, app.height,
-                                     app.presentationQueue, app.graphicsQueue, app.transferQueue, app.transferCommandPool);
+    auto swapchain = CreateSwapchain(*app.vulkan_device, *app.resource_manager, app.surface, app.width, app.height, app.vulkan_device->presentation_queue,
+                                     app.vulkan_device->graphics_queue, app.vulkan_device->transfer_queue, app.transferCommandPool);
 
     if (swapchain)
         app.swapchain = std::move(swapchain.value());
@@ -942,7 +936,7 @@ void init_vulkan(platform::window &window, app_t &app)
 
     build_render_pipelines(app, temp::model);
 
-    app.resource_manager->TransferStagedVertexData(app.transferCommandPool, app.transferQueue);
+    app.resource_manager->TransferStagedVertexData(app.transferCommandPool, app.vulkan_device->transfer_queue);
 
     CreateFramebuffers(*app.vulkan_device, app.renderPass, app.swapchain);
 
@@ -1014,7 +1008,7 @@ void render_frame(app_t &app)
 {
     auto &&vulkan_device = *app.vulkan_device;
 
-    vkQueueWaitIdle(app.presentationQueue.handle());
+    vkQueueWaitIdle(vulkan_device.presentation_queue.handle());
 
     std::uint32_t imageIndex;
 
@@ -1048,7 +1042,7 @@ void render_frame(app_t &app)
         static_cast<std::uint32_t>(std::size(signalSemaphores)), std::data(signalSemaphores),
     };
 
-    if (auto result = vkQueueSubmit(app.graphicsQueue.handle(), 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS)
+    if (auto result = vkQueueSubmit(vulkan_device.graphics_queue.handle(), 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS)
         throw std::runtime_error(fmt::format("failed to submit draw command buffer: {0:#x}\n"s, result));
 
     VkPresentInfoKHR const presentInfo{
@@ -1059,7 +1053,7 @@ void render_frame(app_t &app)
         &imageIndex, nullptr
     };
 
-    switch (auto result = vkQueuePresentKHR(app.presentationQueue.handle(), &presentInfo); result) {
+    switch (auto result = vkQueuePresentKHR(vulkan_device.presentation_queue.handle(), &presentInfo); result) {
         case VK_ERROR_OUT_OF_DATE_KHR:
         case VK_SUBOPTIMAL_KHR:
             recreate_swap_chain(app);
@@ -1228,15 +1222,15 @@ load_texture(app_t &app, vulkan::device &device, ResourceManager &resource_manag
                                     1u, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
             if (texture) {
-                TransitionImageLayout(device, app.transferQueue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
+                TransitionImageLayout(device, device.transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
                                       graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION, app.transferCommandPool);
 
-                CopyBufferToImage(device, app.transferQueue, stagingBuffer->handle(), texture->image->handle(), width, height, app.transferCommandPool);
+                CopyBufferToImage(device, device.transfer_queue, stagingBuffer->handle(), texture->image->handle(), width, height, app.transferCommandPool);
 
                 if (generateMipMaps)
-                    GenerateMipMaps(device, app.transferQueue, *texture->image, app.transferCommandPool);
+                    GenerateMipMaps(device, device.transfer_queue, *texture->image, app.transferCommandPool);
 
-                else TransitionImageLayout(device, app.transferQueue, *texture->image, graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION,
+                else TransitionImageLayout(device, device.transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION,
                                            graphics::IMAGE_LAYOUT::SHADER_READ_ONLY, app.transferCommandPool);
             }
         }

@@ -332,7 +332,7 @@ void ResourceManager::StageVertexData(std::shared_ptr<VertexBuffer> vertexBuffer
     }
 }
 
-void ResourceManager::TransferStagedVertexData(VkCommandPool transferCommandPool, TransferQueue &transferQueue) const
+void ResourceManager::TransferStagedVertexData(VkCommandPool transferCommandPool, graphics::transfer_queue const &transfer_queue) const
 {
     for (auto &&[layout, vertexBuffer] : vertexBuffers_) {
         auto &&stagingBuffer = vertexBuffer->stagingBuffer();
@@ -340,7 +340,7 @@ void ResourceManager::TransferStagedVertexData(VkCommandPool transferCommandPool
 
         auto copyRegions = std::array{VkBufferCopy{ 0, 0, stagingBuffer.memory()->size() }};
 
-        CopyBufferToBuffer(device_, transferQueue, stagingBuffer.handle(), deviceBuffer.handle(), std::move(copyRegions), transferCommandPool);
+        CopyBufferToBuffer(device_, transfer_queue, stagingBuffer.handle(), deviceBuffer.handle(), std::move(copyRegions), transferCommandPool);
     }
 }
 

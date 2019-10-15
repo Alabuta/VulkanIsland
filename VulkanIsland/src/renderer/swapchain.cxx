@@ -119,7 +119,7 @@ template<class T> requires mpl::iterable<std::remove_cvref_t<T>>
 }
 
 [[nodiscard]] std::optional<VulkanTexture>
-CreateColorAttachement(vulkan::device &device, ResourceManager &resource_manager, TransferQueue transferQueue,
+CreateColorAttachement(vulkan::device &device, ResourceManager &resource_manager, graphics::transfer_queue const &transfer_queue,
                        VkCommandPool transferCommandPool, graphics::FORMAT format, std::uint16_t width, std::uint16_t height)
 {
     std::optional<VulkanTexture> texture;
@@ -139,14 +139,14 @@ CreateColorAttachement(vulkan::device &device, ResourceManager &resource_manager
                             tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
     if (texture)
-        TransitionImageLayout(device, transferQueue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
+        TransitionImageLayout(device, transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
                               graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT, transferCommandPool);
 
     return texture;
 }
 
 [[nodiscard]]std::pair<std::optional<VulkanTexture>, std::optional<graphics::FORMAT>>
-CreateDepthAttachement(vulkan::device &device, ResourceManager &resource_manager, TransferQueue transferQueue, VkCommandPool transferCommandPool, std::uint16_t width, std::uint16_t height)
+CreateDepthAttachement(vulkan::device &device, ResourceManager &resource_manager, graphics::transfer_queue const &transfer_queue, VkCommandPool transferCommandPool, std::uint16_t width, std::uint16_t height)
 {
     std::optional<VulkanTexture> texture;
 
@@ -166,7 +166,7 @@ CreateDepthAttachement(vulkan::device &device, ResourceManager &resource_manager
                                 tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
 
         if (texture)
-            TransitionImageLayout(device, transferQueue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
+            TransitionImageLayout(device, transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
                                   graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT, transferCommandPool);
 
         return std::make_pair(texture, format);
@@ -215,8 +215,8 @@ CreateDepthAttachement(vulkan::device &device, ResourceManager &resource_manager
 
 [[nodiscard]] std::optional<VulkanSwapchain>
 CreateSwapchain(vulkan::device &device, ResourceManager &resource_manager, VkSurfaceKHR surface, std::uint32_t width, std::uint32_t height,
-                VulkanQueue<PresentationQueue> const &presentationQueue, VulkanQueue<GraphicsQueue> const &graphicsQueue,
-                TransferQueue transferQueue, VkCommandPool transferCommandPool)
+                graphics::graphics_queue const &presentation_queue, graphics::graphics_queue const &graphics_queue,
+                graphics::transfer_queue const &transfer_queue, VkCommandPool transferCommandPool)
 {
     VulkanSwapchain swapchain;
     
@@ -258,10 +258,10 @@ CreateSwapchain(vulkan::device &device, ResourceManager &resource_manager, VkSur
     };
 
     auto const queueFamilyIndices = mpl::make_array(
-        graphicsQueue.family(), presentationQueue.family()
+        graphics_queue.family(), presentation_queue.family()
     );
 
-    if (graphicsQueue.family() != presentationQueue.family()) {
+    if (graphics_queue.family() != presentation_queue.family()) {
         swapchainCreateInfo.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
         swapchainCreateInfo.queueFamilyIndexCount = static_cast<std::uint32_t>(std::size(queueFamilyIndices));
         swapchainCreateInfo.pQueueFamilyIndices = std::data(queueFamilyIndices);
@@ -296,14 +296,14 @@ CreateSwapchain(vulkan::device &device, ResourceManager &resource_manager, VkSur
     auto const swapchainWidth = static_cast<std::uint16_t>(swapchain.extent.width);
     auto const swapchainHeight = static_cast<std::uint16_t>(swapchain.extent.height);
 
-    if (auto result = CreateColorAttachement(device, resource_manager, transferQueue, transferCommandPool, swapchain.format, swapchainWidth, swapchainHeight); !result) {
+    if (auto result = CreateColorAttachement(device, resource_manager, transfer_queue, transferCommandPool, swapchain.format, swapchainWidth, swapchainHeight); !result) {
         std::cerr << "failed to create color texture\n"s;
         return { };
     }
 
     else swapchain.colorTexture = std::move(result.value());
 
-    if (auto [texture, format] = CreateDepthAttachement(device, resource_manager, transferQueue, transferCommandPool, swapchainWidth, swapchainHeight); !texture) {
+    if (auto [texture, format] = CreateDepthAttachement(device, resource_manager, transfer_queue, transferCommandPool, swapchainWidth, swapchainHeight); !texture) {
         std::cerr << "failed to create depth texture\n"s;
         return { };
     }

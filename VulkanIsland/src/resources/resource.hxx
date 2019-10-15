@@ -67,7 +67,7 @@ public:
 
     void StageVertexData(std::shared_ptr<VertexBuffer> vertexBuffer, std::vector<std::byte> const &container) const;
 
-    void TransferStagedVertexData(VkCommandPool transferCommandPool, TransferQueue &transferQueue) const;
+    void TransferStagedVertexData(VkCommandPool transferCommandPool, graphics::transfer_queue const &transfer_queue) const;
 
     [[nodiscard]] auto &vertex_buffers() const noexcept { return vertexBuffers_; }
 
