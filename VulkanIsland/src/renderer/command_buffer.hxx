@@ -1,5 +1,10 @@
 #pragma once
 
+#include <string>
+using namespace std::string_literals;
+
+#include <fmt/format.h>
+
 #include "main.hxx"
 #include "vulkan/device.hxx"
 #include "resources/image.hxx"
@@ -7,40 +12,13 @@
 #include "graphics/graphics_api.hxx"
 
 
-[[nodiscard]] VkCommandBuffer BeginSingleTimeCommand(vulkan::device const &device, VkCommandPool commandPool)
-{
-    VkCommandBuffer commandBuffer;
+[[nodiscard]] VkCommandBuffer BeginSingleTimeCommand(vulkan::device const &device, VkCommandPool commandPool);
 
-    VkCommandBufferAllocateInfo const allocateInfo{
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
-        nullptr,
-        commandPool,
-        VK_COMMAND_BUFFER_LEVEL_PRIMARY,
-        1
-    };
-
-    if (auto result = vkAllocateCommandBuffers(device.handle(), &allocateInfo, &commandBuffer); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create allocate command buffers: "s + std::to_string(result));
-
-    VkCommandBufferBeginInfo const beginInfo{
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
-        nullptr,
-        VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT,
-        nullptr
-    };
-
-    if (auto result = vkBeginCommandBuffer(commandBuffer, &beginInfo); result != VK_SUCCESS)
-        throw std::runtime_error("failed to record command buffer: "s + std::to_string(result));
-
-    return commandBuffer;
-}
+void EndSingleTimeCommand(VkCommandBuffer commandBuffer);
 
 template<class Q> requires mpl::derived_from<graphics::queue, std::remove_cvref_t<Q>>
-void EndSingleTimeCommand(vulkan::device const &device, Q &queue, VkCommandBuffer commandBuffer, VkCommandPool commandPool)
+void SubmitAndFreeSingleTimeCommandBuffers(vulkan::device const &device, Q &queue, VkCommandPool commandPool, VkCommandBuffer &commandBuffer)
 {
-    if (auto result = vkEndCommandBuffer(commandBuffer); result != VK_SUCCESS)
-        throw std::runtime_error("failed to end command buffer: "s + std::to_string(result));
-
     VkSubmitInfo const submitInfo{
         VK_STRUCTURE_TYPE_SUBMIT_INFO,
         nullptr,
@@ -51,7 +29,7 @@ void EndSingleTimeCommand(vulkan::device const &device, Q &queue, VkCommandBuffe
     };
 
     if (auto result = vkQueueSubmit(queue.handle(), 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS)
-        throw std::runtime_error("failed to submit command buffer: "s + std::to_string(result));
+        throw std::runtime_error(fmt::format("failed to submit command buffer: {0:#x}\n"s, result));
 
     vkQueueWaitIdle(queue.handle());
 
@@ -68,13 +46,15 @@ void CopyBufferToBuffer(vulkan::device const &device, Q &queue, VkBuffer srcBuff
 
     vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, static_cast<std::uint32_t>(std::size(copyRegion)), std::data(copyRegion));
 
-    EndSingleTimeCommand(device, queue, commandBuffer, commandPool);
+    EndSingleTimeCommand(commandBuffer);
+
+    SubmitAndFreeSingleTimeCommandBuffers(device, queue, commandPool, commandBuffer);
 }
 
 template<class Q> requires mpl::derived_from<graphics::queue, std::remove_cvref_t<Q>>
 void CopyBufferToImage(vulkan::device const &device, Q &queue, VkBuffer srcBuffer, VkImage dstImage, std::uint16_t width, std::uint16_t height, VkCommandPool commandPool)
 {
-    auto commandBuffer = BeginSingleTimeCommand(device, queue, commandPool);
+    auto commandBuffer = BeginSingleTimeCommand(device, commandPool);
 
     VkBufferImageCopy const copyRegion{
         0,
@@ -86,14 +66,16 @@ void CopyBufferToImage(vulkan::device const &device, Q &queue, VkBuffer srcBuffe
 
     vkCmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
-    EndSingleTimeCommand(device, queue, commandBuffer, commandPool);
+    EndSingleTimeCommand(commandBuffer);
+
+    SubmitAndFreeSingleTimeCommandBuffers(device, queue, commandPool, commandBuffer);
 }
 
 
 template<class Q> requires mpl::derived_from<graphics::queue, std::remove_cvref_t<Q>>
 void GenerateMipMaps(vulkan::device const &device, Q &queue, VulkanImage const &image, VkCommandPool commandPool) noexcept
 {
-    auto commandBuffer = BeginSingleTimeCommand(device, queue, commandPool);
+    auto commandBuffer = BeginSingleTimeCommand(device, commandPool);
 
     auto width = image.width();
     auto height = image.height();
@@ -145,7 +127,9 @@ void GenerateMipMaps(vulkan::device const &device, Q &queue, VulkanImage const &
 
     vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-    EndSingleTimeCommand(device, queue, commandBuffer, commandPool);
+    EndSingleTimeCommand(commandBuffer);
+
+    SubmitAndFreeSingleTimeCommandBuffers(device, queue, commandPool, commandBuffer);
 }
 
 
@@ -209,11 +193,13 @@ bool TransitionImageLayout(vulkan::device const &device, Q &queue, VulkanImage c
         return false;
     }
 
-    auto commandBuffer = BeginSingleTimeCommand(device, queue, commandPool);
+    auto commandBuffer = BeginSingleTimeCommand(device, commandPool);
 
     vkCmdPipelineBarrier(commandBuffer, convert_to::vulkan(srcStageFlags), convert_to::vulkan(dstStageFlags), 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-    EndSingleTimeCommand(device, queue, commandBuffer, commandPool);
+    EndSingleTimeCommand(commandBuffer);
+
+    SubmitAndFreeSingleTimeCommandBuffers(device, queue, commandPool, commandBuffer);
 
     return true;
 }
@@ -231,8 +217,8 @@ std::optional<VkCommandPool> CreateCommandPool(vulkan::device const &device, Q &
 
     VkCommandPool handle;
 
-    if (auto result = vkCreateCommandPool(device, &createInfo, nullptr, &handle); result != VK_SUCCESS)
-        std::cerr << "failed to create a command buffer: "s << result << std::endl;
+    if (auto result = vkCreateCommandPool(device.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
+        throw std::runtime_error(fmt::format("failed to create a command buffer: {0:#x}\n"s, result));
 
     else return handle;
 
