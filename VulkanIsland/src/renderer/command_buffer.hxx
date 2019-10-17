@@ -7,8 +7,7 @@
 #include "graphics/graphics_api.hxx"
 
 
-template<class Q> requires mpl::derived_from<graphics::queue, std::remove_cvref_t<Q>>
-[[nodiscard]] VkCommandBuffer BeginSingleTimeCommand(vulkan::device const &device, [[maybe_unused]] Q &queue, VkCommandPool commandPool)
+[[nodiscard]] VkCommandBuffer BeginSingleTimeCommand(vulkan::device const &device, VkCommandPool commandPool)
 {
     VkCommandBuffer commandBuffer;
 
@@ -65,7 +64,7 @@ void CopyBufferToBuffer(vulkan::device const &device, Q &queue, VkBuffer srcBuff
 {
     static_assert(std::is_same_v<typename std::remove_cvref_t<R>::value_type, VkBufferCopy>, "'copyRegion' argument does not contain 'VkBufferCopy' elements");
 
-    auto commandBuffer = BeginSingleTimeCommand(device, queue, commandPool);
+    auto commandBuffer = BeginSingleTimeCommand(device, commandPool);
 
     vkCmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, static_cast<std::uint32_t>(std::size(copyRegion)), std::data(copyRegion));
 
@@ -221,7 +220,7 @@ bool TransitionImageLayout(vulkan::device const &device, Q &queue, VulkanImage c
 
 
 template<class Q> requires mpl::derived_from<graphics::queue, std::remove_cvref_t<Q>>
-std::optional<VkCommandPool> CreateCommandPool(VkDevice device, Q &queue, VkCommandPoolCreateFlags flags)
+std::optional<VkCommandPool> CreateCommandPool(vulkan::device const &device, Q &queue, VkCommandPoolCreateFlags flags)
 {
     VkCommandPoolCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,

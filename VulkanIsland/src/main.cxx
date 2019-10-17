@@ -460,8 +460,7 @@ void recreate_swap_chain(app_t &app)
 
     cleanup_frame_data(app);
 
-    auto swapchain = CreateSwapchain(vulkan_device, *app.resource_manager, app.surface, app.width, app.height, vulkan_device.presentation_queue,
-                                     vulkan_device.graphics_queue, vulkan_device.transfer_queue, app.transferCommandPool);
+    auto swapchain = CreateSwapchain(vulkan_device, *app.resource_manager, app.surface, app.width, app.height, app.transferCommandPool);
 
     if (swapchain)
         app.swapchain = std::move(swapchain.value());
@@ -846,18 +845,17 @@ void init_vulkan(platform::window &window, app_t &app)
     app.vertex_input_state_manager = std::make_unique<graphics::vertex_input_state_manager>();
     app.pipeline_factory = std::make_unique<graphics::pipeline_factory>(*app.vulkan_device, *app.shader_manager);
 
-    if (auto commandPool = CreateCommandPool(app.vulkan_device->handle(), app.vulkan_device->transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); commandPool)
+    if (auto commandPool = CreateCommandPool(*app.vulkan_device, app.vulkan_device->transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); commandPool)
         app.transferCommandPool = *commandPool;
 
     else throw std::runtime_error("failed to transfer command pool"s);
 
-    if (auto commandPool = CreateCommandPool(app.vulkan_device->handle(), app.vulkan_device->graphics_queue, 0); commandPool)
+    if (auto commandPool = CreateCommandPool(*app.vulkan_device, app.vulkan_device->graphics_queue, 0); commandPool)
         app.graphicsCommandPool = *commandPool;
 
     else throw std::runtime_error("failed to graphics command pool"s);
 
-    auto swapchain = CreateSwapchain(*app.vulkan_device, *app.resource_manager, app.surface, app.width, app.height, app.vulkan_device->presentation_queue,
-                                     app.vulkan_device->graphics_queue, app.vulkan_device->transfer_queue, app.transferCommandPool);
+    auto swapchain = CreateSwapchain(*app.vulkan_device, *app.resource_manager, app.surface, app.width, app.height, app.transferCommandPool);
 
     if (swapchain)
         app.swapchain = std::move(swapchain.value());

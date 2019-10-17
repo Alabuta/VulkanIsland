@@ -215,9 +215,12 @@ CreateDepthAttachement(vulkan::device &device, ResourceManager &resource_manager
 
 [[nodiscard]] std::optional<VulkanSwapchain>
 CreateSwapchain(vulkan::device &device, ResourceManager &resource_manager, VkSurfaceKHR surface, std::uint32_t width, std::uint32_t height,
-                graphics::graphics_queue const &presentation_queue, graphics::graphics_queue const &graphics_queue,
-                graphics::transfer_queue const &transfer_queue, VkCommandPool transferCommandPool)
+                VkCommandPool transferCommandPool)
 {
+    auto &&presentation_queue = device.presentation_queue;
+    auto &&graphics_queue = device.graphics_queue;
+    auto &&transfer_queue = device.transfer_queue;
+   
     VulkanSwapchain swapchain;
     
     auto swapChainSupportDetails = QuerySwapChainSupportDetails(device.physical_handle(), surface);
