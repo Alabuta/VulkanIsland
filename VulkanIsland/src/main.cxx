@@ -1,9 +1,48 @@
 #define _SCL_SECURE_NO_WARNINGS
 
 
-#if defined(_MSC_VER) && defined(_DEBUG)
-#define _CRTDBG_MAP_ALLOC
-#include <crtdbg.h>
+#if defined(_DEBUG) || defined(DEBUG)
+    #if defined(_MSC_VER)
+        #define _CRTDBG_MAP_ALLOC
+        #include <crtdbg.h>
+    #else
+        #include <thread>
+        #include <csignal>
+        #include <execinfo.h>
+
+        void posix_signal_handler(int signum)
+        {
+            using namespace std::string_literals;
+
+            auto current_thread = std::this_thread::get_id();
+
+            auto name = "unknown"s;
+
+            switch (signum) {
+                case SIGABRT: name = "SIGABRT"s;  break;
+                case SIGSEGV: name = "SIGSEGV"s;  break;
+                case SIGBUS:  name = "SIGBUS"s;   break;
+                case SIGILL:  name = "SIGILL"s;   break;
+                case SIGFPE:  name = "SIGFPE"s;   break;
+                case SIGTRAP: name = "SIGTRAP"s;  break;
+            }
+
+            std::array<void *, 32> callStack;
+
+            auto size = backtrace(std::data(callStack), std::size(callStack));
+
+            std::cerr << fmt::format("Error: signal {}\n"s, name);
+
+            auto symbollist = backtrace_symbols(std::data(callStack), size);
+
+            for (auto i = 0; i < size; ++i)
+                std::cerr << fmt::format("{} {} {}\n"s, i, current_thread, symbollist[i]);
+
+            free(symbollist);
+
+            exit(1);
+        }
+    #endif
 #endif
 
 #include <chrono>
@@ -249,32 +288,32 @@ struct window_events_handler final : public platform::window::event_handler_inte
 void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescriptorSet &descriptorSet)
 {
     // TODO: descriptor info typed by VkDescriptorType.
-    auto const cameras = std::array{
+    auto const per_camera = std::array{
         VkDescriptorBufferInfo{app.perCameraBuffer->handle(), 0, sizeof(camera::data_t)}
     };
 
     // TODO: descriptor info typed by VkDescriptorType.
-    auto const objects = std::array{
+    auto const per_object = std::array{
         VkDescriptorBufferInfo{app.perObjectBuffer->handle(), 0, sizeof(per_object_t)}
     };
 
 #if TEMPORARILY_DISABLED
     // TODO: descriptor info typed by VkDescriptorType.
-    auto const images = std::array{
+    auto const per_image = std::array{
         VkDescriptorImageInfo{app.texture.sampler->handle(), app.texture.view.handle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}
     };
 #endif
 
-    std::array<VkWriteDescriptorSet, 2> const writeDescriptorsSet{{
+    std::array<VkWriteDescriptorSet, 2> const write_descriptor_sets{{
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,
             descriptorSet,
             0,
-            0, static_cast<std::uint32_t>(std::size(cameras)),
+            0, static_cast<std::uint32_t>(std::size(per_camera)),
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
             nullptr,
-            std::data(cameras),
+            std::data(per_camera),
             nullptr
         },
         {
@@ -282,10 +321,10 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
             nullptr,
             descriptorSet,
             1,
-            0, static_cast<std::uint32_t>(std::size(objects)),
+            0, static_cast<std::uint32_t>(std::size(per_object)),
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
             nullptr,
-            std::data(objects),
+            std::data(per_object),
             nullptr
         },
 #if TEMPORARILY_DISABLED
@@ -294,9 +333,9 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
             nullptr,
             descriptorSet,
             2,
-            0, static_cast<std::uint32_t>(std::size(images)),
+            0, static_cast<std::uint32_t>(std::size(per_image)),
             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
-            std::data(images),
+            std::data(per_image),
             nullptr,
             nullptr
         }
@@ -304,8 +343,8 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
     }};
 
     // WARN:: remember about potential race condition with the related executing command buffer
-    vkUpdateDescriptorSets(device.handle(), static_cast<std::uint32_t>(std::size(writeDescriptorsSet)),
-                           std::data(writeDescriptorsSet), 0, nullptr);
+    vkUpdateDescriptorSets(device.handle(), static_cast<std::uint32_t>(std::size(write_descriptor_sets)),
+                           std::data(write_descriptor_sets), 0, nullptr);
 }
 
 void create_graphics_command_buffers(app_t &app)
@@ -343,10 +382,7 @@ void create_graphics_command_buffers(app_t &app)
     std::vector<VkBuffer> vertex_buffer_handles;
 
     std::transform(std::cbegin(vertex_bindings_and_buffers), std::cend(vertex_bindings_and_buffers),
-                               std::back_inserter(vertex_buffer_handles), [] (auto &&pair)
-    {
-        return pair.second;
-    });
+                               std::back_inserter(vertex_buffer_handles), [] (auto &&pair) { return pair.second; });
 
     auto const binding_count = static_cast<std::uint32_t>(std::size(vertex_buffer_handles));
 
@@ -381,7 +417,7 @@ void create_graphics_command_buffers(app_t &app)
         if (auto result = vkBeginCommandBuffer(command_buffer, &begin_info); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to record command buffer: {0:#x}\n"s, result));
 
-        VkRenderPassBeginInfo const renderPassInfo{
+        VkRenderPassBeginInfo const render_pass_info{
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             nullptr,
             app.renderPass,
@@ -390,7 +426,7 @@ void create_graphics_command_buffers(app_t &app)
             static_cast<std::uint32_t>(std::size(clear_colors)), std::data(clear_colors)
         };
 
-        vkCmdBeginRenderPass(command_buffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+        vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
 
     #if USE_DYNAMIC_PIPELINE_STATE
         VkViewport const viewport{
@@ -1008,10 +1044,10 @@ void render_frame(app_t &app)
 
     vkQueueWaitIdle(vulkan_device.presentation_queue.handle());
 
-    std::uint32_t imageIndex;
+    std::uint32_t image_index;
 
     switch (auto result = vkAcquireNextImageKHR(vulkan_device.handle(), app.swapchain.handle, std::numeric_limits<std::uint64_t>::max(),
-            app.imageAvailableSemaphore->handle(), VK_NULL_HANDLE, &imageIndex); result) {
+            app.imageAvailableSemaphore->handle(), VK_NULL_HANDLE, &image_index); result) {
         case VK_ERROR_OUT_OF_DATE_KHR:
             recreate_swap_chain(app);
             return;
@@ -1024,34 +1060,34 @@ void render_frame(app_t &app)
             throw std::runtime_error(fmt::format("failed to acquire next image index: {0:#x}\n"s, result));
     }
 
-    auto const waitSemaphores = std::array{ app.imageAvailableSemaphore->handle() };
-    auto const signalSemaphores = std::array{ app.renderFinishedSemaphore->handle() };
+    auto const wait_semaphores = std::array{ app.imageAvailableSemaphore->handle() };
+    auto const signal_semaphores = std::array{ app.renderFinishedSemaphore->handle() };
 
-    std::array<VkPipelineStageFlags, 1> constexpr waitStages{
+    std::array<VkPipelineStageFlags, 1> constexpr wait_stages{
         { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
     };
 
-    VkSubmitInfo const submitInfo{
+    VkSubmitInfo const submit_info{
         VK_STRUCTURE_TYPE_SUBMIT_INFO,
         nullptr,
-        static_cast<std::uint32_t>(std::size(waitSemaphores)), std::data(waitSemaphores),
-        std::data(waitStages),
-        1, &app.command_buffers.at(imageIndex),
-        static_cast<std::uint32_t>(std::size(signalSemaphores)), std::data(signalSemaphores),
+        static_cast<std::uint32_t>(std::size(wait_semaphores)), std::data(wait_semaphores),
+        std::data(wait_stages),
+        1, &app.command_buffers.at(image_index),
+        static_cast<std::uint32_t>(std::size(signal_semaphores)), std::data(signal_semaphores),
     };
 
-    if (auto result = vkQueueSubmit(vulkan_device.graphics_queue.handle(), 1, &submitInfo, VK_NULL_HANDLE); result != VK_SUCCESS)
+    if (auto result = vkQueueSubmit(vulkan_device.graphics_queue.handle(), 1, &submit_info, VK_NULL_HANDLE); result != VK_SUCCESS)
         throw std::runtime_error(fmt::format("failed to submit draw command buffer: {0:#x}\n"s, result));
 
-    VkPresentInfoKHR const presentInfo{
+    VkPresentInfoKHR const present_info{
         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
         nullptr,
-        static_cast<std::uint32_t>(std::size(signalSemaphores)), std::data(signalSemaphores),
+        static_cast<std::uint32_t>(std::size(signal_semaphores)), std::data(signal_semaphores),
         1, &app.swapchain.handle,
-        &imageIndex, nullptr
+        &image_index, nullptr
     };
 
-    switch (auto result = vkQueuePresentKHR(vulkan_device.presentation_queue.handle(), &presentInfo); result) {
+    switch (auto result = vkQueuePresentKHR(vulkan_device.presentation_queue.handle(), &present_info); result) {
         case VK_ERROR_OUT_OF_DATE_KHR:
         case VK_SUBOPTIMAL_KHR:
             recreate_swap_chain(app);
@@ -1093,31 +1129,6 @@ int main()
     app.camera_controller->look_at(glm::vec3{0, 2, 1}, {0, 0, 0});
 
     std::cout << measure<>::execution(init_vulkan, window, std::ref(app)) << " ms\n"s;
-
-    /*auto root = app.registry.create();
-
-    app.registry.assign<Transform>(root, glm::mat4{1}, glm::mat4{1});
-    app.nodeSystem.attachNode(root, root, "root"sv);
-
-    auto entityA = app.registry.create();
-
-    app.registry.assign<Transform>(entityA, glm::mat4{1}, glm::mat4{1});
-    app.nodeSystem.attachNode(root, entityA, "entityA"sv);
-
-    auto entityB = app.registry.create();
-
-    app.registry.assign<Transform>(entityB, glm::mat4{1}, glm::mat4{1});
-    app.nodeSystem.attachNode(root, entityB, "entityB"sv);
-
-    auto entityC = app.registry.create();
-
-    app.registry.assign<Transform>(entityC, glm::mat4{1}, glm::mat4{1});
-    app.nodeSystem.attachNode(entityA, entityC, "entityC"sv);
-
-    auto entityD = app.registry.create();
-
-    app.registry.assign<Transform>(entityD, glm::mat4{1}, glm::mat4{1});
-    app.nodeSystem.attachNode(entityB, entityD, "entityD"sv);*/
 
     window.update([&app]
     {
