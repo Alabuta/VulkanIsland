@@ -8,8 +8,6 @@
 #include "resources/image.hxx"
 
 
-struct VulkanSwapchain final {
-    VkSwapchainKHR handle;
 namespace renderer
 {
     struct surface_format final {
@@ -17,46 +15,42 @@ namespace renderer
         graphics::COLOR_SPACE color_space;
     };
 
-    graphics::FORMAT format{graphics::FORMAT::UNDEFINED};
-    graphics::FORMAT depth_format{graphics::FORMAT::UNDEFINED};
-
-    VkExtent2D extent;
     struct extent final {
         std::uint32_t widht, height;
     };
 
-    VulkanTexture colorTexture, depthTexture;
     class platform_surface final {
     public:
 
-    std::vector<VkImage> images;
-    std::vector<VkImageView> views;
         platform_surface(vulkan::instance const &instance, platform::window &window);
 
-    std::vector<VkFramebuffer> framebuffers;
-};
         VkSurfaceKHR handle() const noexcept { return handle_; }
 
     private:
 
-struct SwapChainSupportDetails {
-    VkSurfaceCapabilitiesKHR capabilities;
         VkSurfaceKHR handle_;
     };
 }
 
-    std::vector<VkSurfaceFormatKHR> formats;
-    std::vector<VkPresentModeKHR> presentModes;
-};
+namespace renderer
+{
+    class swapchain final {
+    public:
 
-[[nodiscard]] SwapChainSupportDetails QuerySwapChainSupportDetails(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface);
+        swapchain(vulkan::device const &device, renderer::platform_surface const &platform_surface,
+                  renderer::surface_format surface_format, renderer::extent extent);
 
+    private:
 
-[[nodiscard]] std::optional<VulkanSwapchain>
-CreateSwapchain(vulkan::device &device, ResourceManager &resource_manager, VkSurfaceKHR surface, std::uint32_t width, std::uint32_t height,
-                VkCommandPool transferCommandPool);
+        VkSwapchainKHR handle_;
 
-void CleanupSwapchain(vulkan::device const &device, VulkanSwapchain &swapchain) noexcept;
+        std::vector<VkImage> images_;
+        std::vector<VkImageView> views_;
 
+        std::vector<VkFramebuffer> framebuffers_;
 
-void CreateFramebuffers(vulkan::device const &device, VkRenderPass renderPass, VulkanSwapchain &swapchain);
+        swapchain() = delete;
+        swapchain(swapchain const &) = delete;
+        swapchain(swapchain &&) = delete;
+    };
+}

@@ -94,6 +94,9 @@
 #include "camera/camera.hxx"
 #include "camera/camera_controller.hxx"
 
+// TODO:: remove
+#include "swapchain_old.hxx"
+
 
 auto constexpr kSCENE_NAME{"unlit-test"sv};
 
@@ -1052,9 +1055,18 @@ void render_frame(app_t &app)
 {
     auto &&vulkan_device = *app.vulkan_device;
 
-    vkQueueWaitIdle(vulkan_device.presentation_queue.handle());
+    //vkQueueWaitIdle(vulkan_device.presentation_queue.handle());
 
     std::uint32_t image_index;
+
+    /*VkAcquireNextImageInfoKHR next_image_info{
+        VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR,
+        nullptr,
+        app.swapchain.handle,
+        std::numeric_limits<std::uint64_t>::max(),
+        app.imageAvailableSemaphore->handle(),
+        VK_NULL_HANDLE
+    };*/
 
     switch (auto result = vkAcquireNextImageKHR(vulkan_device.handle(), app.swapchain.handle, std::numeric_limits<std::uint64_t>::max(),
             app.imageAvailableSemaphore->handle(), VK_NULL_HANDLE, &image_index); result) {
