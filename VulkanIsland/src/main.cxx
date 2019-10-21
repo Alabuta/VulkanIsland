@@ -188,6 +188,8 @@ struct app_t final {
 
     std::vector<draw_command> draw_commands;
 
+    std::function<void()> resize_callback{nullptr};
+
     ~app_t()
     {
         clean_up();
@@ -275,12 +277,18 @@ struct window_events_handler final : public platform::window::event_handler_inte
 
     void on_resize(std::int32_t width, std::int32_t height) override
     {
+        if (app.width == width && app.height == height)
+            return;
+
         app.width = static_cast<std::uint32_t>(width);
         app.height = static_cast<std::uint32_t>(height);
 
-        recreate_swap_chain(app);
+        app.resize_callback = [this]
+        {
+            recreate_swap_chain(app);
 
-        app.camera->aspect = static_cast<float>(width) / static_cast<float>(height);
+            app.camera->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
+        };
     }
 };
 
@@ -1133,6 +1141,11 @@ int main()
     window.update([&app]
     {
         glfwPollEvents();
+
+        if (app.resize_callback) {
+            app.resize_callback();
+            app.resize_callback = nullptr;
+        }
 
     #if TEMPORARILY_DISABLED
         app.registry.sort<ecs::node>(ecs::node());
