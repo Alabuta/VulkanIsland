@@ -181,6 +181,8 @@ struct app_t final {
 #endif
 #endif
 
+    std::unique_ptr<renderer::platform_surface> platform_surface;
+
     std::unique_ptr<graphics::shader_manager> shader_manager;
     std::unique_ptr<graphics::material_factory> material_factory;
     std::unique_ptr<graphics::vertex_input_state_manager> vertex_input_state_manager;
@@ -874,10 +876,10 @@ void init_vulkan(platform::window &window, app_t &app)
 {
     app.vulkan_instance = std::make_unique<vulkan::instance>();
 
-    if (auto result = glfwCreateWindowSurface(app.vulkan_instance->handle(), window.handle(), nullptr, &app.surface); result != VK_SUCCESS)
-        throw std::runtime_error(fmt::format("failed to create window surface: {0:#x}\n"s, result));
+    app.platform_surface = std::make_unique<renderer::platform_surface>(*app.vulkan_instance, window);
+    app.surface = app.platform_surface->handle();
 
-    app.vulkan_device = std::make_unique<vulkan::device>(*app.vulkan_instance, app.surface);
+    app.vulkan_device = std::make_unique<vulkan::device>(*app.vulkan_instance, app.platform_surface.get());
 
     auto renderer_config = adjust_renderer_config(*app.vulkan_device);
 

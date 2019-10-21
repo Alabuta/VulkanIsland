@@ -8,12 +8,18 @@
 #include "renderer/queues.hxx"
 
 
+namespace renderer
+{
+    class platform_surface;
+}
+
+
 namespace vulkan
 {
     class device final {
     public:
 
-        device(vulkan::instance &instance, VkSurfaceKHR surface);
+        device(vulkan::instance &instance, renderer::platform_surface const *const platform_surface); // TODO
         ~device();
 
         VkDevice handle() const noexcept { return handle_; };

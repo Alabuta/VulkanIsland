@@ -18,6 +18,9 @@ using namespace std::string_literals;
 #include "device.hxx"
 #include "renderer/swapchain.hxx"
 
+// TODO:: remove
+#include "swapchain_old.hxx"
+
 
 namespace
 {
@@ -530,7 +533,7 @@ namespace vulkan
 
 namespace vulkan
 {
-    device::device(vulkan::instance &instance, VkSurfaceKHR surface)
+    device::device(vulkan::instance &instance, renderer::platform_surface const *const platform_surface)
     {
         auto constexpr use_extensions = !vulkan::device_extensions.empty();
 
@@ -547,7 +550,7 @@ namespace vulkan
 
             std::vector<std::string_view> extensions_view{std::begin(extensions), std::end(extensions)};
 
-            physical_handle_ = pick_physical_device(instance.handle(), surface, std::move(extensions_view));
+            physical_handle_ = pick_physical_device(instance.handle(), platform_surface->handle(), std::move(extensions_view));
         }
 
         auto required_extended_features = std::apply([] (auto ...args)
@@ -578,7 +581,7 @@ namespace vulkan
 
         device::helper helper(requested_queues);
 
-        helper.init_queue_families(physical_handle_, surface);
+        helper.init_queue_families(physical_handle_, platform_surface->handle());
 
         VkDeviceCreateInfo const device_info{
             VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,

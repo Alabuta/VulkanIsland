@@ -24,11 +24,13 @@ VKAPI_ATTR VkResult VKAPI_CALL vkCreateWin32SurfaceKHR(
 
 
 namespace presentation
+namespace
 {
     struct surface_format final {
         graphics::FORMAT format;
         graphics::COLOR_SPACE color_space;
     };
+    ;
 }
 
 
@@ -55,6 +57,7 @@ namespace {
 }
 
 [[nodiscard]] VkExtent2D ChooseSwapExtent(VkSurfaceCapabilitiesKHR &surfaceCapabilities, std::uint32_t width, std::uint32_t height)
+namespace renderer
 {
     if (surfaceCapabilities.currentExtent.width != std::numeric_limits<std::uint32_t>::max())
         return surfaceCapabilities.currentExtent;
@@ -100,6 +103,7 @@ template<class T> requires mpl::iterable<std::remove_cvref_t<T>>
 #endif
 
     auto relaxed = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
+    platform_surface::platform_surface(vulkan::instance const &instance, platform::window &window)
     {
         return mode == VK_PRESENT_MODE_FIFO_RELAXED_KHR;
     });
@@ -170,6 +174,8 @@ CreateDepthAttachement(vulkan::device &device, ResourceManager &resource_manager
                                   graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT, transferCommandPool);
 
         return std::make_pair(texture, format);
+        if (auto result = glfwCreateWindowSurface(instance.handle(), window.handle(), nullptr, &handle_); result != VK_SUCCESS)
+            throw std::runtime_error(fmt::format("failed to create window surface: {0:#x}\n"s, result));
     }
 
     else std::cerr << "failed to find format for depth attachement\n"s;
@@ -343,6 +349,7 @@ void CleanupSwapchain(vulkan::device const &device, VulkanSwapchain &swapchain) 
 
 
 void CreateFramebuffers(vulkan::device const &device, VkRenderPass renderPass, VulkanSwapchain &swapchain)
+namespace renderer
 {
     auto &&framebuffers = swapchain.framebuffers;
     auto &&views = swapchain.views;
@@ -350,6 +357,8 @@ void CreateFramebuffers(vulkan::device const &device, VkRenderPass renderPass, V
     framebuffers.clear();
 
     std::transform(std::cbegin(views), std::cend(views), std::back_inserter(framebuffers), [&device, renderPass, &swapchain] (auto &&view)
+    swapchain::swapchain(vulkan::device const &device, renderer::platform_surface const &platform_surface,
+                         renderer::surface_format surface_format, renderer::extent extent)
     {
         auto const attachements = std::array{swapchain.colorTexture.view.handle(), swapchain.depthTexture.view.handle(), view};
 
@@ -369,4 +378,8 @@ void CreateFramebuffers(vulkan::device const &device, VkRenderPass renderPass, V
 
         return framebuffer;
     });
+        auto &&presentation_queue = device.presentation_queue;
+        auto &&graphics_queue = device.graphics_queue;
+        auto &&transfer_queue = device.transfer_queue;
+    }
 }
