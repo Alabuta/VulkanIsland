@@ -28,7 +28,7 @@ namespace renderer
 
     private:
 
-        VkSurfaceKHR handle_;
+        VkSurfaceKHR handle_{VK_NULL_HANDLE};
     };
 }
 
@@ -42,7 +42,11 @@ namespace renderer
 
     private:
 
-        VkSwapchainKHR handle_;
+        VkSwapchainKHR handle_{VK_NULL_HANDLE};
+
+        renderer::extent extent_;
+
+        renderer::surface_format surface_format_;
 
         std::vector<VkImage> images_;
         std::vector<VkImageView> views_;
