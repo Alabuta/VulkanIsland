@@ -68,7 +68,7 @@ namespace
     }
 
     [[nodiscard]] presentation::surface_format
-        ChooseSwapSurfaceFormat(std::vector<VkSurfaceFormatKHR> const &supported, std::vector<presentation::surface_format> const &required)
+    ChooseSwapSurfaceFormat(std::vector<VkSurfaceFormatKHR> const &supported, std::vector<presentation::surface_format> const &required)
     {
         if (std::size(supported) == 1 && supported.at(0).format == VK_FORMAT_UNDEFINED)
             return {graphics::FORMAT::BGRA8_UNORM, graphics::COLOR_SPACE::SRGB_NONLINEAR};
@@ -87,48 +87,75 @@ namespace
     }
 
     template<class T> requires mpl::iterable<std::remove_cvref_t<T>>
-        [[nodiscard]] VkPresentModeKHR ChooseSwapPresentMode(T &&presentModes)
+    [[nodiscard]] VkPresentModeKHR ChooseSwapPresentMode(T &&presentModes)
+    {
+        static_assert(std::is_same_v<typename std::remove_cvref_t<T>::value_type, VkPresentModeKHR>, "iterable object does not contain VkPresentModeKHR elements");
+
+    #ifndef _DEBUG
+        auto mailbox = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
         {
-            static_assert(std::is_same_v<typename std::remove_cvref_t<T>::value_type, VkPresentModeKHR>, "iterable object does not contain VkPresentModeKHR elements");
+            return mode == VK_PRESENT_MODE_MAILBOX_KHR;
+        });
 
-        #ifndef _DEBUG
-            auto mailbox = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
-            {
-                return mode == VK_PRESENT_MODE_MAILBOX_KHR;
-            });
+        if (mailbox)
+            return VK_PRESENT_MODE_MAILBOX_KHR;
+    #endif
 
-            if (mailbox)
-                return VK_PRESENT_MODE_MAILBOX_KHR;
-        #endif
-
-            auto relaxed = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
-            {
-                return mode == VK_PRESENT_MODE_FIFO_RELAXED_KHR;
-            });
-
-            if (relaxed)
-                return VK_PRESENT_MODE_FIFO_RELAXED_KHR;
-
-            auto immediate = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
-            {
-                return mode == VK_PRESENT_MODE_IMMEDIATE_KHR;
-            });
-
-            if (immediate)
-                return VK_PRESENT_MODE_IMMEDIATE_KHR;
-
-            return VK_PRESENT_MODE_FIFO_KHR;
-        }
-
-        [[nodiscard]] std::optional<VulkanTexture>
-            CreateColorAttachement(vulkan::device &device, ResourceManager &resource_manager, graphics::transfer_queue const &transfer_queue,
-                                   VkCommandPool transferCommandPool, graphics::FORMAT format, std::uint16_t width, std::uint16_t height)
+        auto relaxed = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
         {
-            std::optional<VulkanTexture> texture;
+            return mode == VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+        });
 
+        if (relaxed)
+            return VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+
+        auto immediate = std::any_of(presentModes.cbegin(), presentModes.cend(), [] (auto &&mode)
+        {
+            return mode == VK_PRESENT_MODE_IMMEDIATE_KHR;
+        });
+
+        if (immediate)
+            return VK_PRESENT_MODE_IMMEDIATE_KHR;
+
+        return VK_PRESENT_MODE_FIFO_KHR;
+    }
+
+    [[nodiscard]] std::optional<VulkanTexture>
+    CreateColorAttachement(vulkan::device &device, ResourceManager &resource_manager, graphics::transfer_queue const &transfer_queue,
+                                VkCommandPool transferCommandPool, graphics::FORMAT format, std::uint16_t width, std::uint16_t height)
+    {
+        std::optional<VulkanTexture> texture;
+
+        auto constexpr mipLevels = 1u;
+
+        auto constexpr usageFlags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT | graphics::IMAGE_USAGE::COLOR_ATTACHMENT/* | graphics::IMAGE_USAGE::TRANSFER_DESTINATION*/;
+        auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+        auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
+
+        auto &&device_limits = device.device_limits();
+
+        auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
+
+        texture = CreateTexture(device, resource_manager, format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, samples_count_bits,
+                                tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
+
+        if (texture)
+            TransitionImageLayout(device, transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
+                                    graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT, transferCommandPool);
+
+        return texture;
+    }
+
+    [[nodiscard]] std::pair<std::optional<VulkanTexture>, std::optional<graphics::FORMAT>>
+    CreateDepthAttachement(vulkan::device &device, ResourceManager &resource_manager, graphics::transfer_queue const &transfer_queue, VkCommandPool transferCommandPool, std::uint16_t width, std::uint16_t height)
+    {
+        std::optional<VulkanTexture> texture;
+
+        if (auto const format = FindDepthImageFormat(device); format) {
             auto constexpr mipLevels = 1u;
 
-            auto constexpr usageFlags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT | graphics::IMAGE_USAGE::COLOR_ATTACHMENT/* | graphics::IMAGE_USAGE::TRANSFER_DESTINATION*/;
+            auto constexpr usageFlags = graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT;
             auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
             auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
@@ -137,47 +164,20 @@ namespace
 
             auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
 
-            texture = CreateTexture(device, resource_manager, format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, samples_count_bits,
-                                    tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
+            texture = CreateTexture(device, resource_manager, *format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, samples_count_bits,
+                                    tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
 
             if (texture)
                 TransitionImageLayout(device, transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
-                                      graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT, transferCommandPool);
+                                        graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT, transferCommandPool);
 
-            return texture;
+            return std::make_pair(texture, format);
         }
 
-        [[nodiscard]] std::pair<std::optional<VulkanTexture>, std::optional<graphics::FORMAT>>
-            CreateDepthAttachement(vulkan::device &device, ResourceManager &resource_manager, graphics::transfer_queue const &transfer_queue, VkCommandPool transferCommandPool, std::uint16_t width, std::uint16_t height)
-        {
-            std::optional<VulkanTexture> texture;
+        else std::cerr << "failed to find format for depth attachement\n"s;
 
-            if (auto const format = FindDepthImageFormat(device); format) {
-                auto constexpr mipLevels = 1u;
-
-                auto constexpr usageFlags = graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT;
-                auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
-
-                auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
-
-                auto &&device_limits = device.device_limits();
-
-                auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
-
-                texture = CreateTexture(device, resource_manager, *format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, samples_count_bits,
-                                        tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
-
-                if (texture)
-                    TransitionImageLayout(device, transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
-                                          graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT, transferCommandPool);
-
-                return std::make_pair(texture, format);
-            }
-
-            else std::cerr << "failed to find format for depth attachement\n"s;
-
-            return { };
-        }
+        return { };
+    }
 }
 
 
