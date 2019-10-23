@@ -16,7 +16,7 @@ namespace renderer
     };
 
     struct extent final {
-        std::uint32_t widht, height;
+        std::uint32_t width, height;
     };
 
     class platform_surface final {
@@ -42,7 +42,12 @@ namespace renderer
 
         ~swapchain();
 
+        VkSwapchainKHR handle() const noexcept { return handle_; }
+
         renderer::surface_format const &surface_format() const noexcept { return surface_format_; }
+
+        std::vector<VkImage> const &images() const noexcept { return images_; }
+        std::vector<VkImageView> const &image_views() const noexcept { return image_views_; }
 
     private:
 

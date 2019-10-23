@@ -671,6 +671,6 @@ namespace vulkan
 
     renderer::swapchain_support_details device::query_swapchain_support_details(renderer::platform_surface const *const platform_surface) const
     {
-        return query_swapchain_support_details(physical_handle_, platform_surface->handle());
+        return ::query_swapchain_support_details(physical_handle_, platform_surface->handle());
     }
 }
