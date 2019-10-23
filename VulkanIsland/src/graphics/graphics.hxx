@@ -449,6 +449,19 @@ namespace graphics
         COMPUTE = 0x02,
         TRANSFER = 0x04
     };
+
+    enum class PRESENTATION_MODE {
+        IMMEDIATE = 0,
+        MAILBOX
+        FIFO
+        FIFO_RELAXED
+    };
+
+    enum class IMAGE_ASPECT {
+        COLOR_BIT = 0x01,
+        DEPTH_BIT = 0x02,
+        STENCIL_BIT = 0x04
+    };
 }
 
 namespace graphics

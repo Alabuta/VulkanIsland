@@ -888,4 +888,42 @@ namespace convert_to
 
         return static_cast<VkQueueFlagBits>(result);
     }
+
+    VkPresentModeKHR vulkan(graphics::PRESENTATION_MODE presentation_mode) noexcept
+    {
+        switch (presentation_mode) {
+            case graphics::PRESENTATION_MODE::IMMEDIATE:
+                return VkPresentModeKHR::VK_PRESENT_MODE_IMMEDIATE_KHR;
+
+            case graphics::PRESENTATION_MODE::MAILBOX:
+                return VkPresentModeKHR::VK_PRESENT_MODE_MAILBOX_KHR;
+
+            case graphics::PRESENTATION_MODE::FIFO:
+                return VkPresentModeKHR::VK_PRESENT_MODE_FIFO_KHR;
+
+            case graphics::PRESENTATION_MODE::FIFO_RELAXED:
+                return VkPresentModeKHR::VK_PRESENT_MODE_FIFO_RELAXED_KHR;
+
+            default:
+                return VkAttachmentLoadOp::VK_PRESENT_MODE_MAX_ENUM_KHR;
+        }
+    }
+
+    VkImageAspectFlags vulkan(graphics::IMAGE_ASPECT image_aspect) noexcept
+    {
+        VkImageUsageFlags result = VkImageAspectFlags::VK_IMAGE_ASPECT_COLOR_BIT;
+
+        using E = std::underlying_type_t<graphics::IMAGE_ASPECT>;
+
+        if (static_cast<E>(image_aspect & graphics::IMAGE_ASPECT::COLOR_BIT) == 0)
+            result ^= VkImageAspectFlags::VK_IMAGE_ASPECT_COLOR_BIT;
+
+        if (static_cast<E>(image_aspect & graphics::IMAGE_ASPECT::DEPTH_BIT))
+            result |= VkImageAspectFlags::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+        if (static_cast<E>(image_aspect & graphics::IMAGE_ASPECT::STENCIL_BIT))
+            result |= VkImageAspectFlags::VK_IMAGE_USAGE_STENCIL_BIT;
+
+        return result;
+    }
 }

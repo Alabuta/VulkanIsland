@@ -61,4 +61,8 @@ namespace convert_to
     VkImageUsageFlags vulkan(graphics::IMAGE_USAGE image_usage) noexcept;
 
     VkQueueFlagBits vulkan(graphics::QUEUE_CAPABILITY queue_capability) noexcept;
+
+    VkPresentModeKHR vulkan(graphics::PRESENTATION_MODE presentation_mode) noexcept;
+
+    VkImageAspectFlags vulkan(graphics::IMAGE_ASPECT image_aspect) noexcept;
 }
