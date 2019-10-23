@@ -452,8 +452,8 @@ namespace graphics
 
     enum class PRESENTATION_MODE {
         IMMEDIATE = 0,
-        MAILBOX
-        FIFO
+        MAILBOX,
+        FIFO,
         FIFO_RELAXED
     };
 
