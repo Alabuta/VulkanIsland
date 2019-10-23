@@ -11,6 +11,13 @@
 namespace renderer
 {
     class platform_surface;
+
+    struct swapchain_support_details final {
+        VkSurfaceCapabilitiesKHR surface_capabilities;
+
+        std::vector<VkSurfaceFormatKHR> surface_formats;
+        std::vector<VkPresentModeKHR> presentation_modes;
+    };
 }
 
 
@@ -26,6 +33,8 @@ namespace vulkan
         VkPhysicalDevice physical_handle() const noexcept { return physical_handle_; };
 
         vulkan::device_limits const &device_limits() const noexcept { return device_limits_; };
+
+        renderer::swapchain_support_details query_swapchain_support_details(renderer::platform_surface const *const platform_surface) const;
 
         graphics::graphics_queue graphics_queue;
         graphics::compute_queue compute_queue;

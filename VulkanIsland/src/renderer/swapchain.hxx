@@ -40,18 +40,25 @@ namespace renderer
         swapchain(vulkan::device const &device, renderer::platform_surface const &platform_surface,
                   renderer::surface_format surface_format, renderer::extent extent);
 
+        ~swapchain();
+
+        renderer::surface_format const &surface_format() const noexcept { return surface_format_; }
+
     private:
+
+        vulkan::device const &device_;
 
         VkSwapchainKHR handle_{VK_NULL_HANDLE};
 
         renderer::extent extent_;
 
         renderer::surface_format surface_format_;
+        graphics::PRESENTATION_MODE presentation_mode_;
+
+        graphics::IMAGE_USAGE image_usage_{graphics::IMAGE_USAGE::COLOR_ATTACHMENT};
 
         std::vector<VkImage> images_;
-        std::vector<VkImageView> views_;
-
-        std::vector<VkFramebuffer> framebuffers_;
+        std::vector<VkImageView> image_views_;
 
         swapchain() = delete;
         swapchain(swapchain const &) = delete;

@@ -203,6 +203,42 @@ namespace
                           std::cbegin(supported_extended_features), compare);
     }
 
+    renderer::swapchain_support_details query_swapchain_support_details(VkPhysicalDevice device, VkSurfaceKHR surface)
+    {
+        VkSurfaceCapabilitiesKHR surface_capabilities;
+
+        if (auto result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &surface_capabilities); result != VK_SUCCESS)
+            throw std::runtime_error(fmt::format("failed to retrieve device surface capabilities: {0:#x}\n"s, result));
+
+        std::uint32_t surface_formats_count = 0;
+
+        if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &surface_formats_count, nullptr); result != VK_SUCCESS)
+            throw std::runtime_error(fmt::format("failed to retrieve device surface formats count: {0:#x}\n"s, result));
+
+        if (surface_formats_count == 0)
+            throw std::runtime_error("zero number of presentation format pairs"s);
+
+        std::vector<VkSurfaceFormatKHR> surface_formats(surface_formats_count);
+
+        if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &surface_formats_count, std::data(surface_formats)); result != VK_SUCCESS)
+            throw std::runtime_error(fmt::format("failed to retrieve device surface formats: {0:#x}\n"s, result));
+
+        std::uint32_t present_modes_count = 0;
+
+        if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_modes_count, nullptr); result != VK_SUCCESS)
+            throw std::runtime_error(fmt::format("failed to retrieve device surface presentation modes count: {0:#x}\n"s, result));
+
+        if (present_modes_count == 0)
+            throw std::runtime_error("zero number of presentation modes"s);
+
+        std::vector<VkPresentModeKHR> presentation_modes(present_modes_count);
+
+        if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_modes_count, std::data(presentation_modes)); result != VK_SUCCESS)
+            throw std::runtime_error(fmt::format("failed to retrieve device surface presentation modes: {0:#x}\n"s, result));
+
+        return { surface_capabilities, surface_formats, presentation_modes };
+    }
+
     struct queue_family final {
         std::uint32_t index;
         VkQueueFamilyProperties property;
@@ -334,9 +370,9 @@ namespace
         // Matching by the swap chain properties support.
         it_end = std::remove_if(std::begin(devices), std::end(devices), [surface] (auto &&device)
         {
-            auto const details = QuerySwapChainSupportDetails(device, surface);
+            auto details = query_swapchain_support_details(device, surface);
 
-            return details.formats.empty() || details.presentModes.empty();
+            return details.surface_formats.empty() || details.presentation_modes.empty();
         });
 
         devices.erase(it_end, std::end(devices));
@@ -631,5 +667,10 @@ namespace vulkan
 
         handle_ = nullptr;
         physical_handle_ = nullptr;
+    }
+
+    renderer::swapchain_support_details device::query_swapchain_support_details(renderer::platform_surface const *const platform_surface) const
+    {
+        return query_swapchain_support_details(physical_handle_, platform_surface->handle());
     }
 }
