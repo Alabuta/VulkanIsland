@@ -185,6 +185,7 @@ struct app_t final {
 #endif
 
     std::unique_ptr<renderer::platform_surface> platform_surface;
+    // std::unique_ptr<renderer::swapchain> swapchain;
 
     std::unique_ptr<graphics::shader_manager> shader_manager;
     std::unique_ptr<graphics::material_factory> material_factory;
@@ -903,6 +904,26 @@ void init_vulkan(platform::window &window, app_t &app)
         app.graphicsCommandPool = *commandPool;
 
     else throw std::runtime_error("failed to graphics command pool"s);
+
+    {
+        auto surface_formats = std::vector<presentation::surface_format>{
+            { graphics::FORMAT::RGBA8_SRGB, graphics::COLOR_SPACE::SRGB_NONLINEAR },
+            { graphics::FORMAT::BGRA8_SRGB, graphics::COLOR_SPACE::SRGB_NONLINEAR }
+        };
+
+        for (auto &&surface_format : surface_formats) {
+            try {
+                app.swapchain = std::make_unique<renderer::swapchain>(
+                    *device, *platform_surface, surface_format, renderer::extent{app.width, app.height}
+                );
+            } catch (std::runtime_error const &ex) {
+                std::cout << ex.what() << std::endl;
+            }
+
+            if (app.swapchain)
+                break;
+        }
+    }
 
     auto swapchain = CreateSwapchain(*app.vulkan_device, *app.resource_manager, app.surface, app.width, app.height, app.transferCommandPool);
 
