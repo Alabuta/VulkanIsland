@@ -33,16 +33,16 @@ CreateBufferHandle(vulkan::device const &device, VkDeviceSize size, graphics::BU
 }
 
 [[nodiscard]] std::optional<VkImage>
-CreateImageHandle(vulkan::device const &vulkan_device, std::uint32_t width, std::uint32_t height, std::uint32_t mipLevels,
+CreateImageHandle(vulkan::device const &vulkan_device, std::uint32_t width, std::uint32_t height, std::uint32_t mip_levels,
                   std::uint32_t samples_count, graphics::FORMAT format, graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usage) noexcept
 {
-        VkImageCreateInfo const createInfo{
+    VkImageCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
         nullptr, 0,
         VK_IMAGE_TYPE_2D,
         convert_to::vulkan(format),
         { width, height, 1 },
-        mipLevels,
+        mip_levels,
         1,
         convert_to::vulkan(samples_count),
         convert_to::vulkan(tiling),
@@ -80,13 +80,13 @@ CreateImageHandle(vulkan::device const &vulkan_device, std::uint32_t width, std:
 }
 }
 
-std::shared_ptr<VulkanImage>
-ResourceManager::CreateImage(graphics::FORMAT format, std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels,
+std::shared_ptr<resource::image>
+ResourceManager::CreateImage(graphics::FORMAT format, std::uint16_t width, std::uint16_t height, std::uint32_t mip_levels,
                              std::uint32_t samples_count, graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags)
 {
-    std::shared_ptr<VulkanImage> image;
+    std::shared_ptr<resource::image> image;
 
-    auto handle = CreateImageHandle(device_, width, height, mipLevels, samples_count, format, tiling, usageFlags);
+    auto handle = CreateImageHandle(device_, width, height, mip_levels, samples_count, format, tiling, usageFlags);
 
     if (handle) {
         auto const linearMemory = tiling == graphics::IMAGE_TILING::LINEAR;
@@ -98,8 +98,8 @@ ResourceManager::CreateImage(graphics::FORMAT format, std::uint16_t width, std::
                 std::cerr << "failed to bind image buffer memory: "s << result << '\n';
 
             else image.reset(
-                new VulkanImage{memory, *handle, format, tiling, mipLevels, width, height},
-                [this] (VulkanImage *ptr_image)
+                new resource::image{memory, *handle, format, tiling, mip_levels, { width, height }},
+                [this] (resource::image *ptr_image)
                 {
                     ReleaseResource(*ptr_image);
 
@@ -112,19 +112,19 @@ ResourceManager::CreateImage(graphics::FORMAT format, std::uint16_t width, std::
     return image;
 }
 
-std::optional<VulkanImageView>
-ResourceManager::CreateImageView(VulkanImage const &image, graphics::IMAGE_VIEW_TYPE view_type, VkImageAspectFlags aspectFlags) noexcept
+std::shared_ptr<resource::image_view>
+ResourceManager::CreateImageView(std::shared_ptr<resource::image> image, graphics::IMAGE_VIEW_TYPE view_type, VkImageAspectFlags aspectFlags) noexcept
 {
-    std::optional<VulkanImageView> view;
+    std::shared_ptr<resource::image_view> image_view;
 
     VkImageViewCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
         nullptr, 0,
-        image.handle(),
+        image->handle(),
         convert_to::vulkan(view_type),
-        convert_to::vulkan(image.format()),
+        convert_to::vulkan(image->format()),
         { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
-        { aspectFlags, 0, image.mipLevels(), 0, 1 }
+        { aspectFlags, 0, image->mip_levels(), 0, 1 }
     };
 
     VkImageView handle;
@@ -132,15 +132,19 @@ ResourceManager::CreateImageView(VulkanImage const &image, graphics::IMAGE_VIEW_
     if (auto result = vkCreateImageView(device_.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
         std::cerr << "failed to create image view: "s << result << '\n';
 
-    else view.emplace(handle, convert_to::vulkan(view_type));
+    else image_view.reset(new resource::image_view{handle, image, view_type}, [this] (resource::image_view *ptr_image_view) {
+        ReleaseResource(*ptr_image_view);
 
-    return view;
+        delete ptr_image_view;
+    });
+
+    return image_view;
 }
 
-std::shared_ptr<VulkanSampler>
-ResourceManager::CreateImageSampler(std::uint32_t mipLevels) noexcept
+std::shared_ptr<resource::sampler>
+ResourceManager::CreateImageSampler(std::uint32_t mip_levels) noexcept
 {
-    std::shared_ptr<VulkanSampler> sampler;
+    std::shared_ptr<resource::sampler> sampler;
 
     VkSamplerCreateInfo const createInfo{
         VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
@@ -153,7 +157,7 @@ ResourceManager::CreateImageSampler(std::uint32_t mipLevels) noexcept
         0.f,
         VK_TRUE, 16.f,
         VK_FALSE, VK_COMPARE_OP_ALWAYS,
-        0.f, static_cast<float>(mipLevels),
+        0.f, static_cast<float>(mip_levels),
         VK_BORDER_COLOR_INT_OPAQUE_BLACK,
         VK_FALSE
     };
@@ -164,8 +168,8 @@ ResourceManager::CreateImageSampler(std::uint32_t mipLevels) noexcept
         std::cerr << "failed to create sampler: "s << result << '\n';
 
     else sampler.reset(
-        new VulkanSampler{handle},
-        [this] (VulkanSampler *ptr_sampler)
+        new resource::sampler{handle},
+        [this] (resource::sampler *ptr_sampler)
         {
             ReleaseResource(*ptr_sampler);
 
@@ -209,23 +213,23 @@ ResourceManager::CreateBuffer(VkDeviceSize size, graphics::BUFFER_USAGE usage, V
 }
 
 
-template<class T> requires mpl::one_of<std::remove_cvref_t<T>, VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, resource::semaphore>
+template<class T> requires mpl::one_of<std::remove_cvref_t<T>, resource::image, resource::sampler, resource::image_view, VulkanBuffer, resource::semaphore>
 void ResourceManager::ReleaseResource(T &&resource) noexcept
 {
     using R = std::remove_cvref_t<T>;
 
-    if constexpr (std::is_same_v<R, VulkanImage>)
+    if constexpr (std::is_same_v<R, resource::image>)
     {
         vkDestroyImage(device_.handle(), resource.handle(), nullptr);
         resource.memory().reset();
     }
 
-    else if constexpr (std::is_same_v<R, VulkanSampler>)
+    else if constexpr (std::is_same_v<R, resource::sampler>)
     {
         vkDestroySampler(device_.handle(), resource.handle(), nullptr);
     }
 
-    else if constexpr (std::is_same_v<R, VulkanImageView>)
+    else if constexpr (std::is_same_v<R, resource::image_view>)
     {
         vkDestroyImageView(device_.handle(), resource.handle(), nullptr);
     }

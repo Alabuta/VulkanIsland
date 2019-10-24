@@ -270,7 +270,7 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
     image.width = targa.width;
     image.height = targa.height;
 
-    image.mipLevels = static_cast<std::uint32_t>(std::floor(std::log2(std::max(image.width, image.height))) + 1);
+    image.mip_levels = static_cast<std::uint32_t>(std::floor(std::log2(std::max(image.width, image.height))) + 1);
 
     image.data = std::move(targa.data);
 

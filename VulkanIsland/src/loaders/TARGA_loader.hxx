@@ -30,7 +30,7 @@ struct RawImage {
     graphics::IMAGE_VIEW_TYPE view_type;
 
     std::int16_t width{0}, height{0};
-    std::uint32_t mipLevels{1};
+    std::uint32_t mip_levels{1};
 
     texel_buffer_t data;
 };

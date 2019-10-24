@@ -36,7 +36,7 @@ namespace presentation
 namespace
 {
 
-    [[nodiscard]] VkImageView CreateImageView(VkDevice device, VkImage &image, graphics::FORMAT format, VkImageAspectFlags aspectFlags, std::uint32_t mipLevels)
+    [[nodiscard]] VkImageView CreateImageView(VkDevice device, VkImage &image, graphics::FORMAT format, VkImageAspectFlags aspectFlags, std::uint32_t mip_levels)
     {
         VkImageViewCreateInfo const createInfo{
             VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
@@ -45,7 +45,7 @@ namespace
             VK_IMAGE_VIEW_TYPE_2D,
             convert_to::vulkan(format),
             { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
-            { aspectFlags, 0, mipLevels, 0, 1 }
+            { aspectFlags, 0, mip_levels, 0, 1 }
         };
 
         VkImageView imageView;
@@ -120,13 +120,13 @@ namespace
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    [[nodiscard]] std::optional<VulkanTexture>
+    [[nodiscard]] std::shared_ptr<resource::texture>
     CreateColorAttachement(vulkan::device &device, ResourceManager &resource_manager, graphics::transfer_queue const &transfer_queue,
                                 VkCommandPool transferCommandPool, graphics::FORMAT format, std::uint16_t width, std::uint16_t height)
     {
-        std::optional<VulkanTexture> texture;
+        std::shared_ptr<resource::texture> texture;
 
-        auto constexpr mipLevels = 1u;
+        auto constexpr mip_levels = 1u;
 
         auto constexpr usageFlags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT | graphics::IMAGE_USAGE::COLOR_ATTACHMENT/* | graphics::IMAGE_USAGE::TRANSFER_DESTINATION*/;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
@@ -137,7 +137,7 @@ namespace
 
         auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
 
-        texture = CreateTexture(device, resource_manager, format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, samples_count_bits,
+        texture = CreateTexture(device, resource_manager, format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mip_levels, samples_count_bits,
                                 tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
         if (texture)
@@ -147,13 +147,13 @@ namespace
         return texture;
     }
 
-    [[nodiscard]] std::pair<std::optional<VulkanTexture>, std::optional<graphics::FORMAT>>
+    [[nodiscard]] std::pair<std::shared_ptr<resource::texture>, std::optional<graphics::FORMAT>>
     CreateDepthAttachement(vulkan::device &device, ResourceManager &resource_manager, graphics::transfer_queue const &transfer_queue, VkCommandPool transferCommandPool, std::uint16_t width, std::uint16_t height)
     {
-        std::optional<VulkanTexture> texture;
+        std::shared_ptr<resource::texture> texture;
 
         if (auto const format = FindDepthImageFormat(device); format) {
-            auto constexpr mipLevels = 1u;
+            auto constexpr mip_levels = 1u;
 
             auto constexpr usageFlags = graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT;
             auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
@@ -164,7 +164,7 @@ namespace
 
             auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
 
-            texture = CreateTexture(device, resource_manager, *format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mipLevels, samples_count_bits,
+            texture = CreateTexture(device, resource_manager, *format, graphics::IMAGE_VIEW_TYPE::TYPE_2D, width, height, mip_levels, samples_count_bits,
                                     tiling, VK_IMAGE_ASPECT_DEPTH_BIT, usageFlags, propertyFlags);
 
             if (texture)
@@ -306,7 +306,7 @@ CreateSwapchain(vulkan::device &device, ResourceManager &resource_manager, VkSur
         return { };
     }
 
-    else swapchain.colorTexture = std::move(result.value());
+    else swapchain.colorTexture = std::move(result);
 
     if (auto [texture, format] = CreateDepthAttachement(device, resource_manager, transfer_queue, transferCommandPool, swapchainWidth, swapchainHeight); !texture) {
         std::cerr << "failed to create depth texture\n"s;
@@ -314,7 +314,7 @@ CreateSwapchain(vulkan::device &device, ResourceManager &resource_manager, VkSur
     }
 
     else {
-        swapchain.depthTexture = std::move(*texture);
+        swapchain.depthTexture = std::move(texture);
         swapchain.depth_format = *format;
     }
 
@@ -334,11 +334,13 @@ void CleanupSwapchain(vulkan::device const &device, VulkanSwapchain &swapchain) 
     vkDestroySwapchainKHR(device.handle(), swapchain.handle, nullptr);
     swapchain.views.clear();
 
-    vkDestroyImageView(device.handle(), swapchain.colorTexture.view.handle(), nullptr);
-    swapchain.colorTexture.image.reset();
+    //vkDestroyImageView(device.handle(), swapchain.colorTexture.view.handle(), nullptr);
+    swapchain.colorTexture->view.reset();
+    swapchain.colorTexture->image.reset();
 
-    vkDestroyImageView(device.handle(), swapchain.depthTexture.view.handle(), nullptr);
-    swapchain.depthTexture.image.reset();
+    //vkDestroyImageView(device.handle(), swapchain.depthTexture.view.handle(), nullptr);
+    swapchain.depthTexture->view.reset();
+    swapchain.depthTexture->image.reset();
 
     swapchain.images.clear();
 }
@@ -353,7 +355,7 @@ void CreateFramebuffers(vulkan::device const &device, VkRenderPass renderPass, V
 
     std::transform(std::cbegin(views), std::cend(views), std::back_inserter(framebuffers), [&device, renderPass, &swapchain] (auto &&view)
     {
-        auto const attachements = std::array{swapchain.colorTexture.view.handle(), swapchain.depthTexture.view.handle(), view};
+        auto const attachements = std::array{swapchain.colorTexture->view->handle(), swapchain.depthTexture->view->handle(), view};
 
         VkFramebufferCreateInfo const createInfo{
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,

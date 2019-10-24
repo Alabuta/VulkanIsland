@@ -117,7 +117,7 @@ void recreate_swap_chain(app_t &app);
 template<class T> requires mpl::container<std::remove_cvref_t<T>>
 [[nodiscard]] std::shared_ptr<VulkanBuffer> stage_data(vulkan::device &device, ResourceManager &resource_manager, T &&container);
 
-[[nodiscard]] std::optional<VulkanTexture>
+[[nodiscard]] std::shared_ptr<resource::texture>
 load_texture(app_t &app, vulkan::device &device, ResourceManager &resource_manager, std::string_view name);
 
 struct draw_command final {
@@ -173,7 +173,7 @@ struct app_t final {
     std::size_t objectsNumber{2u};
     std::size_t alignedBufferSize{0u};
 
-    VulkanTexture texture;
+    std::shared_ptr<resource::texture> texture;
 
 #if TEMPORARILY_DISABLED
     ecs::entity_registry registry;
@@ -244,10 +244,8 @@ struct app_t final {
             vkDestroyRenderPass(vulkan_device->handle(), renderPass, nullptr);
     #endif
 
-        texture.sampler.reset();
-        if (texture.view.handle() != VK_NULL_HANDLE)
-            vkDestroyImageView(vulkan_device->handle(), texture.view.handle(), nullptr);
-        texture.image.reset();
+        if (texture)
+            texture.reset();
 
         if (perObjectsMappedPtr)
             vkUnmapMemory(vulkan_device->handle(), perObjectBuffer->memory()->handle());
@@ -963,7 +961,7 @@ void init_vulkan(platform::window &window, app_t &app)
 
     else app.texture = std::move(result.value());
 
-    if (auto result = app.vulkan_device->resource_manager().CreateImageSampler(app.texture.image->mipLevels()); !result)
+    if (auto result = app.vulkan_device->resource_manager().CreateImageSampler(app.texture.image->mip_levels()); !result)
         throw std::runtime_error("failed to create a texture sampler"s);
 
     else app.texture.sampler = result;
@@ -1256,10 +1254,10 @@ stage_data(vulkan::device &device, ResourceManager &resource_manager, T &&contai
     return buffer;
 }
 
-[[nodiscard]] std::optional<VulkanTexture>
+[[nodiscard]] std::shared_ptr<resource::texture>
 load_texture(app_t &app, vulkan::device &device, ResourceManager &resource_manager, std::string_view name)
 {
-    std::optional<VulkanTexture> texture;
+    std::shared_ptr<resource::texture> texture;
 
     auto constexpr generateMipMaps = true;
 
@@ -1278,7 +1276,7 @@ load_texture(app_t &app, vulkan::device &device, ResourceManager &resource_manag
 
             auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
-            texture = CreateTexture(device, resource_manager, rawImage->format, rawImage->view_type, width, height, rawImage->mipLevels,
+            texture = CreateTexture(device, resource_manager, rawImage->format, rawImage->view_type, width, height, rawImage->mip_levels,
                                     1u, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
 
             if (texture) {

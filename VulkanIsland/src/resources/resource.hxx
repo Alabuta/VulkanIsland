@@ -9,14 +9,21 @@
 
 #include "graphics/graphics_api.hxx"
 #include "graphics/vertex.hxx"
+#include "graphics/render_pass.hxx"
 
 #include "memory.hxx"
 #include "semaphore.hxx"
 
 
-class VulkanImage;
-class VulkanImageView;
-class VulkanSampler;
+namespace resource
+{
+    class image;
+    class image_view;
+
+    class sampler;
+}
+
+
 class VulkanBuffer;
 
 class VertexBuffer;
@@ -25,12 +32,10 @@ class IndexBuffer;
 namespace resource
 {
     class semaphore;
-
-    struct framebuffer;
 }
 
 
-template<class T> requires mpl::one_of<std::remove_cvref_t<T>, VulkanImage, VulkanBuffer>
+template<class T> requires mpl::one_of<std::remove_cvref_t<T>, resource::image, VulkanBuffer>
 bool IsResourceLinear(T &&resource)
 {
     using type = std::remove_cvref_t<T>;
@@ -38,7 +43,7 @@ bool IsResourceLinear(T &&resource)
     if constexpr (std::is_same_v<type, VulkanBuffer>)
         return true;
 
-    else if constexpr (std::is_same_v<type, VulkanImage>)
+    else if constexpr (std::is_same_v<type, resource::image>)
         return resource.tiling() == VK_IMAGE_TILING_LINEAR;
 
     else return false;
@@ -49,15 +54,15 @@ public:
 
     ResourceManager(vulkan::device &device, MemoryManager &memory_manager) noexcept : device_{device}, memory_manager_{memory_manager} { }
 
-    [[nodiscard]] std::shared_ptr<VulkanImage>
-    CreateImage(graphics::FORMAT format, std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels,
+    [[nodiscard]] std::shared_ptr<resource::image>
+    CreateImage(graphics::FORMAT format, std::uint16_t width, std::uint16_t height, std::uint32_t mip_levels,
                 std::uint32_t samples_count, graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags);
 
-    [[nodiscard]] std::optional<VulkanImageView>
-    CreateImageView(VulkanImage const &image, graphics::IMAGE_VIEW_TYPE view_type, VkImageAspectFlags aspectFlags) noexcept;
+    [[nodiscard]] std::shared_ptr<resource::image_view>
+    CreateImageView(std::shared_ptr<resource::image> image, graphics::IMAGE_VIEW_TYPE view_type, VkImageAspectFlags aspectFlags) noexcept;
 
-    [[nodiscard]] std::shared_ptr<VulkanSampler>
-    CreateImageSampler(std::uint32_t mipLevels) noexcept;
+    [[nodiscard]] std::shared_ptr<resource::sampler>
+    CreateImageSampler(std::uint32_t mip_levels) noexcept;
     
     [[nodiscard]] std::shared_ptr<VulkanBuffer>
     CreateBuffer(VkDeviceSize size, graphics::BUFFER_USAGE usage, VkMemoryPropertyFlags properties) noexcept;
@@ -77,9 +82,6 @@ public:
 
     [[nodiscard]] std::shared_ptr<resource::semaphore> create_semaphore();
 
-    [[nodiscard]] std::shared_ptr<resource::framebuffer>
-    create_framebuffer(renderer::extent extent, std::shared_ptr<graphics::render_pass> render_pass, std::vector<std::shared_ptr<VulkanImage>> attachments);
-
 private:
 
     static auto constexpr kVertexBufferIncreaseValue{4};
@@ -88,7 +90,7 @@ private:
     MemoryManager &memory_manager_;
 
     template<class T> requires mpl::one_of<std::remove_cvref_t<T>,
-        VulkanImage, VulkanSampler, VulkanImageView, VulkanBuffer, resource::semaphore
+        resource::image, resource::sampler, resource::image_view, VulkanBuffer, resource::semaphore
     >
     void ReleaseResource(T &&resource) noexcept;
 

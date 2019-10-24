@@ -44,20 +44,20 @@ FindSupportedImageFormat(vulkan::device const &device, std::vector<graphics::FOR
     return it_format != std::cend(candidates) ? *it_format : std::optional<graphics::FORMAT>();
 }
 
-std::optional<VulkanTexture>
+std::shared_ptr<resource::texture>
 CreateTexture(vulkan::device const &device, ResourceManager &resource_manager, graphics::FORMAT format, graphics::IMAGE_VIEW_TYPE view_type,
-              std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, std::uint32_t samples_count, graphics::IMAGE_TILING tiling,
+              std::uint16_t width, std::uint16_t height, std::uint32_t mip_levels, std::uint32_t samples_count, graphics::IMAGE_TILING tiling,
               VkImageAspectFlags aspectFlags, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags)
 {
-    std::optional<VulkanTexture> texture;
+    std::shared_ptr<resource::texture> texture;
 
-    if (auto image = resource_manager.CreateImage(format, width, height, mipLevels, samples_count, tiling, usageFlags, propertyFlags); image)
-        if (auto view = resource_manager.CreateImageView(*image, view_type, aspectFlags); view)
+    if (auto image = resource_manager.CreateImage(format, width, height, mip_levels, samples_count, tiling, usageFlags, propertyFlags); image)
+        if (auto view = resource_manager.CreateImageView(image, view_type, aspectFlags); view)
 #if NOT_YET_IMPLEMENTED
-            if (auto sampler = resource_manager.CreateImageSampler(image->mipLevels()); sampler)
+            if (auto sampler = resource_manager.CreateImageSampler(image->mip_levels()); sampler)
                 texture.emplace(image, *view, sampler);
 #else
-            texture.emplace(image, *view, nullptr);
+            texture = std::make_shared<resource::texture>(image, view, nullptr);
 #endif
 
 

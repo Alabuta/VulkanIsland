@@ -73,12 +73,12 @@ void CopyBufferToImage(vulkan::device const &device, Q &queue, VkBuffer srcBuffe
 
 
 template<class Q> requires mpl::derived_from<graphics::queue, std::remove_cvref_t<Q>>
-void GenerateMipMaps(vulkan::device const &device, Q &queue, VulkanImage const &image, VkCommandPool commandPool) noexcept
+void GenerateMipMaps(vulkan::device const &device, Q &queue, resource::image const &image, VkCommandPool commandPool) noexcept
 {
     auto commandBuffer = BeginSingleTimeCommand(device, commandPool);
 
-    auto width = image.width();
-    auto height = image.height();
+    auto &&extent = image.extent();
+    auto [width, height] = extent;
 
     VkImageMemoryBarrier barrier{
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
@@ -90,7 +90,7 @@ void GenerateMipMaps(vulkan::device const &device, Q &queue, VulkanImage const &
         { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 }
     };
 
-    for (auto i = 1u; i < image.mipLevels(); ++i) {
+    for (auto i = 1u; i < image.mip_levels(); ++i) {
         barrier.subresourceRange.baseMipLevel = i - 1;
         barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -101,9 +101,9 @@ void GenerateMipMaps(vulkan::device const &device, Q &queue, VulkanImage const &
 
         VkImageBlit const imageBlit{
             { VK_IMAGE_ASPECT_COLOR_BIT, i - 1, 0, 1 },
-            {{ 0, 0, 0 }, { width, height, 1 }},
+            {{ 0, 0, 0 }, { static_cast<std::int32_t>(width), static_cast<std::int32_t>(height), 1 }},
             { VK_IMAGE_ASPECT_COLOR_BIT, i, 0, 1 },
-            {{ 0, 0, 0 }, { width / 2, height / 2, 1 }}
+            {{ 0, 0, 0 }, { static_cast<std::int32_t>(width / 2), static_cast<std::int32_t>(height / 2), 1 }}
         };
 
         vkCmdBlitImage(commandBuffer, image.handle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image.handle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
@@ -119,7 +119,7 @@ void GenerateMipMaps(vulkan::device const &device, Q &queue, VulkanImage const &
         if (height > 1) height /= 2;
     }
 
-    barrier.subresourceRange.baseMipLevel = image.mipLevels() - 1;
+    barrier.subresourceRange.baseMipLevel = image.mip_levels() - 1;
     barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
     barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
@@ -134,7 +134,7 @@ void GenerateMipMaps(vulkan::device const &device, Q &queue, VulkanImage const &
 
 
 template<class Q> requires mpl::derived_from<graphics::queue, std::remove_cvref_t<Q>>
-bool TransitionImageLayout(vulkan::device const &device, Q &queue, VulkanImage const &image,
+bool TransitionImageLayout(vulkan::device const &device, Q &queue, resource::image const &image,
                            graphics::IMAGE_LAYOUT srcLayout, graphics::IMAGE_LAYOUT dstLayout, VkCommandPool commandPool) noexcept
 {
     VkImageMemoryBarrier barrier{
@@ -144,7 +144,7 @@ bool TransitionImageLayout(vulkan::device const &device, Q &queue, VulkanImage c
         convert_to::vulkan(srcLayout), convert_to::vulkan(dstLayout),
         VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
         image.handle(),
-        { VK_IMAGE_ASPECT_COLOR_BIT, 0, image.mipLevels(), 0, 1 }
+        { VK_IMAGE_ASPECT_COLOR_BIT, 0, image.mip_levels(), 0, 1 }
     };
 
     if (dstLayout == graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT) {

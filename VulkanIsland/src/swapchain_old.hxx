@@ -16,7 +16,7 @@ struct VulkanSwapchain final {
 
     VkExtent2D extent;
 
-    VulkanTexture colorTexture, depthTexture;
+    std::shared_ptr<resource::texture> colorTexture, depthTexture;
 
     std::vector<VkImage> images;
     std::vector<VkImageView> views;

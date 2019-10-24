@@ -15,7 +15,7 @@ namespace resource
 
         std::shared_ptr<graphics::render_pass> render_pass;
 
-        std::vector<std::shared_ptr<VulkanImage>> attachments;
+        std::vector<std::shared_ptr<resource::image>> attachments;
 
         template<class T> requires std::same_as<std::remove_cvref_t<T>, resource::framebuffer>
         auto constexpr operator== (T &&rhs) const

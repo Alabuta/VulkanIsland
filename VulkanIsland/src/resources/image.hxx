@@ -9,83 +9,109 @@
 #include "resource.hxx"
 
 
-class VulkanImageView;
+namespace resource
+{
+    class image final {
+    public:
 
-class VulkanImage final {
-public:
+        VkImage handle() const noexcept { return handle_; }
 
-    VulkanImage(std::shared_ptr<DeviceMemory> memory, VkImage handle, graphics::FORMAT format, graphics::IMAGE_TILING tiling,
-                std::uint32_t mipLevels, std::uint16_t width, std::uint16_t height) noexcept :
-        memory_{memory}, handle_{handle}, format_{format}, tiling_{tiling}, mipLevels_{mipLevels}, width_{width}, height_{height} { }
+        graphics::FORMAT format() const noexcept { return format_; }
+        graphics::IMAGE_TILING tiling() const noexcept { return tiling_; }
 
-    std::shared_ptr<DeviceMemory> memory() const noexcept { return memory_; }
-    std::shared_ptr<DeviceMemory> &memory() noexcept { return memory_; }
+        renderer::extent extent() const noexcept { return extent_; }
 
-    VkImage handle() const noexcept { return handle_; }
-    graphics::FORMAT format() const noexcept { return format_; }
-    graphics::IMAGE_TILING tiling() const noexcept { return tiling_; }
+        std::uint32_t mip_levels() const noexcept { return mip_levels_; }
 
-    std::uint32_t mipLevels() const noexcept { return mipLevels_; }
+        std::shared_ptr<DeviceMemory> memory() const noexcept { return memory_; }
+        std::shared_ptr<DeviceMemory> &memory() noexcept { return memory_; }
 
-    std::uint16_t width() const noexcept { return width_; }
-    std::uint16_t height() const noexcept { return height_; }
+    private:
+        
+        VkImage handle_{VK_NULL_HANDLE};
+        
+        graphics::FORMAT format_{graphics::FORMAT::UNDEFINED};
+        graphics::IMAGE_TILING tiling_{graphics::IMAGE_TILING::OPTIMAL};
+        
+        renderer::extent extent_;
+        
+        std::uint32_t mip_levels_{1};
+        
+        std::shared_ptr<DeviceMemory> memory_;
 
-private:
-    std::shared_ptr<DeviceMemory> memory_;
+        image() = delete;
+        image(image const &) = delete;
+        image(image &&) = delete;
 
-    VkImage handle_{VK_NULL_HANDLE};
-    graphics::FORMAT format_{graphics::FORMAT::UNDEFINED};
-    graphics::IMAGE_TILING tiling_{graphics::IMAGE_TILING::LINEAR};
+        image(std::shared_ptr<DeviceMemory> memory, VkImage handle, graphics::FORMAT format, graphics::IMAGE_TILING tiling,
+              std::uint32_t mip_levels, renderer::extent extent) noexcept :
+            memory_{memory}, handle_{handle}, format_{format}, tiling_{tiling}, mip_levels_{mip_levels}, extent_{extent} { }
 
-    std::uint32_t mipLevels_{1};
-    std::uint16_t width_{0}, height_{0};
+        friend ResourceManager;
+    };
+}
 
-    VulkanImage() = delete;
-    VulkanImage(VulkanImage const &) = delete;
-    VulkanImage(VulkanImage &&) = delete;
-};
+namespace resource
+{
+    class image_view final {
+    public:
 
-class VulkanImageView final {
-public:
-    VkImageView handle_{VK_NULL_HANDLE};
-    VkImageViewType type_;
+        VkImageView handle() const noexcept { return handle_; }
 
-    VulkanImageView() = default;
-    VulkanImageView(VkImageView handle, VkImageViewType type) noexcept : handle_{handle}, type_{type} { }
+        graphics::IMAGE_VIEW_TYPE type() const noexcept { return type_; }
 
-    VkImageView handle() const noexcept { return handle_; }
-    VkImageViewType type() const noexcept { return type_; }
+    private:
 
-private:
-    //VulkanImageView() = delete;
-};
+        VkImageView handle_{VK_NULL_HANDLE};
 
-class VulkanSampler final {
-public:
+        std::shared_ptr<resource::image> image_;
 
-    VulkanSampler(VkSampler handle) noexcept : handle_{handle} { }
+        graphics::IMAGE_VIEW_TYPE type_;
 
-    VkSampler handle() const noexcept { return handle_; }
+        image_view() = delete;
+        image_view(image_view const &) = delete;
+        image_view(image_view &&) = delete;
 
-private:
-    VkSampler handle_{VK_NULL_HANDLE};
+        image_view(VkImageView handle, std::shared_ptr<resource::image> image, graphics::IMAGE_VIEW_TYPE type) noexcept :
+            handle_{handle}, image_{image}, type_{type} { }
 
-    VulkanSampler() = delete;
-    VulkanSampler(VulkanSampler const &) = delete;
-    VulkanSampler(VulkanSampler &&) = delete;
-};
+        friend ResourceManager;
+    };
+}
 
-struct VulkanTexture final {
-    std::shared_ptr<VulkanImage> image;
-    VulkanImageView view;
+namespace resource
+{
+    class sampler final {
+    public:
 
-    std::shared_ptr<VulkanSampler> sampler;
+        VkSampler handle() const noexcept { return handle_; }
 
-    VulkanTexture() = default;
+    private:
 
-    VulkanTexture(std::shared_ptr<VulkanImage> image, VulkanImageView view, std::shared_ptr<VulkanSampler> sampler) noexcept
-        : image{image}, view{view}, sampler{sampler} { }
-};
+        VkSampler handle_{VK_NULL_HANDLE};
+
+        sampler() = delete;
+        sampler(sampler const &) = delete;
+        sampler(sampler &&) = delete;
+
+        sampler(VkSampler handle) noexcept : handle_{handle} { }
+
+        friend ResourceManager;
+    };
+}
+
+
+namespace resource
+{
+    struct texture final {
+        std::shared_ptr<resource::image> image;
+        std::shared_ptr<resource::image_view> view;
+        std::shared_ptr<resource::sampler> sampler;
+
+        texture(std::shared_ptr<resource::image> image, std::shared_ptr<resource::image_view> view, std::shared_ptr<resource::sampler> sampler) noexcept
+            : image{image}, view{view}, sampler{sampler} { }
+    };
+}
 
 
 [[nodiscard]] std::optional<graphics::FORMAT>
@@ -94,7 +120,7 @@ FindSupportedImageFormat(vulkan::device const &device, std::vector<graphics::FOR
 [[nodiscard]] std::optional<graphics::FORMAT> FindDepthImageFormat(vulkan::device const &device) noexcept;
 
 
-[[nodiscard]] std::optional<VulkanTexture>
+[[nodiscard]] std::shared_ptr<resource::texture>
 CreateTexture(vulkan::device const &device, ResourceManager &resource_manager, graphics::FORMAT format, graphics::IMAGE_VIEW_TYPE view_type,
-              std::uint16_t width, std::uint16_t height, std::uint32_t mipLevels, std::uint32_t samples_count, graphics::IMAGE_TILING tiling,
+              std::uint16_t width, std::uint16_t height, std::uint32_t mip_levels, std::uint32_t samples_count, graphics::IMAGE_TILING tiling,
               VkImageAspectFlags aspectFlags, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags);
