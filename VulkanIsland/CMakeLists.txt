@@ -59,7 +59,7 @@ set(SOURCE_FILES
 
 	src/loaders/loaderGLTF.hxx                      src/loaders/loaderGLTF.cxx
 	src/loaders/material_loader.hxx                 src/loaders/material_loader.cxx
-	src/loaders/scene_loader.hxx                    src/loaders/scene_loader.cxx
+	src/loaders/scene_loader.hxx
 	src/loaders/SPIRV_loader.hxx                    src/loaders/SPIRV_loader.cxx
     src/loaders/TARGA_loader.hxx                    src/loaders/TARGA_loader.cxx
 
@@ -71,15 +71,14 @@ set(SOURCE_FILES
 
     src/platform/window.hxx                         src/platform/window.cxx
 	
-	src/renderer/command_buffer.hxx
-    src/renderer/queue_builder.hxx
+	src/renderer/command_buffer.hxx                 src/renderer/command_buffer.cxx
+    src/renderer/config.hxx
     src/renderer/queues.hxx
-	src/renderer/swapchain.hxx                      src/swapchain.cxx
+	src/renderer/swapchain.hxx                      src/renderer/swapchain.cxx
 
 	src/resources/buffer.hxx                        src/resources/buffer.cxx
 	src/resources/image.hxx                         src/resources/image.cxx
     src/resources/memory.hxx                        src/resources/memory.cxx
-    src/resources/program.hxx                       src/resources/program.cxx
     src/resources/resource.hxx                      src/resources/resource.cxx
     src/resources/semaphore.hxx
 
@@ -91,10 +90,10 @@ set(SOURCE_FILES
     src/vulkan/device_limits.hxx
 	src/vulkan/device.hxx                           src/vulkan/device.cxx
 	src/vulkan/instance.hxx                         src/vulkan/instance.cxx
-	src/vulkan/queue_factory.hxx
 
     src/descriptor.hxx                              src/descriptor.cxx
     src/main.hxx                                    src/main.cxx
+    src/swapchain_old.hxx                           src/swapchain_old.cxx
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
