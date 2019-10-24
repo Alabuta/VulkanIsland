@@ -15,10 +15,6 @@ namespace renderer
         graphics::COLOR_SPACE color_space;
     };
 
-    struct extent final {
-        std::uint32_t width, height;
-    };
-
     class platform_surface final {
     public:
 

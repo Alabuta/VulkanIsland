@@ -480,3 +480,10 @@ namespace graphics
         return static_cast<T>(static_cast<E>(lhs) & static_cast<E>(rhs));
     }
 }
+
+namespace renderer
+{
+    struct extent final {
+        std::uint32_t width, height;
+    };
+}

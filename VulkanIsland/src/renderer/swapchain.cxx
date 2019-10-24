@@ -38,13 +38,13 @@ namespace
             return { graphics::FORMAT::BGRA8_UNORM, graphics::COLOR_SPACE::SRGB_NONLINEAR };
 
         for (auto [format, color_space] : required_surface_formats) {
-            auto exist = std::any_of(std::cbegin(supported_surface_formats), std::cend(supported_surface_formats),
-                                     [format, color_space] (auto &&surface_format)
+            auto supported = std::any_of(std::cbegin(supported_surface_formats), std::cend(supported_surface_formats),
+                                         [format, color_space] (auto &&surface_format)
             {
                 return surface_format.format == convert_to::vulkan(format) && surface_format.colorSpace == convert_to::vulkan(color_space);
             });
 
-            if (exist)
+            if (supported)
                 return { format, color_space };
         }
 
@@ -77,7 +77,7 @@ namespace
         if (surface_capabilities.currentExtent.width != std::numeric_limits<std::uint32_t>::max()) {
             auto [width, height] = surface_capabilities.currentExtent;
 
-            return {width, height};
+            return { width, height };
         }
 
         return {

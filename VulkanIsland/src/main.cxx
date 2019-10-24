@@ -933,7 +933,7 @@ void init_vulkan(platform::window &window, app_t &app)
     if (swapchain)
         app.swapchain2 = std::move(swapchain.value());
 
-    else throw std::runtime_error("failed to create the swapchain2"s);
+    else throw std::runtime_error("failed to create the swapchain"s);
 
     if (auto renderPass = CreateRenderPass(*app.vulkan_device, app.swapchain2); !renderPass)
         throw std::runtime_error("failed to create the render pass"s);
