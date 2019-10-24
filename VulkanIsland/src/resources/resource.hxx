@@ -25,6 +25,8 @@ class IndexBuffer;
 namespace resource
 {
     class semaphore;
+
+    struct framebuffer;
 }
 
 
@@ -74,6 +76,9 @@ public:
     [[nodiscard]] std::shared_ptr<VertexBuffer> vertex_buffer(graphics::vertex_layout const &layout) const;
 
     [[nodiscard]] std::shared_ptr<resource::semaphore> create_semaphore();
+
+    [[nodiscard]] std::shared_ptr<resource::framebuffer>
+    create_framebuffer(renderer::extent extent, std::shared_ptr<graphics::render_pass> render_pass, std::vector<std::shared_ptr<VulkanImage>> attachments);
 
 private:
 
