@@ -1,9 +1,9 @@
 #pragma once
 
 #include <unordered_set>
-#include <set>
 #include <vector>
 #include <memory>
+#include <set>
 
 #include "vulkan/device.hxx"
 #include "graphics.hxx"
@@ -17,10 +17,10 @@ namespace graphics
     };
 
     struct subpass_description final {
-        /*std::set<graphics::attachment_reference> input_attachments_;
+        std::set<graphics::attachment_reference> input_attachments_;
         std::set<graphics::attachment_reference> color_attachments_;
         std::set<graphics::attachment_reference> depth_stencil_attachments_;
-        std::set<graphics::attachment_reference> resolve_attachments_;*/
+        std::set<graphics::attachment_reference> resolve_attachments_;
     };
 }
 
@@ -40,5 +40,22 @@ namespace graphics
         // std::vector<graphics::render_pass_attachment> attachments_;
 
         // std::vector<graphics::render_subpass> subpasses_;
+    };
+}
+
+namespace graphics
+{
+    class render_pass_manager final {
+    public:
+
+        render_pass_manager(vulkan::device const &device) noexcept : device_{device} { }
+
+        [[nodiscard]] std::shared_ptr<graphics::render_pass>
+        create_render_pass(std::vector<graphics::attachment_description> const &attachment_descriptions,
+                           std::vector<graphics::subpass_description> const &subpass_descriptions);
+
+    private:
+
+        vulkan::device const &device_;
     };
 }

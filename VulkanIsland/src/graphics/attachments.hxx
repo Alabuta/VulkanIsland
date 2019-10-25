@@ -17,10 +17,8 @@ namespace graphics
         graphics::ATTACHMENT_LOAD_TREATMENT load_op;
         graphics::ATTACHMENT_STORE_TREATMENT store_op;
 
-        // At the begining of a render pass.
-        graphics::IMAGE_LAYOUT initial_layout;
-        // At the end of a render pass.
-        graphics::IMAGE_LAYOUT final_layout;
+        graphics::IMAGE_LAYOUT initial_layout;      // At the begining of a render pass.
+        graphics::IMAGE_LAYOUT final_layout;        // At the end of a render pass.
 
         template<class T> requires std::same_as<std::remove_cvref_t<T>, attachment_description>
         auto constexpr operator== (T &&rhs) const
@@ -35,8 +33,7 @@ namespace graphics
         std::uint32_t pass_index;
         std::uint32_t attachment_index;
 
-        // During a subpass.
-        graphics::IMAGE_LAYOUT subpass_layout;
+        graphics::IMAGE_LAYOUT subpass_layout;      // During a subpass.
 
         template<class T> requires std::same_as<std::remove_cvref_t<T>, attachment_reference>
         auto constexpr operator== (T &&rhs) const
