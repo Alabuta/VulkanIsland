@@ -241,6 +241,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\graphics\framebuffer.cxx" />
     <ClCompile Include="src\renderer\command_buffer.cxx" />
     <ClCompile Include="src\swapchain_old.cxx" />
     <ClCompile Include="src\vulkan\debug.cxx" />

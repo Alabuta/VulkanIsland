@@ -10,11 +10,11 @@ namespace graphics
         boost::hash_combine(seed, framebuffer.width);
         boost::hash_combine(seed, framebuffer.height);
 
+        // TODO:: implement
+    #if NOT_YET_IMPLEMENTED
         graphics::hash<graphics::render_pass> constexpr render_pass_hasher;
         boost::hash_combine(seed, render_pass_hasher(*framebuffer.render_pass));
 
-        // TODO:: implement
-    #if NOT_YET_IMPLEMENTED
         graphics::hash<VulkanImage> constexpr image_hasher;
 
         for (auto &&attachment : framebuffer.attachments)

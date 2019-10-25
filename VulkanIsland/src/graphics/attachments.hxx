@@ -40,6 +40,12 @@ namespace graphics
         {
             return pass_index == rhs.pass_index && attachment_index == rhs.attachment_index && subpass_layout == rhs.subpass_layout;
         }
+
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, attachment_reference>
+        auto constexpr operator< (T &&rhs) const
+        {
+            return attachment_index < rhs.attachment_index;
+        }
     };
 
     using attachment = std::variant<graphics::attachment_description, graphics::attachment_reference>;
