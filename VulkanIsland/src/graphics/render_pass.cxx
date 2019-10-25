@@ -4,8 +4,22 @@ using namespace std::string_literals;
 
 #include <fmt/format.h>
 
+#include "graphics_api.hxx"
 #include "render_pass.hxx"
 
+
+namespace
+{
+    struct subpass_invariant final {
+        std::vector<VkAttachmentReference> input_attachments;
+        std::vector<VkAttachmentReference> color_attachments;
+        std::vector<VkAttachmentReference> resolve_attachments;
+
+        VkAttachmentReference depth_stencil_attachments;
+
+        std::vector<std::uint32_t> preserve_attachments;
+    };
+}
 
 namespace graphics
 {
@@ -28,11 +42,55 @@ namespace graphics
                 convert_to::vulkan(description.final_layout)
             });
         }
-        
-        std::vector<VkAttachmentReference> references;
+
+        std::vector<subpass_invariant> subpass_invariants;
+
+        std::vector<VkSubpassDescription> subpasses;
 
         for (auto &&description : subpass_descriptions) {
-            // references.push_back();
+            std::vector<VkAttachmentReference> input_attachments;
+
+            for (auto &&attachment : description.input_attachments) {
+                input_attachments.push_back({
+                    attachment.attachment_index, convert_to::vulkan(attachment.subpass_layout)
+                });
+            }
+
+            std::vector<VkAttachmentReference> color_attachments;
+
+            for (auto &&attachment : description.color_attachments) {
+                color_attachments.push_back({
+                    attachment.attachment_index, convert_to::vulkan(attachment.subpass_layout)
+                });
+            }
+
+            VkAttachmentReference const depth_stencil_attachments{
+                description.depth_stencil_attachment.attachment_index,
+                convert_to::vulkan(description.depth_stencil_attachment.subpass_layout)
+            };
+
+            // TODO:: complete resolve attachments.
+            std::vector<VkAttachmentReference> resolve_attachments;
+
+            std::vector<std::uint32_t> preserve_attachments;
+
+            subpasses.push_back(VkSubpassDescription{
+                0,
+                VK_PIPELINE_BIND_POINT_GRAPHICS,
+                static_cast<std::uint32_t>(std::size(input_attachments)), std::data(input_attachments),
+                static_cast<std::uint32_t>(std::size(color_attachments)), std::data(color_attachments),
+                std::data(resolve_attachments),
+                &depth_stencil_attachments,
+                static_cast<std::uint32_t>(std::size(preserve_attachments)), std::data(preserve_attachments)
+            });
+
+            subpass_invariants.push_back({
+                std::move(input_attachments),
+                std::move(color_attachments),
+                std::move(resolve_attachments),
+                std::move(depth_stencil_attachments),
+                std::move(preserve_attachments)
+            });
         }
 
     #if NOT_YET_IMPLEMENTED
@@ -52,13 +110,13 @@ namespace graphics
             nullptr,
             0,
             static_cast<std::uint32_t>(std::size(attachments)), std::data(attachments),
-            1, &subpassDescription,
-            1, &subpassDependency
+            static_cast<std::uint32_t>(std::size(subpasses)), std::data(subpasses),
+            //1, &subpassDependency
         };
 
         VkRenderPass handle;
 
-        if (auto result = vkCreateRenderPass(device.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
+        if (auto result = vkCreateRenderPass(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to create render pass: {0:#x}\n"s, result));
 
         return std::make_shared<graphics::render_pass>(handle);

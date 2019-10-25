@@ -17,10 +17,10 @@ namespace graphics
     };
 
     struct subpass_description final {
-        std::set<graphics::attachment_reference> input_attachments_;
-        std::set<graphics::attachment_reference> color_attachments_;
-        std::set<graphics::attachment_reference> depth_stencil_attachments_;
-        std::set<graphics::attachment_reference> resolve_attachments_;
+        std::set<graphics::attachment_reference> input_attachments;
+        std::set<graphics::attachment_reference> color_attachments;
+        std::set<graphics::attachment_reference> resolve_attachments;
+        graphics::attachment_reference depth_stencil_attachment;
     };
 }
 
@@ -36,10 +36,6 @@ namespace graphics
     private:
 
         VkRenderPass handle_;
-
-        // std::vector<graphics::render_pass_attachment> attachments_;
-
-        // std::vector<graphics::render_subpass> subpasses_;
     };
 }
 
