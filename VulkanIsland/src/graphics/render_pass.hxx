@@ -1,6 +1,7 @@
 #pragma once
 
 #include <unordered_set>
+#include <optional>
 #include <vector>
 #include <memory>
 #include <set>
@@ -20,7 +21,8 @@ namespace graphics
         std::set<graphics::attachment_reference> input_attachments;
         std::set<graphics::attachment_reference> color_attachments;
         std::set<graphics::attachment_reference> resolve_attachments;
-        graphics::attachment_reference depth_stencil_attachment;
+
+        std::optional<graphics::attachment_reference> depth_stencil_attachment;
     };
 }
 

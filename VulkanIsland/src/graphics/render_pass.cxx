@@ -15,7 +15,7 @@ namespace
         std::vector<VkAttachmentReference> color_attachments;
         std::vector<VkAttachmentReference> resolve_attachments;
 
-        VkAttachmentReference depth_stencil_attachments;
+        std::optional<VkAttachmentReference> depth_stencil_attachment;
 
         std::vector<std::uint32_t> preserve_attachments;
     };
@@ -27,6 +27,8 @@ namespace graphics
     render_pass_manager::create_render_pass(std::vector<graphics::attachment_description> const &attachment_descriptions,
                                             std::vector<graphics::subpass_description> const &subpass_descriptions)
     {
+        auto const subpass_count = std::size(subpass_descriptions);
+
         std::vector<VkAttachmentDescription> attachments;
 
         for (auto &&description : attachment_descriptions) {
@@ -43,12 +45,16 @@ namespace graphics
             });
         }
 
-        std::vector<subpass_invariant> subpass_invariants;
+        std::vector<VkSubpassDependency> dependencies;
+
+        std::vector<subpass_invariant> subpass_invariants(subpass_count);
 
         std::vector<VkSubpassDescription> subpasses;
 
+        std::size_t subpass_index = 0;
+
         for (auto &&description : subpass_descriptions) {
-            std::vector<VkAttachmentReference> input_attachments;
+            auto &&input_attachments = subpass_invariants.at(subpass_index).input_attachments;
 
             for (auto &&attachment : description.input_attachments) {
                 input_attachments.push_back({
@@ -56,7 +62,7 @@ namespace graphics
                 });
             }
 
-            std::vector<VkAttachmentReference> color_attachments;
+            auto &&color_attachments = subpass_invariants.at(subpass_index).color_attachments;
 
             for (auto &&attachment : description.color_attachments) {
                 color_attachments.push_back({
@@ -64,15 +70,24 @@ namespace graphics
                 });
             }
 
-            VkAttachmentReference const depth_stencil_attachments{
-                description.depth_stencil_attachment.attachment_index,
-                convert_to::vulkan(description.depth_stencil_attachment.subpass_layout)
-            };
+            auto &&depth_stencil_attachment = subpass_invariants.at(subpass_index).depth_stencil_attachment;
 
-            // TODO:: complete resolve attachments.
-            std::vector<VkAttachmentReference> resolve_attachments;
+            if (description.depth_stencil_attachment) {
+                depth_stencil_attachment = VkAttachmentReference{
+                    description.depth_stencil_attachment->attachment_index,
+                    convert_to::vulkan(description.depth_stencil_attachment->subpass_layout)
+                };
+            }
 
-            std::vector<std::uint32_t> preserve_attachments;
+            auto &&resolve_attachments = subpass_invariants.at(subpass_index).resolve_attachments;
+
+            for (auto &&attachment : description.resolve_attachments) {
+                resolve_attachments.push_back({
+                    attachment.attachment_index, convert_to::vulkan(attachment.subpass_layout)
+                });
+            }
+
+            auto &&preserve_attachments = subpass_invariants.at(subpass_index).preserve_attachments;
 
             subpasses.push_back(VkSubpassDescription{
                 0,
@@ -80,17 +95,11 @@ namespace graphics
                 static_cast<std::uint32_t>(std::size(input_attachments)), std::data(input_attachments),
                 static_cast<std::uint32_t>(std::size(color_attachments)), std::data(color_attachments),
                 std::data(resolve_attachments),
-                &depth_stencil_attachments,
+                depth_stencil_attachment ? &depth_stencil_attachment.value() : nullptr,
                 static_cast<std::uint32_t>(std::size(preserve_attachments)), std::data(preserve_attachments)
             });
 
-            subpass_invariants.push_back({
-                std::move(input_attachments),
-                std::move(color_attachments),
-                std::move(resolve_attachments),
-                std::move(depth_stencil_attachments),
-                std::move(preserve_attachments)
-            });
+            ++subpass_index;
         }
 
     #if NOT_YET_IMPLEMENTED
@@ -111,7 +120,7 @@ namespace graphics
             0,
             static_cast<std::uint32_t>(std::size(attachments)), std::data(attachments),
             static_cast<std::uint32_t>(std::size(subpasses)), std::data(subpasses),
-            //1, &subpassDependency
+            static_cast<std::uint32_t>(std::size(dependencies)), std::data(dependencies),
         };
 
         VkRenderPass handle;
