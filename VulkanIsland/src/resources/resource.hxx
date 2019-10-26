@@ -21,26 +21,22 @@ namespace resource
     class image_view;
 
     class sampler;
-}
 
+    class buffer;
 
-class VulkanBuffer;
+    class vertex_buffer;
+    class index_buffer;
 
-class VertexBuffer;
-class IndexBuffer;
-
-namespace resource
-{
     class semaphore;
 }
 
 
-template<class T> requires mpl::one_of<std::remove_cvref_t<T>, resource::image, VulkanBuffer>
+template<class T> requires mpl::one_of<std::remove_cvref_t<T>, resource::image, resource::buffer>
 bool IsResourceLinear(T &&resource)
 {
     using type = std::remove_cvref_t<T>;
    
-    if constexpr (std::is_same_v<type, VulkanBuffer>)
+    if constexpr (std::is_same_v<type, resource::buffer>)
         return true;
 
     else if constexpr (std::is_same_v<type, resource::image>)
@@ -64,21 +60,21 @@ public:
     [[nodiscard]] std::shared_ptr<resource::sampler>
     CreateImageSampler(std::uint32_t mip_levels) noexcept;
     
-    [[nodiscard]] std::shared_ptr<VulkanBuffer>
+    [[nodiscard]] std::shared_ptr<resource::buffer>
     CreateBuffer(VkDeviceSize size, graphics::BUFFER_USAGE usage, VkMemoryPropertyFlags properties) noexcept;
 
     template<class T> requires mpl::one_of<T, std::uint16_t, std::uint32_t>
-    [[nodiscard]] std::shared_ptr<IndexBuffer> CreateIndexBuffer(std::size_t sizeInBytes) noexcept;
+    [[nodiscard]] std::shared_ptr<resource::index_buffer> CreateIndexBuffer(std::size_t sizeInBytes) noexcept;
 
-    [[nodiscard]] std::shared_ptr<VertexBuffer> CreateVertexBuffer(graphics::vertex_layout const &layout, std::size_t sizeInBytes) noexcept;
+    [[nodiscard]] std::shared_ptr<resource::vertex_buffer> CreateVertexBuffer(graphics::vertex_layout const &layout, std::size_t sizeInBytes) noexcept;
 
-    void StageVertexData(std::shared_ptr<VertexBuffer> vertexBuffer, std::vector<std::byte> const &container) const;
+    void StageVertexData(std::shared_ptr<resource::vertex_buffer> vertexBuffer, std::vector<std::byte> const &container) const;
 
     void TransferStagedVertexData(VkCommandPool transferCommandPool, graphics::transfer_queue const &transfer_queue) const;
 
     [[nodiscard]] auto &vertex_buffers() const noexcept { return vertexBuffers_; }
 
-    [[nodiscard]] std::shared_ptr<VertexBuffer> vertex_buffer(graphics::vertex_layout const &layout) const;
+    [[nodiscard]] std::shared_ptr<resource::vertex_buffer> vertex_buffer(graphics::vertex_layout const &layout) const;
 
     [[nodiscard]] std::shared_ptr<resource::semaphore> create_semaphore();
 
@@ -90,7 +86,7 @@ private:
     MemoryManager &memory_manager_;
 
     template<class T> requires mpl::one_of<std::remove_cvref_t<T>,
-        resource::image, resource::sampler, resource::image_view, VulkanBuffer, resource::semaphore
+        resource::image, resource::sampler, resource::image_view, resource::buffer, resource::semaphore
     >
     void ReleaseResource(T &&resource) noexcept;
 
@@ -99,10 +95,10 @@ private:
     ResourceManager(ResourceManager &&) = delete;
     
     // TODO:: unordered_miltimap
-    std::unordered_map<graphics::vertex_layout, std::shared_ptr<VertexBuffer>, graphics::hash<graphics::vertex_layout>> vertexBuffers_;
+    std::unordered_map<graphics::vertex_layout, std::shared_ptr<resource::vertex_buffer>, graphics::hash<graphics::vertex_layout>> vertexBuffers_;
 };
 
 
-[[nodiscard]] std::shared_ptr<VulkanBuffer> CreateUniformBuffer(ResourceManager &resource_manager, std::size_t size);
-[[nodiscard]] std::shared_ptr<VulkanBuffer> CreateCoherentStorageBuffer(ResourceManager &resource_manager, std::size_t size);
-[[nodiscard]] std::shared_ptr<VulkanBuffer> CreateStorageBuffer(ResourceManager &resource_manager, std::size_t size);
+[[nodiscard]] std::shared_ptr<resource::buffer> CreateUniformBuffer(ResourceManager &resource_manager, std::size_t size);
+[[nodiscard]] std::shared_ptr<resource::buffer> CreateCoherentStorageBuffer(ResourceManager &resource_manager, std::size_t size);
+[[nodiscard]] std::shared_ptr<resource::buffer> CreateStorageBuffer(ResourceManager &resource_manager, std::size_t size);

@@ -15,8 +15,8 @@
 namespace ecs
 {
 struct mesh final {
-    std::optional<VertexBuffer> vertexBuffer;
-    std::optional<IndexBuffer> indexBuffer;
+    std::optional<resource::vertex_buffer> vertexBuffer;
+    std::optional<resource::index_buffer> indexBuffer;
 
     std::uint32_t vertexCount{0};
     std::uint32_t indexCount{0};

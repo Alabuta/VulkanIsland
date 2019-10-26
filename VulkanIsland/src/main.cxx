@@ -115,7 +115,7 @@ void create_semaphores(app_t &app);
 void recreate_swap_chain(app_t &app);
 
 template<class T> requires mpl::container<std::remove_cvref_t<T>>
-[[nodiscard]] std::shared_ptr<VulkanBuffer> stage_data(vulkan::device &device, ResourceManager &resource_manager, T &&container);
+[[nodiscard]] std::shared_ptr<resource::buffer> stage_data(vulkan::device &device, ResourceManager &resource_manager, T &&container);
 
 [[nodiscard]] std::shared_ptr<resource::texture>
 load_texture(app_t &app, vulkan::device &device, ResourceManager &resource_manager, std::string_view name);
@@ -123,7 +123,7 @@ load_texture(app_t &app, vulkan::device &device, ResourceManager &resource_manag
 struct draw_command final {
     std::shared_ptr<graphics::material> material;
     std::shared_ptr<graphics::pipeline> pipeline;
-    std::shared_ptr<VertexBuffer> vertex_buffer;
+    std::shared_ptr<resource::vertex_buffer> vertex_buffer;
 
     std::uint32_t vertex_count{0};
     std::uint32_t first_vertex{0};
@@ -166,7 +166,7 @@ struct app_t final {
 
     std::shared_ptr<resource::semaphore> imageAvailableSemaphore, renderFinishedSemaphore;
 
-    std::shared_ptr<VulkanBuffer> perObjectBuffer, perCameraBuffer;
+    std::shared_ptr<resource::buffer> perObjectBuffer, perCameraBuffer;
     void *perObjectsMappedPtr{nullptr};
     void *alignedBuffer{nullptr};
 
@@ -1224,7 +1224,7 @@ void create_semaphores(app_t &app)
 }
 
 template<class T> requires mpl::container<std::remove_cvref_t<T>>
-[[nodiscard]] std::shared_ptr<VulkanBuffer>
+[[nodiscard]] std::shared_ptr<resource::buffer>
 stage_data(vulkan::device &device, ResourceManager &resource_manager, T &&container)
 {
     auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;

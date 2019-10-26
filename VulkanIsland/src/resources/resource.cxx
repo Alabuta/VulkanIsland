@@ -181,10 +181,10 @@ ResourceManager::CreateImageSampler(std::uint32_t mip_levels) noexcept
 }
 
 
-std::shared_ptr<VulkanBuffer>
+std::shared_ptr<resource::buffer>
 ResourceManager::CreateBuffer(VkDeviceSize size, graphics::BUFFER_USAGE usage, VkMemoryPropertyFlags properties) noexcept
 {
-    std::shared_ptr<VulkanBuffer> buffer;
+    std::shared_ptr<resource::buffer> buffer;
 
     auto handle = CreateBufferHandle(device_, size, usage);
 
@@ -198,8 +198,8 @@ ResourceManager::CreateBuffer(VkDeviceSize size, graphics::BUFFER_USAGE usage, V
                 std::cerr << "failed to bind buffer memory: "s << result << '\n';
 
             else buffer.reset(
-                new VulkanBuffer{memory, *handle},
-                [this] (VulkanBuffer *ptr_buffer)
+                new resource::buffer{memory, *handle},
+                [this] (resource::buffer *ptr_buffer)
                 {
                     ReleaseResource(*ptr_buffer);
 
@@ -213,7 +213,7 @@ ResourceManager::CreateBuffer(VkDeviceSize size, graphics::BUFFER_USAGE usage, V
 }
 
 
-template<class T> requires mpl::one_of<std::remove_cvref_t<T>, resource::image, resource::sampler, resource::image_view, VulkanBuffer, resource::semaphore>
+template<class T> requires mpl::one_of<std::remove_cvref_t<T>, resource::image, resource::sampler, resource::image_view, resource::buffer, resource::semaphore>
 void ResourceManager::ReleaseResource(T &&resource) noexcept
 {
     using R = std::remove_cvref_t<T>;
@@ -234,7 +234,7 @@ void ResourceManager::ReleaseResource(T &&resource) noexcept
         vkDestroyImageView(device_.handle(), resource.handle(), nullptr);
     }
 
-    else if constexpr (std::is_same_v<R, VulkanBuffer>)
+    else if constexpr (std::is_same_v<R, resource::buffer>)
     {
         vkDestroyBuffer(device_.handle(), resource.handle(), nullptr);
         resource.memory().reset();
@@ -246,11 +246,11 @@ void ResourceManager::ReleaseResource(T &&resource) noexcept
     }
 }
 
-std::shared_ptr<VertexBuffer> ResourceManager::CreateVertexBuffer(graphics::vertex_layout const &layout, std::size_t sizeInBytes) noexcept
+std::shared_ptr<resource::vertex_buffer> ResourceManager::CreateVertexBuffer(graphics::vertex_layout const &layout, std::size_t sizeInBytes) noexcept
 {
     if (vertexBuffers_.count(layout) == 0) {
-        std::shared_ptr<VulkanBuffer> stagingBuffer;
-        std::shared_ptr<VulkanBuffer> deviceBuffer;
+        std::shared_ptr<resource::buffer> stagingBuffer;
+        std::shared_ptr<resource::buffer> deviceBuffer;
         
         auto const capacityInBytes = sizeInBytes * kVertexBufferIncreaseValue;
 
@@ -278,7 +278,7 @@ std::shared_ptr<VertexBuffer> ResourceManager::CreateVertexBuffer(graphics::vert
             }
         }
 
-        vertexBuffers_.emplace(layout, std::make_shared<VertexBuffer>(deviceBuffer, stagingBuffer, capacityInBytes, layout));
+        vertexBuffers_.emplace(layout, std::make_shared<resource::vertex_buffer>(deviceBuffer, stagingBuffer, capacityInBytes, layout));
     }
 
     auto &vertexBuffer = vertexBuffers_[layout];
@@ -310,7 +310,7 @@ std::shared_ptr<VertexBuffer> ResourceManager::CreateVertexBuffer(graphics::vert
     return vertexBuffer;
 }
 
-void ResourceManager::StageVertexData(std::shared_ptr<VertexBuffer> vertexBuffer, std::vector<std::byte> const &container) const
+void ResourceManager::StageVertexData(std::shared_ptr<resource::vertex_buffer> vertexBuffer, std::vector<std::byte> const &container) const
 {
     if (vertexBuffer) {
         auto const lengthInBytes = std::size(container);
@@ -348,7 +348,7 @@ void ResourceManager::TransferStagedVertexData(VkCommandPool transferCommandPool
     }
 }
 
-std::shared_ptr<VertexBuffer> ResourceManager::vertex_buffer(graphics::vertex_layout const &layout) const
+std::shared_ptr<resource::vertex_buffer> ResourceManager::vertex_buffer(graphics::vertex_layout const &layout) const
 {
     if (vertexBuffers_.count(layout) == 0)
         return { };
@@ -357,7 +357,7 @@ std::shared_ptr<VertexBuffer> ResourceManager::vertex_buffer(graphics::vertex_la
 }
 
 
-std::shared_ptr<VulkanBuffer>
+std::shared_ptr<resource::buffer>
 CreateUniformBuffer(ResourceManager &resource_manager, std::size_t size)
 {
     auto constexpr usageFlags = graphics::BUFFER_USAGE::UNIFORM_BUFFER;
@@ -366,7 +366,7 @@ CreateUniformBuffer(ResourceManager &resource_manager, std::size_t size)
     return resource_manager.CreateBuffer(size, usageFlags, propertyFlags);
 }
 
-std::shared_ptr<VulkanBuffer>
+std::shared_ptr<resource::buffer>
 CreateCoherentStorageBuffer(ResourceManager &resource_manager, std::size_t size)
 {
     auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
@@ -375,7 +375,7 @@ CreateCoherentStorageBuffer(ResourceManager &resource_manager, std::size_t size)
     return resource_manager.CreateBuffer(size, usageFlags, propertyFlags);
 }
 
-std::shared_ptr<VulkanBuffer>
+std::shared_ptr<resource::buffer>
 CreateStorageBuffer(ResourceManager &resource_manager, std::size_t size)
 {
     auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;

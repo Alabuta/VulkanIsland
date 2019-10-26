@@ -6,73 +6,84 @@
 #include "graphics/vertex.hxx"
 #include "memory.hxx"
 
+class ResourceManager;
 
-class VulkanBuffer final {
-public:
 
-    VulkanBuffer(std::shared_ptr<DeviceMemory> memory, VkBuffer handle) : memory_{memory}, handle_{handle} { }
+namespace resource
+{
+    class buffer final {
+    public:
 
-    std::shared_ptr<DeviceMemory> memory() const noexcept { return memory_; }
-    std::shared_ptr<DeviceMemory> &memory() noexcept { return memory_; }
+        buffer(std::shared_ptr<DeviceMemory> memory, VkBuffer handle) : memory_{memory}, handle_{handle} { }
 
-    VkBuffer handle() const noexcept { return handle_; }
+        std::shared_ptr<DeviceMemory> memory() const noexcept { return memory_; }
+        std::shared_ptr<DeviceMemory> &memory() noexcept { return memory_; }
 
-private:
-    std::shared_ptr<DeviceMemory> memory_;
-    VkBuffer handle_;
+        VkBuffer handle() const noexcept { return handle_; }
 
-    VulkanBuffer() = delete;
-    VulkanBuffer(VulkanBuffer const &) = delete;
-    VulkanBuffer(VulkanBuffer &&) = delete;
-};
+    private:
+        std::shared_ptr<DeviceMemory> memory_;
+        VkBuffer handle_;
 
-class IndexBuffer final {
-public:
+        buffer() = delete;
+        buffer(buffer const &) = delete;
+        buffer(buffer &&) = delete;
+    };
+}
 
-    template<class T> requires mpl::one_of<T, std::uint16_t, std::uint32_t>
-    IndexBuffer(std::shared_ptr<VulkanBuffer> buffer, [[maybe_unused]] std::size_t size) noexcept : buffer{buffer}/* , size{size} */, type{T{}} { }
+namespace resource
+{
+    class index_buffer final {
+    public:
 
-    template<class T> requires std::same_as<std::remove_cvref_t<T>, IndexBuffer>
-    bool constexpr operator< (T &&rhs) const noexcept
-    {
-        return buffer->handle() < rhs.buffer->handle();
-    }
+        template<class T> requires mpl::one_of<T, std::uint16_t, std::uint32_t>
+        index_buffer(std::shared_ptr<resource::buffer> buffer, [[maybe_unused]] std::size_t size) noexcept : buffer{buffer}/* , size{size} */, type{T{}} { }
 
-private:
-    std::shared_ptr<VulkanBuffer> buffer{nullptr};
-    // std::size_t size{0};
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, resource::index_buffer>
+        bool constexpr operator< (T &&rhs) const noexcept
+        {
+            return buffer->handle() < rhs.buffer->handle();
+        }
 
-    std::variant<std::uint16_t, std::uint32_t> type;
-};
+    private:
+        std::shared_ptr<resource::buffer> buffer{nullptr};
+        // std::size_t size{0};
 
-class VertexBuffer final {
-public:
+        std::variant<std::uint16_t, std::uint32_t> type;
+    };
+}
 
-    VertexBuffer(std::shared_ptr<VulkanBuffer> deviceBuffer, std::shared_ptr<VulkanBuffer> stagingBuffer,
-                 std::size_t capacityInBytes, graphics::vertex_layout const &vertexLayout) noexcept
-        : deviceBuffer_{deviceBuffer}, stagingBuffer_{stagingBuffer}, capacityInBytes_{capacityInBytes}, vertexLayout_{vertexLayout} { }
+namespace resource
+{
+    class vertex_buffer final {
+    public:
 
-    VulkanBuffer const &deviceBuffer() const noexcept { return *deviceBuffer_; }
-    VulkanBuffer const &stagingBuffer() const noexcept { return *stagingBuffer_; }
+        vertex_buffer(std::shared_ptr<resource::buffer> deviceBuffer, std::shared_ptr<resource::buffer> stagingBuffer,
+                     std::size_t capacityInBytes, graphics::vertex_layout const &vertexLayout) noexcept
+            : deviceBuffer_{deviceBuffer}, stagingBuffer_{stagingBuffer}, capacityInBytes_{capacityInBytes}, vertexLayout_{vertexLayout} { }
 
-    std::size_t deviceBufferOffset() const noexcept { return deviceBuffer_->memory()->offset() + offset_; }
-    std::size_t stagingBufferOffset() const noexcept { return stagingBuffer_->memory()->offset() + offset_; }
+        resource::buffer const &deviceBuffer() const noexcept { return *deviceBuffer_; }
+        resource::buffer const &stagingBuffer() const noexcept { return *stagingBuffer_; }
 
-    std::size_t availableMemorySize() const noexcept { return capacityInBytes_ - offset_; }
+        std::size_t deviceBufferOffset() const noexcept { return deviceBuffer_->memory()->offset() + offset_; }
+        std::size_t stagingBufferOffset() const noexcept { return stagingBuffer_->memory()->offset() + offset_; }
 
-    graphics::vertex_layout const &vertexLayout() const noexcept { return vertexLayout_; }
+        std::size_t availableMemorySize() const noexcept { return capacityInBytes_ - offset_; }
 
-private:
+        graphics::vertex_layout const &vertexLayout() const noexcept { return vertexLayout_; }
 
-    std::shared_ptr<VulkanBuffer> deviceBuffer_{nullptr};
-    std::shared_ptr<VulkanBuffer> stagingBuffer_{nullptr};
+    private:
 
-    std::size_t capacityInBytes_{0};
+        std::shared_ptr<resource::buffer> deviceBuffer_{nullptr};
+        std::shared_ptr<resource::buffer> stagingBuffer_{nullptr};
 
-    graphics::vertex_layout vertexLayout_;
+        std::size_t capacityInBytes_{0};
 
-    std::size_t offset_{0};
-    std::size_t stagingBufferSizeInBytes_{0};
+        graphics::vertex_layout vertexLayout_;
 
-    friend class ResourceManager;
-};
+        std::size_t offset_{0};
+        std::size_t stagingBufferSizeInBytes_{0};
+
+        friend ResourceManager;
+    };
+}
