@@ -50,12 +50,12 @@ namespace convert_to
 
     VkShaderStageFlagBits vulkan(graphics::SHADER_STAGE shader_stage) noexcept
     {
-        VkShaderStageFlags result = VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+        VkShaderStageFlags result = 0;
 
         using E = std::underlying_type_t<graphics::SHADER_STAGE>;
 
-        if (static_cast<E>(shader_stage & graphics::SHADER_STAGE::VERTEX) == 0)
-            result ^= VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
+        if (static_cast<E>(shader_stage & graphics::SHADER_STAGE::VERTEX))
+            result |= VkShaderStageFlagBits::VK_SHADER_STAGE_VERTEX_BIT;
 
         if (static_cast<E>(shader_stage & graphics::SHADER_STAGE::TESS_CONTROL))
             result |= VkShaderStageFlagBits::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
@@ -77,12 +77,12 @@ namespace convert_to
 
     VkPipelineStageFlagBits vulkan(graphics::PIPELINE_STAGE pipeline_stage) noexcept
     {
-        VkPipelineStageFlags result = VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        VkPipelineStageFlags result = 0;
 
         using E = std::underlying_type_t<graphics::PIPELINE_STAGE>;
 
-        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::TOP_OF_PIPE) == 0)
-            result ^= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::TOP_OF_PIPE))
+            result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
 
         if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::DRAW_INDIRECT))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT;
@@ -804,12 +804,12 @@ namespace convert_to
 
     VkBufferUsageFlags vulkan(graphics::BUFFER_USAGE buffer_usage) noexcept
     {
-        VkBufferUsageFlags result = VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        VkBufferUsageFlags result = 0;
 
         using E = std::underlying_type_t<graphics::BUFFER_USAGE>;
 
-        if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::TRANSFER_SOURCE) == 0)
-            result ^= VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::TRANSFER_SOURCE))
+            result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
 
         if (static_cast<E>(buffer_usage & graphics::BUFFER_USAGE::TRANSFER_DESTINATION))
             result |= VkBufferUsageFlagBits::VK_BUFFER_USAGE_TRANSFER_DST_BIT;
@@ -840,12 +840,12 @@ namespace convert_to
 
     VkImageUsageFlags vulkan(graphics::IMAGE_USAGE image_usage) noexcept
     {
-        VkImageUsageFlags result = VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        VkImageUsageFlags result = 0;
 
         using E = std::underlying_type_t<graphics::IMAGE_USAGE>;
 
-        if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::TRANSFER_SOURCE) == 0)
-            result ^= VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::TRANSFER_SOURCE))
+            result |= VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
 
         if (static_cast<E>(image_usage & graphics::IMAGE_USAGE::TRANSFER_DESTINATION))
             result |= VkImageUsageFlagBits::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
@@ -873,12 +873,12 @@ namespace convert_to
 
     VkQueueFlagBits vulkan(graphics::QUEUE_CAPABILITY queue_capability) noexcept
     {
-        VkQueueFlags result = VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT;
+        VkQueueFlags result = 0;
 
         using E = std::underlying_type_t<graphics::QUEUE_CAPABILITY>;
 
-        if (static_cast<E>(queue_capability & graphics::QUEUE_CAPABILITY::GRAPHICS) == 0)
-            result ^= VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT;
+        if (static_cast<E>(queue_capability & graphics::QUEUE_CAPABILITY::GRAPHICS))
+            result |= VkQueueFlagBits::VK_QUEUE_GRAPHICS_BIT;
 
         if (static_cast<E>(queue_capability & graphics::QUEUE_CAPABILITY::COMPUTE))
             result |= VkQueueFlagBits::VK_QUEUE_COMPUTE_BIT;
@@ -911,12 +911,12 @@ namespace convert_to
 
     VkImageAspectFlags vulkan(graphics::IMAGE_ASPECT image_aspect) noexcept
     {
-        VkImageAspectFlags result = VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+        VkImageAspectFlags result = 0;
 
         using E = std::underlying_type_t<graphics::IMAGE_ASPECT>;
 
-        if (static_cast<E>(image_aspect & graphics::IMAGE_ASPECT::COLOR_BIT) == 0)
-            result ^= VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
+        if (static_cast<E>(image_aspect & graphics::IMAGE_ASPECT::COLOR_BIT))
+            result |= VkImageAspectFlagBits::VK_IMAGE_ASPECT_COLOR_BIT;
 
         if (static_cast<E>(image_aspect & graphics::IMAGE_ASPECT::DEPTH_BIT))
             result |= VkImageAspectFlagBits::VK_IMAGE_ASPECT_DEPTH_BIT;
