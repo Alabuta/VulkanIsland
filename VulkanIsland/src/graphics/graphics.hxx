@@ -462,6 +462,26 @@ namespace graphics
         DEPTH_BIT = 0x02,
         STENCIL_BIT = 0x04
     };
+
+    enum class MEMORY_ACCESS_TYPE {
+        INDIRECT_COMMAND_READ = 0x00001,
+        INDEX_READ = 0x00002,
+        VERTEX_ATTRIBUTE_READ = 0x00004,
+        UNIFORM_READ = 0x00008,
+        INPUT_ATTACHMENT_READ = 0x00010,
+        SHADER_READ = 0x00020,
+        SHADER_WRITE = 0x00040,
+        COLOR_ATTACHMENT_READ = 0x00080,
+        COLOR_ATTACHMENT_WRITE = 0x00100,
+        DEPTH_STENCIL_ATTACHMENT_READ = 0x00200,
+        DEPTH_STENCIL_ATTACHMENT_WRITE = 0x00400,
+        TRANSFER_READ = 0x00800,
+        TRANSFER_WRITE = 0x01000,
+        HOST_READ = 0x02000,
+        HOST_WRITE = 0x04000,
+        MEMORY_READ = 0x08000,
+        MEMORY_WRITE = 0x10000
+    };
 }
 
 namespace graphics

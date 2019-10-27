@@ -65,4 +65,6 @@ namespace convert_to
     VkPresentModeKHR vulkan(graphics::PRESENTATION_MODE presentation_mode) noexcept;
 
     VkImageAspectFlags vulkan(graphics::IMAGE_ASPECT image_aspect) noexcept;
+
+    VkAccessFlags vulkan(graphics::MEMORY_ACCESS_TYPE memory_access_type) noexcept;
 }
