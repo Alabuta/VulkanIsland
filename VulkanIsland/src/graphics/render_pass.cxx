@@ -25,7 +25,8 @@ namespace graphics
 {
     std::shared_ptr<graphics::render_pass>
     render_pass_manager::create_render_pass(std::vector<graphics::attachment_description> const &attachment_descriptions,
-                                            std::vector<graphics::subpass_description> const &subpass_descriptions)
+                                            std::vector<graphics::subpass_description> const &subpass_descriptions,
+                                            std::vector<graphics::subpass_dependency> const &subpass_dependencies)
     {
         auto const subpass_count = std::size(subpass_descriptions);
 
@@ -123,11 +124,20 @@ namespace graphics
             static_cast<std::uint32_t>(std::size(dependencies)), std::data(dependencies),
         };
 
+        std::shared_ptr<graphics::render_pass> render_pass;
+
         VkRenderPass handle;
 
         if (auto result = vkCreateRenderPass(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to create render pass: {0:#x}\n"s, result));
 
-        return std::make_shared<graphics::render_pass>(handle);
+        else render_pass.reset(new graphics::render_pass{handle}, [this] (graphics::render_pass *ptr_render_pass)
+        {
+            vkDestroyRenderPass(device_.handle(), ptr_render_pass->handle(), nullptr);
+
+            delete ptr_render_pass;
+        });
+
+        return render_pass;
     }
 }

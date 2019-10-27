@@ -87,6 +87,7 @@
 #include "graphics/material.hxx"
 
 #include "graphics/vertex.hxx"
+#include "graphics/render_pass.hxx"
 #include "graphics/render_flow.hxx"
 #include "graphics/compatibility.hxx"
 
@@ -187,10 +188,11 @@ struct app_t final {
     std::unique_ptr<renderer::platform_surface> platform_surface;
     std::unique_ptr<renderer::swapchain> swapchain;
 
+    std::unique_ptr<graphics::vertex_input_state_manager> vertex_input_state_manager;
     std::unique_ptr<graphics::shader_manager> shader_manager;
     std::unique_ptr<graphics::material_factory> material_factory;
-    std::unique_ptr<graphics::vertex_input_state_manager> vertex_input_state_manager;
     std::unique_ptr<graphics::pipeline_factory> pipeline_factory;
+    std::unique_ptr<graphics::render_pass_manager> render_pass_manager;
 
     std::vector<draw_command> draw_commands;
 
@@ -220,6 +222,9 @@ struct app_t final {
 
         if (imageAvailableSemaphore)
             imageAvailableSemaphore.reset();
+
+        if (render_pass_manager)
+            render_pass_manager.reset();
 
         if (pipeline_factory)
             pipeline_factory.reset();
@@ -896,6 +901,8 @@ void init_vulkan(platform::window &window, app_t &app)
     app.vertex_input_state_manager = std::make_unique<graphics::vertex_input_state_manager>();
     app.pipeline_factory = std::make_unique<graphics::pipeline_factory>(*app.vulkan_device, *app.shader_manager);
 
+    app.render_pass_manager = std::make_unique<graphics::render_pass_manager>(*app.vulkan_device);
+
     if (auto commandPool = CreateCommandPool(*app.vulkan_device, app.vulkan_device->transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); commandPool)
         app.transferCommandPool = *commandPool;
 
@@ -932,6 +939,70 @@ void init_vulkan(platform::window &window, app_t &app)
         app.swapchain2 = std::move(swapchain.value());
 
     else throw std::runtime_error("failed to create the swapchain"s);
+
+    {
+        auto &&device_limits = app.vulkan_device->device_limits();
+
+        auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
+
+        auto render_pass = app.render_pass_manager->create_render_pass(
+            std::vector{
+                graphics::attachment_description{
+                    graphics::FORMAT::RGBA8_SRGB,
+                    samples_count_bits,
+                    graphics::ATTACHMENT_LOAD_TREATMENT::CLEAR,
+                    graphics::ATTACHMENT_STORE_TREATMENT::STORE,
+                    graphics::IMAGE_LAYOUT::UNDEFINED,
+                    graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT
+                },
+                graphics::attachment_description{
+                    graphics::FORMAT::D32_SFLOAT,
+                    samples_count_bits,
+                    graphics::ATTACHMENT_LOAD_TREATMENT::CLEAR,
+                    graphics::ATTACHMENT_STORE_TREATMENT::DONT_CARE,
+                    graphics::IMAGE_LAYOUT::UNDEFINED,
+                    graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT
+                },
+                graphics::attachment_description{
+                    graphics::FORMAT::RGBA8_SRGB,
+                    1,
+                    graphics::ATTACHMENT_LOAD_TREATMENT::DONT_CARE,
+                    graphics::ATTACHMENT_STORE_TREATMENT::STORE,
+                    graphics::IMAGE_LAYOUT::UNDEFINED,
+                    graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT
+                }
+            },
+            std::vector{
+                graphics::subpass_description{
+                    { },
+                    {
+                        graphics::attachment_reference{
+                            0, 0, graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT
+                        }
+                    },
+                    {
+                        graphics::attachment_reference{
+                            0, 2, graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT
+                        }
+                    },
+                    graphics::attachment_reference{
+                        0, 1, graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT
+                    }
+                }
+            },
+            std::vector{
+                graphics::subpass_dependency{
+                    /*std::nullopt, 0,
+                    graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT,
+                    graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT,
+                    0,
+                    graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_READ | graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_WRITE*/
+                }
+            }
+        );
+
+        std::cout << render_pass << '\n';
+    }
 
     if (auto renderPass = CreateRenderPass(*app.vulkan_device, app.swapchain2); !renderPass)
         throw std::runtime_error("failed to create the render pass"s);

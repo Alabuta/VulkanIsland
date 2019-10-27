@@ -13,8 +13,15 @@
 
 namespace graphics
 {
-    struct render_subpass final {
-        ;
+    struct subpass_dependency final {
+        std::optional<std::uint32_t> source_index;
+        std::optional<std::uint32_t> destination_index;
+
+        graphics::PIPELINE_STAGE source_stage;
+        graphics::PIPELINE_STAGE destination_stage;
+
+        graphics::MEMORY_ACCESS_TYPE source_access;
+        graphics::MEMORY_ACCESS_TYPE destination_access;
     };
 
     struct subpass_description final {
@@ -50,7 +57,8 @@ namespace graphics
 
         [[nodiscard]] std::shared_ptr<graphics::render_pass>
         create_render_pass(std::vector<graphics::attachment_description> const &attachment_descriptions,
-                           std::vector<graphics::subpass_description> const &subpass_descriptions);
+                           std::vector<graphics::subpass_description> const &subpass_descriptions,
+                           std::vector<graphics::subpass_dependency> const &subpass_dependencies);
 
     private:
 
