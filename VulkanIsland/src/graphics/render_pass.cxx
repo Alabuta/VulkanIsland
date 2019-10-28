@@ -30,10 +30,16 @@ namespace graphics
     {
         auto const subpass_count = std::size(subpass_descriptions);
 
+        std::vector<subpass_invariant> subpass_invariants(subpass_count);
+
         std::vector<VkAttachmentDescription> attachments;
 
-        for (auto &&description : attachment_descriptions) {
-            attachments.push_back({
+        std::transform(std::cbegin(attachment_descriptions), std::cend(attachment_descriptions), std::begin(subpass_invariants),
+                                  [attachment_index = 0u] (auto &&description) mutable
+        {
+            ++attachment_index;
+
+            return VkAttachmentDescription{
                 0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
                 convert_to::vulkan(description.format),
                 convert_to::vulkan(description.samples_count),
@@ -44,7 +50,7 @@ namespace graphics
                 convert_to::vulkan(description.initial_layout),
                 convert_to::vulkan(description.final_layout)
             });
-        }
+        });
 
         std::vector<VkSubpassDependency> dependencies;
 
@@ -59,8 +65,6 @@ namespace graphics
                 0
             });
         }
-
-        std::vector<subpass_invariant> subpass_invariants(subpass_count);
 
         std::vector<VkSubpassDescription> subpasses;
 
