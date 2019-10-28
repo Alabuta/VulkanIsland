@@ -271,10 +271,12 @@ namespace
 
             auto const capability = convert_to::vulkan(T::capability);
 
+            using C = std::remove_cvref_t<decltype(queue_family.queueFlags)>;
+
             if constexpr (strict_matching)
                 return queue_family.queueCount > 0 && queue_family.queueFlags == capability;
 
-            return queue_family.queueCount > 0 && (queue_family.queueFlags & capability) == capability;
+            return queue_family.queueCount > 0 && (queue_family.queueFlags & capability) == static_cast<C>(capability);
         });
 
         if (it_family != std::cend(queue_families))

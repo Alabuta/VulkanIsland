@@ -149,7 +149,6 @@ namespace renderer
     {
         auto &&presentation_queue = device.presentation_queue;
         auto &&graphics_queue = device.graphics_queue;
-        auto &&transfer_queue = device.transfer_queue;
 
         auto swapchain_support_details = device.query_swapchain_support_details(&platform_surface);
 

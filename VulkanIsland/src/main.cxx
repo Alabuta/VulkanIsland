@@ -296,7 +296,7 @@ struct window_events_handler final : public platform::window::event_handler_inte
 
     void on_resize(std::int32_t width, std::int32_t height) override
     {
-        if (app.width == width && app.height == height)
+        if (app.width == static_cast<std::uint32_t>(width) && app.height == static_cast<std::uint32_t>(height))
             return;
 
         app.width = static_cast<std::uint32_t>(width);
