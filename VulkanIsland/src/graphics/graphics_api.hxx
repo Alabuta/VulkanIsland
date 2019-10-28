@@ -18,7 +18,7 @@ namespace convert_to
 
     VkShaderStageFlagBits vulkan(graphics::SHADER_STAGE shader_stage) noexcept;
 
-    VkPipelineStageFlagBits vulkan(graphics::PIPELINE_STAGE pipeline_stage) noexcept;
+    VkPipelineStageFlags vulkan(graphics::PIPELINE_STAGE pipeline_stage) noexcept;
 
     VkCullModeFlags vulkan(graphics::CULL_MODE cull_mode) noexcept;
 

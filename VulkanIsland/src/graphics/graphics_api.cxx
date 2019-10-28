@@ -75,7 +75,7 @@ namespace convert_to
         return static_cast<VkShaderStageFlagBits>(result);
     }
 
-    VkPipelineStageFlagBits vulkan(graphics::PIPELINE_STAGE pipeline_stage) noexcept
+    VkPipelineStageFlags vulkan(graphics::PIPELINE_STAGE pipeline_stage) noexcept
     {
         VkPipelineStageFlags result = 0;
 
@@ -132,7 +132,7 @@ namespace convert_to
         if (static_cast<E>(pipeline_stage & graphics::PIPELINE_STAGE::ALL_COMMANDS))
             result |= VkPipelineStageFlagBits::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
-        return static_cast<VkPipelineStageFlagBits>(result);
+        return result;
     }
 
     VkCullModeFlags vulkan(graphics::CULL_MODE cull_mode) noexcept

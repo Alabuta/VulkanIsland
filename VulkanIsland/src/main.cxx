@@ -882,7 +882,7 @@ renderer::config adjust_renderer_config(vulkan::device const &device)
     return renderer_config;
 }
 
-void init_vulkan(platform::window &window, app_t &app)
+void init(platform::window &window, app_t &app)
 {
     app.vulkan_instance = std::make_unique<vulkan::instance>();
 
@@ -1243,7 +1243,7 @@ int main()
     app.camera_controller = std::make_unique<orbit_controller>(app.camera, *input_manager);
     app.camera_controller->look_at(glm::vec3{0, 2, 1}, {0, 0, 0});
 
-    std::cout << measure<>::execution(init_vulkan, window, std::ref(app)) << " ms\n"s;
+    std::cout << measure<>::execution(init, window, std::ref(app)) << " ms\n"s;
 
     window.update([&app]
     {
