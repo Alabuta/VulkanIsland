@@ -30,6 +30,8 @@ namespace graphics
         std::set<graphics::attachment_reference> resolve_attachments;
 
         std::optional<graphics::attachment_reference> depth_stencil_attachment;
+
+        std::vector<std::uint32_t> preserve_attachments;
     };
 }
 

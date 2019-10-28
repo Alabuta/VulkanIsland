@@ -15,7 +15,7 @@ CreateRenderPass(vulkan::device const &device, VulkanSwapchain const &swapchain)
         0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
         convert_to::vulkan(swapchain.format),
         convert_to::vulkan(samples_count_bits),
-        VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
+        VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
         VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL
     };

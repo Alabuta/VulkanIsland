@@ -346,21 +346,21 @@ void CleanupSwapchain(vulkan::device const &device, VulkanSwapchain &swapchain) 
 }
 
 
-void CreateFramebuffers(vulkan::device const &device, VkRenderPass renderPass, VulkanSwapchain &swapchain)
+void CreateFramebuffers(vulkan::device const &device, std::shared_ptr<graphics::render_pass> render_pass, VulkanSwapchain &swapchain)
 {
     auto &&framebuffers = swapchain.framebuffers;
     auto &&views = swapchain.views;
 
     framebuffers.clear();
 
-    std::transform(std::cbegin(views), std::cend(views), std::back_inserter(framebuffers), [&device, renderPass, &swapchain] (auto &&view)
+    std::transform(std::cbegin(views), std::cend(views), std::back_inserter(framebuffers), [&device, render_pass, &swapchain] (auto &&view)
     {
         auto const attachements = std::array{swapchain.colorTexture->view->handle(), swapchain.depthTexture->view->handle(), view};
 
         VkFramebufferCreateInfo const createInfo{
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
             nullptr, 0,
-            renderPass,
+            render_pass->handle(),
             static_cast<std::uint32_t>(std::size(attachements)), std::data(attachements),
             swapchain.extent.width, swapchain.extent.height,
             1

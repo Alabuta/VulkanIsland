@@ -15,6 +15,7 @@
 #include "pipeline_states.hxx"
 #include "material.hxx"
 #include "shader_program.hxx"
+#include "render_pass.hxx"
 
 #define USE_DYNAMIC_PIPELINE_STATE 1
 
@@ -64,7 +65,7 @@ namespace graphics
         // TODO:: replace by an abstraction from material.
         VkPipelineLayout layout_;
 
-        VkRenderPass render_pass_;
+        std::shared_ptr<graphics::render_pass> render_pass_;
         std::uint32_t subpass_index_;
 
         template<class T> requires std::same_as<std::remove_cvref_t<T>, pipeline_invariant>
@@ -94,7 +95,7 @@ namespace graphics
 
         [[nodiscard]] std::shared_ptr<graphics::pipeline>
         create_pipeline(std::shared_ptr<graphics::material> material, graphics::pipeline_states const &pipeline_states,
-                        VkPipelineLayout layout, VkRenderPass render_pass, std::uint32_t subpass_index);
+                        VkPipelineLayout layout, std::shared_ptr<graphics::render_pass> render_pass, std::uint32_t subpass_index);
 
     private:
 

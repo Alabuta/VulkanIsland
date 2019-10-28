@@ -4,6 +4,7 @@
 #include "vulkan/device.hxx"
 #include "platform/window.hxx"
 #include "graphics/graphics.hxx"
+#include "graphics/render_pass.hxx"
 #include "resources/buffer.hxx"
 #include "resources/image.hxx"
 
@@ -42,4 +43,4 @@ CreateSwapchain(vulkan::device &device, ResourceManager &resource_manager, VkSur
 void CleanupSwapchain(vulkan::device const &device, VulkanSwapchain &swapchain) noexcept;
 
 
-void CreateFramebuffers(vulkan::device const &device, VkRenderPass renderPass, VulkanSwapchain &swapchain);
+void CreateFramebuffers(vulkan::device const &device, std::shared_ptr<graphics::render_pass> render_pass, VulkanSwapchain &swapchain);

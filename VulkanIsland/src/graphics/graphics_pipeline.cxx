@@ -148,7 +148,7 @@ namespace graphics
 {
     std::shared_ptr<graphics::pipeline> pipeline_factory::create_pipeline(
         std::shared_ptr<graphics::material> material, graphics::pipeline_states const &pipeline_states,
-        VkPipelineLayout layout, VkRenderPass render_pass, std::uint32_t subpass_index
+        VkPipelineLayout layout, std::shared_ptr<graphics::render_pass> render_pass, std::uint32_t subpass_index
     )
     {
         graphics::pipeline_invariant invariant{material, pipeline_states, layout, render_pass, subpass_index};
@@ -315,7 +315,7 @@ namespace graphics
             nullptr,
     #endif
             layout,
-            render_pass,
+            render_pass->handle(),
             subpass_index,
             VK_NULL_HANDLE, -1
         };

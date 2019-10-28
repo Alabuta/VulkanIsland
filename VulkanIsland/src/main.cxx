@@ -130,7 +130,9 @@ struct draw_command final {
     std::uint32_t first_vertex{0};
 
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
-    VkRenderPass renderPass{VK_NULL_HANDLE};
+
+    std::shared_ptr<graphics::render_pass> render_pass;
+    //VkRenderPass renderPass{VK_NULL_HANDLE};
     VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
 };
 
@@ -155,7 +157,7 @@ struct app_t final {
     VulkanSwapchain swapchain2;
 
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
-    VkRenderPass renderPass{VK_NULL_HANDLE};
+    //VkRenderPass renderPass{VK_NULL_HANDLE};
 
     VkCommandPool graphicsCommandPool{VK_NULL_HANDLE}, transferCommandPool{VK_NULL_HANDLE};
 
@@ -192,6 +194,8 @@ struct app_t final {
     std::unique_ptr<graphics::shader_manager> shader_manager;
     std::unique_ptr<graphics::material_factory> material_factory;
     std::unique_ptr<graphics::pipeline_factory> pipeline_factory;
+
+    std::shared_ptr<graphics::render_pass> render_pass;
     std::unique_ptr<graphics::render_pass_manager> render_pass_manager;
 
     std::vector<draw_command> draw_commands;
@@ -223,9 +227,6 @@ struct app_t final {
         if (imageAvailableSemaphore)
             imageAvailableSemaphore.reset();
 
-        if (render_pass_manager)
-            render_pass_manager.reset();
-
         if (pipeline_factory)
             pipeline_factory.reset();
 
@@ -244,10 +245,16 @@ struct app_t final {
         vkDestroyDescriptorSetLayout(vulkan_device->handle(), descriptorSetLayout, nullptr);
         vkDestroyDescriptorPool(vulkan_device->handle(), descriptorPool, nullptr);
 
+        if (render_pass)
+            render_pass.reset();
+
     #if USE_DYNAMIC_PIPELINE_STATE
-        if (renderPass != VK_NULL_HANDLE)
-            vkDestroyRenderPass(vulkan_device->handle(), renderPass, nullptr);
+        /*if (renderPass != VK_NULL_HANDLE)
+            vkDestroyRenderPass(vulkan_device->handle(), renderPass, nullptr);*/
     #endif
+
+        if (render_pass_manager)
+            render_pass_manager.reset();
 
         if (texture)
             texture.reset();
@@ -440,7 +447,7 @@ void create_graphics_command_buffers(app_t &app)
         VkRenderPassBeginInfo const render_pass_info{
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             nullptr,
-            app.renderPass,
+            app.render_pass->handle(),
             app.swapchain2.framebuffers.at(i++),
             {{0, 0}, app.swapchain2.extent},
             static_cast<std::uint32_t>(std::size(clear_colors)), std::data(clear_colors)
@@ -469,7 +476,7 @@ void create_graphics_command_buffers(app_t &app)
             auto [
                 material, pipeline, vertex_buffer,
                 vertex_count, first_vertex,
-                pipelineLayout, renderPass, descriptorSet
+                pipelineLayout, render_pass, descriptorSet
             ] = draw_command;
 
             vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
@@ -499,8 +506,8 @@ void cleanup_frame_data(app_t &app)
     app.command_buffers.clear();
 
 #if !USE_DYNAMIC_PIPELINE_STATE
-    if (app.renderPass != VK_NULL_HANDLE)
-        vkDestroyRenderPass(device.handle(), app.renderPass, nullptr);
+    /*if (app.renderPass != VK_NULL_HANDLE)
+        vkDestroyRenderPass(device.handle(), app.renderPass, nullptr);*/
 #endif
 
     CleanupSwapchain(device, app.swapchain2);
@@ -524,15 +531,15 @@ void recreate_swap_chain(app_t &app)
     else throw std::runtime_error("failed to create the swapchain"s);
 
 #if !USE_DYNAMIC_PIPELINE_STATE
-    if (auto renderPass = CreateRenderPass(*app.vulkan_device, app.swapchain2); !renderPass)
+    /*if (auto renderPass = CreateRenderPass(*app.vulkan_device, app.swapchain2); !renderPass)
         throw std::runtime_error("failed to create the render pass"s);
 
-    else app.renderPass = std::move(renderPass.value());
+    else app.renderPass = std::move(renderPass.value());*/
 
     CreateGraphicsPipelines(app);
 #endif
 
-    CreateFramebuffers(*app.vulkan_device, app.renderPass, app.swapchain2);
+    CreateFramebuffers(*app.vulkan_device, app.render_pass, app.swapchain2);
 
     create_graphics_command_buffers(app);
 }
@@ -600,13 +607,13 @@ void build_render_pipelines(app_t &app, xformat const &_model)
             color_blend_state
         };
 
-        auto pipeline = pipeline_factory.create_pipeline(material, pipeline_states, app.pipelineLayout, app.renderPass, 0u);
+        auto pipeline = pipeline_factory.create_pipeline(material, pipeline_states, app.pipelineLayout, app.render_pass, 0u);
 
         app.draw_commands.push_back(
             draw_command{
                 material, pipeline, vertex_buffer,
                 meshlet.vertex_count, meshlet.first_vertex,
-                app.pipelineLayout, app.renderPass, app.descriptorSet
+                app.pipelineLayout, app.render_pass, app.descriptorSet
             }
         );
     }
@@ -945,13 +952,13 @@ void init(platform::window &window, app_t &app)
 
         auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
 
-        auto render_pass = app.render_pass_manager->create_render_pass(
+        app.render_pass = app.render_pass_manager->create_render_pass(
             std::vector{
                 graphics::attachment_description{
-                    graphics::FORMAT::RGBA8_SRGB,
+                    graphics::FORMAT::BGRA8_SRGB,
                     samples_count_bits,
                     graphics::ATTACHMENT_LOAD_TREATMENT::CLEAR,
-                    graphics::ATTACHMENT_STORE_TREATMENT::STORE,
+                    graphics::ATTACHMENT_STORE_TREATMENT::DONT_CARE,
                     graphics::IMAGE_LAYOUT::UNDEFINED,
                     graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT
                 },
@@ -964,7 +971,7 @@ void init(platform::window &window, app_t &app)
                     graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT
                 },
                 graphics::attachment_description{
-                    graphics::FORMAT::RGBA8_SRGB,
+                    graphics::FORMAT::BGRA8_SRGB,
                     1,
                     graphics::ATTACHMENT_LOAD_TREATMENT::DONT_CARE,
                     graphics::ATTACHMENT_STORE_TREATMENT::STORE,
@@ -1001,13 +1008,14 @@ void init(platform::window &window, app_t &app)
             }
         );
 
-        std::cout << render_pass << '\n';
+        if (app.render_pass == nullptr)
+            throw std::runtime_error("failed to create the render pass"s);
     }
 
-    if (auto renderPass = CreateRenderPass(*app.vulkan_device, app.swapchain2); !renderPass)
+    /*if (auto renderPass = CreateRenderPass(*app.vulkan_device, app.swapchain2); !renderPass)
         throw std::runtime_error("failed to create the render pass"s);
 
-    else app.renderPass = std::move(renderPass.value());
+    else app.renderPass = std::move(renderPass.value());*/
 
     if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkan_device); !descriptorSetLayout)
         throw std::runtime_error("failed to create the descriptor set layout"s);
@@ -1078,7 +1086,7 @@ void init(platform::window &window, app_t &app)
 
     app.resource_manager->TransferStagedVertexData(app.transferCommandPool, app.vulkan_device->transfer_queue);
 
-    CreateFramebuffers(*app.vulkan_device, app.renderPass, app.swapchain2);
+    CreateFramebuffers(*app.vulkan_device, app.render_pass, app.swapchain2);
 
     create_graphics_command_buffers(app);
 
