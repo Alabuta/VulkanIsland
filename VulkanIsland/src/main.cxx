@@ -969,7 +969,7 @@ void init(platform::window &window, app_t &app)
                     graphics::ATTACHMENT_LOAD_TREATMENT::DONT_CARE,
                     graphics::ATTACHMENT_STORE_TREATMENT::STORE,
                     graphics::IMAGE_LAYOUT::UNDEFINED,
-                    graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT
+                    graphics::IMAGE_LAYOUT::PRESENT_SOURCE
                 }
             },
             std::vector{
@@ -992,11 +992,11 @@ void init(platform::window &window, app_t &app)
             },
             std::vector{
                 graphics::subpass_dependency{
-                    /*std::nullopt, 0,
+                    std::nullopt, 0,
                     graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT,
                     graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT,
-                    0,
-                    graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_READ | graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_WRITE*/
+                    static_cast<graphics::MEMORY_ACCESS_TYPE>(0),
+                    graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_READ | graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_WRITE
                 }
             }
         );
