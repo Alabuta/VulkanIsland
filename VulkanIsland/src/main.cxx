@@ -80,7 +80,6 @@
 
 #include "graphics/graphics_pipeline.hxx"
 #include "graphics/pipeline_states.hxx"
-#include "graphics/renderPass.hxx"
 
 #include "graphics/graphics.hxx"
 
@@ -132,7 +131,6 @@ struct draw_command final {
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
 
     std::shared_ptr<graphics::render_pass> render_pass;
-    //VkRenderPass renderPass{VK_NULL_HANDLE};
     VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
 };
 
@@ -157,7 +155,6 @@ struct app_t final {
     VulkanSwapchain swapchain2;
 
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
-    //VkRenderPass renderPass{VK_NULL_HANDLE};
 
     VkCommandPool graphicsCommandPool{VK_NULL_HANDLE}, transferCommandPool{VK_NULL_HANDLE};
 
@@ -247,11 +244,6 @@ struct app_t final {
 
         if (render_pass)
             render_pass.reset();
-
-    #if USE_DYNAMIC_PIPELINE_STATE
-        /*if (renderPass != VK_NULL_HANDLE)
-            vkDestroyRenderPass(vulkan_device->handle(), renderPass, nullptr);*/
-    #endif
 
         if (render_pass_manager)
             render_pass_manager.reset();
@@ -505,11 +497,6 @@ void cleanup_frame_data(app_t &app)
 
     app.command_buffers.clear();
 
-#if !USE_DYNAMIC_PIPELINE_STATE
-    /*if (app.renderPass != VK_NULL_HANDLE)
-        vkDestroyRenderPass(device.handle(), app.renderPass, nullptr);*/
-#endif
-
     CleanupSwapchain(device, app.swapchain2);
 }
 
@@ -531,11 +518,6 @@ void recreate_swap_chain(app_t &app)
     else throw std::runtime_error("failed to create the swapchain"s);
 
 #if !USE_DYNAMIC_PIPELINE_STATE
-    /*if (auto renderPass = CreateRenderPass(*app.vulkan_device, app.swapchain2); !renderPass)
-        throw std::runtime_error("failed to create the render pass"s);
-
-    else app.renderPass = std::move(renderPass.value());*/
-
     CreateGraphicsPipelines(app);
 #endif
 
@@ -1011,11 +993,6 @@ void init(platform::window &window, app_t &app)
         if (app.render_pass == nullptr)
             throw std::runtime_error("failed to create the render pass"s);
     }
-
-    /*if (auto renderPass = CreateRenderPass(*app.vulkan_device, app.swapchain2); !renderPass)
-        throw std::runtime_error("failed to create the render pass"s);
-
-    else app.renderPass = std::move(renderPass.value());*/
 
     if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkan_device); !descriptorSetLayout)
         throw std::runtime_error("failed to create the descriptor set layout"s);

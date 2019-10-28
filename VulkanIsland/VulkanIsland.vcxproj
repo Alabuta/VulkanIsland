@@ -269,7 +269,6 @@
     <ClCompile Include="src\graphics\graphics_pipeline.cxx" />
     <ClCompile Include="src\graphics\material.cxx" />
     <ClCompile Include="src\graphics\pipeline_states.cxx" />
-    <ClCompile Include="src\graphics\renderPass.cxx" />
     <ClCompile Include="src\graphics\render_flow.cxx" />
     <ClCompile Include="src\graphics\render_pass.cxx" />
     <ClCompile Include="src\graphics\shader_program.cxx" />
@@ -311,7 +310,6 @@
     <ClInclude Include="src\graphics\graphics_pipeline.hxx" />
     <ClInclude Include="src\graphics\material.hxx" />
     <ClInclude Include="src\graphics\pipeline_states.hxx" />
-    <ClInclude Include="src\graphics\renderPass.hxx" />
     <ClInclude Include="src\graphics\render_flow.hxx" />
     <ClInclude Include="src\graphics\render_pass.hxx" />
     <ClInclude Include="src\graphics\shader_program.hxx" />
