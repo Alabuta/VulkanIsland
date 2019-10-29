@@ -2,7 +2,7 @@
 
 #include "image.hxx"
 #include "framebuffer.hxx"
-#include "manager.hxx"
+#include "resource_manager.hxx"
 
 
 namespace resource
@@ -26,11 +26,20 @@ namespace resource
             extent.width, extent.height, 1
         };
 
+        std::shared_ptr<resource::framebuffer> framebuffer;
+
         VkFramebuffer handle;
 
         if (auto result = vkCreateFramebuffer(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to create a framebuffer: {0:#x}\n"s, result));
 
-        return std::make_shared<resource::framebuffer>(handle);
+        else framebuffer.reset(new resource::framebuffer{handle}, [this] (resource::framebuffer *ptr_framebuffer)
+        {
+            vkDestroyFramebuffer(device_.handle(), ptr_framebuffer->handle(), nullptr);
+
+            delete ptr_framebuffer;
+        });
+
+        return framebuffer;
     }
 }

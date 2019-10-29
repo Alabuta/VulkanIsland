@@ -243,7 +243,7 @@
   <ItemGroup>
     <ClCompile Include="src\resources\framebuffer.cxx" />
     <ClCompile Include="src\renderer\command_buffer.cxx" />
-    <ClCompile Include="src\resources\manager.cxx" />
+    <ClCompile Include="src\resources\resource_manager.cxx" />
     <ClCompile Include="src\swapchain_old.cxx" />
     <ClCompile Include="src\vulkan\debug.cxx" />
     <ClCompile Include="src/descriptor.cxx" />
@@ -283,7 +283,7 @@
     <ClInclude Include="include\config.hxx" />
     <ClInclude Include="src\renderer\command_buffer.hxx" />
     <ClInclude Include="src\renderer\config.hxx" />
-    <ClInclude Include="src\resources\manager.hxx" />
+    <ClInclude Include="src\resources\resource_manager.hxx" />
     <ClInclude Include="src\swapchain_old.hxx" />
     <ClInclude Include="src\vulkan\debug.hxx" />
     <ClInclude Include="src/descriptor.hxx" />

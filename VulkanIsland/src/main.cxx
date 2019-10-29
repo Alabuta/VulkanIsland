@@ -72,6 +72,7 @@
 #include "resources/buffer.hxx"
 #include "resources/image.hxx"
 #include "resources/resource.hxx"
+#include "resources/resource_manager.hxx"
 #include "resources/semaphore.hxx"
 #include "descriptor.hxx"
 
@@ -149,7 +150,9 @@ struct app_t final {
     std::unique_ptr<vulkan::device> vulkan_device;
 
     std::unique_ptr<MemoryManager> memory_manager;
-    std::unique_ptr<ResourceManager> resource_manager;
+    std::unique_ptr<ResourceManager> resource_manager2;
+
+    std::unique_ptr<resource::resource_manager> resource_manager;
 
     VkSurfaceKHR surface{VK_NULL_HANDLE};
     VulkanSwapchain swapchain2;
@@ -272,6 +275,9 @@ struct app_t final {
         if (resource_manager)
             resource_manager.reset();
 
+        if (resource_manager2)
+            resource_manager2.reset();
+
         if (memory_manager)
             memory_manager.reset();
 
@@ -381,8 +387,8 @@ void create_graphics_command_buffers(app_t &app)
     if (auto result = vkAllocateCommandBuffers(app.vulkan_device->handle(), &allocate_info, std::data(app.command_buffers)); result != VK_SUCCESS)
         throw std::runtime_error(fmt::format("failed to create allocate command buffers: {0:#x}\n"s, result));
 
-    auto &&resource_manager = *app.resource_manager;
-    auto &&vertex_buffers = resource_manager.vertex_buffers();
+    auto &&resource_manager2 = *app.resource_manager2;
+    auto &&vertex_buffers = resource_manager2.vertex_buffers();
 
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
 
@@ -510,7 +516,7 @@ void recreate_swap_chain(app_t &app)
 
     cleanup_frame_data(app);
 
-    auto swapchain2 = CreateSwapchain(vulkan_device, *app.resource_manager, app.surface, app.width, app.height, app.transferCommandPool);
+    auto swapchain2 = CreateSwapchain(vulkan_device, *app.resource_manager2, app.surface, app.width, app.height, app.transferCommandPool);
 
     if (swapchain2)
         app.swapchain2 = std::move(swapchain2.value());
@@ -553,7 +559,7 @@ void build_render_pipelines(app_t &app, xformat const &_model)
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
     auto &&pipeline_factory = *app.pipeline_factory;
 
-    auto &&resource_manager = *app.resource_manager;
+    auto &&resource_manager2 = *app.resource_manager2;
 
     for (auto &&meshlet : _model.non_indexed_meshlets) {
         auto material_index = meshlet.material_index;
@@ -568,10 +574,10 @@ void build_render_pipelines(app_t &app, xformat const &_model)
 
         auto &&vertex_data_buffer = _model.vertex_buffers.at(vertex_layout_index);
 
-        auto vertex_buffer = resource_manager.CreateVertexBuffer(vertex_layout, std::size(vertex_data_buffer.buffer));
+        auto vertex_buffer = resource_manager2.CreateVertexBuffer(vertex_layout, std::size(vertex_data_buffer.buffer));
 
         if (vertex_buffer)
-            resource_manager.StageVertexData(vertex_buffer, vertex_data_buffer.buffer);
+            resource_manager2.StageVertexData(vertex_buffer, vertex_data_buffer.buffer);
 
         else throw std::runtime_error("failed to get vertex buffer"s);
 
@@ -883,7 +889,9 @@ void init(platform::window &window, app_t &app)
     auto renderer_config = adjust_renderer_config(*app.vulkan_device);
 
     app.memory_manager = std::make_unique<MemoryManager>(*app.vulkan_device);
-    app.resource_manager = std::make_unique<ResourceManager>(*app.vulkan_device, *app.memory_manager);
+    app.resource_manager2 = std::make_unique<ResourceManager>(*app.vulkan_device, *app.memory_manager);
+
+    app.resource_manager = std::make_unique<resource::resource_manager>(*app.vulkan_device);
 
     app.shader_manager = std::make_unique<graphics::shader_manager>(*app.vulkan_device);
     app.material_factory = std::make_unique<graphics::material_factory>();
@@ -922,7 +930,7 @@ void init(platform::window &window, app_t &app)
         }
     }
 
-    auto swapchain = CreateSwapchain(*app.vulkan_device, *app.resource_manager, app.surface, app.width, app.height, app.transferCommandPool);
+    auto swapchain = CreateSwapchain(*app.vulkan_device, *app.resource_manager2, app.surface, app.width, app.height, app.transferCommandPool);
 
     if (swapchain)
         app.swapchain2 = std::move(swapchain.value());
@@ -993,6 +1001,20 @@ void init(platform::window &window, app_t &app)
 
         if (app.render_pass == nullptr)
             throw std::runtime_error("failed to create the render pass"s);
+
+        if (app.swapchain) {
+            auto &&device_limits = app.vulkan_device->device_limits();
+
+            auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
+
+            auto const swapchain_length = std::size(app.swapchain->image_views());
+
+            [[maybe_unused]] auto const [format, color_space] = app.swapchain->surface_format();
+
+            auto const extent = app.swapchain->extent();
+
+            auto framebuffer = app.resource_manager->create_framebuffer(extent, app.render_pass, std::vector<std::shared_ptr<resource::image_view>>{});
+        }
     }
 
     if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkan_device); !descriptorSetLayout)
@@ -1018,7 +1040,7 @@ void init(platform::window &window, app_t &app)
 
     else app.texture = std::move(result.value());
 
-    if (auto result = app.vulkan_device->resource_manager().CreateImageSampler(app.texture.image->mip_levels()); !result)
+    if (auto result = app.vulkan_device->resource_manager2().CreateImageSampler(app.texture.image->mip_levels()); !result)
         throw std::runtime_error("failed to create a texture sampler"s);
 
     else app.texture.sampler = result;
@@ -1031,7 +1053,7 @@ void init(platform::window &window, app_t &app)
 
     app.objects.resize(app.objectsNumber);
 
-    if (app.perObjectBuffer = CreateStorageBuffer(*app.resource_manager, app.alignedBufferSize); app.perObjectBuffer) {
+    if (app.perObjectBuffer = CreateStorageBuffer(*app.resource_manager2, app.alignedBufferSize); app.perObjectBuffer) {
         auto &&buffer = *app.perObjectBuffer;
 
         auto offset = buffer.memory()->offset();
@@ -1043,7 +1065,7 @@ void init(platform::window &window, app_t &app)
 
     else throw std::runtime_error("failed to init per object uniform buffer"s);
 
-    if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.resource_manager, sizeof(camera::data_t)); !app.perCameraBuffer)
+    if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.resource_manager2, sizeof(camera::data_t)); !app.perCameraBuffer)
         throw std::runtime_error("failed to init per camera uniform buffer"s);
 
     if (auto descriptorPool = CreateDescriptorPool(*app.vulkan_device); !descriptorPool)
@@ -1062,7 +1084,7 @@ void init(platform::window &window, app_t &app)
 
     build_render_pipelines(app, temp::model);
 
-    app.resource_manager->TransferStagedVertexData(app.transferCommandPool, app.vulkan_device->transfer_queue);
+    app.resource_manager2->TransferStagedVertexData(app.transferCommandPool, app.vulkan_device->transfer_queue);
 
     CreateFramebuffers(*app.vulkan_device, app.render_pass, app.swapchain2);
 
@@ -1268,14 +1290,14 @@ int main()
 
 void create_semaphores(app_t &app)
 {
-    auto &&resource_manager = *app.resource_manager;
+    auto &&resource_manager2 = *app.resource_manager2;
 
-    if (auto semaphore = resource_manager.create_semaphore(); !semaphore)
+    if (auto semaphore = resource_manager2.create_semaphore(); !semaphore)
         throw std::runtime_error("failed to create image semaphore"s);
 
     else app.imageAvailableSemaphore = semaphore;
 
-    if (auto semaphore = resource_manager.create_semaphore(); !semaphore)
+    if (auto semaphore = resource_manager2.create_semaphore(); !semaphore)
         throw std::runtime_error("failed to create render semaphore"s);
 
     else app.renderFinishedSemaphore = semaphore;

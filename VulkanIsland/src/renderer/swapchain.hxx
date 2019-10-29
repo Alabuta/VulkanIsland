@@ -42,6 +42,8 @@ namespace renderer
 
         renderer::surface_format const &surface_format() const noexcept { return surface_format_; }
 
+        renderer::extent extent() const noexcept { return extent_; }
+
         std::vector<VkImage> const &images() const noexcept { return images_; }
         std::vector<VkImageView> const &image_views() const noexcept { return image_views_; }
 
