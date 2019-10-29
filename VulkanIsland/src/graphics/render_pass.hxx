@@ -52,6 +52,30 @@ namespace graphics
 
 namespace graphics
 {
+#if NOT_YET_IMPLEMENTED
+    struct render_pass_invariant final {
+        std::vector<graphics::attachment_description> attachment_descriptions;
+        std::vector<graphics::subpass_description> subpass_descriptions;
+        std::vector<graphics::subpass_dependency> subpass_dependencies;
+
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, resource::framebuffer>
+        auto constexpr operator== (T &&rhs) const
+        {
+            return attachment_descriptions == rhs.attachment_descriptions &&
+                subpass_descriptions == rhs.subpass_descriptions &&
+                subpass_dependencies == rhs.subpass_dependencies;
+        }
+    };
+
+    template<>
+    struct hash<graphics::render_pass_invariant> {
+        std::size_t operator() (graphics::render_pass_invariant const &invariant) const;
+    };
+#endif
+}
+
+namespace graphics
+{
     class render_pass_manager final {
     public:
 

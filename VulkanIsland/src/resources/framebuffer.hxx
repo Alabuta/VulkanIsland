@@ -3,10 +3,16 @@
 #include <vector>
 #include <memory>
 
-#include "graphics.hxx"
-#include "render_pass.hxx"
+#include "graphics/graphics.hxx"
+#include "graphics/render_pass.hxx"
 #include "resources/image.hxx"
 
+
+namespace resource
+{
+    template<class T>
+    struct hash;
+}
 
 namespace resource
 {
@@ -38,25 +44,7 @@ namespace resource
             return extent == rhs.extent && render_pass == rhs.render_pass && attachments == rhs.attachments;
         }
     };
-}
 
-namespace resource
-{
-    class framebuffer_manager final {
-    public:
-
-        [[nodiscard]] std::shared_ptr<resource::framebuffer>
-        create_framebuffer(renderer::extent extent, std::shared_ptr<graphics::render_pass> render_pass,
-                           std::vector<std::shared_ptr<resource::image_view>> const &attachments);
-
-    private:
-
-        ;
-    };
-}
-
-namespace graphics
-{
     template<>
     struct hash<resource::framebuffer_invariant> {
         std::size_t operator() (resource::framebuffer_invariant const &framebuffer_invariant) const;
