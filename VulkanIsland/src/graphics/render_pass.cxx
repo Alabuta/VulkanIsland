@@ -56,8 +56,8 @@ namespace graphics
                 dependency.destination_index ? *dependency.destination_index : 0,
                 convert_to::vulkan(dependency.source_stage),
                 convert_to::vulkan(dependency.destination_stage),
-                convert_to::vulkan(dependency.source_access),
-                convert_to::vulkan(dependency.destination_access),
+                dependency.source_access ? convert_to::vulkan(*dependency.source_access) : 0,
+                dependency.destination_access ? convert_to::vulkan(*dependency.destination_access) : 0,
                 0
             });
         }

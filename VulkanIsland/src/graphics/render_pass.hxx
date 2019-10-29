@@ -20,8 +20,8 @@ namespace graphics
         graphics::PIPELINE_STAGE source_stage;
         graphics::PIPELINE_STAGE destination_stage;
 
-        graphics::MEMORY_ACCESS_TYPE source_access;
-        graphics::MEMORY_ACCESS_TYPE destination_access;
+        std::optional<graphics::MEMORY_ACCESS_TYPE> source_access;
+        std::optional<graphics::MEMORY_ACCESS_TYPE> destination_access;
     };
 
     struct subpass_description final {

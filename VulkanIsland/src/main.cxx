@@ -976,15 +976,16 @@ void init(platform::window &window, app_t &app)
                     },
                     graphics::attachment_reference{
                         0, 1, graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT
+                    },
+                    { }
                     }
-                }
             },
             std::vector{
                 graphics::subpass_dependency{
                     std::nullopt, 0,
                     graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT,
                     graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT,
-                    static_cast<graphics::MEMORY_ACCESS_TYPE>(0),
+                    std::nullopt,
                     graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_READ | graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_WRITE
                 }
             }
