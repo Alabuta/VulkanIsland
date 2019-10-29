@@ -978,7 +978,7 @@ void init(platform::window &window, app_t &app)
                         0, 1, graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT
                     },
                     { }
-                    }
+                }
             },
             std::vector{
                 graphics::subpass_dependency{
@@ -1211,7 +1211,8 @@ int main()
 	std::signal(SIGTRAP, posix_signal_handler);
 #endif
 
-    glfwInit();
+    if (auto result = glfwInit(); result != GLFW_TRUE)
+        throw std::runtime_error(fmt::format("failed to init GLFW: {0:#x}\n"s, result));
 
     app_t app;
 
