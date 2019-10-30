@@ -294,8 +294,11 @@ CreateSwapchain(vulkan::device &device, ResourceManager &resource_manager, VkSur
     swapchain.views.clear();
 
     for (auto &&swapChainImage : swapchain.images) {
-        auto imageView = CreateImageView(device.handle(), swapChainImage, swapchain.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
-        swapchain.views.emplace_back(std::move(imageView));
+        auto handle = CreateImageView(device.handle(), swapChainImage, swapchain.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+        //swapchain.views.emplace_back(std::move(handle));
+
+        auto view = std::make_shared<resource::image_view>(handle, std::shared_ptr<resource::image>(), graphics::IMAGE_VIEW_TYPE::TYPE_2D);
+        swapchain.views.push_back(std::move(view));
     }
 
     auto const swapchainWidth = static_cast<std::uint16_t>(swapchain.extent.width);
@@ -323,13 +326,11 @@ CreateSwapchain(vulkan::device &device, ResourceManager &resource_manager, VkSur
 
 void CleanupSwapchain(vulkan::device const &device, VulkanSwapchain &swapchain) noexcept
 {
-    for (auto &&framebuffer : swapchain.framebuffers)
-        vkDestroyFramebuffer(device.handle(), framebuffer, nullptr);
 
     swapchain.framebuffers.clear();
 
     for (auto &&view : swapchain.views)
-        vkDestroyImageView(device.handle(), view, nullptr);
+        vkDestroyImageView(device.handle(), view->handle(), nullptr);
 
     vkDestroySwapchainKHR(device.handle(), swapchain.handle, nullptr);
     swapchain.views.clear();
@@ -346,31 +347,17 @@ void CleanupSwapchain(vulkan::device const &device, VulkanSwapchain &swapchain) 
 }
 
 
-void CreateFramebuffers(vulkan::device const &device, std::shared_ptr<graphics::render_pass> render_pass, VulkanSwapchain &swapchain)
+void CreateFramebuffers(resource::resource_manager &resource_manager, std::shared_ptr<graphics::render_pass> render_pass, VulkanSwapchain &swapchain)
 {
     auto &&framebuffers = swapchain.framebuffers;
     auto &&views = swapchain.views;
 
     framebuffers.clear();
 
-    std::transform(std::cbegin(views), std::cend(views), std::back_inserter(framebuffers), [&device, render_pass, &swapchain] (auto &&view)
+    std::transform(std::cbegin(views), std::cend(views), std::back_inserter(framebuffers), [&resource_manager, render_pass, &swapchain] (auto &&view)
     {
-        auto const attachements = std::array{swapchain.colorTexture->view->handle(), swapchain.depthTexture->view->handle(), view};
+        auto image_views = std::vector{swapchain.colorTexture->view, swapchain.depthTexture->view, view};
 
-        VkFramebufferCreateInfo const createInfo{
-            VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
-            nullptr, 0,
-            render_pass->handle(),
-            static_cast<std::uint32_t>(std::size(attachements)), std::data(attachements),
-            swapchain.extent.width, swapchain.extent.height,
-            1
-        };
-
-        VkFramebuffer framebuffer;
-
-        if (auto result = vkCreateFramebuffer(device.handle(), &createInfo, nullptr, &framebuffer); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to create a framebuffer: {0:#x}\n"s, result));
-
-        return framebuffer;
+        return resource_manager.create_framebuffer({ swapchain.extent.width, swapchain.extent.height }, render_pass, image_views);
     });
 }

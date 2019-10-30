@@ -56,6 +56,9 @@ namespace resource
     class image_view final {
     public:
 
+        image_view(VkImageView handle, std::shared_ptr<resource::image> image, graphics::IMAGE_VIEW_TYPE type) noexcept :
+            handle_{handle}, image_{image}, type_{type} { }
+
         VkImageView handle() const noexcept { return handle_; }
 
         graphics::IMAGE_VIEW_TYPE type() const noexcept { return type_; }
@@ -71,9 +74,6 @@ namespace resource
         image_view() = delete;
         image_view(image_view const &) = delete;
         image_view(image_view &&) = delete;
-
-        image_view(VkImageView handle, std::shared_ptr<resource::image> image, graphics::IMAGE_VIEW_TYPE type) noexcept :
-            handle_{handle}, image_{image}, type_{type} { }
 
         friend ResourceManager;
     };

@@ -7,6 +7,8 @@
 #include "graphics/render_pass.hxx"
 #include "resources/buffer.hxx"
 #include "resources/image.hxx"
+#include "resources/resource_manager.hxx"
+#include "resources/framebuffer.hxx"
 
 
 struct VulkanSwapchain final {
@@ -20,9 +22,9 @@ struct VulkanSwapchain final {
     std::shared_ptr<resource::texture> colorTexture, depthTexture;
 
     std::vector<VkImage> images;
-    std::vector<VkImageView> views;
+    std::vector<std::shared_ptr<resource::image_view>> views;
 
-    std::vector<VkFramebuffer> framebuffers;
+    std::vector<std::shared_ptr<resource::framebuffer>> framebuffers;
 };
 
 
@@ -43,4 +45,4 @@ CreateSwapchain(vulkan::device &device, ResourceManager &resource_manager, VkSur
 void CleanupSwapchain(vulkan::device const &device, VulkanSwapchain &swapchain) noexcept;
 
 
-void CreateFramebuffers(vulkan::device const &device, std::shared_ptr<graphics::render_pass> render_pass, VulkanSwapchain &swapchain);
+void CreateFramebuffers(resource::resource_manager &resource_manager, std::shared_ptr<graphics::render_pass> render_pass, VulkanSwapchain &swapchain);

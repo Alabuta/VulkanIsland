@@ -446,7 +446,7 @@ void create_graphics_command_buffers(app_t &app)
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
             nullptr,
             app.render_pass->handle(),
-            app.swapchain2.framebuffers.at(i++),
+            app.swapchain2.framebuffers.at(i++)->handle(),
             {{0, 0}, app.swapchain2.extent},
             static_cast<std::uint32_t>(std::size(clear_colors)), std::data(clear_colors)
         };
@@ -527,7 +527,7 @@ void recreate_swap_chain(app_t &app)
     CreateGraphicsPipelines(app);
 #endif
 
-    CreateFramebuffers(*app.vulkan_device, app.render_pass, app.swapchain2);
+    CreateFramebuffers(*app.resource_manager, app.render_pass, app.swapchain2);
 
     create_graphics_command_buffers(app);
 }
@@ -1086,7 +1086,7 @@ void init(platform::window &window, app_t &app)
 
     app.resource_manager2->TransferStagedVertexData(app.transferCommandPool, app.vulkan_device->transfer_queue);
 
-    CreateFramebuffers(*app.vulkan_device, app.render_pass, app.swapchain2);
+    CreateFramebuffers(*app.resource_manager, app.render_pass, app.swapchain2);
 
     create_graphics_command_buffers(app);
 
