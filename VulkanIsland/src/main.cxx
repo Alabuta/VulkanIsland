@@ -494,6 +494,31 @@ void create_graphics_command_buffers(app_t &app)
     }
 }
 
+std::vector<std::shared_ptr<resource::framebuffer>>
+create_framebiffers(resource::resource_manager &resource_manager, std::shared_ptr<graphics::render_pass> render_pass,
+                    renderer::swapchain const &swapchain, vulkan::device_limits const &device_limits)
+{
+    auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
+
+    auto &&swapchain_views = swapchain.image_views();
+    auto swapchain_length = std::size(swapchain_views);
+
+    //[[maybe_unused]] auto [format, color_space] = app.swapchain->surface_format();
+
+    auto extent = swapchain.extent();
+
+    std::vector<std::shared_ptr<resource::framebuffer>> framebuffers;
+
+    std::transform(std::cbegin(swapchain_views), std::cend(swapchain_views), std::back_inserter(framebuffers), [&] (auto view)
+    {
+        auto image_views = std::vector{/*colorTexture->view, depthTexture->view,*/ view};
+
+        return resource_manager.create_framebuffer(extent, render_pass, image_views);
+    });
+
+    return framebuffers;
+}
+
 void cleanup_frame_data(app_t &app)
 {
     auto &&device = *app.vulkan_device;

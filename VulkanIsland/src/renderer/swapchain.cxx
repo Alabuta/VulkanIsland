@@ -101,12 +101,12 @@ namespace
         return images;
     }
 
-    std::vector<VkImageView>
+    std::vector<std::shared_ptr<resource::image_view>>
     get_swapchain_image_views(vulkan::device const &device, renderer::swapchain const &swapchain)
     {
         auto &&surface_format = swapchain.surface_format();
 
-        std::vector<VkImageView> image_views;
+        std::vector<std::shared_ptr<resource::image_view>> image_views;
 
         std::transform(std::cbegin(swapchain.images()), std::cend(swapchain.images()),
                        std::back_inserter(image_views), [&] (auto &&swapchain_image)
@@ -126,7 +126,7 @@ namespace
             if (auto result = vkCreateImageView(device.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
                 throw std::runtime_error(fmt::format("failed to create image view: {0:#x}\n"s, result));
 
-            return handle;
+            return std::make_shared<resource::image_view>(handle, std::shared_ptr<resource::image>(), graphics::IMAGE_VIEW_TYPE::TYPE_2D);
         });
 
         return image_views;
@@ -209,7 +209,9 @@ namespace renderer
     swapchain::~swapchain()
     {
         for (auto &&image_view : image_views_)
-            vkDestroyImageView(device_.handle(), image_view, nullptr);
+            vkDestroyImageView(device_.handle(), image_view->handle(), nullptr);
+
+        image_views_.clear();
 
         vkDestroySwapchainKHR(device_.handle(), handle_, nullptr);
     }
