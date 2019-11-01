@@ -172,34 +172,32 @@ namespace renderer
         if (auto result = vkCreateSwapchainKHR(device.handle(), &create_info, nullptr, &handle_); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to create required swap chain: {0:#x}\n"s, result));
 
-         auto handles = get_swapchain_image_handles(device, *this);
+        for (auto image_handle : get_swapchain_image_handles(device, *this)) {
+            auto image = std::shared_ptr<resource::image>(
+                new resource::image{nullptr, image_handle, surface_format_.format, graphics::IMAGE_TILING::OPTIMAL, 1, extent_}
+            );
 
-        for (auto handle : handles) {
-            images_.push_back(std::make_shared<resource::image>(
-                nullptr, handle, surface_format_.format, graphics::IMAGE_TILING::OPTIMAL, 1, extent_
-            ));
-        }
-
-        std::transform(std::cbegin(swapchain.images()), std::cend(swapchain.images()),
-                       std::back_inserter(image_views_), [&] (auto swapchain_image)
-        {
             VkImageViewCreateInfo const create_info{
                 VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
                 nullptr, 0,
-                swapchain_image->handle(),
+                image->handle(),
                 convert_to::vulkan(graphics::IMAGE_VIEW_TYPE::TYPE_2D),
                 convert_to::vulkan(surface_format_.format),
                 { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
                 { convert_to::vulkan(graphics::IMAGE_ASPECT::COLOR_BIT), 0, 1, 0, 1 }
             };
 
-            VkImageView handle;
+            VkImageView image_view_handle;
 
-            if (auto result = vkCreateImageView(device.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
+            if (auto result = vkCreateImageView(device.handle(), &create_info, nullptr, &image_view_handle); result != VK_SUCCESS)
                 throw std::runtime_error(fmt::format("failed to create image view: {0:#x}\n"s, result));
 
-            return std::make_shared<resource::image_view>(handle, swapchain_image, graphics::IMAGE_VIEW_TYPE::TYPE_2D);
-        });
+            images_.push_back(image);
+
+            image_views_.push_back(std::shared_ptr<resource::image_view>(
+                new resource::image_view{image_view_handle, image, graphics::IMAGE_VIEW_TYPE::TYPE_2D}
+            ));
+        }
     }
 
     swapchain::~swapchain()

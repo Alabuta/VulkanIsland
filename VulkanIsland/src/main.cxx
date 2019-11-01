@@ -906,7 +906,7 @@ create_swapchain(vulkan::device const &device, renderer::platform_surface const 
 std::vector<graphics::attachment_description>
 create_attachment_descriptions(vulkan::device const &device, renderer::surface_format surface_format)
 {
-    auto &&device_limits = app.vulkan_device.device_limits();
+    auto &&device_limits = device.device_limits();
 
     auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
 
@@ -1015,7 +1015,7 @@ create_attachments(vulkan::device const &device, ResourceManager &resource_manag
 
     auto constexpr aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT;
 
-    std::transform(std::cbegin(attachment_descriptions), std::cend(attachment_descriptions),
+    /*std::transform(std::cbegin(attachment_descriptions), std::cend(attachment_descriptions),
                    std::back_inserter(image_views), [&] (auto &&attachment_description)
     {
         auto image = resource_manager.CreateImage(format, width, height, mip_levels, samples_count, tiling, usage_flags, property_flags);
@@ -1029,13 +1029,13 @@ create_attachments(vulkan::device const &device, ResourceManager &resource_manag
             ;
 
         return image_view;
-    });
+    });*/
 
-    return attachments;
+    return image_views;
 }
 
 std::vector<std::shared_ptr<resource::framebuffer>>
-create_framebuffers(vulkan::device const &device, resource::resource_manager &resource_manager,
+create_framebuffers(vulkan::device const &device, resource::resource_manager &resource_manager, renderer::swapchain const &swapchain,
                     std::vector<graphics::attachment_description> const &attachment_descriptions)
 {
     std::vector<std::shared_ptr<resource::framebuffer>> framebuffers;
@@ -1087,29 +1087,40 @@ void init(platform::window &window, app_t &app)
 
     else throw std::runtime_error("failed to graphics command pool"s);
 
-    {
+    if (false) {
         app.swapchain = create_swapchain(*app.vulkan_device, *app.platform_surface, renderer::extent{app.width, app.height});
 
         if (app.swapchain == nullptr)
             throw std::runtime_error("failed to create the swapchain"s);
 
-        auto attachment_descriptions = create_attachment_descriptions(*app.vulkan_device, *app.surface_format);
+        auto attachment_descriptions = create_attachment_descriptions(*app.vulkan_device, app.swapchain->surface_format());
 
-        app.render_pass = create_render_pass(*app.vulkan_device, *app.render_pass_manager, *app.surface_format, attachment_descriptions);
+        app.render_pass = create_render_pass(*app.vulkan_device, *app.render_pass_manager, app.swapchain->surface_format(), attachment_descriptions);
 
         if (app.render_pass == nullptr)
             throw std::runtime_error("failed to create the render pass"s);
 
         auto attachments = create_attachments(*app.vulkan_device, *app.resource_manager2, app.vulkan_device->transfer_queue,
-                                              app.transferCommandPool, app.swapchain, attachment_descriptions);
+                                              app.transferCommandPool, *app.swapchain, attachment_descriptions);
 
         if (std::size(attachments) == 0)
             throw std::runtime_error("failed to create the attachments"s);
 
-        auto framebuffers = create_framebuffers(*app.vulkan_device, *app.resource_manager, attachment_descriptions);
+        auto framebuffers = create_framebuffers(*app.vulkan_device, *app.resource_manager, *app.swapchain, attachment_descriptions);
 
         if (std::size(framebuffers) == 0)
             throw std::runtime_error("failed to create the framebuffers"s);
+    }
+
+    else {
+        renderer::surface_format constexpr surface_format{graphics::FORMAT::BGRA8_SRGB, graphics::COLOR_SPACE::SRGB_NONLINEAR};
+
+        auto attachment_descriptions = create_attachment_descriptions(*app.vulkan_device, surface_format);
+
+        app.render_pass = create_render_pass(*app.vulkan_device, *app.render_pass_manager, surface_format, attachment_descriptions);
+
+        if (app.render_pass == nullptr)
+            throw std::runtime_error("failed to create the render pass"s);
     }
 
     auto swapchain = CreateSwapchain(*app.vulkan_device, *app.resource_manager2, app.surface, app.width, app.height, app.transferCommandPool);

@@ -779,8 +779,8 @@ namespace convert_to
         if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::COSITED_CHROMA_SAMPLES))
             result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT;
 
-        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::SAMPLED_IMAGE_FILTER_CUBIC_IMAGE))
-            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_IMG_BIT;
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMAGE))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMG;
 
         return result;
     }

@@ -297,7 +297,13 @@ CreateSwapchain(vulkan::device &device, ResourceManager &resource_manager, VkSur
         auto handle = CreateImageView(device.handle(), swapChainImage, swapchain.format, VK_IMAGE_ASPECT_COLOR_BIT, 1);
         //swapchain.views.emplace_back(std::move(handle));
 
-        auto view = std::make_shared<resource::image_view>(handle, std::shared_ptr<resource::image>(), graphics::IMAGE_VIEW_TYPE::TYPE_2D);
+        auto image = std::shared_ptr<resource::image>(
+            new resource::image{nullptr, VK_NULL_HANDLE, graphics::FORMAT::UNDEFINED, graphics::IMAGE_TILING::OPTIMAL, 1, renderer::extent{}}
+        );
+
+        auto view = std::shared_ptr<resource::image_view>(
+            new resource::image_view{handle, image, graphics::IMAGE_VIEW_TYPE::TYPE_2D}
+        );
         swapchain.views.push_back(std::move(view));
     }
 
