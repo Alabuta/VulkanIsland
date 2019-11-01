@@ -44,7 +44,7 @@ namespace renderer
 
         renderer::extent extent() const noexcept { return extent_; }
 
-        std::vector<VkImage> const &images() const noexcept { return images_; }
+        std::vector<std::shared_ptr<resource::image>> const &images() const noexcept { return images_; }
         std::vector<std::shared_ptr<resource::image_view>> const &image_views() const noexcept { return image_views_; }
 
     private:
@@ -60,7 +60,7 @@ namespace renderer
 
         graphics::IMAGE_USAGE image_usage_{graphics::IMAGE_USAGE::COLOR_ATTACHMENT};
 
-        std::vector<VkImage> images_;
+        std::vector<std::shared_ptr<resource::image>> images_;
         std::vector<std::shared_ptr<resource::image_view>> image_views_;
 
         swapchain() = delete;

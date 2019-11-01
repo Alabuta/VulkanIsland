@@ -9,6 +9,11 @@
 #include "resource.hxx"
 
 
+namespace renderer
+{
+    class swapchain;
+}
+
 namespace resource
 {
     class image final {
@@ -48,6 +53,7 @@ namespace resource
             memory_{memory}, handle_{handle}, format_{format}, tiling_{tiling}, mip_levels_{mip_levels}, extent_{extent} { }
 
         friend ResourceManager;
+        friend renderer::swapchain;
     };
 }
 
@@ -55,9 +61,6 @@ namespace resource
 {
     class image_view final {
     public:
-
-        image_view(VkImageView handle, std::shared_ptr<resource::image> image, graphics::IMAGE_VIEW_TYPE type) noexcept :
-            handle_{handle}, image_{image}, type_{type} { }
 
         VkImageView handle() const noexcept { return handle_; }
 
@@ -75,7 +78,11 @@ namespace resource
         image_view(image_view const &) = delete;
         image_view(image_view &&) = delete;
 
+        image_view(VkImageView handle, std::shared_ptr<resource::image> image, graphics::IMAGE_VIEW_TYPE type) noexcept :
+            handle_{handle}, image_{image}, type_{type} { }
+
         friend ResourceManager;
+        friend renderer::swapchain;
     };
 }
 

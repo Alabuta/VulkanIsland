@@ -1,6 +1,7 @@
 #include <cmath>
 #include <vector>
 #include <optional>
+#include <iostream>
 #include <algorithm>
 
 #include <fmt/format.h>
@@ -27,7 +28,6 @@ VkInstance vulkan_instance, VkWin32SurfaceCreateInfoKHR const *pCreateInfo, VkAl
 
 namespace
 {
-
     renderer::surface_format
     choose_supported_surface_format(renderer::swapchain_support_details const &support_details,
                                     std::vector<renderer::surface_format> const &required_surface_formats)
@@ -86,50 +86,19 @@ namespace
         };
     }
 
-    std::vector<VkImage> get_swapchain_images(vulkan::device const &device, renderer::swapchain const &swapchain)
+    std::vector<VkImage> get_swapchain_image_handles(vulkan::device const &device, renderer::swapchain const &swapchain)
     {
         std::uint32_t image_count = 0;
 
         if (auto result = vkGetSwapchainImagesKHR(device.handle(), swapchain.handle(), &image_count, nullptr); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to retrieve swap chain images count: {0:#x}\n"s, result));
 
-        std::vector<VkImage> images(image_count);
+        std::vector<VkImage> handles(image_count);
 
-        if (auto result = vkGetSwapchainImagesKHR(device.handle(), swapchain.handle(), &image_count, std::data(images)); result != VK_SUCCESS)
+        if (auto result = vkGetSwapchainImagesKHR(device.handle(), swapchain.handle(), &image_count, std::data(handles)); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to retrieve swap chain images: {0:#x}\n"s, result));
 
-        return images;
-    }
-
-    std::vector<std::shared_ptr<resource::image_view>>
-    get_swapchain_image_views(vulkan::device const &device, renderer::swapchain const &swapchain)
-    {
-        auto &&surface_format = swapchain.surface_format();
-
-        std::vector<std::shared_ptr<resource::image_view>> image_views;
-
-        std::transform(std::cbegin(swapchain.images()), std::cend(swapchain.images()),
-                       std::back_inserter(image_views), [&] (auto &&swapchain_image)
-        {
-            VkImageViewCreateInfo const create_info{
-                VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-                nullptr, 0,
-                swapchain_image,
-                convert_to::vulkan(graphics::IMAGE_VIEW_TYPE::TYPE_2D),
-                convert_to::vulkan(surface_format.format),
-                { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
-                { convert_to::vulkan(graphics::IMAGE_ASPECT::COLOR_BIT), 0, 1, 0, 1 }
-            };
-
-            VkImageView handle;
-
-            if (auto result = vkCreateImageView(device.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-                throw std::runtime_error(fmt::format("failed to create image view: {0:#x}\n"s, result));
-
-            return std::make_shared<resource::image_view>(handle, std::shared_ptr<resource::image>(), graphics::IMAGE_VIEW_TYPE::TYPE_2D);
-        });
-
-        return image_views;
+        return handles;
     }
 }
 
@@ -188,6 +157,8 @@ namespace renderer
         };
 
         if (graphics_queue.family() != presentation_queue.family()) {
+            std::cout << "graphics and presentation queues are not from one family\n"s;
+            
             create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 
             auto queue_family_indices = std::array{
@@ -201,9 +172,34 @@ namespace renderer
         if (auto result = vkCreateSwapchainKHR(device.handle(), &create_info, nullptr, &handle_); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to create required swap chain: {0:#x}\n"s, result));
 
-        images_ = get_swapchain_images(device, *this);
+         auto handles = get_swapchain_image_handles(device, *this);
 
-        image_views_ = get_swapchain_image_views(device, *this);
+        for (auto handle : handles) {
+            images_.push_back(std::make_shared<resource::image>(
+                nullptr, handle, surface_format_.format, graphics::IMAGE_TILING::OPTIMAL, 1, extent_
+            ));
+        }
+
+        std::transform(std::cbegin(swapchain.images()), std::cend(swapchain.images()),
+                       std::back_inserter(image_views_), [&] (auto swapchain_image)
+        {
+            VkImageViewCreateInfo const create_info{
+                VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
+                nullptr, 0,
+                swapchain_image->handle(),
+                convert_to::vulkan(graphics::IMAGE_VIEW_TYPE::TYPE_2D),
+                convert_to::vulkan(surface_format_.format),
+                { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
+                { convert_to::vulkan(graphics::IMAGE_ASPECT::COLOR_BIT), 0, 1, 0, 1 }
+            };
+
+            VkImageView handle;
+
+            if (auto result = vkCreateImageView(device.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
+                throw std::runtime_error(fmt::format("failed to create image view: {0:#x}\n"s, result));
+
+            return std::make_shared<resource::image_view>(handle, swapchain_image, graphics::IMAGE_VIEW_TYPE::TYPE_2D);
+        });
     }
 
     swapchain::~swapchain()
@@ -214,5 +210,7 @@ namespace renderer
         image_views_.clear();
 
         vkDestroySwapchainKHR(device_.handle(), handle_, nullptr);
+
+        images_.clear();
     }
 }
