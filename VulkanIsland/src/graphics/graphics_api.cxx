@@ -707,6 +707,84 @@ namespace convert_to
         }
     }
 
+    VkFormatFeatureFlags vulkan(graphics::FORMAT_FEATURE format_feature) noexcept
+    {
+        VkFormatFeatureFlags result = 0;
+
+        using E = std::underlying_type_t<graphics::FORMAT_FEATURE>;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::SAMPLED_IMAGE))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::STORAGE_IMAGE))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::STORAGE_IMAGE_ATOMIC))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_STORAGE_IMAGE_ATOMIC_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::UNIFORM_TEXEL_BUFFER))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_UNIFORM_TEXEL_BUFFER_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::STORAGE_TEXEL_BUFFER))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::STORAGE_TEXEL_BUFFER_ATOMIC))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_STORAGE_TEXEL_BUFFER_ATOMIC_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::VERTEX_BUFFER))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::COLOR_ATTACHMENT))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::COLOR_ATTACHMENT_BLEND))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::DEPTH_STENCIL_ATTACHMENT))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::BLIT_SOURCE))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_BLIT_SRC_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::BLIT_DESTINATION))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_BLIT_DST_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::SAMPLED_IMAGE_FILTER_LINEAR))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::TRANSFER_SOURCE))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::TRANSFER_DESTINATION))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::MIDPOINT_CHROMA_SAMPLES))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_LINEAR_FILTER_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_SEPARATE_RECONSTRUCTION_FILTER_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_YCBCR_CONVERSION_CHROMA_RECONSTRUCTION_EXPLICIT_FORCEABLE_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::DISJOINT))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_DISJOINT_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::COSITED_CHROMA_SAMPLES))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT;
+
+        if (static_cast<E>(format_feature & graphics::FORMAT_FEATURE::SAMPLED_IMAGE_FILTER_CUBIC_IMAGE))
+            result |= VkFormatFeatureFlagBits::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_CUBIC_IMG_BIT;
+
+        return result;
+    }
+
     VkAttachmentLoadOp vulkan(graphics::ATTACHMENT_LOAD_TREATMENT load_treatment) noexcept
     {
         switch (load_treatment) {

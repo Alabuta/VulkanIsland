@@ -48,6 +48,8 @@ namespace convert_to
 
     VkFormat vulkan(graphics::FORMAT format) noexcept;
 
+    VkFormatFeatureFlags vulkan(graphics::FORMAT_FEATURE format_feature) noexcept;
+
     VkAttachmentLoadOp vulkan(graphics::ATTACHMENT_LOAD_TREATMENT load_treatment) noexcept;
 
     VkAttachmentStoreOp vulkan(graphics::ATTACHMENT_STORE_TREATMENT store_treatment) noexcept;
