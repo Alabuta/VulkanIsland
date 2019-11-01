@@ -26,6 +26,10 @@ namespace resource
     private:
 
         VkFramebuffer handle_;
+
+        framebuffer() = delete;
+        framebuffer(framebuffer const &) = delete;
+        framebuffer(framebuffer &&) = delete;
     };
 }
 

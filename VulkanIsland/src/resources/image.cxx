@@ -44,6 +44,31 @@ FindSupportedImageFormat(vulkan::device const &device, std::vector<graphics::FOR
     return it_format != std::cend(candidates) ? *it_format : std::optional<graphics::FORMAT>();
 }
 
+
+[[nodiscard]] std::optional<graphics::FORMAT>
+find_supported_image_format(vulkan::device const &device, std::vector<graphics::FORMAT> const &candidates,
+                            graphics::IMAGE_TILING tiling, graphics::FORMAT_FEATURE features)
+{
+    auto it_format = std::find_if(std::cbegin(candidates), std::cend(candidates), [&device, tiling, features] (auto candidate)
+    {
+        VkFormatProperties properties;
+        vkGetPhysicalDeviceFormatProperties(device.physical_handle(), convert_to::vulkan(candidate), &properties);
+
+        switch (tiling) {
+            case graphics::IMAGE_TILING::LINEAR:
+                return (properties.linearTilingFeatures & features) == features;
+
+            case graphics::IMAGE_TILING::OPTIMAL:
+                return (properties.optimalTilingFeatures & features) == features;
+
+            default:
+                return false;
+        }
+    });
+
+    return it_format != std::cend(candidates) ? *it_format : std::nullopt;
+}
+
 std::shared_ptr<resource::texture>
 CreateTexture(vulkan::device const &device, ResourceManager &resource_manager, graphics::FORMAT format, graphics::IMAGE_VIEW_TYPE view_type,
               std::uint16_t width, std::uint16_t height, std::uint32_t mip_levels, std::uint32_t samples_count, graphics::IMAGE_TILING tiling,
