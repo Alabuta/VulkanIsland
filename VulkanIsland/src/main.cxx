@@ -878,6 +878,182 @@ renderer::config adjust_renderer_config(vulkan::device const &device)
     return renderer_config;
 }
 
+std::unique_ptr<renderer::swapchain>
+create_swapchain(vulkan::device const &device, renderer::platform_surface const &platform_surface, renderer::extent extent)
+{
+    auto surface_formats = std::vector<renderer::surface_format>{
+        { graphics::FORMAT::RGBA8_SRGB, graphics::COLOR_SPACE::SRGB_NONLINEAR },
+        { graphics::FORMAT::BGRA8_SRGB, graphics::COLOR_SPACE::SRGB_NONLINEAR }
+    };
+
+    std::unique_ptr<renderer::swapchain> swapchain;
+
+    for (auto surface_format : surface_formats) {
+        try {
+            swapchain = std::make_unique<renderer::swapchain>(device, platform_surface, surface_format, extent);
+
+        } catch (std::runtime_error const &ex) {
+            std::cout << ex.what() << std::endl;
+        }
+
+        if (swapchain)
+            break;
+    }
+
+    return swapchain;
+}
+
+std::vector<graphics::attachment_description>
+create_attachment_descriptions(vulkan::device const &device, renderer::surface_format surface_format)
+{
+    auto &&device_limits = app.vulkan_device.device_limits();
+
+    auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
+
+    /* auto color_format = find_supported_image_format(
+        device,
+        { graphics::FORMAT::RGBA8_SRGB, graphics::FORMAT::BGRA8_SRGB },
+        graphics::IMAGE_TILING::OPTIMAL,
+        graphics::FORMAT_FEATURE::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT
+    );
+
+    if (!color_format)
+        throw std::runtime_error("failed to find supported color format"s); */
+
+    auto depth_format = find_supported_image_format(
+        device,
+        { graphics::FORMAT::D32_SFLOAT, graphics::FORMAT::D32_SFLOAT_S8_UINT, graphics::FORMAT::D24_UNORM_S8_UINT },
+        graphics::IMAGE_TILING::OPTIMAL,
+        graphics::FORMAT_FEATURE::DEPTH_STENCIL_ATTACHMENT
+    );
+
+    if (!depth_format)
+        throw std::runtime_error("failed to find supported depth format"s);
+
+    return std::vector{
+        graphics::attachment_description{
+            surface_format.format,
+            samples_count_bits,
+            graphics::ATTACHMENT_LOAD_TREATMENT::CLEAR,
+            graphics::ATTACHMENT_STORE_TREATMENT::DONT_CARE,
+            graphics::IMAGE_LAYOUT::UNDEFINED,
+            graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT
+        },
+        graphics::attachment_description{
+            *depth_format,
+            samples_count_bits,
+            graphics::ATTACHMENT_LOAD_TREATMENT::CLEAR,
+            graphics::ATTACHMENT_STORE_TREATMENT::DONT_CARE,
+            graphics::IMAGE_LAYOUT::UNDEFINED,
+            graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT
+        }
+    };
+}
+
+std::shared_ptr<graphics::render_pass>
+create_render_pass(vulkan::device const &device, graphics::render_pass_manager &render_pass_manager,
+                   renderer::surface_format surface_format, std::vector<graphics::attachment_description> attachment_descriptions)
+{
+    attachment_descriptions.push_back(
+        graphics::attachment_description{
+            surface_format.format,
+            1,
+            graphics::ATTACHMENT_LOAD_TREATMENT::DONT_CARE,
+            graphics::ATTACHMENT_STORE_TREATMENT::STORE,
+            graphics::IMAGE_LAYOUT::UNDEFINED,
+            graphics::IMAGE_LAYOUT::PRESENT_SOURCE
+        }
+    );
+    
+    return render_pass_manager.create_render_pass(
+        attachment_descriptions,
+        std::vector{
+            graphics::subpass_description{
+                { },
+                {
+                    graphics::attachment_reference{
+                        0, 0, graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT
+                    }
+                },
+                {
+                    graphics::attachment_reference{
+                        0, 2, graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT
+                    }
+                },
+                graphics::attachment_reference{
+                    0, 1, graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT
+                },
+                { }
+            }
+        },
+        std::vector{
+            graphics::subpass_dependency{
+                std::nullopt, 0,
+                graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT,
+                graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT,
+                std::nullopt,
+                graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_READ | graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_WRITE
+            }
+        }
+    );
+}
+
+std::vector<std::shared_ptr<resource::image_view>>
+create_attachments(vulkan::device const &device, ResourceManager &resource_manager, graphics::transfer_queue const &transfer_queue,
+                   VkCommandPool transferCommandPool, renderer::swapchain const &swapchain,
+                   std::vector<graphics::attachment_description> const &attachment_descriptions)
+{
+    std::vector<std::shared_ptr<resource::image_view>> image_views;
+
+    auto constexpr mip_levels = 1u;
+
+    /* | graphics::IMAGE_USAGE::TRANSFER_DESTINATION*/
+    auto constexpr usage_flags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT | graphics::IMAGE_USAGE::COLOR_ATTACHMENT;
+    auto constexpr property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT | VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+
+    auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
+
+    auto constexpr aspect_flags = VK_IMAGE_ASPECT_COLOR_BIT;
+
+    std::transform(std::cbegin(attachment_descriptions), std::cend(attachment_descriptions),
+                   std::back_inserter(image_views), [&] (auto &&attachment_description)
+    {
+        auto image = resource_manager.CreateImage(format, width, height, mip_levels, samples_count, tiling, usage_flags, property_flags);
+
+        if (image == nullptr)
+            ;
+
+        auto image_view = resource_manager.CreateImageView(image, view_type, aspect_flags);
+
+        if (image_view == nullptr)
+            ;
+
+        return image_view;
+    });
+
+    return attachments;
+}
+
+std::vector<std::shared_ptr<resource::framebuffer>>
+create_framebuffers(vulkan::device const &device, resource::resource_manager &resource_manager,
+                    std::vector<graphics::attachment_description> const &attachment_descriptions)
+{
+    std::vector<std::shared_ptr<resource::framebuffer>> framebuffers;
+
+    auto &&swapchain_views = swapchain.image_views();
+    auto swapchain_length = std::size(swapchain_views);
+    auto extent = swapchain.extent();
+
+    // std::transform(std::cbegin(swapchain_views), std::cend(swapchain_views), std::back_inserter(framebuffers), [&] (auto swapchain_view)
+    // {
+    //     auto image_views = std::vector{/*colorTexture->view, depthTexture->view,*/ view};
+
+    //     return resource_manager.create_framebuffer(extent, render_pass, image_views);
+    // });
+
+    return framebuffers;
+}
+
 void init(platform::window &window, app_t &app)
 {
     app.vulkan_instance = std::make_unique<vulkan::instance>();
@@ -911,24 +1087,29 @@ void init(platform::window &window, app_t &app)
 
     else throw std::runtime_error("failed to graphics command pool"s);
 
-    if (false) {
-        auto surface_formats = std::vector<renderer::surface_format>{
-            { graphics::FORMAT::RGBA8_SRGB, graphics::COLOR_SPACE::SRGB_NONLINEAR },
-            { graphics::FORMAT::BGRA8_SRGB, graphics::COLOR_SPACE::SRGB_NONLINEAR }
-        };
+    {
+        app.swapchain = create_swapchain(*app.vulkan_device, *app.platform_surface, renderer::extent{app.width, app.height});
 
-        for (auto &&surface_format : surface_formats) {
-            try {
-                app.swapchain = std::make_unique<renderer::swapchain>(
-                    *app.vulkan_device, *app.platform_surface, surface_format, renderer::extent{app.width, app.height}
-                );
-            } catch (std::runtime_error const &ex) {
-                std::cout << ex.what() << std::endl;
-            }
+        if (app.swapchain == nullptr)
+            throw std::runtime_error("failed to create the swapchain"s);
 
-            if (app.swapchain)
-                break;
-        }
+        auto attachment_descriptions = create_attachment_descriptions(*app.vulkan_device, *app.surface_format);
+
+        app.render_pass = create_render_pass(*app.vulkan_device, *app.render_pass_manager, *app.surface_format, attachment_descriptions);
+
+        if (app.render_pass == nullptr)
+            throw std::runtime_error("failed to create the render pass"s);
+
+        auto attachments = create_attachments(*app.vulkan_device, *app.resource_manager2, app.vulkan_device->transfer_queue,
+                                              app.transferCommandPool, app.swapchain, attachment_descriptions);
+
+        if (std::size(attachments) == 0)
+            throw std::runtime_error("failed to create the attachments"s);
+
+        auto framebuffers = create_framebuffers(*app.vulkan_device, *app.resource_manager, attachment_descriptions);
+
+        if (std::size(framebuffers) == 0)
+            throw std::runtime_error("failed to create the framebuffers"s);
     }
 
     auto swapchain = CreateSwapchain(*app.vulkan_device, *app.resource_manager2, app.surface, app.width, app.height, app.transferCommandPool);
@@ -937,86 +1118,6 @@ void init(platform::window &window, app_t &app)
         app.swapchain2 = std::move(swapchain.value());
 
     else throw std::runtime_error("failed to create the swapchain"s);
-
-    {
-        auto &&device_limits = app.vulkan_device->device_limits();
-
-        auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
-
-        app.render_pass = app.render_pass_manager->create_render_pass(
-            std::vector{
-                graphics::attachment_description{
-                    graphics::FORMAT::BGRA8_SRGB,
-                    samples_count_bits,
-                    graphics::ATTACHMENT_LOAD_TREATMENT::CLEAR,
-                    graphics::ATTACHMENT_STORE_TREATMENT::DONT_CARE,
-                    graphics::IMAGE_LAYOUT::UNDEFINED,
-                    graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT
-                },
-                graphics::attachment_description{
-                    graphics::FORMAT::D32_SFLOAT,
-                    samples_count_bits,
-                    graphics::ATTACHMENT_LOAD_TREATMENT::CLEAR,
-                    graphics::ATTACHMENT_STORE_TREATMENT::DONT_CARE,
-                    graphics::IMAGE_LAYOUT::UNDEFINED,
-                    graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT
-                },
-                graphics::attachment_description{
-                    graphics::FORMAT::BGRA8_SRGB,
-                    1,
-                    graphics::ATTACHMENT_LOAD_TREATMENT::DONT_CARE,
-                    graphics::ATTACHMENT_STORE_TREATMENT::STORE,
-                    graphics::IMAGE_LAYOUT::UNDEFINED,
-                    graphics::IMAGE_LAYOUT::PRESENT_SOURCE
-                }
-            },
-            std::vector{
-                graphics::subpass_description{
-                    { },
-                    {
-                        graphics::attachment_reference{
-                            0, 0, graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT
-                        }
-                    },
-                    {
-                        graphics::attachment_reference{
-                            0, 2, graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT
-                        }
-                    },
-                    graphics::attachment_reference{
-                        0, 1, graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT
-                    },
-                    { }
-                }
-            },
-            std::vector{
-                graphics::subpass_dependency{
-                    std::nullopt, 0,
-                    graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT,
-                    graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT,
-                    std::nullopt,
-                    graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_READ | graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_WRITE
-                }
-            }
-        );
-
-        if (app.render_pass == nullptr)
-            throw std::runtime_error("failed to create the render pass"s);
-
-        if (app.swapchain) {
-            auto &&device_limits = app.vulkan_device->device_limits();
-
-            auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
-
-            auto const swapchain_length = std::size(app.swapchain->image_views());
-
-            [[maybe_unused]] auto const [format, color_space] = app.swapchain->surface_format();
-
-            auto const extent = app.swapchain->extent();
-
-            auto framebuffer = app.resource_manager->create_framebuffer(extent, app.render_pass, std::vector<std::shared_ptr<resource::image_view>>{});
-        }
-    }
 
     if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkan_device); !descriptorSetLayout)
         throw std::runtime_error("failed to create the descriptor set layout"s);
