@@ -49,7 +49,7 @@ namespace resource
         image(image &&) = delete;
 
         image(std::shared_ptr<DeviceMemory> memory, VkImage handle, graphics::FORMAT format, graphics::IMAGE_TILING tiling,
-              std::uint32_t mip_levels, renderer::extent extent) noexcept :
+              std::uint32_t mip_levels, renderer::extent extent) :
             memory_{memory}, handle_{handle}, format_{format}, tiling_{tiling}, mip_levels_{mip_levels}, extent_{extent} { }
 
         friend ResourceManager;
@@ -78,7 +78,7 @@ namespace resource
         image_view(image_view const &) = delete;
         image_view(image_view &&) = delete;
 
-        image_view(VkImageView handle, std::shared_ptr<resource::image> image, graphics::IMAGE_VIEW_TYPE type) noexcept :
+        image_view(VkImageView handle, std::shared_ptr<resource::image> image, graphics::IMAGE_VIEW_TYPE type) :
             handle_{handle}, image_{image}, type_{type} { }
 
         friend ResourceManager;

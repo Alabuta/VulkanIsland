@@ -19,9 +19,9 @@ namespace graphics
     struct render_pipeline_node final {
         std::uint32_t width, height;
 
-        std::vector<graphics::attachment> input_attachments;
+        /*std::vector<graphics::attachment> input_attachments;
         std::vector<graphics::attachment> color_attachments;
-        std::vector<graphics::attachment> depth_stencil_attachments;
+        std::vector<graphics::attachment> depth_stencil_attachments;*/
 
         std::shared_ptr<graphics::material> material;
 

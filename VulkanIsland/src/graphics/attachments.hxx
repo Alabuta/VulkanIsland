@@ -48,7 +48,25 @@ namespace graphics
         }
     };
 
-    using attachment = std::variant<graphics::attachment_description, graphics::attachment_reference>;
+    struct color_attachment final {
+        static auto constexpr usage{graphics::IMAGE_USAGE::COLOR_ATTACHMENT};
+        static auto constexpr layout{graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT};
+        static auto constexpr aspect{graphics::IMAGE_ASPECT::COLOR_BIT};
+    };
+
+    struct depth_attachment final {
+        static auto constexpr usage{graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT};
+        static auto constexpr layout{graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT};
+        static auto constexpr aspect{graphics::IMAGE_ASPECT::DEPTH_BIT};
+    };
+
+    struct depth_stencil_attachment final {
+        static auto constexpr usage{graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT};
+        static auto constexpr layout{graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT};
+        static auto constexpr aspect{graphics::IMAGE_ASPECT::DEPTH_BIT | graphics::IMAGE_ASPECT::STENCIL_BIT};
+    };
+
+    using attachment = std::variant<graphics::color_attachment, graphics::depth_attachment, graphics::depth_stencil_attachment>;
 }
 
 namespace graphics
