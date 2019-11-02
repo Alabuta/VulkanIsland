@@ -1,5 +1,6 @@
 #include <boost/functional/hash.hpp>
 
+#include "resources/image.hxx"
 #include "attachments.hxx"
 
 

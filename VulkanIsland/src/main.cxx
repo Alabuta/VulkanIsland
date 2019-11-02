@@ -115,7 +115,7 @@ void cleanup_frame_data(struct app_t &app);
 void create_semaphores(app_t &app);
 void recreate_swap_chain(app_t &app);
 
-template<class T> requires mpl::container<std::remove_cvref_t<T>>
+template<class T, typename std::enable_if_t<mpl::is_container_v<std::remove_cvref_t<T>>>...>
 [[nodiscard]] std::shared_ptr<resource::buffer> stage_data(vulkan::device &device, ResourceManager &resource_manager, T &&container);
 
 [[nodiscard]] std::shared_ptr<resource::texture>
@@ -198,7 +198,7 @@ struct app_t final {
     std::shared_ptr<graphics::render_pass> render_pass;
     std::unique_ptr<graphics::render_pass_manager> render_pass_manager;
 
-    std::vector<std::shared_ptr<resource::image_view>> attachments;
+    std::vector<graphics::attachment> attachments;
     std::vector<std::shared_ptr<resource::framebuffer>> framebuffers;
 
     std::vector<draw_command> draw_commands;
@@ -908,45 +908,111 @@ create_swapchain(vulkan::device const &device, renderer::platform_surface const 
     return swapchain;
 }
 
-std::vector<graphics::attachment_description>
-create_attachment_descriptions(vulkan::device const &device, renderer::surface_format surface_format)
+std::vector<graphics::attachment>
+create_attachments(vulkan::device const &device, ResourceManager &resource_manager, renderer::swapchain const &swapchain)
 {
     auto &&device_limits = device.device_limits();
 
-    auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
+    auto samples_count = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
 
-    /*auto color_format = find_supported_image_format(
-        device,
-        { graphics::FORMAT::RGBA8_SRGB, graphics::FORMAT::BGRA8_SRGB },
-        graphics::IMAGE_TILING::OPTIMAL,
-        graphics::FORMAT_FEATURE::COLOR_ATTACHMENT_BLEND
-    );
+    auto constexpr mip_levels = 1u;
+    auto constexpr view_type = graphics::IMAGE_VIEW_TYPE::TYPE_2D;
 
-    if (!color_format)
-        throw std::runtime_error("failed to find supported color format"s); */
+    auto [width, height] = swapchain.extent();
 
-    auto depth_format = find_supported_image_format(
-        device,
-        { graphics::FORMAT::D32_SFLOAT, graphics::FORMAT::D32_SFLOAT_S8_UINT, graphics::FORMAT::D24_UNORM_S8_UINT },
-        graphics::IMAGE_TILING::OPTIMAL,
-        graphics::FORMAT_FEATURE::DEPTH_STENCIL_ATTACHMENT
-    );
+    std::vector<graphics::attachment> attachments;
 
-    if (!depth_format)
-        throw std::runtime_error("failed to find supported depth format"s);
+    {
+        /* | graphics::IMAGE_USAGE::TRANSFER_DESTINATION*/
+        auto constexpr usage_flags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT | graphics::IMAGE_USAGE::COLOR_ATTACHMENT;
+        auto constexpr property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT /*| VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT*/;
+        auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
+        auto constexpr aspect_flags = graphics::IMAGE_ASPECT::COLOR_BIT;
+
+        auto format = swapchain.surface_format().format;
+
+        /*auto color_format = find_supported_image_format(
+            device,
+            { graphics::FORMAT::RGBA8_SRGB, graphics::FORMAT::BGRA8_SRGB },
+            graphics::IMAGE_TILING::OPTIMAL,
+            graphics::FORMAT_FEATURE::COLOR_ATTACHMENT_BLEND
+        );
+
+        if (!color_format)
+            throw std::runtime_error("failed to find supported color format"s); */
+
+        auto image = resource_manager.CreateImage(format, width, height, mip_levels, samples_count, tiling, usage_flags, property_flags);
+
+        if (image == nullptr)
+            throw std::runtime_error("failed to create image for the color attachment"s);
+
+        auto image_view = resource_manager.CreateImageView(image, view_type, convert_to::vulkan(aspect_flags));
+
+        if (image_view == nullptr)
+            throw std::runtime_error("failed to create image view for the color attachment"s);
+
+        attachments.push_back(graphics::color_attachment{format, tiling, mip_levels, samples_count, image, image_view});
+    }
+
+    {
+        auto constexpr usage_flags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT | graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT;
+        auto constexpr property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT /*| VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT*/;
+        auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
+        auto constexpr aspect_flags = graphics::IMAGE_ASPECT::DEPTH_BIT;
+
+        auto format = find_supported_image_format(
+            device,
+            {graphics::FORMAT::D32_SFLOAT, graphics::FORMAT::D32_SFLOAT_S8_UINT, graphics::FORMAT::D24_UNORM_S8_UINT},
+            tiling,
+            graphics::FORMAT_FEATURE::DEPTH_STENCIL_ATTACHMENT
+        );
+
+        if (!format)
+            throw std::runtime_error("failed to find supported depth format"s);
+
+        auto image = resource_manager.CreateImage(*format, width, height, mip_levels, samples_count, tiling, usage_flags, property_flags);
+
+        if (image == nullptr)
+            throw std::runtime_error("failed to create image for the depth attachment"s);
+
+        auto image_view = resource_manager.CreateImageView(image, view_type, convert_to::vulkan(aspect_flags));
+
+        if (image_view == nullptr)
+            throw std::runtime_error("failed to create image view for the depth attachment"s);
+
+        attachments.push_back(graphics::depth_attachment{*format, tiling, mip_levels, samples_count, image, image_view});
+    }
+
+    return attachments;
+}
+
+std::vector<graphics::attachment_description>
+create_attachment_descriptions(std::vector<graphics::attachment> const &attachments)
+{
+    auto [color_attachment_format, color_attachment_samples_count] = std::visit([] (auto &&attachment)
+    {
+        return std::pair{attachment.format, attachment.samples_count};
+
+    }, attachments.at(0));
+
+    auto [depth_attachment_format, depth_attachment_samples_count] = std::visit([] (auto &&attachment)
+    {
+        return std::pair{attachment.format, attachment.samples_count};
+
+    }, attachments.at(1));
 
     return std::vector{
         graphics::attachment_description{
-            surface_format.format,
-            samples_count_bits,
+            color_attachment_format,
+            color_attachment_samples_count,
             graphics::ATTACHMENT_LOAD_TREATMENT::CLEAR,
             graphics::ATTACHMENT_STORE_TREATMENT::DONT_CARE,
             graphics::IMAGE_LAYOUT::UNDEFINED,
             graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT
         },
         graphics::attachment_description{
-            *depth_format,
-            samples_count_bits,
+            depth_attachment_format,
+            depth_attachment_samples_count,
             graphics::ATTACHMENT_LOAD_TREATMENT::CLEAR,
             graphics::ATTACHMENT_STORE_TREATMENT::DONT_CARE,
             graphics::IMAGE_LAYOUT::UNDEFINED,
@@ -1003,106 +1069,31 @@ create_render_pass(vulkan::device const &device, graphics::render_pass_manager &
     );
 }
 
-std::vector<std::shared_ptr<resource::image_view>>
-create_attachments(vulkan::device const &device, ResourceManager &resource_manager, graphics::transfer_queue const &transfer_queue,
-                   VkCommandPool transfer_command_pool, renderer::swapchain const &swapchain,
-                   std::vector<graphics::attachment_description> const &attachment_descriptions)
-{
-    auto &&device_limits = device.device_limits();
-
-    auto samples_count = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
-
-    auto constexpr mip_levels = 1u;
-    auto constexpr view_type = graphics::IMAGE_VIEW_TYPE::TYPE_2D;
-
-    auto &&color_attachment_description = attachment_descriptions.at(0);
-    auto &&depth_attachment_description = attachment_descriptions.at(1);
-
-    auto [width, height] = swapchain.extent();
-
-    std::vector<std::shared_ptr<resource::image_view>> image_views;
-
-    {
-        /* | graphics::IMAGE_USAGE::TRANSFER_DESTINATION*/
-        auto constexpr usage_flags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT | graphics::IMAGE_USAGE::COLOR_ATTACHMENT;
-        auto constexpr property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT /*| VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT*/;
-        auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
-        auto constexpr aspect_flags = graphics::IMAGE_ASPECT::COLOR_BIT;
-        auto constexpr layout = graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT;
-
-        auto image = resource_manager.CreateImage(color_attachment_description.format, width, height, mip_levels, samples_count, tiling, usage_flags, property_flags);
-
-        if (image == nullptr)
-            throw std::runtime_error("failed to create image for the color attachment"s);
-
-        auto image_view = resource_manager.CreateImageView(image, view_type, convert_to::vulkan(aspect_flags));
-
-        if (image_view == nullptr)
-            throw std::runtime_error("failed to create image view for the color attachment"s);
-
-        TransitionImageLayout(device, transfer_queue, *image, graphics::IMAGE_LAYOUT::UNDEFINED, layout, transfer_command_pool);
-
-        image_views.push_back(image_view);
-    }
-
-    {
-        auto constexpr usage_flags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT | graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT;
-        auto constexpr property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT /*| VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT*/;
-        auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
-        auto constexpr aspect_flags = graphics::IMAGE_ASPECT::DEPTH_BIT;
-        auto constexpr layout = graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT;
-
-        auto image = resource_manager.CreateImage(depth_attachment_description.format, width, height, mip_levels, samples_count, tiling, usage_flags, property_flags);
-
-        if (image == nullptr)
-            throw std::runtime_error("failed to create image for the depth attachment"s);
-
-        auto image_view = resource_manager.CreateImageView(image, view_type, convert_to::vulkan(aspect_flags));
-
-        if (image_view == nullptr)
-            throw std::runtime_error("failed to create image view for the depth attachment"s);
-
-        TransitionImageLayout(device, transfer_queue, *image, graphics::IMAGE_LAYOUT::UNDEFINED, layout, transfer_command_pool);
-
-        image_views.push_back(image_view);
-    }
-
-    /*std::transform(std::cbegin(attachment_descriptions), std::cend(attachment_descriptions),
-                   std::back_inserter(image_views), [&] (auto &&attachment_description)
-    {
-        auto image = resource_manager.CreateImage(format, width, height, mip_levels, samples_count, tiling, usage_flags, property_flags);
-
-        if (image == nullptr)
-            ;
-
-        auto image_view = resource_manager.CreateImageView(image, view_type, aspect_flags);
-
-        if (image_view == nullptr)
-            ;
-
-        return image_view;
-    });*/
-
-    return image_views;
-}
-
 std::vector<std::shared_ptr<resource::framebuffer>>
 create_framebuffers(vulkan::device const &device, resource::resource_manager &resource_manager, renderer::swapchain const &swapchain,
-                    std::shared_ptr<graphics::render_pass> render_pass, std::vector<std::shared_ptr<resource::image_view>> const &attachments)
+                    std::shared_ptr<graphics::render_pass> render_pass, std::vector<graphics::attachment> const &attachments)
 {
     std::vector<std::shared_ptr<resource::framebuffer>> framebuffers;
 
     auto &&swapchain_views = swapchain.image_views();
     auto extent = swapchain.extent();
 
-    std::transform(std::cbegin(swapchain_views), std::cend(swapchain_views), std::back_inserter(framebuffers), [&] (auto swapchain_view)
+    std::vector<std::shared_ptr<resource::image_view>> image_views;
+
+    for (auto attachment : attachments) {
+        std::visit([&image_views] (auto &&attachment)
+        {
+            image_views.push_back(attachment.image_view);
+
+        }, std::move(attachment));
+    }
+
+    std::transform(std::cbegin(swapchain_views), std::cend(swapchain_views), std::back_inserter(framebuffers), [&] (auto &&swapchain_view)
     {
-        auto color_attachment_view = attachments.at(0);
-        auto depth_attachment_view = attachments.at(1);
+        auto _image_views = image_views;
+        _image_views.push_back(swapchain_view);
 
-        auto image_views = std::vector{color_attachment_view, depth_attachment_view, swapchain_view};
-
-        return resource_manager.create_framebuffer(extent, render_pass, image_views);
+        return resource_manager.create_framebuffer(extent, render_pass, _image_views);
     });
 
     return framebuffers;
@@ -1113,7 +1104,6 @@ void init(platform::window &window, app_t &app)
     app.vulkan_instance = std::make_unique<vulkan::instance>();
 
     app.platform_surface = std::make_unique<renderer::platform_surface>(*app.vulkan_instance, window);
-    //app.surface = app.platform_surface->handle();
 
     app.vulkan_device = std::make_unique<vulkan::device>(*app.vulkan_instance, app.platform_surface.get());
 
@@ -1147,26 +1137,25 @@ void init(platform::window &window, app_t &app)
         if (app.swapchain == nullptr)
             throw std::runtime_error("failed to create the swapchain"s);
 
-        auto attachment_descriptions = create_attachment_descriptions(*app.vulkan_device, app.swapchain->surface_format());
+        auto attachments = create_attachments(*app.vulkan_device, *app.resource_manager2, *app.swapchain);
+
+        if (std::size(attachments) == 0)
+            throw std::runtime_error("failed to create the attachments"s);
+
+        auto attachment_descriptions = create_attachment_descriptions(attachments);
 
         app.render_pass = create_render_pass(*app.vulkan_device, *app.render_pass_manager, app.swapchain->surface_format(), attachment_descriptions);
 
         if (app.render_pass == nullptr)
             throw std::runtime_error("failed to create the render pass"s);
 
-        auto attachments = create_attachments(*app.vulkan_device, *app.resource_manager2, app.vulkan_device->transfer_queue,
-                                              app.transferCommandPool, *app.swapchain, attachment_descriptions);
-
-        if (std::size(attachments) == 0)
-            throw std::runtime_error("failed to create the attachments"s);
-
         auto framebuffers = create_framebuffers(*app.vulkan_device, *app.resource_manager, *app.swapchain, app.render_pass, attachments);
 
         if (std::size(framebuffers) == 0)
             throw std::runtime_error("failed to create the framebuffers"s);
 
-        app.attachments = attachments;
-        app.framebuffers = framebuffers;
+        app.attachments = std::move(attachments);
+        app.framebuffers = std::move(framebuffers);
     }
 
     else {
@@ -1475,7 +1464,7 @@ void create_semaphores(app_t &app)
     else app.renderFinishedSemaphore = semaphore;
 }
 
-template<class T> requires mpl::container<std::remove_cvref_t<T>>
+template<class T, typename std::enable_if_t<mpl::is_container_v<std::remove_cvref_t<T>>>...>
 [[nodiscard]] std::shared_ptr<resource::buffer>
 stage_data(vulkan::device &device, ResourceManager &resource_manager, T &&container)
 {

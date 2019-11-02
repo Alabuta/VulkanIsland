@@ -11,6 +11,6 @@ namespace renderer
         bool anisotropy_enable{true};
         float anisotropy_level{16.f};
 
-        std::uint32_t framebuffer_sample_counts{0x10};
+        std::uint32_t framebuffer_sample_counts{0x01};
     };
 }

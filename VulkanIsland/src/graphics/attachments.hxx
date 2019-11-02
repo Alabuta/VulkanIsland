@@ -8,10 +8,31 @@
 #include "graphics.hxx"
 
 
+namespace resource
+{
+    class image;
+    class image_view;
+}
+
+namespace
+{
+    struct framebuffer_attachment {
+        graphics::FORMAT format;
+        graphics::IMAGE_TILING tiling;
+
+        std::uint32_t mip_levels;
+        std::uint32_t samples_count;
+
+        std::shared_ptr<resource::image> image;
+        std::shared_ptr<resource::image_view> image_view;
+    };
+}
+
 namespace graphics
 {
     struct attachment_description final {
         graphics::FORMAT format;
+
         std::uint32_t samples_count;
 
         graphics::ATTACHMENT_LOAD_TREATMENT load_op;      // At the begining of the subpass where it first used.
@@ -48,23 +69,9 @@ namespace graphics
         }
     };
 
-    struct color_attachment final {
-        static auto constexpr usage{graphics::IMAGE_USAGE::COLOR_ATTACHMENT};
-        static auto constexpr layout{graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT};
-        static auto constexpr aspect{graphics::IMAGE_ASPECT::COLOR_BIT};
-    };
-
-    struct depth_attachment final {
-        static auto constexpr usage{graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT};
-        static auto constexpr layout{graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT};
-        static auto constexpr aspect{graphics::IMAGE_ASPECT::DEPTH_BIT};
-    };
-
-    struct depth_stencil_attachment final {
-        static auto constexpr usage{graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT};
-        static auto constexpr layout{graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT};
-        static auto constexpr aspect{graphics::IMAGE_ASPECT::DEPTH_BIT | graphics::IMAGE_ASPECT::STENCIL_BIT};
-    };
+    struct color_attachment final : public framebuffer_attachment { };
+    struct depth_attachment final : public framebuffer_attachment { };
+    struct depth_stencil_attachment final : public framebuffer_attachment { };
 
     using attachment = std::variant<graphics::color_attachment, graphics::depth_attachment, graphics::depth_stencil_attachment>;
 }
