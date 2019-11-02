@@ -18,9 +18,6 @@ using namespace std::string_literals;
 #include "device.hxx"
 #include "renderer/swapchain.hxx"
 
-// TODO:: remove
-#include "swapchain_old.hxx"
-
 
 namespace
 {

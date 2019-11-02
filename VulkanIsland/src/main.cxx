@@ -74,6 +74,8 @@
 #include "resources/resource.hxx"
 #include "resources/resource_manager.hxx"
 #include "resources/semaphore.hxx"
+#include "resources/framebuffer.hxx"
+
 #include "descriptor.hxx"
 
 #include "loaders/TARGA_loader.hxx"
@@ -94,9 +96,6 @@
 #include "platform/input/input_manager.hxx"
 #include "camera/camera.hxx"
 #include "camera/camera_controller.hxx"
-
-// TODO:: remove
-#include "swapchain_old.hxx"
 
 
 auto constexpr kSCENE_NAME{"unlit-test"sv};
