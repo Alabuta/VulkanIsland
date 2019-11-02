@@ -121,6 +121,25 @@ template<class T, typename std::enable_if_t<mpl::is_container_v<std::remove_cvre
 [[nodiscard]] std::shared_ptr<resource::texture>
 load_texture(app_t &app, vulkan::device &device, ResourceManager &resource_manager, std::string_view name);
 
+
+std::unique_ptr<renderer::swapchain>
+create_swapchain(vulkan::device const &device, renderer::platform_surface const &platform_surface, renderer::extent extent);
+
+std::vector<graphics::attachment>
+create_attachments(vulkan::device const &device, ResourceManager &resource_manager, renderer::swapchain const &swapchain);
+
+std::vector<graphics::attachment_description>
+create_attachment_descriptions(std::vector<graphics::attachment> const &attachments);
+
+std::shared_ptr<graphics::render_pass>
+create_render_pass(vulkan::device const &device, graphics::render_pass_manager &render_pass_manager,
+                   renderer::surface_format surface_format, std::vector<graphics::attachment_description> attachment_descriptions);
+
+std::vector<std::shared_ptr<resource::framebuffer>>
+create_framebuffers(vulkan::device const &device, resource::resource_manager &resource_manager, renderer::swapchain const &swapchain,
+                    std::shared_ptr<graphics::render_pass> render_pass, std::vector<graphics::attachment> const &attachments);
+
+
 struct draw_command final {
     std::shared_ptr<graphics::material> material;
     std::shared_ptr<graphics::pipeline> pipeline;
@@ -153,9 +172,6 @@ struct app_t final {
     std::unique_ptr<ResourceManager> resource_manager2;
 
     std::unique_ptr<resource::resource_manager> resource_manager;
-
-    //VkSurfaceKHR surface{VK_NULL_HANDLE};
-    //VulkanSwapchain swapchain2;
 
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
 
@@ -272,8 +288,8 @@ struct app_t final {
         if (graphicsCommandPool != VK_NULL_HANDLE)
             vkDestroyCommandPool(vulkan_device->handle(), graphicsCommandPool, nullptr);
 
-        /*if (surface != VK_NULL_HANDLE)
-            vkDestroySurfaceKHR(vulkan_instance->handle(), surface, nullptr);*/
+        if (platform_surface)
+            platform_surface.reset();
 
         if (resource_manager)
             resource_manager.reset();
@@ -302,6 +318,9 @@ struct window_events_handler final : public platform::window::event_handler_inte
 
         app.width = static_cast<std::uint32_t>(width);
         app.height = static_cast<std::uint32_t>(height);
+
+        if (width < 1 || height < 1)
+            return;
 
         app.resize_callback = [this]
         {
@@ -509,7 +528,11 @@ void cleanup_frame_data(app_t &app)
 
     app.command_buffers.clear();
 
-    //CleanupSwapchain(device, app.swapchain2);
+    app.framebuffers.clear();
+    app.attachments.clear();
+
+    if (app.swapchain)
+        app.swapchain.reset();
 }
 
 void recreate_swap_chain(app_t &app)
@@ -522,18 +545,31 @@ void recreate_swap_chain(app_t &app)
 
     cleanup_frame_data(app);
 
-    /*auto swapchain2 = CreateSwapchain(vulkan_device, *app.resource_manager2, app.surface, app.width, app.height, app.transferCommandPool);
+    app.swapchain = create_swapchain(*app.vulkan_device, *app.platform_surface, renderer::extent{app.width, app.height});
 
-    if (swapchain2)
-        app.swapchain2 = std::move(swapchain2.value());
+    if (app.swapchain == nullptr)
+        throw std::runtime_error("failed to create the swapchain"s);
 
-    else throw std::runtime_error("failed to create the swapchain"s);*/
+    app.attachments = create_attachments(*app.vulkan_device, *app.resource_manager2, *app.swapchain);
+
+    if (std::size(app.attachments) == 0)
+        throw std::runtime_error("failed to create the attachments"s);
+
+    auto attachment_descriptions = create_attachment_descriptions(app.attachments);
+
+    app.render_pass = create_render_pass(*app.vulkan_device, *app.render_pass_manager, app.swapchain->surface_format(), attachment_descriptions);
+
+    if (app.render_pass == nullptr)
+        throw std::runtime_error("failed to create the render pass"s);
+
+    app.framebuffers = create_framebuffers(*app.vulkan_device, *app.resource_manager, *app.swapchain, app.render_pass, app.attachments);
+
+    if (std::size(app.framebuffers) == 0)
+        throw std::runtime_error("failed to create the framebuffers"s);
 
 #if !USE_DYNAMIC_PIPELINE_STATE
     CreateGraphicsPipelines(app);
 #endif
-
-    //CreateFramebuffers(*app.resource_manager, app.render_pass, app.swapchain2);
 
     create_graphics_command_buffers(app);
 }
@@ -883,6 +919,7 @@ renderer::config adjust_renderer_config(vulkan::device const &device)
     return renderer_config;
 }
 
+
 std::unique_ptr<renderer::swapchain>
 create_swapchain(vulkan::device const &device, renderer::platform_surface const &platform_surface, renderer::extent extent)
 {
@@ -930,16 +967,6 @@ create_attachments(vulkan::device const &device, ResourceManager &resource_manag
         auto constexpr aspect_flags = graphics::IMAGE_ASPECT::COLOR_BIT;
 
         auto format = swapchain.surface_format().format;
-
-        /*auto color_format = find_supported_image_format(
-            device,
-            { graphics::FORMAT::RGBA8_SRGB, graphics::FORMAT::BGRA8_SRGB },
-            graphics::IMAGE_TILING::OPTIMAL,
-            graphics::FORMAT_FEATURE::COLOR_ATTACHMENT_BLEND
-        );
-
-        if (!color_format)
-            throw std::runtime_error("failed to find supported color format"s); */
 
         auto image = resource_manager.CreateImage(format, width, height, mip_levels, samples_count, tiling, usage_flags, property_flags);
 
@@ -1099,6 +1126,7 @@ create_framebuffers(vulkan::device const &device, resource::resource_manager &re
     return framebuffers;
 }
 
+
 void init(platform::window &window, app_t &app)
 {
     app.vulkan_instance = std::make_unique<vulkan::instance>();
@@ -1131,7 +1159,7 @@ void init(platform::window &window, app_t &app)
 
     else throw std::runtime_error("failed to graphics command pool"s);
 
-    if (true) {
+    {
         app.swapchain = create_swapchain(*app.vulkan_device, *app.platform_surface, renderer::extent{app.width, app.height});
 
         if (app.swapchain == nullptr)
@@ -1156,24 +1184,6 @@ void init(platform::window &window, app_t &app)
 
         app.attachments = std::move(attachments);
         app.framebuffers = std::move(framebuffers);
-    }
-
-    else {
-        /*renderer::surface_format constexpr surface_format{graphics::FORMAT::BGRA8_SRGB, graphics::COLOR_SPACE::SRGB_NONLINEAR};
-
-        auto attachment_descriptions = create_attachment_descriptions(*app.vulkan_device, surface_format);
-
-        app.render_pass = create_render_pass(*app.vulkan_device, *app.render_pass_manager, surface_format, attachment_descriptions);
-
-        if (app.render_pass == nullptr)
-            throw std::runtime_error("failed to create the render pass"s);
-
-        auto swapchain = CreateSwapchain(*app.vulkan_device, *app.resource_manager2, app.surface, app.width, app.height, app.transferCommandPool);
-
-        if (swapchain)
-            app.swapchain2 = std::move(swapchain.value());
-
-        else throw std::runtime_error("failed to create the swapchain"s);*/
     }
 
     if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.vulkan_device); !descriptorSetLayout)
@@ -1244,8 +1254,6 @@ void init(platform::window &window, app_t &app)
     build_render_pipelines(app, temp::model);
 
     app.resource_manager2->TransferStagedVertexData(app.transferCommandPool, app.vulkan_device->transfer_queue);
-
-    //CreateFramebuffers(*app.resource_manager, app.render_pass, app.swapchain2);
 
     create_graphics_command_buffers(app);
 
@@ -1322,7 +1330,7 @@ void render_frame(app_t &app)
     /*VkAcquireNextImageInfoKHR next_image_info{
         VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR,
         nullptr,
-        app.swapchain2.handle,
+        app.swapchain->handle(),
         std::numeric_limits<std::uint64_t>::max(),
         app.imageAvailableSemaphore->handle(),
         VK_NULL_HANDLE
