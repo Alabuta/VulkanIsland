@@ -44,10 +44,10 @@ namespace
         if (auto result = vkEnumerateInstanceExtensionProperties(nullptr, &extensions_count, std::data(supported_extensions)); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to retrieve extensions: {0:#x}\n"s, result));
 
-        std::sort(supported_extensions.begin(), supported_extensions.end(), extensions_compare);
+        std::sort(std::begin(supported_extensions), std::end(supported_extensions), extensions_compare);
 
-        return std::includes(supported_extensions.begin(), supported_extensions.end(),
-                             required_extensions.begin(), required_extensions.end(), extensions_compare);
+        return std::includes(std::cbegin(supported_extensions), std::cend(supported_extensions),
+                             std::cbegin(required_extensions), std::cend(required_extensions), extensions_compare);
     }
 
     [[nodiscard]] bool check_required_layers(std::vector<char const *> _requiredLayers)
@@ -124,7 +124,13 @@ namespace vulkan
 
         auto const application_info = vulkan_config::application_info;
 
-        if (api_version != application_info.apiVersion)
+        auto api_major = VK_VERSION_MAJOR(api_version);
+        auto api_minor = VK_VERSION_MINOR(api_version);
+
+        auto required_major = VK_VERSION_MAJOR(application_info.apiVersion);
+        auto required_minor = VK_VERSION_MINOR(application_info.apiVersion);
+
+        if (api_major != required_major || api_minor != required_minor)
             throw std::runtime_error("unsupported Vulkan API version"s);
 
         VkInstanceCreateInfo instance_info{
