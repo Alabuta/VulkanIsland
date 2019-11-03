@@ -26,10 +26,9 @@ namespace
             return prop;
         });
 
-        auto constexpr extensions_compare = [] (auto &&lhs, auto &&rhs)
+        auto extensions_compare = [] (auto &&lhs, auto &&rhs)
         {
-            return std::lexicographical_compare(std::cbegin(lhs.extensionName), std::cend(lhs.extensionName),
-                                                std::cbegin(rhs.extensionName), std::cend(rhs.extensionName));
+            return std::string_view{lhs.extensionName} < std::string_view{rhs.extensionName};
         };
 
         std::sort(std::begin(required_extensions), std::end(required_extensions), extensions_compare);
