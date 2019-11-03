@@ -125,7 +125,7 @@ std::unique_ptr<renderer::swapchain>
 create_swapchain(vulkan::device const &device, renderer::platform_surface const &platform_surface, renderer::extent extent);
 
 std::vector<graphics::attachment>
-create_attachments(vulkan::device const &device, ResourceManager &resource_manager, renderer::swapchain const &swapchain);
+create_attachments(vulkan::device const &device, renderer::config const &renderer_config, ResourceManager &resource_manager, renderer::swapchain const &swapchain);
 
 std::vector<graphics::attachment_description>
 create_attachment_descriptions(std::vector<graphics::attachment> const &attachments);
@@ -204,6 +204,8 @@ struct app_t final {
 
     std::unique_ptr<renderer::platform_surface> platform_surface;
     std::unique_ptr<renderer::swapchain> swapchain;
+
+    renderer::config renderer_config;
 
     std::unique_ptr<graphics::vertex_input_state_manager> vertex_input_state_manager;
     std::unique_ptr<graphics::shader_manager> shader_manager;
@@ -549,7 +551,7 @@ void recreate_swap_chain(app_t &app)
     if (app.swapchain == nullptr)
         throw std::runtime_error("failed to create the swapchain"s);
 
-    app.attachments = create_attachments(*app.vulkan_device, *app.resource_manager2, *app.swapchain);
+    app.attachments = create_attachments(*app.vulkan_device, app.renderer_config, *app.resource_manager2, *app.swapchain);
 
     if (std::size(app.attachments) == 0)
         throw std::runtime_error("failed to create the attachments"s);
@@ -945,18 +947,16 @@ create_swapchain(vulkan::device const &device, renderer::platform_surface const 
 }
 
 std::vector<graphics::attachment>
-create_attachments(vulkan::device const &device, ResourceManager &resource_manager, renderer::swapchain const &swapchain)
+create_attachments(vulkan::device const &device, renderer::config const &renderer_config, ResourceManager &resource_manager, renderer::swapchain const &swapchain)
 {
-    auto &&device_limits = device.device_limits();
-
-    auto samples_count = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
-
     auto constexpr mip_levels = 1u;
     auto constexpr view_type = graphics::IMAGE_VIEW_TYPE::TYPE_2D;
 
     auto [width, height] = swapchain.extent();
 
     std::vector<graphics::attachment> attachments;
+
+    auto samples_count = renderer_config.framebuffer_sample_counts;
 
     {
         /* | graphics::IMAGE_USAGE::TRANSFER_DESTINATION*/
@@ -1134,7 +1134,7 @@ void init(platform::window &window, app_t &app)
 
     app.vulkan_device = std::make_unique<vulkan::device>(*app.vulkan_instance, app.platform_surface.get());
 
-    auto renderer_config = adjust_renderer_config(*app.vulkan_device);
+    app.renderer_config = adjust_renderer_config(*app.vulkan_device);
 
     app.memory_manager = std::make_unique<MemoryManager>(*app.vulkan_device);
     app.resource_manager2 = std::make_unique<ResourceManager>(*app.vulkan_device, *app.memory_manager);
@@ -1144,7 +1144,7 @@ void init(platform::window &window, app_t &app)
     app.shader_manager = std::make_unique<graphics::shader_manager>(*app.vulkan_device);
     app.material_factory = std::make_unique<graphics::material_factory>();
     app.vertex_input_state_manager = std::make_unique<graphics::vertex_input_state_manager>();
-    app.pipeline_factory = std::make_unique<graphics::pipeline_factory>(*app.vulkan_device, *app.shader_manager);
+    app.pipeline_factory = std::make_unique<graphics::pipeline_factory>(*app.vulkan_device, app.renderer_config, *app.shader_manager);
 
     app.render_pass_manager = std::make_unique<graphics::render_pass_manager>(*app.vulkan_device);
 
@@ -1164,7 +1164,7 @@ void init(platform::window &window, app_t &app)
         if (app.swapchain == nullptr)
             throw std::runtime_error("failed to create the swapchain"s);
 
-        auto attachments = create_attachments(*app.vulkan_device, *app.resource_manager2, *app.swapchain);
+        auto attachments = create_attachments(*app.vulkan_device, app.renderer_config, *app.resource_manager2, *app.swapchain);
 
         if (std::size(attachments) == 0)
             throw std::runtime_error("failed to create the attachments"s);

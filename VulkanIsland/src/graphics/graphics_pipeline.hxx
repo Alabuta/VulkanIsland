@@ -9,6 +9,7 @@
 #include <set>
 
 #include "vulkan/device.hxx"
+#include "renderer/config.hxx"
 
 #include "graphics.hxx"
 #include "vertex.hxx"
@@ -16,6 +17,7 @@
 #include "material.hxx"
 #include "shader_program.hxx"
 #include "render_pass.hxx"
+
 
 #define USE_DYNAMIC_PIPELINE_STATE 1
 
@@ -90,8 +92,8 @@ namespace graphics
     class pipeline_factory final {
     public:
 
-        pipeline_factory(vulkan::device &vulkan_device, graphics::shader_manager &shader_manager) noexcept
-            : vulkan_device_{vulkan_device}, shader_manager_{shader_manager} { }
+        pipeline_factory(vulkan::device &device, renderer::config const &renderer_config, graphics::shader_manager &shader_manager) noexcept
+            : device_{device}, renderer_config_{renderer_config}, shader_manager_{shader_manager} { }
 
         [[nodiscard]] std::shared_ptr<graphics::pipeline>
         create_pipeline(std::shared_ptr<graphics::material> material, graphics::pipeline_states const &pipeline_states,
@@ -99,7 +101,8 @@ namespace graphics
 
     private:
 
-        vulkan::device &vulkan_device_;
+        vulkan::device &device_;
+        renderer::config renderer_config_;
         graphics::shader_manager &shader_manager_;
 
         std::unordered_map<graphics::pipeline_invariant, std::shared_ptr<graphics::pipeline>, graphics::hash<pipeline_invariant>> pipelines_;
@@ -108,7 +111,7 @@ namespace graphics
 
 template<class T> requires mpl::container<std::remove_cvref_t<T>>
 [[nodiscard]] std::optional<VkPipelineLayout>
-create_pipeline_layout(vulkan::device const &vulkan_device, T &&descriptorSetLayouts) noexcept
+create_pipeline_layout(vulkan::device const &device, T &&descriptorSetLayouts) noexcept
 {
     static_assert(
         std::is_same_v<typename std::remove_cvref_t<T>::value_type, VkDescriptorSetLayout>,
@@ -126,7 +129,7 @@ create_pipeline_layout(vulkan::device const &vulkan_device, T &&descriptorSetLay
 
     VkPipelineLayout handle;
 
-    if (auto result = vkCreatePipelineLayout(vulkan_device.handle(), &layoutCreateInfo, nullptr, &handle); result != VK_SUCCESS)
+    if (auto result = vkCreatePipelineLayout(device.handle(), &layoutCreateInfo, nullptr, &handle); result != VK_SUCCESS)
         std::cerr << "failed to create pipeline layout: "s << result << '\n';
 
     else pipelineLayout.emplace(handle);

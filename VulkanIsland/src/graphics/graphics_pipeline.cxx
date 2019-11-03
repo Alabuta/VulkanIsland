@@ -282,14 +282,10 @@ namespace graphics
         std::vector<VkPipelineColorBlendAttachmentState> color_blend_attachment_states;
         auto color_blend_state = convert_to::vulkan(pipeline_states.color_blend_state, color_blend_attachment_states);
 
-        auto &&device_limits = vulkan_device_.device_limits();
-
-        auto samples_count_bits = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
-
         VkPipelineMultisampleStateCreateInfo const multisample_state{
             VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
             nullptr, 0,
-            convert_to::vulkan(samples_count_bits),
+            convert_to::vulkan(renderer_config_.framebuffer_sample_counts),
             VK_FALSE, 1,
             nullptr,
             VK_FALSE,
@@ -322,13 +318,13 @@ namespace graphics
 
         VkPipeline handle;
 
-        if (auto result = vkCreateGraphicsPipelines(vulkan_device_.handle(), VK_NULL_HANDLE, 1, &create_info, nullptr, &handle); result != VK_SUCCESS)
+        if (auto result = vkCreateGraphicsPipelines(device_.handle(), VK_NULL_HANDLE, 1, &create_info, nullptr, &handle); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to create graphics pipeline: {0:#x}\n"s, result));
 
         auto pipeline = std::shared_ptr<graphics::pipeline>(
             new graphics::pipeline{handle}, [this] (graphics::pipeline *const ptr_pipeline)
             {
-                vkDestroyPipeline(vulkan_device_.handle(), ptr_pipeline->handle(), nullptr);
+                vkDestroyPipeline(device_.handle(), ptr_pipeline->handle(), nullptr);
 
                 delete ptr_pipeline;
             }

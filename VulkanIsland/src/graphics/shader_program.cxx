@@ -53,13 +53,13 @@ namespace graphics
 
             VkShaderModule handle;
 
-            if (auto result = vkCreateShaderModule(vulkan_device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
+            if (auto result = vkCreateShaderModule(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
                 std::cerr << fmt::format("failed to create shader module: {0:#x}\n"s, result);
 
             else {
                 shader_module.reset(new graphics::shader_module{handle}, [this] (graphics::shader_module *ptr_module)
                     {
-                        vkDestroyShaderModule(vulkan_device_.handle(), ptr_module->handle(), nullptr);
+                        vkDestroyShaderModule(device_.handle(), ptr_module->handle(), nullptr);
 
                         delete ptr_module;
                     }
