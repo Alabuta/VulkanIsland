@@ -20,20 +20,20 @@ struct Transform final {
 };
 
 
-namespace ecs
-{
-class TransformSystem final : public System {
-public:
-
-    TransformSystem(entity_registry &registry) noexcept : registry{registry} { }
-    ~TransformSystem() = default;
-
-    void update() override;
-
-private:
-    entity_registry &registry;
-};
-}
+//namespace ecs
+//{
+//class TransformSystem final : public System {
+//public:
+//
+//    TransformSystem(entity_registry &registry) noexcept : registry{registry} { }
+//    ~TransformSystem() = default;
+//
+//    void update() override;
+//
+//private:
+//    entity_registry &registry;
+//};
+//}
 
 /*struct TransformSytem final : public ex::System<Transform> {
     void update(ex::EntityManager &es, ex::EventManager &events, ex::TimeDelta dt) final

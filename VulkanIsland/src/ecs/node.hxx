@@ -12,6 +12,7 @@ using namespace std::string_view_literals;
 #include "transform.hxx"
 
 
+#if 0
 namespace ecs
 {
 struct node final {
@@ -58,3 +59,4 @@ private:
     entity_type root_;
 };
 }
+#endif

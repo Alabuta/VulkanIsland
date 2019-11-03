@@ -1,6 +1,7 @@
 #include "node.hxx"
 
 
+#if 0
 namespace ecs
 {
 std::optional<node> NodeSystem::attachNode(entity_type parent, entity_type entity, [[maybe_unused]] std::string_view name)
@@ -37,3 +38,4 @@ void NodeSystem::update()
     });
 }
 }
+#endif
