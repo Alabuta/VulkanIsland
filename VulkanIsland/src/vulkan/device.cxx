@@ -228,10 +228,27 @@ namespace
         if (present_modes_count == 0)
             throw std::runtime_error("zero number of presentation modes"s);
 
-        std::vector<VkPresentModeKHR> presentation_modes(present_modes_count);
+        std::vector<VkPresentModeKHR> supported_modes(present_modes_count);
 
-        if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_modes_count, std::data(presentation_modes)); result != VK_SUCCESS)
+        if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_modes_count, std::data(supported_modes)); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to retrieve device surface presentation modes: {0:#x}\n"s, result));
+
+        std::vector<graphics::PRESENTATION_MODE> presentation_modes(present_modes_count);
+
+        std::generate_n(std::begin(presentation_modes), present_modes_count, [n = 0] () mutable
+        {
+            return static_cast<graphics::PRESENTATION_MODE>(n++);
+        });
+
+        auto it_end = std::remove_if(std::begin(presentation_modes), std::end(presentation_modes), [&supported_modes] (auto mode)
+        {
+            return std::none_of(std::begin(supported_modes), std::end(supported_modes), [mode] (auto supported_mode)
+            {
+                return supported_mode == convert_to::vulkan(mode);
+            });
+        });
+
+        presentation_modes.erase(it_end, std::end(presentation_modes));
 
         return { surface_capabilities, surface_formats, presentation_modes };
     }

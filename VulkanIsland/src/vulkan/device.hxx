@@ -6,17 +6,26 @@
 #include "instance.hxx"
 #include "device_limits.hxx"
 #include "renderer/queues.hxx"
+//#include "renderer/swapchain.hxx"
 
 
 namespace renderer
 {
     class platform_surface;
 
+    struct surface_format final {
+        graphics::FORMAT format;
+        graphics::COLOR_SPACE color_space;
+    };
+
     struct swapchain_support_details final {
         VkSurfaceCapabilitiesKHR surface_capabilities;
 
         std::vector<VkSurfaceFormatKHR> surface_formats;
-        std::vector<VkPresentModeKHR> presentation_modes;
+        //std::vector<VkPresentModeKHR> presentation_modes;
+
+        //std::vector<renderer::surface_format> surface_formats;
+        std::vector<graphics::PRESENTATION_MODE> presentation_modes;
     };
 }
 

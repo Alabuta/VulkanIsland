@@ -55,19 +55,11 @@ namespace
     choose_supported_presentation_mode(renderer::swapchain_support_details const &support_details,
                                        std::vector<graphics::PRESENTATION_MODE> &&required_modes)
     {
-        auto &&supported_present_modes = support_details.presentation_modes;
+        auto &&supported_modes = support_details.presentation_modes;
 
-        for (auto required_mode : required_modes) {
-            auto supported = std::any_of(std::cbegin(supported_present_modes), std::cend(supported_present_modes), [required_mode] (auto mode)
-            {
-                return mode == convert_to::vulkan(required_mode);
-            });
+        auto it = std::find_first_of(std::cbegin(required_modes), std::cend(required_modes), std::cbegin(supported_modes), std::cend(supported_modes));
 
-            if (supported)
-                return required_mode;
-        }
-
-        return graphics::PRESENTATION_MODE::FIFO;
+        return it != std::cend(required_modes) ? *it : graphics::PRESENTATION_MODE::FIFO;
     }
 
     renderer::extent adjust_swapchain_extent(renderer::swapchain_support_details const &support_details, renderer::extent extent)
@@ -133,44 +125,46 @@ namespace renderer
 
         extent_ = adjust_swapchain_extent(swapchain_support_details, extent);
 
-        auto image_count = swapchain_support_details.surface_capabilities.minImageCount + 1;
+        {
+            auto image_count = swapchain_support_details.surface_capabilities.minImageCount + 1;
 
-        if (swapchain_support_details.surface_capabilities.maxImageCount > 0)
-            image_count = std::min(image_count, swapchain_support_details.surface_capabilities.maxImageCount);
+            if (swapchain_support_details.surface_capabilities.maxImageCount > 0)
+                image_count = std::min(image_count, swapchain_support_details.surface_capabilities.maxImageCount);
 
-        VkSwapchainCreateInfoKHR create_info{
-            VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
-            nullptr, 0,
-            platform_surface.handle(),
-            image_count,
-            convert_to::vulkan(surface_format_.format), convert_to::vulkan(surface_format_.color_space),
-            VkExtent2D{extent_.width, extent_.height},
-            1,
-            convert_to::vulkan(image_usage_),
-            VK_SHARING_MODE_EXCLUSIVE,
-            0, nullptr,
-            swapchain_support_details.surface_capabilities.currentTransform,
-            VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
-            convert_to::vulkan(presentation_mode_),
-            VK_FALSE,
-            nullptr
-        };
-
-        if (graphics_queue.family() != presentation_queue.family()) {
-            std::cout << "graphics and presentation queues are not from one family\n"s;
-            
-            create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-
-            auto queue_family_indices = std::array{
-                graphics_queue.family(), presentation_queue.family()
+            VkSwapchainCreateInfoKHR create_info{
+                VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
+                nullptr, 0,
+                platform_surface.handle(),
+                image_count,
+                convert_to::vulkan(surface_format_.format), convert_to::vulkan(surface_format_.color_space),
+                VkExtent2D{extent_.width, extent_.height},
+                1,
+                convert_to::vulkan(image_usage_),
+                VK_SHARING_MODE_EXCLUSIVE,
+                0, nullptr,
+                swapchain_support_details.surface_capabilities.currentTransform,
+                VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR,
+                convert_to::vulkan(presentation_mode_),
+                VK_FALSE,
+                nullptr
             };
 
-            create_info.queueFamilyIndexCount = static_cast<std::uint32_t>(std::size(queue_family_indices));
-            create_info.pQueueFamilyIndices = std::data(queue_family_indices);
-        }
+            if (graphics_queue.family() != presentation_queue.family()) {
+                std::cout << "graphics and presentation queues are not from one family\n"s;
 
-        if (auto result = vkCreateSwapchainKHR(device.handle(), &create_info, nullptr, &handle_); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to create required swap chain: {0:#x}\n"s, result));
+                create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
+
+                auto queue_family_indices = std::array{
+                    graphics_queue.family(), presentation_queue.family()
+                };
+
+                create_info.queueFamilyIndexCount = static_cast<std::uint32_t>(std::size(queue_family_indices));
+                create_info.pQueueFamilyIndices = std::data(queue_family_indices);
+            }
+
+            if (auto result = vkCreateSwapchainKHR(device.handle(), &create_info, nullptr, &handle_); result != VK_SUCCESS)
+                throw std::runtime_error(fmt::format("failed to create required swap chain: {0:#x}\n"s, result));
+        }
 
         for (auto image_handle : get_swapchain_image_handles(device, *this)) {
             auto image = std::shared_ptr<resource::image>(

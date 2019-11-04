@@ -10,11 +10,6 @@
 
 namespace renderer
 {
-    struct surface_format final {
-        graphics::FORMAT format;
-        graphics::COLOR_SPACE color_space;
-    };
-
     class platform_surface final {
     public:
 
