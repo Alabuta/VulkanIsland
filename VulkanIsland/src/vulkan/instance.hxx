@@ -13,15 +13,15 @@ namespace vulkan
     class instance final {
     public:
 
-        instance();
+        explicit instance();
         ~instance();
 
-        VkInstance handle() const noexcept { return instance_; }
+        VkInstance handle() const noexcept { return handle_; }
 
     private:
 
-        VkInstance instance_{nullptr};
-        VkDebugReportCallbackEXT debug_report_callback_{nullptr};
+        VkInstance handle_{VK_NULL_HANDLE};
+        VkDebugReportCallbackEXT debug_report_callback_{VK_NULL_HANDLE};
 
         instance(instance const &) = delete;
         instance(instance &&) = delete;

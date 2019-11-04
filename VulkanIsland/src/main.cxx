@@ -164,7 +164,7 @@ struct app_t final {
 
     std::vector<per_object_t> objects;
 
-    std::unique_ptr<vulkan::instance> vulkan_instance;
+    std::unique_ptr<vulkan::instance> instance;
     std::unique_ptr<vulkan::device> device;
 
     std::unique_ptr<MemoryManager> memory_manager;
@@ -202,7 +202,7 @@ struct app_t final {
 #endif
 #endif
 
-    std::unique_ptr<renderer::platform_surface> platform_surface;
+    std::shared_ptr<renderer::platform_surface> platform_surface;
     std::unique_ptr<renderer::swapchain> swapchain;
 
     renderer::config renderer_config;
@@ -277,7 +277,7 @@ struct app_t final {
         memory_manager.reset();
 
         device.reset();
-        vulkan_instance.reset();
+        instance.reset();
     }
 };
 
@@ -1103,11 +1103,11 @@ create_framebuffers(resource::resource_manager &resource_manager, renderer::swap
 
 void init(platform::window &window, app_t &app)
 {
-    app.vulkan_instance = std::make_unique<vulkan::instance>();
+    app.instance = std::make_unique<vulkan::instance>();
 
-    app.platform_surface = std::make_unique<renderer::platform_surface>(*app.vulkan_instance, window);
+    app.platform_surface = std::make_shared<renderer::platform_surface>(*app.instance, window);
 
-    app.device = std::make_unique<vulkan::device>(*app.vulkan_instance, app.platform_surface.get());
+    app.device = std::make_unique<vulkan::device>(*app.instance, app.platform_surface);
 
     app.renderer_config = adjust_renderer_config(*app.device);
 

@@ -31,7 +31,7 @@ namespace vulkan
     class device final {
     public:
 
-        device(vulkan::instance &instance, renderer::platform_surface const *const platform_surface); // TODO
+        explicit device(vulkan::instance &instance, std::shared_ptr<renderer::platform_surface> platform_surface);
         ~device();
 
         VkDevice handle() const noexcept { return handle_; };
@@ -48,8 +48,8 @@ namespace vulkan
 
     private:
 
-        VkDevice handle_{nullptr};
-        VkPhysicalDevice physical_handle_{nullptr};
+        VkDevice handle_{VK_NULL_HANDLE};
+        VkPhysicalDevice physical_handle_{VK_NULL_HANDLE};
 
         vulkan::device_limits device_limits_;
 

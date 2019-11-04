@@ -161,12 +161,16 @@ namespace vulkan
 
     instance::~instance()
     {
+        if (handle_ == VK_NULL_HANDLE)
+            return;
+
         if (debug_report_callback_ != VK_NULL_HANDLE)
-            vkDestroyDebugReportCallbackEXT(instance_, debug_report_callback_, nullptr);
+            vkDestroyDebugReportCallbackEXT(handle_, debug_report_callback_, nullptr);
 
         debug_report_callback_ = VK_NULL_HANDLE;
 
-        vkDestroyInstance(instance_, nullptr);
-        instance_ = VK_NULL_HANDLE;
+        vkDestroyInstance(handle_, nullptr);
+
+        handle_ = VK_NULL_HANDLE;
     }
 }

@@ -659,7 +659,7 @@ namespace vulkan
 
 namespace vulkan
 {
-    device::device(vulkan::instance &instance, renderer::platform_surface const *const platform_surface)
+    device::device(vulkan::instance &instance, std::shared_ptr<renderer::platform_surface> platform_surface)
     {
         auto constexpr use_extensions = !vulkan::device_extensions.empty();
 
@@ -750,10 +750,11 @@ namespace vulkan
 
     device::~device()
     {
-        if (handle_) {
-            vkDeviceWaitIdle(handle_);
-            vkDestroyDevice(handle_, nullptr);
-        }
+        if (handle_ == VK_NULL_HANDLE)
+            return;
+
+        vkDeviceWaitIdle(handle_);
+        vkDestroyDevice(handle_, nullptr);
 
         handle_ = nullptr;
         physical_handle_ = nullptr;

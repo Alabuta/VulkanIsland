@@ -13,7 +13,7 @@ namespace renderer
     class platform_surface final {
     public:
 
-        platform_surface(vulkan::instance const &instance, platform::window &window);
+        explicit platform_surface(vulkan::instance const &instance, platform::window &window);
 
         VkSurfaceKHR handle() const noexcept { return handle_; }
 
