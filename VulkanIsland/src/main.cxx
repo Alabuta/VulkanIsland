@@ -550,7 +550,7 @@ void recreate_swap_chain(app_t &app)
     create_graphics_command_buffers(app);
 }
 
-void build_render_pipelines(app_t &app, xformat const &_model)
+void build_render_pipelines(app_t &app, xformat const &model_)
 {
     std::vector<graphics::render_pipeline> render_pipelines;
 
@@ -579,18 +579,18 @@ void build_render_pipelines(app_t &app, xformat const &_model)
 
     auto &&resource_manager2 = *app.resource_manager2;
 
-    for (auto &&meshlet : _model.non_indexed_meshlets) {
+    for (auto &&meshlet : model_.non_indexed_meshlets) {
         auto material_index = meshlet.material_index;
-        auto [technique_index, name] = _model.materials[material_index];
+        auto [technique_index, name] = model_.materials[material_index];
 
         std::cout << fmt::format("{}#{}\n"s, name, technique_index);
 
         auto material = material_factory.material(name, technique_index);
 
         auto vertex_layout_index = meshlet.vertex_buffer_index;
-        auto &&vertex_layout = _model.vertex_layouts[vertex_layout_index];
+        auto &&vertex_layout = model_.vertex_layouts[vertex_layout_index];
 
-        auto &&vertex_data_buffer = _model.vertex_buffers.at(vertex_layout_index);
+        auto &&vertex_data_buffer = model_.vertex_buffers.at(vertex_layout_index);
 
         auto vertex_buffer = resource_manager2.CreateVertexBuffer(vertex_layout, std::size(vertex_data_buffer.buffer));
 
@@ -629,7 +629,7 @@ namespace temp
 {
 xformat populate()
 {
-    xformat _model;
+    xformat model_;
 
     auto constexpr vertexCountPerMeshlet = 3u;
 
@@ -642,9 +642,9 @@ xformat populate()
             vertex::static_array<3, boost::float32_t> color;
         };
 
-        auto const vertex_layout_index = std::size(_model.vertex_layouts);
+        auto const vertex_layout_index = std::size(model_.vertex_layouts);
 
-        _model.vertex_layouts.push_back(
+        model_.vertex_layouts.push_back(
             vertex::create_vertex_layout(
                 vertex::position{}, decltype(vertex_struct::position){}, false,
                 //vertex::normal{}, decltype(vertex_struct::normal){}, false,
@@ -676,7 +676,7 @@ xformat populate()
             auto const vertex_count = std::size(vertices);
             auto const bytesCount = vertexSize * vertex_count;
 
-            auto &&vertexBuffer = _model.vertex_buffers[vertex_layout_index];
+            auto &&vertexBuffer = model_.vertex_buffers[vertex_layout_index];
 
             using buffer_type_t = std::remove_cvref_t<decltype(vertexBuffer.buffer)>;
 
@@ -699,7 +699,7 @@ xformat populate()
         meshlet.instance_count = 1;
         meshlet.first_instance = 0;
 
-        _model.non_indexed_meshlets.push_back(std::move(meshlet));
+        model_.non_indexed_meshlets.push_back(std::move(meshlet));
     }
 
     {
@@ -709,9 +709,9 @@ xformat populate()
             vertex::static_array<4, boost::float32_t> color;
         };
 
-        auto const vertex_layout_index = std::size(_model.vertex_layouts);
+        auto const vertex_layout_index = std::size(model_.vertex_layouts);
 
-        _model.vertex_layouts.push_back(
+        model_.vertex_layouts.push_back(
             vertex::create_vertex_layout(
                 vertex::position{}, decltype(vertex_struct::position){}, false,
                 vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
@@ -747,7 +747,7 @@ xformat populate()
             {{-1.f, 0.f, 0.f}}, {{0.f, .5f}}, {{1.f, 1.f, 0.f, 1.f}}
         });
 
-        auto &&vertexBuffer = _model.vertex_buffers[vertex_layout_index];
+        auto &&vertexBuffer = model_.vertex_buffers[vertex_layout_index];
 
         using buffer_type_t = std::remove_cvref_t<decltype(vertexBuffer.buffer)>;
 
@@ -765,7 +765,7 @@ xformat populate()
             meshlet.instance_count = 1;
             meshlet.first_instance = 0;
 
-            _model.non_indexed_meshlets.push_back(std::move(meshlet));
+            model_.non_indexed_meshlets.push_back(std::move(meshlet));
         }
 
         {
@@ -782,7 +782,7 @@ xformat populate()
             meshlet.instance_count = 1;
             meshlet.first_instance = 0;
 
-            _model.non_indexed_meshlets.push_back(std::move(meshlet));
+            model_.non_indexed_meshlets.push_back(std::move(meshlet));
         }
 
         {
@@ -809,9 +809,9 @@ xformat populate()
             vertex::static_array<3, boost::float32_t> color;
         };
 
-        auto const vertex_layout_index = std::size(_model.vertex_layouts);
+        auto const vertex_layout_index = std::size(model_.vertex_layouts);
 
-        _model.vertex_layouts.push_back(
+        model_.vertex_layouts.push_back(
             vertex::create_vertex_layout(
                 vertex::position{}, decltype(vertex_struct::position){}, false,
                 vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
@@ -834,7 +834,7 @@ xformat populate()
             {{1.f, 0.f, 0.f}}, {{.5f, 1.f}}, {{.8f, .5f, 0.f}}
         });
 
-        auto &&vertexBuffer = _model.vertex_buffers[vertex_layout_index];
+        auto &&vertexBuffer = model_.vertex_buffers[vertex_layout_index];
 
         using buffer_type_t = std::remove_cvref_t<decltype(vertexBuffer.buffer)>;
 
@@ -852,7 +852,7 @@ xformat populate()
             meshlet.instance_count = 1;
             meshlet.first_instance = 0;
 
-            _model.non_indexed_meshlets.push_back(std::move(meshlet));
+            model_.non_indexed_meshlets.push_back(std::move(meshlet));
         }
 
         {
@@ -872,12 +872,12 @@ xformat populate()
         }
     }
 
-    _model.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
-    _model.materials.push_back(xformat::material{0, "debug/color-debug-material"s});
-    _model.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
-    //_model.materials.push_back(xformat::material{0, "debug/normal-debug"s});
+    model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
+    model_.materials.push_back(xformat::material{0, "debug/color-debug-material"s});
+    model_.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
+    //model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
 
-    return _model;
+    return model_;
 }
 }
 
@@ -1091,10 +1091,10 @@ create_framebuffers(resource::resource_manager &resource_manager, renderer::swap
 
     std::transform(std::cbegin(swapchain_views), std::cend(swapchain_views), std::back_inserter(framebuffers), [&] (auto &&swapchain_view)
     {
-        auto _image_views = image_views;
-        _image_views.push_back(swapchain_view);
+        auto image_views_ = image_views;
+        image_views_.push_back(swapchain_view);
 
-        return resource_manager.create_framebuffer(extent, render_pass, _image_views);
+        return resource_manager.create_framebuffer(extent, render_pass, image_views_);
     });
 
     return framebuffers;

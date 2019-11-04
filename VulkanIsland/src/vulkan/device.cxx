@@ -666,9 +666,9 @@ namespace vulkan
         std::vector<char const *> extensions;
 
         if constexpr (use_extensions) {
-            auto const _extensions = vulkan::device_extensions;
+            auto const extensions_ = vulkan::device_extensions;
 
-            std::copy(std::begin(_extensions), std::end(_extensions), std::back_inserter(extensions));
+            std::copy(std::begin(extensions_), std::end(extensions_), std::back_inserter(extensions));
 
         #if USE_DEBUG_MARKERS
             extensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);

@@ -40,7 +40,7 @@ namespace graphics
 
             auto const check = std::set{ lhs, rhs };
 
-            auto /*constexpr*/ _8bit = std::set{
+            auto /*constexpr*/ bit8 = std::set{
                 FORMAT::RG4_UNORM_PACK8,
                 FORMAT::R8_UNORM,
                 FORMAT::R8_SNORM,
@@ -51,10 +51,10 @@ namespace graphics
                 FORMAT::R8_SRGB
             };
 
-            if (std::includes(std::cbegin(_8bit), std::cend(_8bit), std::cbegin(check), std::cend(check)))
+            if (std::includes(std::cbegin(bit8), std::cend(bit8), std::cbegin(check), std::cend(check)))
                 return true;
 
-            auto /*constexpr*/ _16bit = std::set{
+            auto /*constexpr*/ bit16 = std::set{
                 FORMAT::RGBA4_UNORM_PACK16,
                 FORMAT::BGRA4_UNORM_PACK16,
                 FORMAT::B5G6R5_UNORM_PACK16,
@@ -80,10 +80,10 @@ namespace graphics
                 FORMAT::R12X4_UNORM_PACK16
             };
 
-            if (std::includes(std::cbegin(_16bit), std::cend(_16bit), std::cbegin(check), std::cend(check)))
+            if (std::includes(std::cbegin(bit16), std::cend(bit16), std::cbegin(check), std::cend(check)))
                 return true;
 
-            auto /*constexpr*/ _24bit = std::set{
+            auto /*constexpr*/ bit24 = std::set{
                 FORMAT::RGB8_UNORM,
                 FORMAT::RGB8_SNORM,
                 FORMAT::RGB8_USCALED,
@@ -100,10 +100,10 @@ namespace graphics
                 FORMAT::BGR8_SRGB
             };
 
-            if (std::includes(std::cbegin(_24bit), std::cend(_24bit), std::cbegin(check), std::cend(check)))
+            if (std::includes(std::cbegin(bit24), std::cend(bit24), std::cbegin(check), std::cend(check)))
                 return true;
 
-            auto /*constexpr*/ _32bit = std::set{
+            auto /*constexpr*/ bit32 = std::set{
                 FORMAT::E5BGR9_UFLOAT_PACK32,
                 FORMAT::RGBA8_UNORM,
                 FORMAT::RGBA8_SNORM,
@@ -153,10 +153,10 @@ namespace graphics
                 // FORMAT::R12X4G12X4_UNORM_2PACK16
             };
 
-            if (std::includes(std::cbegin(_32bit), std::cend(_32bit), std::cbegin(check), std::cend(check)))
+            if (std::includes(std::cbegin(bit32), std::cend(bit32), std::cbegin(check), std::cend(check)))
                 return true;
 
-            auto /*constexpr*/ _48bit = std::set{
+            auto /*constexpr*/ bit48 = std::set{
                 FORMAT::RGB16_UNORM,
                 FORMAT::RGB16_SNORM,
                 FORMAT::RGB16_USCALED,
@@ -166,10 +166,10 @@ namespace graphics
                 FORMAT::RGB16_SFLOAT
             };
 
-            if (std::includes(std::cbegin(_48bit), std::cend(_48bit), std::cbegin(check), std::cend(check)))
+            if (std::includes(std::cbegin(bit48), std::cend(bit48), std::cbegin(check), std::cend(check)))
                 return true;
 
-            auto /*constexpr*/ _64bit = std::set{
+            auto /*constexpr*/ bit64 = std::set{
                 FORMAT::RGBA16_UNORM,
                 FORMAT::RGBA16_SNORM,
                 FORMAT::RGBA16_SFLOAT,
@@ -185,19 +185,19 @@ namespace graphics
                 FORMAT::RG32_SINT
             };
 
-            if (std::includes(std::cbegin(_64bit), std::cend(_64bit), std::cbegin(check), std::cend(check)))
+            if (std::includes(std::cbegin(bit64), std::cend(bit64), std::cbegin(check), std::cend(check)))
                 return true;
 
-            auto /*constexpr*/ _96bit = std::set{
+            auto /*constexpr*/ bit96 = std::set{
                 FORMAT::RGB32_UINT,
                 FORMAT::RGB32_SINT,
                 FORMAT::RGB32_SFLOAT
             };
 
-            if (std::includes(std::cbegin(_96bit), std::cend(_96bit), std::cbegin(check), std::cend(check)))
+            if (std::includes(std::cbegin(bit96), std::cend(bit96), std::cbegin(check), std::cend(check)))
                 return true;
 
-            auto /*constexpr*/ _128bit = std::set{
+            auto /*constexpr*/ bit128 = std::set{
                 FORMAT::RGBA32_SFLOAT,
                 FORMAT::RGBA32_UINT,
                 FORMAT::RGBA32_SINT,
@@ -206,25 +206,25 @@ namespace graphics
                 FORMAT::RG64_SFLOAT
             };
 
-            if (std::includes(std::cbegin(_128bit), std::cend(_128bit), std::cbegin(check), std::cend(check)))
+            if (std::includes(std::cbegin(bit128), std::cend(bit128), std::cbegin(check), std::cend(check)))
                 return true;
 
-            auto /*constexpr*/ _192bit = std::set{
+            auto /*constexpr*/ bit192 = std::set{
                 FORMAT::RGB64_UINT,
                 FORMAT::RGB64_SINT,
                 FORMAT::RGB64_SFLOAT
             };
 
-            if (std::includes(std::cbegin(_192bit), std::cend(_192bit), std::cbegin(check), std::cend(check)))
+            if (std::includes(std::cbegin(bit192), std::cend(bit192), std::cbegin(check), std::cend(check)))
                 return true;
 
-            auto /*constexpr*/ _256bit = std::set{
+            auto /*constexpr*/ bit256 = std::set{
                 FORMAT::RGBA64_UINT,
                 FORMAT::RGBA64_SINT,
                 FORMAT::RGBA64_SFLOAT
             };
 
-            if (std::includes(std::cbegin(_256bit), std::cend(_256bit), std::cbegin(check), std::cend(check)))
+            if (std::includes(std::cbegin(bit256), std::cend(bit256), std::cbegin(check), std::cend(check)))
                 return true;
 
             return false;

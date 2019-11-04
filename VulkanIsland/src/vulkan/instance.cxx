@@ -13,11 +13,11 @@ using namespace std::string_literals;
 
 namespace
 {
-    [[nodiscard]] bool check_required_extensions(std::vector<char const *> _required_extensions)
+    [[nodiscard]] bool check_required_extensions(std::vector<char const *> required_extensions_)
     {
         std::vector<VkExtensionProperties> required_extensions;
 
-        std::transform(std::cbegin(_required_extensions), std::cend(_required_extensions), 
+        std::transform(std::cbegin(required_extensions_), std::cend(required_extensions_), 
                        std::back_inserter(required_extensions), [] (auto &&name)
         {
             VkExtensionProperties prop{};
@@ -49,11 +49,11 @@ namespace
                              std::cbegin(required_extensions), std::cend(required_extensions), extensions_compare);
     }
 
-    [[nodiscard]] bool check_required_layers(std::vector<char const *> _requiredLayers)
+    [[nodiscard]] bool check_required_layers(std::vector<char const *> required_layers_)
     {
         std::vector<VkLayerProperties> required_layers;
 
-        std::transform(std::cbegin(_requiredLayers), std::cend(_requiredLayers), std::back_inserter(required_layers), [] (auto &&name)
+        std::transform(std::cbegin(required_layers_), std::cend(required_layers_), std::back_inserter(required_layers), [] (auto &&name)
         {
             VkLayerProperties prop{};
             std::uninitialized_copy_n(name, std::strlen(name), prop.layerName);
@@ -95,10 +95,10 @@ namespace vulkan
         std::vector<char const *> layers;
 
         if constexpr (use_extensions) {
-            auto _extensions = vulkan_config::extensions;
+            auto extensions_ = vulkan_config::extensions;
 
             if constexpr (use_layers) {
-                auto present = std::any_of(std::cbegin(_extensions), std::cend(_extensions), [] (auto &&name)
+                auto present = std::any_of(std::cbegin(extensions_), std::cend(extensions_), [] (auto &&name)
                 {
                     return std::strcmp(name, VK_EXT_DEBUG_REPORT_EXTENSION_NAME) == 0;
                 });
@@ -107,13 +107,13 @@ namespace vulkan
                     throw std::runtime_error("enabled validation layers require enabled 'VK_EXT_debug_report' extension"s);
             }
 
-            std::copy(std::cbegin(_extensions), std::cend(_extensions), std::back_inserter(extensions));
+            std::copy(std::cbegin(extensions_), std::cend(extensions_), std::back_inserter(extensions));
         }
 
         if constexpr (use_layers) {
-            auto _layers = vulkan_config::layers;
+            auto layers_ = vulkan_config::layers;
 
-            std::copy(std::cbegin(_layers), std::cend(_layers), std::back_inserter(layers));
+            std::copy(std::cbegin(layers_), std::cend(layers_), std::back_inserter(layers));
         }
 
         std::uint32_t api_version = 0;
@@ -152,11 +152,11 @@ namespace vulkan
         instance_info.enabledLayerCount = static_cast<std::uint32_t>(std::size(layers));
         instance_info.ppEnabledLayerNames = std::data(layers);
 
-        if (auto result = vkCreateInstance(&instance_info, nullptr, &instance_); result != VK_SUCCESS)
+        if (auto result = vkCreateInstance(&instance_info, nullptr, &handle_); result != VK_SUCCESS)
             throw std::runtime_error("failed to create instance"s);
 
         if constexpr (use_layers)
-            vulkan::create_debug_report_callback(instance_, debug_report_callback_);
+            vulkan::create_debug_report_callback(handle_, debug_report_callback_);
     }
 
     instance::~instance()
