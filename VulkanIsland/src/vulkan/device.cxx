@@ -27,6 +27,44 @@ namespace
 
     using device_extended_feature_t = mpl::variant_from_tuple<std::remove_cvref_t<decltype(vulkan::device_extended_features)>>::type;
 
+    auto constexpr possible_surface_formats = std::array{
+        graphics::FORMAT::BGRA8_SRGB,
+        graphics::FORMAT::BGRA8_UNORM,
+        graphics::FORMAT::RGBA8_SRGB,
+        graphics::FORMAT::RGBA8_UNORM,
+        graphics::FORMAT::R5G6B5_UNORM_PACK16,
+        graphics::FORMAT::A2RGB10_UNORM_PACK32,
+        graphics::FORMAT::RGBA8_SNORM,
+        graphics::FORMAT::ABGR8_UNORM_PACK32,
+        graphics::FORMAT::ABGR8_SNORM_PACK32,
+        graphics::FORMAT::ABGR8_SRGB_PACK32,
+        graphics::FORMAT::A2RGB10_UNORM_PACK32,
+        graphics::FORMAT::RGBA16_UNORM,
+        graphics::FORMAT::RGBA16_SNORM,
+        graphics::FORMAT::B10GR11_UFLOAT_PACK32,
+        graphics::FORMAT::B5G6R5_UNORM_PACK16,
+        graphics::FORMAT::BGRA8_SNORM,
+        graphics::FORMAT::RGBA16_SFLOAT,
+        graphics::FORMAT::A1RGB5_UNORM_PACK16,
+        graphics::FORMAT::RGBA4_UNORM_PACK16,
+        graphics::FORMAT::BGRA4_UNORM_PACK16,
+        graphics::FORMAT::RGB5A1_UNORM_PACK16,
+        graphics::FORMAT::BGR5A1_UNORM_PACK16
+    };
+
+    auto constexpr possible_surface_color_spaces = std::array{
+        graphics::COLOR_SPACE::SRGB_NONLINEAR,
+        graphics::COLOR_SPACE::EXTENDED_SRGB_LINEAR,
+        graphics::COLOR_SPACE::EXTENDED_SRGB_NONLINEAR,
+        graphics::COLOR_SPACE::BT709_LINEAR,
+        graphics::COLOR_SPACE::BT709_NONLINEAR,
+        graphics::COLOR_SPACE::ADOBE_RGB_LINEAR,
+        graphics::COLOR_SPACE::ADOBE_RGB_NONLINEAR,
+        graphics::COLOR_SPACE::HDR10_ST2084,
+        graphics::COLOR_SPACE::HDR10_HLG,
+        graphics::COLOR_SPACE::PASS_THROUGH
+    };
+
     template<bool check_on_duplicates = false>
     bool check_required_device_extensions(VkPhysicalDevice physical_device, std::vector<std::string_view> &&extensions)
     {
@@ -215,10 +253,33 @@ namespace
         if (surface_formats_count == 0)
             throw std::runtime_error("zero number of presentation format pairs"s);
 
-        std::vector<VkSurfaceFormatKHR> surface_formats(surface_formats_count);
+        std::vector<VkSurfaceFormatKHR> supported_formats(surface_formats_count);
 
-        if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &surface_formats_count, std::data(surface_formats)); result != VK_SUCCESS)
+        if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &surface_formats_count, std::data(supported_formats)); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to retrieve device surface formats: {0:#x}\n"s, result));
+
+        std::vector<renderer::surface_format> surface_formats;
+
+        std::transform(std::cbegin(supported_formats), std::cend(supported_formats), std::back_inserter(surface_formats), [] (auto supported)
+        {
+            auto it_color_space = std::find_if(std::cbegin(possible_surface_color_spaces), std::cend(possible_surface_color_spaces), [supported] (auto color_space)
+            {
+                return convert_to::vulkan(color_space) == supported.colorSpace;
+            });
+
+            if (it_color_space == std::cend(possible_surface_color_spaces))
+                throw std::runtime_error("failed to find matching device surface color space\n"s);
+
+            auto it_format = std::find_if(std::cbegin(possible_surface_formats), std::cend(possible_surface_formats), [supported] (auto format)
+            {
+                return convert_to::vulkan(format) == supported.format;
+            });
+
+            if (it_format == std::cend(possible_surface_formats))
+                throw std::runtime_error("failed to find matching device surface format\n"s);
+
+            return renderer::surface_format{ *it_format, *it_color_space };
+        });
 
         std::uint32_t present_modes_count = 0;
 

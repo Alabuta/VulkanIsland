@@ -32,16 +32,15 @@ namespace
     choose_supported_surface_format(renderer::swapchain_support_details const &support_details,
                                     std::vector<renderer::surface_format> const &required_surface_formats)
     {
-        auto &&supported_surface_formats = support_details.surface_formats;
+        auto &&surface = support_details.surface_formats;
 
-        if (std::size(supported_surface_formats) == 1 && supported_surface_formats.at(0).format == VK_FORMAT_UNDEFINED)
+        if (std::size(surface) == 1 && surface.at(0).format == graphics::FORMAT::UNDEFINED)
             return { graphics::FORMAT::BGRA8_UNORM, graphics::COLOR_SPACE::SRGB_NONLINEAR };
 
         for (auto [format, color_space] : required_surface_formats) {
-            auto supported = std::any_of(std::cbegin(supported_surface_formats), std::cend(supported_surface_formats),
-                                         [format, color_space] (auto &&surface_format)
+            auto supported = std::any_of(std::cbegin(surface), std::cend(surface), [format, color_space] (auto &&surface_format)
             {
-                return surface_format.format == convert_to::vulkan(format) && surface_format.colorSpace == convert_to::vulkan(color_space);
+                return surface_format.format == format && surface_format.color_space == color_space;
             });
 
             if (supported)

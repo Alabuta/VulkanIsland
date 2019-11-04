@@ -20,10 +20,7 @@ namespace renderer
     struct swapchain_support_details final {
         VkSurfaceCapabilitiesKHR surface_capabilities;
 
-        std::vector<VkSurfaceFormatKHR> surface_formats;
-        //std::vector<VkPresentModeKHR> presentation_modes;
-
-        //std::vector<renderer::surface_format> surface_formats;
+        std::vector<renderer::surface_format> surface_formats;
         std::vector<graphics::PRESENTATION_MODE> presentation_modes;
     };
 }
