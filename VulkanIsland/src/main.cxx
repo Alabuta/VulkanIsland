@@ -528,7 +528,7 @@ void recreate_swap_chain(app_t &app)
 
     app.attachments = create_attachments(*app.device, app.renderer_config, *app.resource_manager2, *app.swapchain);
 
-    if (std::size(app.attachments) == 0)
+    if (app.attachments.empty())
         throw std::runtime_error("failed to create the attachments"s);
 
     auto attachment_descriptions = create_attachment_descriptions(app.attachments);
@@ -540,7 +540,7 @@ void recreate_swap_chain(app_t &app)
 
     app.framebuffers = create_framebuffers(*app.resource_manager, *app.swapchain, app.render_pass, app.attachments);
 
-    if (std::size(app.framebuffers) == 0)
+    if (app.framebuffers.empty())
         throw std::runtime_error("failed to create the framebuffers"s);
 
 #if !USE_DYNAMIC_PIPELINE_STATE
@@ -1141,7 +1141,7 @@ void init(platform::window &window, app_t &app)
 
         auto attachments = create_attachments(*app.device, app.renderer_config, *app.resource_manager2, *app.swapchain);
 
-        if (std::size(attachments) == 0)
+        if (attachments.empty())
             throw std::runtime_error("failed to create the attachments"s);
 
         auto attachment_descriptions = create_attachment_descriptions(attachments);
@@ -1153,7 +1153,7 @@ void init(platform::window &window, app_t &app)
 
         auto framebuffers = create_framebuffers(*app.resource_manager, *app.swapchain, app.render_pass, attachments);
 
-        if (std::size(framebuffers) == 0)
+        if (framebuffers.empty())
             throw std::runtime_error("failed to create the framebuffers"s);
 
         app.attachments = std::move(attachments);

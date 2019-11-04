@@ -188,16 +188,19 @@ namespace renderer
             images_.push_back(image);
 
             image_views_.push_back(std::shared_ptr<resource::image_view>(
-                new resource::image_view{image_view_handle, image, graphics::IMAGE_VIEW_TYPE::TYPE_2D}
+                new resource::image_view{image_view_handle, image, graphics::IMAGE_VIEW_TYPE::TYPE_2D},
+                [this] (resource::image_view *ptr_image_view)
+                {
+                    vkDestroyImageView(device_.handle(), ptr_image_view->handle(), nullptr);
+
+                    delete ptr_image_view;
+                }
             ));
         }
     }
 
     swapchain::~swapchain()
     {
-        for (auto &&image_view : image_views_)
-            vkDestroyImageView(device_.handle(), image_view->handle(), nullptr);
-
         image_views_.clear();
 
         vkDestroySwapchainKHR(device_.handle(), handle_, nullptr);
