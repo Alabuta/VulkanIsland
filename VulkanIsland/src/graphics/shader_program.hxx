@@ -95,7 +95,7 @@ namespace graphics
     class shader_manager final {
     public:
 
-        shader_manager(vulkan::device &vulkan_device) noexcept : device_{vulkan_device} { }
+        shader_manager(vulkan::device &device) noexcept : device_{device} { }
 
         [[nodiscard]] std::shared_ptr<graphics::shader_module> shader_module(std::string_view name, std::uint32_t technique_index);
 

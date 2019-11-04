@@ -33,7 +33,7 @@ CreateBufferHandle(vulkan::device const &device, VkDeviceSize size, graphics::BU
 }
 
 [[nodiscard]] std::optional<VkImage>
-CreateImageHandle(vulkan::device const &vulkan_device, std::uint32_t width, std::uint32_t height, std::uint32_t mip_levels,
+CreateImageHandle(vulkan::device const &device, std::uint32_t width, std::uint32_t height, std::uint32_t mip_levels,
                   std::uint32_t samples_count, graphics::FORMAT format, graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usage) noexcept
 {
     VkImageCreateInfo const createInfo{
@@ -56,7 +56,7 @@ CreateImageHandle(vulkan::device const &vulkan_device, std::uint32_t width, std:
 
     VkImage handle;
 
-    if (auto result = vkCreateImage(vulkan_device.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
+    if (auto result = vkCreateImage(device.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
         std::cerr << "failed to create image: "s << result << '\n';
 
     else image.emplace(handle);
@@ -70,9 +70,9 @@ CreateImageHandle(vulkan::device const &vulkan_device, std::uint32_t width, std:
         "image"
     };
 
-    auto vkDebugMarkerSetObjectNameEXT = (PFN_vkDebugMarkerSetObjectNameEXT)vkGetDeviceProcAddr(vulkan_device.handle(), "vkDebugMarkerSetObjectNameEXT");
+    auto vkDebugMarkerSetObjectNameEXT = (PFN_vkDebugMarkerSetObjectNameEXT)vkGetDeviceProcAddr(device.handle(), "vkDebugMarkerSetObjectNameEXT");
 
-    if (auto result = vkDebugMarkerSetObjectNameEXT(vulkan_device.handle(), &info); result != VK_SUCCESS)
+    if (auto result = vkDebugMarkerSetObjectNameEXT(device.handle(), &info); result != VK_SUCCESS)
         throw std::runtime_error("failed to set the image debug marker: "s + std::to_string(result));
 #endif
 

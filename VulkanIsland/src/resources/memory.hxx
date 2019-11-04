@@ -19,7 +19,7 @@ class DeviceMemory;
 class MemoryManager final {
 public:
 
-    MemoryManager(vulkan::device const &vulkan_device);
+    MemoryManager(vulkan::device const &device);
     ~MemoryManager();
 
     template<class T> requires mpl::one_of<T, VkBuffer, VkImage>
