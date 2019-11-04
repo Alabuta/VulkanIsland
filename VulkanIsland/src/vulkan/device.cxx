@@ -266,7 +266,19 @@ namespace
                     return false;
             }
 
-            auto const capability = convert_to::vulkan(T::capability);
+            auto const capability = ([]
+            {
+                if constexpr (std::is_same_v<T, graphics::graphics_queue>)
+                    return convert_to::vulkan(graphics::QUEUE_CAPABILITY::GRAPHICS);
+
+                else if constexpr (std::is_same_v<T, graphics::compute_queue>)
+                    return convert_to::vulkan(graphics::QUEUE_CAPABILITY::COMPUTE);
+
+                else if constexpr (std::is_same_v<T, graphics::transfer_queue>)
+                    return convert_to::vulkan(graphics::QUEUE_CAPABILITY::TRANSFER);
+
+                else static_assert(std::false_type{}, "unsupported queue type");
+            })();
 
             using C = std::remove_cvref_t<decltype(queue_family.queueFlags)>;
 

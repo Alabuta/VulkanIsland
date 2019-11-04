@@ -30,15 +30,7 @@ namespace graphics
         friend vulkan::device;
     };
 
-    struct graphics_queue final : public graphics::queue {
-        static auto constexpr capability{graphics::QUEUE_CAPABILITY::GRAPHICS};
-    };
-
-    struct compute_queue final : public graphics::queue {
-        static auto constexpr capability{graphics::QUEUE_CAPABILITY::COMPUTE};
-    };
-
-    struct transfer_queue final : public graphics::queue {
-        static auto constexpr capability{graphics::QUEUE_CAPABILITY::TRANSFER};
-    };
+    struct graphics_queue final : public graphics::queue { };
+    struct compute_queue final : public graphics::queue { };
+    struct transfer_queue final : public graphics::queue { };
 }
