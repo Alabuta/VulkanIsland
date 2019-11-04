@@ -233,12 +233,12 @@ namespace
         if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_modes_count, std::data(supported_modes)); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to retrieve device surface presentation modes: {0:#x}\n"s, result));
 
-        std::vector<graphics::PRESENTATION_MODE> presentation_modes(present_modes_count);
-
-        std::generate_n(std::begin(presentation_modes), present_modes_count, [n = 0] () mutable
-        {
-            return static_cast<graphics::PRESENTATION_MODE>(n++);
-        });
+        std::vector<graphics::PRESENTATION_MODE> presentation_modes{
+            graphics::PRESENTATION_MODE::IMMEDIATE,
+            graphics::PRESENTATION_MODE::MAILBOX,
+            graphics::PRESENTATION_MODE::FIFO,
+            graphics::PRESENTATION_MODE::FIFO_RELAXED
+        };
 
         auto it_end = std::remove_if(std::begin(presentation_modes), std::end(presentation_modes), [&supported_modes] (auto mode)
         {
@@ -249,6 +249,7 @@ namespace
         });
 
         presentation_modes.erase(it_end, std::end(presentation_modes));
+        presentation_modes.shrink_to_fit();
 
         return { surface_capabilities, surface_formats, presentation_modes };
     }
