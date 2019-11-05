@@ -157,13 +157,13 @@ struct app_t final {
     std::uint32_t width{800u};
     std::uint32_t height{600u};
 
+    renderer::config renderer_config;
+
     std::unique_ptr<vulkan::instance> instance;
     std::unique_ptr<vulkan::device> device;
 
     std::shared_ptr<renderer::platform_surface> platform_surface;
     std::unique_ptr<renderer::swapchain> swapchain;
-
-    renderer::config renderer_config;
 
     std::unique_ptr<resource::resource_manager> resource_manager;
 
@@ -1363,12 +1363,10 @@ void render_frame(app_t &app)
 }
 
 int main()
-/*try */{
+{
 #if defined(_MSC_VER)
-    static_assert(__cplusplus >= 201704L);
-
     #if defined(_DEBUG) || defined(DEBUG)
-    _   CrtSetDbgFlag(_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+        _CrtSetDbgFlag(_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     #endif
 #else
     static_assert(__cpp_concepts >= 201500); // check compiled with -fconcepts
@@ -1418,10 +1416,7 @@ int main()
     app.clean_up();
 
     glfwTerminate();
-}/* catch (std::exception const &ex) {
-    std::cout << ex.what() << std::endl;
-    std::cin.get();
-}*/
+}
 
 
 void create_semaphores(app_t &app)
