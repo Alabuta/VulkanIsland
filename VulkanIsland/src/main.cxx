@@ -1300,7 +1300,7 @@ void render_frame(app_t &app)
 
     auto &&device = *app.device;
 
-    //vkQueueWaitIdle(device.presentation_queue.handle());
+    vkQueueWaitIdle(device.presentation_queue.handle());
 
     std::uint32_t image_index;
 
