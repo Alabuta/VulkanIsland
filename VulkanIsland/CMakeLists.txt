@@ -44,7 +44,6 @@ set(SOURCE_FILES
     src/graphics/attachments.hxx                    src/graphics/attachments.cxx
     src/graphics/compatibility.hxx
     src/graphics/descriptors.hxx		            src/graphics/descriptors.cxx
-    src/graphics/framebuffer.hxx
     src/graphics/graphics_api.hxx                   src/graphics/graphics_api.cxx
     src/graphics/graphics_pipeline.hxx              src/graphics/graphics_pipeline.cxx
     src/graphics/graphics.hxx
@@ -54,8 +53,6 @@ set(SOURCE_FILES
     src/graphics/render_pass.hxx                    src/graphics/render_pass.cxx
     src/graphics/shader_program.hxx                 src/graphics/shader_program.cxx
     src/graphics/vertex.hxx                         src/graphics/vertex.cxx
-
-    src/graphics/renderPass.hxx                     src/graphics/renderPass.cxx
 
 	src/loaders/loaderGLTF.hxx                      src/loaders/loaderGLTF.cxx
 	src/loaders/material_loader.hxx                 src/loaders/material_loader.cxx
@@ -77,8 +74,10 @@ set(SOURCE_FILES
 	src/renderer/swapchain.hxx                      src/renderer/swapchain.cxx
 
 	src/resources/buffer.hxx                        src/resources/buffer.cxx
+    src/resources/framebuffer.hxx                   src/resources/framebuffer.cxx
 	src/resources/image.hxx                         src/resources/image.cxx
     src/resources/memory.hxx                        src/resources/memory.cxx
+    src/resources/resource_manager.hxx              src/resources/resource_manager.cxx
     src/resources/resource.hxx                      src/resources/resource.cxx
     src/resources/semaphore.hxx
 
@@ -93,7 +92,6 @@ set(SOURCE_FILES
 
     src/descriptor.hxx                              src/descriptor.cxx
     src/main.hxx                                    src/main.cxx
-    src/swapchain_old.hxx                           src/swapchain_old.cxx
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
@@ -130,6 +128,8 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     target_compile_options(${PROJECT_NAME} PRIVATE
+        -fconcepts
+
         -Wpedantic
         -Wall
         -Wextra
@@ -148,7 +148,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 		-Wuseless-cast
         # -Wlifetime
 
-        #-fsanitize=thread -fsanitize=address
+        # -fsanitize=thread -fsanitize=address
 )
 
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
