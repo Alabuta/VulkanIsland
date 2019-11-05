@@ -17,7 +17,7 @@ namespace graphics
         graphics::DESCRIPTOR_TYPE descriptor_type;
         graphics::SHADER_STAGE shader_stages;
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, descriptor_set_binding>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, descriptor_set_binding>
         auto constexpr operator== (T &&rhs) const
         {
             return binding_index == rhs.binding_index &&

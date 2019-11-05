@@ -42,7 +42,7 @@ private:
         bool linear{true};
 
         struct hash_value final {
-            template<class T> requires std::same_as<std::remove_cvref_t<T>, Pool>
+            template<class T> requires mpl::same_as<std::remove_cvref_t<T>, Pool>
             constexpr std::size_t operator() (T &&pool) const noexcept
             {
                 std::size_t seed = 0;
@@ -55,7 +55,7 @@ private:
             }
         };
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, Pool>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, Pool>
         constexpr bool operator== (T &&rhs) const noexcept
         {
             return memoryTypeIndex == rhs.memoryTypeIndex && properties == rhs.properties && linear == rhs.linear;
@@ -78,13 +78,13 @@ private:
                         return lhs.size < rhs.size;
                     }
 
-                    template<class T, class S> requires std::same_as<Chunk, std::remove_cvref_t<T>> && std::integral<S>
+                    template<class T, class S> requires mpl::same_as<Chunk, std::remove_cvref_t<T>> && mpl::integral<S>
                     auto operator() (T &&chunk, S size) const noexcept
                     {
                         return chunk.size < size;
                     }
 
-                    template<class S, class T> requires std::same_as<Chunk, std::remove_cvref_t<T>> && std::integral<S>
+                    template<class S, class T> requires mpl::same_as<Chunk, std::remove_cvref_t<T>> && mpl::integral<S>
                     auto operator() (S size, T &&chunk) const noexcept
                     {
                         return chunk.size < size;

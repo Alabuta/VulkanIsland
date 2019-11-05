@@ -2,7 +2,10 @@
 
 #include <array>
 #include <variant>
-#include <concepts>
+
+#if defined(_MSC_VER)
+    #include <concepts>
+#endif
 
 #include <boost/cstdfloat.hpp>
 
@@ -40,7 +43,7 @@ namespace vertex
         using type = T;
         static auto constexpr length{N};
 
-        template<std::uint32_t N2, class T2> requires std::same_as<T, T2>
+        template<std::uint32_t N2, class T2> requires mpl::same_as<T, T2>
         auto constexpr operator== (static_array<N2, T2>) const noexcept
         {
             return N == N2;
@@ -125,7 +128,7 @@ namespace graphics
 
         bool normalized;
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_attribute>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, vertex_attribute>
         auto constexpr operator== (T &&rhs) const
         {
             return offset_in_bytes == rhs.offset_in_bytes &&
@@ -140,7 +143,7 @@ namespace graphics
 
         std::vector<graphics::vertex_attribute> attributes;
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_layout>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, vertex_layout>
         auto constexpr operator== (T &&rhs) const
         {
             return size_in_bytes == rhs.size_in_bytes && attributes == rhs.attributes;
@@ -153,7 +156,7 @@ namespace graphics
 
         graphics::VERTEX_INPUT_RATE input_rate;
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_input_binding>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, vertex_input_binding>
         auto constexpr operator== (T &&rhs) const
         {
             return binding_index == rhs.binding_index &&
@@ -169,7 +172,7 @@ namespace graphics
 
         graphics::FORMAT format;
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_input_attribute>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, vertex_input_attribute>
         auto constexpr operator== (T &&rhs) const
         {
             return location_index == rhs.location_index &&

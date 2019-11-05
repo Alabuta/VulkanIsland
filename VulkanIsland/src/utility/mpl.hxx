@@ -1,13 +1,16 @@
 #pragma once
 
 #include <type_traits>
-#include <concepts>
 #include <utility>
 #include <numeric>
 #include <cstddef>
 #include <variant>
 #include <vector>
 #include <tuple>
+
+#if defined(_MSC_VER)
+    #include <concepts>
+#endif
 
 
 namespace mpl
@@ -120,7 +123,7 @@ namespace mpl
 
     template<class T, class... Ts>
     struct is_variant_alternative<T, std::variant<Ts...>> {
-        static auto constexpr value = is_one_of_v<T, Ts...>;;
+        static auto constexpr value = is_one_of_v<T, Ts...>;
     };
 
     template<class T, class... Ts>
@@ -135,6 +138,9 @@ namespace mpl
     };
 
     template<class T>
+    concept integral = std::is_integral_v<T>;
+
+    template<class T>
     concept iterable = is_iterable_v<T>;
 
     template<class T>
@@ -142,6 +148,9 @@ namespace mpl
 
     template<class T, class... Ts>
     concept one_of = is_one_of_v<T, Ts...>;
+
+    template<class T1, class T2>
+    concept same_as = are_same_v<T1, T2>;
 
     template<class T, class... Ts>
     concept all_same = are_same_v<T, Ts...>;

@@ -1,7 +1,10 @@
 #pragma once
 
-#include <concepts>
 #include <memory>
+
+#if defined(_MSC_VER)
+    #include <concepts>
+#endif
 
 #include "graphics/vertex.hxx"
 #include "memory.hxx"
@@ -39,7 +42,7 @@ namespace resource
         template<class T> requires mpl::one_of<T, std::uint16_t, std::uint32_t>
         index_buffer(std::shared_ptr<resource::buffer> buffer, [[maybe_unused]] std::size_t size) noexcept : buffer{buffer}/* , size{size} */, type{T{}} { }
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, resource::index_buffer>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, resource::index_buffer>
         bool constexpr operator< (T &&rhs) const noexcept
         {
             return buffer->handle() < rhs.buffer->handle();

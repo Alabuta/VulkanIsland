@@ -1,12 +1,15 @@
 #pragma once
 
 #include <unordered_map>
-#include <concepts>
 #include <optional>
 #include <iostream>
 #include <vector>
 #include <array>
 #include <set>
+
+#if defined(_MSC_VER)
+    #include <concepts>
+#endif
 
 #include "vulkan/device.hxx"
 #include "renderer/config.hxx"
@@ -70,7 +73,7 @@ namespace graphics
         std::shared_ptr<graphics::render_pass> render_pass_;
         std::uint32_t subpass_index_;
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, pipeline_invariant>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, pipeline_invariant>
         auto constexpr operator== (T &&rhs) const
         {
             return material_ == rhs.material_ &&

@@ -16,7 +16,7 @@ namespace graphics
         //std::vector<graphics::vertex_input_binding> binding_descriptions;
         std::vector<graphics::vertex_input_attribute> attribute_descriptions;
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_input_state>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, vertex_input_state>
         auto constexpr operator== (T &&rhs) const
         {
             return binding_description == rhs.binding_description &&
@@ -31,7 +31,7 @@ namespace graphics
 
         float line_width{1.f};
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, rasterization_state>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, rasterization_state>
         auto constexpr operator== (T &&rhs) const
         {
             return cull_mode == rhs.cull_mode &&
@@ -52,7 +52,7 @@ namespace graphics
         std::uint32_t write_mask{0};
         std::uint32_t reference{0};
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, stencil_state>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, stencil_state>
         auto constexpr operator== (T &&rhs) const
         {
             return fail == rhs.fail &&
@@ -81,7 +81,7 @@ namespace graphics
         graphics::stencil_state front_stencil_state;
         graphics::stencil_state back_stencil_state;
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, depth_stencil_state>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, depth_stencil_state>
         auto constexpr operator== (T &&rhs) const
         {
             return depth_test_enable == rhs.depth_test_enable &&
@@ -110,7 +110,7 @@ namespace graphics
 
         graphics::COLOR_COMPONENT color_write_mask{graphics::COLOR_COMPONENT::RGBA};
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, color_blend_attachment_state>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, color_blend_attachment_state>
         auto constexpr operator== (T &&rhs) const
         {
             return blend_enable == rhs.blend_enable &&
@@ -133,7 +133,7 @@ namespace graphics
 
         std::vector<graphics::color_blend_attachment_state> attachment_states;
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, color_blend_state>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, color_blend_state>
         auto constexpr operator== (T &&rhs) const
         {
             return logic_operation_enable == rhs.logic_operation_enable &&
@@ -151,7 +151,7 @@ namespace graphics
         graphics::depth_stencil_state depth_stencil_state;
         graphics::color_blend_state color_blend_state;
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, pipeline_states>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, pipeline_states>
         auto constexpr operator== (T &&rhs) const
         {
             return primitive_topology == rhs.primitive_topology &&

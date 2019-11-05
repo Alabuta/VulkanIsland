@@ -26,6 +26,8 @@ auto constexpr kPI = 3.14159265358979323846f;
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/hash.hpp>
 
+#include "utility/mpl.hxx"
+
 
 namespace math {
     template<std::size_t N, class T>
@@ -64,7 +66,7 @@ namespace math {
 }
 
 
-template<class T> requires std::same_as<std::remove_cvref_t<T>, glm::mat4>
+template<class T> requires mpl::same_as<std::remove_cvref_t<T>, glm::mat4>
 inline std::ostream &operator<< (std::ostream &stream, T &&m)
 {
     stream << std::setprecision(4) << std::fixed;
