@@ -656,7 +656,7 @@ namespace vulkan
 
 namespace vulkan
 {
-    device::device(vulkan::instance &instance, std::shared_ptr<renderer::platform_surface> platform_surface)
+    device::device(vulkan::instance &instance, renderer::platform_surface const *platform_surface)
     {
         auto constexpr use_extensions = !vulkan::device_extensions.empty();
 

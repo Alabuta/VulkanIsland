@@ -2,10 +2,7 @@
 
 #include <memory>
 
-#if defined(_MSC_VER)
-    #include <concepts>
-#endif
-
+#include "utility/mpl.hxx"
 #include "graphics/vertex.hxx"
 #include "memory.hxx"
 

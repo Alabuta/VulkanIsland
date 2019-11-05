@@ -7,12 +7,9 @@
 #include <map>
 #include <set>
 
-#if defined(_MSC_VER)
-    #include <concepts>
-#endif
-
 #include <boost/cstdfloat.hpp>
 
+#include "utility/mpl.hxx"
 #include "vulkan/device.hxx"
 #include "graphics.hxx"
 

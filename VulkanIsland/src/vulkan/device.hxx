@@ -31,7 +31,7 @@ namespace vulkan
     class device final {
     public:
 
-        explicit device(vulkan::instance &instance, std::shared_ptr<renderer::platform_surface> platform_surface);
+        explicit device(vulkan::instance &instance, renderer::platform_surface const *platform_surface);
         ~device();
 
         VkDevice handle() const noexcept { return handle_; };
@@ -39,7 +39,7 @@ namespace vulkan
 
         vulkan::device_limits const &device_limits() const noexcept { return device_limits_; };
 
-        renderer::swapchain_support_details query_swapchain_support_details(renderer::platform_surface const *const platform_surface) const;
+        renderer::swapchain_support_details query_swapchain_support_details(renderer::platform_surface const *platform_surface) const;
 
         graphics::graphics_queue graphics_queue;
         graphics::compute_queue compute_queue;

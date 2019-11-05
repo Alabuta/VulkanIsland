@@ -3,12 +3,9 @@
 #include <array>
 #include <variant>
 
-#if defined(_MSC_VER)
-    #include <concepts>
-#endif
-
 #include <boost/cstdfloat.hpp>
 
+#include "utility/mpl.hxx"
 #include "graphics.hxx"
 
 

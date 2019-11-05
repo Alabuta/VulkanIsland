@@ -98,8 +98,6 @@
 #include "camera/camera_controller.hxx"
 
 
-auto constexpr kSCENE_NAME{"unlit-test"sv};
-
 namespace temp
 {
     xformat model;
@@ -1098,7 +1096,7 @@ void init(platform::window &window, app_t &app)
 
     app.platform_surface = std::make_shared<renderer::platform_surface>(*app.instance, window);
 
-    app.device = std::make_unique<vulkan::device>(*app.instance, app.platform_surface);
+    app.device = std::make_unique<vulkan::device>(*app.instance, app.platform_surface.get());
 
     app.renderer_config = adjust_renderer_config(*app.device);
 

@@ -7,10 +7,7 @@
 #include <array>
 #include <set>
 
-#if defined(_MSC_VER)
-    #include <concepts>
-#endif
-
+#include "utility/mpl.hxx"
 #include "vulkan/device.hxx"
 #include "renderer/config.hxx"
 
