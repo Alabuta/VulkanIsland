@@ -44,6 +44,6 @@ namespace graphics
 
     private:
 
-        ;
+        // ;
     };
 }

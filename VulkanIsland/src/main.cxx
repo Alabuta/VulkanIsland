@@ -158,7 +158,7 @@ struct app_t final {
     std::uint32_t height{600u};
 
     camera_system cameraSystem;
-    std::shared_ptr<camera> camera;
+    std::shared_ptr<camera> camera_;
 
     std::unique_ptr<orbit_controller> camera_controller;
 
@@ -302,7 +302,7 @@ struct window_events_handler final : public platform::window::event_handler_inte
         {
             recreate_swap_chain(app);
 
-            app.camera->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
+            app.camera_->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
         };
     }
 };
@@ -428,7 +428,7 @@ void create_graphics_command_buffers(app_t &app)
 
     for (auto &command_buffer : app.command_buffers) {
 #else
-    for (std::size_t i = 0; auto &commandBuffer : app.commandBuffers) {
+    for (std::size_t i = 0; auto &command_buffer : app.command_buffers) {
 #endif
         VkCommandBufferBeginInfo const begin_info{
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -1252,7 +1252,7 @@ void update(app_t &app)
         if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to map per camera uniform buffer memory: {0:#x}\n"s, result));
 
-        std::uninitialized_copy_n(&app.camera->data, 1, reinterpret_cast<camera::data_t *>(data));
+        std::uninitialized_copy_n(&app.camera_->data, 1, reinterpret_cast<camera::data_t *>(data));
 
         vkUnmapMemory(device.handle(), buffer.memory()->handle());
     }
@@ -1373,10 +1373,19 @@ void render_frame(app_t &app)
 int main()
 /*try */{
 #if defined(_MSC_VER)
-    _CrtSetDbgFlag(_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    static_assert(__cplusplus >= 201704L);
+
+    #if defined(_DEBUG) || defined(DEBUG)
+    _   CrtSetDbgFlag(_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+    #endif
 #else
-	std::signal(SIGSEGV, posix_signal_handler);
-	std::signal(SIGTRAP, posix_signal_handler);
+    static_assert(__cpp_concepts >= 201500); // check compiled with -fconcepts
+    static_assert(__cplusplus >= 201703L);
+
+    #if defined(_DEBUG) || defined(DEBUG)
+        std::signal(SIGSEGV, posix_signal_handler);
+        std::signal(SIGTRAP, posix_signal_handler);
+    #endif
 #endif
 
     if (auto result = glfwInit(); result != GLFW_TRUE)
@@ -1392,10 +1401,10 @@ int main()
     auto input_manager = std::make_shared<platform::input_manager>();
     window.connect_input_handler(input_manager);
 
-    app.camera = app.cameraSystem.create_camera();
-    app.camera->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
+    app.camera_ = app.cameraSystem.create_camera();
+    app.camera_->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
 
-    app.camera_controller = std::make_unique<orbit_controller>(app.camera, *input_manager);
+    app.camera_controller = std::make_unique<orbit_controller>(app.camera_, *input_manager);
     app.camera_controller->look_at(glm::vec3{0, 2, 1}, {0, 0, 0});
 
     std::cout << measure<>::execution(init, window, std::ref(app)) << " ms\n"s;

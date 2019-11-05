@@ -85,7 +85,7 @@ namespace graphics
     };
 
     template<>
-    struct graphics::hash<pipeline_invariant> {
+    struct hash<pipeline_invariant> {
         std::size_t operator() (pipeline_invariant const &pipeline_invariant) const;
     };
 }
@@ -113,7 +113,7 @@ namespace graphics
 }
 
 template<class T> requires mpl::container<std::remove_cvref_t<T>>
-[[nodiscard]] std::optional<VkPipelineLayout>
+/* [[nodiscard]] */ std::optional<VkPipelineLayout>
 create_pipeline_layout(vulkan::device const &device, T &&descriptorSetLayouts) noexcept
 {
     static_assert(

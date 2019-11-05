@@ -356,7 +356,7 @@ namespace
                 else if constexpr (std::is_same_v<T, graphics::transfer_queue>)
                     return convert_to::vulkan(graphics::QUEUE_CAPABILITY::TRANSFER);
 
-                else static_assert(std::false_type{}, "unsupported queue type");
+                static_assert(mpl::is_one_of_v<T, graphics::graphics_queue, graphics::compute_queue, graphics::transfer_queue>);
             })();
 
             using C = std::remove_cvref_t<decltype(queue_family.queueFlags)>;
@@ -364,7 +364,7 @@ namespace
             if constexpr (strict_matching)
                 return queue_family.queueCount > 0 && queue_family.queueFlags == capability;
 
-            return queue_family.queueCount > 0 && (queue_family.queueFlags & capability) == static_cast<C>(capability);
+            return queue_family.queueCount > 0 && (queue_family.queueFlags & static_cast<C>(capability)) == static_cast<C>(capability);
         });
 
         if (it_family != std::cend(queue_families))
@@ -421,7 +421,8 @@ namespace
 
             VkPhysicalDeviceFeatures2 supported_features{
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2,
-                &supported_extended_features.back()
+                &supported_extended_features.back(),
+                { }
             };
 
             vkGetPhysicalDeviceFeatures2(device, &supported_features);
@@ -612,15 +613,11 @@ namespace
 
 namespace vulkan
 {
-    struct device::helper final {
-        device::helper(std::vector<queue_t> &requested_queues) noexcept : requested_queues{requested_queues} { }
-
-        std::vector<queue_t> &requested_queues;
-
+    struct device::queue_helper final {
         std::vector<VkDeviceQueueCreateInfo> queue_infos;
         std::vector<std::vector<float>> priorities;
 
-        void init_queue_families(VkPhysicalDevice device, VkSurfaceKHR surface)
+        queue_helper(VkPhysicalDevice device, VkSurfaceKHR surface, std::vector<queue_t> &requested_queues)
         {
             std::map<std::uint32_t, std::uint32_t> requested_families;
 
@@ -705,9 +702,7 @@ namespace vulkan
             graphics_queue, compute_queue, transfer_queue, presentation_queue
         };
 
-        device::helper helper(requested_queues);
-
-        helper.init_queue_families(physical_handle_, platform_surface->handle());
+        device::queue_helper helper(physical_handle_, platform_surface->handle(), requested_queues);
 
         VkDeviceCreateInfo const device_info{
             VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,

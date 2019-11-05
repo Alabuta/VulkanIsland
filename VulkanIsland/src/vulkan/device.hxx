@@ -57,6 +57,6 @@ namespace vulkan
         device(vulkan::device const &) = delete;
         device(vulkan::device &&) = delete;
 
-        struct helper;
+        struct queue_helper;
     };
 }

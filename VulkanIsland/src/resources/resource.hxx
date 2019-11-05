@@ -51,7 +51,7 @@ public:
     ResourceManager(vulkan::device &device, MemoryManager &memory_manager) noexcept : device_{device}, memory_manager_{memory_manager} { }
 
     [[nodiscard]] std::shared_ptr<resource::image>
-    CreateImage(graphics::FORMAT format, std::uint16_t width, std::uint16_t height, std::uint32_t mip_levels,
+    CreateImage(graphics::FORMAT format, std::uint32_t width, std::uint32_t height, std::uint32_t mip_levels,
                 std::uint32_t samples_count, graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags);
 
     [[nodiscard]] std::shared_ptr<resource::image_view>
@@ -64,7 +64,7 @@ public:
     CreateBuffer(VkDeviceSize size, graphics::BUFFER_USAGE usage, VkMemoryPropertyFlags properties) noexcept;
 
     template<class T> requires mpl::one_of<T, std::uint16_t, std::uint32_t>
-    [[nodiscard]] std::shared_ptr<resource::index_buffer> CreateIndexBuffer(std::size_t sizeInBytes) noexcept;
+    /* [[nodiscard]] */ std::shared_ptr<resource::index_buffer> CreateIndexBuffer(std::size_t sizeInBytes) noexcept;
 
     [[nodiscard]] std::shared_ptr<resource::vertex_buffer> CreateVertexBuffer(graphics::vertex_layout const &layout, std::size_t sizeInBytes) noexcept;
 

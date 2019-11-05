@@ -58,7 +58,7 @@ namespace graphics
         std::vector<graphics::subpass_description> subpass_descriptions;
         std::vector<graphics::subpass_dependency> subpass_dependencies;
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, resource::framebuffer>
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, resource::framebuffer>
         auto constexpr operator== (T &&rhs) const
         {
             return attachment_descriptions == rhs.attachment_descriptions &&

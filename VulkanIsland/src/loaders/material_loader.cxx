@@ -351,7 +351,7 @@ namespace loader
     std::optional<material_description::specialization_constant> specialization_constant_value(std::string_view type, float value)
     {
         if (type == "float"sv)
-            return static_cast<boost::float32_t>(value);
+            return value;
 
         else if (type == "int"sv)
             return static_cast<std::int32_t>(value);

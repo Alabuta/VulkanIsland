@@ -81,7 +81,7 @@ CreateImageHandle(vulkan::device const &device, std::uint32_t width, std::uint32
 }
 
 std::shared_ptr<resource::image>
-ResourceManager::CreateImage(graphics::FORMAT format, std::uint16_t width, std::uint16_t height, std::uint32_t mip_levels,
+ResourceManager::CreateImage(graphics::FORMAT format, std::uint32_t width, std::uint32_t height, std::uint32_t mip_levels,
                              std::uint32_t samples_count, graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags)
 {
     std::shared_ptr<resource::image> image;

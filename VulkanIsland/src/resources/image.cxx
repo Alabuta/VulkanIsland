@@ -71,7 +71,7 @@ find_supported_image_format(vulkan::device const &device, std::vector<graphics::
 
 std::shared_ptr<resource::texture>
 CreateTexture(ResourceManager &resource_manager, graphics::FORMAT format, graphics::IMAGE_VIEW_TYPE view_type,
-              std::uint16_t width, std::uint16_t height, std::uint32_t mip_levels, std::uint32_t samples_count, graphics::IMAGE_TILING tiling,
+              std::uint32_t width, std::uint32_t height, std::uint32_t mip_levels, std::uint32_t samples_count, graphics::IMAGE_TILING tiling,
               VkImageAspectFlags aspectFlags, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags)
 {
     std::shared_ptr<resource::texture> texture;

@@ -32,17 +32,17 @@ namespace resource
         std::shared_ptr<DeviceMemory> &memory() noexcept { return memory_; }
 
     private:
+
+        std::shared_ptr<DeviceMemory> memory_;
         
         VkImage handle_{VK_NULL_HANDLE};
-        
+
         graphics::FORMAT format_{graphics::FORMAT::UNDEFINED};
         graphics::IMAGE_TILING tiling_{graphics::IMAGE_TILING::OPTIMAL};
-        
-        renderer::extent extent_;
-        
+
         std::uint32_t mip_levels_{1};
-        
-        std::shared_ptr<DeviceMemory> memory_;
+
+        renderer::extent extent_;
 
         image() = delete;
         image(image const &) = delete;
@@ -129,7 +129,7 @@ FindSupportedImageFormat(vulkan::device const &device, std::vector<graphics::FOR
 
 [[nodiscard]] std::shared_ptr<resource::texture>
 CreateTexture(ResourceManager &resource_manager, graphics::FORMAT format, graphics::IMAGE_VIEW_TYPE view_type,
-              std::uint16_t width, std::uint16_t height, std::uint32_t mip_levels, std::uint32_t samples_count, graphics::IMAGE_TILING tiling,
+              std::uint32_t width, std::uint32_t height, std::uint32_t mip_levels, std::uint32_t samples_count, graphics::IMAGE_TILING tiling,
               VkImageAspectFlags aspectFlags, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags);
 
 [[nodiscard]] std::optional<graphics::FORMAT>

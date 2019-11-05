@@ -23,7 +23,7 @@ public:
     ~MemoryManager();
 
     template<class T> requires mpl::one_of<T, VkBuffer, VkImage>
-    [[nodiscard]] std::shared_ptr<DeviceMemory> AllocateMemory(T buffer, VkMemoryPropertyFlags properties, bool linear)
+    /* [[nodiscard]] */ std::shared_ptr<DeviceMemory> AllocateMemory(T buffer, VkMemoryPropertyFlags properties, bool linear)
     {
         return CheckRequirementsAndAllocate(buffer, properties, linear);
     }
@@ -106,7 +106,7 @@ private:
     std::unordered_map<std::size_t, Pool> pools_;
 
     template<class T> requires mpl::one_of<T, VkBuffer, VkImage>
-    [[nodiscard]] std::shared_ptr<DeviceMemory>
+    /* [[nodiscard]] */ std::shared_ptr<DeviceMemory>
     CheckRequirementsAndAllocate(T resource, VkMemoryPropertyFlags properties, bool linear);
 
     [[nodiscard]] std::shared_ptr<DeviceMemory>
@@ -119,7 +119,7 @@ private:
 };
 
 template<class T> requires mpl::one_of<T, VkBuffer, VkImage>
-[[nodiscard]] std::shared_ptr<DeviceMemory>
+/* [[nodiscard]] */ std::shared_ptr<DeviceMemory>
 MemoryManager::CheckRequirementsAndAllocate(T resource, VkMemoryPropertyFlags properties, bool linear)
 {
 #if TEMPORALY_DISABLED

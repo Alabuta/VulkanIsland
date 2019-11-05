@@ -14,20 +14,6 @@ namespace resource
     class image_view;
 }
 
-namespace
-{
-    struct framebuffer_attachment {
-        graphics::FORMAT format;
-        graphics::IMAGE_TILING tiling;
-
-        std::uint32_t mip_levels;
-        std::uint32_t samples_count;
-
-        std::shared_ptr<resource::image> image;
-        std::shared_ptr<resource::image_view> image_view;
-    };
-}
-
 namespace graphics
 {
     struct attachment_description final {
@@ -67,6 +53,17 @@ namespace graphics
         {
             return attachment_index < rhs.attachment_index;
         }
+    };
+
+    struct framebuffer_attachment {
+        graphics::FORMAT format;
+        graphics::IMAGE_TILING tiling;
+
+        std::uint32_t mip_levels;
+        std::uint32_t samples_count;
+
+        std::shared_ptr<resource::image> image;
+        std::shared_ptr<resource::image_view> image_view;
     };
 
     struct color_attachment final : public framebuffer_attachment { };

@@ -1005,61 +1005,61 @@ namespace convert_to
         return result;
     }
 
-    VkAccessFlags convert_to::vulkan(graphics::MEMORY_ACCESS_TYPE memory_access_type) noexcept
+    VkAccessFlags vulkan(graphics::MEMORY_ACCESS_TYPE access_type) noexcept
     {
         VkAccessFlags result = 0;
 
         using E = std::underlying_type_t<graphics::MEMORY_ACCESS_TYPE>;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::INDIRECT_COMMAND_READ))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::INDIRECT_COMMAND_READ))
             result |= VkAccessFlagBits::VK_ACCESS_INDIRECT_COMMAND_READ_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::INDEX_READ))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::INDEX_READ))
             result |= VkAccessFlagBits::VK_ACCESS_INDEX_READ_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::VERTEX_ATTRIBUTE_READ))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::VERTEX_ATTRIBUTE_READ))
             result |= VkAccessFlagBits::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::UNIFORM_READ))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::UNIFORM_READ))
             result |= VkAccessFlagBits::VK_ACCESS_UNIFORM_READ_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::INPUT_ATTACHMENT_READ))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::INPUT_ATTACHMENT_READ))
             result |= VkAccessFlagBits::VK_ACCESS_INPUT_ATTACHMENT_READ_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::SHADER_READ))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::SHADER_READ))
             result |= VkAccessFlagBits::VK_ACCESS_SHADER_READ_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::SHADER_WRITE))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::SHADER_WRITE))
             result |= VkAccessFlagBits::VK_ACCESS_SHADER_WRITE_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_READ))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_READ))
             result |= VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_WRITE))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_WRITE))
             result |= VkAccessFlagBits::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::DEPTH_STENCIL_ATTACHMENT_READ))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::DEPTH_STENCIL_ATTACHMENT_READ))
             result |= VkAccessFlagBits::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::DEPTH_STENCIL_ATTACHMENT_WRITE))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::DEPTH_STENCIL_ATTACHMENT_WRITE))
             result |= VkAccessFlagBits::VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::TRANSFER_READ))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::TRANSFER_READ))
             result |= VkAccessFlagBits::VK_ACCESS_TRANSFER_READ_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::TRANSFER_WRITE))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::TRANSFER_WRITE))
             result |= VkAccessFlagBits::VK_ACCESS_TRANSFER_WRITE_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::HOST_READ))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::HOST_READ))
             result |= VkAccessFlagBits::VK_ACCESS_HOST_READ_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::HOST_WRITE))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::HOST_WRITE))
             result |= VkAccessFlagBits::VK_ACCESS_HOST_WRITE_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::MEMORY_READ))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::MEMORY_READ))
             result |= VkAccessFlagBits::VK_ACCESS_MEMORY_READ_BIT;
 
-        if (static_cast<E>(memory_access_type & graphics::MEMORY_ACCESS_TYPE::MEMORY_WRITE))
+        if (static_cast<E>(access_type & graphics::MEMORY_ACCESS_TYPE::MEMORY_WRITE))
             result |= VkAccessFlagBits::VK_ACCESS_MEMORY_WRITE_BIT;
 
         return result;
