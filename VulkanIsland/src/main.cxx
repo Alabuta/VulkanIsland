@@ -157,55 +157,15 @@ struct app_t final {
     std::uint32_t width{800u};
     std::uint32_t height{600u};
 
-    camera_system cameraSystem;
-    std::shared_ptr<camera> camera_;
-
-    std::unique_ptr<orbit_controller> camera_controller;
-
-    std::vector<per_object_t> objects;
-
     std::unique_ptr<vulkan::instance> instance;
     std::unique_ptr<vulkan::device> device;
-
-    std::unique_ptr<MemoryManager> memory_manager;
-    std::unique_ptr<ResourceManager> resource_manager2;
-
-    std::unique_ptr<resource::resource_manager> resource_manager;
-
-    VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
-
-    VkCommandPool graphicsCommandPool{VK_NULL_HANDLE}, transferCommandPool{VK_NULL_HANDLE};
-
-    VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
-    VkDescriptorPool descriptorPool{VK_NULL_HANDLE};
-    VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
-
-    std::vector<VkCommandBuffer> command_buffers;
-
-    std::shared_ptr<resource::semaphore> imageAvailableSemaphore, renderFinishedSemaphore;
-
-    std::shared_ptr<resource::buffer> perObjectBuffer, perCameraBuffer;
-    void *perObjectsMappedPtr{nullptr};
-    void *alignedBuffer{nullptr};
-
-    std::size_t objectsNumber{2u};
-    std::size_t alignedBufferSize{0u};
-
-    std::shared_ptr<resource::texture> texture;
-
-#if TEMPORARILY_DISABLED
-    ecs::entity_registry registry;
-
-    ecs::NodeSystem nodeSystem{registry};
-#if NOT_YET_IMPLEMENTED
-    ecs::MeshSystem meshSystem{registry};
-#endif
-#endif
 
     std::shared_ptr<renderer::platform_surface> platform_surface;
     std::unique_ptr<renderer::swapchain> swapchain;
 
     renderer::config renderer_config;
+
+    std::unique_ptr<resource::resource_manager> resource_manager;
 
     std::unique_ptr<graphics::vertex_input_state_manager> vertex_input_state_manager;
     std::unique_ptr<graphics::shader_manager> shader_manager;
@@ -217,6 +177,37 @@ struct app_t final {
 
     std::vector<graphics::attachment> attachments;
     std::vector<std::shared_ptr<resource::framebuffer>> framebuffers;
+
+    std::shared_ptr<resource::semaphore> image_available_semaphore, render_finished_semaphore;
+
+    camera_system cameraSystem;
+    std::shared_ptr<camera> camera_;
+
+    std::unique_ptr<orbit_controller> camera_controller;
+
+    std::vector<per_object_t> objects;
+
+    std::unique_ptr<MemoryManager> memory_manager;
+    std::unique_ptr<ResourceManager> resource_manager2;
+
+    VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
+
+    VkCommandPool graphicsCommandPool{VK_NULL_HANDLE}, transferCommandPool{VK_NULL_HANDLE};
+
+    VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
+    VkDescriptorPool descriptorPool{VK_NULL_HANDLE};
+    VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
+
+    std::vector<VkCommandBuffer> command_buffers;
+
+    std::shared_ptr<resource::buffer> perObjectBuffer, perCameraBuffer;
+    void *perObjectsMappedPtr{nullptr};
+    void *alignedBuffer{nullptr};
+
+    std::size_t objectsNumber{2u};
+    std::size_t alignedBufferSize{0u};
+
+    std::shared_ptr<resource::texture> texture;
 
     std::vector<draw_command> draw_commands;
 
@@ -233,8 +224,8 @@ struct app_t final {
 
         cleanup_frame_data(*this);
 
-        renderFinishedSemaphore.reset();
-        imageAvailableSemaphore.reset();
+        render_finished_semaphore.reset();
+        image_available_semaphore.reset();
 
         pipeline_factory.reset();
 
@@ -418,7 +409,7 @@ void create_graphics_command_buffers(app_t &app)
     };
 #else
     auto const clear_colors = std::array{
-        VkClearValue{.color = {.float32 = { .64f, .64f, .64f, 1.f } } },
+        VkClearValue{.color = { .float32 = { .64f, .64f, .64f, 1.f } } },
         VkClearValue{.depthStencil = { kREVERSED_DEPTH ? 0.f : 1.f, 0 } }
     };
 #endif
@@ -1299,22 +1290,23 @@ void render_frame(app_t &app)
         return;
 
     auto &&device = *app.device;
+    auto &&swapchain = *app.swapchain;
 
     vkQueueWaitIdle(device.presentation_queue.handle());
-
-    std::uint32_t image_index;
 
     /*VkAcquireNextImageInfoKHR next_image_info{
         VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR,
         nullptr,
-        app.swapchain->handle(),
+        swapchain.handle(),
         std::numeric_limits<std::uint64_t>::max(),
-        app.imageAvailableSemaphore->handle(),
+        app.image_available_semaphore->handle(),
         VK_NULL_HANDLE
     };*/
 
-    switch (auto result = vkAcquireNextImageKHR(device.handle(), app.swapchain->handle(), std::numeric_limits<std::uint64_t>::max(),
-            app.imageAvailableSemaphore->handle(), VK_NULL_HANDLE, &image_index); result) {
+    std::uint32_t image_index;
+
+    switch (auto result = vkAcquireNextImageKHR(device.handle(), swapchain.handle(), std::numeric_limits<std::uint64_t>::max(),
+            app.image_available_semaphore->handle(), VK_NULL_HANDLE, &image_index); result) {
         case VK_ERROR_OUT_OF_DATE_KHR:
             recreate_swap_chain(app);
             return;
@@ -1327,11 +1319,11 @@ void render_frame(app_t &app)
             throw std::runtime_error(fmt::format("failed to acquire next image index: {0:#x}\n"s, result));
     }
 
-    auto const wait_semaphores = std::array{ app.imageAvailableSemaphore->handle() };
-    auto const signal_semaphores = std::array{ app.renderFinishedSemaphore->handle() };
+    auto const wait_semaphores = std::array{ app.image_available_semaphore->handle() };
+    auto const signal_semaphores = std::array{ app.render_finished_semaphore->handle() };
 
-    std::array<VkPipelineStageFlags, 1> constexpr wait_stages{
-        { VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
+    auto const wait_stages = std::array{
+        VkPipelineStageFlags{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
     };
 
     VkSubmitInfo const submit_info{
@@ -1346,7 +1338,7 @@ void render_frame(app_t &app)
     if (auto result = vkQueueSubmit(device.graphics_queue.handle(), 1, &submit_info, VK_NULL_HANDLE); result != VK_SUCCESS)
         throw std::runtime_error(fmt::format("failed to submit draw command buffer: {0:#x}\n"s, result));
 
-    auto swapchain_handle = app.swapchain->handle();
+    auto swapchain_handle = swapchain.handle();
 
     VkPresentInfoKHR const present_info{
         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
@@ -1418,17 +1410,6 @@ int main()
             app.resize_callback = nullptr;
         }
 
-    #if TEMPORARILY_DISABLED
-        app.registry.sort<ecs::node>(ecs::node());
-        #if NOT_YET_IMPLEMENTED
-            app.registry.sort<ecs::mesh>(ecs::mesh());
-        #endif
-
-            app.nodeSystem.update();
-        #if NOT_YET_IMPLEMENTED
-            app.meshSystem.update();
-        #endif
-    #endif
         update(app);
 
         render_frame(app);
@@ -1450,12 +1431,12 @@ void create_semaphores(app_t &app)
     if (auto semaphore = resource_manager2.create_semaphore(); !semaphore)
         throw std::runtime_error("failed to create image semaphore"s);
 
-    else app.imageAvailableSemaphore = semaphore;
+    else app.image_available_semaphore = semaphore;
 
     if (auto semaphore = resource_manager2.create_semaphore(); !semaphore)
         throw std::runtime_error("failed to create render semaphore"s);
 
-    else app.renderFinishedSemaphore = semaphore;
+    else app.render_finished_semaphore = semaphore;
 }
 
 template<class T, typename std::enable_if_t<mpl::is_container_v<std::remove_cvref_t<T>>>...>
