@@ -58,31 +58,31 @@ namespace resource
     class vertex_buffer final {
     public:
 
-        vertex_buffer(std::shared_ptr<resource::buffer> deviceBuffer, std::shared_ptr<resource::buffer> stagingBuffer,
-                     std::size_t capacityInBytes, graphics::vertex_layout const &vertexLayout) noexcept
-            : deviceBuffer_{deviceBuffer}, stagingBuffer_{stagingBuffer}, capacityInBytes_{capacityInBytes}, vertexLayout_{vertexLayout} { }
+        vertex_buffer(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer,
+                     std::size_t capacityInBytes, graphics::vertex_layout const &vertex_layout) noexcept
+            : device_buffer_{device_buffer}, staging_buffer_{staging_buffer}, capacity_in_bytes_{capacityInBytes}, vertex_layout_{vertex_layout} { }
 
-        resource::buffer const &deviceBuffer() const noexcept { return *deviceBuffer_; }
-        resource::buffer const &stagingBuffer() const noexcept { return *stagingBuffer_; }
+        resource::buffer const &device_buffer() const noexcept { return *device_buffer_; }
+        resource::buffer const &staging_buffer() const noexcept { return *staging_buffer_; }
 
-        std::size_t deviceBufferOffset() const noexcept { return deviceBuffer_->memory()->offset() + offset_; }
-        std::size_t stagingBufferOffset() const noexcept { return stagingBuffer_->memory()->offset() + offset_; }
+        std::size_t device_buffer_offset() const noexcept { return device_buffer_->memory()->offset() + offset_; }
+        std::size_t staging_buffer_offset() const noexcept { return staging_buffer_->memory()->offset() + offset_; }
 
-        std::size_t availableMemorySize() const noexcept { return capacityInBytes_ - offset_; }
+        std::size_t available_memory_size() const noexcept { return capacity_in_bytes_ - offset_; }
 
-        graphics::vertex_layout const &vertexLayout() const noexcept { return vertexLayout_; }
+        graphics::vertex_layout const &vertex_layout() const noexcept { return vertex_layout_; }
 
     private:
 
-        std::shared_ptr<resource::buffer> deviceBuffer_{nullptr};
-        std::shared_ptr<resource::buffer> stagingBuffer_{nullptr};
+        std::shared_ptr<resource::buffer> device_buffer_{nullptr};
+        std::shared_ptr<resource::buffer> staging_buffer_{nullptr};
 
-        std::size_t capacityInBytes_{0};
+        std::size_t capacity_in_bytes_{0};
 
-        graphics::vertex_layout vertexLayout_;
+        graphics::vertex_layout vertex_layout_;
 
         std::size_t offset_{0};
-        std::size_t stagingBufferSizeInBytes_{0};
+        std::size_t staging_buffer_size_in_bytes_{0};
 
         friend ResourceManager;
     };

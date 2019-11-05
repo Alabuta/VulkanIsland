@@ -249,8 +249,8 @@ void ResourceManager::ReleaseResource(T &&resource) noexcept
 std::shared_ptr<resource::vertex_buffer> ResourceManager::CreateVertexBuffer(graphics::vertex_layout const &layout, std::size_t sizeInBytes) noexcept
 {
     if (vertexBuffers_.count(layout) == 0) {
-        std::shared_ptr<resource::buffer> stagingBuffer;
-        std::shared_ptr<resource::buffer> deviceBuffer;
+        std::shared_ptr<resource::buffer> staging_buffer;
+        std::shared_ptr<resource::buffer> device_buffer;
         
         auto const capacityInBytes = sizeInBytes * kVertexBufferIncreaseValue;
 
@@ -258,9 +258,9 @@ std::shared_ptr<resource::vertex_buffer> ResourceManager::CreateVertexBuffer(gra
             auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
             auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-            stagingBuffer = CreateBuffer(sizeInBytes, usageFlags, propertyFlags);
+            staging_buffer = CreateBuffer(sizeInBytes, usageFlags, propertyFlags);
 
-            if (!stagingBuffer) {
+            if (!staging_buffer) {
                 std::cerr << "failed to create staging vertex buffer\n"s;
                 return { };
             }
@@ -270,37 +270,37 @@ std::shared_ptr<resource::vertex_buffer> ResourceManager::CreateVertexBuffer(gra
             auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER;
             auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
 
-            deviceBuffer = CreateBuffer(capacityInBytes, usageFlags, propertyFlags);
+            device_buffer = CreateBuffer(capacityInBytes, usageFlags, propertyFlags);
 
-            if (!deviceBuffer) {
+            if (!device_buffer) {
                 std::cerr << "failed to create device vertex buffer\n"s;
                 return { };
             }
         }
 
-        vertexBuffers_.emplace(layout, std::make_shared<resource::vertex_buffer>(deviceBuffer, stagingBuffer, capacityInBytes, layout));
+        vertexBuffers_.emplace(layout, std::make_shared<resource::vertex_buffer>(device_buffer, staging_buffer, capacityInBytes, layout));
     }
 
     auto &vertexBuffer = vertexBuffers_[layout];
 
-    if (vertexBuffer->stagingBufferSizeInBytes_ < sizeInBytes) {
+    if (vertexBuffer->staging_buffer_size_in_bytes_ < sizeInBytes) {
         auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
         auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
 
-        vertexBuffer->stagingBuffer_ = CreateBuffer(sizeInBytes, usageFlags, propertyFlags);
+        vertexBuffer->staging_buffer_ = CreateBuffer(sizeInBytes, usageFlags, propertyFlags);
 
-        if (!vertexBuffer->stagingBuffer_) {
+        if (!vertexBuffer->staging_buffer_) {
             std::cerr << "failed to extend staging vertex buffer\n"s;
             return { };
         }
 
-        vertexBuffer->stagingBufferSizeInBytes_ = sizeInBytes;
+        vertexBuffer->staging_buffer_size_in_bytes_ = sizeInBytes;
     }
 
-    if (vertexBuffer->availableMemorySize() < sizeInBytes) {
+    if (vertexBuffer->available_memory_size() < sizeInBytes) {
         // TODO: sparse memory binding
 #if NOT_YET_IMPLEMENTED
-        auto bufferHandle = vertexBuffer->deviceBuffer_->handle();
+        auto bufferHandle = vertexBuffer->device_buffer_->handle();
         auto memory = memory_manager_.AllocateMemory(bufferHandle, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 #endif
         std::cerr << "not enough device memory for vertex buffer\n"s;
@@ -316,14 +316,14 @@ void ResourceManager::StageVertexData(std::shared_ptr<resource::vertex_buffer> v
         auto const lengthInBytes = std::size(container);
 
         // TODO: sparse memory binding
-        if (vertexBuffer->availableMemorySize() < lengthInBytes)
+        if (vertexBuffer->available_memory_size() < lengthInBytes)
             throw std::runtime_error("not enough device memory for vertex buffer"s);
 
-        auto &&memory = vertexBuffer->stagingBuffer().memory();
+        auto &&memory = vertexBuffer->staging_buffer().memory();
 
         void *ptr;
 
-        if (auto result = vkMapMemory(device_.handle(), memory->handle(), vertexBuffer->stagingBufferOffset(), lengthInBytes, 0, &ptr); result != VK_SUCCESS)
+        if (auto result = vkMapMemory(device_.handle(), memory->handle(), vertexBuffer->staging_buffer_offset(), lengthInBytes, 0, &ptr); result != VK_SUCCESS)
             throw std::runtime_error("failed to map staging vertex buffer memory: "s + std::to_string(result));
 
         else {
@@ -339,12 +339,12 @@ void ResourceManager::StageVertexData(std::shared_ptr<resource::vertex_buffer> v
 void ResourceManager::TransferStagedVertexData(VkCommandPool transferCommandPool, graphics::transfer_queue const &transfer_queue) const
 {
     for (auto &&[layout, vertexBuffer] : vertexBuffers_) {
-        auto &&stagingBuffer = vertexBuffer->stagingBuffer();
-        auto &&deviceBuffer = vertexBuffer->deviceBuffer();
+        auto &&staging_buffer = vertexBuffer->staging_buffer();
+        auto &&device_buffer = vertexBuffer->device_buffer();
 
-        auto copyRegions = std::array{VkBufferCopy{ 0, 0, stagingBuffer.memory()->size() }};
+        auto copyRegions = std::array{VkBufferCopy{ 0, 0, staging_buffer.memory()->size() }};
 
-        CopyBufferToBuffer(device_, transfer_queue, stagingBuffer.handle(), deviceBuffer.handle(), std::move(copyRegions), transferCommandPool);
+        CopyBufferToBuffer(device_, transfer_queue, staging_buffer.handle(), device_buffer.handle(), std::move(copyRegions), transferCommandPool);
     }
 }
 

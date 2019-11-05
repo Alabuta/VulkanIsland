@@ -388,7 +388,7 @@ void create_graphics_command_buffers(app_t &app)
 
         first_binding = std::min(binding_index, first_binding);
 
-        vertex_bindings_and_buffers.emplace(binding_index, vertex_buffer->deviceBuffer().handle());
+        vertex_bindings_and_buffers.emplace(binding_index, vertex_buffer->device_buffer().handle());
     }
 
     std::vector<VkBuffer> vertex_buffer_handles;
@@ -1471,12 +1471,12 @@ load_texture(app_t &app, vulkan::device &device, ResourceManager &resource_manag
     auto constexpr generateMipMaps = true;
 
     if (auto rawImage = LoadTARGA(name); rawImage) {
-        auto stagingBuffer = std::visit([&device, &resource_manager] (auto &&data)
+        auto staging_buffer = std::visit([&device, &resource_manager] (auto &&data)
         {
             return stage_data(device, resource_manager, std::forward<decltype(data)>(data));
         }, std::move(rawImage->data));
 
-        if (stagingBuffer) {
+        if (staging_buffer) {
             auto const width = static_cast<std::uint16_t>(rawImage->width);
             auto const height = static_cast<std::uint16_t>(rawImage->height);
 
@@ -1492,7 +1492,7 @@ load_texture(app_t &app, vulkan::device &device, ResourceManager &resource_manag
                 TransitionImageLayout(device, device.transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
                                       graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION, app.transferCommandPool);
 
-                CopyBufferToImage(device, device.transfer_queue, stagingBuffer->handle(), texture->image->handle(), width, height, app.transferCommandPool);
+                CopyBufferToImage(device, device.transfer_queue, staging_buffer->handle(), texture->image->handle(), width, height, app.transferCommandPool);
 
                 if (generateMipMaps)
                     GenerateMipMaps(device, device.transfer_queue, *texture->image, app.transferCommandPool);
