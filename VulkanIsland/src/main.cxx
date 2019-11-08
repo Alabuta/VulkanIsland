@@ -50,8 +50,7 @@
 #include <unordered_map>
 
 #ifdef _MSC_VER
-#define USE_EXECUTION_POLICIES
-#include <execution>
+    #include <execution>
 #endif
 
 #include <fmt/format.h>
@@ -60,6 +59,7 @@
 #include "main.hxx"
 #include "utility/helpers.hxx"
 #include "utility/mpl.hxx"
+
 #include "math/math.hxx"
 
 #include "vulkan/instance.hxx"
@@ -81,10 +81,9 @@
 #include "loaders/TARGA_loader.hxx"
 #include "loaders/scene_loader.hxx"
 
+#include "graphics/graphics.hxx"
 #include "graphics/graphics_pipeline.hxx"
 #include "graphics/pipeline_states.hxx"
-
-#include "graphics/graphics.hxx"
 
 #include "graphics/material.hxx"
 
@@ -1364,7 +1363,7 @@ int main()
 {
 #if defined(_MSC_VER)
     #if defined(_DEBUG) || defined(DEBUG)
-        _CrtSetDbgFlag(_CRTDBG_DELAY_FREE_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
+        _CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
     #endif
 #else
     static_assert(__cpp_concepts >= 201500); // check compiled with -fconcepts

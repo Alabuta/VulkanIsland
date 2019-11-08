@@ -1,5 +1,4 @@
 #ifdef _MSC_VER
-    #define USE_EXECUTION_POLICIES
     #include <execution>
 #endif
 
