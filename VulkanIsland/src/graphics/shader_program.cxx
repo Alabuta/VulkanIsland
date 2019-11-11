@@ -19,7 +19,7 @@ namespace graphics
     {
         auto const key = std::pair{std::string{name}, technique_index};
 
-        if (modules_by_techinques_.count(key) != 0)
+        if (modules_by_techinques_.contains(key))
             return modules_by_techinques_.at(key);
 
         else return create_shader_module(name, technique_index);

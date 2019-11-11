@@ -153,7 +153,7 @@ namespace graphics
     {
         graphics::pipeline_invariant invariant{material, pipeline_states, layout, render_pass, subpass_index};
 
-        if (pipelines_.count(invariant) != 0)
+        if (pipelines_.contains(invariant))
             return pipelines_.at(invariant);
 
     #if !USE_DYNAMIC_PIPELINE_STATE
@@ -347,7 +347,7 @@ namespace graphics
 
     graphics::vertex_input_state const &vertex_input_state_manager::vertex_input_state(graphics::vertex_layout const &vertex_layout)
     {
-        if (vertex_input_states_.count(vertex_layout) != 0)
+        if (vertex_input_states_.contains(vertex_layout))
             return vertex_input_states_.at(vertex_layout);
 
         auto const binding_index = static_cast<std::uint32_t>(std::size(vertex_input_states_));
@@ -379,7 +379,7 @@ namespace graphics
     graphics::vertex_input_state vertex_input_state_manager::get_adjusted_vertex_input_state(
         graphics::vertex_layout const &vertex_layout, graphics::vertex_layout const &required_vertex_layout) const
     {
-        if (vertex_input_states_.count(vertex_layout) == 0)
+        if (!vertex_input_states_.contains(vertex_layout))
             throw std::runtime_error("failed to find vertex layout"s);
 
         auto &&vertex_input_state = vertex_input_states_.at(vertex_layout);

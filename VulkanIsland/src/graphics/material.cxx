@@ -18,7 +18,7 @@ namespace graphics
     {
         auto const key = std::pair{std::string{name}, technique_index};
 
-        if (materials_.count(key) != 0)
+        if (materials_.contains(key))
             return materials_.at(key);
 
         auto &&description = material_description(name);
