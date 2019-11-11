@@ -196,6 +196,25 @@ namespace graphics
         TYPE_CUBE_ARRAY
     };
 
+    enum class TEXTURE_FILTER {
+        NEAREST = 0,
+        LINEAR = 1,
+        CUBIC = 2
+    };
+
+    enum class TEXTURE_MIPMAP_MODE {
+        NEAREST = 0,
+        LINEAR = 1,
+    };
+
+    enum class MEMORY_PROPERTY_TYPE {
+        DEVICE_LOCAL = 0x01,
+        HOST_VISIBLE = 0x02,
+        HOST_COHERENT = 0x04,
+        HOST_CACHED = 0x08,
+        LAZILY_ALLOCATED = 0x10
+    };
+
     enum class FORMAT {
         UNDEFINED = 0,
 

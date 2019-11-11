@@ -46,6 +46,12 @@ namespace convert_to
 
     VkImageViewType vulkan(graphics::IMAGE_VIEW_TYPE image_view_type) noexcept;
 
+    VkFilter vulkan(graphics::TEXTURE_FILTER texture_filter) noexcept;
+
+    VkSamplerMipmapMode  vulkan(graphics::TEXTURE_MIPMAP_MODE texture_mipmap_mode) noexcept;
+
+    VkMemoryPropertyFlags vulkan(graphics::MEMORY_PROPERTY_TYPE memory_property_type) noexcept;
+
     VkFormat vulkan(graphics::FORMAT format) noexcept;
 
     VkFormatFeatureFlags vulkan(graphics::FORMAT_FEATURE format_feature) noexcept;

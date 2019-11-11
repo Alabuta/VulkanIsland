@@ -524,6 +524,61 @@ namespace convert_to
         }
     }
 
+    VkFilter vulkan(graphics::TEXTURE_FILTER texture_filter) noexcept
+    {
+        switch (texture_filter) {
+            case graphics::TEXTURE_FILTER::NEAREST:
+                return VkFilter::VK_FILTER_NEAREST;
+
+            case graphics::TEXTURE_FILTER::LINEAR:
+                return VkFilter::VK_FILTER_LINEAR;
+
+            case graphics::TEXTURE_FILTER::CUBIC:
+                return VkFilter::VK_FILTER_CUBIC_IMG;
+
+            default:
+                return VkFilter::VK_FILTER_MAX_ENUM;
+        }
+    }
+
+    VkSamplerMipmapMode vulkan(graphics::TEXTURE_MIPMAP_MODE texture_mipmap_mode) noexcept
+    {
+        switch (texture_mipmap_mode) {
+            case graphics::TEXTURE_MIPMAP_MODE::NEAREST:
+                return VkSamplerMipmapMode::VK_SAMPLER_MIPMAP_MODE_NEAREST;
+
+            case graphics::TEXTURE_MIPMAP_MODE::LINEAR:
+                return VkSamplerMipmapMode::VK_SAMPLER_MIPMAP_MODE_LINEAR;
+
+            default:
+                return VkSamplerMipmapMode::VK_SAMPLER_MIPMAP_MODE_MAX_ENUM;
+        }
+    }
+
+    VkMemoryPropertyFlags vulkan(graphics::MEMORY_PROPERTY_TYPE memory_property_type) noexcept
+    {
+        VkMemoryPropertyFlags result = 0;
+
+        using E = std::underlying_type_t<graphics::MEMORY_PROPERTY_TYPE>;
+
+        if (static_cast<E>(memory_property_type & graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL))
+            result |= VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+
+        if (static_cast<E>(memory_property_type & graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE))
+            result |= VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT;
+
+        if (static_cast<E>(memory_property_type & graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT))
+            result |= VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+        if (static_cast<E>(memory_property_type & graphics::MEMORY_PROPERTY_TYPE::HOST_CACHED))
+            result |= VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_HOST_CACHED_BIT;
+
+        if (static_cast<E>(memory_property_type & graphics::MEMORY_PROPERTY_TYPE::LAZILY_ALLOCATED))
+            result |= VkMemoryPropertyFlagBits::VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT;
+
+        return result;
+    }
+
     VkFormat vulkan(graphics::FORMAT format) noexcept
     {
         switch (format) {
