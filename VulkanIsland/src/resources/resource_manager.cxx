@@ -1,3 +1,6 @@
+#include <unordered_map>
+#include <vector>
+
 #include <fmt/format.h>
 
 #include "image.hxx"
@@ -7,10 +10,22 @@
 
 namespace resource
 {
+    struct resource_map final {
+        std::unordered_map<framebuffer_invariant, std::shared_ptr<framebuffer>, hash<framebuffer_invariant>> framebuffers;
+    };
+}
+
     [[nodiscard]] std::shared_ptr<resource::framebuffer>
-    resource_manager::create_framebuffer(renderer::extent extent, std::shared_ptr<graphics::render_pass> render_pass,
-                                        std::vector<std::shared_ptr<resource::image_view>> const &attachments)
+    resource_manager::create_framebuffer(std::shared_ptr<graphics::render_pass> render_pass, renderer::extent extent,
+                                         std::vector<std::shared_ptr<resource::image_view>> const &attachments)
     {
+        resource::framebuffer_invariant const invariant{
+            extent, render_pass, attachments
+        };
+
+        if (resource_map_->framebuffers.contains(invariant))
+            return resource_map_->framebuffers.at(invariant);
+
         std::vector<VkImageView> views;
 
         std::transform(std::cbegin(attachments), std::cend(attachments), std::back_inserter(views), [] (auto &&attachment)
@@ -39,6 +54,8 @@ namespace resource
 
             delete ptr_framebuffer;
         });
+
+        resource_map_->framebuffers.emplace(invariant, framebuffer);
 
         return framebuffer;
     }

@@ -8,9 +8,6 @@ namespace resource
     {
         std::size_t seed = 0;
 
-        boost::hash_combine(seed, invariant.extent.width);
-        boost::hash_combine(seed, invariant.extent.height);
-
         // TODO:: implement
     #if NOT_YET_IMPLEMENTED
         graphics::hash<graphics::render_pass> constexpr render_pass_hasher;
@@ -21,6 +18,14 @@ namespace resource
         for (auto &&attachment : invariant.attachments)
             boost::hash_combine(seed, image_view_hasher(*attachment));
     #endif
+
+        boost::hash_combine(seed, invariant.render_pass->handle());
+
+        boost::hash_combine(seed, invariant.extent.width);
+        boost::hash_combine(seed, invariant.extent.height);
+
+        for (auto &&attachment : invariant.attachments)
+            boost::hash_combine(seed, attachment->handle());
 
         return seed;
     }

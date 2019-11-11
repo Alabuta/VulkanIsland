@@ -1082,7 +1082,7 @@ create_framebuffers(resource::resource_manager &resource_manager, renderer::swap
         auto image_views_ = image_views;
         image_views_.push_back(swapchain_view);
 
-        return resource_manager.create_framebuffer(extent, render_pass, image_views_);
+        return resource_manager.create_framebuffer(render_pass, extent, image_views_);
     });
 
     return framebuffers;
@@ -1102,7 +1102,7 @@ void init(platform::window &window, app_t &app)
     app.memory_manager = std::make_unique<MemoryManager>(*app.device);
     app.resource_manager2 = std::make_unique<ResourceManager>(*app.device, *app.memory_manager);
 
-    app.resource_manager = std::make_unique<resource::resource_manager>(*app.device);
+    app.resource_manager = std::make_unique<resource::resource_manager>(*app.device, app.renderer_config);
 
     app.shader_manager = std::make_unique<graphics::shader_manager>(*app.device);
     app.material_factory = std::make_unique<graphics::material_factory>();
