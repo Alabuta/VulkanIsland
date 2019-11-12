@@ -16,6 +16,11 @@ namespace renderer
 
 namespace resource
 {
+    class resource_manager;
+}
+
+namespace resource
+{
     class image final {
     public:
 
@@ -53,6 +58,7 @@ namespace resource
             memory_{memory}, handle_{handle}, format_{format}, tiling_{tiling}, mip_levels_{mip_levels}, extent_{extent} { }
 
         friend ResourceManager;
+        friend resource::resource_manager;
         friend renderer::swapchain;
     };
 }
@@ -82,6 +88,7 @@ namespace resource
             handle_{handle}, image_{image}, type_{type} { }
 
         friend ResourceManager;
+        friend resource::resource_manager;
         friend renderer::swapchain;
     };
 }
@@ -104,6 +111,7 @@ namespace resource
         sampler(VkSampler handle) noexcept : handle_{handle} { }
 
         friend ResourceManager;
+        friend resource::resource_manager;
     };
 }
 

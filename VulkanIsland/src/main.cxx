@@ -1103,7 +1103,7 @@ void init(platform::window &window, app_t &app)
     app.memory_manager = std::make_unique<MemoryManager>(*app.device);
     app.resource_manager2 = std::make_unique<ResourceManager>(*app.device, *app.memory_manager);
 
-    app.resource_manager = std::make_unique<resource::resource_manager>(*app.device, app.renderer_config);
+    app.resource_manager = std::make_unique<resource::resource_manager>(*app.device, app.renderer_config, *app.memory_manager);
 
     app.shader_manager = std::make_unique<graphics::shader_manager>(*app.device);
     app.material_factory = std::make_unique<graphics::material_factory>();
