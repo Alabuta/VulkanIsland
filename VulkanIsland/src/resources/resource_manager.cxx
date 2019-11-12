@@ -44,7 +44,7 @@ namespace resource
     resource_manager::create_framebuffer(std::shared_ptr<graphics::render_pass> render_pass, renderer::extent extent,
                                          std::vector<std::shared_ptr<resource::image_view>> const &attachments)
     {
-        resource::framebuffer_invariant const invariant{
+        resource::framebuffer_invariant invariant{
             extent, render_pass, attachments
         };
 
@@ -80,7 +80,7 @@ namespace resource
             delete ptr_framebuffer;
         });
 
-        resource_map_->framebuffers.emplace(invariant, framebuffer);
+        resource_map_->framebuffers.emplace(std::move(invariant), framebuffer);
 
         return framebuffer;
     }

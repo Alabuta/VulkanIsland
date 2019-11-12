@@ -144,9 +144,9 @@ namespace graphics
         if (auto result = vkCreateRenderPass(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to create render pass: {0:#x}\n"s, result));
 
-        else render_pass.reset(new graphics::render_pass{handle}, [this] (graphics::render_pass *ptr_render_pass)
+        else render_pass.reset(new graphics::render_pass{handle}, [device = device_.handle()] (graphics::render_pass *ptr_render_pass)
         {
-            vkDestroyRenderPass(device_.handle(), ptr_render_pass->handle(), nullptr);
+            vkDestroyRenderPass(device, ptr_render_pass->handle(), nullptr);
 
             delete ptr_render_pass;
         });

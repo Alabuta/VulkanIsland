@@ -262,6 +262,7 @@ struct app_t final {
 
         resource_manager.reset();
         resource_manager2.reset();
+
         memory_manager.reset();
 
         device.reset();
