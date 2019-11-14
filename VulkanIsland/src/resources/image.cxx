@@ -68,24 +68,3 @@ find_supported_image_format(vulkan::device const &device, std::vector<graphics::
 
     return it_format != std::cend(candidates) ? *it_format : std::optional<graphics::FORMAT>{ };
 }
-
-std::shared_ptr<resource::texture>
-CreateTexture(ResourceManager &resource_manager, graphics::FORMAT format, graphics::IMAGE_VIEW_TYPE view_type,
-              std::uint32_t width, std::uint32_t height, std::uint32_t mip_levels, std::uint32_t samples_count, graphics::IMAGE_TILING tiling,
-              VkImageAspectFlags aspectFlags, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags)
-{
-    std::shared_ptr<resource::texture> texture;
-
-    if (auto image = resource_manager.CreateImage(format, width, height, mip_levels, samples_count, tiling, usageFlags, propertyFlags); image)
-        if (auto view = resource_manager.CreateImageView(image, view_type, aspectFlags); view)
-#if NOT_YET_IMPLEMENTED
-            if (auto sampler = resource_manager.CreateImageSampler(image->mip_levels()); sampler)
-                texture.emplace(image, *view, sampler);
-#else
-            texture = std::make_shared<resource::texture>(image, view, nullptr);
-#endif
-
-
-    return texture;
-}
-

@@ -112,10 +112,10 @@ void create_semaphores(app_t &app);
 void recreate_swap_chain(app_t &app);
 
 template<class T, typename std::enable_if_t<mpl::is_container_v<std::remove_cvref_t<T>>>...>
-[[nodiscard]] std::shared_ptr<resource::buffer> stage_data(vulkan::device &device, ResourceManager &resource_manager, T &&container);
+[[nodiscard]] std::shared_ptr<resource::buffer> stage_data(vulkan::device &device, resource::resource_manager &resource_manager, T &&container);
 
 [[nodiscard]] std::shared_ptr<resource::texture>
-load_texture(app_t &app, vulkan::device &device, ResourceManager &resource_manager, std::string_view name);
+load_texture(app_t &app, vulkan::device &device, resource::resource_manager &resource_manager, std::string_view name);
 
 
 std::unique_ptr<renderer::swapchain>
@@ -1172,7 +1172,7 @@ void init(platform::window &window, app_t &app)
 
     else app.texture = std::move(result.value());
 
-    if (auto result = app.device->resource_manager2().CreateImageSampler(app.texture.image->mip_levels()); !result)
+    if (auto result = app.device->resource_manager.create_image_sampler(app.texture.image->mip_levels()); !result)
         throw std::runtime_error("failed to create a texture sampler"s);
 
     else app.texture.sampler = result;
@@ -1434,16 +1434,16 @@ void create_semaphores(app_t &app)
 
 template<class T, typename std::enable_if_t<mpl::is_container_v<std::remove_cvref_t<T>>>...>
 [[nodiscard]] std::shared_ptr<resource::buffer>
-stage_data(vulkan::device &device, ResourceManager &resource_manager, T &&container)
+stage_data(vulkan::device &device, resource::resource_manager &resource_manager, T &&container)
 {
-    auto constexpr usageFlags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
-    auto constexpr propertyFlags = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+    auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
+    auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
 
     using type = typename std::remove_cvref_t<T>::value_type;
 
-    auto const bufferSize = static_cast<VkDeviceSize>(sizeof(type) * std::size(container));
+    auto const bufferSize = sizeof(type) * std::size(container);
 
-    auto buffer = resource_manager.CreateBuffer(bufferSize, usageFlags, propertyFlags);
+    auto buffer = resource_manager.create_buffer(bufferSize, usage_flags, property_flags);
 
     if (buffer) {
         void *data;
@@ -1464,7 +1464,7 @@ stage_data(vulkan::device &device, ResourceManager &resource_manager, T &&contai
 }
 
 [[nodiscard]] std::shared_ptr<resource::texture>
-load_texture(app_t &app, vulkan::device &device, ResourceManager &resource_manager, std::string_view name)
+load_texture(app_t &app, vulkan::device &device, resource::resource_manager &resource_manager, std::string_view name)
 {
     std::shared_ptr<resource::texture> texture;
 
@@ -1480,13 +1480,31 @@ load_texture(app_t &app, vulkan::device &device, ResourceManager &resource_manag
             auto const width = static_cast<std::uint16_t>(rawImage->width);
             auto const height = static_cast<std::uint16_t>(rawImage->height);
 
-            auto constexpr usageFlags = graphics::IMAGE_USAGE::TRANSFER_SOURCE | graphics::IMAGE_USAGE::TRANSFER_DESTINATION | graphics::IMAGE_USAGE::SAMPLED;
-            auto constexpr propertyFlags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT;
+            auto constexpr usage_flags = graphics::IMAGE_USAGE::TRANSFER_SOURCE | graphics::IMAGE_USAGE::TRANSFER_DESTINATION | graphics::IMAGE_USAGE::SAMPLED;
+            auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
 
             auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
-            texture = CreateTexture(resource_manager, rawImage->format, rawImage->view_type, width, height, rawImage->mip_levels,
-                                    1u, tiling, VK_IMAGE_ASPECT_COLOR_BIT, usageFlags, propertyFlags);
+            std::shared_ptr<resource::texture> texture;
+
+            auto type = graphics::IMAGE_TYPE::TYPE_2D;
+            auto format = rawImage->format;
+            auto view_type = rawImage->view_type;
+            auto mip_levels = rawImage->mip_levels;
+            auto aspectFlags = graphics::IMAGE_ASPECT::COLOR_BIT;
+            auto samples_count = 1u;
+
+            auto extent = renderer::extent{width, height};
+
+            if (auto image = resource_manager.create_image(type, format, extent, mip_levels, samples_count, tiling, usage_flags, property_flags); image) {
+                if (auto view = resource_manager.create_image_view(image, view_type, aspectFlags); view)
+            #if NOT_YET_IMPLEMENTED
+                    if (auto sampler = resource_manager.create_image_sampler(mip_levels()); sampler)
+                        texture.emplace(image, *view, sampler);
+            #else
+                    texture = std::make_shared<resource::texture>(image, view, nullptr);
+            #endif
+            }
 
             if (texture) {
                 TransitionImageLayout(device, device.transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
