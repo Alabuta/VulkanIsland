@@ -19,8 +19,9 @@ find_package(glm REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
 find_package(fmt 5.3 CONFIG REQUIRED)
 find_package(nlohmann_json 3.6 CONFIG REQUIRED)
-find_package(EnTT 3.0 CONFIG REQUIRED)
 find_package(Boost 1.69 REQUIRED)
+find_package(unofficial-vulkan-memory-allocator CONFIG REQUIRED)
+find_package(EnTT 3.0 CONFIG REQUIRED)
 
 if(NOT WIN32)
 	find_package(X11 REQUIRED)
@@ -191,5 +192,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     glfw
 	fmt::fmt
 	nlohmann_json::nlohmann_json
+    unofficial::vulkan-memory-allocator::vulkan-memory-allocator
 	EnTT
 )
