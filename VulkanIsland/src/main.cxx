@@ -122,7 +122,7 @@ std::unique_ptr<renderer::swapchain>
 create_swapchain(vulkan::device const &device, renderer::platform_surface const &platform_surface, renderer::extent extent);
 
 std::vector<graphics::attachment>
-create_attachments(vulkan::device const &device, renderer::config const &renderer_config, ResourceManager &resource_manager, renderer::swapchain const &swapchain);
+create_attachments(vulkan::device const &device, renderer::config const &renderer_config, resource::resource_manager &resource_manager, renderer::swapchain const &swapchain);
 
 std::vector<graphics::attachment_description>
 create_attachment_descriptions(std::vector<graphics::attachment> const &attachments);
@@ -515,7 +515,7 @@ void recreate_swap_chain(app_t &app)
     if (app.swapchain == nullptr)
         throw std::runtime_error("failed to create the swapchain"s);
 
-    app.attachments = create_attachments(*app.device, app.renderer_config, *app.resource_manager2, *app.swapchain);
+    app.attachments = create_attachments(*app.device, app.renderer_config, *app.resource_manager, *app.swapchain);
 
     if (app.attachments.empty())
         throw std::runtime_error("failed to create the attachments"s);
@@ -911,12 +911,11 @@ create_swapchain(vulkan::device const &device, renderer::platform_surface const 
 }
 
 std::vector<graphics::attachment>
-create_attachments(vulkan::device const &device, renderer::config const &renderer_config, ResourceManager &resource_manager, renderer::swapchain const &swapchain)
+create_attachments(vulkan::device const &device, renderer::config const &renderer_config, resource::resource_manager &resource_manager, renderer::swapchain const &swapchain)
 {
     auto constexpr mip_levels = 1u;
+    auto constexpr image_type = graphics::IMAGE_TYPE::TYPE_2D;
     auto constexpr view_type = graphics::IMAGE_VIEW_TYPE::TYPE_2D;
-
-    auto [width, height] = swapchain.extent();
 
     std::vector<graphics::attachment> attachments;
 
@@ -925,18 +924,18 @@ create_attachments(vulkan::device const &device, renderer::config const &rendere
     {
         /* | graphics::IMAGE_USAGE::TRANSFER_DESTINATION*/
         auto constexpr usage_flags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT | graphics::IMAGE_USAGE::COLOR_ATTACHMENT;
-        auto constexpr property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT /*| VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT*/;
+        auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL /*| VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT*/;
         auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
         auto constexpr aspect_flags = graphics::IMAGE_ASPECT::COLOR_BIT;
 
         auto format = swapchain.surface_format().format;
 
-        auto image = resource_manager.CreateImage(format, width, height, mip_levels, samples_count, tiling, usage_flags, property_flags);
+        auto image = resource_manager.create_image(image_type, format, swapchain.extent(), mip_levels, samples_count, tiling, usage_flags, property_flags);
 
         if (image == nullptr)
             throw std::runtime_error("failed to create image for the color attachment"s);
 
-        auto image_view = resource_manager.CreateImageView(image, view_type, convert_to::vulkan(aspect_flags));
+        auto image_view = resource_manager.create_image_view(image, view_type, aspect_flags);
 
         if (image_view == nullptr)
             throw std::runtime_error("failed to create image view for the color attachment"s);
@@ -946,7 +945,7 @@ create_attachments(vulkan::device const &device, renderer::config const &rendere
 
     {
         auto constexpr usage_flags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT | graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT;
-        auto constexpr property_flags = VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT /*| VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT*/;
+        auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL /*| VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT*/;
         auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
         auto constexpr aspect_flags = graphics::IMAGE_ASPECT::DEPTH_BIT;
 
@@ -960,12 +959,12 @@ create_attachments(vulkan::device const &device, renderer::config const &rendere
         if (!format)
             throw std::runtime_error("failed to find supported depth format"s);
 
-        auto image = resource_manager.CreateImage(*format, width, height, mip_levels, samples_count, tiling, usage_flags, property_flags);
+        auto image = resource_manager.create_image(image_type, *format, swapchain.extent(), mip_levels, samples_count, tiling, usage_flags, property_flags);
 
         if (image == nullptr)
             throw std::runtime_error("failed to create image for the depth attachment"s);
 
-        auto image_view = resource_manager.CreateImageView(image, view_type, convert_to::vulkan(aspect_flags));
+        auto image_view = resource_manager.create_image_view(image, view_type, aspect_flags);
 
         if (image_view == nullptr)
             throw std::runtime_error("failed to create image view for the depth attachment"s);
@@ -1128,7 +1127,7 @@ void init(platform::window &window, app_t &app)
         if (app.swapchain == nullptr)
             throw std::runtime_error("failed to create the swapchain"s);
 
-        auto attachments = create_attachments(*app.device, app.renderer_config, *app.resource_manager2, *app.swapchain);
+        auto attachments = create_attachments(*app.device, app.renderer_config, *app.resource_manager, *app.swapchain);
 
         if (attachments.empty())
             throw std::runtime_error("failed to create the attachments"s);

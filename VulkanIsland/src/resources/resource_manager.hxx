@@ -16,11 +16,13 @@
 
 namespace resource
 {
-    class vertex_buffer;
-    class index_buffer;
+    class buffer;
 
     class image;
     class image_view;
+
+    class vertex_buffer;
+    class index_buffer;
 
     class framebuffer;
 
