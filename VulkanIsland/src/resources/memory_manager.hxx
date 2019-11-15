@@ -6,8 +6,6 @@
 #include "utility/mpl.hxx"
 #include "vulkan/device.hxx"
 
-#include "vulkan/device.hxx"
-
 
 namespace resource
 {
@@ -28,7 +26,9 @@ namespace resource
         std::size_t offset() const noexcept { return offset_; }
 
         std::uint32_t type_index() const noexcept { return type_index_; }
-        VkMemoryPropertyFlags properties() const noexcept { return properties_; }
+        graphics::MEMORY_PROPERTY_TYPE properties() const noexcept { return properties_; }
+
+        bool linear() const noexcept { return linear_; }
 
     private:
 
@@ -37,7 +37,7 @@ namespace resource
         std::size_t size_, offset_;
 
         std::uint32_t type_index_;
-        VkMemoryPropertyFlags properties_;
+        graphics::MEMORY_PROPERTY_TYPE properties_;
 
         bool linear_;
 
@@ -48,7 +48,6 @@ namespace resource
     public:
 
         memory_manager(vulkan::device const &device);
-        ~memory_manager();
 
         template<class T, typename std::enable_if_t<mpl::is_one_of_v<T, std::shared_ptr<resource::buffer>, std::shared_ptr<resource::image>>>* = nullptr>
         std::shared_ptr<resource::device_memory> allocate_memory(T buffer, graphics::MEMORY_PROPERTY_TYPE memory_property_types);
@@ -59,9 +58,8 @@ namespace resource
 
         vulkan::device const &device_;
 
-        std::size_t total_allocated_size_{0}, buffer_image_granularity_{0};
+        struct memory_helper;
 
-        std::shared_ptr<resource::device_memory>
-        allocate_memory(VkMemoryRequirements &&memory_requirements, graphics::MEMORY_PROPERTY_TYPE, bool linear);
+        std::unique_ptr<memory_manager::memory_helper> memory_helper_;
     };
 }
