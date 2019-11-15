@@ -23,7 +23,7 @@ namespace resource
         : device_{device}, config_{config}, resource_map_{std::make_shared<resource::resource_map>()}, memory_manager_{memory_manager} { };
 
     std::shared_ptr<resource::buffer>
-    resource_manager::create_buffer(std::size_t size_in_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_type)
+    resource_manager::create_buffer(std::size_t size_in_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
     {
         VkBufferCreateInfo const create_info{
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -41,7 +41,7 @@ namespace resource
 
         auto constexpr linear_memory = true;
 
-        auto memory = memory_manager_.AllocateMemory(handle, convert_to::vulkan(memory_property_type), linear_memory);
+        auto memory = memory_manager_.AllocateMemory(handle, convert_to::vulkan(memory_property_types), linear_memory);
 
         if (memory == nullptr)
             throw std::runtime_error("failed to allocate buffer memory\n"s);
@@ -64,7 +64,7 @@ namespace resource
 
     std::shared_ptr<resource::image>
     resource_manager::create_image(graphics::IMAGE_TYPE type, graphics::FORMAT format, renderer::extent extent, std::uint32_t mip_levels, std::uint32_t samples_count,
-                                   graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usage_flags, graphics::MEMORY_PROPERTY_TYPE memory_property_type)
+                                   graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usage_flags, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
     {
         VkImageCreateInfo const create_info{
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -91,7 +91,7 @@ namespace resource
 
         auto const linear_memory = tiling == graphics::IMAGE_TILING::LINEAR;
 
-        auto memory = memory_manager_.AllocateMemory(handle, convert_to::vulkan(memory_property_type), linear_memory);
+        auto memory = memory_manager_.AllocateMemory(handle, convert_to::vulkan(memory_property_types), linear_memory);
 
         if (memory == nullptr)
             throw std::runtime_error("failed to allocate image memory\n"s);
