@@ -49,16 +49,6 @@ class ResourceManager final {
 public:
 
     ResourceManager(vulkan::device &device, MemoryManager &memory_manager) noexcept : device_{device}, memory_manager_{memory_manager} { }
-
-    [[nodiscard]] std::shared_ptr<resource::image>
-    CreateImage(graphics::FORMAT format, std::uint32_t width, std::uint32_t height, std::uint32_t mip_levels,
-                std::uint32_t samples_count, graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags);
-
-    [[nodiscard]] std::shared_ptr<resource::image_view>
-    CreateImageView(std::shared_ptr<resource::image> image, graphics::IMAGE_VIEW_TYPE view_type, VkImageAspectFlags aspectFlags) noexcept;
-
-    [[nodiscard]] std::shared_ptr<resource::sampler>
-    CreateImageSampler(std::uint32_t mip_levels) noexcept;
     
     [[nodiscard]] std::shared_ptr<resource::buffer>
     CreateBuffer(VkDeviceSize size, graphics::BUFFER_USAGE usage, VkMemoryPropertyFlags properties) noexcept;

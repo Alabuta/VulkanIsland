@@ -1,7 +1,7 @@
 #include <cmath>
 
-#include "buffer.hxx"
-#include "image.hxx"
+#include "resources/buffer.hxx"
+#include "resources/image.hxx"
 #include "resource.hxx"
 #include "renderer/command_buffer.hxx"
 
@@ -79,107 +79,6 @@ CreateImageHandle(vulkan::device const &device, std::uint32_t width, std::uint32
     return image;
 }
 }
-
-std::shared_ptr<resource::image>
-ResourceManager::CreateImage(graphics::FORMAT format, std::uint32_t width, std::uint32_t height, std::uint32_t mip_levels,
-                             std::uint32_t samples_count, graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags)
-{
-    std::shared_ptr<resource::image> image;
-
-    auto handle = CreateImageHandle(device_, width, height, mip_levels, samples_count, format, tiling, usageFlags);
-
-    if (handle) {
-        auto const linearMemory = tiling == graphics::IMAGE_TILING::LINEAR;
-
-        auto memory = memory_manager_.AllocateMemory(*handle, propertyFlags, linearMemory);
-
-        if (memory) {
-            if (auto result = vkBindImageMemory(device_.handle(), *handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
-                std::cerr << "failed to bind image buffer memory: "s << result << '\n';
-
-            else image.reset(
-                new resource::image{memory, *handle, format, tiling, mip_levels, { width, height }},
-                [this] (resource::image *ptr_image)
-                {
-                    ReleaseResource(*ptr_image);
-
-                    delete ptr_image;
-                }
-            );
-        }
-    }
-
-    return image;
-}
-
-std::shared_ptr<resource::image_view>
-ResourceManager::CreateImageView(std::shared_ptr<resource::image> image, graphics::IMAGE_VIEW_TYPE view_type, VkImageAspectFlags aspectFlags) noexcept
-{
-    std::shared_ptr<resource::image_view> image_view;
-
-    VkImageViewCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,
-        nullptr, 0,
-        image->handle(),
-        convert_to::vulkan(view_type),
-        convert_to::vulkan(image->format()),
-        { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
-        { aspectFlags, 0, image->mip_levels(), 0, 1 }
-    };
-
-    VkImageView handle;
-
-    if (auto result = vkCreateImageView(device_.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
-        std::cerr << "failed to create image view: "s << result << '\n';
-
-    else image_view.reset(new resource::image_view{handle, image, view_type}, [this] (resource::image_view *ptr_image_view) {
-        ReleaseResource(*ptr_image_view);
-
-        delete ptr_image_view;
-    });
-
-    return image_view;
-}
-
-std::shared_ptr<resource::sampler>
-ResourceManager::CreateImageSampler(std::uint32_t mip_levels) noexcept
-{
-    std::shared_ptr<resource::sampler> sampler;
-
-    VkSamplerCreateInfo const createInfo{
-        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        nullptr, 0,
-        VK_FILTER_LINEAR, VK_FILTER_LINEAR,
-        VK_SAMPLER_MIPMAP_MODE_LINEAR,
-        VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        VK_SAMPLER_ADDRESS_MODE_REPEAT,
-        0.f,
-        VK_TRUE, 16.f,
-        VK_FALSE, VK_COMPARE_OP_ALWAYS,
-        0.f, static_cast<float>(mip_levels),
-        VK_BORDER_COLOR_INT_OPAQUE_BLACK,
-        VK_FALSE
-    };
-
-    VkSampler handle;
-
-    if (auto result = vkCreateSampler(device_.handle(), &createInfo, nullptr, &handle); result != VK_SUCCESS)
-        std::cerr << "failed to create sampler: "s << result << '\n';
-
-    else sampler.reset(
-        new resource::sampler{handle},
-        [this] (resource::sampler *ptr_sampler)
-        {
-            ReleaseResource(*ptr_sampler);
-
-            delete ptr_sampler;
-        }
-    );
-
-    return sampler;
-}
-
 
 std::shared_ptr<resource::buffer>
 ResourceManager::CreateBuffer(VkDeviceSize size, graphics::BUFFER_USAGE usage, VkMemoryPropertyFlags properties) noexcept

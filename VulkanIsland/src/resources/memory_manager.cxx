@@ -190,11 +190,9 @@ namespace resource
                 auto aligned_offset = boost::alignment::align_up(chunk.offset, required_alignment);
 
                 /*if (linear)
-                    aligned_offset = boost::alignment::align_up(aligned_offset, imageGranularity);*/
+                    aligned_offset = boost::alignment::align_up(aligned_offset, image_granularity);*/
 
-                auto fits = aligned_offset + required_size <= chunk.offset + chunk.size;;
-
-                return fits;
+                return aligned_offset + required_size <= chunk.offset + chunk.size;;
             });
 
             return it_chunk != it_chunk_end;
@@ -214,18 +212,18 @@ namespace resource
         auto &&memory_block = it_block->second;
         auto &&available_chunks = memory_block.available_chunks;
 
-        if (auto chunk_node = available_chunks.extract(it_chunk); chunk_node) {
-            auto &&[offset, size] = chunk_node.value();
+        if (auto node_handle = available_chunks.extract(it_chunk); node_handle) {
+            auto &&[offset, size] = node_handle.value();
 
             auto aligned_offset = boost::alignment::align_up(offset, required_alignment);
 
             /*if (linear)
-                aligned_offset = boost::alignment::align_up(aligned_offset, imageGranularity);*/
+                aligned_offset = boost::alignment::align_up(aligned_offset, image_granularity);*/
 
             size -= required_size + aligned_offset - offset;
             offset = aligned_offset + required_size;
 
-            available_chunks.insert(std::move(chunk_node));
+            available_chunks.insert(std::move(node_handle));
 
             if (aligned_offset > offset)
                 available_chunks.emplace(offset, aligned_offset - offset);
@@ -285,7 +283,7 @@ namespace resource
         auto &&memory_block = memory_pool.memory_blocks.at(memory_handle);
         auto &&available_chunks = memory_block.available_chunks;
 
-        std::cout << fmt::format("Memory type index #{0:#x} : releasing chunk {} KB.\n"s, memory_type_index, static_cast<float>(memory_size) / 1024.f);
+        std::cout << fmt::format("Memory manager: type index #{0:#x} : releasing chunk {} KB.\n"s, memory_type_index, static_cast<float>(memory_size) / 1024.f);
 
         auto it_chunk = available_chunks.emplace(memory_offset, memory_size);
 
@@ -356,7 +354,7 @@ namespace resource
         auto kilobytes = static_cast<float>(size_in_bytes) / 1024.f;
         auto megabytes = static_cast<float>(total_allocated_size) / std::pow(2.f, 20.f);
 
-        std::cout << fmt::format("Memory type index #{0:#x} : {}th page allocation {}KB/{}MB.\n"s, memory_type_index, block_index, kilobytes, megabytes);
+        std::cout << fmt::format("Memory manager: type index #{0:#x} : {}th page allocation {}KB/{}MB.\n"s, memory_type_index, block_index, kilobytes, megabytes);
 
         return it_memory_block;
     }
