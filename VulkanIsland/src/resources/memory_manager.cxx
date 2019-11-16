@@ -4,6 +4,9 @@
 #include <set>
 
 #include <fmt/format.h>
+
+#include <boost/align.hpp>
+#include <boost/align/align.hpp>
 #include <boost/functional/hash.hpp>
 
 #include "graphics/graphics_api.hxx"
@@ -70,15 +73,15 @@ namespace resource
     };
 
     struct memory_block final {
-        memory_block(std::size_t available_size) : available_size{available_size}, avaiable_chunks{{0, available_size}} { }
+        memory_block(std::size_t available_size) : available_size{available_size}, available_chunks{{0, available_size}} { }
 
         std::size_t available_size{0};
 
-        std::multiset<resource::memory_chunk, resource::memory_chunk::comparator> avaiable_chunks;
+        std::multiset<resource::memory_chunk, resource::memory_chunk::comparator> available_chunks;
     };
 
     struct memory_pool final {
-        memory_pool(std::uint32_t memory_type_index, graphics::MEMORY_PROPERTY_TYPE properties, bool linear)
+        memory_pool(graphics::MEMORY_PROPERTY_TYPE properties, std::uint32_t memory_type_index, bool linear)
             : properties{properties}, type_index{memory_type_index}, linear{linear} { }
 
         graphics::MEMORY_PROPERTY_TYPE properties;
@@ -98,53 +101,158 @@ namespace resource
         }
     };
 
-    template<>
-    struct hash<resource::memory_pool> {
-        std::size_t operator() (resource::memory_pool const &memory_pool) const
-        {
-            std::size_t seed = 0;
-
-            boost::hash_combine(seed, memory_pool.properties);
-            boost::hash_combine(seed, memory_pool.type_index);
-            boost::hash_combine(seed, memory_pool.allocated_size);
-            boost::hash_combine(seed, memory_pool.linear);
-
-            return seed;
-        }
-    };
-
-    struct memory_manager::memory_helper final {
-        memory_helper(vulkan::device const &device) : device{device}
-        {
-            buffer_image_granularity = device.device_limits().buffer_image_granularity;
-
-            if (kBLOCK_ALLOCATION_SIZE < buffer_image_granularity)
-                throw std::runtime_error("default memory page size is less than buffer image granularity size"s);
-        }
+    struct memory_allocator final {
+        static std::size_t constexpr kBLOCK_ALLOCATION_SIZE{0x800'0000};   // 128 MB
 
         vulkan::device const &device;
 
         std::size_t buffer_image_granularity{0};
         std::size_t total_allocated_size{0};
 
-        std::unordered_map<std::size_t, resource::memory_pool> memory_pools_;
+        std::unordered_map<std::size_t, resource::memory_pool> memory_pools;
+
+        memory_allocator(vulkan::device const &device) : device{device}
+        {
+            buffer_image_granularity = device.device_limits().buffer_image_granularity;
+
+            if (kBLOCK_ALLOCATION_SIZE < buffer_image_granularity)
+                throw std::runtime_error("Memory manager: default memory page size is less than buffer image granularity size."s);
+        }
+
+        ~memory_allocator()
+        {
+            for (auto &&[type, memory_pool] : memory_pools)
+                for (auto &&[memory_handle, memory_block] : memory_pool.memory_blocks)
+                    vkFreeMemory(device.handle(), memory_handle, nullptr);
+
+            memory_pools.clear();
+        }
 
         std::shared_ptr<resource::device_memory>
         allocate_memory(VkMemoryRequirements &&memory_requirements, graphics::MEMORY_PROPERTY_TYPE, bool linear);
 
         void deallocate_memory(resource::device_memory &&device_memory);
 
-        std::optional<decltype(memory_pool::memory_blocks)::iterator>
+        decltype(memory_pool::memory_blocks)::iterator
         allocate_memory_block(std::size_t size_in_bytes, std::uint32_t memory_type_index, graphics::MEMORY_PROPERTY_TYPE properties, bool linear);
     };
 
     std::shared_ptr<resource::device_memory>
-    memory_manager::memory_helper::allocate_memory(VkMemoryRequirements &&memory_requirements, graphics::MEMORY_PROPERTY_TYPE memory_property_types, bool linear)
+    memory_allocator::allocate_memory(VkMemoryRequirements &&memory_requirements, graphics::MEMORY_PROPERTY_TYPE properties, bool linear)
     {
-        return std::shared_ptr<resource::device_memory>();
+        auto const required_size = static_cast<std::size_t>(memory_requirements.size);
+        auto const required_alignment = static_cast<std::size_t>(memory_requirements.alignment);
+
+        if (required_size > kBLOCK_ALLOCATION_SIZE)
+            throw std::runtime_error("Memory manager: requested allocation size is bigger than memory page size."s);
+
+        std::uint32_t memory_type_index = 0;
+
+        if (auto index = find_memory_type_index(device, memory_requirements.memoryTypeBits, properties); index)
+            memory_type_index = *index;
+
+        else throw std::runtime_error("Memory manager: failed to find suitable memory type."s);
+
+        auto const key = ([=]
+        {
+            std::size_t seed = 0;
+
+            boost::hash_combine(seed, memory_type_index);
+            boost::hash_combine(seed, properties);
+            boost::hash_combine(seed, linear);
+
+            return seed;
+        })();
+
+        if (!memory_pools.contains(key))
+            memory_pools.try_emplace(key, properties, memory_type_index, linear);
+
+        auto &&memory_pool = memory_pools.at(key);
+        auto &&memory_blocks = memory_pool.memory_blocks;
+
+        typename decltype(resource::memory_pool::memory_blocks)::iterator it_block;
+        typename decltype(resource::memory_block::available_chunks)::iterator it_chunk;
+
+        it_block = std::find_if(std::begin(memory_blocks), std::end(memory_blocks), [&it_chunk, required_size, required_alignment] (auto &&pair)
+        {
+            auto &&[memory_handle, memory_block] = pair;
+
+            if (memory_block.available_size < required_size)
+                return false;
+
+            auto &&available_chunks = memory_block.available_chunks;
+
+            auto it_chunk_begin = available_chunks.lower_bound(required_size);
+            auto it_chunk_end = available_chunks.upper_bound(required_size);
+
+            it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [required_size, required_alignment] (auto &&chunk)
+            {
+                auto aligned_offset = boost::alignment::align_up(chunk.offset, required_alignment);
+
+                /*if (linear)
+                    aligned_offset = boost::alignment::align_up(aligned_offset, imageGranularity);*/
+
+                auto fits = aligned_offset + required_size <= chunk.offset + chunk.size;;
+
+                return fits;
+            });
+
+            return it_chunk != it_chunk_end;
+        });
+
+        if (it_block == std::end(memory_blocks)) {
+            it_block = allocate_memory_block(kBLOCK_ALLOCATION_SIZE, memory_type_index, properties, linear);
+
+            auto &&available_chunks = it_block->second.available_chunks;
+
+            it_chunk = available_chunks.lower_bound(kBLOCK_ALLOCATION_SIZE);
+
+            if (it_chunk == std::end(available_chunks))
+                throw std::runtime_error("Memory manager: failed to find available memory chunk."s);
+        }
+
+        auto &&memory_block = it_block->second;
+        auto &&available_chunks = memory_block.available_chunks;
+
+        if (auto chunk_node = available_chunks.extract(it_chunk); chunk_node) {
+            auto &&[offset, size] = chunk_node.value();
+
+            auto aligned_offset = boost::alignment::align_up(offset, required_alignment);
+
+            /*if (linear)
+                aligned_offset = boost::alignment::align_up(aligned_offset, imageGranularity);*/
+
+            size -= required_size + aligned_offset - offset;
+            offset = aligned_offset + required_size;
+
+            available_chunks.insert(std::move(chunk_node));
+
+            if (aligned_offset > offset)
+                available_chunks.emplace(offset, aligned_offset - offset);
+
+            memory_block.available_size -= required_size;
+
+            available_chunks.erase(resource::memory_chunk{0, 0});
+
+            auto const kilobytes = static_cast<float>(required_size) / 1024.f;
+
+            std::cout << fmt::format("Memory manager: type index #{} : sub-allocation {} KB.\n"s, memory_type_index, kilobytes);
+
+            return std::shared_ptr<resource::device_memory>{
+                new resource::device_memory{it_block->first, required_size, aligned_offset, memory_type_index, properties, linear},
+                                            [this] (resource::device_memory *const ptr_memory)
+                {
+                    deallocate_memory(std::move(*ptr_memory));
+
+                    delete ptr_memory;
+                }
+            };
+        }
+
+        else throw std::runtime_error("Memory manager: failed to extract available memory block chunk."s);
     }
 
-    void memory_manager::memory_helper::deallocate_memory(resource::device_memory &&device_memory)
+    void memory_allocator::deallocate_memory(resource::device_memory &&device_memory)
     {
         auto const key = ([&device_memory]
         {
@@ -157,15 +265,16 @@ namespace resource
             return seed;
         })();
 
-        if (!memory_pools_.contains(key)) {
+        if (!memory_pools.contains(key)) {
             std::cerr << "Memory manager: dead memory chunk encountered."s << std::endl;
             return;
-        };
+        }
 
-        auto &&memory_pool = memory_pools_.at(key);
+        auto &&memory_pool = memory_pools.at(key);
 
         auto const memory_handle = device_memory.handle();
         auto const memory_size = device_memory.size();
+        auto const memory_offset = device_memory.offset();
         auto const memory_type_index = device_memory.type_index();
 
         if (!memory_pool.memory_blocks.contains(memory_handle)) {
@@ -174,19 +283,89 @@ namespace resource
         }
 
         auto &&memory_block = memory_pool.memory_blocks.at(memory_handle);
-        auto &&avaiable_chunks = memory_block.avaiable_chunks;
+        auto &&available_chunks = memory_block.available_chunks;
 
         std::cout << fmt::format("Memory type index #{0:#x} : releasing chunk {} KB.\n"s, memory_type_index, static_cast<float>(memory_size) / 1024.f);
+
+        auto it_chunk = available_chunks.emplace(memory_offset, memory_size);
+
+        auto find_adjacent_chunk = [] (auto begin, auto end, auto it_chunk)
+        {
+            return std::find_if(begin, end, [it_chunk] (auto &&chunk)
+            {
+                return chunk.offset + chunk.size == it_chunk->offset || it_chunk->offset + it_chunk->size == chunk.offset;
+            });
+        };
+
+        auto it_adjacent_chunk = find_adjacent_chunk(std::begin(available_chunks), std::end(available_chunks), it_chunk);
+
+        while (it_adjacent_chunk != std::end(available_chunks)) {
+            auto [offset_a, size_a] = *it_chunk;
+            auto [offset_b, size_b] = *it_adjacent_chunk;
+
+            available_chunks.erase(it_chunk);
+            available_chunks.erase(it_adjacent_chunk);
+
+            it_chunk = available_chunks.emplace(std::min(offset_a, offset_b), size_a + size_b);
+
+            it_adjacent_chunk = find_adjacent_chunk(std::begin(available_chunks), std::end(available_chunks), it_chunk);
+        }
+
+        memory_block.available_size += memory_size;
+    }
+
+    decltype(memory_pool::memory_blocks)::iterator
+    memory_allocator::allocate_memory_block(std::size_t size_in_bytes, std::uint32_t memory_type_index, graphics::MEMORY_PROPERTY_TYPE properties, bool linear)
+    {
+        auto const key = ([=]
+        {
+            std::size_t seed = 0;
+
+            boost::hash_combine(seed, memory_type_index);
+            boost::hash_combine(seed, properties);
+            boost::hash_combine(seed, linear);
+
+            return seed;
+        })();
+
+        if (!memory_pools.contains(key))
+            throw std::runtime_error(fmt::format("Memory manager: failed to find instantiated memory pool for type index #{}.\n"s, memory_type_index));
+
+        auto &&memory_pool = memory_pools.at(key);
+        auto &&memory_blocks = memory_pool.memory_blocks;
+
+        VkMemoryAllocateInfo const allocation_info{
+            VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            nullptr,
+            static_cast<VkDeviceSize>(size_in_bytes),
+            memory_type_index
+        };
+
+        VkDeviceMemory handle;
+
+        if (auto result = vkAllocateMemory(device.handle(), &allocation_info, nullptr, &handle); result != VK_SUCCESS)
+            throw std::runtime_error("Memory manager: failed to allocate memory block from memory pool."s);
+
+        total_allocated_size += size_in_bytes;
+        memory_pool.allocated_size += size_in_bytes;
+
+        auto it_memory_block = memory_blocks.try_emplace(handle, size_in_bytes).first;
+
+        auto block_index = std::size(memory_blocks);
+
+        auto kilobytes = static_cast<float>(size_in_bytes) / 1024.f;
+        auto megabytes = static_cast<float>(total_allocated_size) / std::pow(2.f, 20.f);
+
+        std::cout << fmt::format("Memory type index #{0:#x} : {}th page allocation {}KB/{}MB.\n"s, memory_type_index, block_index, kilobytes, megabytes);
+
+        return it_memory_block;
     }
 }
 
 namespace resource
 {
     memory_manager::memory_manager(vulkan::device const &device)
-        : device_{device}, memory_helper_{std::make_unique<memory_manager::memory_helper>(device)}
-    {
-        ;
-    }
+        : device_{device}, allocator_{std::make_shared<resource::memory_allocator>(device)} { }
 
     template<>
     std::shared_ptr<resource::device_memory>
@@ -197,7 +376,7 @@ namespace resource
         VkMemoryRequirements memory_requirements;
         vkGetBufferMemoryRequirements(device_.handle(), buffer->handle(), &memory_requirements);
 
-        return memory_helper_->allocate_memory(std::move(memory_requirements), memory_property_types, linear_memory);
+        return allocator_->allocate_memory(std::move(memory_requirements), memory_property_types, linear_memory);
     }
 
     template<>
@@ -209,17 +388,10 @@ namespace resource
         VkMemoryRequirements memory_requirements;
         vkGetImageMemoryRequirements(device_.handle(), image->handle(), &memory_requirements);
 
-        return memory_helper_->allocate_memory(std::move(memory_requirements), memory_property_types, linear_memory);
+        return allocator_->allocate_memory(std::move(memory_requirements), memory_property_types, linear_memory);
     }
 
-    /*std::size_t hash<resource::device_memory>::operator() (resource::device_memory const &device_memory) const
-    {
-        std::size_t seed = 0;
-
-        boost::hash_combine(seed, device_memory.type_index());
-        boost::hash_combine(seed, device_memory.properties());
-        boost::hash_combine(seed, device_memory.linear());
-
-        return seed;
-    }*/
+    device_memory::device_memory(VkDeviceMemory handle, std::size_t size, std::size_t offset, std::uint32_t type_index,
+                                 graphics::MEMORY_PROPERTY_TYPE properties, bool linear) noexcept
+        : handle_{handle}, size_{size}, offset_{offset}, type_index_{type_index}, properties_{properties}, linear_{linear} { }
 }

@@ -73,6 +73,7 @@
 #include "resources/image.hxx"
 #include "resources/resource.hxx"
 #include "resources/resource_manager.hxx"
+#include "resources/memory_manager.hxx"
 #include "resources/semaphore.hxx"
 #include "resources/framebuffer.hxx"
 
@@ -163,6 +164,7 @@ struct app_t final {
     std::unique_ptr<renderer::swapchain> swapchain;
 
     std::unique_ptr<resource::resource_manager> resource_manager;
+    std::unique_ptr<resource::memory_manager> memory_manager;
 
     std::unique_ptr<graphics::vertex_input_state_manager> vertex_input_state_manager;
     std::unique_ptr<graphics::shader_manager> shader_manager;
@@ -184,7 +186,7 @@ struct app_t final {
 
     std::vector<per_object_t> objects;
 
-    std::unique_ptr<MemoryManager> memory_manager;
+    std::unique_ptr<MemoryManager> memory_manager2;
     std::unique_ptr<ResourceManager> resource_manager2;
 
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
@@ -264,6 +266,7 @@ struct app_t final {
         resource_manager2.reset();
 
         memory_manager.reset();
+        memory_manager2.reset();
 
         device.reset();
         instance.reset();
@@ -1099,10 +1102,11 @@ void init(platform::window &window, app_t &app)
 
     app.renderer_config = adjust_renderer_config(*app.device);
 
-    app.memory_manager = std::make_unique<MemoryManager>(*app.device);
-    app.resource_manager2 = std::make_unique<ResourceManager>(*app.device, *app.memory_manager);
+    app.memory_manager2 = std::make_unique<MemoryManager>(*app.device);
+    app.resource_manager2 = std::make_unique<ResourceManager>(*app.device, *app.memory_manager2);
 
-    app.resource_manager = std::make_unique<resource::resource_manager>(*app.device, app.renderer_config, *app.memory_manager);
+    app.memory_manager = std::make_unique<resource::memory_manager>(*app.device);
+    app.resource_manager = std::make_unique<resource::resource_manager>(*app.device, app.renderer_config, *app.memory_manager2);
 
     app.shader_manager = std::make_unique<graphics::shader_manager>(*app.device);
     app.material_factory = std::make_unique<graphics::material_factory>();

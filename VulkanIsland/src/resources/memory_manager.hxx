@@ -13,6 +13,7 @@ namespace resource
     class image;
 
     class memory_manager;
+    struct memory_allocator;
 }
 
 namespace resource
@@ -41,7 +42,10 @@ namespace resource
 
         bool linear_;
 
-        friend resource::memory_manager;
+        device_memory(VkDeviceMemory handle, std::size_t size, std::size_t offset, std::uint32_t type_index,
+                      graphics::MEMORY_PROPERTY_TYPE properties, bool linear) noexcept;
+
+        friend resource::memory_allocator;
     };
 
     class memory_manager final {
@@ -54,12 +58,8 @@ namespace resource
 
     private:
 
-        static std::size_t constexpr kBLOCK_ALLOCATION_SIZE{0x800'0000};   // 128 MB
-
         vulkan::device const &device_;
 
-        struct memory_helper;
-
-        std::unique_ptr<memory_manager::memory_helper> memory_helper_;
+        std::shared_ptr<resource::memory_allocator> allocator_;
     };
 }
