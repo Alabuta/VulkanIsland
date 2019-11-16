@@ -9,6 +9,7 @@
 #include <boost/align/align.hpp>
 #include <boost/functional/hash.hpp>
 
+#include "utility/exceptions.hxx"
 #include "graphics/graphics_api.hxx"
 
 #include "buffer.hxx"
@@ -116,7 +117,7 @@ namespace resource
             buffer_image_granularity = device.device_limits().buffer_image_granularity;
 
             if (kBLOCK_ALLOCATION_SIZE < buffer_image_granularity)
-                throw std::runtime_error("Memory manager: default memory page size is less than buffer image granularity size."s);
+                throw memory::logic_error("default memory page size is less than buffer image granularity size."s);
         }
 
         ~memory_allocator()
@@ -144,14 +145,14 @@ namespace resource
         auto const required_alignment = static_cast<std::size_t>(memory_requirements.alignment);
 
         if (required_size > kBLOCK_ALLOCATION_SIZE)
-            throw std::runtime_error("Memory manager: requested allocation size is bigger than memory page size."s);
+            throw memory::logic_error("requested allocation size is bigger than memory page size."s);
 
         std::uint32_t memory_type_index = 0;
 
         if (auto index = find_memory_type_index(device, memory_requirements.memoryTypeBits, properties); index)
             memory_type_index = *index;
 
-        else throw std::runtime_error("Memory manager: failed to find suitable memory type."s);
+        else throw memory::bad_allocation("failed to find suitable memory type."s);
 
         auto const key = ([=]
         {
@@ -206,7 +207,7 @@ namespace resource
             it_chunk = available_chunks.lower_bound(kBLOCK_ALLOCATION_SIZE);
 
             if (it_chunk == std::end(available_chunks))
-                throw std::runtime_error("Memory manager: failed to find available memory chunk."s);
+                throw memory::exception("failed to find available memory chunk."s);
         }
 
         auto &&memory_block = it_block->second;
@@ -247,7 +248,7 @@ namespace resource
             };
         }
 
-        else throw std::runtime_error("Memory manager: failed to extract available memory block chunk."s);
+        else throw memory::exception("failed to find memory chunk for extraction"s);
     }
 
     void memory_allocator::deallocate_memory(resource::device_memory &&device_memory)
@@ -327,7 +328,7 @@ namespace resource
         })();
 
         if (!memory_pools.contains(key))
-            throw std::runtime_error(fmt::format("Memory manager: failed to find instantiated memory pool for type index #{}.\n"s, memory_type_index));
+            throw memory::exception(fmt::format("failed to find instantiated memory pool for type index #{}"s, memory_type_index));
 
         auto &&memory_pool = memory_pools.at(key);
         auto &&memory_blocks = memory_pool.memory_blocks;
@@ -342,7 +343,7 @@ namespace resource
         VkDeviceMemory handle;
 
         if (auto result = vkAllocateMemory(device.handle(), &allocation_info, nullptr, &handle); result != VK_SUCCESS)
-            throw std::runtime_error("Memory manager: failed to allocate memory block from memory pool."s);
+            throw memory::bad_allocation("failed to allocate memory block from memory pool."s);
 
         total_allocated_size += size_in_bytes;
         memory_pool.allocated_size += size_in_bytes;

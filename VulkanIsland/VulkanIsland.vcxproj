@@ -285,6 +285,7 @@
     <ClInclude Include="src\renderer\config.hxx" />
     <ClInclude Include="src\resources\memory_manager.hxx" />
     <ClInclude Include="src\resources\resource_manager.hxx" />
+    <ClInclude Include="src\utility\exceptions.hxx" />
     <ClInclude Include="src\vulkan\debug.hxx" />
     <ClInclude Include="src/descriptor.hxx" />
     <ClInclude Include="src/device.hxx" />

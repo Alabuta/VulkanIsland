@@ -61,6 +61,8 @@ namespace resource
 
         [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(std::size_t size_in_bytes);
 
+        [[nodiscard]] std::shared_ptr<resource::vertex_buffer> vertex_buffer(graphics::vertex_layout const &layout) const;
+
     private:
 
         vulkan::device const &device_;

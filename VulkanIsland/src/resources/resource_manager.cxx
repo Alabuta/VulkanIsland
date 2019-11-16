@@ -3,6 +3,7 @@
 
 #include <fmt/format.h>
 
+#include "utility/exceptions.hxx"
 #include "buffer.hxx"
 #include "image.hxx"
 #include "framebuffer.hxx"
@@ -37,19 +38,19 @@ namespace resource
         VkBuffer handle;
 
         if (auto result = vkCreateBuffer(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to create a buffer: {0:#x}\n"s, result));
+            throw resource::instantiation_fail(fmt::format("failed to create a buffer: {0:#x}"s, result));
 
         auto constexpr linear_memory = true;
 
         auto memory = memory_manager_.AllocateMemory(handle, convert_to::vulkan(memory_property_types), linear_memory);
 
         if (memory == nullptr)
-            throw std::runtime_error("failed to allocate buffer memory\n"s);
+            throw memory::exception("failed to allocate buffer memory"s);
 
         std::shared_ptr<resource::buffer> buffer;
 
         if (auto result = vkBindBufferMemory(device_.handle(), handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to bind buffer memory: {0:#x}\n"s, result));
+            throw resource::memory_bind(fmt::format("failed to bind buffer memory: {0:#x}"s, result));
 
         else buffer.reset(new resource::buffer{memory, handle}, [this] (resource::buffer *ptr_buffer)
         {
@@ -85,7 +86,7 @@ namespace resource
         VkImage handle;
 
         if (auto result = vkCreateImage(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to create an image: {0:#x}\n"s, result));
+            throw resource::instantiation_fail(fmt::format("failed to create an image: {0:#x}"s, result));
 
         std::shared_ptr<resource::image> image;
 
@@ -94,10 +95,10 @@ namespace resource
         auto memory = memory_manager_.AllocateMemory(handle, convert_to::vulkan(memory_property_types), linear_memory);
 
         if (memory == nullptr)
-            throw std::runtime_error("failed to allocate image memory\n"s);
+            throw memory::exception("failed to allocate image memory"s);
 
         if (auto result = vkBindImageMemory(device_.handle(), handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to bind image buffer memory: {0:#x}\n"s, result));
+            throw resource::memory_bind(fmt::format("failed to bind image buffer memory: {0:#x}"s, result));
 
         else image.reset(new resource::image{memory, handle, format, tiling, mip_levels, extent}, [this] (resource::image *ptr_image)
         {
@@ -128,7 +129,7 @@ namespace resource
         VkImageView handle;
 
         if (auto result = vkCreateImageView(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to create an image view: {0:#x}\n"s, result));
+            throw resource::instantiation_fail(fmt::format("failed to create an image view: {0:#x}"s, result));
 
         else image_view.reset(new resource::image_view{handle, image, view_type}, [this] (resource::image_view *ptr_image_view)
         {
@@ -165,7 +166,7 @@ namespace resource
         VkSampler handle;
 
         if (auto result = vkCreateSampler(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to create a sampler: {0:#x}\n"s, result));
+            throw resource::instantiation_fail(fmt::format("failed to create a sampler: {0:#x}"s, result));
 
         else sampler.reset(new resource::sampler{handle}, [this] (resource::sampler *ptr_sampler)
         {
@@ -209,7 +210,7 @@ namespace resource
         VkFramebuffer handle;
 
         if (auto result = vkCreateFramebuffer(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to create a framebuffer: {0:#x}\n"s, result));
+            throw resource::instantiation_fail(fmt::format("failed to create a framebuffer: {0:#x}"s, result));
 
         else framebuffer.reset(new resource::framebuffer{handle}, [this] (resource::framebuffer *ptr_framebuffer)
         {
@@ -244,7 +245,7 @@ namespace resource
             );
         }
 
-        else throw std::runtime_error(fmt::format("failed to create a semaphore: {0:#x}\n"s, result));
+        else throw resource::instantiation_fail(fmt::format("failed to create a semaphore: {0:#x}"s, result));
 
         return semaphore;
     }
