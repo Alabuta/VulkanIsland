@@ -276,8 +276,6 @@
     <ClCompile Include="src\graphics\vertex.cxx" />
     <ClCompile Include="src\resources\buffer.cxx" />
     <ClCompile Include="src\resources\image.cxx" />
-    <ClCompile Include="src\memory.cxx" />
-    <ClCompile Include="src\resource.cxx" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\config.hxx" />
@@ -317,8 +315,6 @@
     <ClInclude Include="src\graphics\render_pass.hxx" />
     <ClInclude Include="src\graphics\shader_program.hxx" />
     <ClInclude Include="src\graphics\vertex.hxx" />
-    <ClInclude Include="src\memory.hxx" />
-    <ClInclude Include="src\resource.hxx" />
     <ClInclude Include="src\resources\semaphore.hxx" />
     <ClInclude Include="src\loaders\scene_loader.hxx" />
     <ClInclude Include="src/platform/window.hxx" />
