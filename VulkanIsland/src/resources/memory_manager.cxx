@@ -368,24 +368,24 @@ namespace resource
 
     template<>
     std::shared_ptr<resource::device_memory>
-    memory_manager::allocate_memory(std::shared_ptr<resource::buffer> buffer, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
+    memory_manager::allocate_memory(resource::buffer &&buffer, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
     {
         auto constexpr linear_memory = true;
 
         VkMemoryRequirements memory_requirements;
-        vkGetBufferMemoryRequirements(device_.handle(), buffer->handle(), &memory_requirements);
+        vkGetBufferMemoryRequirements(device_.handle(), buffer.handle(), &memory_requirements);
 
         return allocator_->allocate_memory(std::move(memory_requirements), memory_property_types, linear_memory);
     }
 
     template<>
     std::shared_ptr<resource::device_memory>
-    memory_manager::allocate_memory(std::shared_ptr<resource::image> image, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
+    memory_manager::allocate_memory(resource::image &&image, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
     {
-        auto const linear_memory = image->tiling() == graphics::IMAGE_TILING::LINEAR;
+        auto const linear_memory = image.tiling() == graphics::IMAGE_TILING::LINEAR;
 
         VkMemoryRequirements memory_requirements;
-        vkGetImageMemoryRequirements(device_.handle(), image->handle(), &memory_requirements);
+        vkGetImageMemoryRequirements(device_.handle(), image.handle(), &memory_requirements);
 
         return allocator_->allocate_memory(std::move(memory_requirements), memory_property_types, linear_memory);
     }
