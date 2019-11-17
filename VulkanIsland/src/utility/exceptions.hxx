@@ -13,10 +13,6 @@ namespace memory
     struct bad_allocation final : public memory::exception {
         explicit bad_allocation(std::string const &what_arg) : memory::exception(what_arg) { }
     };
-
-    struct logic_error final : public memory::exception {
-        explicit logic_error(std::string const &what_arg) : memory::exception(what_arg) { }
-    };
 }
 
 namespace resource

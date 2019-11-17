@@ -352,7 +352,7 @@ namespace resource
 
             auto copy_regions = std::array{ VkBufferCopy{ 0, 0, staging_buffer.memory()->size() } };
 
-            CopyBufferToBuffer(device_, transfer_queue, staging_buffer.handle(), device_buffer.handle(), std::move(copy_regions), command_pool);
+            copy_buffer_to_buffer(device_, transfer_queue, staging_buffer.handle(), device_buffer.handle(), std::move(copy_regions), command_pool);
         }
     }
 }

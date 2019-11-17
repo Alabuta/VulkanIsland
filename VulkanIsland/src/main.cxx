@@ -1110,12 +1110,12 @@ void init(platform::window &window, app_t &app)
 
     app.render_pass_manager = std::make_unique<graphics::render_pass_manager>(*app.device);
 
-    if (auto commandPool = CreateCommandPool(*app.device, app.device->transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); commandPool)
+    if (auto commandPool = create_command_pool(*app.device, app.device->transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); commandPool)
         app.transferCommandPool = *commandPool;
 
     else throw std::runtime_error("failed to transfer command pool"s);
 
-    if (auto commandPool = CreateCommandPool(*app.device, app.device->graphics_queue, 0); commandPool)
+    if (auto commandPool = create_command_pool(*app.device, app.device->graphics_queue, 0); commandPool)
         app.graphicsCommandPool = *commandPool;
 
     else throw std::runtime_error("failed to graphics command pool"s);
@@ -1505,15 +1505,15 @@ load_texture(app_t &app, vulkan::device &device, resource::resource_manager &res
             }
 
             if (texture) {
-                TransitionImageLayout(device, device.transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
+                image_layout_transition(device, device.transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
                                       graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION, app.transferCommandPool);
 
-                CopyBufferToImage(device, device.transfer_queue, staging_buffer->handle(), texture->image->handle(), width, height, app.transferCommandPool);
+                copy_buffer_to_image(device, device.transfer_queue, staging_buffer->handle(), texture->image->handle(), extent, app.transferCommandPool);
 
                 if (generateMipMaps)
-                    GenerateMipMaps(device, device.transfer_queue, *texture->image, app.transferCommandPool);
+                    generate_mip_maps(device, device.transfer_queue, *texture->image, app.transferCommandPool);
 
-                else TransitionImageLayout(device, device.transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION,
+                else image_layout_transition(device, device.transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION,
                                            graphics::IMAGE_LAYOUT::SHADER_READ_ONLY, app.transferCommandPool);
             }
         }

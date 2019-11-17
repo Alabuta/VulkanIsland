@@ -117,7 +117,7 @@ namespace resource
             buffer_image_granularity = device.device_limits().buffer_image_granularity;
 
             if (kBLOCK_ALLOCATION_SIZE < buffer_image_granularity)
-                throw memory::logic_error("default memory page size is less than buffer image granularity size."s);
+                throw memory::bad_allocation("default memory page size is less than buffer image granularity size."s);
         }
 
         ~memory_allocator()
@@ -145,7 +145,7 @@ namespace resource
         auto const required_alignment = static_cast<std::size_t>(memory_requirements.alignment);
 
         if (required_size > kBLOCK_ALLOCATION_SIZE)
-            throw memory::logic_error("requested allocation size is bigger than memory page size."s);
+            throw memory::bad_allocation("requested allocation size is bigger than memory page size."s);
 
         std::uint32_t memory_type_index = 0;
 
