@@ -331,11 +331,6 @@ namespace resource
         return vertex_buffer;
     }
 
-    std::shared_ptr<resource::vertex_buffer> resource_manager::vertex_buffer(graphics::vertex_layout const &layout) const
-    {
-        return std::shared_ptr<resource::vertex_buffer>();
-    }
-
     void resource_manager::stage_vertex_buffer_data(std::shared_ptr<resource::vertex_buffer> vertex_buffer, std::vector<std::byte> const &container) const
     {
         if (vertex_buffer == nullptr)

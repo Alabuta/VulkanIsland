@@ -2,7 +2,6 @@
 
 #include "renderer/command_buffer.hxx"
 #include "graphics/graphics_api.hxx"
-#include "resource.hxx"
 #include "image.hxx"
 
 

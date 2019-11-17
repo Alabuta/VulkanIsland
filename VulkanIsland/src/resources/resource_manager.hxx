@@ -65,8 +65,6 @@ namespace resource
 
         [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(std::size_t size_in_bytes);
 
-        [[nodiscard]] std::shared_ptr<resource::vertex_buffer> vertex_buffer(graphics::vertex_layout const &layout) const;
-
         [[nodiscard]] auto &vertex_buffers() const noexcept { return vertex_buffers_; }
 
         void stage_vertex_buffer_data(std::shared_ptr<resource::vertex_buffer> vertex_buffer, std::vector<std::byte> const &container) const;
