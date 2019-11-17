@@ -1,5 +1,6 @@
 #pragma once
 
+#include <iostream>
 #include <string>
 using namespace std::string_literals;
 
@@ -16,7 +17,7 @@ using namespace std::string_literals;
 
 void EndSingleTimeCommand(VkCommandBuffer commandBuffer);
 
-template<class Q> requires mpl::derived_from<graphics::queue, std::remove_cvref_t<Q>>
+template<class Q, typename std::enable_if_t<std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>>* = nullptr>
 void SubmitAndFreeSingleTimeCommandBuffers(vulkan::device const &device, Q &queue, VkCommandPool commandPool, VkCommandBuffer &commandBuffer)
 {
     VkSubmitInfo const submitInfo{
@@ -37,7 +38,7 @@ void SubmitAndFreeSingleTimeCommandBuffers(vulkan::device const &device, Q &queu
 }
 
 
-template<class Q, class R> requires mpl::derived_from<graphics::queue, std::remove_cvref_t<Q>> && mpl::container<std::remove_cvref_t<R>>
+template<class Q, class R, typename std::enable_if_t<std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>> && mpl::container<std::remove_cvref_t<R>>>* = nullptr>
 void CopyBufferToBuffer(vulkan::device const &device, Q &queue, VkBuffer srcBuffer, VkBuffer dstBuffer, R &&copyRegion, VkCommandPool commandPool)
 {
     static_assert(std::is_same_v<typename std::remove_cvref_t<R>::value_type, VkBufferCopy>, "'copyRegion' argument does not contain 'VkBufferCopy' elements");
@@ -51,7 +52,7 @@ void CopyBufferToBuffer(vulkan::device const &device, Q &queue, VkBuffer srcBuff
     SubmitAndFreeSingleTimeCommandBuffers(device, queue, commandPool, commandBuffer);
 }
 
-template<class Q> requires mpl::derived_from<graphics::queue, std::remove_cvref_t<Q>>
+template<class Q, typename std::enable_if_t<std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>>* = nullptr>
 void CopyBufferToImage(vulkan::device const &device, Q &queue, VkBuffer srcBuffer, VkImage dstImage, std::uint16_t width, std::uint16_t height, VkCommandPool commandPool)
 {
     auto commandBuffer = BeginSingleTimeCommand(device, commandPool);
@@ -72,7 +73,7 @@ void CopyBufferToImage(vulkan::device const &device, Q &queue, VkBuffer srcBuffe
 }
 
 
-template<class Q> requires mpl::derived_from<graphics::queue, std::remove_cvref_t<Q>>
+template<class Q, typename std::enable_if_t<std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>>* = nullptr>
 void GenerateMipMaps(vulkan::device const &device, Q &queue, resource::image const &image, VkCommandPool commandPool) noexcept
 {
     auto commandBuffer = BeginSingleTimeCommand(device, commandPool);
@@ -133,7 +134,7 @@ void GenerateMipMaps(vulkan::device const &device, Q &queue, resource::image con
 }
 
 
-template<class Q> requires mpl::derived_from<graphics::queue, std::remove_cvref_t<Q>>
+template<class Q, typename std::enable_if_t<std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>>* = nullptr>
 bool TransitionImageLayout(vulkan::device const &device, Q &queue, resource::image const &image,
                            graphics::IMAGE_LAYOUT srcLayout, graphics::IMAGE_LAYOUT dstLayout, VkCommandPool commandPool) noexcept
 {
@@ -205,7 +206,7 @@ bool TransitionImageLayout(vulkan::device const &device, Q &queue, resource::ima
 }
 
 
-template<class Q> requires mpl::derived_from<graphics::queue, std::remove_cvref_t<Q>>
+template<class Q, typename std::enable_if_t<std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>>* = nullptr>
 std::optional<VkCommandPool> CreateCommandPool(vulkan::device const &device, Q &queue, VkCommandPoolCreateFlags flags)
 {
     VkCommandPoolCreateInfo const createInfo{
