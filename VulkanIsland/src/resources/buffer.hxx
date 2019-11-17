@@ -23,7 +23,8 @@ namespace resource
 
     private:
         std::shared_ptr<DeviceMemory> memory_;
-        VkBuffer handle_;
+
+        VkBuffer handle_{VK_NULL_HANDLE};
 
         buffer() = delete;
         buffer(buffer const &) = delete;

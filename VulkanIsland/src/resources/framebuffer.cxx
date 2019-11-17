@@ -1,3 +1,4 @@
+#include <boost/functional/hash.hpp>
 
 #include "framebuffer.hxx"
 

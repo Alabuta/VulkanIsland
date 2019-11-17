@@ -128,18 +128,6 @@ namespace resource
     };
 }
 
-
-[[nodiscard]] std::optional<graphics::FORMAT>
-FindSupportedImageFormat(vulkan::device const &device, std::vector<graphics::FORMAT> const &candidates, graphics::IMAGE_TILING tiling, VkFormatFeatureFlags features) noexcept;
-
-[[nodiscard]] std::optional<graphics::FORMAT> FindDepthImageFormat(vulkan::device const &device) noexcept;
-
-
-[[nodiscard]] std::shared_ptr<resource::texture>
-CreateTexture(ResourceManager &resource_manager, graphics::FORMAT format, graphics::IMAGE_VIEW_TYPE view_type,
-              std::uint32_t width, std::uint32_t height, std::uint32_t mip_levels, std::uint32_t samples_count, graphics::IMAGE_TILING tiling,
-              VkImageAspectFlags aspectFlags, graphics::IMAGE_USAGE usageFlags, VkMemoryPropertyFlags propertyFlags);
-
 [[nodiscard]] std::optional<graphics::FORMAT>
 find_supported_image_format(vulkan::device const &device, std::vector<graphics::FORMAT> const &candidates,
                             graphics::IMAGE_TILING tiling, graphics::FORMAT_FEATURE features);

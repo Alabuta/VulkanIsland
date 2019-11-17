@@ -16,6 +16,6 @@ namespace resource
         VkSemaphore handle() const noexcept { return handle_; }
 
     private:
-        VkSemaphore handle_;
+        VkSemaphore handle_{VK_NULL_HANDLE};
     };
 }

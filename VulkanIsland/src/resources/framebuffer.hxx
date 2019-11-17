@@ -25,7 +25,7 @@ namespace resource
 
     private:
 
-        VkFramebuffer handle_;
+        VkFramebuffer handle_{VK_NULL_HANDLE};
 
         framebuffer() = delete;
         framebuffer(framebuffer const &) = delete;

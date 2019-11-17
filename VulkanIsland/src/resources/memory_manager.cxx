@@ -284,7 +284,7 @@ namespace resource
         auto &&memory_block = memory_pool.memory_blocks.at(memory_handle);
         auto &&available_chunks = memory_block.available_chunks;
 
-        std::cout << fmt::format("Memory manager: type index #{0:#x} : releasing chunk {} KB.\n"s, memory_type_index, static_cast<float>(memory_size) / 1024.f);
+        std::cout << fmt::format("Memory manager: type index #{} : releasing chunk {} KB.\n"s, memory_type_index, static_cast<float>(memory_size) / 1024.f);
 
         auto it_chunk = available_chunks.emplace(memory_offset, memory_size);
 
@@ -355,7 +355,7 @@ namespace resource
         auto kilobytes = static_cast<float>(size_in_bytes) / 1024.f;
         auto megabytes = static_cast<float>(total_allocated_size) / std::pow(2.f, 20.f);
 
-        std::cout << fmt::format("Memory manager: type index #{0:#x} : {}th page allocation {}KB/{}MB.\n"s, memory_type_index, block_index, kilobytes, megabytes);
+        std::cout << fmt::format("Memory manager: type index #{} : {}th page allocation {}KB/{}MB.\n"s, memory_type_index, block_index, kilobytes, megabytes);
 
         return it_memory_block;
     }
