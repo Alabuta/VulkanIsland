@@ -221,13 +221,13 @@ namespace resource
             /*if (linear)
                 aligned_offset = boost::alignment::align_up(aligned_offset, image_granularity);*/
 
+            if (aligned_offset > offset)
+                available_chunks.emplace(offset, aligned_offset - offset);
+
             size -= required_size + aligned_offset - offset;
             offset = aligned_offset + required_size;
 
             available_chunks.insert(std::move(node_handle));
-
-            if (aligned_offset > offset)
-                available_chunks.emplace(offset, aligned_offset - offset);
 
             memory_block.available_size -= required_size;
 

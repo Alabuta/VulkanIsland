@@ -80,7 +80,6 @@ namespace resource
 
         resource::memory_manager &memory_manager_;
 
-        std::shared_ptr<struct resource_map> resource_map_;
         std::shared_ptr<struct resource_deleter> resource_deleter_;
 
         // TODO:: unordered_miltimap

@@ -16,10 +16,6 @@
 
 namespace resource
 {
-    struct resource_map final {
-        std::unordered_map<framebuffer_invariant, std::shared_ptr<framebuffer>, hash<framebuffer_invariant>> framebuffers;
-    };
-
     struct resource_deleter final {
         vulkan::device const &device;
 
@@ -60,8 +56,7 @@ namespace resource
 namespace resource
 {
     resource_manager::resource_manager(vulkan::device const &device, renderer::config const &config, resource::memory_manager &memory_manager)
-        : device_{device}, config_{config}, memory_manager_{memory_manager},
-          resource_map_{std::make_shared<resource::resource_map>()}, resource_deleter_{std::make_shared<resource::resource_deleter>(device)} { };
+        : device_{device}, config_{config}, memory_manager_{memory_manager}, resource_deleter_{std::make_shared<resource::resource_deleter>(device)} { };
 
     std::shared_ptr<resource::buffer>
     resource_manager::create_buffer(std::size_t size_in_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
@@ -207,13 +202,6 @@ namespace resource
     resource_manager::create_framebuffer(std::shared_ptr<graphics::render_pass> render_pass, renderer::extent extent,
                                          std::vector<std::shared_ptr<resource::image_view>> const &attachments)
     {
-        resource::framebuffer_invariant invariant{
-            extent, render_pass, attachments
-        };
-
-        if (resource_map_->framebuffers.contains(invariant))
-            return resource_map_->framebuffers.at(invariant);
-
         std::vector<VkImageView> views;
 
         std::transform(std::cbegin(attachments), std::cend(attachments), std::back_inserter(views), [] (auto &&attachment)
@@ -242,8 +230,6 @@ namespace resource
 
             delete ptr_framebuffer;
         });
-
-        resource_map_->framebuffers.emplace(std::move(invariant), framebuffer);
 
         return framebuffer;
     }
