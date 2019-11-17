@@ -32,4 +32,34 @@ namespace resource
     struct memory_bind final : public resource::exception {
         explicit memory_bind(std::string const &what_arg) : resource::exception(what_arg) { }
     };
+
+    struct not_enough_memory final : public resource::exception {
+        explicit not_enough_memory(std::string const &what_arg) : resource::exception(what_arg) { }
+    };
+}
+
+namespace loader
+{
+    struct exception : public std::exception {
+        explicit exception(std::string const &what_arg) : std::exception(what_arg.c_str()) { }
+    };
+}
+
+namespace vulkan
+{
+    struct exception : public std::exception {
+        explicit exception(std::string const &what_arg) : std::exception(what_arg.c_str()) { }
+    };
+
+    struct instance_exception final : public vulkan::exception {
+        explicit instance_exception(std::string const &what_arg) : vulkan::exception(what_arg) { }
+    };
+
+    struct device_exception final : public vulkan::exception {
+        explicit device_exception(std::string const &what_arg) : vulkan::exception(what_arg) { }
+    };
+
+    struct logic_error final : public vulkan::exception {
+        explicit logic_error(std::string const &what_arg) : vulkan::exception(what_arg) { }
+    };
 }

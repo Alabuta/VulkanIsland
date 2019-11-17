@@ -9,6 +9,7 @@ using namespace std::string_literals;
 #include <fmt/format.h>
 
 #include "utility/helpers.hxx"
+#include "utility/exceptions.hxx"
 #include "utility/mpl.hxx"
 
 #define USE_DEBUG_MARKERS 0
@@ -16,6 +17,7 @@ using namespace std::string_literals;
 #include "vulkan_config.hxx"
 #include "device_config.hxx"
 #include "device.hxx"
+#include "graphics/graphics_api.hxx"
 #include "renderer/swapchain.hxx"
 
 
@@ -99,12 +101,12 @@ namespace
         std::uint32_t extensions_count = 0;
 
         if (auto result = vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extensions_count, nullptr); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to retrieve device extensions count: {0:#x}\n"s, result));
+            throw vulkan::device_exception(fmt::format("failed to retrieve device extensions count: {0:#x}"s, result));
 
         std::vector<VkExtensionProperties> supported_extensions(extensions_count);
 
         if (auto result = vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extensions_count, std::data(supported_extensions)); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to retrieve device extensions: {0:#x}\n"s, result));
+            throw vulkan::device_exception(fmt::format("failed to retrieve device extensions: {0:#x}"s, result));
 
         std::sort(std::begin(supported_extensions), std::end(supported_extensions), extensions_compare);
 
@@ -243,20 +245,20 @@ namespace
         VkSurfaceCapabilitiesKHR surface_capabilities;
 
         if (auto result = vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, surface, &surface_capabilities); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to retrieve device surface capabilities: {0:#x}\n"s, result));
+            throw vulkan::device_exception(fmt::format("failed to retrieve device surface capabilities: {0:#x}"s, result));
 
         std::uint32_t surface_formats_count = 0;
 
         if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &surface_formats_count, nullptr); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to retrieve device surface formats count: {0:#x}\n"s, result));
+            throw vulkan::device_exception(fmt::format("failed to retrieve device surface formats count: {0:#x}"s, result));
 
         if (surface_formats_count == 0)
-            throw std::runtime_error("zero number of presentation format pairs"s);
+            throw vulkan::device_exception("zero number of presentation format pairs"s);
 
         std::vector<VkSurfaceFormatKHR> supported_formats(surface_formats_count);
 
         if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &surface_formats_count, std::data(supported_formats)); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to retrieve device surface formats: {0:#x}\n"s, result));
+            throw vulkan::device_exception(fmt::format("failed to retrieve device surface formats: {0:#x}"s, result));
 
         std::vector<renderer::surface_format> surface_formats;
 
@@ -268,7 +270,7 @@ namespace
             });
 
             if (it_color_space == std::cend(possible_surface_color_spaces))
-                throw std::runtime_error("failed to find matching device surface color space\n"s);
+                throw vulkan::device_exception("failed to find matching device surface color space"s);
 
             auto it_format = std::find_if(std::cbegin(possible_surface_formats), std::cend(possible_surface_formats), [supported] (auto format)
             {
@@ -276,7 +278,7 @@ namespace
             });
 
             if (it_format == std::cend(possible_surface_formats))
-                throw std::runtime_error("failed to find matching device surface format\n"s);
+                throw vulkan::device_exception("failed to find matching device surface format"s);
 
             return renderer::surface_format{ *it_format, *it_color_space };
         });
@@ -284,15 +286,15 @@ namespace
         std::uint32_t present_modes_count = 0;
 
         if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_modes_count, nullptr); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to retrieve device surface presentation modes count: {0:#x}\n"s, result));
+            throw vulkan::device_exception(fmt::format("failed to retrieve device surface presentation modes count: {0:#x}"s, result));
 
         if (present_modes_count == 0)
-            throw std::runtime_error("zero number of presentation modes"s);
+            throw vulkan::device_exception("zero number of presentation modes"s);
 
         std::vector<VkPresentModeKHR> supported_modes(present_modes_count);
 
         if (auto result = vkGetPhysicalDeviceSurfacePresentModesKHR(device, surface, &present_modes_count, std::data(supported_modes)); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to retrieve device surface presentation modes: {0:#x}\n"s, result));
+            throw vulkan::device_exception(fmt::format("failed to retrieve device surface presentation modes: {0:#x}"s, result));
 
         std::vector<graphics::PRESENTATION_MODE> presentation_modes{
             graphics::PRESENTATION_MODE::IMMEDIATE,
@@ -339,7 +341,7 @@ namespace
                 VkBool32 surface_supported = VK_FALSE;
 
                 if (auto result = vkGetPhysicalDeviceSurfaceSupportKHR(device, family_index++, surface, &surface_supported); result != VK_SUCCESS)
-                    throw std::runtime_error(fmt::format("failed to retrieve surface support: {0:#x}\n"s, result));
+                    throw vulkan::device_exception(fmt::format("failed to retrieve surface support: {0:#x}"s, result));
 
                 if (surface_supported != VK_TRUE)
                     return false;
@@ -378,12 +380,12 @@ namespace
         std::uint32_t devices_count = 0;
 
         if (auto result = vkEnumeratePhysicalDevices(instance, &devices_count, nullptr); result != VK_SUCCESS || devices_count == 0)
-            throw std::runtime_error(fmt::format("failed to find physical device with Vulkan API support: {0:#x}\n"s, result));
+            throw vulkan::device_exception(fmt::format("failed to find physical device with Vulkan API support: {0:#x}"s, result));
 
         std::vector<VkPhysicalDevice> devices(devices_count);
 
         if (auto result = vkEnumeratePhysicalDevices(instance, &devices_count, std::data(devices)); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to retrieve physical devices: {0:#x}\n"s, result));
+            throw vulkan::device_exception(fmt::format("failed to retrieve physical devices: {0:#x}"s, result));
 
         auto const required_extended_features = std::apply([] (auto ...args)
         {
@@ -469,7 +471,7 @@ namespace
         devices.erase(it_end, std::end(devices));
 
         if (devices.empty())
-            throw std::runtime_error("failed to pick physical device"s);
+            throw vulkan::device_exception("failed to pick physical device"s);
 
         auto constexpr device_types_priority = std::array{
             VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU, VK_PHYSICAL_DEVICE_TYPE_VIRTUAL_GPU,
@@ -635,7 +637,7 @@ namespace vulkan
                         ++requested_families[family_index];
                     }
 
-                    else throw std::runtime_error("failed to get the queue family"s);
+                    else throw vulkan::device_exception("failed to get the queue family"s);
 
                 }, queue);
             }
@@ -715,7 +717,7 @@ namespace vulkan
         };
 
         if (auto result = vkCreateDevice(physical_handle_, &device_info, nullptr, &handle_); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to create logical device: {0:#x}\n"s, result));
+            throw vulkan::device_exception(fmt::format("failed to create logical device: {0:#x}"s, result));
 
         for (auto &&queue : requested_queues) {
             std::visit([this] (auto &&queue)

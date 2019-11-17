@@ -7,6 +7,7 @@ using namespace std::string_literals;
 
 #include <fmt/format.h>
 
+#include "utility/exceptions.hxx"
 #include "vulkan_config.hxx"
 #include "instance.hxx"
 
@@ -36,12 +37,12 @@ namespace
         std::uint32_t extensions_count = 0;
 
         if (auto result = vkEnumerateInstanceExtensionProperties(nullptr, &extensions_count, nullptr); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to retrieve extensions count: {0:#x}\n"s, result));
+            throw vulkan::instance_exception(fmt::format("failed to retrieve extensions count: {0:#x}"s, result));
 
         std::vector<VkExtensionProperties> supported_extensions(extensions_count);
 
         if (auto result = vkEnumerateInstanceExtensionProperties(nullptr, &extensions_count, std::data(supported_extensions)); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to retrieve extensions: {0:#x}\n"s, result));
+            throw vulkan::instance_exception(fmt::format("failed to retrieve extensions: {0:#x}"s, result));
 
         std::sort(std::begin(supported_extensions), std::end(supported_extensions), extensions_compare);
 
@@ -71,12 +72,12 @@ namespace
         std::uint32_t layers_count = 0;
 
         if (auto result = vkEnumerateInstanceLayerProperties(&layers_count, nullptr); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to retrieve layers count: {0:#x}\n"s, result));
+            throw vulkan::instance_exception(fmt::format("failed to retrieve layers count: {0:#x}"s, result));
 
         std::vector<VkLayerProperties> supportedLayers(layers_count);
 
         if (auto result = vkEnumerateInstanceLayerProperties(&layers_count, std::data(supportedLayers)); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to retrieve layers: {0:#x}\n"s, result));
+            throw vulkan::instance_exception(fmt::format("failed to retrieve layers: {0:#x}"s, result));
 
         std::sort(std::begin(supportedLayers), std::end(supportedLayers), layers_compare);
 
@@ -104,7 +105,7 @@ namespace vulkan
                 });
 
                 if (!present)
-                    throw std::runtime_error("enabled validation layers require enabled 'VK_EXT_debug_report' extension"s);
+                    throw vulkan::logic_error("enabled validation layers require enabled 'VK_EXT_debug_report' extension"s);
             }
 
             std::copy(std::cbegin(extensions_), std::cend(extensions_), std::back_inserter(extensions));
@@ -119,7 +120,7 @@ namespace vulkan
         std::uint32_t api_version = 0;
 
         if (auto result = vkEnumerateInstanceVersion(&api_version); result != VK_SUCCESS)
-            throw std::runtime_error("failed to retrieve Vulkan API version"s);
+            throw vulkan::instance_exception("failed to retrieve Vulkan API version"s);
 
         auto const application_info = vulkan_config::application_info;
 
@@ -130,7 +131,7 @@ namespace vulkan
         auto required_minor = VK_VERSION_MINOR(application_info.apiVersion);
 
         if (api_major != required_major || api_minor != required_minor)
-            throw std::runtime_error("unsupported Vulkan API version"s);
+            throw vulkan::instance_exception("unsupported Vulkan API version"s);
 
         VkInstanceCreateInfo instance_info{
             VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
@@ -141,19 +142,19 @@ namespace vulkan
         };
 
         if (auto supported = check_required_extensions(extensions); !supported)
-            throw std::runtime_error("not all required extensions are supported"s);
+            throw vulkan::instance_exception("not all required extensions are supported"s);
 
         instance_info.enabledExtensionCount = static_cast<std::uint32_t>(std::size(extensions));
         instance_info.ppEnabledExtensionNames = std::data(extensions);
 
         if (auto supported = check_required_layers(layers); !supported)
-            throw std::runtime_error("not all required layers are supported"s);
+            throw vulkan::instance_exception("not all required layers are supported"s);
 
         instance_info.enabledLayerCount = static_cast<std::uint32_t>(std::size(layers));
         instance_info.ppEnabledLayerNames = std::data(layers);
 
         if (auto result = vkCreateInstance(&instance_info, nullptr, &handle_); result != VK_SUCCESS)
-            throw std::runtime_error("failed to create instance"s);
+            throw vulkan::instance_exception("failed to create instance"s);
 
         if constexpr (use_layers)
             vulkan::create_debug_report_callback(handle_, debug_report_callback_);
