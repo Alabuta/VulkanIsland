@@ -3,10 +3,9 @@
 #include <memory>
 
 #include "utility/mpl.hxx"
+#include "vulkan/device.hxx"
 #include "graphics/vertex.hxx"
-#include "memory.hxx"
-
-class ResourceManager;
+#include "resource_manager.hxx"
 
 
 namespace resource
@@ -14,21 +13,24 @@ namespace resource
     class buffer final {
     public:
 
-        buffer(std::shared_ptr<DeviceMemory> memory, VkBuffer handle) : memory_{memory}, handle_{handle} { }
-
-        std::shared_ptr<DeviceMemory> memory() const noexcept { return memory_; }
-        std::shared_ptr<DeviceMemory> &memory() noexcept { return memory_; }
-
         VkBuffer handle() const noexcept { return handle_; }
 
+        std::shared_ptr<resource::device_memory> memory() const noexcept { return memory_; }
+        std::shared_ptr<resource::device_memory> &memory() noexcept { return memory_; }
+
     private:
-        std::shared_ptr<DeviceMemory> memory_;
 
         VkBuffer handle_{VK_NULL_HANDLE};
+
+        std::shared_ptr<resource::device_memory> memory_;
+
+        buffer(VkBuffer handle, std::shared_ptr<resource::device_memory> memory) : handle_{handle}, memory_{memory} { }
 
         buffer() = delete;
         buffer(buffer const &) = delete;
         buffer(buffer &&) = delete;
+
+        friend resource::resource_manager;
     };
 }
 
@@ -60,8 +62,8 @@ namespace resource
     public:
 
         vertex_buffer(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer,
-                     std::size_t capacityInBytes, graphics::vertex_layout const &vertex_layout) noexcept
-            : device_buffer_{device_buffer}, staging_buffer_{staging_buffer}, capacity_in_bytes_{capacityInBytes}, vertex_layout_{vertex_layout} { }
+                     std::size_t capacity_in_bytes, graphics::vertex_layout const &vertex_layout) noexcept
+            : device_buffer_{device_buffer}, staging_buffer_{staging_buffer}, capacity_in_bytes_{capacity_in_bytes}, vertex_layout_{vertex_layout} { }
 
         resource::buffer const &device_buffer() const noexcept { return *device_buffer_; }
         resource::buffer const &staging_buffer() const noexcept { return *staging_buffer_; }
@@ -85,6 +87,6 @@ namespace resource
         std::size_t offset_{0};
         std::size_t staging_buffer_size_in_bytes_{0};
 
-        friend ResourceManager;
+        friend resource::resource_manager;
     };
 }

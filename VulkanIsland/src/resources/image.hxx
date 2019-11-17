@@ -2,11 +2,10 @@
 
 #include <memory>
 #include <cstddef>
+#include <optional>
 
 #include "vulkan/device.hxx"
 #include "graphics/graphics.hxx"
-#include "memory.hxx"
-#include "resource.hxx"
 
 
 namespace renderer
@@ -17,6 +16,7 @@ namespace renderer
 namespace resource
 {
     class resource_manager;
+    class device_memory;
 }
 
 namespace resource
@@ -33,12 +33,12 @@ namespace resource
 
         std::uint32_t mip_levels() const noexcept { return mip_levels_; }
 
-        std::shared_ptr<DeviceMemory> memory() const noexcept { return memory_; }
-        std::shared_ptr<DeviceMemory> &memory() noexcept { return memory_; }
+        std::shared_ptr<resource::device_memory> memory() const noexcept { return memory_; }
+        std::shared_ptr<resource::device_memory> &memory() noexcept { return memory_; }
 
     private:
 
-        std::shared_ptr<DeviceMemory> memory_;
+        std::shared_ptr<resource::device_memory> memory_;
         
         VkImage handle_{VK_NULL_HANDLE};
 
@@ -53,11 +53,10 @@ namespace resource
         image(image const &) = delete;
         image(image &&) = delete;
 
-        image(std::shared_ptr<DeviceMemory> memory, VkImage handle, graphics::FORMAT format, graphics::IMAGE_TILING tiling,
+        image(std::shared_ptr<resource::device_memory> memory, VkImage handle, graphics::FORMAT format, graphics::IMAGE_TILING tiling,
               std::uint32_t mip_levels, renderer::extent extent) :
             memory_{memory}, handle_{handle}, format_{format}, tiling_{tiling}, mip_levels_{mip_levels}, extent_{extent} { }
 
-        friend ResourceManager;
         friend resource::resource_manager;
         friend renderer::swapchain;
     };
@@ -87,7 +86,6 @@ namespace resource
         image_view(VkImageView handle, std::shared_ptr<resource::image> image, graphics::IMAGE_VIEW_TYPE type) :
             handle_{handle}, image_{image}, type_{type} { }
 
-        friend ResourceManager;
         friend resource::resource_manager;
         friend renderer::swapchain;
     };
@@ -110,7 +108,6 @@ namespace resource
 
         sampler(VkSampler handle) noexcept : handle_{handle} { }
 
-        friend ResourceManager;
         friend resource::resource_manager;
     };
 }

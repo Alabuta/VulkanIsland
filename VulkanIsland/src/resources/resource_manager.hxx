@@ -1,5 +1,6 @@
 #pragma once
 
+#include <unordered_map>
 #include <memory>
 
 #include "main.hxx"
@@ -11,7 +12,7 @@
 
 #include "graphics/render_pass.hxx"
 
-#include "memory.hxx"
+#include "memory_manager.hxx"
 
 
 namespace resource
@@ -20,11 +21,14 @@ namespace resource
 
     class image;
     class image_view;
+    class sampler;
 
     class vertex_buffer;
     class index_buffer;
 
     class framebuffer;
+
+    class semaphore;
 
     template<class T>
     struct hash;
@@ -35,7 +39,7 @@ namespace resource
     class resource_manager final {
     public:
 
-        resource_manager(vulkan::device const &device, renderer::config const &config, MemoryManager &memory_manager);
+        resource_manager(vulkan::device const &device, renderer::config const &config, resource::memory_manager &memory_manager);
 
         [[nodiscard]] std::shared_ptr<resource::buffer>
         create_buffer(std::size_t size_in_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types);
@@ -63,13 +67,25 @@ namespace resource
 
         [[nodiscard]] std::shared_ptr<resource::vertex_buffer> vertex_buffer(graphics::vertex_layout const &layout) const;
 
+        [[nodiscard]] auto &vertex_buffers() const noexcept { return vertex_buffers_; }
+
+        void stage_vertex_buffer_data(std::shared_ptr<resource::vertex_buffer> vertex_buffer, std::vector<std::byte> const &container) const;
+
+        void transfer_vertex_buffers_data(VkCommandPool command_pool, graphics::transfer_queue const &transfer_queue) const;
+
     private:
+
+        static std::size_t constexpr kVERTEX_BUFFER_INCREASE_VALUE{4};
 
         vulkan::device const &device_;
         renderer::config const &config_;
 
-        MemoryManager &memory_manager_;
+        resource::memory_manager &memory_manager_;
 
         std::shared_ptr<struct resource_map> resource_map_;
+        std::shared_ptr<struct resource_deleter> resource_deleter_;
+
+        // TODO:: unordered_miltimap
+        std::unordered_map<graphics::vertex_layout, std::shared_ptr<resource::vertex_buffer>, graphics::hash<graphics::vertex_layout>> vertex_buffers_;
     };
 }

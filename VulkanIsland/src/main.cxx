@@ -71,7 +71,6 @@
 
 #include "resources/buffer.hxx"
 #include "resources/image.hxx"
-#include "resources/resource.hxx"
 #include "resources/resource_manager.hxx"
 #include "resources/memory_manager.hxx"
 #include "resources/semaphore.hxx"
@@ -137,6 +136,11 @@ create_framebuffers(resource::resource_manager &resource_manager, renderer::swap
                     std::shared_ptr<graphics::render_pass> render_pass, std::vector<graphics::attachment> const &attachments);
 
 
+[[nodiscard]] std::shared_ptr<resource::buffer> CreateUniformBuffer(resource::resource_manager &resource_manager, std::size_t size);
+[[nodiscard]] std::shared_ptr<resource::buffer> CreateCoherentStorageBuffer(resource::resource_manager &resource_manager, std::size_t size);
+[[nodiscard]] std::shared_ptr<resource::buffer> CreateStorageBuffer(resource::resource_manager &resource_manager, std::size_t size);
+
+
 struct draw_command final {
     std::shared_ptr<graphics::material> material;
     std::shared_ptr<graphics::pipeline> pipeline;
@@ -185,9 +189,6 @@ struct app_t final {
     std::unique_ptr<orbit_controller> camera_controller;
 
     std::vector<per_object_t> objects;
-
-    std::unique_ptr<MemoryManager> memory_manager2;
-    std::unique_ptr<ResourceManager> resource_manager2;
 
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
 
@@ -263,10 +264,7 @@ struct app_t final {
         platform_surface.reset();
 
         resource_manager.reset();
-        resource_manager2.reset();
-
         memory_manager.reset();
-        memory_manager2.reset();
 
         device.reset();
         instance.reset();
@@ -377,8 +375,8 @@ void create_graphics_command_buffers(app_t &app)
     if (auto result = vkAllocateCommandBuffers(app.device->handle(), &allocate_info, std::data(app.command_buffers)); result != VK_SUCCESS)
         throw std::runtime_error(fmt::format("failed to create allocate command buffers: {0:#x}\n"s, result));
 
-    auto &&resource_manager2 = *app.resource_manager2;
-    auto &&vertex_buffers = resource_manager2.vertex_buffers();
+    auto &&resource_manager = *app.resource_manager;
+    auto &&vertex_buffers = resource_manager.vertex_buffers();
 
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
 
@@ -569,7 +567,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
     auto &&pipeline_factory = *app.pipeline_factory;
 
-    auto &&resource_manager2 = *app.resource_manager2;
+    auto &&resource_manager = *app.resource_manager;
 
     for (auto &&meshlet : model_.non_indexed_meshlets) {
         auto material_index = meshlet.material_index;
@@ -584,10 +582,10 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
         auto &&vertex_data_buffer = model_.vertex_buffers.at(vertex_layout_index);
 
-        auto vertex_buffer = resource_manager2.CreateVertexBuffer(vertex_layout, std::size(vertex_data_buffer.buffer));
+        auto vertex_buffer = resource_manager.create_vertex_buffer(vertex_layout, std::size(vertex_data_buffer.buffer));
 
         if (vertex_buffer)
-            resource_manager2.StageVertexData(vertex_buffer, vertex_data_buffer.buffer);
+            resource_manager.stage_vertex_buffer_data(vertex_buffer, vertex_data_buffer.buffer);
 
         else throw std::runtime_error("failed to get vertex buffer"s);
 
@@ -1102,11 +1100,8 @@ void init(platform::window &window, app_t &app)
 
     app.renderer_config = adjust_renderer_config(*app.device);
 
-    app.memory_manager2 = std::make_unique<MemoryManager>(*app.device);
-    app.resource_manager2 = std::make_unique<ResourceManager>(*app.device, *app.memory_manager2);
-
     app.memory_manager = std::make_unique<resource::memory_manager>(*app.device);
-    app.resource_manager = std::make_unique<resource::resource_manager>(*app.device, app.renderer_config, *app.memory_manager2);
+    app.resource_manager = std::make_unique<resource::resource_manager>(*app.device, app.renderer_config, *app.memory_manager);
 
     app.shader_manager = std::make_unique<graphics::shader_manager>(*app.device);
     app.material_factory = std::make_unique<graphics::material_factory>();
@@ -1188,7 +1183,7 @@ void init(platform::window &window, app_t &app)
 
     app.objects.resize(app.objectsNumber);
 
-    if (app.perObjectBuffer = CreateStorageBuffer(*app.resource_manager2, app.alignedBufferSize); app.perObjectBuffer) {
+    if (app.perObjectBuffer = CreateStorageBuffer(*app.resource_manager, app.alignedBufferSize); app.perObjectBuffer) {
         auto &&buffer = *app.perObjectBuffer;
 
         auto offset = buffer.memory()->offset();
@@ -1200,7 +1195,7 @@ void init(platform::window &window, app_t &app)
 
     else throw std::runtime_error("failed to init per object uniform buffer"s);
 
-    if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.resource_manager2, sizeof(camera::data_t)); !app.perCameraBuffer)
+    if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.resource_manager, sizeof(camera::data_t)); !app.perCameraBuffer)
         throw std::runtime_error("failed to init per camera uniform buffer"s);
 
     if (auto descriptorPool = CreateDescriptorPool(*app.device); !descriptorPool)
@@ -1219,7 +1214,7 @@ void init(platform::window &window, app_t &app)
 
     build_render_pipelines(app, temp::model);
 
-    app.resource_manager2->TransferStagedVertexData(app.transferCommandPool, app.device->transfer_queue);
+    app.resource_manager->transfer_vertex_buffers_data(app.transferCommandPool, app.device->transfer_queue);
 
     create_graphics_command_buffers(app);
 
@@ -1422,14 +1417,14 @@ int main()
 
 void create_semaphores(app_t &app)
 {
-    auto &&resource_manager2 = *app.resource_manager2;
+    auto &&resource_manager = *app.resource_manager;
 
-    if (auto semaphore = resource_manager2.create_semaphore(); !semaphore)
+    if (auto semaphore = resource_manager.create_semaphore(); !semaphore)
         throw std::runtime_error("failed to create image semaphore"s);
 
     else app.image_available_semaphore = semaphore;
 
-    if (auto semaphore = resource_manager2.create_semaphore(); !semaphore)
+    if (auto semaphore = resource_manager.create_semaphore(); !semaphore)
         throw std::runtime_error("failed to create render semaphore"s);
 
     else app.render_finished_semaphore = semaphore;
@@ -1527,4 +1522,32 @@ load_texture(app_t &app, vulkan::device &device, resource::resource_manager &res
     else std::cerr << "failed to load an image\n"s;
 
     return texture;
+}
+
+
+std::shared_ptr<resource::buffer>
+CreateUniformBuffer(resource::resource_manager &resource_manager, std::size_t size)
+{
+    auto constexpr usageFlags = graphics::BUFFER_USAGE::UNIFORM_BUFFER;
+    auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
+
+    return resource_manager.create_buffer(size, usageFlags, propertyFlags);
+}
+
+std::shared_ptr<resource::buffer>
+CreateCoherentStorageBuffer(resource::resource_manager &resource_manager, std::size_t size)
+{
+    auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
+    auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE| graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
+
+    return resource_manager.create_buffer(size, usageFlags, propertyFlags);
+}
+
+std::shared_ptr<resource::buffer>
+CreateStorageBuffer(resource::resource_manager &resource_manager, std::size_t size)
+{
+    auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
+    auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE;
+
+    return resource_manager.create_buffer(size, usageFlags, propertyFlags);
 }

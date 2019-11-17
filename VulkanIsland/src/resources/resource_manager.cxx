@@ -4,9 +4,12 @@
 #include <fmt/format.h>
 
 #include "utility/exceptions.hxx"
+#include "graphics/graphics_api.hxx"
 #include "buffer.hxx"
 #include "image.hxx"
+#include "semaphore.hxx"
 #include "framebuffer.hxx"
+#include "renderer/command_buffer.hxx"
 
 #include "resource_manager.hxx"
 
@@ -16,12 +19,49 @@ namespace resource
     struct resource_map final {
         std::unordered_map<framebuffer_invariant, std::shared_ptr<framebuffer>, hash<framebuffer_invariant>> framebuffers;
     };
+
+    struct resource_deleter final {
+        vulkan::device const &device;
+
+        resource_deleter(vulkan::device const &device) noexcept : device{device} { }
+
+        template<class T>
+        void operator() (T *resource_ptr) const
+        {
+            if constexpr (std::is_same_v<T, resource::buffer>) {
+                vkDestroyBuffer(device.handle(), resource_ptr->handle(), nullptr);
+
+                resource_ptr->memory().reset();
+            }
+
+            else if constexpr (std::is_same_v<T, resource::image>) {
+                vkDestroyImage(device.handle(), resource_ptr->handle(), nullptr);
+
+                resource_ptr->memory().reset();
+            }
+
+            else if constexpr (std::is_same_v<T, resource::image_view>)
+                vkDestroyImageView(device.handle(), resource_ptr->handle(), nullptr);
+
+            else if constexpr (std::is_same_v<T, resource::sampler>)
+                vkDestroySampler(device.handle(), resource_ptr->handle(), nullptr);
+
+            else if constexpr (std::is_same_v<T, resource::framebuffer>)
+                vkDestroyFramebuffer(device.handle(), resource_ptr->handle(), nullptr);
+
+            else if constexpr (std::is_same_v<T, resource::semaphore>)
+                vkDestroySemaphore(device.handle(), resource_ptr->handle(), nullptr);
+
+            delete resource_ptr;
+        }
+    };
 }
 
 namespace resource
 {
-    resource_manager::resource_manager(vulkan::device const &device, renderer::config const &config, MemoryManager &memory_manager)
-        : device_{device}, config_{config}, resource_map_{std::make_shared<resource::resource_map>()}, memory_manager_{memory_manager} { };
+    resource_manager::resource_manager(vulkan::device const &device, renderer::config const &config, resource::memory_manager &memory_manager)
+        : device_{device}, config_{config}, memory_manager_{memory_manager},
+          resource_map_{std::make_shared<resource::resource_map>()}, resource_deleter_{std::make_shared<resource::resource_deleter>(device)} { };
 
     std::shared_ptr<resource::buffer>
     resource_manager::create_buffer(std::size_t size_in_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
@@ -40,25 +80,17 @@ namespace resource
         if (auto result = vkCreateBuffer(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
             throw resource::instantiation_fail(fmt::format("failed to create a buffer: {0:#x}"s, result));
 
-        auto constexpr linear_memory = true;
-
-        auto memory = memory_manager_.AllocateMemory(handle, convert_to::vulkan(memory_property_types), linear_memory);
+        auto memory = memory_manager_.allocate_memory(resource::buffer{handle, nullptr}, memory_property_types);
 
         if (memory == nullptr)
             throw memory::exception("failed to allocate buffer memory"s);
 
-        std::shared_ptr<resource::buffer> buffer;
-
         if (auto result = vkBindBufferMemory(device_.handle(), handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
             throw resource::memory_bind(fmt::format("failed to bind buffer memory: {0:#x}"s, result));
 
-        else buffer.reset(new resource::buffer{memory, handle}, [this] (resource::buffer *ptr_buffer)
-        {
-            vkDestroyBuffer(device_.handle(), ptr_buffer->handle(), nullptr);
-            ptr_buffer->memory().reset();
+        std::shared_ptr<resource::buffer> buffer;
 
-            delete ptr_buffer;
-        });
+        buffer.reset(new resource::buffer{handle, memory}, *resource_deleter_);
 
         return buffer;
     }
@@ -88,11 +120,7 @@ namespace resource
         if (auto result = vkCreateImage(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
             throw resource::instantiation_fail(fmt::format("failed to create an image: {0:#x}"s, result));
 
-        std::shared_ptr<resource::image> image;
-
-        auto const linear_memory = tiling == graphics::IMAGE_TILING::LINEAR;
-
-        auto memory = memory_manager_.AllocateMemory(handle, convert_to::vulkan(memory_property_types), linear_memory);
+        auto memory = memory_manager_.allocate_memory(resource::image{nullptr, handle, format, tiling, mip_levels, extent}, memory_property_types);
 
         if (memory == nullptr)
             throw memory::exception("failed to allocate image memory"s);
@@ -100,13 +128,9 @@ namespace resource
         if (auto result = vkBindImageMemory(device_.handle(), handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
             throw resource::memory_bind(fmt::format("failed to bind image buffer memory: {0:#x}"s, result));
 
-        else image.reset(new resource::image{memory, handle, format, tiling, mip_levels, extent}, [this] (resource::image *ptr_image)
-        {
-            vkDestroyImage(device_.handle(), ptr_image->handle(), nullptr);
-            ptr_image->memory().reset();
+        std::shared_ptr<resource::image> image;
 
-            delete ptr_image;
-        });
+        image.reset(new resource::image{memory, handle, format, tiling, mip_levels, extent}, *resource_deleter_);
 
         return image;
     }
@@ -248,5 +272,106 @@ namespace resource
         else throw resource::instantiation_fail(fmt::format("failed to create a semaphore: {0:#x}"s, result));
 
         return semaphore;
+    }
+
+    std::shared_ptr<resource::vertex_buffer> resource_manager::create_vertex_buffer(graphics::vertex_layout const &layout, std::size_t size_in_bytes)
+    {
+        if (!vertex_buffers_.contains(layout)) {
+            std::shared_ptr<resource::buffer> staging_buffer;
+            std::shared_ptr<resource::buffer> device_buffer;
+
+            auto const capacity_in_bytes = kVERTEX_BUFFER_INCREASE_VALUE * size_in_bytes;
+
+            {
+                auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
+                auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
+
+                staging_buffer = create_buffer(size_in_bytes, usage_flags, property_flags);
+
+                if (staging_buffer == nullptr)
+                    throw resource::instantiation_fail("failed to create staging vertex buffer"s);
+            }
+
+            {
+                auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER;
+                auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
+
+                device_buffer = create_buffer(size_in_bytes, usage_flags, property_flags);
+
+                if (device_buffer == nullptr)
+                    throw resource::instantiation_fail("failed to create device vertex buffer"s);
+            }
+
+            vertex_buffers_.emplace(layout, std::make_shared<resource::vertex_buffer>(device_buffer, staging_buffer, capacity_in_bytes, layout));
+        }
+
+        auto &vertex_buffer = vertex_buffers_.at(layout);
+
+        if (vertex_buffer->staging_buffer_size_in_bytes_ < size_in_bytes) {
+            auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
+            auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
+
+            vertex_buffer->staging_buffer_ = create_buffer(size_in_bytes, usage_flags, property_flags);
+
+            if (vertex_buffer->staging_buffer_ == nullptr)
+                throw resource::instantiation_fail("failed to extend device vertex buffer"s);
+
+            vertex_buffer->staging_buffer_size_in_bytes_ = size_in_bytes;
+        }
+
+        if (vertex_buffer->available_memory_size() < size_in_bytes) {
+            // TODO: sparse memory binding
+        #if NOT_YET_IMPLEMENTED
+            auto buffer_handle = vertex_buffer->device_buffer_->handle();
+            auto memory = memory_manager_.allocate_memory(buffer_handle, graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL);
+        #endif
+            throw resource::instantiation_fail("not enough device memory for device vertex buffer"s);
+        }
+
+        return vertex_buffer;
+    }
+
+    std::shared_ptr<resource::vertex_buffer> resource_manager::vertex_buffer(graphics::vertex_layout const &layout) const
+    {
+        return std::shared_ptr<resource::vertex_buffer>();
+    }
+
+    void resource_manager::stage_vertex_buffer_data(std::shared_ptr<resource::vertex_buffer> vertex_buffer, std::vector<std::byte> const &container) const
+    {
+        if (vertex_buffer == nullptr)
+            return;
+
+        auto const size_in_bytes = std::size(container);
+
+        // TODO: sparse memory binding
+        if (vertex_buffer->available_memory_size() < size_in_bytes)
+            throw resource::not_enough_memory("not enough device memory for vertex buffer"s);
+
+        auto &&memory = vertex_buffer->staging_buffer().memory();
+
+        void *ptr;
+
+        if (auto result = vkMapMemory(device_.handle(), memory->handle(), vertex_buffer->staging_buffer_offset(), size_in_bytes, 0, &ptr); result != VK_SUCCESS)
+            throw resource::exception(fmt::format("failed to map staging vertex buffer memory: {0:#x}"s, result));
+
+        else {
+            std::uninitialized_copy_n(std::begin(container), size_in_bytes, reinterpret_cast<std::byte *>(ptr));
+
+            vkUnmapMemory(device_.handle(), memory->handle());
+
+            vertex_buffer->offset_ += size_in_bytes;
+        }
+    }
+
+    void resource_manager::transfer_vertex_buffers_data(VkCommandPool command_pool, graphics::transfer_queue const &transfer_queue) const
+    {
+        for (auto &&[layout, vertex_buffer] : vertex_buffers_) {
+            auto &&staging_buffer = vertex_buffer->staging_buffer();
+            auto &&device_buffer = vertex_buffer->device_buffer();
+
+            auto copy_regions = std::array{ VkBufferCopy{ 0, 0, staging_buffer.memory()->size() } };
+
+            CopyBufferToBuffer(device_, transfer_queue, staging_buffer.handle(), device_buffer.handle(), std::move(copy_regions), command_pool);
+        }
     }
 }
