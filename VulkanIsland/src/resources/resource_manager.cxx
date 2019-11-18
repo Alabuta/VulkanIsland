@@ -56,11 +56,13 @@ namespace resource
 namespace resource
 {
     resource_manager::resource_manager(vulkan::device const &device, renderer::config const &config, resource::memory_manager &memory_manager)
-        : device_{device}, config_{config}, memory_manager_{memory_manager}, resource_deleter_{std::make_shared<resource::resource_deleter>(device)} { };
+        : device_{device}, config_{config}, memory_manager_{memory_manager}, resource_deleter_{std::make_shared<resource::resource_deleter>(device)} { }
 
     std::shared_ptr<resource::buffer>
     resource_manager::create_buffer(std::size_t size_in_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
     {
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wuseless-cast"
         VkBufferCreateInfo const create_info{
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             nullptr, 0,
@@ -69,6 +71,7 @@ namespace resource
             VK_SHARING_MODE_EXCLUSIVE,
             0, nullptr
         };
+    #pragma GCC diagnostic pop
 
         VkBuffer handle;
 
