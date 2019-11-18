@@ -288,7 +288,9 @@ namespace resource
                     throw resource::instantiation_fail("failed to create device vertex buffer"s);
             }
 
-            vertex_buffers_.emplace(layout, std::make_shared<resource::vertex_buffer>(device_buffer, staging_buffer, capacity_in_bytes, layout));
+            auto vertex_buffer = std::make_shared<resource::vertex_buffer>(device_buffer, staging_buffer, capacity_in_bytes, layout);
+
+            vertex_buffers_.emplace(layout, vertex_buffer);
         }
 
         auto &vertex_buffer = vertex_buffers_.at(layout);

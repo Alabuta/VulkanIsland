@@ -573,7 +573,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
         auto material_index = meshlet.material_index;
         auto [technique_index, name] = model_.materials[material_index];
 
-        std::cout << fmt::format("{}#{}\n"s, name, technique_index);
+        fmt::print("{}#{}\n"s, name, technique_index);
 
         auto material = material_factory.material(name, technique_index);
 

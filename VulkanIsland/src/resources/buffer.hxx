@@ -39,20 +39,25 @@ namespace resource
     class index_buffer final {
     public:
 
-        template<class T> requires mpl::one_of<T, std::uint16_t, std::uint32_t>
-        index_buffer(std::shared_ptr<resource::buffer> buffer, [[maybe_unused]] std::size_t size) noexcept : buffer{buffer}/* , size{size} */, type{T{}} { }
+        template<class T, typename std::enable_if_t<mpl::is_one_of_v<T, std::uint16_t, std::uint32_t>> * = nullptr>
+        index_buffer(std::shared_ptr<resource::buffer> buffer) noexcept : buffer{buffer}, type{T{}} { }
 
-        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, resource::index_buffer>
-        bool constexpr operator< (T &&rhs) const noexcept
+        template<class T, typename std::enable_if_t<mpl::are_same_v<std::remove_cvref_t<T>, resource::index_buffer>>* = nullptr>
+        bool constexpr operator< (T &&rhs) const
         {
             return buffer->handle() < rhs.buffer->handle();
         }
 
     private:
         std::shared_ptr<resource::buffer> buffer{nullptr};
-        // std::size_t size{0};
 
         std::variant<std::uint16_t, std::uint32_t> type;
+
+        index_buffer() = delete;
+        index_buffer(index_buffer const &) = delete;
+        index_buffer(index_buffer &&) = delete;
+
+        friend resource::resource_manager;
     };
 }
 
@@ -62,7 +67,7 @@ namespace resource
     public:
 
         vertex_buffer(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer,
-                     std::size_t capacity_in_bytes, graphics::vertex_layout const &vertex_layout) noexcept
+                      std::size_t capacity_in_bytes, graphics::vertex_layout const &vertex_layout)
             : device_buffer_{device_buffer}, staging_buffer_{staging_buffer}, capacity_in_bytes_{capacity_in_bytes}, vertex_layout_{vertex_layout} { }
 
         resource::buffer const &device_buffer() const noexcept { return *device_buffer_; }
@@ -86,6 +91,10 @@ namespace resource
 
         std::size_t offset_{0};
         std::size_t staging_buffer_size_in_bytes_{0};
+
+        vertex_buffer() = delete;
+        vertex_buffer(vertex_buffer const &) = delete;
+        vertex_buffer(vertex_buffer &&) = delete;
 
         friend resource::resource_manager;
     };
