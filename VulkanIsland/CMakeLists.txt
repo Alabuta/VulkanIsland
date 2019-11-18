@@ -20,8 +20,8 @@ find_package(glfw3 3.3 REQUIRED)
 find_package(fmt 5.3 CONFIG REQUIRED)
 find_package(nlohmann_json 3.6 CONFIG REQUIRED)
 find_package(Boost 1.69 REQUIRED)
-find_package(unofficial-vulkan-memory-allocator CONFIG REQUIRED)
-find_package(EnTT 3.0 CONFIG REQUIRED)
+# find_package(unofficial-vulkan-memory-allocator CONFIG REQUIRED)
+# find_package(EnTT 3.0 CONFIG REQUIRED)
 
 if(NOT WIN32)
 	find_package(X11 REQUIRED)
@@ -77,9 +77,8 @@ set(SOURCE_FILES
 	src/resources/buffer.hxx                        src/resources/buffer.cxx
     src/resources/framebuffer.hxx                   src/resources/framebuffer.cxx
 	src/resources/image.hxx                         src/resources/image.cxx
-    src/resources/memory.hxx                        src/resources/memory.cxx
+    src/resources/memory_manager.hxx                src/resources/memory_manager.cxx
     src/resources/resource_manager.hxx              src/resources/resource_manager.cxx
-    src/resources/resource.hxx                      src/resources/resource.cxx
     src/resources/semaphore.hxx
 
 	src/utility/mpl.hxx
@@ -192,6 +191,6 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     glfw
 	fmt::fmt
 	nlohmann_json::nlohmann_json
-    unofficial::vulkan-memory-allocator::vulkan-memory-allocator
-	EnTT
+    # unofficial::vulkan-memory-allocator::vulkan-memory-allocator
+	# EnTT
 )
