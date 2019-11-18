@@ -1,4 +1,5 @@
 #include <algorithm>
+#include <iostream>
 #include <variant>
 #include <vector>
 #include <array>
@@ -110,8 +111,20 @@ namespace
 
         std::sort(std::begin(supported_extensions), std::end(supported_extensions), extensions_compare);
 
-        return std::includes(std::cbegin(supported_extensions), std::cend(supported_extensions),
-                             std::cbegin(required_extensions), std::cend(required_extensions), extensions_compare);
+        std::vector<VkExtensionProperties> unsupported_extensions;
+
+        std::set_difference(std::begin(required_extensions), std::end(required_extensions),
+                            std::begin(supported_extensions), std::end(supported_extensions), std::back_inserter(unsupported_extensions), extensions_compare);
+
+        if (unsupported_extensions.empty())
+            return true;
+
+        std::cerr << "unsupported device extensions: "s << std::endl;
+
+        for (auto &&extension : unsupported_extensions)
+            std::cerr << fmt::format("{}\n"s, extension.extensionName);
+
+        return false;
     }
 
     bool compare_device_features(VkPhysicalDeviceFeatures &&lhs, VkPhysicalDeviceFeatures &&rhs)

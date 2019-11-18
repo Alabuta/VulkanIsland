@@ -1,5 +1,6 @@
 #include <exception>
 #include <algorithm>
+#include <iostream>
 #include <vector>
 
 #include <string>
@@ -46,8 +47,20 @@ namespace
 
         std::sort(std::begin(supported_extensions), std::end(supported_extensions), extensions_compare);
 
-        return std::includes(std::cbegin(supported_extensions), std::cend(supported_extensions),
-                             std::cbegin(required_extensions), std::cend(required_extensions), extensions_compare);
+        std::vector<VkExtensionProperties> unsupported_extensions;
+
+        std::set_difference(std::begin(required_extensions), std::end(required_extensions),
+                            std::begin(supported_extensions), std::end(supported_extensions), std::back_inserter(unsupported_extensions), extensions_compare);
+
+        if (unsupported_extensions.empty())
+            return true;
+
+        std::cerr << "unsupported instance extensions: "s << std::endl;
+
+        for (auto &&extension : unsupported_extensions)
+            std::cerr << fmt::format("{}\n"s, extension.extensionName);
+
+        return false;
     }
 
     [[nodiscard]] bool check_required_layers(std::vector<char const *> required_layers_)
@@ -62,9 +75,10 @@ namespace
             return prop;
         });
 
-        auto constexpr layers_compare = [] (auto &&lhs, auto &&rhs)
+        auto layers_compare = [] (auto &&lhs, auto &&rhs)
         {
-            return std::lexicographical_compare(std::cbegin(lhs.layerName), std::cend(lhs.layerName), std::cbegin(rhs.layerName), std::cend(rhs.layerName));
+            return std::lexicographical_compare(std::cbegin(lhs.layerName), std::cend(lhs.layerName),
+                                                std::cbegin(rhs.layerName), std::cend(rhs.layerName));
         };
 
         std::sort(std::begin(required_layers), std::end(required_layers), layers_compare);
@@ -74,14 +88,27 @@ namespace
         if (auto result = vkEnumerateInstanceLayerProperties(&layers_count, nullptr); result != VK_SUCCESS)
             throw vulkan::instance_exception(fmt::format("failed to retrieve layers count: {0:#x}"s, result));
 
-        std::vector<VkLayerProperties> supportedLayers(layers_count);
+        std::vector<VkLayerProperties> supported_layers(layers_count);
 
-        if (auto result = vkEnumerateInstanceLayerProperties(&layers_count, std::data(supportedLayers)); result != VK_SUCCESS)
+        if (auto result = vkEnumerateInstanceLayerProperties(&layers_count, std::data(supported_layers)); result != VK_SUCCESS)
             throw vulkan::instance_exception(fmt::format("failed to retrieve layers: {0:#x}"s, result));
 
-        std::sort(std::begin(supportedLayers), std::end(supportedLayers), layers_compare);
+        std::sort(std::begin(supported_layers), std::end(supported_layers), layers_compare);
 
-        return std::includes(supportedLayers.begin(), supportedLayers.end(), required_layers.begin(), required_layers.end(), layers_compare);
+        std::vector<VkLayerProperties> unsupported_layers;
+
+        std::set_difference(std::begin(required_layers), std::end(required_layers),
+                            std::begin(supported_layers), std::end(supported_layers), std::back_inserter(unsupported_layers), layers_compare);
+
+        if (unsupported_layers.empty())
+            return true;
+
+        std::cerr << "unsupported instance layers: "s << std::endl;
+
+        for (auto &&layer : unsupported_layers)
+            std::cerr << fmt::format("{}\n"s, layer.layerName);
+
+        return false;
     }
 }
 
