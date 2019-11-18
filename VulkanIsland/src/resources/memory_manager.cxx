@@ -141,11 +141,16 @@ namespace resource
     std::shared_ptr<resource::device_memory>
     memory_allocator::allocate_memory(VkMemoryRequirements &&memory_requirements, graphics::MEMORY_PROPERTY_TYPE properties, bool linear)
     {
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wuseless-cast"
+    #ifdef _MSC_VER
         auto const required_size = static_cast<std::size_t>(memory_requirements.size);
         auto const required_alignment = static_cast<std::size_t>(memory_requirements.alignment);
-    #pragma GCC diagnostic pop
+    #else
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wuseless-cast"
+            auto const required_size = static_cast<std::size_t>(memory_requirements.size);
+            auto const required_alignment = static_cast<std::size_t>(memory_requirements.alignment);
+        #pragma GCC diagnostic pop
+    #endif
 
         if (required_size > kBLOCK_ALLOCATION_SIZE)
             throw memory::bad_allocation("requested allocation size is bigger than memory page size."s);
@@ -336,15 +341,24 @@ namespace resource
         auto &&memory_pool = memory_pools.at(key);
         auto &&memory_blocks = memory_pool.memory_blocks;
 
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wuseless-cast"
+    #ifdef _MSC_VER
         VkMemoryAllocateInfo const allocation_info{
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
             nullptr,
             static_cast<VkDeviceSize>(size_in_bytes),
             memory_type_index
         };
-    #pragma GCC diagnostic pop
+    #else
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wuseless-cast"
+            VkMemoryAllocateInfo const allocation_info{
+                VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+                nullptr,
+                static_cast<VkDeviceSize>(size_in_bytes),
+                memory_type_index
+            };
+        #pragma GCC diagnostic pop
+    #endif
 
         VkDeviceMemory handle;
 
