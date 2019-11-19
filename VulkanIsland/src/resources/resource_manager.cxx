@@ -61,8 +61,7 @@ namespace resource
     std::shared_ptr<resource::buffer>
     resource_manager::create_buffer(std::size_t size_in_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
     {
-    #pragma GCC diagnostic push
-    #pragma GCC diagnostic ignored "-Wuseless-cast"
+    #ifdef _MSC_VER
         VkBufferCreateInfo const create_info{
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             nullptr, 0,
@@ -71,7 +70,19 @@ namespace resource
             VK_SHARING_MODE_EXCLUSIVE,
             0, nullptr
         };
-    #pragma GCC diagnostic pop
+    #else
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wuseless-cast"
+            VkBufferCreateInfo const create_info{
+                VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+                nullptr, 0,
+                static_cast<VkDeviceSize>(size_in_bytes),
+                convert_to::vulkan(usage),
+                VK_SHARING_MODE_EXCLUSIVE,
+                0, nullptr
+            };
+        #pragma GCC diagnostic pop
+    #endif
 
         VkBuffer handle;
 
