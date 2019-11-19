@@ -113,8 +113,8 @@ namespace
 
         std::vector<VkExtensionProperties> unsupported_extensions;
 
-        std::set_difference(std::begin(required_extensions), std::end(required_extensions),
-                            std::begin(supported_extensions), std::end(supported_extensions), std::back_inserter(unsupported_extensions), extensions_compare);
+        std::set_difference(std::begin(required_extensions), std::end(required_extensions), std::begin(supported_extensions),
+                            std::end(supported_extensions), std::back_inserter(unsupported_extensions), extensions_compare);
 
         if (unsupported_extensions.empty())
             return true;
