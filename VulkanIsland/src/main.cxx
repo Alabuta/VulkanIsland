@@ -192,7 +192,7 @@ struct app_t final {
 
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
 
-    VkCommandPool graphicsCommandPool{VK_NULL_HANDLE}, transferCommandPool{VK_NULL_HANDLE};
+    VkCommandPool graphics_command_pool{VK_NULL_HANDLE}, transfer_command_pool{VK_NULL_HANDLE};
 
     VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorPool descriptorPool{VK_NULL_HANDLE};
@@ -255,11 +255,11 @@ struct app_t final {
         perCameraBuffer.reset();
         perObjectBuffer.reset();
 
-        if (transferCommandPool != VK_NULL_HANDLE)
-            vkDestroyCommandPool(device->handle(), transferCommandPool, nullptr);
+        if (transfer_command_pool != VK_NULL_HANDLE)
+            vkDestroyCommandPool(device->handle(), transfer_command_pool, nullptr);
 
-        if (graphicsCommandPool != VK_NULL_HANDLE)
-            vkDestroyCommandPool(device->handle(), graphicsCommandPool, nullptr);
+        if (graphics_command_pool != VK_NULL_HANDLE)
+            vkDestroyCommandPool(device->handle(), graphics_command_pool, nullptr);
 
         platform_surface.reset();
 
@@ -367,7 +367,7 @@ void create_graphics_command_buffers(app_t &app)
     VkCommandBufferAllocateInfo const allocate_info{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO,
         nullptr,
-        app.graphicsCommandPool,
+        app.graphics_command_pool,
         VK_COMMAND_BUFFER_LEVEL_PRIMARY,
         static_cast<std::uint32_t>(std::size(app.command_buffers))
     };
@@ -408,8 +408,8 @@ void create_graphics_command_buffers(app_t &app)
     };
 #else
     auto const clear_colors = std::array{
-        VkClearValue{.color = { .float32 = { .64f, .64f, .64f, 1.f } } },
-        VkClearValue{.depthStencil = { kREVERSED_DEPTH ? 0.f : 1.f, 0 } }
+        VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f } } },
+        VkClearValue{ .depthStencil = { kREVERSED_DEPTH ? 0.f : 1.f, 0 } }
     };
 #endif
 
@@ -484,13 +484,46 @@ void create_graphics_command_buffers(app_t &app)
     }
 }
 
+void create_frame_data(app_t &app)
+{
+    auto &&device = *app.device;
+    auto &&platform_surface = *app.platform_surface;
+    auto &&resource_manager = *app.resource_manager;
+    
+    auto swapchain = create_swapchain(device, platform_surface, renderer::extent{app.width, app.height});
+
+    if (swapchain == nullptr)
+        throw std::runtime_error("failed to create the swapchain"s);
+
+    auto attachments = create_attachments(device, app.renderer_config, resource_manager, *swapchain);
+
+    if (attachments.empty())
+        throw std::runtime_error("failed to create the attachments"s);
+
+    auto attachment_descriptions = create_attachment_descriptions(attachments);
+
+    auto render_pass = create_render_pass(*app.render_pass_manager, swapchain->surface_format(), attachment_descriptions);
+
+    if (render_pass == nullptr)
+        throw std::runtime_error("failed to create the render pass"s);
+
+    auto framebuffers = create_framebuffers(resource_manager, *swapchain, render_pass, attachments);
+
+    if (framebuffers.empty())
+        throw std::runtime_error("failed to create the framebuffers"s);
+
+    app.swapchain = std::move(swapchain);
+    app.attachments = std::move(attachments);
+    app.render_pass = std::move(render_pass);
+    app.framebuffers = std::move(framebuffers);
+}
 
 void cleanup_frame_data(app_t &app)
 {
     auto &&device = *app.device;
 
-    if (app.graphicsCommandPool)
-        vkFreeCommandBuffers(device.handle(), app.graphicsCommandPool, static_cast<std::uint32_t>(std::size(app.command_buffers)), std::data(app.command_buffers));
+    if (app.graphics_command_pool)
+        vkFreeCommandBuffers(device.handle(), app.graphics_command_pool, static_cast<std::uint32_t>(std::size(app.command_buffers)), std::data(app.command_buffers));
 
     app.command_buffers.clear();
 
@@ -510,28 +543,7 @@ void recreate_swap_chain(app_t &app)
     vkDeviceWaitIdle(device.handle());
 
     cleanup_frame_data(app);
-
-    app.swapchain = create_swapchain(*app.device, *app.platform_surface, renderer::extent{app.width, app.height});
-
-    if (app.swapchain == nullptr)
-        throw std::runtime_error("failed to create the swapchain"s);
-
-    app.attachments = create_attachments(*app.device, app.renderer_config, *app.resource_manager, *app.swapchain);
-
-    if (app.attachments.empty())
-        throw std::runtime_error("failed to create the attachments"s);
-
-    auto attachment_descriptions = create_attachment_descriptions(app.attachments);
-
-    app.render_pass = create_render_pass(*app.render_pass_manager, app.swapchain->surface_format(), attachment_descriptions);
-
-    if (app.render_pass == nullptr)
-        throw std::runtime_error("failed to create the render pass"s);
-
-    app.framebuffers = create_framebuffers(*app.resource_manager, *app.swapchain, app.render_pass, app.attachments);
-
-    if (app.framebuffers.empty())
-        throw std::runtime_error("failed to create the framebuffers"s);
+    create_frame_data(app);
 
 #if !USE_DYNAMIC_PIPELINE_STATE
     CreateGraphicsPipelines(app);
@@ -617,226 +629,73 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
 namespace temp
 {
-xformat populate()
-{
-    xformat model_;
-
-    auto constexpr vertexCountPerMeshlet = 3u;
-
+    xformat populate()
     {
-        // First triangle
-        struct vertex_struct final {
-            vertex::static_array<3, boost::float32_t> position;
-            //vertex::static_array<3, boost::float32_t> normal;
-            vertex::static_array<2, boost::float32_t> texCoord;
-            vertex::static_array<3, boost::float32_t> color;
-        };
+        xformat model_;
 
-        auto const vertex_layout_index = std::size(model_.vertex_layouts);
-
-        model_.vertex_layouts.push_back(
-            vertex::create_vertex_layout(
-                vertex::position{}, decltype(vertex_struct::position){}, false,
-                //vertex::normal{}, decltype(vertex_struct::normal){}, false,
-                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
-                vertex::color_0{}, decltype(vertex_struct::color){}, false
-            )
-        );
-
-        std::vector<vertex_struct> vertices;
-
-        vertices.push_back(vertex_struct{
-            {{0.f, 0.f, 0.f}}/*, {{ 0.f, 1.f, 0.f }}*/, {{.5f, .5f}}, {{ .8f, 1.f, .2f }}
-        });
-
-        vertices.push_back(vertex_struct{
-            {{-1.f, 0.f, 1.f}}/*, {{ 0.f, 1.f, 0.f }}*/, {{0.f, 0.f}}, {{ 1.f, .8f, .2f }}
-        });
-
-        vertices.push_back(vertex_struct{
-            {{0.f, 0.f, 1.f}}/*, {{ 0.f, 1.f, 0.f }}*/, {{1.f, 0.f}}, {{ .2f, 0.8f, 1.f }}
-        });
-
-        xformat::non_indexed_meshlet meshlet;
-
-        meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
+        auto constexpr vertexCountPerMeshlet = 3u;
 
         {
-            auto const vertexSize = sizeof(vertex_struct);
-            auto const vertex_count = std::size(vertices);
-            auto const bytesCount = vertexSize * vertex_count;
+            // First triangle
+            struct vertex_struct final {
+                vertex::static_array<3, boost::float32_t> position;
+                //vertex::static_array<3, boost::float32_t> normal;
+                vertex::static_array<2, boost::float32_t> texCoord;
+                vertex::static_array<3, boost::float32_t> color;
+            };
 
-            auto &&vertexBuffer = model_.vertex_buffers[vertex_layout_index];
+            auto const vertex_layout_index = std::size(model_.vertex_layouts);
 
-            using buffer_type_t = std::remove_cvref_t<decltype(vertexBuffer.buffer)>;
+            model_.vertex_layouts.push_back(
+                vertex::create_vertex_layout(
+                    vertex::position{}, decltype(vertex_struct::position){}, false,
+                    //vertex::normal{}, decltype(vertex_struct::normal){}, false,
+                    vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
+                    vertex::color_0{}, decltype(vertex_struct::color){}, false
+                )
+            );
 
-            meshlet.vertex_buffer_index = vertex_layout_index;
-            meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
-            meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count);
+            std::vector<vertex_struct> vertices;
 
-            vertexBuffer.buffer.resize(std::size(vertexBuffer.buffer) + bytesCount);
+            vertices.push_back(vertex_struct{
+                {{0.f, 0.f, 0.f}}/*, {{ 0.f, 1.f, 0.f }}*/, {{.5f, .5f}}, {{ .8f, 1.f, .2f }}
+            });
 
-            auto writeOffset = static_cast<buffer_type_t::difference_type>(vertexBuffer.count * vertexSize);
+            vertices.push_back(vertex_struct{
+                {{-1.f, 0.f, 1.f}}/*, {{ 0.f, 1.f, 0.f }}*/, {{0.f, 0.f}}, {{ 1.f, .8f, .2f }}
+            });
 
-            vertexBuffer.count += vertex_count;
+            vertices.push_back(vertex_struct{
+                {{0.f, 0.f, 1.f}}/*, {{ 0.f, 1.f, 0.f }}*/, {{1.f, 0.f}}, {{ .2f, 0.8f, 1.f }}
+            });
 
-            auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
-
-            std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
-        }
-
-        meshlet.material_index = 2;
-        meshlet.instance_count = 1;
-        meshlet.first_instance = 0;
-
-        model_.non_indexed_meshlets.push_back(std::move(meshlet));
-    }
-
-    {
-        struct vertex_struct final {
-            vertex::static_array<3, boost::float32_t> position;
-            vertex::static_array<2, boost::float32_t> texCoord;
-            vertex::static_array<4, boost::float32_t> color;
-        };
-
-        auto const vertex_layout_index = std::size(model_.vertex_layouts);
-
-        model_.vertex_layouts.push_back(
-            vertex::create_vertex_layout(
-                vertex::position{}, decltype(vertex_struct::position){}, false,
-                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
-                vertex::color_0{}, decltype(vertex_struct::color){}, false
-            )
-        );
-
-        std::vector<vertex_struct> vertices;
-
-        // Second triangle
-        vertices.push_back(vertex_struct{
-            {{0.f, 0.f, 0.f}}, {{.5f, .5f}}, {{0.f, 0.f, 0.f, 1.f}}
-        });
-
-        vertices.push_back(vertex_struct{
-            {{1.f, 0.f, -1.f}}, {{1.f, 1.f}}, {{1.f, 0.f, 1.f, 1.f}}
-        });
-
-        vertices.push_back(vertex_struct{
-            {{0.f, 0.f, -1.f}}, {{.5f, 1.f}}, {{0.f, 0.f, 1.f, 1.f}}
-        });
-
-        // Third triangle
-        vertices.push_back(vertex_struct{
-            {{0.f, 0.f, 0.f}}, {{.5f, .5f}}, {{1.f, 0.f, 1.f, 1.f}}
-        });
-
-        vertices.push_back(vertex_struct{
-            {{-1.f, 0.f, -1.f}}, {{0.f, 1.f}}, {{0.f, 1.f, 1.f, 1.f}}
-        });
-
-        vertices.push_back(vertex_struct{
-            {{-1.f, 0.f, 0.f}}, {{0.f, .5f}}, {{1.f, 1.f, 0.f, 1.f}}
-        });
-
-        auto &&vertexBuffer = model_.vertex_buffers[vertex_layout_index];
-
-        using buffer_type_t = std::remove_cvref_t<decltype(vertexBuffer.buffer)>;
-
-        {
-            // Second triangle
             xformat::non_indexed_meshlet meshlet;
 
             meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
-            meshlet.vertex_buffer_index = vertex_layout_index;
-            meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
-            meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count + 0u);
+            {
+                auto const vertexSize = sizeof(vertex_struct);
+                auto const vertex_count = std::size(vertices);
+                auto const bytesCount = vertexSize * vertex_count;
 
-            meshlet.material_index = 1;
-            meshlet.instance_count = 1;
-            meshlet.first_instance = 0;
+                auto &&vertexBuffer = model_.vertex_buffers[vertex_layout_index];
 
-            model_.non_indexed_meshlets.push_back(std::move(meshlet));
-        }
+                using buffer_type_t = std::remove_cvref_t<decltype(vertexBuffer.buffer)>;
 
-        {
-            // Third triangle
-            xformat::non_indexed_meshlet meshlet;
+                meshlet.vertex_buffer_index = vertex_layout_index;
+                meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
+                meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count);
 
-            meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
+                vertexBuffer.buffer.resize(std::size(vertexBuffer.buffer) + bytesCount);
 
-            meshlet.vertex_buffer_index = vertex_layout_index;
-            meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
-            meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count + vertexCountPerMeshlet);
+                auto writeOffset = static_cast<buffer_type_t::difference_type>(vertexBuffer.count * vertexSize);
 
-            meshlet.material_index = 0;
-            meshlet.instance_count = 1;
-            meshlet.first_instance = 0;
+                vertexBuffer.count += vertex_count;
 
-            model_.non_indexed_meshlets.push_back(std::move(meshlet));
-        }
+                auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
 
-        {
-            auto const vertexSize = sizeof(vertex_struct);
-            auto const vertex_count = std::size(vertices);
-            auto const bytesCount = vertexSize * vertex_count;
-
-            vertexBuffer.buffer.resize(std::size(vertexBuffer.buffer) + bytesCount);
-
-            auto writeOffset = static_cast<buffer_type_t::difference_type>(vertexBuffer.count * vertexSize);
-
-            vertexBuffer.count += vertex_count;
-
-            auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
-
-            std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
-        }
-    }
-    
-    {
-        struct vertex_struct final {
-            vertex::static_array<3, boost::float32_t> position;
-            vertex::static_array<2, boost::float32_t> texCoord;
-            vertex::static_array<3, boost::float32_t> color;
-        };
-
-        auto const vertex_layout_index = std::size(model_.vertex_layouts);
-
-        model_.vertex_layouts.push_back(
-            vertex::create_vertex_layout(
-                vertex::position{}, decltype(vertex_struct::position){}, false,
-                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
-                vertex::color_0{}, decltype(vertex_struct::color){}, false
-            )
-        );
-
-        std::vector<vertex_struct> vertices;
-
-        // Fourth triangle
-        vertices.push_back(vertex_struct{
-            {{0.f, 0.f, 0.f}}, {{.5f, .5f}}, {{1.f, 0.f, 0.f}}
-        });
-
-        vertices.push_back(vertex_struct{
-            {{1.f, 0.f, 1.f}}, {{1.f, 1.f}}, {{0.f, 0.5f, 0.5f}}
-        });
-
-        vertices.push_back(vertex_struct{
-            {{1.f, 0.f, 0.f}}, {{.5f, 1.f}}, {{.8f, .5f, 0.f}}
-        });
-
-        auto &&vertexBuffer = model_.vertex_buffers[vertex_layout_index];
-
-        using buffer_type_t = std::remove_cvref_t<decltype(vertexBuffer.buffer)>;
-
-        {
-            // Fourth triangle
-            xformat::non_indexed_meshlet meshlet;
-
-            meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
-
-            meshlet.vertex_buffer_index = vertex_layout_index;
-            meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
-            meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count + vertexCountPerMeshlet);
+                std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
+            }
 
             meshlet.material_index = 2;
             meshlet.instance_count = 1;
@@ -846,29 +705,182 @@ xformat populate()
         }
 
         {
-            auto const vertexSize = sizeof(vertex_struct);
-            auto const vertex_count = std::size(vertices);
-            auto const bytesCount = vertexSize * vertex_count;
+            struct vertex_struct final {
+                vertex::static_array<3, boost::float32_t> position;
+                vertex::static_array<2, boost::float32_t> texCoord;
+                vertex::static_array<4, boost::float32_t> color;
+            };
 
-            vertexBuffer.buffer.resize(std::size(vertexBuffer.buffer) + bytesCount);
+            auto const vertex_layout_index = std::size(model_.vertex_layouts);
 
-            auto writeOffset = static_cast<buffer_type_t::difference_type>(vertexBuffer.count * vertexSize);
+            model_.vertex_layouts.push_back(
+                vertex::create_vertex_layout(
+                    vertex::position{}, decltype(vertex_struct::position){}, false,
+                    vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
+                    vertex::color_0{}, decltype(vertex_struct::color){}, false
+                )
+            );
 
-            vertexBuffer.count += vertex_count;
+            std::vector<vertex_struct> vertices;
 
-            auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
+            // Second triangle
+            vertices.push_back(vertex_struct{
+                {{0.f, 0.f, 0.f}}, {{.5f, .5f}}, {{0.f, 0.f, 0.f, 1.f}}
+            });
 
-            std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
+            vertices.push_back(vertex_struct{
+                {{1.f, 0.f, -1.f}}, {{1.f, 1.f}}, {{1.f, 0.f, 1.f, 1.f}}
+            });
+
+            vertices.push_back(vertex_struct{
+                {{0.f, 0.f, -1.f}}, {{.5f, 1.f}}, {{0.f, 0.f, 1.f, 1.f}}
+            });
+
+            // Third triangle
+            vertices.push_back(vertex_struct{
+                {{0.f, 0.f, 0.f}}, {{.5f, .5f}}, {{1.f, 0.f, 1.f, 1.f}}
+            });
+
+            vertices.push_back(vertex_struct{
+                {{-1.f, 0.f, -1.f}}, {{0.f, 1.f}}, {{0.f, 1.f, 1.f, 1.f}}
+            });
+
+            vertices.push_back(vertex_struct{
+                {{-1.f, 0.f, 0.f}}, {{0.f, .5f}}, {{1.f, 1.f, 0.f, 1.f}}
+            });
+
+            auto &&vertexBuffer = model_.vertex_buffers[vertex_layout_index];
+
+            using buffer_type_t = std::remove_cvref_t<decltype(vertexBuffer.buffer)>;
+
+            {
+                // Second triangle
+                xformat::non_indexed_meshlet meshlet;
+
+                meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
+
+                meshlet.vertex_buffer_index = vertex_layout_index;
+                meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
+                meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count + 0u);
+
+                meshlet.material_index = 1;
+                meshlet.instance_count = 1;
+                meshlet.first_instance = 0;
+
+                model_.non_indexed_meshlets.push_back(std::move(meshlet));
+            }
+
+            {
+                // Third triangle
+                xformat::non_indexed_meshlet meshlet;
+
+                meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
+
+                meshlet.vertex_buffer_index = vertex_layout_index;
+                meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
+                meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count + vertexCountPerMeshlet);
+
+                meshlet.material_index = 0;
+                meshlet.instance_count = 1;
+                meshlet.first_instance = 0;
+
+                model_.non_indexed_meshlets.push_back(std::move(meshlet));
+            }
+
+            {
+                auto const vertexSize = sizeof(vertex_struct);
+                auto const vertex_count = std::size(vertices);
+                auto const bytesCount = vertexSize * vertex_count;
+
+                vertexBuffer.buffer.resize(std::size(vertexBuffer.buffer) + bytesCount);
+
+                auto writeOffset = static_cast<buffer_type_t::difference_type>(vertexBuffer.count * vertexSize);
+
+                vertexBuffer.count += vertex_count;
+
+                auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
+
+                std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
+            }
         }
+        
+        {
+            struct vertex_struct final {
+                vertex::static_array<3, boost::float32_t> position;
+                vertex::static_array<2, boost::float32_t> texCoord;
+                vertex::static_array<3, boost::float32_t> color;
+            };
+
+            auto const vertex_layout_index = std::size(model_.vertex_layouts);
+
+            model_.vertex_layouts.push_back(
+                vertex::create_vertex_layout(
+                    vertex::position{}, decltype(vertex_struct::position){}, false,
+                    vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
+                    vertex::color_0{}, decltype(vertex_struct::color){}, false
+                )
+            );
+
+            std::vector<vertex_struct> vertices;
+
+            // Fourth triangle
+            vertices.push_back(vertex_struct{
+                {{0.f, 0.f, 0.f}}, {{.5f, .5f}}, {{1.f, 0.f, 0.f}}
+            });
+
+            vertices.push_back(vertex_struct{
+                {{1.f, 0.f, 1.f}}, {{1.f, 1.f}}, {{0.f, 0.5f, 0.5f}}
+            });
+
+            vertices.push_back(vertex_struct{
+                {{1.f, 0.f, 0.f}}, {{.5f, 1.f}}, {{.8f, .5f, 0.f}}
+            });
+
+            auto &&vertexBuffer = model_.vertex_buffers[vertex_layout_index];
+
+            using buffer_type_t = std::remove_cvref_t<decltype(vertexBuffer.buffer)>;
+
+            {
+                // Fourth triangle
+                xformat::non_indexed_meshlet meshlet;
+
+                meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
+
+                meshlet.vertex_buffer_index = vertex_layout_index;
+                meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
+                meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count + vertexCountPerMeshlet);
+
+                meshlet.material_index = 2;
+                meshlet.instance_count = 1;
+                meshlet.first_instance = 0;
+
+                model_.non_indexed_meshlets.push_back(std::move(meshlet));
+            }
+
+            {
+                auto const vertexSize = sizeof(vertex_struct);
+                auto const vertex_count = std::size(vertices);
+                auto const bytesCount = vertexSize * vertex_count;
+
+                vertexBuffer.buffer.resize(std::size(vertexBuffer.buffer) + bytesCount);
+
+                auto writeOffset = static_cast<buffer_type_t::difference_type>(vertexBuffer.count * vertexSize);
+
+                vertexBuffer.count += vertex_count;
+
+                auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
+
+                std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
+            }
+        }
+
+        model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
+        model_.materials.push_back(xformat::material{0, "debug/color-debug-material"s});
+        model_.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
+        //model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
+
+        return model_;
     }
-
-    model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
-    model_.materials.push_back(xformat::material{0, "debug/color-debug-material"s});
-    model_.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
-    //model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
-
-    return model_;
-}
 }
 
 
@@ -1092,11 +1104,11 @@ create_framebuffers(resource::resource_manager &resource_manager, renderer::swap
 
 void init(platform::window &window, app_t &app)
 {
-    app.instance = std::make_unique<vulkan::instance>();
+    auto instance = std::make_unique<vulkan::instance>();
 
-    app.platform_surface = std::make_shared<renderer::platform_surface>(*app.instance, window);
+    app.platform_surface = std::make_shared<renderer::platform_surface>(*instance, window);
 
-    app.device = std::make_unique<vulkan::device>(*app.instance, app.platform_surface.get());
+    app.device = std::make_unique<vulkan::device>(*instance, app.platform_surface.get());
 
     app.renderer_config = adjust_renderer_config(*app.device);
 
@@ -1110,42 +1122,17 @@ void init(platform::window &window, app_t &app)
 
     app.render_pass_manager = std::make_unique<graphics::render_pass_manager>(*app.device);
 
-    if (auto commandPool = create_command_pool(*app.device, app.device->transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); commandPool)
-        app.transferCommandPool = *commandPool;
+    if (auto command_pool = create_command_pool(*app.device, app.device->transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); command_pool)
+        app.transfer_command_pool = *command_pool;
 
     else throw std::runtime_error("failed to transfer command pool"s);
 
-    if (auto commandPool = create_command_pool(*app.device, app.device->graphics_queue, 0); commandPool)
-        app.graphicsCommandPool = *commandPool;
+    if (auto command_pool = create_command_pool(*app.device, app.device->graphics_queue, 0); command_pool)
+        app.graphics_command_pool = *command_pool;
 
     else throw std::runtime_error("failed to graphics command pool"s);
 
-    {
-        app.swapchain = create_swapchain(*app.device, *app.platform_surface, renderer::extent{app.width, app.height});
-
-        if (app.swapchain == nullptr)
-            throw std::runtime_error("failed to create the swapchain"s);
-
-        auto attachments = create_attachments(*app.device, app.renderer_config, *app.resource_manager, *app.swapchain);
-
-        if (attachments.empty())
-            throw std::runtime_error("failed to create the attachments"s);
-
-        auto attachment_descriptions = create_attachment_descriptions(attachments);
-
-        app.render_pass = create_render_pass(*app.render_pass_manager, app.swapchain->surface_format(), attachment_descriptions);
-
-        if (app.render_pass == nullptr)
-            throw std::runtime_error("failed to create the render pass"s);
-
-        auto framebuffers = create_framebuffers(*app.resource_manager, *app.swapchain, app.render_pass, attachments);
-
-        if (framebuffers.empty())
-            throw std::runtime_error("failed to create the framebuffers"s);
-
-        app.attachments = std::move(attachments);
-        app.framebuffers = std::move(framebuffers);
-    }
+    create_frame_data(app);
 
     if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.device); !descriptorSetLayout)
         throw std::runtime_error("failed to create the descriptor set layout"s);
@@ -1214,11 +1201,13 @@ void init(platform::window &window, app_t &app)
 
     build_render_pipelines(app, temp::model);
 
-    app.resource_manager->transfer_vertex_buffers_data(app.transferCommandPool, app.device->transfer_queue);
+    app.resource_manager->transfer_vertex_buffers_data(app.transfer_command_pool, app.device->transfer_queue);
 
     create_graphics_command_buffers(app);
 
     create_semaphores(app);
+
+    app.instance = std::move(instance);
 }
 
 void update(app_t &app)
@@ -1506,15 +1495,15 @@ load_texture(app_t &app, vulkan::device &device, resource::resource_manager &res
 
             if (texture) {
                 image_layout_transition(device, device.transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
-                                      graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION, app.transferCommandPool);
+                                      graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION, app.transfer_command_pool);
 
-                copy_buffer_to_image(device, device.transfer_queue, staging_buffer->handle(), texture->image->handle(), extent, app.transferCommandPool);
+                copy_buffer_to_image(device, device.transfer_queue, staging_buffer->handle(), texture->image->handle(), extent, app.transfer_command_pool);
 
                 if (generateMipMaps)
-                    generate_mip_maps(device, device.transfer_queue, *texture->image, app.transferCommandPool);
+                    generate_mip_maps(device, device.transfer_queue, *texture->image, app.transfer_command_pool);
 
                 else image_layout_transition(device, device.transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION,
-                                           graphics::IMAGE_LAYOUT::SHADER_READ_ONLY, app.transferCommandPool);
+                                           graphics::IMAGE_LAYOUT::SHADER_READ_ONLY, app.transfer_command_pool);
             }
         }
     }
