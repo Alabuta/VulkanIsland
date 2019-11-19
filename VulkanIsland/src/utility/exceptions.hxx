@@ -8,7 +8,6 @@ namespace memory
 {
     struct exception : public std::runtime_error {
         explicit exception(std::string const &what_arg) : std::runtime_error(what_arg.c_str()) { }
-        explicit exception(char const *what_arg) : std::runtime_error(what_arg) { }
     };
 
     struct bad_allocation final : public memory::exception {
@@ -20,7 +19,6 @@ namespace resource
 {
     struct exception : public std::runtime_error {
         explicit exception(std::string const &what_arg) : std::runtime_error(what_arg.c_str()) { }
-        explicit exception(char const *what_arg) : std::runtime_error(what_arg) { }
     };
 
     struct instantiation_fail final : public resource::exception {
@@ -40,7 +38,6 @@ namespace loader
 {
     struct exception : public std::runtime_error {
         explicit exception(std::string const &what_arg) : std::runtime_error(what_arg.c_str()) { }
-        explicit exception(char const *what_arg) : std::runtime_error(what_arg) { }
     };
 }
 
@@ -48,7 +45,6 @@ namespace vulkan
 {
     struct exception : public std::runtime_error {
         explicit exception(std::string const &what_arg) : std::runtime_error(what_arg.c_str()) { }
-        explicit exception(char const *what_arg) : std::runtime_error(what_arg) { }
     };
 
     struct instance_exception final : public vulkan::exception {

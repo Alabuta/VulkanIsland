@@ -531,14 +531,14 @@ namespace graphics
 
 namespace graphics
 {
-    template<class T> requires mpl::enumeration<T>
+    template<mpl::enumeration T>
     auto constexpr operator| (T lhs, T rhs)
     {
         using E = std::underlying_type_t<T>;
         return static_cast<T>(static_cast<E>(lhs) | static_cast<E>(rhs));
     }
 
-    template<class T> requires mpl::enumeration<T>
+    template<mpl::enumeration T>
     auto constexpr operator& (T lhs, T rhs)
     {
         using E = std::underlying_type_t<T>;
