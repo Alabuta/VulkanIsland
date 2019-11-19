@@ -32,12 +32,17 @@ namespace vulkan_config
         "VK_LAYER_LUNARG_api_dump",
     #endif
 
+    #if _MSC_VER
         "VK_LAYER_LUNARG_assistant_layer",
         "VK_LAYER_LUNARG_core_validation",
         "VK_LAYER_LUNARG_object_tracker",
         "VK_LAYER_LUNARG_parameter_validation",
         "VK_LAYER_GOOGLE_threading",
         "VK_LAYER_GOOGLE_unique_objects"
+    #else
+        // "VK_LAYER_KHRONOS_validation",
+        "VK_LAYER_LUNARG_standard_validation"
+    #endif
     };
 
     VkApplicationInfo constexpr application_info{

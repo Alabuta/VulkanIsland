@@ -49,8 +49,8 @@ namespace
 
         std::vector<VkExtensionProperties> unsupported_extensions;
 
-        std::set_difference(std::begin(required_extensions), std::end(required_extensions),
-                            std::begin(supported_extensions), std::end(supported_extensions), std::back_inserter(unsupported_extensions), extensions_compare);
+        std::set_difference(std::begin(required_extensions), std::end(required_extensions), std::begin(supported_extensions),
+                            std::end(supported_extensions), std::back_inserter(unsupported_extensions), extensions_compare);
 
         if (unsupported_extensions.empty())
             return true;
@@ -97,8 +97,8 @@ namespace
 
         std::vector<VkLayerProperties> unsupported_layers;
 
-        std::set_difference(std::begin(required_layers), std::end(required_layers),
-                            std::begin(supported_layers), std::end(supported_layers), std::back_inserter(unsupported_layers), layers_compare);
+        std::set_difference(std::begin(required_layers), std::end(required_layers), std::begin(supported_layers),
+                            std::end(supported_layers), std::back_inserter(unsupported_layers), layers_compare);
 
         if (unsupported_layers.empty())
             return true;
@@ -151,13 +151,13 @@ namespace vulkan
 
         auto const application_info = vulkan_config::application_info;
 
-        auto api_major = VK_VERSION_MAJOR(api_version);
-        auto api_minor = VK_VERSION_MINOR(api_version);
+        auto supported_api_major = VK_VERSION_MAJOR(api_version);
+        auto supported_api_minor = VK_VERSION_MINOR(api_version);
 
-        auto required_major = VK_VERSION_MAJOR(application_info.apiVersion);
-        auto required_minor = VK_VERSION_MINOR(application_info.apiVersion);
+        auto required_api_major = VK_VERSION_MAJOR(application_info.apiVersion);
+        auto required_api_minor = VK_VERSION_MINOR(application_info.apiVersion);
 
-        if (api_major != required_major || api_minor != required_minor)
+        if (supported_api_major != required_api_major || supported_api_minor != required_api_minor)
             throw vulkan::instance_exception("unsupported Vulkan API version"s);
 
         VkInstanceCreateInfo instance_info{
