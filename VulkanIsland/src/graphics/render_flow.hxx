@@ -9,6 +9,7 @@
 #include "attachments.hxx"
 #include "material.hxx"
 
+#include "renderer/config.hxx"
 #include "renderer/swapchain.hxx"
 
 
@@ -48,7 +49,7 @@ namespace graphics
     class render_pipeline_manager final {
     public:
     
-        render_pipeline_manager(std::shared_ptr<resource::resource_manager> resource_manager, renderer::config const &renderer_config) : resource_manager_{resource_manager} { }
+        render_pipeline_manager(std::shared_ptr<resource::resource_manager> resource_manager, renderer::config const &renderer_config);
 
         [[nodiscard]] graphics::render_pipeline
         create_render_flow(std::vector<graphics::render_pipeline_node> const &nodes, std::vector<graphics::render_pipeline_output> const &output);

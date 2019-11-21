@@ -538,9 +538,7 @@ void recreate_swap_chain(app_t &app)
     if (app.width < 1 || app.height < 1)
         return;
 
-    auto &&device = *app.device;
-
-    vkDeviceWaitIdle(device.handle());
+    vkDeviceWaitIdle(app.device->handle());
 
     cleanup_frame_data(app);
     create_frame_data(app);
