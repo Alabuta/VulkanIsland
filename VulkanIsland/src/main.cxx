@@ -401,7 +401,7 @@ void create_graphics_command_buffers(app_t &app)
 
     std::vector<VkDeviceSize> vertex_buffer_offsets(binding_count, 0);
 
-#if defined( __clang__) || defined(_MSC_VER)
+#ifdef __clang__
     auto const clear_colors = std::array{
         VkClearValue{{{ .64f, .64f, .64f, 1.f }}},
         VkClearValue{{{ kREVERSED_DEPTH ? 0.f : 1.f, 0 }}}

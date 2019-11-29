@@ -3,10 +3,6 @@
 #include <variant>
 #include <set>
 
-#ifdef _MSC_VER
-    #include <execution>
-#endif
-
 #include <string>
 using namespace std::string_literals;
 

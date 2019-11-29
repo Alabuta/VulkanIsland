@@ -160,9 +160,22 @@ namespace vulkan
         if (supported_api_major != required_api_major || supported_api_minor != required_api_minor)
             throw vulkan::instance_exception("unsupported Vulkan API version"s);
 
-        VkInstanceCreateInfo instance_info{
+        auto const enabled_validation_features = std::array{
+            VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT
+        };
+
+        VkValidationFeaturesEXT const validation_features{
+            VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT,
+            nullptr,
+            static_cast<std::uint32_t>(std::size(enabled_validation_features)),
+            std::data(enabled_validation_features),
+            0, nullptr
+        };
+
+        VkInstanceCreateInfo create_info{
             VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-            nullptr, 0,
+            &validation_features,
+            0,
             &application_info,
             0, nullptr,
             0, nullptr
@@ -171,16 +184,16 @@ namespace vulkan
         if (auto supported = check_required_extensions(extensions); !supported)
             throw vulkan::instance_exception("not all required extensions are supported"s);
 
-        instance_info.enabledExtensionCount = static_cast<std::uint32_t>(std::size(extensions));
-        instance_info.ppEnabledExtensionNames = std::data(extensions);
+        create_info.enabledExtensionCount = static_cast<std::uint32_t>(std::size(extensions));
+        create_info.ppEnabledExtensionNames = std::data(extensions);
 
         if (auto supported = check_required_layers(layers); !supported)
             throw vulkan::instance_exception("not all required layers are supported"s);
 
-        instance_info.enabledLayerCount = static_cast<std::uint32_t>(std::size(layers));
-        instance_info.ppEnabledLayerNames = std::data(layers);
+        create_info.enabledLayerCount = static_cast<std::uint32_t>(std::size(layers));
+        create_info.ppEnabledLayerNames = std::data(layers);
 
-        if (auto result = vkCreateInstance(&instance_info, nullptr, &handle_); result != VK_SUCCESS)
+        if (auto result = vkCreateInstance(&create_info, nullptr, &handle_); result != VK_SUCCESS)
             throw vulkan::instance_exception("failed to create instance"s);
 
         if constexpr (use_layers)
