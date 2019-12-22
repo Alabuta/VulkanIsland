@@ -69,7 +69,7 @@ namespace resource
 
         void stage_vertex_buffer_data(std::shared_ptr<resource::vertex_buffer> vertex_buffer, std::vector<std::byte> const &container) const;
 
-        void transfer_vertex_buffers_data(VkCommandPool command_pool, graphics::transfer_queue const &transfer_queue) const;
+        void transfer_vertex_buffers_data(VkCommandPool command_pool, graphics::transfer_queue const &transfer_queue);
 
     private:
 

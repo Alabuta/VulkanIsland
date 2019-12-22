@@ -286,7 +286,7 @@ namespace resource
                 auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
                 auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
 
-                staging_buffer = create_buffer(size_in_bytes, usage_flags, property_flags);
+                staging_buffer = create_buffer(capacity_in_bytes, usage_flags, property_flags);
 
                 if (staging_buffer == nullptr)
                     throw resource::instantiation_fail("failed to create staging vertex buffer"s);
@@ -296,7 +296,7 @@ namespace resource
                 auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER;
                 auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
 
-                device_buffer = create_buffer(size_in_bytes, usage_flags, property_flags);
+                device_buffer = create_buffer(capacity_in_bytes, usage_flags, property_flags);
 
                 if (device_buffer == nullptr)
                     throw resource::instantiation_fail("failed to create device vertex buffer"s);
@@ -310,6 +310,9 @@ namespace resource
         auto &vertex_buffer = vertex_buffers_.at(layout);
 
         if (vertex_buffer->available_staging_buffer_size() < size_in_bytes) {
+            if (vertex_buffer->staging_buffer_offset_ > 0)
+                throw resource::exception("unsupported case"s);
+
             auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
             auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
 
@@ -340,6 +343,9 @@ namespace resource
 
         auto const size_in_bytes = std::size(container);
 
+        if (vertex_buffer->available_staging_buffer_size() < size_in_bytes)
+            throw resource::not_enough_memory("not enough staging memory for vertex buffer"s);
+
         // TODO: sparse memory binding
         if (vertex_buffer->available_device_buffer_size() < size_in_bytes)
             throw resource::not_enough_memory("not enough device memory for vertex buffer"s);
@@ -356,19 +362,32 @@ namespace resource
 
             vkUnmapMemory(device_.handle(), memory->handle());
 
-            vertex_buffer->offset_ += size_in_bytes;
+            vertex_buffer->staging_buffer_offset_ += size_in_bytes;
         }
     }
 
-    void resource_manager::transfer_vertex_buffers_data(VkCommandPool command_pool, graphics::transfer_queue const &transfer_queue) const
+    void resource_manager::transfer_vertex_buffers_data(VkCommandPool command_pool, graphics::transfer_queue const &transfer_queue)
     {
+        //std::vector<VkBufferCopy> copy_regions;
+
         for (auto &&[layout, vertex_buffer] : vertex_buffers_) {
             auto &&staging_buffer = vertex_buffer->staging_buffer();
             auto &&device_buffer = vertex_buffer->device_buffer();
 
-            auto copy_regions = std::array{ VkBufferCopy{ 0, 0, staging_buffer.memory()->size() } };
+            /*auto staging_memory_offset = vertex_buffer->staging_memory_offset();
+            auto device_memory_offset = vertex_buffer->device_memory_offset();*/
+
+            auto &&device_buffer_offset = vertex_buffer->device_buffer_offset_;
+            auto &&staging_buffer_offset = vertex_buffer->staging_buffer_offset_;
+
+            auto copy_regions = std::array{
+                VkBufferCopy{ 0, device_buffer_offset, staging_buffer_offset }
+            };
 
             copy_buffer_to_buffer(device_, transfer_queue, staging_buffer.handle(), device_buffer.handle(), std::move(copy_regions), command_pool);
+
+            device_buffer_offset += staging_buffer_offset;
+            staging_buffer_offset = 0;
         }
     }
 }
