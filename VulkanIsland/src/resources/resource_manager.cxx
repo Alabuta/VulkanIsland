@@ -302,14 +302,14 @@ namespace resource
                     throw resource::instantiation_fail("failed to create device vertex buffer"s);
             }
 
-            auto vertex_buffer = std::make_shared<resource::vertex_buffer>(device_buffer, staging_buffer, capacity_in_bytes, layout);
+            auto vertex_buffer = std::make_shared<resource::vertex_buffer>(device_buffer, staging_buffer, layout);
 
             vertex_buffers_.emplace(layout, vertex_buffer);
         }
 
         auto &vertex_buffer = vertex_buffers_.at(layout);
 
-        if (vertex_buffer->staging_buffer_size_in_bytes_ < size_in_bytes) {
+        if (vertex_buffer->available_staging_buffer_size() < size_in_bytes) {
             auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
             auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
 
@@ -318,10 +318,10 @@ namespace resource
             if (vertex_buffer->staging_buffer_ == nullptr)
                 throw resource::instantiation_fail("failed to extend device vertex buffer"s);
 
-            vertex_buffer->staging_buffer_size_in_bytes_ = size_in_bytes;
+            vertex_buffer->staging_buffer_size_ = size_in_bytes;
         }
 
-        if (vertex_buffer->available_memory_size() < size_in_bytes) {
+        if (vertex_buffer->available_device_buffer_size() < size_in_bytes) {
             // TODO: sparse memory binding
         #if NOT_YET_IMPLEMENTED
             auto buffer_handle = vertex_buffer->device_buffer_->handle();
@@ -341,14 +341,14 @@ namespace resource
         auto const size_in_bytes = std::size(container);
 
         // TODO: sparse memory binding
-        if (vertex_buffer->available_memory_size() < size_in_bytes)
+        if (vertex_buffer->available_device_buffer_size() < size_in_bytes)
             throw resource::not_enough_memory("not enough device memory for vertex buffer"s);
 
         auto &&memory = vertex_buffer->staging_buffer().memory();
 
         void *ptr;
 
-        if (auto result = vkMapMemory(device_.handle(), memory->handle(), vertex_buffer->staging_buffer_offset(), size_in_bytes, 0, &ptr); result != VK_SUCCESS)
+        if (auto result = vkMapMemory(device_.handle(), memory->handle(), vertex_buffer->staging_memory_offset(), size_in_bytes, 0, &ptr); result != VK_SUCCESS)
             throw resource::exception(fmt::format("failed to map staging vertex buffer memory: {0:#x}"s, result));
 
         else {

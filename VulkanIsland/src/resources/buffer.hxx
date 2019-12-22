@@ -67,16 +67,16 @@ namespace resource
     public:
 
         vertex_buffer(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer,
-                      std::size_t capacity_in_bytes, graphics::vertex_layout const &vertex_layout)
-            : device_buffer_{device_buffer}, staging_buffer_{staging_buffer}, capacity_in_bytes_{capacity_in_bytes}, vertex_layout_{vertex_layout} { }
+                      graphics::vertex_layout const &vertex_layout);
 
-        resource::buffer const &device_buffer() const noexcept { return *device_buffer_; }
-        resource::buffer const &staging_buffer() const noexcept { return *staging_buffer_; }
+        resource::buffer const &device_buffer() const { return *device_buffer_; }
+        resource::buffer const &staging_buffer() const { return *staging_buffer_; }
 
-        std::size_t device_buffer_offset() const noexcept { return device_buffer_->memory()->offset() + offset_; }
-        std::size_t staging_buffer_offset() const noexcept { return staging_buffer_->memory()->offset() + offset_; }
+        std::size_t device_memory_offset() const { return device_buffer_->memory()->offset() + device_buffer_offset_; }
+        std::size_t staging_memory_offset() const { return staging_buffer_->memory()->offset() + staging_buffer_offset_; }
 
-        std::size_t available_memory_size() const noexcept { return capacity_in_bytes_ - offset_; }
+        std::size_t available_device_buffer_size() const { return device_buffer_size_ - device_buffer_offset_; }
+        std::size_t available_staging_buffer_size() const { return staging_buffer_size_ - staging_buffer_offset_; }
 
         graphics::vertex_layout const &vertex_layout() const noexcept { return vertex_layout_; }
 
@@ -85,12 +85,13 @@ namespace resource
         std::shared_ptr<resource::buffer> device_buffer_{nullptr};
         std::shared_ptr<resource::buffer> staging_buffer_{nullptr};
 
-        std::size_t capacity_in_bytes_{0};
-
         graphics::vertex_layout vertex_layout_;
 
-        std::size_t offset_{0};
-        std::size_t staging_buffer_size_in_bytes_{0};
+        std::size_t device_buffer_offset_{0};
+        std::size_t device_buffer_size_{0};
+
+        std::size_t staging_buffer_offset_{0};
+        std::size_t staging_buffer_size_{0};
 
         vertex_buffer() = delete;
         vertex_buffer(vertex_buffer const &) = delete;

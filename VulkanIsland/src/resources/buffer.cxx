@@ -1,6 +1,17 @@
 #include "buffer.hxx"
 
 
+namespace resource
+{
+    vertex_buffer::vertex_buffer(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer,
+                                 graphics::vertex_layout const &vertex_layout)
+        : device_buffer_{device_buffer}, staging_buffer_{staging_buffer}, vertex_layout_{vertex_layout}
+    {
+        device_buffer_size_ = device_buffer_->memory()->size();
+        staging_buffer_size_ = staging_buffer_->memory()->size();
+    }
+}
+
 #if OBSOLETE
 std::shared_ptr<DeviceMemory>
 CreateBuffer(vulkan::device &device, VkBuffer &buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
