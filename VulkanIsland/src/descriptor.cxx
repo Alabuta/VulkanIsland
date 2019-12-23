@@ -52,10 +52,10 @@ std::optional<VkDescriptorPool> CreateDescriptorPool(vulkan::device const &devic
 
     std::array<VkDescriptorPoolSize, 2> constexpr poolSizes{{
         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 },
-#if TEMPORARILY_DISABLED
-        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 },
-#endif
         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1 }
+#if TEMPORARILY_DISABLED
+        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
+#endif
     }};
 
     VkDescriptorPoolCreateInfo const createInfo{
@@ -87,18 +87,18 @@ std::optional<VkDescriptorSetLayout> CreateDescriptorSetLayout(vulkan::device co
             1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             nullptr
         },
+        {
+            1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
+            1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            nullptr
+        }
 #if TEMPORARILY_DISABLED
         {
-            1, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             1, VK_SHADER_STAGE_FRAGMENT_BIT,
             nullptr
         },
 #endif
-        {
-            2, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
-            1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
-            nullptr
-        }
     }};
 
     VkDescriptorSetLayoutCreateInfo const createInfo{
