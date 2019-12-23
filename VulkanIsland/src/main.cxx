@@ -164,7 +164,7 @@ struct app_t final {
     std::unique_ptr<vulkan::instance> instance;
     std::unique_ptr<vulkan::device> device;
 
-    std::shared_ptr<renderer::platform_surface> platform_surface;
+    renderer::platform_surface platform_surface;
     std::unique_ptr<renderer::swapchain> swapchain;
 
     std::unique_ptr<resource::resource_manager> resource_manager;
@@ -261,8 +261,6 @@ struct app_t final {
         if (graphics_command_pool != VK_NULL_HANDLE)
             vkDestroyCommandPool(device->handle(), graphics_command_pool, nullptr);
 
-        platform_surface.reset();
-
         resource_manager.reset();
         memory_manager.reset();
 
@@ -339,7 +337,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
             nullptr,
             std::data(per_object),
             nullptr
-        },
+        }
 #if TEMPORARILY_DISABLED
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
@@ -355,7 +353,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
 #endif
     }};
 
-    // WARN:: remember about potential race condition with the related executing command buffer
+    // WARN:: remember about potential race condition with the related executing command buffer.
     vkUpdateDescriptorSets(device.handle(), static_cast<std::uint32_t>(std::size(write_descriptor_sets)),
                            std::data(write_descriptor_sets), 0, nullptr);
 }
@@ -487,7 +485,7 @@ void create_graphics_command_buffers(app_t &app)
 void create_frame_data(app_t &app)
 {
     auto &&device = *app.device;
-    auto &&platform_surface = *app.platform_surface;
+    auto &&platform_surface = app.platform_surface;
     auto &&resource_manager = *app.resource_manager;
     
     auto swapchain = create_swapchain(device, platform_surface, renderer::extent{app.width, app.height});
@@ -1099,14 +1097,13 @@ create_framebuffers(resource::resource_manager &resource_manager, renderer::swap
     return framebuffers;
 }
 
-
 void init(platform::window &window, app_t &app)
 {
     auto instance = std::make_unique<vulkan::instance>();
 
-    app.platform_surface = std::make_shared<renderer::platform_surface>(*instance, window);
+    app.platform_surface = instance->get_platform_surface(window);
 
-    app.device = std::make_unique<vulkan::device>(*instance, app.platform_surface.get());
+    app.device = std::make_unique<vulkan::device>(*instance, app.platform_surface);
 
     app.renderer_config = adjust_renderer_config(*app.device);
 

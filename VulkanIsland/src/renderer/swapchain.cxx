@@ -95,22 +95,13 @@ namespace
 
 namespace renderer
 {
-    platform_surface::platform_surface(vulkan::instance const &instance, platform::window &window)
-    {
-        if (auto result = glfwCreateWindowSurface(instance.handle(), window.handle(), nullptr, &handle_); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to create window surface: {0:#x}\n"s, result));
-    }
-}
-
-namespace renderer
-{
     swapchain::swapchain(vulkan::device const &device, renderer::platform_surface const &platform_surface,
                          renderer::surface_format surface_format, renderer::extent extent) : device_{device}
     {
         auto &&presentation_queue = device.presentation_queue;
         auto &&graphics_queue = device.graphics_queue;
 
-        auto swapchain_support_details = device.query_swapchain_support_details(&platform_surface);
+        auto swapchain_support_details = device.query_swapchain_support_details(platform_surface);
 
         surface_format_ = choose_supported_surface_format(swapchain_support_details, std::vector{surface_format});
 

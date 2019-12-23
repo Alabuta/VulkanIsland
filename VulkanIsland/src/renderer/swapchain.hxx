@@ -10,21 +10,6 @@
 
 namespace renderer
 {
-    class platform_surface final {
-    public:
-
-        explicit platform_surface(vulkan::instance const &instance, platform::window &window);
-
-        VkSurfaceKHR handle() const noexcept { return handle_; }
-
-    private:
-
-        VkSurfaceKHR handle_{VK_NULL_HANDLE};
-    };
-}
-
-namespace renderer
-{
     class swapchain final {
     public:
 

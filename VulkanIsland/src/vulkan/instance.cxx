@@ -205,6 +205,9 @@ namespace vulkan
         if (handle_ == VK_NULL_HANDLE)
             return;
 
+        for (auto [window_handle, platform_surface] : platform_surfaces_)
+            vkDestroySurfaceKHR(handle_, platform_surface.handle(), nullptr);
+
         if (debug_report_callback_ != VK_NULL_HANDLE)
             vkDestroyDebugReportCallbackEXT(handle_, debug_report_callback_, nullptr);
 
@@ -213,5 +216,19 @@ namespace vulkan
         vkDestroyInstance(handle_, nullptr);
 
         handle_ = VK_NULL_HANDLE;
+    }
+
+    renderer::platform_surface instance::get_platform_surface(platform::window &window)
+    {
+        if (!platform_surfaces_.contains(window.handle())) {
+            renderer::platform_surface platform_surface;
+
+            if (auto result = glfwCreateWindowSurface(handle_, window.handle(), nullptr, &platform_surface.handle_); result != VK_SUCCESS)
+                throw std::runtime_error(fmt::format("failed to create window surface: {0:#x}\n"s, result));
+
+            platform_surfaces_.emplace(window.handle(), platform_surface);
+        }
+
+        return platform_surfaces_.at(window.handle());
     }
 }
