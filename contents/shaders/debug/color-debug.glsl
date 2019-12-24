@@ -18,20 +18,29 @@ layout(set = 0, binding = 1, scalar) readonly buffer PER_OBJECT
 
 layout(location = 0) out vec4 outColor;
 
+
+#pragma include_descriptor("per-instance", per_instance)
+
+#pragma define_descriptor(maps)
+{
+    ;
+}
+
+
 out gl_PerVertex {
     vec4 gl_Position;
 };
 
 #pragma technique(0)
 {
-    gl_Position = camera.projectionView * object.world * vec4(POSITION, 1.0);
+    gl_Position = camera.projectionView * object.world * vec4(POSITION, 1.);
 
     outColor = COLOR_0;
 }
 
 #pragma technique(1)
 {
-    gl_Position = camera.projectionView * object.world * vec4(POSITION, 1.0);
+    gl_Position = camera.projectionView * object.world * vec4(POSITION, 1.);
 
-    outColor = vec4(COLOR_0 * SPECIALIZATION_CONSTANT_1, 1.0);
+    outColor = vec4(COLOR_0 * SPECIALIZATION_CONSTANT_1, 1.);
 }

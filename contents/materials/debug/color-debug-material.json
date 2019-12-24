@@ -63,5 +63,20 @@
             "semantic": "COLOR_0",
             "type": "vec3"
         }
+    ],
+    "descriptors": [
+        {
+            "type": "custom",
+            "content": [
+                {
+                    "type": "mat4",
+                    "name": "world"
+                },
+                {
+                    "type": "mat4",
+                    "name": "normal"
+                }
+            ]
+        }
     ]
 }
