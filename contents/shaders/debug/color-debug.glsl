@@ -19,14 +19,6 @@ layout(set = 0, binding = 1, scalar) readonly buffer PER_OBJECT
 layout(location = 0) out vec4 outColor;
 
 
-#pragma include_descriptor("per-instance", per_instance)
-
-#pragma define_descriptor(maps)
-{
-    ;
-}
-
-
 out gl_PerVertex {
     vec4 gl_Position;
 };

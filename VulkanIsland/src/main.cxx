@@ -1244,7 +1244,7 @@ void update(app_t &app)
     auto it_begin = reinterpret_cast<decltype(app.objects)::value_type *>(app.alignedBuffer);
 
 #ifdef _MSC_VER
-    std::copy(std::execution::par_unseq, std::cbegin(app.objects), std::cend(app.objects), strided_forward_iterator{it_begin, stride});
+    std::copy(std::execution::par, std::cbegin(app.objects), std::cend(app.objects), strided_forward_iterator{it_begin, stride});
 #else
     std::copy(std::cbegin(app.objects), std::cend(app.objects), strided_forward_iterator{it_begin, stride});
 #endif
