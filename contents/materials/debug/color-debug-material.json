@@ -64,48 +64,50 @@
             "type": "vec3"
         }
     ],
-    "descriptors": [
-        {
-            "name": "camera",
-            "rate": "per-view",
-            "type": "buffer",
-            "layout": [
-                {
-                    "type": "mat4",
-                    "name": "view"
-                },
-                {
-                    "type": "mat4",
-                    "name": "projection"
-                },
-                {
-                    "type": "mat4",
-                    "name": "projectionView"
-                },
-                {
-                    "type": "mat4",
-                    "name": "invertedView"
-                },
-                {
-                    "type": "mat4",
-                    "name": "invertedProjection"
-                }
-            ]
-        },
-        {
-            "name": "object",
-            "rate": "object",
-            "type": "buffer",
-            "layout": [
-                {
-                    "type": "mat4",
-                    "name": "world"
-                },
-                {
-                    "type": "mat4",
-                    "name": "normal"
-                }
-            ]
-        }
-    ]
+    "descriptors": {
+        "per-object": [
+            {
+                "name": "object",
+                "type": "buffer",
+                "layout": [
+                    {
+                        "type": "mat4",
+                        "name": "world"
+                    },
+                    {
+                        "type": "mat4",
+                        "name": "normal"
+                    }
+                ]
+            }
+        ],
+        "per-view": [
+            {
+                "name": "camera",
+                "type": "buffer",
+                "layout": [
+                    {
+                        "type": "mat4",
+                        "name": "view"
+                    },
+                    {
+                        "type": "mat4",
+                        "name": "projection"
+                    },
+                    {
+                        "type": "mat4",
+                        "name": "projectionView"
+                    },
+                    {
+                        "type": "mat4",
+                        "name": "invertedView"
+                    },
+                    {
+                        "type": "mat4",
+                        "name": "invertedProjection"
+                    }
+                ]
+            }
+        ]
+    }
 }
