@@ -31,12 +31,12 @@
                     "technique": 1,
                     "specializationConstants": [
                         {
-                            "id": 0,
+                            "name": "SPECIALIZATION_CONSTANT_0",
                             "value": 0,
                             "type": "int"
                         },
                         {
-                            "id": 1,
+                            "name": "COLOR_MULTIPLIER",
                             "value": 1,
                             "type": "float"
                         }

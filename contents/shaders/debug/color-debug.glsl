@@ -34,5 +34,5 @@ out gl_PerVertex {
 {
     gl_Position = camera.projectionView * object.world * vec4(POSITION, 1.);
 
-    outColor = vec4(COLOR_0 * SPECIALIZATION_CONSTANT_1, 1.);
+    outColor = vec4(COLOR_0 * COLOR_MULTIPLIER, 1.);
 }

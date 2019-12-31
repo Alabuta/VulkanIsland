@@ -218,10 +218,10 @@ def get_shader_source_code(name):
 def get_specialization_constants(specialization_constants):
     constants = ''
 
-    for specialization_constant in specialization_constants:
-        id, value, type = [ specialization_constant[k] for k in ('id', 'value', 'type') ]
+    for index, specialization_constant in enumerate(specialization_constants):
+        name, value, type = [ specialization_constant[k] for k in ('name', 'value', 'type') ]
 
-        constants += f'layout(constant_id = {id}) const {type} SPECIALIZATION_CONSTANT_{id} = {type}({value});\n'
+        constants += f'layout(constant_id = {index}) const {type} {name} = {type}({value});\n'
 
     return constants
 
