@@ -55,6 +55,10 @@ namespace vulkan
         explicit device_exception(std::string const &what_arg) : vulkan::exception(what_arg) { }
     };
 
+    struct swapchain_exception final : public vulkan::exception {
+        explicit swapchain_exception(std::string const &what_arg) : vulkan::exception(what_arg) { }
+    };
+
     struct logic_error final : public vulkan::exception {
         explicit logic_error(std::string const &what_arg) : vulkan::exception(what_arg) { }
     };

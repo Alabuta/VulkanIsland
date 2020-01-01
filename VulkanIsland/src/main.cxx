@@ -57,8 +57,9 @@
 #include <boost/align/aligned_alloc.hpp>
 
 #include "main.hxx"
-#include "utility/helpers.hxx"
 #include "utility/mpl.hxx"
+#include "utility/helpers.hxx"
+#include "utility/exceptions.hxx"
 
 #include "math/math.hxx"
 
@@ -896,7 +897,7 @@ create_swapchain(vulkan::device const &device, renderer::platform_surface const 
         try {
             swapchain = std::make_unique<renderer::swapchain>(device, platform_surface, surface_format, extent);
 
-        } catch (std::runtime_error const &ex) {
+        } catch (vulkan::swapchain_exception const &ex) {
             std::cout << ex.what() << std::endl;
         }
 
