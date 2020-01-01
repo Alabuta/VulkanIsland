@@ -880,18 +880,6 @@ namespace temp
 }
 
 
-renderer::config adjust_renderer_config(vulkan::device const &device)
-{
-    auto &&device_limits = device.device_limits();
-
-    auto sample_counts = std::min(device_limits.framebuffer_color_sample_counts, device_limits.framebuffer_depth_sample_counts);
-
-    renderer::config renderer_config;
-
-    renderer_config.framebuffer_sample_counts = std::min(sample_counts, renderer_config.framebuffer_sample_counts);
-
-    return renderer_config;
-}
 
 
 std::unique_ptr<renderer::swapchain>
@@ -1105,7 +1093,7 @@ void init(platform::window &window, app_t &app)
 
     app.device = std::make_unique<vulkan::device>(*instance, app.platform_surface);
 
-    app.renderer_config = adjust_renderer_config(*app.device);
+    app.renderer_config = renderer::adjust_renderer_config(app.device->device_limits());
 
     app.memory_manager = std::make_unique<resource::memory_manager>(*app.device);
     app.resource_manager = std::make_unique<resource::resource_manager>(*app.device, app.renderer_config, *app.memory_manager);
