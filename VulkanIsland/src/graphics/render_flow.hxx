@@ -62,3 +62,19 @@ namespace graphics
         renderer::config const &renderer_config_;
     };
 }
+
+
+std::vector<graphics::attachment>
+create_attachments(vulkan::device const &device, renderer::config const &renderer_config,
+                   resource::resource_manager &resource_manager,renderer::swapchain const &swapchain);
+
+std::vector<graphics::attachment_description>
+create_attachment_descriptions(std::vector<graphics::attachment> const &attachments);
+
+std::shared_ptr<graphics::render_pass>
+create_render_pass(graphics::render_pass_manager &render_pass_manager,
+                   renderer::surface_format surface_format, std::vector<graphics::attachment_description> attachment_descriptions);
+
+std::vector<std::shared_ptr<resource::framebuffer>>
+create_framebuffers(resource::resource_manager &resource_manager, renderer::swapchain const &swapchain,
+                    std::shared_ptr<graphics::render_pass> render_pass, std::vector<graphics::attachment> const &attachments);
