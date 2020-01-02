@@ -15,12 +15,8 @@
 
 namespace graphics
 {
-    struct render_pipeline_output final {
-        graphics::attachment_reference attachment_reference;
-    };
-
     struct render_pipeline_node final {
-        std::uint32_t width, height;
+        renderer::extent extent;
 
         /*std::vector<graphics::attachment> input_attachments;
         std::vector<graphics::attachment> color_attachments;
@@ -49,17 +45,17 @@ namespace graphics
     class render_pipeline_manager final {
     public:
     
-        render_pipeline_manager(std::shared_ptr<resource::resource_manager> resource_manager, renderer::config const &renderer_config);
+        render_pipeline_manager(vulkan::device const &device, std::shared_ptr<resource::resource_manager> resource_manager);
 
         [[nodiscard]] graphics::render_pipeline
-        create_render_flow(std::vector<graphics::render_pipeline_node> const &nodes, std::vector<graphics::render_pipeline_output> const &output);
+        create_render_flow(renderer::swapchain const &swapchain, std::vector<graphics::render_pipeline_node> const &nodes);
 
     private:
 
-        std::shared_ptr<resource::resource_manager> resource_manager_;
-        std::shared_ptr<graphics::render_pass_manager> render_pass_manager_;
+        vulkan::device const &device_;
 
-        renderer::config const &renderer_config_;
+        std::shared_ptr<resource::resource_manager> resource_manager_;
+        std::unique_ptr<graphics::render_pass_manager> render_pass_manager_;
     };
 }
 

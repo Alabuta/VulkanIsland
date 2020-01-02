@@ -4,11 +4,15 @@
 
 namespace graphics
 {
-    render_pipeline_manager::render_pipeline_manager(std::shared_ptr<resource::resource_manager> resource_manager, renderer::config const &renderer_config)
-        : resource_manager_{resource_manager}, renderer_config_{renderer_config} { }
+    render_pipeline_manager::render_pipeline_manager(vulkan::device const &device,
+                                                     std::shared_ptr<resource::resource_manager> resource_manager)
+        : device_{device}, resource_manager_{resource_manager}
+    {
+        render_pass_manager_ = std::make_unique<graphics::render_pass_manager>(device);
+    }
     
     graphics::render_pipeline
-    render_pipeline_manager::create_render_flow(std::vector<graphics::render_pipeline_node> const &, std::vector<graphics::render_pipeline_output> const &)
+    render_pipeline_manager::create_render_flow(renderer::swapchain const &swapchain, std::vector<graphics::render_pipeline_node> const &)
     {
         return graphics::render_pipeline();
     }
@@ -26,7 +30,6 @@ create_attachments(vulkan::device const &device, renderer::config const &rendere
     auto samples_count = renderer_config.framebuffer_sample_counts;
 
     auto extent = swapchain.extent();
-
 
     {
         /* | graphics::IMAGE_USAGE::TRANSFER_DESTINATION*/
@@ -184,10 +187,10 @@ create_framebuffers(resource::resource_manager &resource_manager, renderer::swap
     }
 
     for (auto &&swapchain_view : swapchain_views) {
-        auto image_views_ = image_views;
-        image_views_.push_back(swapchain_view);
+        auto image_views_copy = image_views;
+        image_views_copy.push_back(swapchain_view);
 
-        auto framebuffer = resource_manager.create_framebuffer(render_pass, swapchain.extent(), image_views_);
+        auto framebuffer = resource_manager.create_framebuffer(render_pass, swapchain.extent(), image_views_copy);
 
         framebuffers.push_back(std::move(framebuffer));
     }
