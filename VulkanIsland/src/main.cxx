@@ -54,7 +54,9 @@
 #endif
 
 #include <fmt/format.h>
-#include <boost/align/aligned_alloc.hpp>
+
+#include <boost/align.hpp>
+#include <boost/align/align.hpp>
 
 #include "main.hxx"
 #include "utility/mpl.hxx"
@@ -188,11 +190,9 @@ struct app_t final {
     std::vector<VkCommandBuffer> command_buffers;
 
     std::shared_ptr<resource::buffer> perObjectBuffer, perCameraBuffer;
-    void *perObjectsMappedPtr{nullptr};
-    void *alignedBuffer{nullptr};
+    void *ssbo_mapped_ptr{nullptr};
 
-    std::size_t objectsNumber{2u};
-    std::size_t alignedBufferSize{0u};
+    std::size_t aligned_buffer_size{0u};
 
     std::shared_ptr<resource::texture> texture;
 
@@ -233,11 +233,8 @@ struct app_t final {
 
         texture.reset();
 
-        if (perObjectsMappedPtr)
+        if (ssbo_mapped_ptr)
             vkUnmapMemory(device->handle(), perObjectBuffer->memory()->handle());
-
-        if (alignedBuffer)
-            boost::alignment::aligned_free(alignedBuffer);
 
         perCameraBuffer.reset();
         perObjectBuffer.reset();
@@ -445,6 +442,11 @@ void create_graphics_command_buffers(app_t &app)
 
         vkCmdBindVertexBuffers(command_buffer, first_binding, binding_count, std::data(vertex_buffer_handles), std::data(vertex_buffer_offsets));
 
+        std::uint32_t dynamic_offset = 0;
+
+        auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
+        auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
+
         for (auto &&draw_command : app.draw_commands) {
             auto [
                 material, pipeline, vertex_buffer,
@@ -454,12 +456,12 @@ void create_graphics_command_buffers(app_t &app)
 
             vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
 
-            std::uint32_t const dynamic_offset = 0;
-
             vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout,
                                     0, 1, &descriptorSet, 1, &dynamic_offset);
 
             vkCmdDraw(command_buffer, vertex_count, 1, first_vertex, 0);
+
+            dynamic_offset += static_cast<std::uint32_t>(aligned_offset);
         }
 
         vkCmdEndRenderPass(command_buffer);
@@ -609,6 +611,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
         );
     }
 }
+
 
 namespace temp
 {
@@ -892,6 +895,20 @@ create_swapchain(vulkan::device const &device, renderer::platform_surface const 
     return swapchain;
 }
 
+void create_semaphores(app_t &app)
+{
+    auto &&resource_manager = *app.resource_manager;
+
+    if (auto semaphore = resource_manager.create_semaphore(); !semaphore)
+        throw std::runtime_error("failed to create image semaphore"s);
+
+    else app.image_available_semaphore = semaphore;
+
+    if (auto semaphore = resource_manager.create_semaphore(); !semaphore)
+        throw std::runtime_error("failed to create render semaphore"s);
+
+    else app.render_finished_semaphore = semaphore;
+}
 
 void init(platform::window &window, app_t &app)
 {
@@ -954,20 +971,20 @@ void init(platform::window &window, app_t &app)
     else app.texture.sampler = result;
 #endif
 
-    auto alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
+    auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
+    auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
 
-    app.alignedBufferSize = aligned_size(sizeof(per_object_t), alignment) * app.objectsNumber;
-    app.alignedBuffer = boost::alignment::aligned_alloc(alignment, app.alignedBufferSize);
+    app.objects.resize(4);
 
-    app.objects.resize(app.objectsNumber);
+    app.aligned_buffer_size = aligned_offset * std::size(app.objects);
 
-    if (app.perObjectBuffer = CreateStorageBuffer(*app.resource_manager, app.alignedBufferSize); app.perObjectBuffer) {
+    if (app.perObjectBuffer = CreateStorageBuffer(*app.resource_manager, app.aligned_buffer_size); app.perObjectBuffer) {
         auto &&buffer = *app.perObjectBuffer;
 
         auto offset = buffer.memory()->offset();
         auto size = buffer.memory()->size();
 
-        if (auto result = vkMapMemory(app.device->handle(), buffer.memory()->handle(), offset, size, 0, &app.perObjectsMappedPtr); result != VK_SUCCESS)
+        if (auto result = vkMapMemory(app.device->handle(), buffer.memory()->handle(), offset, size, 0, &app.ssbo_mapped_ptr); result != VK_SUCCESS)
             throw std::runtime_error(fmt::format("failed to map per object uniform buffer memory: {0:#x}\n"s, result));
     }
 
@@ -1024,20 +1041,20 @@ void update(app_t &app)
         vkUnmapMemory(device.handle(), buffer.memory()->handle());
     }
 
-    std::size_t const stride = app.alignedBufferSize / app.objectsNumber;
-    std::size_t instanceIndex = 0;
+    std::size_t const stride = app.aligned_buffer_size / std::size(app.objects);
+    std::size_t object_index = 0;
 
     for (auto &&object : app.objects) {
-        object.world = glm::translate(glm::mat4{1.f}, glm::vec3{0, 0, -0.125f * static_cast<float>(instanceIndex)});
-        //object.world = glm::rotate(object.world, glm::radians(-90.f), glm::vec3{1, 0, 0});
+        object.world = glm::translate(glm::mat4{1.f}, glm::vec3{0, .1f * object_index, 0});
+        //object.world = glm::rotate(object.world, glm::radians(-30.f * instanceIndex), glm::vec3{0, 1, 0});
         //object.world = glm::scale(object.world, glm::vec3{.01f});
 
         object.normal = glm::inverseTranspose(object.world);
 
-        ++instanceIndex;
+        ++object_index;
     }
 
-    auto it_begin = reinterpret_cast<decltype(app.objects)::value_type *>(app.alignedBuffer);
+    auto it_begin = reinterpret_cast<decltype(app.objects)::value_type *>(app.ssbo_mapped_ptr);
 
 #ifdef _MSC_VER
     std::copy(std::execution::par, std::cbegin(app.objects), std::cend(app.objects), strided_forward_iterator{it_begin, stride});
@@ -1045,15 +1062,13 @@ void update(app_t &app)
     std::copy(std::cbegin(app.objects), std::cend(app.objects), strided_forward_iterator{it_begin, stride});
 #endif
 
-    memcpy(app.perObjectsMappedPtr, app.alignedBuffer, app.alignedBufferSize);
-
     auto const mappedRanges = std::array{
         VkMappedMemoryRange{
             VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
             nullptr,
             app.perObjectBuffer->memory()->handle(),
             app.perObjectBuffer->memory()->offset(),
-            app.alignedBufferSize
+            app.aligned_buffer_size
         }
     };
 
@@ -1195,21 +1210,6 @@ int main()
 }
 
 
-void create_semaphores(app_t &app)
-{
-    auto &&resource_manager = *app.resource_manager;
-
-    if (auto semaphore = resource_manager.create_semaphore(); !semaphore)
-        throw std::runtime_error("failed to create image semaphore"s);
-
-    else app.image_available_semaphore = semaphore;
-
-    if (auto semaphore = resource_manager.create_semaphore(); !semaphore)
-        throw std::runtime_error("failed to create render semaphore"s);
-
-    else app.render_finished_semaphore = semaphore;
-}
-
 template<class T, typename std::enable_if_t<mpl::is_container_v<std::remove_cvref_t<T>>>...>
 [[nodiscard]] std::shared_ptr<resource::buffer>
 stage_data(vulkan::device &device, resource::resource_manager &resource_manager, T &&container)
@@ -1318,7 +1318,7 @@ std::shared_ptr<resource::buffer>
 CreateCoherentStorageBuffer(resource::resource_manager &resource_manager, std::size_t size)
 {
     auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
-    auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE| graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
+    auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
 
     return resource_manager.create_buffer(size, usageFlags, propertyFlags);
 }
