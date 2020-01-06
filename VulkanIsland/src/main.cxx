@@ -451,13 +451,13 @@ void create_graphics_command_buffers(app_t &app)
             auto [
                 material, pipeline, vertex_buffer,
                 vertex_count, first_vertex,
-                pipelineLayout, render_pass, descriptorSet
+                pipeline_layout, render_pass, descriptor_set
             ] = draw_command;
 
             vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
 
-            vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout,
-                                    0, 1, &descriptorSet, 1, &dynamic_offset);
+            vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
+                                    0, 1, &descriptor_set, 1, &dynamic_offset);
 
             vkCmdDraw(command_buffer, vertex_count, 1, first_vertex, 0);
 
@@ -482,12 +482,15 @@ void create_frame_data(app_t &app)
     if (swapchain == nullptr)
         throw std::runtime_error("failed to create the swapchain"s);
 
-    auto attachments = create_attachments(device, app.renderer_config, resource_manager, *swapchain);
+    auto attachment_descriptions = create_attachment_descriptions(device, app.renderer_config, *swapchain);
+
+    if (attachment_descriptions.empty())
+        throw std::runtime_error("failed to create the attachment descriptions"s);
+
+    auto attachments = create_attachments(device, resource_manager, attachment_descriptions, swapchain->extent());
 
     if (attachments.empty())
         throw std::runtime_error("failed to create the attachments"s);
-
-    auto attachment_descriptions = create_attachment_descriptions(attachments);
 
     auto render_pass = create_render_pass(*app.render_pass_manager, swapchain->surface_format(), attachment_descriptions);
 

@@ -67,10 +67,9 @@ namespace graphics
     };
 
     struct color_attachment final : public framebuffer_attachment { };
-    struct depth_attachment final : public framebuffer_attachment { };
     struct depth_stencil_attachment final : public framebuffer_attachment { };
 
-    using attachment = std::variant<graphics::color_attachment, graphics::depth_attachment, graphics::depth_stencil_attachment>;
+    using attachment = std::variant<graphics::color_attachment, graphics::depth_stencil_attachment>;
 }
 
 namespace graphics

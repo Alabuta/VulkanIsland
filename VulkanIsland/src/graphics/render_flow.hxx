@@ -18,9 +18,9 @@ namespace graphics
     struct render_pipeline_node final {
         renderer::extent extent;
 
-        /*std::vector<graphics::attachment> input_attachments;
+        std::vector<graphics::attachment> input_attachments;
         std::vector<graphics::attachment> color_attachments;
-        std::vector<graphics::attachment> depth_stencil_attachments;*/
+        std::vector<graphics::attachment> depth_stencil_attachments;
 
         std::shared_ptr<graphics::material> material;
 
@@ -61,11 +61,11 @@ namespace graphics
 
 
 std::vector<graphics::attachment>
-create_attachments(vulkan::device const &device, renderer::config const &renderer_config,
-                   resource::resource_manager &resource_manager,renderer::swapchain const &swapchain);
+create_attachments(vulkan::device const &device, resource::resource_manager &resource_manager,
+                   std::vector<graphics::attachment_description> const &attachment_descriptions, renderer::extent extent);
 
 std::vector<graphics::attachment_description>
-create_attachment_descriptions(std::vector<graphics::attachment> const &attachments);
+create_attachment_descriptions(vulkan::device const &device, renderer::config const &renderer_config, renderer::swapchain const &swapchain);
 
 std::shared_ptr<graphics::render_pass>
 create_render_pass(graphics::render_pass_manager &render_pass_manager,

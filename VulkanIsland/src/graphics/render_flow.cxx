@@ -19,99 +19,80 @@ namespace graphics
 }
 
 std::vector<graphics::attachment>
-create_attachments(vulkan::device const &device, renderer::config const &renderer_config, resource::resource_manager &resource_manager, renderer::swapchain const &swapchain)
+//create_attachments(vulkan::device const &device, renderer::config const &renderer_config, resource::resource_manager &resource_manager, renderer::swapchain const &swapchain)
+create_attachments(vulkan::device const &device, resource::resource_manager &resource_manager,
+                   std::vector<graphics::attachment_description> const &attachment_descriptions, renderer::extent extent)
 {
     auto constexpr mip_levels = 1u;
+
     auto constexpr image_type = graphics::IMAGE_TYPE::TYPE_2D;
     auto constexpr view_type = graphics::IMAGE_VIEW_TYPE::TYPE_2D;
 
+    auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL /*| VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT*/;
+    auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
+
     std::vector<graphics::attachment> attachments;
 
-    auto samples_count = renderer_config.framebuffer_sample_counts;
+    for (auto &&attachment_description : attachment_descriptions) {
+        auto format = attachment_description.format;
+        auto samples_count = attachment_description.samples_count;
 
-    auto extent = swapchain.extent();
+        auto is_color_attachment = attachment_description.final_layout == graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT;
 
-    {
         /* | graphics::IMAGE_USAGE::TRANSFER_DESTINATION*/
-        auto constexpr usage_flags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT | graphics::IMAGE_USAGE::COLOR_ATTACHMENT;
-        auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL /*| VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT*/;
-        auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
-        auto constexpr aspect_flags = graphics::IMAGE_ASPECT::COLOR_BIT;
+        auto usage_flags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT
+            | (is_color_attachment ? graphics::IMAGE_USAGE::COLOR_ATTACHMENT : graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT);
 
-        auto format = swapchain.surface_format().format;
+        auto aspect_flags = is_color_attachment ? graphics::IMAGE_ASPECT::COLOR_BIT : graphics::IMAGE_ASPECT::DEPTH_BIT;
 
         auto image = resource_manager.create_image(image_type, format, extent, mip_levels, samples_count, tiling, usage_flags, property_flags);
 
         if (image == nullptr)
-            throw graphics::exception("failed to create image for the color attachment"s);
+            throw graphics::exception("failed to create image for an attachment"s);
 
         auto image_view = resource_manager.create_image_view(image, view_type, aspect_flags);
 
         if (image_view == nullptr)
-            throw graphics::exception("failed to create image view for the color attachment"s);
+            throw graphics::exception("failed to create image view for an attachment"s);
 
-        attachments.push_back(graphics::color_attachment{format, tiling, mip_levels, samples_count, image, image_view});
-    }
+        if (is_color_attachment)
+            attachments.push_back(graphics::color_attachment{format, tiling, mip_levels, samples_count, image, image_view});
 
-    {
-        auto constexpr usage_flags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT | graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT;
-        auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL /*| VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT*/;
-        auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
-        auto constexpr aspect_flags = graphics::IMAGE_ASPECT::DEPTH_BIT;
-
-        auto format = find_supported_image_format(
-            device,
-            {graphics::FORMAT::D32_SFLOAT, graphics::FORMAT::D32_SFLOAT_S8_UINT, graphics::FORMAT::D24_UNORM_S8_UINT},
-            tiling,
-            graphics::FORMAT_FEATURE::DEPTH_STENCIL_ATTACHMENT
-        );
-
-        if (!format)
-            throw graphics::exception("failed to find supported depth format"s);
-
-        auto image = resource_manager.create_image(image_type, *format, extent, mip_levels, samples_count, tiling, usage_flags, property_flags);
-
-        if (image == nullptr)
-            throw graphics::exception("failed to create image for the depth attachment"s);
-
-        auto image_view = resource_manager.create_image_view(image, view_type, aspect_flags);
-
-        if (image_view == nullptr)
-            throw graphics::exception("failed to create image view for the depth attachment"s);
-
-        attachments.push_back(graphics::depth_attachment{*format, tiling, mip_levels, samples_count, image, image_view});
+        else attachments.push_back(graphics::depth_stencil_attachment{format, tiling, mip_levels, samples_count, image, image_view});
     }
 
     return attachments;
 }
 
 std::vector<graphics::attachment_description>
-create_attachment_descriptions(std::vector<graphics::attachment> const &attachments)
+create_attachment_descriptions(vulkan::device const &device, renderer::config const &renderer_config, renderer::swapchain const &swapchain)
 {
-    auto [color_attachment_format, color_attachment_samples_count] = std::visit([] (auto &&attachment)
-    {
-        return std::pair{attachment.format, attachment.samples_count};
+    auto samples_count = renderer_config.framebuffer_sample_counts;
 
-    }, attachments.at(0));
+    auto color_attachment_format = swapchain.surface_format().format;
 
-    auto [depth_attachment_format, depth_attachment_samples_count] = std::visit([] (auto &&attachment)
-    {
-        return std::pair{attachment.format, attachment.samples_count};
+    auto depth_attachment_format = find_supported_image_format(
+        device,
+        {graphics::FORMAT::D32_SFLOAT, graphics::FORMAT::D32_SFLOAT_S8_UINT, graphics::FORMAT::D24_UNORM_S8_UINT},
+        graphics::IMAGE_TILING::OPTIMAL,
+        graphics::FORMAT_FEATURE::DEPTH_STENCIL_ATTACHMENT
+    );
 
-    }, attachments.at(1));
+    if (!depth_attachment_format)
+        throw graphics::exception("failed to find supported depth format"s);
 
     return std::vector{
         graphics::attachment_description{
             color_attachment_format,
-            color_attachment_samples_count,
+            samples_count,
             graphics::ATTACHMENT_LOAD_TREATMENT::CLEAR,
             graphics::ATTACHMENT_STORE_TREATMENT::DONT_CARE,
             graphics::IMAGE_LAYOUT::UNDEFINED,
             graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT
         },
         graphics::attachment_description{
-            depth_attachment_format,
-            depth_attachment_samples_count,
+            *depth_attachment_format,
+            samples_count,
             graphics::ATTACHMENT_LOAD_TREATMENT::CLEAR,
             graphics::ATTACHMENT_STORE_TREATMENT::DONT_CARE,
             graphics::IMAGE_LAYOUT::UNDEFINED,
