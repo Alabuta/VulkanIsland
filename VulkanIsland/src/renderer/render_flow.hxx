@@ -5,9 +5,9 @@
 #include <set>
 
 #include "vulkan/device.hxx"
-#include "graphics.hxx"
-#include "attachments.hxx"
-#include "material.hxx"
+#include "graphics/graphics.hxx"
+#include "graphics/attachments.hxx"
+#include "renderer/material.hxx"
 
 #include "renderer/config.hxx"
 #include "renderer/swapchain.hxx"

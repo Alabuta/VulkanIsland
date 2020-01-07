@@ -88,11 +88,11 @@
 #include "graphics/graphics_pipeline.hxx"
 #include "graphics/pipeline_states.hxx"
 
-#include "graphics/material.hxx"
+#include "renderer/material.hxx"
 
 #include "graphics/vertex.hxx"
 #include "graphics/render_pass.hxx"
-#include "graphics/render_flow.hxx"
+#include "renderer/render_flow.hxx"
 #include "graphics/compatibility.hxx"
 
 #include "platform/input/input_manager.hxx"

@@ -1,3 +1,5 @@
+#include <array>
+
 #include "utility/exceptions.hxx"
 #include "render_flow.hxx"
 
@@ -19,29 +21,39 @@ namespace graphics
 }
 
 std::vector<graphics::attachment>
-//create_attachments(vulkan::device const &device, renderer::config const &renderer_config, resource::resource_manager &resource_manager, renderer::swapchain const &swapchain)
 create_attachments(vulkan::device const &device, resource::resource_manager &resource_manager,
                    std::vector<graphics::attachment_description> const &attachment_descriptions, renderer::extent extent)
 {
     auto constexpr mip_levels = 1u;
 
     auto constexpr image_type = graphics::IMAGE_TYPE::TYPE_2D;
-    auto constexpr view_type = graphics::IMAGE_VIEW_TYPE::TYPE_2D;
+    auto constexpr image_view_type = graphics::IMAGE_VIEW_TYPE::TYPE_2D;
 
-    auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL /*| VK_MEMORY_PROPERTY_LAZILY_ALLOCATED_BIT*/;
+    auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL /*| graphics::MEMORY_PROPERTY_TYPE::LAZILY_ALLOCATED*/;
     auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
     std::vector<graphics::attachment> attachments;
+
+    auto constexpr kDEPTH_STENCIL_FORMATS = std::array{
+        graphics::FORMAT::D16_UNORM,
+        graphics::FORMAT::D16_UNORM_S8_UINT,
+        graphics::FORMAT::D24_UNORM_S8_UINT,
+        graphics::FORMAT::X8_D24_UNORM_PACK32,
+        graphics::FORMAT::D32_SFLOAT,
+        graphics::FORMAT::D32_SFLOAT_S8_UINT
+    };
 
     for (auto &&attachment_description : attachment_descriptions) {
         auto format = attachment_description.format;
         auto samples_count = attachment_description.samples_count;
 
-        auto is_color_attachment = attachment_description.final_layout == graphics::IMAGE_LAYOUT::COLOR_ATTACHMENT;
+        auto is_color_attachment = std::none_of(std::cbegin(kDEPTH_STENCIL_FORMATS), std::cend(kDEPTH_STENCIL_FORMATS), [format] (auto dsf)
+        {
+            return format == dsf;
+        });
 
-        /* | graphics::IMAGE_USAGE::TRANSFER_DESTINATION*/
-        auto usage_flags = graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT
-            | (is_color_attachment ? graphics::IMAGE_USAGE::COLOR_ATTACHMENT : graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT);
+        auto usage_flags = is_color_attachment ? graphics::IMAGE_USAGE::COLOR_ATTACHMENT : graphics::IMAGE_USAGE::DEPTH_STENCIL_ATTACHMENT;
+        usage_flags = usage_flags | graphics::IMAGE_USAGE::TRANSIENT_ATTACHMENT;
 
         auto aspect_flags = is_color_attachment ? graphics::IMAGE_ASPECT::COLOR_BIT : graphics::IMAGE_ASPECT::DEPTH_BIT;
 
@@ -50,7 +62,7 @@ create_attachments(vulkan::device const &device, resource::resource_manager &res
         if (image == nullptr)
             throw graphics::exception("failed to create image for an attachment"s);
 
-        auto image_view = resource_manager.create_image_view(image, view_type, aspect_flags);
+        auto image_view = resource_manager.create_image_view(image, image_view_type, aspect_flags);
 
         if (image_view == nullptr)
             throw graphics::exception("failed to create image view for an attachment"s);

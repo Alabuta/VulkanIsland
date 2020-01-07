@@ -269,9 +269,9 @@
     <ClCompile Include="src\graphics\descriptors.cxx" />
     <ClCompile Include="src\graphics\graphics_api.cxx" />
     <ClCompile Include="src\graphics\graphics_pipeline.cxx" />
-    <ClCompile Include="src\graphics\material.cxx" />
+    <ClCompile Include="src\renderer\material.cxx" />
     <ClCompile Include="src\graphics\pipeline_states.cxx" />
-    <ClCompile Include="src\graphics\render_flow.cxx" />
+    <ClCompile Include="src\renderer\render_flow.cxx" />
     <ClCompile Include="src\graphics\render_pass.cxx" />
     <ClCompile Include="src\graphics\shader_program.cxx" />
     <ClCompile Include="src\graphics\vertex.cxx" />
@@ -310,9 +310,9 @@
     <ClInclude Include="src\graphics\graphics.hxx" />
     <ClInclude Include="src\graphics\graphics_api.hxx" />
     <ClInclude Include="src\graphics\graphics_pipeline.hxx" />
-    <ClInclude Include="src\graphics\material.hxx" />
+    <ClInclude Include="src\renderer\material.hxx" />
     <ClInclude Include="src\graphics\pipeline_states.hxx" />
-    <ClInclude Include="src\graphics\render_flow.hxx" />
+    <ClInclude Include="src\renderer\render_flow.hxx" />
     <ClInclude Include="src\graphics\render_pass.hxx" />
     <ClInclude Include="src\graphics\shader_program.hxx" />
     <ClInclude Include="src\graphics\vertex.hxx" />

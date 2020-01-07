@@ -10,11 +10,11 @@
 #include "utility/mpl.hxx"
 #include "vulkan/device.hxx"
 #include "renderer/config.hxx"
+#include "renderer/material.hxx"
 
 #include "graphics.hxx"
 #include "vertex.hxx"
 #include "pipeline_states.hxx"
-#include "material.hxx"
 #include "shader_program.hxx"
 #include "render_pass.hxx"
 

@@ -372,9 +372,10 @@ namespace graphics
         RGB32_SFLOAT,
 
         D16_UNORM,
+        D16_UNORM_S8_UINT,
+        D24_UNORM_S8_UINT,
         X8_D24_UNORM_PACK32,
         D32_SFLOAT,
-        D24_UNORM_S8_UINT,
         D32_SFLOAT_S8_UINT,
 
         GBGR8_422_UNORM,

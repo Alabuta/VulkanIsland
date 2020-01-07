@@ -6,10 +6,10 @@
 #include "main.hxx"
 #include "vulkan/device.hxx"
 
-#include "graphics.hxx"
-#include "vertex.hxx"
+#include "graphics/graphics.hxx"
+#include "graphics/vertex.hxx"
+#include "graphics/shader_program.hxx"
 #include "loaders/material_loader.hxx"
-#include "shader_program.hxx"
 
 
 namespace graphics

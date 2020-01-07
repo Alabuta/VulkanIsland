@@ -8,7 +8,8 @@ using namespace std::string_view_literals;
 #include <boost/functional/hash.hpp>
 #include <boost/uuid/uuid_io.hpp>
 
-#include "graphics_api.hxx"
+#include "graphics/graphics_api.hxx"
+
 #include "material.hxx"
 
 
