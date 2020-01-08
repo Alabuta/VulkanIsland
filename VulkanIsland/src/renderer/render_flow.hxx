@@ -15,8 +15,14 @@
 
 namespace graphics
 {
-    struct render_pipeline_node final {
+    struct render_graph_node final {
         renderer::extent extent;
+
+        graphics::FORMAT format;
+        graphics::IMAGE_LAYOUT layout;
+
+        std::uint32_t samples_count;
+
 
         std::vector<graphics::attachment> input_attachments;
         std::vector<graphics::attachment> color_attachments;
@@ -25,6 +31,8 @@ namespace graphics
         std::shared_ptr<graphics::material> material;
 
         graphics::pipeline_states pipeline_states;
+
+        // TODO:: add graphics and compute commands collection.
     };
 
     class render_graph final {
