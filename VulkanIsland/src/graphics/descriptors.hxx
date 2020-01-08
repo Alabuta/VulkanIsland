@@ -4,6 +4,7 @@
 
 #include "graphics.hxx"
 #include "utility/mpl.hxx"
+#include "vulkan/device.hxx"
 
 
 namespace graphics
@@ -31,6 +32,14 @@ namespace graphics
         // TODO:: create flags support.
 
         std::vector<graphics::descriptor_set_binding> descriptor_set_bindings;
+
+        VkDescriptorSetLayout handle{VK_NULL_HANDLE};
+
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, descriptor_set_layout>
+        auto constexpr operator== (T &&rhs) const
+        {
+            return descriptor_set_bindings == rhs.descriptor_set_bindings;
+        }
     };
 }
 

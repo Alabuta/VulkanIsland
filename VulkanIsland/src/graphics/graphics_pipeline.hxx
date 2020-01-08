@@ -17,6 +17,7 @@
 #include "pipeline_states.hxx"
 #include "shader_program.hxx"
 #include "render_pass.hxx"
+#include "descriptors.hxx"
 
 
 #define USE_DYNAMIC_PIPELINE_STATE 1
@@ -43,6 +44,18 @@ namespace graphics
 
 namespace graphics
 {
+    class pipeline_layout final {
+    public:
+
+        pipeline_layout(VkPipelineLayout handle) noexcept : handle_{handle} { }
+
+        VkPipelineLayout handle() const noexcept { return handle_; }
+
+    private:
+
+        VkPipelineLayout handle_;
+    };
+
     class pipeline final {
     public:
 
@@ -98,6 +111,9 @@ namespace graphics
         [[nodiscard]] std::shared_ptr<graphics::pipeline>
         create_pipeline(std::shared_ptr<graphics::material> material, graphics::pipeline_states const &pipeline_states,
                         VkPipelineLayout layout, std::shared_ptr<graphics::render_pass> render_pass, std::uint32_t subpass_index);
+
+        [[nodiscard]] std::shared_ptr<graphics::pipeline_layout>
+        create_pipeline_layout(std::vector<graphics::descriptor_set_layout> const &descriptor_set_layouts);
 
     private:
 

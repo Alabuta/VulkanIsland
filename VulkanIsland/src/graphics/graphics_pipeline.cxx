@@ -416,6 +416,42 @@ namespace graphics
 
 namespace graphics
 {
+    std::shared_ptr<graphics::pipeline_layout>
+    pipeline_factory::create_pipeline_layout(std::vector<graphics::descriptor_set_layout> const &descriptor_set_layouts)
+    {
+        std::vector<VkDescriptorSetLayout> layouts_handles;
+
+        for (auto &&descriptor_set_layout : descriptor_set_layouts) {
+            layouts_handles.push_back(descriptor_set_layout.handle);
+        }
+
+        VkPipelineLayoutCreateInfo const create_info{
+            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+            nullptr, 0,
+            static_cast<std::uint32_t>(std::size(layouts_handles)), std::data(layouts_handles),
+            0, nullptr
+        };
+
+        VkPipelineLayout handle;
+
+        if (auto result = vkCreatePipelineLayout(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
+            throw std::runtime_error(fmt::format("failed to create pipeline layout: {0:#x}\n"s, result));
+
+        auto pipeline_layout = std::shared_ptr<graphics::pipeline_layout>(
+            new graphics::pipeline_layout{handle}, [this] (graphics::pipeline_layout *const ptr_pipeline_layout)
+            {
+                vkDestroyPipelineLayout(device_.handle(), ptr_pipeline_layout->handle(), nullptr);
+
+                delete ptr_pipeline_layout;
+            }
+        );
+
+        return pipeline_layout;
+    }
+}
+
+namespace graphics
+{
     std::size_t graphics::hash<pipeline_invariant>::operator() (pipeline_invariant const &pipeline_invariant) const
     {
         std::size_t seed = 0;
