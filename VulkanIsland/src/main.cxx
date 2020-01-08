@@ -542,7 +542,7 @@ void recreate_swap_chain(app_t &app)
 
 void build_render_pipelines(app_t &app, xformat const &model_)
 {
-    std::vector<graphics::render_pipeline> render_pipelines;
+    std::vector<graphics::render_graph> render_pipelines;
 
     graphics::rasterization_state rasterization_state{
         graphics::CULL_MODE::BACK,

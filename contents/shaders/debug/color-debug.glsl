@@ -23,6 +23,7 @@ out gl_PerVertex {
     vec4 gl_Position;
 };
 
+
 #pragma technique(0)
 {
     gl_Position = camera.projectionView * object.world * vec4(POSITION, 1.);

@@ -6,17 +6,17 @@
 
 namespace graphics
 {
-    render_pipeline_manager::render_pipeline_manager(vulkan::device const &device,
+    render_graph_manager::render_graph_manager(vulkan::device const &device,
                                                      std::shared_ptr<resource::resource_manager> resource_manager)
         : device_{device}, resource_manager_{resource_manager}
     {
         render_pass_manager_ = std::make_unique<graphics::render_pass_manager>(device);
     }
     
-    graphics::render_pipeline
-    render_pipeline_manager::create_render_flow(renderer::swapchain const &swapchain, std::vector<graphics::render_pipeline_node> const &)
+    graphics::render_graph
+    render_graph_manager::create_render_flow(renderer::swapchain const &swapchain, std::vector<graphics::render_graph_node> const &)
     {
-        return graphics::render_pipeline();
+        return graphics::render_graph();
     }
 }
 
@@ -29,7 +29,7 @@ create_attachments(vulkan::device const &device, resource::resource_manager &res
     auto constexpr image_type = graphics::IMAGE_TYPE::TYPE_2D;
     auto constexpr image_view_type = graphics::IMAGE_VIEW_TYPE::TYPE_2D;
 
-    auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL /*| graphics::MEMORY_PROPERTY_TYPE::LAZILY_ALLOCATED*/;
+    auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL /*graphics::MEMORY_PROPERTY_TYPE::LAZILY_ALLOCATED*/;
     auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
     std::vector<graphics::attachment> attachments;

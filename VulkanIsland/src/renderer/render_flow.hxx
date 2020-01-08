@@ -27,7 +27,7 @@ namespace graphics
         graphics::pipeline_states pipeline_states;
     };
 
-    class render_pipeline final {
+    class render_graph final {
     public:
 
     private:
@@ -42,13 +42,13 @@ namespace graphics
         // std::vector<graphics::render_pipeline_node> nodes_;
     };
 
-    class render_pipeline_manager final {
+    class render_graph_manager final {
     public:
     
-        render_pipeline_manager(vulkan::device const &device, std::shared_ptr<resource::resource_manager> resource_manager);
+        render_graph_manager(vulkan::device const &device, std::shared_ptr<resource::resource_manager> resource_manager);
 
-        [[nodiscard]] graphics::render_pipeline
-        create_render_flow(renderer::swapchain const &swapchain, std::vector<graphics::render_pipeline_node> const &nodes);
+        [[nodiscard]] graphics::render_graph
+        create_render_flow(renderer::swapchain const &swapchain, std::vector<graphics::render_graph_node> const &nodes);
 
     private:
 
