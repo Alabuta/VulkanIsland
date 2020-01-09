@@ -1001,7 +1001,7 @@ void init(platform::window &window, app_t &app)
 
     else app.descriptorPool = std::move(descriptorPool.value());
 
-    if (auto descriptorSet = CreateDescriptorSet(*app.device, app.descriptorPool, std::array{app.descriptorSetLayout}); !descriptorSet)
+    if (auto descriptorSet = CreateDescriptorSets(*app.device, app.descriptorPool, std::array{app.descriptorSetLayout}); !descriptorSet)
         throw std::runtime_error("failed to create the descriptor pool"s);
 
     else app.descriptorSet = std::move(descriptorSet.value());

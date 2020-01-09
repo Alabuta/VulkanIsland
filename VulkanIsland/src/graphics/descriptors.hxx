@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 
 #include "graphics.hxx"
 #include "utility/mpl.hxx"
@@ -31,9 +32,9 @@ namespace graphics
     struct descriptor_set_layout final {
         // TODO:: create flags support.
 
-        std::vector<graphics::descriptor_set_binding> descriptor_set_bindings;
-
         VkDescriptorSetLayout handle{VK_NULL_HANDLE};
+
+        std::vector<graphics::descriptor_set_binding> descriptor_set_bindings;
 
         template<class T> requires mpl::same_as<std::remove_cvref_t<T>, descriptor_set_layout>
         auto constexpr operator== (T &&rhs) const
@@ -45,8 +46,33 @@ namespace graphics
 
 namespace graphics
 {
+    class descriptor_registry final {
+    public:
+
+        static auto constexpr kDESCRIPTOR_SET_MAXIMUM_NUMBER{10u};
+
+        descriptor_registry(vulkan::device &device) noexcept;
+
+        [[nodiscard]] std::shared_ptr<descriptor_set_layout>
+        create_descriptor_set_layout(std::vector<graphics::descriptor_set_binding> const &descriptor_set_bindings);
+
+    private:
+
+        vulkan::device &device_;
+
+        VkDescriptorPool descriptor_pool_;
+    };
+}
+
+namespace graphics
+{
     template<>
     struct hash<graphics::descriptor_set_binding> {
         std::size_t operator() (graphics::descriptor_set_binding const &binding) const;
+    };
+
+    template<>
+    struct hash<graphics::descriptor_set_layout> {
+        std::size_t operator() (graphics::descriptor_set_layout const &binding) const;
     };
 }
