@@ -20,6 +20,8 @@ namespace convert_to
 
     VkPipelineStageFlags vulkan(graphics::PIPELINE_STAGE pipeline_stage) noexcept;
 
+    VkDescriptorType vulkan(graphics::DESCRIPTOR_TYPE descriptor_type) noexcept;
+
     VkCullModeFlags vulkan(graphics::CULL_MODE cull_mode) noexcept;
 
     VkPolygonMode vulkan(graphics::POLYGON_MODE polygon_mode) noexcept;
