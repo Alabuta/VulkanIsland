@@ -29,17 +29,26 @@ namespace graphics
         }
     };
 
-    struct descriptor_set_layout final {
+    class descriptor_set_layout final {
+    public:
+
+        descriptor_set_layout(VkDescriptorSetLayout handle) noexcept : handle_{handle} { }
+
+        VkDescriptorSetLayout handle() const noexcept { return handle_; }
+
+        std::vector<graphics::descriptor_set_binding> const &descriptor_set_bindings() const noexcept { return descriptor_set_bindings_; }
+
+    private:
         // TODO:: create flags support.
 
-        VkDescriptorSetLayout handle{VK_NULL_HANDLE};
+        VkDescriptorSetLayout handle_{VK_NULL_HANDLE};
 
-        std::vector<graphics::descriptor_set_binding> descriptor_set_bindings;
+        std::vector<graphics::descriptor_set_binding> descriptor_set_bindings_;
 
         template<class T> requires mpl::same_as<std::remove_cvref_t<T>, descriptor_set_layout>
         auto constexpr operator== (T &&rhs) const
         {
-            return descriptor_set_bindings == rhs.descriptor_set_bindings;
+            return descriptor_set_bindings_ == rhs.descriptor_set_bindings_;
         }
     };
 }
@@ -49,9 +58,10 @@ namespace graphics
     class descriptor_registry final {
     public:
 
-        static auto constexpr kDESCRIPTOR_SET_MAXIMUM_NUMBER{10u};
+        static auto constexpr kDESCRIPTOR_SET_MAXIMUM_NUMBER{128u};
 
-        descriptor_registry(vulkan::device &device) noexcept;
+        descriptor_registry(vulkan::device &device);
+        ~descriptor_registry();
 
         [[nodiscard]] std::shared_ptr<descriptor_set_layout>
         create_descriptor_set_layout(std::vector<graphics::descriptor_set_binding> const &descriptor_set_bindings);

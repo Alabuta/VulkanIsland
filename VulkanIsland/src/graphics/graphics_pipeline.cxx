@@ -422,7 +422,7 @@ namespace graphics
         std::vector<VkDescriptorSetLayout> layouts_handles;
 
         for (auto &&descriptor_set_layout : descriptor_set_layouts) {
-            layouts_handles.push_back(descriptor_set_layout.handle);
+            layouts_handles.push_back(descriptor_set_layout.handle());
         }
 
         VkPipelineLayoutCreateInfo const create_info{

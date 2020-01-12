@@ -164,6 +164,8 @@ struct app_t final {
     std::unique_ptr<graphics::material_factory> material_factory;
     std::unique_ptr<graphics::pipeline_factory> pipeline_factory;
 
+    std::unique_ptr<graphics::descriptor_registry> descriptor_registry;
+
     std::shared_ptr<graphics::render_pass> render_pass;
     std::unique_ptr<graphics::render_pass_manager> render_pass_manager;
 
@@ -227,6 +229,8 @@ struct app_t final {
 
         vkDestroyDescriptorSetLayout(device->handle(), descriptorSetLayout, nullptr);
         vkDestroyDescriptorPool(device->handle(), descriptorPool, nullptr);
+
+        descriptor_registry.reset();
 
         render_pass.reset();
         render_pass_manager.reset();
@@ -932,6 +936,8 @@ void init(platform::window &window, app_t &app)
     app.pipeline_factory = std::make_unique<graphics::pipeline_factory>(*app.device, app.renderer_config, *app.shader_manager);
 
     app.render_pass_manager = std::make_unique<graphics::render_pass_manager>(*app.device);
+
+    app.descriptor_registry = std::make_unique<graphics::descriptor_registry>(*app.device);
 
     if (auto command_pool = create_command_pool(*app.device, app.device->transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); command_pool)
         app.transfer_command_pool = *command_pool;

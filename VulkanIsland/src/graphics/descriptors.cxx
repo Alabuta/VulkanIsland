@@ -5,6 +5,7 @@ using namespace std::string_literals;
 #include <boost/functional/hash.hpp>
 
 #include "descriptors.hxx"
+#include "graphics_api.hxx"
 
 
 namespace graphics
@@ -27,7 +28,7 @@ namespace graphics
 
         hash<graphics::descriptor_set_binding> constexpr hasher;
 
-        for (auto &&binding : layout.descriptor_set_bindings)
+        for (auto &&binding : layout.descriptor_set_bindings())
             boost::hash_combine(seed, hasher(binding));
 
         return seed;
@@ -36,7 +37,7 @@ namespace graphics
 
 namespace graphics
 {
-    descriptor_registry::descriptor_registry(vulkan::device &device) noexcept : device_{device}
+    descriptor_registry::descriptor_registry(vulkan::device &device) : device_{device}
     {
         std::array<VkDescriptorPoolSize, 3> constexpr descriptor_pool{{
             { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 },
@@ -55,11 +56,47 @@ namespace graphics
             throw std::runtime_error(fmt::format("failed to create the descriptor pool: {0:#x}\n"s, result));
     }
 
-    std::shared_ptr<descriptor_set_layout>
+    descriptor_registry::~descriptor_registry()
+    {
+        vkDestroyDescriptorPool(device_.handle(), descriptor_pool_, nullptr);
+    }
+
+    std::shared_ptr<graphics::descriptor_set_layout>
     descriptor_registry::create_descriptor_set_layout(std::vector<graphics::descriptor_set_binding> const &descriptor_set_bindings)
     {
+        std::vector<VkDescriptorSetLayoutBinding> layout_bindigns;
 
-        return std::shared_ptr<descriptor_set_layout>();
+        for (auto &&binding : descriptor_set_bindings) {
+            layout_bindigns.push_back(VkDescriptorSetLayoutBinding{
+                binding.binding_index,
+                convert_to::vulkan(binding.descriptor_type),
+                binding.descriptor_count,
+                static_cast<VkShaderStageFlags>(convert_to::vulkan(binding.shader_stages)),
+                nullptr
+             });
+        }
+
+        VkDescriptorSetLayoutCreateInfo const create_info{
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+            nullptr, 0,
+            static_cast<std::uint32_t>(std::size(layout_bindigns)), std::data(layout_bindigns)
+        };
+
+        VkDescriptorSetLayout handle;
+
+        if (auto result = vkCreateDescriptorSetLayout(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
+            throw std::runtime_error(fmt::format("failed to create descriptor set layout: {0:#x}\n"s, result));
+
+        std::shared_ptr<graphics::descriptor_set_layout> descriptor_set_layout;
+
+        descriptor_set_layout.reset(new graphics::descriptor_set_layout{handle}, [this] (graphics::descriptor_set_layout *ptr_descriptor_set_layout)
+        {
+            vkDestroyDescriptorSetLayout(device_.handle(), ptr_descriptor_set_layout->handle(), nullptr);
+
+            delete ptr_descriptor_set_layout;
+        });
+
+        return descriptor_set_layout;
     }
 }
 
