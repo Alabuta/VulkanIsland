@@ -48,9 +48,7 @@ set(SOURCE_FILES
     src/graphics/graphics_api.hxx                   src/graphics/graphics_api.cxx
     src/graphics/graphics_pipeline.hxx              src/graphics/graphics_pipeline.cxx
     src/graphics/graphics.hxx
-    src/graphics/material.hxx                       src/graphics/material.cxx
     src/graphics/pipeline_states.hxx                src/graphics/pipeline_states.cxx
-    src/graphics/render_flow.hxx                    src/graphics/render_flow.cxx
     src/graphics/render_pass.hxx                    src/graphics/render_pass.cxx
     src/graphics/shader_program.hxx                 src/graphics/shader_program.cxx
     src/graphics/vertex.hxx                         src/graphics/vertex.cxx
@@ -70,8 +68,10 @@ set(SOURCE_FILES
     src/platform/window.hxx                         src/platform/window.cxx
 	
 	src/renderer/command_buffer.hxx                 src/renderer/command_buffer.cxx
-    src/renderer/config.hxx
+    src/renderer/config.hxx                         src/renderer/config.cxx
+    src/renderer/material.hxx                       src/renderer/material.cxx
     src/renderer/queues.hxx
+    src/renderer/render_flow.hxx                    src/renderer/render_flow.cxx
 	src/renderer/swapchain.hxx                      src/renderer/swapchain.cxx
 
 	src/resources/buffer.hxx                        src/resources/buffer.cxx
@@ -85,7 +85,6 @@ set(SOURCE_FILES
 	src/utility/helpers.hxx
 
 	src/vulkan/debug.hxx                            src/vulkan/debug.cxx
-    src/vulkan/device_config.hxx
     src/vulkan/device_limits.hxx
 	src/vulkan/device.hxx                           src/vulkan/device.cxx
 	src/vulkan/instance.hxx                         src/vulkan/instance.cxx
