@@ -128,11 +128,11 @@ namespace vulkan
             if constexpr (use_layers) {
                 auto present = std::any_of(std::cbegin(extensions_), std::cend(extensions_), [] (auto &&name)
                 {
-                    return std::strcmp(name, VK_EXT_DEBUG_REPORT_EXTENSION_NAME) == 0;
+                    return std::strcmp(name, VK_EXT_DEBUG_UTILS_EXTENSION_NAME) == 0;
                 });
 
                 if (!present)
-                    throw vulkan::logic_error("enabled validation layers require enabled 'VK_EXT_debug_report' extension"s);
+                    throw vulkan::logic_error("enabled validation layers require enabled 'VK_EXT_debug_utils' extension"s);
             }
 
             std::copy(std::cbegin(extensions_), std::cend(extensions_), std::back_inserter(extensions));
@@ -195,6 +195,15 @@ namespace vulkan
 
         if (auto result = vkCreateInstance(&create_info, nullptr, &handle_); result != VK_SUCCESS)
             throw vulkan::instance_exception("failed to create instance"s);
+
+        VkDebugUtilsMessengerEXT debug_messenger_handle{VK_NULL_HANDLE};
+
+        {
+            VkDebugUtilsMessengerCreateInfoEXT create_info{};
+
+            if (auto result = vkCreateDebugUtilsMessengerEXT(&create_info, handle_, nullptr, &debug_messenger_handle); result != VK_SUCCESS)
+                throw vulkan::instance_exception("failed to create debug messenger"s);
+        }
 
         if constexpr (use_layers)
             vulkan::create_debug_report_callback(handle_, debug_report_callback_);

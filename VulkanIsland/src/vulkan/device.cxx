@@ -13,8 +13,6 @@ using namespace std::string_literals;
 #include "utility/exceptions.hxx"
 #include "utility/mpl.hxx"
 
-#define USE_DEBUG_MARKERS 0
-
 #include "vulkan_config.hxx"
 #include "device_config.hxx"
 #include "device.hxx"
@@ -681,10 +679,6 @@ namespace vulkan
             auto const extensions_ = vulkan::device_extensions;
 
             std::copy(std::begin(extensions_), std::end(extensions_), std::back_inserter(extensions));
-
-        #if USE_DEBUG_MARKERS
-            extensions.push_back(VK_EXT_DEBUG_MARKER_EXTENSION_NAME);
-        #endif
 
             std::vector<std::string_view> extensions_view{std::begin(extensions), std::end(extensions)};
 
