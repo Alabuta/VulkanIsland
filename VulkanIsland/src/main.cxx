@@ -491,7 +491,7 @@ void create_frame_data(app_t &app)
     if (attachment_descriptions.empty())
         throw std::runtime_error("failed to create the attachment descriptions"s);
 
-    auto attachments = create_attachments(device, resource_manager, attachment_descriptions, swapchain->extent());
+    auto attachments = create_attachments(resource_manager, attachment_descriptions, swapchain->extent());
 
     if (attachments.empty())
         throw std::runtime_error("failed to create the attachments"s);
@@ -1054,7 +1054,7 @@ void update(app_t &app)
     std::size_t object_index = 0;
 
     for (auto &&object : app.objects) {
-        object.world = glm::translate(glm::mat4{1.f}, glm::vec3{0, .1f * object_index, 0});
+        object.world = glm::translate(glm::mat4{1.f}, glm::vec3{0, .1f * static_cast<float>(object_index), 0});
         //object.world = glm::rotate(object.world, glm::radians(-30.f * instanceIndex), glm::vec3{0, 1, 0});
         //object.world = glm::scale(object.world, glm::vec3{.01f});
 

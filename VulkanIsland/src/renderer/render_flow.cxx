@@ -14,14 +14,14 @@ namespace graphics
     }
     
     graphics::render_graph
-    render_graph_manager::create_render_flow(renderer::swapchain const &swapchain, std::vector<graphics::render_graph_node> const &)
+    render_graph_manager::create_render_flow(renderer::swapchain const &, std::vector<graphics::render_graph_node> const &)
     {
         return graphics::render_graph();
     }
 }
 
 std::vector<graphics::attachment>
-create_attachments(vulkan::device const &device, resource::resource_manager &resource_manager,
+create_attachments(resource::resource_manager &resource_manager,
                    std::vector<graphics::attachment_description> const &attachment_descriptions, renderer::extent extent)
 {
     auto constexpr mip_levels = 1u;
