@@ -20,6 +20,26 @@ using namespace std::string_literals;
 #include "renderer/swapchain.hxx"
 
 
+[[nodiscard]] VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(
+VkInstance instance, VkDevice device, VkDebugUtilsMessengerCreateInfoEXT const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkDebugUtilsMessengerEXT *pMessenger)
+{
+    auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetDeviceProcAddr(device, "vkCreateDebugUtilsMessengerEXT"));
+
+    if (func)
+        return func(instance, pCreateInfo, pAllocator, pMessenger);
+
+    return VK_ERROR_EXTENSION_NOT_PRESENT;
+}
+
+VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(
+VkInstance instance, VkDevice device, VkDebugUtilsMessengerEXT messenger, VkAllocationCallbacks const *pAllocator)
+{
+    auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetDeviceProcAddr(device, "vkDestroyDebugUtilsMessengerEXT"));
+
+    if (func)
+        func(instance, messenger, pAllocator);
+}
+
 namespace
 {
     auto constexpr queue_strict_matching = false;
@@ -726,6 +746,22 @@ namespace vulkan
         if (auto result = vkCreateDevice(physical_handle_, &device_info, nullptr, &handle_); result != VK_SUCCESS)
             throw vulkan::device_exception(fmt::format("failed to create logical device: {0:#x}"s, result));
 
+        VkDebugUtilsMessengerEXT debug_messenger_handle{VK_NULL_HANDLE};
+
+        {
+            VkDebugUtilsMessengerCreateInfoEXT const create_info{
+                VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+                nullptr, 0,
+                VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT,
+                VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+                vulkan::debug_callback,
+                nullptr
+            };
+
+            if (auto result = ::vkCreateDebugUtilsMessengerEXT(instance.handle(), handle_, &create_info, nullptr, &debug_messenger_handle); result != VK_SUCCESS)
+                throw vulkan::device_exception("failed to create debug messenger"s);
+        }
+
         for (auto &&queue : requested_queues) {
             std::visit([this] (auto &&queue)
             {
@@ -756,6 +792,8 @@ namespace vulkan
     {
         if (handle_ == VK_NULL_HANDLE)
             return;
+
+        vkDestroyDebugUtilsMessengerEXT(instance.handle(), handle_, &create_info);
 
         vkDeviceWaitIdle(handle_);
         vkDestroyDevice(handle_, nullptr);
