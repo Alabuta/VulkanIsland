@@ -23,6 +23,7 @@ namespace vulkan_config
         "VK_KHR_xcb_surface",
     #endif
         VK_KHR_SURFACE_EXTENSION_NAME,
+        VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
         VK_EXT_DEBUG_UTILS_EXTENSION_NAME
     };
 

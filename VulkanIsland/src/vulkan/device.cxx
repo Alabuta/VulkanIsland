@@ -20,25 +20,25 @@ using namespace std::string_literals;
 #include "renderer/swapchain.hxx"
 
 
-[[nodiscard]] VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(
-VkInstance instance, VkDevice device, VkDebugUtilsMessengerCreateInfoEXT const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkDebugUtilsMessengerEXT *pMessenger)
-{
-    auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetDeviceProcAddr(device, "vkCreateDebugUtilsMessengerEXT"));
+// [[nodiscard]] VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(
+// VkInstance instance, VkDevice device, VkDebugUtilsMessengerCreateInfoEXT const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkDebugUtilsMessengerEXT *pMessenger)
+// {
+//     auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetDeviceProcAddr(device, "vkCreateDebugUtilsMessengerEXT"));
 
-    if (func)
-        return func(instance, pCreateInfo, pAllocator, pMessenger);
+//     if (func)
+//         return func(instance, pCreateInfo, pAllocator, pMessenger);
 
-    return VK_ERROR_EXTENSION_NOT_PRESENT;
-}
+//     return VK_ERROR_EXTENSION_NOT_PRESENT;
+// }
 
-VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(
-VkInstance instance, VkDevice device, VkDebugUtilsMessengerEXT messenger, VkAllocationCallbacks const *pAllocator)
-{
-    auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetDeviceProcAddr(device, "vkDestroyDebugUtilsMessengerEXT"));
+// VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(
+// VkInstance instance, VkDevice device, VkDebugUtilsMessengerEXT messenger, VkAllocationCallbacks const *pAllocator)
+// {
+//     auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetDeviceProcAddr(device, "vkDestroyDebugUtilsMessengerEXT"));
 
-    if (func)
-        func(instance, messenger, pAllocator);
-}
+//     if (func)
+//         func(instance, messenger, pAllocator);
+// }
 
 namespace
 {
@@ -689,7 +689,7 @@ namespace vulkan
 
 namespace vulkan
 {
-    device::device(vulkan::instance &instance, renderer::platform_surface platform_surface)
+    device::device(vulkan::instance &instance, renderer::platform_surface platform_surface) : instance_{instance}
     {
         auto constexpr use_extensions = !vulkan::device_extensions.empty();
 
@@ -746,19 +746,24 @@ namespace vulkan
         if (auto result = vkCreateDevice(physical_handle_, &device_info, nullptr, &handle_); result != VK_SUCCESS)
             throw vulkan::device_exception(fmt::format("failed to create logical device: {0:#x}"s, result));
 
-        VkDebugUtilsMessengerEXT debug_messenger_handle{VK_NULL_HANDLE};
-
         {
+            auto vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
+                vkGetDeviceProcAddr(handle_, "vkCreateDebugUtilsMessengerEXT")
+            );
+
+            if (vkCreateDebugUtilsMessengerEXT == nullptr)
+                throw vulkan::device_exception("failed to get device procedure address: 'vkCreateDebugUtilsMessengerEXT'"s);
+
             VkDebugUtilsMessengerCreateInfoEXT const create_info{
                 VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
                 nullptr, 0,
                 VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT,
                 VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
-                vulkan::debug_callback,
-                nullptr
+                debug_callback_dispatcher,
+                reinterpret_cast<void *>(this)
             };
 
-            if (auto result = ::vkCreateDebugUtilsMessengerEXT(instance.handle(), handle_, &create_info, nullptr, &debug_messenger_handle); result != VK_SUCCESS)
+            if (auto result = vkCreateDebugUtilsMessengerEXT(instance.handle(), &create_info, nullptr, &debug_messenger_handle_); result != VK_SUCCESS)
                 throw vulkan::device_exception("failed to create debug messenger"s);
         }
 
@@ -793,9 +798,15 @@ namespace vulkan
         if (handle_ == VK_NULL_HANDLE)
             return;
 
-        vkDestroyDebugUtilsMessengerEXT(instance.handle(), handle_, &create_info);
-
         vkDeviceWaitIdle(handle_);
+
+        auto vkDestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
+            vkGetDeviceProcAddr(handle_, "kDestroyDebugUtilsMessengerEXT")
+        );
+
+        if (vkDestroyDebugUtilsMessengerEXT)
+            vkDestroyDebugUtilsMessengerEXT(instance_.handle(), debug_messenger_handle_, nullptr);
+
         vkDestroyDevice(handle_, nullptr);
 
         handle_ = nullptr;
@@ -805,5 +816,28 @@ namespace vulkan
     renderer::swapchain_support_details device::query_swapchain_support_details(renderer::platform_surface platform_surface) const
     {
         return ::query_swapchain_support_details(physical_handle_, platform_surface.handle());
+    }
+
+    VKAPI_ATTR VkBool32 VKAPI_CALL
+    device::debug_callback([[maybe_unused]] VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+                           [[maybe_unused]] VkDebugUtilsMessageTypeFlagsEXT message_types,
+                           [[maybe_unused]] VkDebugUtilsMessengerCallbackDataEXT const *callback_data)
+    {
+        // std::cerr << message << std::endl;
+
+        return VK_FALSE;
+    }
+
+    VKAPI_ATTR VkBool32 VKAPI_CALL
+    device::debug_callback_dispatcher(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+                                      VkDebugUtilsMessageTypeFlagsEXT message_types,
+                                      VkDebugUtilsMessengerCallbackDataEXT const *callback_data, void *user_data)
+    {
+        auto device = reinterpret_cast<vulkan::device *>(user_data);
+
+        if (device)
+            return device->debug_callback(message_severity, message_types, callback_data);
+
+        return VK_FALSE;
     }
 }

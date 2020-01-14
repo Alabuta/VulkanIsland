@@ -37,20 +37,9 @@ VkInstance instance, VkDebugReportCallbackEXT callback, VkAllocationCallbacks co
 namespace vulkan
 {
     [[nodiscard]] VKAPI_ATTR VkBool32 VKAPI_CALL
-    debug_callback2([[maybe_unused]] VkDebugReportFlagsEXT flags, [[maybe_unused]] VkDebugReportObjectTypeEXT object_type,
-                    [[maybe_unused]] std::uint64_t object, [[maybe_unused]] std::size_t location, [[maybe_unused]] std::int32_t message_code,
-                    [[maybe_unused]] const char *layer_prefix, const char *message, [[maybe_unused]] void *user_data)
-    {
-        std::cerr << message << std::endl;
-
-        return VK_FALSE;
-    }
-
-    [[nodiscard]] VKAPI_ATTR VkBool32 VKAPI_CALL
-    debug_callback([[maybe_unused]] VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
-                   [[maybe_unused]] VkDebugUtilsMessageTypeFlagsEXT message_types,
-                   [[maybe_unused]] VkDebugUtilsMessengerCallbackDataEXT const *callback_data,
-                   [[maybe_unused]] void *user_data)
+    debug_callback([[maybe_unused]] VkDebugReportFlagsEXT flags, [[maybe_unused]] VkDebugReportObjectTypeEXT object_type,
+                   [[maybe_unused]] std::uint64_t object, [[maybe_unused]] std::size_t location, [[maybe_unused]] std::int32_t message_code,
+                   [[maybe_unused]] const char *layer_prefix, const char *message, [[maybe_unused]] void *user_data)
     {
         std::cerr << message << std::endl;
 

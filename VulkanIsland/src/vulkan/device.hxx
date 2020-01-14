@@ -48,14 +48,28 @@ namespace vulkan
 
     private:
 
+        vulkan::instance &instance_;
+
         VkDevice handle_{VK_NULL_HANDLE};
         VkPhysicalDevice physical_handle_{VK_NULL_HANDLE};
 
         vulkan::device_limits device_limits_;
 
+        VkDebugUtilsMessengerEXT debug_messenger_handle_{VK_NULL_HANDLE};
+
         device() = delete;
         device(vulkan::device const &) = delete;
         device(vulkan::device &&) = delete;
+
+        VKAPI_ATTR VkBool32 VKAPI_CALL
+        debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+                       VkDebugUtilsMessageTypeFlagsEXT message_types,
+                       VkDebugUtilsMessengerCallbackDataEXT const *callback_data);
+
+        VKAPI_ATTR VkBool32 VKAPI_CALL
+        static debug_callback_dispatcher(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+                                         VkDebugUtilsMessageTypeFlagsEXT message_types,
+                                         VkDebugUtilsMessengerCallbackDataEXT const *callback_data, void *user_data);
 
         struct queue_helper;
     };
