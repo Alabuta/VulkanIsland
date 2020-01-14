@@ -23,8 +23,10 @@ namespace vulkan_config
         "VK_KHR_xcb_surface",
     #endif
         VK_KHR_SURFACE_EXTENSION_NAME,
-        VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
-        VK_EXT_DEBUG_UTILS_EXTENSION_NAME
+    #if NOT_YET_IMPLEMNTED
+        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+    #endif
+        VK_EXT_DEBUG_REPORT_EXTENSION_NAME
     };
 
     auto constexpr layers = std::array{

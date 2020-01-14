@@ -128,7 +128,7 @@ namespace vulkan
             if constexpr (use_layers) {
                 auto present = std::any_of(std::cbegin(extensions_), std::cend(extensions_), [] (auto &&name)
                 {
-                    return std::strcmp(name, VK_EXT_DEBUG_UTILS_EXTENSION_NAME) == 0;
+                    return std::strcmp(name, VK_EXT_DEBUG_REPORT_EXTENSION_NAME) == 0;
                 });
 
                 if (!present)

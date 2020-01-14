@@ -55,21 +55,25 @@ namespace vulkan
 
         vulkan::device_limits device_limits_;
 
+    #if NOT_YET_IMPLEMNTED
         VkDebugUtilsMessengerEXT debug_messenger_handle_{VK_NULL_HANDLE};
+    #endif
 
         device() = delete;
         device(vulkan::device const &) = delete;
         device(vulkan::device &&) = delete;
 
+    #if NOT_YET_IMPLEMNTED
         VKAPI_ATTR VkBool32 VKAPI_CALL
         debug_callback(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
                        VkDebugUtilsMessageTypeFlagsEXT message_types,
                        VkDebugUtilsMessengerCallbackDataEXT const *callback_data);
 
-        VKAPI_ATTR VkBool32 VKAPI_CALL
-        static debug_callback_dispatcher(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
-                                         VkDebugUtilsMessageTypeFlagsEXT message_types,
-                                         VkDebugUtilsMessengerCallbackDataEXT const *callback_data, void *user_data);
+        static VKAPI_ATTR VkBool32 VKAPI_CALL
+        debug_callback_dispatcher(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
+                                  VkDebugUtilsMessageTypeFlagsEXT message_types,
+                                  VkDebugUtilsMessengerCallbackDataEXT const *callback_data, void *user_data);
+    #endif
 
         struct queue_helper;
     };

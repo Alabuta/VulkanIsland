@@ -20,26 +20,6 @@ using namespace std::string_literals;
 #include "renderer/swapchain.hxx"
 
 
-// [[nodiscard]] VKAPI_ATTR VkResult VKAPI_CALL vkCreateDebugUtilsMessengerEXT(
-// VkInstance instance, VkDevice device, VkDebugUtilsMessengerCreateInfoEXT const *pCreateInfo, VkAllocationCallbacks const *pAllocator, VkDebugUtilsMessengerEXT *pMessenger)
-// {
-//     auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetDeviceProcAddr(device, "vkCreateDebugUtilsMessengerEXT"));
-
-//     if (func)
-//         return func(instance, pCreateInfo, pAllocator, pMessenger);
-
-//     return VK_ERROR_EXTENSION_NOT_PRESENT;
-// }
-
-// VKAPI_ATTR void VKAPI_CALL vkDestroyDebugUtilsMessengerEXT(
-// VkInstance instance, VkDevice device, VkDebugUtilsMessengerEXT messenger, VkAllocationCallbacks const *pAllocator)
-// {
-//     auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetDeviceProcAddr(device, "vkDestroyDebugUtilsMessengerEXT"));
-
-//     if (func)
-//         func(instance, messenger, pAllocator);
-// }
-
 namespace
 {
     auto constexpr queue_strict_matching = false;
@@ -747,6 +727,7 @@ namespace vulkan
             throw vulkan::device_exception(fmt::format("failed to create logical device: {0:#x}"s, result));
 
         {
+        #if NOT_YET_IMPLEMNTED
             auto vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
                 vkGetDeviceProcAddr(handle_, "vkCreateDebugUtilsMessengerEXT")
             );
@@ -765,6 +746,7 @@ namespace vulkan
 
             if (auto result = vkCreateDebugUtilsMessengerEXT(instance.handle(), &create_info, nullptr, &debug_messenger_handle_); result != VK_SUCCESS)
                 throw vulkan::device_exception("failed to create debug messenger"s);
+        #endif
         }
 
         for (auto &&queue : requested_queues) {
@@ -800,12 +782,14 @@ namespace vulkan
 
         vkDeviceWaitIdle(handle_);
 
+    #if NOT_YET_IMPLEMNTED
         auto vkDestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
             vkGetDeviceProcAddr(handle_, "kDestroyDebugUtilsMessengerEXT")
         );
 
         if (vkDestroyDebugUtilsMessengerEXT)
             vkDestroyDebugUtilsMessengerEXT(instance_.handle(), debug_messenger_handle_, nullptr);
+    #endif
 
         vkDestroyDevice(handle_, nullptr);
 
@@ -818,6 +802,7 @@ namespace vulkan
         return ::query_swapchain_support_details(physical_handle_, platform_surface.handle());
     }
 
+#if NOT_YET_IMPLEMNTED
     VKAPI_ATTR VkBool32 VKAPI_CALL
     device::debug_callback([[maybe_unused]] VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
                            [[maybe_unused]] VkDebugUtilsMessageTypeFlagsEXT message_types,
@@ -840,4 +825,5 @@ namespace vulkan
 
         return VK_FALSE;
     }
+#endif
 }
