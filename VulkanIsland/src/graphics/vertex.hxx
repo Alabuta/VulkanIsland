@@ -193,21 +193,21 @@ namespace vertex
     }
 
     template<class S, class T, class N, class... Ts>
-    void add_vertex_attributes(std::vector<graphics::vertex_attribute> &attributes, std::size_t offset_in_bytes, S semantic, T type, N normalized, Ts... args)
+    void add_vertex_attributes(std::vector<graphics::vertex_attribute> &attributes, std::size_t offset_in_bytes, S semantic, T type, N normalized, Ts &&...args)
     {
         attributes.push_back(graphics::vertex_attribute{ offset_in_bytes, semantic, type, normalized });
 
-        add_vertex_attributes(attributes, offset_in_bytes + sizeof(type), args...);
+        add_vertex_attributes(attributes, offset_in_bytes + sizeof(type), std::forward<Ts>(args)...);
     }
 
     template<class... Ts>
-    graphics::vertex_layout create_vertex_layout(Ts... args)
+    graphics::vertex_layout create_vertex_layout(Ts &&...args)
     {
         graphics::vertex_layout vertex_layout;
 
         auto &&vertex_attributes = vertex_layout.attributes;
 
-        add_vertex_attributes(vertex_attributes, 0, args...);
+        add_vertex_attributes(vertex_attributes, 0, std::forward<Ts>(args)...);
 
         vertex_layout.size_in_bytes = 0;
 
