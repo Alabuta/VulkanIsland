@@ -622,6 +622,29 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
 namespace temp
 {
+    template<class S, class T, class N>
+    void compile_vertex_struct(std::vector<graphics::vertex_attribute> &attributes, S semantic, T type, N normalized)
+    {
+        attributes.push_back(graphics::vertex_attribute{semantic, type, normalized});
+    }
+
+    template<class S, class T, class N, class... Ts>
+    void compile_vertex_struct(std::vector<graphics::vertex_attribute> &attributes, S semantic, T type, N normalized, Ts &&...args)
+    {
+        attributes.push_back(graphics::vertex_attribute{semantic, type, normalized});
+
+        compile_vertex_struct(attributes, std::forward<Ts>(args)...);
+    }
+
+    template<class... Ts>
+    std::vector<std::byte>
+    generate_plane(std::uint32_t width, std::uint32_t height, std::uint32_t segments, Ts &&...args)
+    {
+        graphics::vertex_attribute vertex_attributes;
+
+        compile_vertex_struct(vertex_attributes, std::forward<Ts>(args)...);
+    }
+
     xformat populate()
     {
         xformat model_;
