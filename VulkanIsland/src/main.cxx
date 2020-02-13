@@ -636,13 +636,56 @@ namespace temp
         compile_vertex_struct(attributes, std::forward<Ts>(args)...);
     }
 
-    template<class... Ts>
+    //template<class... Ts>
     std::vector<std::byte>
-    generate_plane(std::uint32_t width, std::uint32_t height, std::uint32_t segments, Ts &&...args)
+    generate_plane(float width, float height, const graphics::vertex_layout &vertex_layout
+    /* std::uint32_t hsegments, std::uint32_t vsegments, Ts &&...args*/)
     {
-        graphics::vertex_attribute vertex_attributes;
+        /*graphics::vertex_attribute vertex_attributes;
 
-        compile_vertex_struct(vertex_attributes, std::forward<Ts>(args)...);
+        compile_vertex_struct(vertex_attributes, std::forward<Ts>(args)...);*/
+
+        std::size_t vertex_count = 4;
+        std::size_t vertex_size = vertex_layout.size_in_bytes;
+
+        std::vector<std::byte> bytes(vertex_size * vertex_count);
+
+        auto &&attributes = vertex_layout.attributes;
+
+        for (auto &&attribute : attributes) {
+            std::visit([&] (auto attribute_type)
+            {
+                using type = typename std::remove_cvref_t<decltype(attribute_type)>;
+                using pointer_type = typename std::add_pointer_t<type>;
+
+                auto const offset_in_bytes = attribute.offset_in_bytes;
+
+                auto data = reinterpret_cast<pointer_type>(std::data(bytes) + offset_in_bytes);
+
+                auto it = strided_forward_iterator{data, vertex_size};
+
+                std::generate_n(it, vertex_count, [vertex_index = 0u] () mutable
+                {
+                    return type{};
+                });
+
+            }, attribute.type);
+        }
+
+        for (float y = 0; y < 1.f; ++y) {
+            for (float x = 0; x < 1.f; ++x) {
+                ;
+            }
+        }
+
+        auto has_position = std::any_of(std::begin(attributes), std::end(attributes), [] (auto &&attribute)
+        {
+            return std::visit([] (auto semantic) {
+                return std::is_same_v<decltype(semantic), vertex::position>;
+            }, attribute.semantic);
+        });
+
+        return bytes;
     }
 
     xformat populate()
@@ -662,14 +705,16 @@ namespace temp
 
             auto const vertex_layout_index = std::size(model_.vertex_layouts);
 
-            model_.vertex_layouts.push_back(
-                vertex::create_vertex_layout(
-                    vertex::position{}, decltype(vertex_struct::position){}, false,
-                    //vertex::normal{}, decltype(vertex_struct::normal){}, false,
-                    vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
-                    vertex::color_0{}, decltype(vertex_struct::color){}, false
-                )
+            auto vertex_layout = vertex::create_vertex_layout(
+                vertex::position{}, decltype(vertex_struct::position){}, false,
+                //vertex::normal{}, decltype(vertex_struct::normal){}, false,
+                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
+                vertex::color_0{}, decltype(vertex_struct::color){}, false
             );
+
+            model_.vertex_layouts.push_back(vertex_layout);
+
+            generate_plane(1.f, 1.f, vertex_layout);
 
             std::vector<vertex_struct> vertices;
 
