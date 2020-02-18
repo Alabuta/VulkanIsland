@@ -99,19 +99,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     target_compile_definitions(${PROJECT_NAME} PRIVATE _GLIBCXX_USE_CXX11_ABI=1)
 endif ()
 
-if(NOT WIN32)
-    set(EXTRA_LIBS ${EXTRA_LIBS}
-        stdc++fs
-        # pthread
-    )
-
-    set(EXTRA_LIBS_LINK_OPTIONS ${EXTRA_LIBS}
-        -Wl,-no-undefined
-        -Wl,-no-allow-shlib-undefined
-        -Wl,-unresolved-symbols=report-all
-    )
-endif()
-
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
@@ -128,6 +115,12 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     target_compile_options(${PROJECT_NAME} PRIVATE
         -fconcepts
+
+        -fasynchronous-unwind-tables                # Increased reliability of backtraces
+        -fexceptions                                # Enable table-based thread cancellation
+        -fpie
+
+        -pipe
 
         -Wpedantic
         -Wall
@@ -148,9 +141,25 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         # -Wlifetime
 
         # -fsanitize=thread -fsanitize=address
-)
+    )
 
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    set(EXTRA_LIBS ${EXTRA_LIBS}
+        stdc++fs
+        # pthread
+    )
+
+    set(EXTRA_LIBS_LINK_OPTIONS ${EXTRA_LIBS}
+        -pie
+        -Wl,-z,defs                             # Detect and reject underlinking
+        -Wl,-z,now                              # Disable lazy binding
+        -Wl,-z,relro                            # Read-only segments after relocation
+        -Wl,-no-undefined                       # Report unresolved symbol references from regular object files
+        -Wl,-no-allow-shlib-undefined           # Disallows undefined symbols in shared libraries
+        -Wl,-unresolved-symbols=report-all
+    )
+endif()
+
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(${PROJECT_NAME} PRIVATE
         -Wpedantic
         -Wall
@@ -166,12 +175,13 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		-Wformat=2
 
         #-fsanitize=thread -fsanitize=address
-)
+    )
+endif()
 
-elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${PROJECT_NAME} PRIVATE
         /W3
-)
+    )
 endif()
 
 
