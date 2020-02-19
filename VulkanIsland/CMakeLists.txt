@@ -15,10 +15,10 @@ configure_file(
 
 find_package(Vulkan REQUIRED)
 
-find_package(glm REQUIRED)
-find_package(glfw3 3.3 REQUIRED)
-find_package(fmt 5.3 CONFIG REQUIRED)
-find_package(nlohmann_json 3.6 CONFIG REQUIRED)
+# find_package(glm REQUIRED)
+# find_package(glfw3 3.3 REQUIRED)
+# find_package(fmt 5.3 CONFIG REQUIRED)
+# find_package(nlohmann_json 3.6 CONFIG REQUIRED)
 find_package(Boost 1.69 REQUIRED)
 # find_package(unofficial-vulkan-memory-allocator CONFIG REQUIRED)
 # find_package(EnTT 3.0 CONFIG REQUIRED)
@@ -27,6 +27,11 @@ if(NOT WIN32)
 	find_package(X11 REQUIRED)
 endif()
 
+
+include_directories(external)
+include_directories(external/glm)
+include_directories(external/fmt)
+include_directories(external/nlohmann_json)
 
 include_directories(SYSTEM include)
 include_directories(src)
