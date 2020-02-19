@@ -6,3 +6,7 @@
 	path = external/glfw
 	url = git@github.com:glfw/glfw.git
 	branch = 3.3-stable
+[submodule "external/fmt"]
+	path = external/fmt
+	url = git@github.com:fmtlib/fmt.git
+	branch = 4.x
