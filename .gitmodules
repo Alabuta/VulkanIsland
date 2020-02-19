@@ -10,3 +10,6 @@
 	path = external/fmt
 	url = git@github.com:fmtlib/fmt.git
 	branch = 4.x
+[submodule "external/nlohmann_json"]
+	path = external/nlohmann_json
+	url = git@github.com:nlohmann/json.git
