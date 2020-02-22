@@ -8,10 +8,23 @@ project(VulkanIsland VERSION ${PROJECT_VERSION})
 
 enable_language(CXX)
 
+# set(triple x86_64-pc-windows-msvc)
+# set(CMAKE_C_COMPILER clang)
+# set(CMAKE_C_COMPILER_TARGET clang)
+# set(CMAKE_CXX_COMPILER clang)
+# set(CMAKE_CXX_COMPILER_TARGET clang)
+
 configure_file(
     "${PROJECT_SOURCE_DIR}/config.hxx.in"
     "${PROJECT_SOURCE_DIR}/include/config.hxx"
 )
+
+#include_directories(SYSTEM external)
+include_directories(SYSTEM external/glm)
+include_directories(SYSTEM external/glfw)
+include_directories(SYSTEM external/fmt)
+include_directories(SYSTEM external/nlohmann_json)
+
 
 find_package(Vulkan REQUIRED)
 
@@ -19,7 +32,7 @@ find_package(Vulkan REQUIRED)
 # find_package(glfw3 3.3 REQUIRED)
 # find_package(fmt 5.3 CONFIG REQUIRED)
 # find_package(nlohmann_json 3.6 CONFIG REQUIRED)
-find_package(Boost 1.69 REQUIRED)
+find_package(Boost 1.68 REQUIRED)
 # find_package(unofficial-vulkan-memory-allocator CONFIG REQUIRED)
 # find_package(EnTT 3.0 CONFIG REQUIRED)
 
@@ -27,11 +40,6 @@ if(NOT WIN32)
 	find_package(X11 REQUIRED)
 endif()
 
-
-include_directories(external)
-include_directories(external/glm)
-include_directories(external/fmt)
-include_directories(external/nlohmann_json)
 
 include_directories(SYSTEM include)
 include_directories(src)
@@ -208,3 +216,10 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
     # unofficial::vulkan-memory-allocator::vulkan-memory-allocator
 	# EnTT
 )
+
+
+# add_subdirectory(external)
+add_subdirectory(external/glm)
+add_subdirectory(external/glfw)
+add_subdirectory(external/fmt)
+add_subdirectory(external/nlohmann_json)
