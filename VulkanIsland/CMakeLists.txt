@@ -19,13 +19,6 @@ configure_file(
     "${PROJECT_SOURCE_DIR}/include/config.hxx"
 )
 
-#include_directories(SYSTEM external)
-include_directories(SYSTEM external/glm)
-include_directories(SYSTEM external/glfw)
-include_directories(SYSTEM external/fmt)
-include_directories(SYSTEM external/nlohmann_json)
-
-
 find_package(Vulkan REQUIRED)
 
 # find_package(glm REQUIRED)
@@ -40,10 +33,8 @@ if(NOT WIN32)
 	find_package(X11 REQUIRED)
 endif()
 
-
 include_directories(SYSTEM include)
 include_directories(src)
-
 
 set(SOURCE_FILES
     src/camera/handlers/mouse_handler.hxx           src/camera/handlers/mouse_handler.cxx
@@ -107,6 +98,17 @@ set(SOURCE_FILES
 )
 
 add_executable(${PROJECT_NAME} ${SOURCE_FILES})
+
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+
+target_include_directories(${PROJECT_NAME} SYSTEM INTERFACE external)
+# include_directories(${PROJECT_NAME} SYSTEM INTERFACE external/glm)
+# include_directories(${PROJECT_NAME} SYSTEM INTERFACE external/glfw)
+# include_directories(${PROJECT_NAME} SYSTEM INTERFACE external/fmt)
+# include_directories(${PROJECT_NAME} SYSTEM INTERFACE external/nlohmann_json)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     target_compile_definitions(${PROJECT_NAME} PRIVATE _GLIBCXX_USE_CXX11_ABI=1)
@@ -217,9 +219,7 @@ target_link_libraries(${PROJECT_NAME} PRIVATE
 	# EnTT
 )
 
-
-# add_subdirectory(external)
-add_subdirectory(external/glm)
-add_subdirectory(external/glfw)
-add_subdirectory(external/fmt)
-add_subdirectory(external/nlohmann_json)
+add_subdirectory(../external/glm ./glm)
+add_subdirectory(../external/glfw ./glfw)
+add_subdirectory(../external/fmt ./fmt)
+add_subdirectory(../external/nlohmann_json ./nlohmann_json)
