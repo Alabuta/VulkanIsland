@@ -1,4 +1,6 @@
-cmake_minimum_required(VERSION 3.10 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
+include(ExternalProject)
+message(${CMAKE_ROOT})
 
 if(NOT DEFINED PROJECT_VERSION)
     set(PROJECT_VERSION 1.0.0)
@@ -75,14 +77,16 @@ target_sources(${PROJECT_NAME}
         src/main.hxx                                    src/main.cxx
 )
 
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
+
 find_package(Vulkan REQUIRED)
-find_package(glm REQUIRED)
+#find_package(fmt 6.0 CONFIG REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../external)
 find_package(glfw3 3.3 REQUIRED)
-find_package(fmt 5.3 CONFIG REQUIRED)
-find_package(nlohmann_json 3.6 CONFIG REQUIRED)
+#find_package(glm 0.9 REQUIRED)
+#find_package(nlohmann_json 3.7 CONFIG REQUIRED)
 find_package(Boost 1.68 REQUIRED)
 
-if(NOT WIN32)
+if (NOT WIN32)
 	find_package(X11 REQUIRED)
 endif()
 
@@ -91,31 +95,9 @@ target_include_directories(${PROJECT_NAME}
         ${CMAKE_CURRENT_SOURCE_DIR}/include
 
     PRIVATE
-        # Vulkan::Vulkan
         # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
-
-# set(triple x86_64-pc-windows-msvc)
-# set(CMAKE_C_COMPILER clang)
-# set(CMAKE_C_COMPILER_TARGET clang)
-# set(CMAKE_CXX_COMPILER clang)
-# set(CMAKE_CXX_COMPILER_TARGET clang)
-
-#include_directories(SYSTEM external)
-# include_directories(SYSTEM external/glm)
-# include_directories(SYSTEM external/glfw)
-# include_directories(SYSTEM external/fmt)
-# include_directories(SYSTEM external/nlohmann_json)
-
-# find_package(unofficial-vulkan-memory-allocator CONFIG REQUIRED)
-# find_package(EnTT 3.0 CONFIG REQUIRED)
-
-
-# include_directories(SYSTEM include)
-# include_directories(src)
-
-
 
 if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     target_compile_definitions(${PROJECT_NAME}
@@ -177,16 +159,16 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     target_link_options(${PROJECT_NAME}
         PRIVATE
             -pie
-            -Wl,-z,defs                             # Detect and reject underlinking
-            -Wl,-z,now                              # Disable lazy binding
-            -Wl,-z,relro                            # Read-only segments after relocation
-            -Wl,-no-undefined                       # Report unresolved symbol references from regular object files
-            -Wl,-no-allow-shlib-undefined           # Disallows undefined symbols in shared libraries
-            -Wl,-unresolved-symbols=report-all
+            -Wl, -z,defs                             # Detect and reject underlinking
+            -Wl, -z,now                              # Disable lazy binding
+            -Wl, -z,relro                            # Read-only segments after relocation
+            -Wl, -no-undefined                       # Report unresolved symbol references from regular object files
+            -Wl, -no-allow-shlib-undefined           # Disallows undefined symbols in shared libraries
+            -Wl, -unresolved-symbols=report-all
     )
 endif()
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(${PROJECT_NAME}
         PRIVATE
             -Wpedantic
@@ -206,7 +188,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     )
 endif()
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${PROJECT_NAME}
         PRIVATE
             /W3
@@ -219,18 +201,10 @@ target_link_libraries(${PROJECT_NAME}
         ${EXTRA_LIBS}
 
         Vulkan::Vulkan
-
-        glm
+        
+        #fmt::fmt-header-only
+	    #fmt::fmt
         glfw
-	    fmt::fmt
-	    nlohmann_json::nlohmann_json
-        # unofficial::vulkan-memory-allocator::vulkan-memory-allocator
-	    # EnTT
+        #glm::glm
+	    #nlohmann_json::nlohmann_json
 )
-
-
-# add_subdirectory(external)
-# add_subdirectory(external/glm)
-# add_subdirectory(external/glfw)
-# add_subdirectory(external/fmt)
-# add_subdirectory(external/nlohmann_json)
