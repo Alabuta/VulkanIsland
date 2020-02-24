@@ -77,7 +77,7 @@ target_sources(${PROJECT_NAME}
         src/main.hxx                                    src/main.cxx
 )
 
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_DIR}/cmake)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 find_package(Vulkan REQUIRED)
 #find_package(fmt 6.0 CONFIG REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../external)
@@ -92,11 +92,11 @@ endif()
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC        
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
 
     PRIVATE
         # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>
-        ${CMAKE_CURRENT_SOURCE_DIR}/src
+        "${CMAKE_CURRENT_SOURCE_DIR}/src"
 )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
@@ -105,6 +105,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
             _GLIBCXX_USE_CXX11_ABI=1
     )
 endif ()
+
+target_compile_features(${PROJECT_NAME}
+    PUBLIC
+        CXX_STD_17
+)
 
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -133,12 +138,15 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
             -Wpedantic
             -Wall
             -Wextra
+            -Werror
 		    -Wold-style-cast
 		    -Wnon-virtual-dtor
 		    -Wcast-align
 		    -Wunused
+            -Woverloaded-virtual
 		    -Wconversion
 		    -Wsign-conversion
+            -Wmisleading-indentation
 		    -Wnull-dereference
 		    -Wdouble-promotion
 		    -Wformat=2
@@ -146,7 +154,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 		    -Wduplicated-branches
 		    -Wlogical-op
 		    -Wuseless-cast
-            # -Wlifetime
 
             # -fsanitize=thread -fsanitize=address
     )
@@ -174,15 +181,18 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
             -Wpedantic
             -Wall
             -Wextra
+            -Werror
 		    -Wold-style-cast
 		    -Wnon-virtual-dtor
 		    -Wcast-align
 		    -Wunused
 		    -Wconversion
+            -Woverloaded-virtual
 		    -Wsign-conversion
 		    -Wnull-dereference
 		    -Wdouble-promotion
 		    -Wformat=2
+            -Wlifetime
 
             #-fsanitize=thread -fsanitize=address
     )
@@ -191,7 +201,29 @@ endif()
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${PROJECT_NAME}
         PRIVATE
-            /W3
+            /permissive
+
+            /W4
+            /WX
+            /w14242 # 'identfier': conversion from 'type1' to 'type1', possible loss of data
+            /w14254 # 'operator': conversion from 'type1:field_bits' to 'type2:field_bits', possible loss of data
+            /w14263 # 'function': member function does not override any base class virtual member function
+            /w14265 # 'classname': class has virtual functions, but destructor is not virtual
+            /w14287 # 'operator': unsigned/negative constant mismatch
+            /we4289 # 'variable': loop control variable declared in the for-loop is used outside the for-loop scope
+            /w14296 # 'operator': expression is always 'boolean_value'
+            /w14311 # 'variable': pointer truncation from 'type1' to 'type2'
+            /w14545 # expression before comma evaluates to a function which is missing an argument list
+            /w14546 # function call before comma missing argument list
+            /w14547 # 'operator': operator before comma has no effect; expected operator with side-effect
+            /w14549 # 'operator': operator before comma has no effect; did you intend 'operator'?
+            /w14555 # expression has no effect; expected expression with side-effect
+            /w14619 # pragma warning: there is no warning number 'number'
+            /w14640 # Enable warning on thread un-safe static member initialization
+            /w14826 # Conversion from 'type1' to 'type_2' is sign-extended. This may cause unexpected runtime behavior.
+            /w14905 # wide string literal cast to 'LPSTR'
+            /w14906 # string literal cast to 'LPWSTR'
+            /w14928 # illegal copy-initialization; more than one user-defined conversion has been implicitly applied
     )
 endif()
 
