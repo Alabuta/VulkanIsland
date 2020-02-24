@@ -1,6 +1,5 @@
 cmake_minimum_required(VERSION 3.15 FATAL_ERROR)
 include(ExternalProject)
-message(${CMAKE_ROOT})
 
 if(NOT DEFINED PROJECT_VERSION)
     set(PROJECT_VERSION 1.0.0)
@@ -81,17 +80,19 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 find_package(Vulkan REQUIRED)
 #find_package(fmt 6.0 CONFIG REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../external)
+find_package(fmt 6.0 CONFIG REQUIRED)
 find_package(glfw3 3.3 REQUIRED)
-#find_package(glm 0.9 REQUIRED)
-#find_package(nlohmann_json 3.7 CONFIG REQUIRED)
+find_package(glm 0.9 REQUIRED)
+find_package(nlohmann_json 3.7 CONFIG REQUIRED)
 find_package(Boost 1.68 REQUIRED)
 
 if (NOT WIN32)
-	find_package(X11 REQUIRED)
-endif()
+	# find_package(X11 REQUIRED)
+endif ()
 
 target_include_directories(${PROJECT_NAME}
-    PUBLIC        
+    PUBLIC
+        ${GLFW_INCLUDE_DIR}
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
 
     PRIVATE
@@ -110,7 +111,6 @@ target_compile_features(${PROJECT_NAME}
     PUBLIC
         CXX_STD_17
 )
-
 
 set_target_properties(${PROJECT_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
@@ -169,11 +169,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
             -Wl, -z,defs                             # Detect and reject underlinking
             -Wl, -z,now                              # Disable lazy binding
             -Wl, -z,relro                            # Read-only segments after relocation
-            -Wl, -no-undefined                       # Report unresolved symbol references from regular object files
-            -Wl, -no-allow-shlib-undefined           # Disallows undefined symbols in shared libraries
+            # -Wl, -no-undefined                       # Report unresolved symbol references from regular object files
+            # -Wl, -no-allow-shlib-undefined           # Disallows undefined symbols in shared libraries
             -Wl, -unresolved-symbols=report-all
     )
-endif()
+endif ()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
     target_compile_options(${PROJECT_NAME}
@@ -196,7 +196,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 
             #-fsanitize=thread -fsanitize=address
     )
-endif()
+endif ()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${PROJECT_NAME}
@@ -225,7 +225,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
             /w14906 # string literal cast to 'LPWSTR'
             /w14928 # illegal copy-initialization; more than one user-defined conversion has been implicitly applied
     )
-endif()
+endif ()
 
 
 target_link_libraries(${PROJECT_NAME}
@@ -236,7 +236,7 @@ target_link_libraries(${PROJECT_NAME}
         
         #fmt::fmt-header-only
 	    #fmt::fmt
-        glfw
+        glfw ${GLFW_LIBRARY}
         #glm::glm
 	    #nlohmann_json::nlohmann_json
 )
