@@ -7,14 +7,15 @@ endif()
 
 project(VulkanIsland VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 
-add_executable(${PROJECT_NAME})
+set(EXECUTABLE_TARGET_NAME engine)
+add_executable(${EXECUTABLE_TARGET_NAME})
 
 configure_file(
     "${PROJECT_SOURCE_DIR}/config.hxx.in"
     "${PROJECT_SOURCE_DIR}/include/config.hxx"
 )
 
-target_sources(${PROJECT_NAME}
+target_sources(${EXECUTABLE_TARGET_NAME}
     PRIVATE
         src/camera/handlers/mouse_handler.hxx           src/camera/handlers/mouse_handler.cxx
         src/camera/camera_controller.hxx                src/camera/camera_controller.cxx
@@ -90,7 +91,7 @@ if (NOT WIN32)
 	# find_package(X11 REQUIRED)
 endif ()
 
-target_include_directories(${PROJECT_NAME}
+target_include_directories(${EXECUTABLE_TARGET_NAME}
     PUBLIC
         ${GLFW_INCLUDE_DIR}
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
@@ -101,18 +102,18 @@ target_include_directories(${PROJECT_NAME}
 )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    target_compile_definitions(${PROJECT_NAME}
+    target_compile_definitions(${EXECUTABLE_TARGET_NAME}
         PRIVATE
             _GLIBCXX_USE_CXX11_ABI=1
     )
 endif ()
 
-target_compile_features(${PROJECT_NAME}
+target_compile_features(${EXECUTABLE_TARGET_NAME}
     PUBLIC
         CXX_STD_17
 )
 
-set_target_properties(${PROJECT_NAME} PROPERTIES
+set_target_properties(${EXECUTABLE_TARGET_NAME} PROPERTIES
     VERSION ${PROJECT_VERSION}
 
     CXX_STANDARD 20
@@ -125,7 +126,7 @@ set_target_properties(${PROJECT_NAME} PROPERTIES
 )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    target_compile_options(${PROJECT_NAME}
+    target_compile_options(${EXECUTABLE_TARGET_NAME}
         PRIVATE
             -fconcepts
 
@@ -163,7 +164,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
         # pthread
     )
 
-    target_link_options(${PROJECT_NAME}
+    target_link_options(${EXECUTABLE_TARGET_NAME}
         PRIVATE
             -pie
             -Wl, -z,defs                             # Detect and reject underlinking
@@ -176,7 +177,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 endif ()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(${PROJECT_NAME}
+    target_compile_options(${EXECUTABLE_TARGET_NAME}
         PRIVATE
             -Wpedantic
             -Wall
@@ -199,7 +200,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 endif ()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    target_compile_options(${PROJECT_NAME}
+    target_compile_options(${EXECUTABLE_TARGET_NAME}
         PRIVATE
             /permissive
 
@@ -228,7 +229,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 endif ()
 
 
-target_link_libraries(${PROJECT_NAME}
+target_link_libraries(${EXECUTABLE_TARGET_NAME}
     PRIVATE
         ${EXTRA_LIBS}
 
