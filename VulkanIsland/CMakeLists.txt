@@ -7,13 +7,13 @@ endif()
 
 project(VulkanIsland VERSION ${PROJECT_VERSION} LANGUAGES CXX)
 
-set(EXECUTABLE_TARGET_NAME engine)
-add_executable(${EXECUTABLE_TARGET_NAME})
-
 configure_file(
     "${PROJECT_SOURCE_DIR}/config.hxx.in"
     "${PROJECT_SOURCE_DIR}/include/config.hxx"
 )
+
+set(EXECUTABLE_TARGET_NAME engine)
+add_executable(${EXECUTABLE_TARGET_NAME})
 
 target_sources(${EXECUTABLE_TARGET_NAME}
     PRIVATE
