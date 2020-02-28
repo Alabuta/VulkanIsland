@@ -26,6 +26,7 @@ namespace vertex
 
     template<eSEMANTIC_INDEX SI>
     struct semantic {
+        static eSEMANTIC_INDEX constexpr semantic_index{SI};
         static auto constexpr index{static_cast<std::uint32_t>(SI)};
 
         template<eSEMANTIC_INDEX si>

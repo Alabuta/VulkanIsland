@@ -636,6 +636,20 @@ namespace temp
         compile_vertex_struct(attributes, std::forward<Ts>(args)...);
     }
 
+    template<class T>
+    void generate_plane_positions(T it, std::size_t vertex_count)
+    {
+        using type = std::remove_pointer_t<it>;
+
+        std::generate_n(it, vertex_count, [vertex_index = 0u] () mutable
+        {
+            if constexpr (std::is_same_t<type, static_array<3, boost::float32_t>>)
+                return type{};
+
+            return type{};
+        });
+    }
+
     //template<class... Ts>
     std::vector<std::byte>
     generate_plane(float width, float height, const graphics::vertex_layout &vertex_layout
@@ -658,16 +672,24 @@ namespace temp
                 using type = typename std::remove_cvref_t<decltype(attribute_type)>;
                 using pointer_type = typename std::add_pointer_t<type>;
 
+                auto semantic = std::visit([] (auto semantic)
+                {
+                    return semantic.semantic_index;
+                }, attribute.semantic);
+
                 auto const offset_in_bytes = attribute.offset_in_bytes;
 
                 auto data = reinterpret_cast<pointer_type>(std::data(bytes) + offset_in_bytes);
 
                 auto it = strided_forward_iterator{data, vertex_size};
 
-                std::generate_n(it, vertex_count, [vertex_index = 0u] () mutable
-                {
-                    return type{};
-                });
+                switch (semantic) {
+                    case vertex::eSEMANTIC_INDEX::POSITION:
+                        break;
+
+                    default:
+                        break;
+                }
 
             }, attribute.type);
         }
