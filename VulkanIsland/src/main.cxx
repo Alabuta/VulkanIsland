@@ -637,16 +637,33 @@ namespace temp
     }
 
     template<class T>
-    void generate_plane_positions(T it, std::size_t vertex_count)
+    void generate_plane_positions(float width, float height, T it, std::size_t vertex_count)
     {
-        using type = std::remove_pointer_t<it>;
+        using value_type = typename T::value_type;
 
-        std::generate_n(it, vertex_count, [vertex_index = 0u] () mutable
+        static_assert(value_type::length == 2 || value_type::length == 3);
+
+        value_type::type x0 = -width / value_type::type{2};
+        value_type::type y0 = -height / value_type::type{2};
+
+        std::generate_n(it, vertex_count, [&, vertex_index = 0u] () mutable
         {
-            if constexpr (std::is_same_t<type, static_array<3, boost::float32_t>>)
-                return type{};
+            vertex::static_array<3, boost::float32_t> vertex{0, 0, 0};
 
-            return type{};
+            vertex[0] = x0 + static_cast<boost::float32_t>(vertex_index % 2u) * width;
+            vertex[1] = y0 + static_cast<boost::float32_t>(vertex_index / 2u) * height;
+
+            ++vertex_index;
+
+            auto [x, y, z] = vertex;
+
+            if constexpr (value_type::length == 3)
+                return value_type{x, y, z};
+
+            else if constexpr (type::length == 2)
+                return value_type{x, y};
+
+            else return value_type{};
         });
     }
 
@@ -685,6 +702,7 @@ namespace temp
 
                 switch (semantic) {
                     case vertex::eSEMANTIC_INDEX::POSITION:
+                        generate_plane_positions(width, height, it, vertex_count);
                         break;
 
                     default:
