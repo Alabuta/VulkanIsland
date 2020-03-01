@@ -636,10 +636,10 @@ namespace temp
         compile_vertex_struct(attributes, std::forward<Ts>(args)...);
     }
 
-    template<class T>
-    void generate_plane_positions(float width, float height, T it, std::size_t vertex_count)
+    template<class It>
+    void generate_plane_positions(float width, float height, It it, std::size_t vertex_count)
     {
-        using value_type = typename T::value_type;
+        using value_type = typename It::value_type;
 
         static_assert(value_type::length == 2 || value_type::length == 3);
 
@@ -664,6 +664,38 @@ namespace temp
                 return value_type{x, y};
 
             else return value_type{};
+        });
+    }
+
+    template<class It>
+    void generate_normals(It it, std::size_t vertex_count)
+    {
+        using value_type = typename It::value_type;
+
+        static_assert(value_type::length == 3);
+
+        std::fill_n(it, vertex_count, value_type{0, 0, 1});
+    }
+
+    template<class It>
+    void generate_texcoords(It it, std::size_t vertex_count)
+    {
+        using value_type = typename It::value_type;
+
+        static_assert(value_type::length == 2);
+
+        std::generate_n(it, vertex_count, [&, vertex_index = 0u]() mutable
+        {
+            vertex::static_array<2, boost::float32_t> texcoord{0, 0};
+
+            vertex[0] = static_cast<boost::float32_t>(vertex_index % 2u);
+            vertex[1] = static_cast<boost::float32_t>(vertex_index / 2u);
+
+            ++vertex_index;
+
+            auto [x, y] = texcoord;
+
+            return value_type{x, y};
         });
     }
 
@@ -705,25 +737,20 @@ namespace temp
                         generate_plane_positions(width, height, it, vertex_count);
                         break;
 
+                    case vertex::eSEMANTIC_INDEX::NORMAL:
+                        generate_normals(it, vertex_count);
+                        break;
+
+                    case vertex::eSEMANTIC_INDEX::TEXCOORD_0:
+                        generate_texcoords(it, vertex_count);
+                        break;
+
                     default:
                         break;
                 }
 
             }, attribute.type);
         }
-
-        for (float y = 0; y < 1.f; ++y) {
-            for (float x = 0; x < 1.f; ++x) {
-                ;
-            }
-        }
-
-        auto has_position = std::any_of(std::begin(attributes), std::end(attributes), [] (auto &&attribute)
-        {
-            return std::visit([] (auto semantic) {
-                return std::is_same_v<decltype(semantic), vertex::position>;
-            }, attribute.semantic);
-        });
 
         return bytes;
     }
