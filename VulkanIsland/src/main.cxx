@@ -636,34 +636,29 @@ namespace temp
         compile_vertex_struct(attributes, std::forward<Ts>(args)...);
     }
 
-    template<class It>
-    void generate_plane_positions(float width, float height, It it, std::size_t vertex_count)
+    template<class T>
+    void generate_plane_positions(float width, float height, strided_forward_iterator<T> it, std::size_t vertex_count)
     {
-        using value_type = typename It::value_type;
+        if constexpr (T::length != 2 || T::length != 3)
+            return;
 
-        static_assert(value_type::length == 2 || value_type::length == 3);
-
-        value_type::type x0 = -width / value_type::type{2};
-        value_type::type y0 = -height / value_type::type{2};
+        boost::float32_t x0 = -width / 2.f;
+        boost::float32_t y0 = -height / 2.f;
 
         std::generate_n(it, vertex_count, [&, vertex_index = 0u] () mutable
         {
-            vertex::static_array<3, boost::float32_t> vertex{0, 0, 0};
-
-            vertex[0] = x0 + static_cast<boost::float32_t>(vertex_index % 2u) * width;
-            vertex[1] = y0 + static_cast<boost::float32_t>(vertex_index / 2u) * height;
+            boost::float32_t x = x0 + static_cast<boost::float32_t>(vertex_index % 2u) * width;
+            boost::float32_t y = y0 + static_cast<boost::float32_t>(vertex_index / 2u) * height;
 
             ++vertex_index;
 
-            auto [x, y, z] = vertex;
+            if constexpr (T::length == 3)
+                return T{x, y, 0};
 
-            if constexpr (value_type::length == 3)
-                return value_type{x, y, z};
+            else if constexpr (T::length == 2)
+                return T{x, y};
 
-            else if constexpr (type::length == 2)
-                return value_type{x, y};
-
-            else return value_type{};
+            else return T{};
         });
     }
 
@@ -672,9 +667,8 @@ namespace temp
     {
         using value_type = typename It::value_type;
 
-        static_assert(value_type::length == 3);
-
-        std::fill_n(it, vertex_count, value_type{0, 0, 1});
+        if constexpr (value_type::length == 3)
+            std::fill_n(it, vertex_count, value_type{0, 0, 1});
     }
 
     template<class It>
@@ -682,21 +676,21 @@ namespace temp
     {
         using value_type = typename It::value_type;
 
-        static_assert(value_type::length == 2);
+        if constexpr (value_type::length == 2)         {
+            std::generate_n(it, vertex_count, [&, vertex_index = 0u]() mutable
+            {
+                vertex::static_array<2, boost::float32_t> texcoord{0, 0};
 
-        std::generate_n(it, vertex_count, [&, vertex_index = 0u]() mutable
-        {
-            vertex::static_array<2, boost::float32_t> texcoord{0, 0};
+                vertex[0] = static_cast<boost::float32_t>(vertex_index % 2u);
+                vertex[1] = static_cast<boost::float32_t>(vertex_index / 2u);
 
-            vertex[0] = static_cast<boost::float32_t>(vertex_index % 2u);
-            vertex[1] = static_cast<boost::float32_t>(vertex_index / 2u);
+                ++vertex_index;
 
-            ++vertex_index;
+                auto [x, y] = texcoord;
 
-            auto [x, y] = texcoord;
-
-            return value_type{x, y};
-        });
+                return value_type{x, y};
+            });
+        }
     }
 
     //template<class... Ts>
