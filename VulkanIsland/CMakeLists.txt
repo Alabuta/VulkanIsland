@@ -82,8 +82,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 find_package(Vulkan REQUIRED)
 #find_package(fmt 6.0 CONFIG REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../external)
 find_package(fmt 6.0 CONFIG REQUIRED)
-find_package(glfw3 3.3 REQUIRED)
-find_package(glm 0.9 REQUIRED)
+find_package(glfw3 3.3 CONFIG REQUIRED)
+find_package(glm 0.9 CONFIG REQUIRED)
 find_package(nlohmann_json 3.7 CONFIG REQUIRED)
 find_package(Boost 1.68 REQUIRED)
 
@@ -235,9 +235,10 @@ target_link_libraries(${EXECUTABLE_TARGET_NAME}
 
         Vulkan::Vulkan
         
-        #fmt::fmt-header-only
-	    #fmt::fmt
-        glfw ${GLFW_LIBRARY}
-        #glm::glm
-	    #nlohmann_json::nlohmann_json
+        fmt::fmt-header-only
+	    fmt::fmt
+        #glfw ${GLFW_LIBRARY}
+        glfw
+        glm::glm
+	    nlohmann_json::nlohmann_json
 )
