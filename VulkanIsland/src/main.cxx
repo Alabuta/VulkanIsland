@@ -642,13 +642,13 @@ namespace temp
         if constexpr (T::length != 2 || T::length != 3)
             return;
 
-        boost::float32_t x0 = -width / 2.f;
-        boost::float32_t y0 = -height / 2.f;
+        auto x0 = -width / 2.f;
+        auto y0 = -height / 2.f;
 
         std::generate_n(it, vertex_count, [&, vertex_index = 0u] () mutable
         {
-            boost::float32_t x = x0 + static_cast<boost::float32_t>(vertex_index % 2u) * width;
-            boost::float32_t y = y0 + static_cast<boost::float32_t>(vertex_index / 2u) * height;
+            auto x = static_cast<typename T::type>(x0 + static_cast<float>(vertex_index % 2u) * width);
+            auto y = static_cast<typename T::type>(y0 + static_cast<float>(vertex_index / 2u) * height);
 
             ++vertex_index;
 
@@ -679,14 +679,10 @@ namespace temp
         if constexpr (value_type::length == 2)         {
             std::generate_n(it, vertex_count, [&, vertex_index = 0u]() mutable
             {
-                vertex::static_array<2, boost::float32_t> texcoord{0, 0};
-
-                vertex[0] = static_cast<boost::float32_t>(vertex_index % 2u);
-                vertex[1] = static_cast<boost::float32_t>(vertex_index / 2u);
+                auto x = static_cast<typename value_type::type>(vertex_index % 2u);
+                auto y = static_cast<typename value_type::type>(vertex_index / 2u);
 
                 ++vertex_index;
-
-                auto [x, y] = texcoord;
 
                 return value_type{x, y};
             });
