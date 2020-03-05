@@ -636,29 +636,35 @@ namespace temp
         compile_vertex_struct(attributes, std::forward<Ts>(args)...);
     }
 
-    template<class T>
-    void generate_plane_positions(float width, float height, strided_forward_iterator<T> it, std::size_t vertex_count)
+    template<std::uint32_t N, class T>
+    void generate_plane_positions(float width, float height, std::uint32_t hsegments, std::uint32_t vsegments,
+                                  strided_forward_iterator<vertex::static_array<N, T>> it, std::size_t vertex_count)
     {
-        if constexpr (T::length != 2 || T::length != 3)
-            return;
+        //if constexpr (T::length != 2 || T::length != 3)
+        /*if constexpr (N != 2 || N != 3)
+            return;*/
 
         auto x0 = -width / 2.f;
         auto y0 = -height / 2.f;
 
-        std::generate_n(it, vertex_count, [&, vertex_index = 0u] () mutable
+        std::generate_n(it, vertex_count, [&, vertex_index = 0u] () mutable ->vertex::static_array<N, T>
         {
-            auto x = static_cast<typename T::type>(x0 + static_cast<float>(vertex_index % 2u) * width);
-            auto y = static_cast<typename T::type>(y0 + static_cast<float>(vertex_index / 2u) * height);
+            auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * width);
+            auto y = static_cast<T>(y0 + static_cast<float>(vertex_index / (hsegments + 1u)) * height);
+
+            /*x /= static_cast<T>(hsegments);
+            y /= static_cast<T>(vsegments);*/
+            std::cout << vertex_index << '\t' << x << '\t' << y << std::endl;
 
             ++vertex_index;
 
-            if constexpr (T::length == 3)
-                return T{x, y, 0};
+            if constexpr (N == 3)
+                return {x, y, 0};
 
-            else if constexpr (T::length == 2)
-                return T{x, y};
+            else if constexpr (N == 2)
+                return {x, y};
 
-            else return T{};
+            else return {};
         });
     }
 
@@ -672,15 +678,18 @@ namespace temp
     }
 
     template<class It>
-    void generate_texcoords(It it, std::size_t vertex_count)
+    void generate_texcoords(It it, std::uint32_t hsegments, std::uint32_t vsegments, std::size_t vertex_count)
     {
         using value_type = typename It::value_type;
 
-        if constexpr (value_type::length == 2)         {
-            std::generate_n(it, vertex_count, [&, vertex_index = 0u]() mutable
+        if constexpr (value_type::length == 2) {
+            std::generate_n(it, vertex_count, [&, vertex_index = 0u] () mutable
             {
-                auto x = static_cast<typename value_type::type>(vertex_index % 2u);
-                auto y = static_cast<typename value_type::type>(vertex_index / 2u);
+                auto x = static_cast<typename value_type::type>(vertex_index % (hsegments + 1u));
+                auto y = static_cast<typename value_type::type>(vertex_index / (hsegments + 1u));
+
+                x /= static_cast<typename value_type::type>(hsegments);
+                y /= static_cast<typename value_type::type>(vsegments);
 
                 ++vertex_index;
 
@@ -689,16 +698,14 @@ namespace temp
         }
     }
 
-    //template<class... Ts>
     std::vector<std::byte>
-    generate_plane(float width, float height, const graphics::vertex_layout &vertex_layout
-    /* std::uint32_t hsegments, std::uint32_t vsegments, Ts &&...args*/)
+    generate_plane(float width, float height, std::uint32_t hsegments, std::uint32_t vsegments, const graphics::vertex_layout &vertex_layout)
     {
         /*graphics::vertex_attribute vertex_attributes;
 
         compile_vertex_struct(vertex_attributes, std::forward<Ts>(args)...);*/
 
-        std::size_t vertex_count = 4;
+        std::size_t vertex_count = (hsegments + 1u) * (vsegments + 1u);
         std::size_t vertex_size = vertex_layout.size_in_bytes;
 
         std::vector<std::byte> bytes(vertex_size * vertex_count);
@@ -724,7 +731,7 @@ namespace temp
 
                 switch (semantic) {
                     case vertex::eSEMANTIC_INDEX::POSITION:
-                        generate_plane_positions(width, height, it, vertex_count);
+                        generate_plane_positions(width, height, hsegments, vsegments, it, vertex_count);
                         break;
 
                     case vertex::eSEMANTIC_INDEX::NORMAL:
@@ -732,7 +739,7 @@ namespace temp
                         break;
 
                     case vertex::eSEMANTIC_INDEX::TEXCOORD_0:
-                        generate_texcoords(it, vertex_count);
+                        generate_texcoords(it, hsegments, vsegments, vertex_count);
                         break;
 
                     default:
@@ -771,7 +778,7 @@ namespace temp
 
             model_.vertex_layouts.push_back(vertex_layout);
 
-            generate_plane(1.f, 1.f, vertex_layout);
+            generate_plane(1.f, 1.f, 1u, 1u, vertex_layout);
 
             std::vector<vertex_struct> vertices;
 
