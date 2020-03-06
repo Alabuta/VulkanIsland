@@ -637,29 +637,32 @@ namespace temp
     }
 
     template<std::uint32_t N, class T>
-    void generate_plane_positions(float width, float height, std::uint32_t hsegments, std::uint32_t vsegments,
+    void generate_plane_positions(float width, float height, std::size_t hsegments, std::size_t vsegments,
                                   strided_forward_iterator<vertex::static_array<N, T>> it, std::size_t vertex_count)
     {
-        //if constexpr (T::length != 2 || T::length != 3)
-        /*if constexpr (N != 2 || N != 3)
-            return;*/
+        if constexpr (N != 2 && N != 3)
+            return;
 
         auto x0 = -width / 2.f;
         auto y0 = -height / 2.f;
 
-        std::generate_n(it, vertex_count, [&, vertex_index = 0u] () mutable ->vertex::static_array<N, T>
-        {
-            auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * width);
-            auto y = static_cast<T>(y0 + static_cast<float>(vertex_index / (hsegments + 1u)) * height);
+        auto step_x = width / hsegments;
+        auto step_y = height / vsegments;
 
-            /*x /= static_cast<T>(hsegments);
-            y /= static_cast<T>(vsegments);*/
+        std::generate_n(it, vertex_count, [&, vertex_index = 0u] () mutable -> vertex::static_array<N, T>
+        {
+            auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * step_x);
+            auto y = static_cast<T>(y0 + static_cast<float>(vertex_index / (hsegments + 1u)) * step_y);
+
             std::cout << vertex_index << '\t' << x << '\t' << y << std::endl;
 
             ++vertex_index;
 
-            if constexpr (N == 3)
-                return {x, y, 0};
+            if constexpr (N == 4)
+                return {x, y, 0, 1};
+
+            else if constexpr (N == 3)
+                return {x, y, z};
 
             else if constexpr (N == 2)
                 return {x, y};
@@ -668,43 +671,38 @@ namespace temp
         });
     }
 
-    template<class It>
-    void generate_normals(It it, std::size_t vertex_count)
+    template<std::uint32_t N, class T>
+    void generate_normals(strided_forward_iterator<vertex::static_array<N, T>> it, std::size_t vertex_count)
     {
-        using value_type = typename It::value_type;
-
-        if constexpr (value_type::length == 3)
-            std::fill_n(it, vertex_count, value_type{0, 0, 1});
+        if constexpr (N == 3)
+            std::fill_n(it, vertex_count, vertex::static_array<N, T>{0, 0, 1});
     }
 
-    template<class It>
-    void generate_texcoords(It it, std::uint32_t hsegments, std::uint32_t vsegments, std::size_t vertex_count)
+    template<std::uint32_t N, class T>
+    void generate_texcoords(strided_forward_iterator<vertex::static_array<N, T>> it,
+                            std::size_t hsegments, std::size_t vsegments, std::size_t vertex_count)
     {
-        using value_type = typename It::value_type;
-
-        if constexpr (value_type::length == 2) {
+        if constexpr (N == 2) {
             std::generate_n(it, vertex_count, [&, vertex_index = 0u] () mutable
             {
-                auto x = static_cast<typename value_type::type>(vertex_index % (hsegments + 1u));
-                auto y = static_cast<typename value_type::type>(vertex_index / (hsegments + 1u));
+                auto x = static_cast<T>(vertex_index % (hsegments + 1u));
+                auto y = static_cast<T>(vertex_index / (hsegments + 1u));
 
-                x /= static_cast<typename value_type::type>(hsegments);
-                y /= static_cast<typename value_type::type>(vsegments);
+                x /= static_cast<T>(hsegments);
+                y /= static_cast<T>(vsegments);
+
+                std::cout << vertex_index << '\t' << x << '\t' << y << std::endl;
 
                 ++vertex_index;
 
-                return value_type{x, y};
+                return vertex::static_array<N, T>{x, y};
             });
         }
     }
 
     std::vector<std::byte>
-    generate_plane(float width, float height, std::uint32_t hsegments, std::uint32_t vsegments, const graphics::vertex_layout &vertex_layout)
+    generate_plane(float width, float height, std::size_t hsegments, std::size_t vsegments, const graphics::vertex_layout &vertex_layout)
     {
-        /*graphics::vertex_attribute vertex_attributes;
-
-        compile_vertex_struct(vertex_attributes, std::forward<Ts>(args)...);*/
-
         std::size_t vertex_count = (hsegments + 1u) * (vsegments + 1u);
         std::size_t vertex_size = vertex_layout.size_in_bytes;
 
@@ -713,23 +711,21 @@ namespace temp
         auto &&attributes = vertex_layout.attributes;
 
         for (auto &&attribute : attributes) {
+            auto attribute_semantic = std::visit([] (auto semantic)
+            {
+                return semantic.semantic_index;
+            }, attribute.semantic);
+
             std::visit([&] (auto attribute_type)
             {
                 using type = typename std::remove_cvref_t<decltype(attribute_type)>;
                 using pointer_type = typename std::add_pointer_t<type>;
 
-                auto semantic = std::visit([] (auto semantic)
-                {
-                    return semantic.semantic_index;
-                }, attribute.semantic);
-
-                auto const offset_in_bytes = attribute.offset_in_bytes;
-
-                auto data = reinterpret_cast<pointer_type>(std::data(bytes) + offset_in_bytes);
+                auto data = reinterpret_cast<pointer_type>(std::data(bytes) + attribute.offset_in_bytes);
 
                 auto it = strided_forward_iterator{data, vertex_size};
 
-                switch (semantic) {
+                switch (attribute_semantic) {
                     case vertex::eSEMANTIC_INDEX::POSITION:
                         generate_plane_positions(width, height, hsegments, vsegments, it, vertex_count);
                         break;
@@ -777,8 +773,6 @@ namespace temp
             );
 
             model_.vertex_layouts.push_back(vertex_layout);
-
-            generate_plane(1.f, 1.f, 1u, 1u, vertex_layout);
 
             std::vector<vertex_struct> vertices;
 
@@ -938,13 +932,15 @@ namespace temp
 
             auto const vertex_layout_index = std::size(model_.vertex_layouts);
 
-            model_.vertex_layouts.push_back(
-                vertex::create_vertex_layout(
-                    vertex::position{}, decltype(vertex_struct::position){}, false,
-                    vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
-                    vertex::color_0{}, decltype(vertex_struct::color){}, false
-                )
+            auto vertex_layout = vertex::create_vertex_layout(
+                vertex::position{}, decltype(vertex_struct::position){}, false,
+                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
+                vertex::color_0{}, decltype(vertex_struct::color){}, false
             );
+
+            model_.vertex_layouts.push_back(vertex_layout);
+
+            generate_plane(1.f, 1.f, 1u, 1u, vertex_layout);
 
             std::vector<vertex_struct> vertices;
 
