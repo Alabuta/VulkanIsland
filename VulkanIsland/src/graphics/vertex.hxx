@@ -38,13 +38,16 @@ namespace vertex
 
     template<std::uint32_t N, class T>
     struct static_array final : public std::array<T, N> {
-        using type = T;
-        static auto constexpr length{N};
-
         template<std::uint32_t N2, class T2> requires mpl::same_as<T, T2>
-        auto constexpr operator== (static_array<N2, T2>) const noexcept
+        auto constexpr operator== (static_array<N2, T2> const &) const noexcept
         {
             return N == N2;
+        }
+
+        template<std::uint32_t N2, class T2> requires mpl::same_as<T, T2>
+        auto constexpr operator!= (static_array<N2, T2> const &) const noexcept
+        {
+            return N != N2;
         }
     };
 }
