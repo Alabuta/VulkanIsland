@@ -662,7 +662,7 @@ namespace temp
                 return {x, y, 0, 1};
 
             else if constexpr (N == 3)
-                return {x, y, z};
+                return {x, y, 0};
 
             else if constexpr (N == 2)
                 return {x, y};
@@ -990,6 +990,68 @@ namespace temp
                 vertexBuffer.count += vertex_count;
 
                 auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
+
+                std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
+            }
+        }
+        
+        if (false) {
+            struct vertex_struct final {
+                vertex::static_array<3, boost::float32_t> position;
+                vertex::static_array<3, boost::float32_t> normal;
+                vertex::static_array<2, boost::float32_t> texCoord;
+            };
+
+            auto const vertex_layout_index = std::size(model_.vertex_layouts);
+
+            {
+                auto vertex_layout = vertex::create_vertex_layout(
+                    vertex::position{}, decltype(vertex_struct::position){}, false,
+                    vertex::normal{}, decltype(vertex_struct::normal){}, false,
+                    vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false
+                );
+
+                model_.vertex_layouts.push_back(vertex_layout);
+
+                generate_plane(1.f, 1.f, 1u, 1u, vertex_layout);
+            }
+
+            std::vector<vertex_struct> vertices;
+
+            auto const vertex_count = std::size(vertices);
+
+            auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
+
+            using buffer_type_t = std::remove_cvref_t<decltype(vertex_buffer.buffer)>;
+
+            {
+                // Plane
+                xformat::non_indexed_meshlet meshlet;
+
+                meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
+
+                meshlet.vertex_buffer_index = vertex_layout_index;
+                meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
+                meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count + vertex_count);
+
+                meshlet.material_index = 2;
+                meshlet.instance_count = 1;
+                meshlet.first_instance = 0;
+
+                model_.non_indexed_meshlets.push_back(std::move(meshlet));
+            }
+
+            {
+                auto const vertexSize = sizeof(vertex_struct);
+                auto const bytesCount = vertexSize * vertex_count;
+
+                vertex_buffer.buffer.resize(std::size(vertex_buffer.buffer) + bytesCount);
+
+                auto writeOffset = static_cast<buffer_type_t::difference_type>(vertex_buffer.count * vertexSize);
+
+                vertex_buffer.count += vertex_count;
+
+                auto dstBegin = std::next(std::begin(vertex_buffer.buffer), writeOffset);
 
                 std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
             }
