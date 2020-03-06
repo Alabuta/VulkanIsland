@@ -405,7 +405,7 @@ namespace graphics
             });
 
             if (it == std::cend(vertex_input_state.attribute_descriptions))
-                throw std::runtime_error("original vertex layout doesn't have required vertex attribute."s);
+                throw std::runtime_error("original vertex layout doesn't have a required vertex attribute."s);
 
             adjusted_vertex_input_state.attribute_descriptions.push_back(*it);
         }

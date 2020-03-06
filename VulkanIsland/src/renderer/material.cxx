@@ -63,7 +63,7 @@ namespace graphics
         {
             auto [semantic, type, normalized] = vertex_attributes.at(vertex_layout_index);
 
-            graphics::vertex_attribute const vertex_attribute{offset_in_bytes, semantic, type, normalized};
+            graphics::vertex_attribute const vertex_attribute{semantic, type, offset_in_bytes, normalized};
 
             offset_in_bytes += std::visit([] (auto &&type)
             {

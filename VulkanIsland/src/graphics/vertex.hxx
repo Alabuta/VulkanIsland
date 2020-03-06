@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <vector>
 #include <variant>
 
 #include <boost/cstdfloat.hpp>
@@ -122,12 +123,18 @@ namespace vertex
 namespace graphics
 {
     struct vertex_attribute final {
-        std::size_t offset_in_bytes{0};
-
         vertex::attribute_semantic semantic;
         vertex::attribute_type type;
 
+        std::size_t offset_in_bytes{0};
+
         bool normalized;
+
+        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, vertex_attribute>
+        auto constexpr operator< (T &&rhs) const
+        {
+            return semantic < rhs.semantic;
+        }
 
         template<class T> requires mpl::same_as<std::remove_cvref_t<T>, vertex_attribute>
         auto constexpr operator== (T &&rhs) const
@@ -190,6 +197,7 @@ namespace graphics
 
 namespace vertex
 {
+#if 0
     template<class S, class T, class N>
     void add_vertex_attributes(std::vector<graphics::vertex_attribute> &attributes, std::size_t offset_in_bytes, S semantic, T type, N normalized)
     {
@@ -203,19 +211,35 @@ namespace vertex
 
         add_vertex_attributes(attributes, offset_in_bytes + sizeof(type), std::forward<Ts>(args)...);
     }
+#endif
+    template<class S, class T>
+    void compile_vertex_attributes(std::vector<graphics::vertex_attribute> &attributes, S semantic, T &&type, bool normalized)
+    {
+        attributes.push_back(graphics::vertex_attribute{semantic, std::forward<T>(type), 0, normalized});
+    }
+
+    template<class S, class T, class... Ts>
+    void compile_vertex_attributes(std::vector<graphics::vertex_attribute> &attributes, S semantic, T &&type, bool normalized, Ts &&...args)
+    {
+        attributes.push_back(graphics::vertex_attribute{semantic, std::forward<T>(type), 0, normalized});
+
+        compile_vertex_attributes(attributes, std::forward<Ts>(args)...);
+    }
 
     template<class... Ts>
     graphics::vertex_layout create_vertex_layout(Ts &&...args)
     {
-        graphics::vertex_layout vertex_layout;
+        graphics::vertex_layout vertex_layout{0, { }};
 
         auto &&vertex_attributes = vertex_layout.attributes;
 
-        add_vertex_attributes(vertex_attributes, 0, std::forward<Ts>(args)...);
+        compile_vertex_attributes(vertex_attributes, std::forward<Ts>(args)...);
 
-        vertex_layout.size_in_bytes = 0;
+        std::sort(std::begin(vertex_attributes), std::end(vertex_attributes));
 
         for (auto &&vertex_attribute : vertex_attributes) {
+            vertex_attribute.offset_in_bytes += vertex_layout.size_in_bytes;
+
             auto size_in_bytes = std::visit([] (auto &&type)
             {
                 return sizeof(std::remove_cvref_t<decltype(type)>);
