@@ -622,23 +622,36 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
 namespace temp
 {
-    template<class S, class T, class N>
-    void compile_vertex_struct(std::vector<graphics::vertex_attribute> &attributes, S semantic, T type, N normalized)
+    template<std::uint32_t N, class T>
+    vertex::static_array<N, T>
+    generate_plane_position(float width, float height, std::size_t hsegments, std::size_t vsegments, std::size_t vertex_index)
     {
-        attributes.push_back(graphics::vertex_attribute{semantic, type, normalized});
-    }
+        float x0 = -width / 2.f;
+        float y0 = -height / 2.f;
 
-    template<class S, class T, class N, class... Ts>
-    void compile_vertex_struct(std::vector<graphics::vertex_attribute> &attributes, S semantic, T type, N normalized, Ts &&...args)
-    {
-        attributes.push_back(graphics::vertex_attribute{semantic, type, normalized});
+        float step_x = width / hsegments;
+        float step_y = height / vsegments;
 
-        compile_vertex_struct(attributes, std::forward<Ts>(args)...);
+        auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * step_x);
+        auto y = static_cast<T>(y0 + static_cast<float>(vertex_index / (hsegments + 1u)) * step_y);
+
+        std::cout << vertex_index << '\t' << x << '\t' << y << std::endl;
+
+        if constexpr (N == 4)
+            return {x, y, 0, 1};
+
+        else if constexpr (N == 3)
+            return {x, y, 0};
+
+        else if constexpr (N == 2)
+            return {x, y};
+
+        else return {};
     }
 
     template<std::uint32_t N, class T>
     void generate_plane_positions(float width, float height, std::size_t hsegments, std::size_t vsegments,
-                                  strided_forward_iterator<vertex::static_array<N, T>> it, std::size_t vertex_count)
+                                  strided_forward_iterator<vertex::static_array<N, T>> it)
     {
         if constexpr (N != 2 && N != 3)
             return;
@@ -649,25 +662,28 @@ namespace temp
         auto step_x = width / hsegments;
         auto step_y = height / vsegments;
 
-        std::generate_n(it, vertex_count, [&, vertex_index = 0u] () mutable -> vertex::static_array<N, T>
+        // First triangle.
+        std::generate_n(it, 3u, [&, vertex_index = 0u] () mutable -> vertex::static_array<N, T>
         {
-            auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * step_x);
-            auto y = static_cast<T>(y0 + static_cast<float>(vertex_index / (hsegments + 1u)) * step_y);
-
-            std::cout << vertex_index << '\t' << x << '\t' << y << std::endl;
+            auto row = vertex_index / 2u;
+            auto column = vertex_index % 2u;
 
             ++vertex_index;
 
-            if constexpr (N == 4)
-                return {x, y, 0, 1};
+            return generate_plane_position<N, T>(width, height, hsegments, vsegments, (hsegments + 1) * row + column);
+        });
 
-            else if constexpr (N == 3)
-                return {x, y, 0};
+        auto it_begin = std::next(it, 3u);
+        auto it_end = strided_forward_iterator<vertex::static_array<N, T>>{};
 
-            else if constexpr (N == 2)
-                return {x, y};
+        std::generate(it_begin, it_end, [&, triangle_index = 1u] () mutable -> vertex::static_array<N, T>
+        {
+            auto row = triangle_index / (hsegments + 1u);
+            auto column = triangle_index % (hsegments + 1u);
 
-            else return {};
+            auto vertex_index = 0u;
+
+            return generate_plane_position<N, T>(width, height, hsegments, vsegments, vertex_index);
         });
     }
 
@@ -691,7 +707,7 @@ namespace temp
                 x /= static_cast<T>(hsegments);
                 y /= static_cast<T>(vsegments);
 
-                std::cout << vertex_index << '\t' << x << '\t' << y << std::endl;
+                //std::cout << vertex_index << '\t' << x << '\t' << y << std::endl;
 
                 ++vertex_index;
 
@@ -727,7 +743,7 @@ namespace temp
 
                 switch (attribute_semantic) {
                     case vertex::eSEMANTIC_INDEX::POSITION:
-                        generate_plane_positions(width, height, hsegments, vsegments, it, vertex_count);
+                        generate_plane_positions(width, height, hsegments, vsegments, it);
                         break;
 
                     case vertex::eSEMANTIC_INDEX::NORMAL:
@@ -940,8 +956,6 @@ namespace temp
 
             model_.vertex_layouts.push_back(vertex_layout);
 
-            generate_plane(1.f, 1.f, 1u, 1u, vertex_layout);
-
             std::vector<vertex_struct> vertices;
 
             // Fourth triangle
@@ -995,7 +1009,7 @@ namespace temp
             }
         }
         
-        if (false) {
+        {
             struct vertex_struct final {
                 vertex::static_array<3, boost::float32_t> position;
                 vertex::static_array<3, boost::float32_t> normal;
@@ -1013,9 +1027,9 @@ namespace temp
 
                 model_.vertex_layouts.push_back(vertex_layout);
 
-                generate_plane(1.f, 1.f, 1u, 1u, vertex_layout);
+                generate_plane(1.f, 1.f, 1u, 2u, vertex_layout);
             }
-
+        #if 0
             std::vector<vertex_struct> vertices;
 
             auto const vertex_count = std::size(vertices);
@@ -1055,6 +1069,7 @@ namespace temp
 
                 std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
             }
+        #endif
         }
 
         model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
