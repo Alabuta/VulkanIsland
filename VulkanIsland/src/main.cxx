@@ -626,16 +626,13 @@ namespace temp
     vertex::static_array<N, T>
     generate_plane_position(float width, float height, std::size_t hsegments, std::size_t vsegments, std::size_t vertex_index)
     {
-        float x0 = -width / 2.f;
-        float y0 = -height / 2.f;
-
-        float step_x = width / hsegments;
-        float step_y = height / vsegments;
+        auto [x0, y0] = std::pair{-width / 2.f, -height / 2.f};
+        auto [step_x, step_y] = std::pair{width / hsegments, height / vsegments};
 
         auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * step_x);
         auto y = static_cast<T>(y0 + static_cast<float>(vertex_index / (hsegments + 1u)) * step_y);
 
-        std::cout << vertex_index << '\t' << x << '\t' << y << std::endl;
+        std::cout << "vertex_index " << vertex_index << '\t' << x << '\t' << y << std::endl;
 
         if constexpr (N == 4)
             return {x, y, 0, 1};
@@ -651,37 +648,44 @@ namespace temp
 
     template<std::uint32_t N, class T>
     void generate_plane_positions(float width, float height, std::size_t hsegments, std::size_t vsegments,
-                                  strided_forward_iterator<vertex::static_array<N, T>> it)
+                                  strided_forward_iterator<vertex::static_array<N, T>> it, std::size_t vertex_count)
     {
         if constexpr (N != 2 && N != 3)
             return;
 
-        auto x0 = -width / 2.f;
-        auto y0 = -height / 2.f;
+        auto [x0, y0] = std::pair{-width / 2.f, -height / 2.f};
+        auto [step_x, step_y] = std::pair{width / hsegments, height / vsegments};
 
-        auto step_x = width / hsegments;
-        auto step_y = height / vsegments;
-
-        // First triangle.
-        std::generate_n(it, 3u, [&, vertex_index = 0u] () mutable -> vertex::static_array<N, T>
+        // First two vertices.
+        std::generate_n(it, 2, [&, row = 2u] () mutable -> vertex::static_array<N, T>
         {
-            auto row = vertex_index / 2u;
-            auto column = vertex_index % 2u;
-
-            ++vertex_index;
-
-            return generate_plane_position<N, T>(width, height, hsegments, vsegments, (hsegments + 1) * row + column);
+            return generate_plane_position<N, T>(width, height, hsegments, vsegments, --row * (hsegments + 1));
         });
 
-        auto it_begin = std::next(it, 3u);
-        auto it_end = strided_forward_iterator<vertex::static_array<N, T>>{};
+        auto it_begin = std::next(it, 2);
 
-        std::generate(it_begin, it_end, [&, triangle_index = 1u] () mutable -> vertex::static_array<N, T>
+        std::generate_n(it_begin, vertex_count - 2, [&, triangle_index = 0u] () mutable -> vertex::static_array<N, T>
         {
-            auto row = triangle_index / (hsegments + 1u);
-            auto column = triangle_index % (hsegments + 1u);
+            auto quad_index = triangle_index / 2;
 
-            auto vertex_index = 0u;
+            auto column = quad_index % hsegments + ((triangle_index + 1) % 2) + 1;
+            auto row = quad_index / hsegments + ((triangle_index + 1) % 2);
+
+            std::cout << "triangle_index " << triangle_index << '\t' << column << '\t' << row << std::endl;
+
+            /*auto row1 = triangle_index / 2 + 1;
+
+            if (triangle % 2 == 0) {
+                ;
+            }
+
+            else {
+                ;
+            }*/
+
+            ++triangle_index;
+
+            auto vertex_index = row * hsegments + column;
 
             return generate_plane_position<N, T>(width, height, hsegments, vsegments, vertex_index);
         });
@@ -719,8 +723,10 @@ namespace temp
     std::vector<std::byte>
     generate_plane(float width, float height, std::size_t hsegments, std::size_t vsegments, const graphics::vertex_layout &vertex_layout)
     {
-        std::size_t vertex_count = (hsegments + 1u) * (vsegments + 1u);
+        std::size_t vertex_count = (hsegments + 1u) * (vsegments + 1u) + (vsegments - 1) * 3;
         std::size_t vertex_size = vertex_layout.size_in_bytes;
+
+        std::cout << "vertex_count " << vertex_count << std::endl;
 
         std::vector<std::byte> bytes(vertex_size * vertex_count);
 
@@ -743,7 +749,7 @@ namespace temp
 
                 switch (attribute_semantic) {
                     case vertex::eSEMANTIC_INDEX::POSITION:
-                        generate_plane_positions(width, height, hsegments, vsegments, it);
+                        generate_plane_positions(width, height, hsegments, vsegments, it, vertex_count);
                         break;
 
                     case vertex::eSEMANTIC_INDEX::NORMAL:
@@ -1027,7 +1033,7 @@ namespace temp
 
                 model_.vertex_layouts.push_back(vertex_layout);
 
-                generate_plane(1.f, 1.f, 1u, 2u, vertex_layout);
+                generate_plane(1.f, 1.f, 4u, 1u, vertex_layout);
             }
         #if 0
             std::vector<vertex_struct> vertices;
