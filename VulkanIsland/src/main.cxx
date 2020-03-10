@@ -647,20 +647,25 @@ namespace temp
     }
 
     template<std::uint32_t N, class T>
-    void generate_plane_positions(float width, float height, std::size_t hsegments, std::size_t vsegments,
+    void generate_plane_positions(float width, float height, std::uint32_t hsegments, std::uint32_t vsegments,
                                   strided_forward_iterator<vertex::static_array<N, T>> it, std::size_t vertex_count)
     {
         if constexpr (N != 2 && N != 3)
             return;
 
-        auto [x0, y0] = std::pair{-width / 2.f, -height / 2.f};
-        auto [step_x, step_y] = std::pair{width / hsegments, height / vsegments};
+        auto const vertices_per_strip = (hsegments + 1) * 2 + vsegments > 1;
 
-        // First two vertices.
-        std::generate_n(it, 2, [&, row = 2u] () mutable -> vertex::static_array<N, T>
-        {
-            return generate_plane_position<N, T>(width, height, hsegments, vsegments, --row * (hsegments + 1));
-        });
+        for (auto strip_index = 0u; strip_index < vsegments; ++strip_index) {
+            auto it_begin = std::next(it, strip_index * vertices_per_strip);
+
+            std::generate_n(it_begin, 2, [&, row = 2u] () mutable
+            {
+                return generate_plane_position<N, T>(width, height, hsegments, vsegments, --row * (hsegments + 1));
+            });
+
+            it_begin = std::next(it_begin, 2);
+        }
+
 
         auto it_begin = std::next(it, 2);
 
@@ -668,20 +673,18 @@ namespace temp
         {
             auto quad_index = triangle_index / 2;
 
-            auto column = quad_index % hsegments + ((triangle_index + 1) % 2) + 1;
-            auto row = quad_index / hsegments + ((triangle_index + 1) % 2);
+            auto offset = 1u;
 
-            std::cout << "triangle_index " << triangle_index << '\t' << column << '\t' << row << std::endl;
+            bool is_degenerate = quad_index == vsegments;
 
-            /*auto row1 = triangle_index / 2 + 1;
-
-            if (triangle % 2 == 0) {
-                ;
+            if (is_degenerate) {
+                offset = 0;
             }
 
-            else {
-                ;
-            }*/
+            auto column = quad_index % hsegments + ((triangle_index + offset) % 2) + 1;
+            auto row = quad_index / hsegments + ((triangle_index + offset) % 2);
+
+            std::cout << "triangle_index " << triangle_index << '\t' << column << '\t' << row << std::endl;
 
             ++triangle_index;
 
@@ -723,7 +726,8 @@ namespace temp
     std::vector<std::byte>
     generate_plane(float width, float height, std::size_t hsegments, std::size_t vsegments, const graphics::vertex_layout &vertex_layout)
     {
-        std::size_t vertex_count = (hsegments + 1u) * (vsegments + 1u) + (vsegments - 1) * 3;
+        //std::size_t vertex_count = (hsegments + 1u) * (vsegments + 1u) + (vsegments - 1) * 2;
+        std::size_t vertex_count = (hsegments + 1) * 2 * vsegments + (vsegments - 1);
         std::size_t vertex_size = vertex_layout.size_in_bytes;
 
         std::cout << "vertex_count " << vertex_count << std::endl;
@@ -1033,7 +1037,7 @@ namespace temp
 
                 model_.vertex_layouts.push_back(vertex_layout);
 
-                generate_plane(1.f, 1.f, 4u, 1u, vertex_layout);
+                generate_plane(1.f, 1.f, 1u, 2u, vertex_layout);
             }
         #if 0
             std::vector<vertex_struct> vertices;
