@@ -653,14 +653,18 @@ namespace temp
         if constexpr (N != 2 && N != 3)
             return;
 
-        auto const vertices_per_strip = (hsegments + 1) * 2 + vsegments > 1;
+        auto const vertices_per_strip = (hsegments + 1) * 2 + static_cast<std::uint32_t>(vsegments > 1);
 
         for (auto strip_index = 0u; strip_index < vsegments; ++strip_index) {
             auto it_begin = std::next(it, strip_index * vertices_per_strip);
 
-            std::generate_n(it_begin, 2, [&, row = 2u] () mutable
+            auto odd_strip_index = strip_index % 2;
+
+            std::generate_n(it_begin, 2, [&, offset = 0u] () mutable
             {
-                return generate_plane_position<N, T>(width, height, hsegments, vsegments, --row * (hsegments + 1));
+                auto vertex_index = (strip_index + offset++) * (hsegments + 1);
+
+                return generate_plane_position<N, T>(width, height, hsegments, vsegments, vertex_index);
             });
 
             it_begin = std::next(it_begin, 2);
