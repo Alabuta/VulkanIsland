@@ -626,8 +626,8 @@ namespace temp
     vertex::static_array<N, T>
     generate_plane_position(float width, float height, std::size_t hsegments, std::size_t vsegments, std::size_t vertex_index)
     {
-        auto [x0, y0] = std::pair{-width / 2.f, -height / 2.f};
-        auto [step_x, step_y] = std::pair{width / hsegments, height / vsegments};
+        auto [x0, y0] = std::pair{-width / 2.f, height / 2.f};
+        auto [step_x, step_y] = std::pair{width / hsegments, -height / vsegments};
 
         auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * step_x);
         auto y = static_cast<T>(y0 + static_cast<float>(vertex_index / (hsegments + 1u)) * step_y);
@@ -653,49 +653,49 @@ namespace temp
         if constexpr (N != 2 && N != 3)
             return;
 
-        auto const vertices_per_strip = (hsegments + 1) * 2 + static_cast<std::uint32_t>(vsegments > 1);
+        std::uint32_t const vertices_per_strip = (hsegments + 1) * 2;
+        std::uint32_t const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1);
 
-        for (auto strip_index = 0u; strip_index < vsegments; ++strip_index) {
-            auto it_begin = std::next(it, strip_index * vertices_per_strip);
+        for (std::uint32_t strip_index = 0u; strip_index < vsegments; ++strip_index) {
+            auto it_begin = std::next(it, strip_index * (vertices_per_strip + extra_vertices_per_strip));
 
-            auto odd_strip_index = strip_index % 2;
+            auto const odd_strip_index = static_cast<std::int32_t>(strip_index % 2);
 
-            std::generate_n(it_begin, 2, [&, offset = 0u] () mutable
+            std::generate_n(it_begin, 2, [&, offset = odd_strip_index] () mutable
             {
-                auto vertex_index = (strip_index + offset++) * (hsegments + 1);
+                auto vertex_index = (strip_index + offset) * (hsegments + 1) + hsegments * odd_strip_index;
+
+                offset += odd_strip_index == 0 ? 1 : -1;
 
                 return generate_plane_position<N, T>(width, height, hsegments, vsegments, vertex_index);
             });
 
             it_begin = std::next(it_begin, 2);
-        }
 
+            std::generate_n(it_begin, vertices_per_strip - 2, [&, triangle_index = strip_index * vsegments * 2] () mutable
+            {
+                auto quad_index = triangle_index / 2;
 
-        auto it_begin = std::next(it, 2);
+                auto column = quad_index % hsegments + (triangle_index % 2) + 1;
+                auto row = quad_index / hsegments + ((triangle_index + odd_strip_index) % 2);
 
-        std::generate_n(it_begin, vertex_count - 2, [&, triangle_index = 0u] () mutable -> vertex::static_array<N, T>
-        {
-            auto quad_index = triangle_index / 2;
+                if (odd_strip_index != 0) {
+                    column = hsegments - column;
+                }
 
-            auto offset = 1u;
+                std::cout << "triangle_index " << triangle_index << '\t' << column << '\t' << row << std::endl;
 
-            bool is_degenerate = quad_index == vsegments;
+                ++triangle_index;
 
-            if (is_degenerate) {
-                offset = 0;
+                auto vertex_index = row * hsegments + column;
+
+                return generate_plane_position<N, T>(width, height, hsegments, vsegments, vertex_index);
+            });
+
+            if (extra_vertices_per_strip != 0) {
+                ;
             }
-
-            auto column = quad_index % hsegments + ((triangle_index + offset) % 2) + 1;
-            auto row = quad_index / hsegments + ((triangle_index + offset) % 2);
-
-            std::cout << "triangle_index " << triangle_index << '\t' << column << '\t' << row << std::endl;
-
-            ++triangle_index;
-
-            auto vertex_index = row * hsegments + column;
-
-            return generate_plane_position<N, T>(width, height, hsegments, vsegments, vertex_index);
-        });
+        }
     }
 
     template<std::uint32_t N, class T>
@@ -707,7 +707,7 @@ namespace temp
 
     template<std::uint32_t N, class T>
     void generate_texcoords(strided_forward_iterator<vertex::static_array<N, T>> it,
-                            std::size_t hsegments, std::size_t vsegments, std::size_t vertex_count)
+                            std::uint32_t hsegments, std::uint32_t vsegments, std::size_t vertex_count)
     {
         if constexpr (N == 2) {
             std::generate_n(it, vertex_count, [&, vertex_index = 0u] () mutable
@@ -728,7 +728,7 @@ namespace temp
     }
 
     std::vector<std::byte>
-    generate_plane(float width, float height, std::size_t hsegments, std::size_t vsegments, const graphics::vertex_layout &vertex_layout)
+    generate_plane(float width, float height, std::uint32_t hsegments, std::uint32_t vsegments, const graphics::vertex_layout &vertex_layout)
     {
         //std::size_t vertex_count = (hsegments + 1u) * (vsegments + 1u) + (vsegments - 1) * 2;
         std::size_t vertex_count = (hsegments + 1) * 2 * vsegments + (vsegments - 1);
