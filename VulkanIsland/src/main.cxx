@@ -670,30 +670,28 @@ namespace temp
                 return generate_plane_position<N, T>(width, height, hsegments, vsegments, vertex_index);
             });
 
-            it_begin = std::next(it_begin, 2);
-
-            std::generate_n(it_begin, vertices_per_strip - 2, [&, triangle_index = strip_index * vsegments * 2] () mutable
+            std::generate_n(std::next(it_begin, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2] () mutable
             {
                 auto quad_index = triangle_index / 2;
 
-                auto column = quad_index % hsegments + (triangle_index % 2) + 1;
+                auto column = quad_index % hsegments + 1;
                 auto row = quad_index / hsegments + ((triangle_index + odd_strip_index) % 2);
 
-                if (odd_strip_index != 0) {
+                if (odd_strip_index != 0)
                     column = hsegments - column;
-                }
-
-                std::cout << "triangle_index " << triangle_index << '\t' << column << '\t' << row << std::endl;
 
                 ++triangle_index;
 
-                auto vertex_index = row * hsegments + column;
+                auto vertex_index = row * (hsegments + 1) + column;
 
                 return generate_plane_position<N, T>(width, height, hsegments, vsegments, vertex_index);
             });
 
             if (extra_vertices_per_strip != 0) {
-                ;
+                /*it_begin = std::next(it_begin, vertices_per_strip - 1);
+                std::copy_n(it_begin, 1, std::next(it_begin));
+
+                std::cout << it_begin->at(0) << '\t' << it_begin->at(1) << std::endl;*/
             }
         }
     }
@@ -1041,7 +1039,7 @@ namespace temp
 
                 model_.vertex_layouts.push_back(vertex_layout);
 
-                generate_plane(1.f, 1.f, 1u, 2u, vertex_layout);
+                generate_plane(1.f, 1.f, 3u, 2u, vertex_layout);
             }
         #if 0
             std::vector<vertex_struct> vertices;
