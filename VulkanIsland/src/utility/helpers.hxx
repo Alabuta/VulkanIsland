@@ -87,8 +87,39 @@ public:
         return !(*this == rhs);
     }
 
-private:
+protected:
 
     std::size_t stride{sizeof(T)};
     std::byte *position{nullptr};
+};
+
+template<class T>
+class strided_bidirectional_iterator : public strided_forward_iterator<T> {
+public:
+
+    using iterator_category = std::bidirectional_iterator_tag;
+
+    using strided_forward_iterator<T>::strided_forward_iterator;
+
+    strided_bidirectional_iterator<T> &operator-- () noexcept
+    {
+        // using strided_forward_iterator<T>::position;
+        // using strided_forward_iterator<T>::stride;
+
+        strided_forward_iterator<T>::position -= strided_forward_iterator<T>::stride;
+
+        return *this;
+    }
+
+    strided_bidirectional_iterator<T> operator-- (int) noexcept
+    {
+        // using strided_forward_iterator<T>::position;
+        // using strided_forward_iterator<T>::stride;
+
+        auto copy = *this;
+
+        strided_forward_iterator<T>::position -= strided_forward_iterator<T>::stride;
+
+        return copy;
+    }
 };
