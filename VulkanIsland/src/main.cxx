@@ -648,20 +648,24 @@ namespace temp
 
     template<std::uint32_t N, class T>
     void generate_plane_positions(float width, float height, std::uint32_t hsegments, std::uint32_t vsegments,
-                                  strided_forward_iterator<vertex::static_array<N, T>> it, std::size_t vertex_count)
+                                  strided_bidirectional_iterator<vertex::static_array<N, T>> it_begin, std::size_t vertex_count)
     {
+        using iterator_type = strided_bidirectional_iterator<vertex::static_array<N, T>>;
+
         if constexpr (N != 2 && N != 3)
             return;
+
+        auto it_end = std::next(it_begin, vertex_count);
 
         std::uint32_t const vertices_per_strip = (hsegments + 1) * 2;
         std::uint32_t const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1);
 
         for (std::uint32_t strip_index = 0u; strip_index < vsegments; ++strip_index) {
-            auto it_begin = std::next(it, strip_index * (vertices_per_strip + extra_vertices_per_strip));
+            auto it = std::next(it_begin, strip_index * (vertices_per_strip + extra_vertices_per_strip));
 
             auto const odd_strip_index = static_cast<std::int32_t>(strip_index % 2);
 
-            std::generate_n(it_begin, 2, [&, offset = odd_strip_index] () mutable
+            std::generate_n(it, 2, [&, offset = odd_strip_index] () mutable
             {
                 auto vertex_index = (strip_index + offset) * (hsegments + 1) + hsegments * odd_strip_index;
 
@@ -670,7 +674,7 @@ namespace temp
                 return generate_plane_position<N, T>(width, height, hsegments, vsegments, vertex_index);
             });
 
-            std::generate_n(std::next(it_begin, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2] () mutable
+            std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2] () mutable
             {
                 auto quad_index = triangle_index / 2;
 
@@ -687,24 +691,33 @@ namespace temp
                 return generate_plane_position<N, T>(width, height, hsegments, vsegments, vertex_index);
             });
 
-            if (extra_vertices_per_strip != 0) {
-                /*it_begin = std::next(it_begin, vertices_per_strip - 1);
-                std::copy_n(it_begin, 1, std::next(it_begin));
+            it = std::next(it, vertices_per_strip);
 
-                std::cout << it_begin->at(0) << '\t' << it_begin->at(1) << std::endl;*/
+            if (it < it_end) {
+                auto triangle_index = (strip_index + 1) * (hsegments + 1) - 1;
+
+                auto column = quad_index % hsegments + 1;
+                auto row = quad_index / hsegments + ((triangle_index + odd_strip_index) % 2);
+
+                if (odd_strip_index != 0)
+                    column = hsegments - column;
+                /*
+                std::copy_n(it, 1, std::next(it));
+
+                std::cout << it->at(0) << '\t' << it->at(1) << std::endl;*/
             }
         }
     }
 
     template<std::uint32_t N, class T>
-    void generate_normals(strided_forward_iterator<vertex::static_array<N, T>> it, std::size_t vertex_count)
+    void generate_normals(strided_bidirectional_iterator<vertex::static_array<N, T>> it, std::size_t vertex_count)
     {
         if constexpr (N == 3)
             std::fill_n(it, vertex_count, vertex::static_array<N, T>{0, 0, 1});
     }
 
     template<std::uint32_t N, class T>
-    void generate_texcoords(strided_forward_iterator<vertex::static_array<N, T>> it,
+    void generate_texcoords(strided_bidirectional_iterator<vertex::static_array<N, T>> it,
                             std::uint32_t hsegments, std::uint32_t vsegments, std::size_t vertex_count)
     {
         if constexpr (N == 2) {
@@ -751,7 +764,7 @@ namespace temp
 
                 auto data = reinterpret_cast<pointer_type>(std::data(bytes) + attribute.offset_in_bytes);
 
-                auto it = strided_forward_iterator{data, vertex_size};
+                auto it = strided_bidirectional_iterator{data, vertex_size};
 
                 switch (attribute_semantic) {
                     case vertex::eSEMANTIC_INDEX::POSITION:
@@ -1283,9 +1296,9 @@ void update(app_t &app)
     auto it_begin = reinterpret_cast<decltype(app.objects)::value_type *>(app.ssbo_mapped_ptr);
 
 #ifdef _MSC_VER
-    std::copy(std::execution::par, std::cbegin(app.objects), std::cend(app.objects), strided_forward_iterator{it_begin, stride});
+    std::copy(std::execution::par, std::cbegin(app.objects), std::cend(app.objects), strided_bidirectional_iterator{it_begin, stride});
 #else
-    std::copy(std::cbegin(app.objects), std::cend(app.objects), strided_forward_iterator{it_begin, stride});
+    std::copy(std::cbegin(app.objects), std::cend(app.objects), strided_bidirectional_iterator{it, stride});
 #endif
 
     auto const mappedRanges = std::array{
