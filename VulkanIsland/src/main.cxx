@@ -632,7 +632,7 @@ namespace temp
         auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * step_x);
         auto y = static_cast<T>(y0 + static_cast<float>(vertex_index / (hsegments + 1u)) * step_y);
 
-        std::cout << "vertex_index " << vertex_index << '\t' << x << '\t' << y << std::endl;
+        //std::cout << "vertex_index " << vertex_index << '\t' << x << '\t' << y << std::endl;
 
         if constexpr (N == 4)
             return {x, y, 0, 1};
@@ -694,17 +694,17 @@ namespace temp
             it = std::next(it, vertices_per_strip);
 
             if (it < it_end) {
-                auto triangle_index = (strip_index + 1) * (hsegments + 1) - 1;
+                auto column = hsegments * (1 - odd_strip_index);
+                auto row = strip_index + odd_strip_index + 1;
 
-                auto column = quad_index % hsegments + 1;
-                auto row = quad_index / hsegments + ((triangle_index + odd_strip_index) % 2);
+                auto vertex_index = row * (hsegments + 1) + column;
 
-                if (odd_strip_index != 0)
-                    column = hsegments - column;
                 /*
                 std::copy_n(it, 1, std::next(it));
 
                 std::cout << it->at(0) << '\t' << it->at(1) << std::endl;*/
+
+                *it = generate_plane_position<N, T>(width, height, hsegments, vsegments, vertex_index);
             }
         }
     }
@@ -964,7 +964,7 @@ namespace temp
             }
         }
         
-        {
+        if (false) {
             struct vertex_struct final {
                 vertex::static_array<3, boost::float32_t> position;
                 vertex::static_array<2, boost::float32_t> texCoord;
@@ -1038,30 +1038,28 @@ namespace temp
             struct vertex_struct final {
                 vertex::static_array<3, boost::float32_t> position;
                 vertex::static_array<3, boost::float32_t> normal;
-                vertex::static_array<2, boost::float32_t> texCoord;
+                //vertex::static_array<2, boost::float32_t> texCoord;
             };
 
             auto const vertex_layout_index = std::size(model_.vertex_layouts);
 
-            {
-                auto vertex_layout = vertex::create_vertex_layout(
-                    vertex::position{}, decltype(vertex_struct::position){}, false,
-                    vertex::normal{}, decltype(vertex_struct::normal){}, false,
-                    vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false
-                );
+            auto vertex_layout = vertex::create_vertex_layout(
+                vertex::position{}, decltype(vertex_struct::position){}, false,
+                vertex::normal{}, decltype(vertex_struct::normal){}, false
+                //vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false
+            );
 
-                model_.vertex_layouts.push_back(vertex_layout);
+            model_.vertex_layouts.push_back(vertex_layout);
 
-                generate_plane(1.f, 1.f, 3u, 2u, vertex_layout);
-            }
-        #if 0
-            std::vector<vertex_struct> vertices;
+            auto vertices = generate_plane(1.f, 1.f, 1u, 1u, vertex_layout);
 
-            auto const vertex_count = std::size(vertices);
+            if (std::size(vertices) % vertex_layout.size_in_bytes != 0)
+                throw std::runtime_error("vertex buffer size is not multiple of size of vertex strcture"s);
+
+            auto const vertex_count = std::size(vertices) / vertex_layout.size_in_bytes;
+            auto const vertex_size = vertex_layout.size_in_bytes;
 
             auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
-
-            using buffer_type_t = std::remove_cvref_t<decltype(vertex_buffer.buffer)>;
 
             {
                 // Plane
@@ -1073,7 +1071,7 @@ namespace temp
                 meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
                 meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count + vertex_count);
 
-                meshlet.material_index = 2;
+                meshlet.material_index = 3;
                 meshlet.instance_count = 1;
                 meshlet.first_instance = 0;
 
@@ -1081,26 +1079,21 @@ namespace temp
             }
 
             {
-                auto const vertexSize = sizeof(vertex_struct);
-                auto const bytesCount = vertexSize * vertex_count;
+                std::ptrdiff_t write_offset = vertex_buffer.count * vertex_size;
 
-                vertex_buffer.buffer.resize(std::size(vertex_buffer.buffer) + bytesCount);
-
-                auto writeOffset = static_cast<buffer_type_t::difference_type>(vertex_buffer.count * vertexSize);
-
+                vertex_buffer.buffer.resize(std::size(vertex_buffer.buffer) + std::size(vertices));
                 vertex_buffer.count += vertex_count;
 
-                auto dstBegin = std::next(std::begin(vertex_buffer.buffer), writeOffset);
+                auto it_dst = std::next(std::begin(vertex_buffer.buffer), write_offset);
 
-                std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
+                std::uninitialized_copy_n(std::data(vertices), std::size(vertices), it_dst);
             }
-        #endif
         }
 
         model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
         model_.materials.push_back(xformat::material{0, "debug/color-debug-material"s});
         model_.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
-        //model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
+        model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
 
         return model_;
     }

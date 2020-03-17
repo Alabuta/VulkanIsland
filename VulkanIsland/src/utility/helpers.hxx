@@ -87,6 +87,11 @@ public:
         return !(*this == rhs);
     }
 
+    bool operator< (strided_forward_iterator<T> const &rhs) const
+    {
+        return position < rhs.position;
+    }
+
 protected:
 
     std::size_t stride{sizeof(T)};
