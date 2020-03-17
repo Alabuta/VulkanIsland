@@ -103,9 +103,6 @@ public:
 
     strided_bidirectional_iterator<T> &operator-- () noexcept
     {
-        // using strided_forward_iterator<T>::position;
-        // using strided_forward_iterator<T>::stride;
-
         strided_forward_iterator<T>::position -= strided_forward_iterator<T>::stride;
 
         return *this;
@@ -113,9 +110,6 @@ public:
 
     strided_bidirectional_iterator<T> operator-- (int) noexcept
     {
-        // using strided_forward_iterator<T>::position;
-        // using strided_forward_iterator<T>::stride;
-
         auto copy = *this;
 
         strided_forward_iterator<T>::position -= strided_forward_iterator<T>::stride;

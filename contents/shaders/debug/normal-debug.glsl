@@ -16,8 +16,6 @@ layout (set = 0, binding = 1, scalar) readonly buffer PER_OBJECT
     mat4 normal;
 } object;
 
-layout(constant_id = 0) const int technique = 0;
-
 layout (location = 0) out vec4 outColor;
 
 out gl_PerVertex {
