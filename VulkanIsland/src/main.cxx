@@ -635,26 +635,38 @@ namespace temp
         //std::cout << "vertex_index " << vertex_index << '\t' << x << '\t' << y << std::endl;
 
         if constexpr (N == 4)
-            return {x, y, 0, 1};
+            return vertex::static_array<N, T>{x, y, 0, 1};
 
         else if constexpr (N == 3)
-            return {x, y, 0};
+            return vertex::static_array<N, T>{x, y, 0};
 
         else if constexpr (N == 2)
-            return {x, y};
+            return vertex::static_array<N, T>{x, y};
 
-        else return {};
+        else return vertex::static_array<N, T>{};
     }
 
     template<std::uint32_t N, class T>
-    void generate_plane_positions(float width, float height, std::uint32_t hsegments, std::uint32_t vsegments,
-                                  strided_bidirectional_iterator<vertex::static_array<N, T>> it_begin, std::size_t vertex_count)
+    vertex::static_array<N, T>
+    generate_plane_texcoord(std::size_t hsegments, std::size_t vsegments, std::size_t vertex_index)
     {
-        using iterator_type = strided_bidirectional_iterator<vertex::static_array<N, T>>;
+        if constexpr (N == 2) {
+            auto x = static_cast<float>(vertex_index % (hsegments + 1u)) / hsegments;
+            auto y = 1.f - static_cast<float>(vertex_index / (hsegments + 1u)) / vsegments;
 
-        if constexpr (N != 2 && N != 3)
-            return;
+            std::cout << vertex_index << '\t' << x << '\t' << y << std::endl;
 
+            return vertex::static_array<N, T>{static_cast<T>(x), static_cast<T>(y)};
+        }
+
+        return vertex::static_array<N, T>{};
+    }
+
+    template<std::uint32_t N, class T, class F>
+    void
+    generate_plane_vertex(F func, std::uint32_t hsegments, std::uint32_t vsegments,
+                          strided_bidirectional_iterator<vertex::static_array<N, T>> it_begin, std::size_t vertex_count)
+    {
         auto it_end = std::next(it_begin, vertex_count);
 
         std::uint32_t const vertices_per_strip = (hsegments + 1) * 2;
@@ -671,7 +683,7 @@ namespace temp
 
                 offset += odd_strip_index == 0 ? 1 : -1;
 
-                return generate_plane_position<N, T>(width, height, hsegments, vsegments, vertex_index);
+                return func(hsegments, vsegments, vertex_index);
             });
 
             std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2] () mutable
@@ -688,7 +700,7 @@ namespace temp
 
                 auto vertex_index = row * (hsegments + 1) + column;
 
-                return generate_plane_position<N, T>(width, height, hsegments, vsegments, vertex_index);
+                return func(hsegments, vsegments, vertex_index);
             });
 
             it = std::next(it, vertices_per_strip);
@@ -699,14 +711,26 @@ namespace temp
 
                 auto vertex_index = row * (hsegments + 1) + column;
 
-                /*
-                std::copy_n(it, 1, std::next(it));
-
-                std::cout << it->at(0) << '\t' << it->at(1) << std::endl;*/
-
-                *it = generate_plane_position<N, T>(width, height, hsegments, vsegments, vertex_index);
+                *it = func(hsegments, vsegments, vertex_index);
             }
         }
+    }
+
+    template<std::uint32_t N, class T>
+    void generate_plane_positions(float width, float height, std::uint32_t hsegments, std::uint32_t vsegments,
+                                  strided_bidirectional_iterator<vertex::static_array<N, T>> it_begin, std::size_t vertex_count)
+    {
+        if constexpr (N != 2 && N != 3)
+            return;
+
+        using std::placeholders::_1;
+        using std::placeholders::_2;
+        using std::placeholders::_3;
+
+        generate_plane_vertex<N, T>(
+            std::bind(generate_plane_position<N, T>, width, height, _1, _2, _3),
+            hsegments, vsegments, it_begin, vertex_count
+        );
     }
 
     template<std::uint32_t N, class T>
@@ -717,24 +741,18 @@ namespace temp
     }
 
     template<std::uint32_t N, class T>
-    void generate_texcoords(strided_bidirectional_iterator<vertex::static_array<N, T>> it,
+    void generate_texcoords(strided_bidirectional_iterator<vertex::static_array<N, T>> it_begin,
                             std::uint32_t hsegments, std::uint32_t vsegments, std::size_t vertex_count)
     {
+        using std::placeholders::_1;
+        using std::placeholders::_2;
+        using std::placeholders::_3;
+
         if constexpr (N == 2) {
-            std::generate_n(it, vertex_count, [&, vertex_index = 0u] () mutable
-            {
-                auto x = static_cast<T>(vertex_index % (hsegments + 1u));
-                auto y = static_cast<T>(vertex_index / (hsegments + 1u));
-
-                x /= static_cast<T>(hsegments);
-                y /= static_cast<T>(vsegments);
-
-                //std::cout << vertex_index << '\t' << x << '\t' << y << std::endl;
-
-                ++vertex_index;
-
-                return vertex::static_array<N, T>{x, y};
-            });
+            generate_plane_vertex<N, T>(
+                std::bind(generate_plane_texcoord<N, T>, _1, _2, _3),
+                hsegments, vsegments, it_begin, vertex_count
+            );
         }
     }
 
@@ -1038,15 +1056,15 @@ namespace temp
             struct vertex_struct final {
                 vertex::static_array<3, boost::float32_t> position;
                 vertex::static_array<3, boost::float32_t> normal;
-                //vertex::static_array<2, boost::float32_t> texCoord;
+                vertex::static_array<2, boost::float32_t> texCoord;
             };
 
             auto const vertex_layout_index = std::size(model_.vertex_layouts);
 
             auto vertex_layout = vertex::create_vertex_layout(
                 vertex::position{}, decltype(vertex_struct::position){}, false,
-                vertex::normal{}, decltype(vertex_struct::normal){}, false
-                //vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false
+                vertex::normal{}, decltype(vertex_struct::normal){}, false,
+                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false
             );
 
             model_.vertex_layouts.push_back(vertex_layout);
