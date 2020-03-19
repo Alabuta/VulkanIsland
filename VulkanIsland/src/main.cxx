@@ -632,7 +632,7 @@ namespace temp
         auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * step_x);
         auto y = static_cast<T>(y0 + static_cast<float>(vertex_index / (hsegments + 1u)) * step_y);
 
-        //std::cout << "vertex_index " << vertex_index << '\t' << x << '\t' << y << std::endl;
+        std::cout << "vertex_index " << vertex_index << '\t' << x << '\t' << y << std::endl;
 
         if constexpr (N == 4)
             return vertex::static_array<N, T>{x, y, 0, 1};
@@ -654,7 +654,7 @@ namespace temp
             auto x = static_cast<float>(vertex_index % (hsegments + 1u)) / hsegments;
             auto y = 1.f - static_cast<float>(vertex_index / (hsegments + 1u)) / vsegments;
 
-            std::cout << vertex_index << '\t' << x << '\t' << y << std::endl;
+            //std::cout << vertex_index << '\t' << x << '\t' << y << std::endl;
 
             return vertex::static_array<N, T>{static_cast<T>(x), static_cast<T>(y)};
         }
@@ -663,27 +663,22 @@ namespace temp
     }
 
     template<std::uint32_t N, class T, class F>
-    void
-    generate_plane_vertex(F func, std::uint32_t hsegments, std::uint32_t vsegments,
-                          strided_bidirectional_iterator<vertex::static_array<N, T>> it_begin, std::size_t vertex_count)
+    void generate_plane_vertex(F generator, std::uint32_t hsegments, std::uint32_t vsegments,
+                               strided_bidirectional_iterator<vertex::static_array<N, T>> it_begin, std::size_t vertex_count)
     {
         auto it_end = std::next(it_begin, vertex_count);
 
         std::uint32_t const vertices_per_strip = (hsegments + 1) * 2;
-        std::uint32_t const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1);
+        std::uint32_t const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1) * 2;
 
         for (std::uint32_t strip_index = 0u; strip_index < vsegments; ++strip_index) {
             auto it = std::next(it_begin, strip_index * (vertices_per_strip + extra_vertices_per_strip));
 
-            auto const odd_strip_index = static_cast<std::int32_t>(strip_index % 2);
-
-            std::generate_n(it, 2, [&, offset = odd_strip_index] () mutable
+            std::generate_n(it, 2, [&, offset = 0u] () mutable
             {
-                auto vertex_index = (strip_index + offset) * (hsegments + 1) + hsegments * odd_strip_index;
+                auto vertex_index = (strip_index + offset++) * (hsegments + 1);
 
-                offset += odd_strip_index == 0 ? 1 : -1;
-
-                return func(hsegments, vsegments, vertex_index);
+                return generator(hsegments, vsegments, vertex_index);
             });
 
             std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2] () mutable
@@ -691,27 +686,23 @@ namespace temp
                 auto quad_index = triangle_index / 2;
 
                 auto column = quad_index % hsegments + 1;
-                auto row = quad_index / hsegments + ((triangle_index + odd_strip_index) % 2);
-
-                if (odd_strip_index != 0)
-                    column = hsegments - column;
+                auto row = quad_index / hsegments + (triangle_index % 2);
 
                 ++triangle_index;
 
                 auto vertex_index = row * (hsegments + 1) + column;
 
-                return func(hsegments, vsegments, vertex_index);
+                return generator(hsegments, vsegments, vertex_index);
             });
 
             it = std::next(it, vertices_per_strip);
 
             if (it < it_end) {
-                auto column = hsegments * (1 - odd_strip_index);
-                auto row = strip_index + odd_strip_index + 1;
+                std::generate_n(it, 2, [&, i = 0u] () mutable {
+                    auto vertex_index = (strip_index + 1) * (hsegments + 1) + hsegments * (1 - i++);
 
-                auto vertex_index = row * (hsegments + 1) + column;
-
-                *it = func(hsegments, vsegments, vertex_index);
+                    return generator(hsegments, vsegments, vertex_index);
+                });
             }
         }
     }
@@ -760,7 +751,7 @@ namespace temp
     generate_plane(float width, float height, std::uint32_t hsegments, std::uint32_t vsegments, const graphics::vertex_layout &vertex_layout)
     {
         //std::size_t vertex_count = (hsegments + 1u) * (vsegments + 1u) + (vsegments - 1) * 2;
-        std::size_t vertex_count = (hsegments + 1) * 2 * vsegments + (vsegments - 1);
+        std::size_t vertex_count = (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
         std::size_t vertex_size = vertex_layout.size_in_bytes;
 
         std::cout << "vertex_count " << vertex_count << std::endl;
@@ -1069,7 +1060,7 @@ namespace temp
 
             model_.vertex_layouts.push_back(vertex_layout);
 
-            auto vertices = generate_plane(1.f, 1.f, 1u, 1u, vertex_layout);
+            auto vertices = generate_plane(1.f, 1.f, 8u, 8u, vertex_layout);
 
             if (std::size(vertices) % vertex_layout.size_in_bytes != 0)
                 throw std::runtime_error("vertex buffer size is not multiple of size of vertex strcture"s);
@@ -1087,9 +1078,9 @@ namespace temp
 
                 meshlet.vertex_buffer_index = vertex_layout_index;
                 meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
-                meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count + vertex_count);
+                meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count);
 
-                meshlet.material_index = 3;
+                meshlet.material_index = 0;
                 meshlet.instance_count = 1;
                 meshlet.first_instance = 0;
 
