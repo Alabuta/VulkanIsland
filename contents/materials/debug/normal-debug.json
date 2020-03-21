@@ -23,6 +23,19 @@
                 }
             ],
             "vertexLayout": [ 0, 1 ]
+        },
+        {
+            "shadersBundle": [
+                {
+                    "index": 0,
+                    "technique": 1
+                },
+                {
+                    "index": 1,
+                    "technique": 0
+                }
+            ],
+            "vertexLayout": [ 0, 2 ]
         }
     ],
     "vertexAttributes": [
@@ -33,6 +46,10 @@
         {
             "semantic": "NORMAL",
             "type": "vec3"
+        },
+        {
+            "semantic": "NORMAL",
+            "type": "uvec2"
         }
     ]
 }

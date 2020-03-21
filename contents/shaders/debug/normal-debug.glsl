@@ -28,5 +28,21 @@ out gl_PerVertex {
     gl_Position = camera.view * object.world * vec4(POSITION, 1.0);
     gl_Position = camera.projection * gl_Position;
 
-    outColor = vec4(normalize(vec3(object.normal * vec4(NORMAL, 0.0))), 1.0);
+    vec4 worldSpaceNormal = object.normal * vec4(NORMAL, 0.0);
+    vec4 viewSpaceNormal = camera.view * worldSpaceNormal;
+
+    outColor = vec4(normalize(vec3(viewSpaceNormal)), 1.0);
+}
+
+#pragma technique(1)
+{
+    gl_Position = camera.view * object.world * vec4(POSITION, 1.0);
+    gl_Position = camera.projection * gl_Position;
+
+    vec3 normal = NORMAL;
+
+    vec4 worldSpaceNormal = object.normal * vec4(normal, 0.0);
+    vec4 viewSpaceNormal = camera.view * worldSpaceNormal;
+
+    outColor = vec4(normalize(vec3(viewSpaceNormal)), 1.0);
 }
