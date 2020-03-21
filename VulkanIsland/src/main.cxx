@@ -105,6 +105,8 @@ namespace temp
     xformat model;
 }
 
+auto constexpr kOBJECTS_NUMBER = 5u;
+
 struct per_object_t final {
     glm::mat4 world{1};
     glm::mat4 normal{1};  // Transposed of the inversed of the upper left 3x3 sub-matrix of model(world)-view matrix.
@@ -632,7 +634,7 @@ namespace temp
         auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * step_x);
         auto y = static_cast<T>(y0 + static_cast<float>(vertex_index / (hsegments + 1u)) * step_y);
 
-        std::cout << "vertex_index " << vertex_index << '\t' << x << '\t' << y << std::endl;
+        //std::cout << "vertex_index " << vertex_index << '\t' << x << '\t' << y << std::endl;
 
         if constexpr (N == 4)
             return vertex::static_array<N, T>{x, y, 0, 1};
@@ -754,7 +756,7 @@ namespace temp
         std::size_t vertex_count = (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
         std::size_t vertex_size = vertex_layout.size_in_bytes;
 
-        std::cout << "vertex_count " << vertex_count << std::endl;
+        //std::cout << "vertex_count " << vertex_count << std::endl;
 
         std::vector<std::byte> bytes(vertex_size * vertex_count);
 
@@ -973,7 +975,7 @@ namespace temp
             }
         }
         
-        if (false) {
+        {
             struct vertex_struct final {
                 vertex::static_array<3, boost::float32_t> position;
                 vertex::static_array<2, boost::float32_t> texCoord;
@@ -1044,6 +1046,7 @@ namespace temp
         }
         
         {
+            // TODO:: check required format by vkGetPhysicalDeviceFormatProperties() and VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT.
             struct vertex_struct final {
                 vertex::static_array<3, boost::float32_t> position;
                 vertex::static_array<3, boost::float32_t> normal;
@@ -1080,7 +1083,7 @@ namespace temp
                 meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
                 meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count);
 
-                meshlet.material_index = 0;
+                meshlet.material_index = 3;
                 meshlet.instance_count = 1;
                 meshlet.first_instance = 0;
 
@@ -1215,7 +1218,7 @@ void init(platform::window &window, app_t &app)
     auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
     auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
 
-    app.objects.resize(4);
+    app.objects.resize(kOBJECTS_NUMBER);
 
     app.aligned_buffer_size = aligned_offset * std::size(app.objects);
 
