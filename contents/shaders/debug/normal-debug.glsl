@@ -36,10 +36,11 @@ out gl_PerVertex {
 
 #pragma technique(1)
 {
-    gl_Position = camera.view * object.world * vec4(POSITION, 1.0);
-    gl_Position = camera.projection * gl_Position;
+    vec3 position = unpackAttribute(POSITION);
+    vec3 normal = unpackAttribute(NORMAL);
 
-    vec3 normal = NORMAL;
+    gl_Position = camera.view * object.world * vec4(position, 1.0);
+    gl_Position = camera.projection * gl_Position;
 
     vec4 worldSpaceNormal = object.normal * vec4(normal, 0.0);
     vec4 viewSpaceNormal = camera.view * worldSpaceNormal;
