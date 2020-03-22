@@ -17,6 +17,7 @@ auto constexpr kPI = 3.14159265358979323846f;
 #define GLM_ENABLE_EXPERIMENTAL
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
+#define GLM_FORCE_SWIZZLE
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -40,7 +41,7 @@ namespace math {
         vec() = default;
 
         template<class... Ts, typename = std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == size>>
-        constexpr vec(Ts... values) noexcept : array{static_cast<typename std::remove_cvref_t<decltype(array)>::value_type>(values)...} { }
+        constexpr vec(Ts... values) noexcept : array{static_cast<T>(values)...} { }
     };
 
     template<class U, class V>

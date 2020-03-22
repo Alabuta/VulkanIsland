@@ -280,6 +280,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="include\config.hxx" />
+    <ClInclude Include="src\math\pack-unpack.hxx" />
     <ClInclude Include="src\renderer\command_buffer.hxx" />
     <ClInclude Include="src\renderer\config.hxx" />
     <ClInclude Include="src\resources\memory_manager.hxx" />

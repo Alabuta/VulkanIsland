@@ -64,6 +64,7 @@
 #include "utility/exceptions.hxx"
 
 #include "math/math.hxx"
+#include "math/pack-unpack.hxx"
 
 #include "vulkan/instance.hxx"
 #include "vulkan/device.hxx"
@@ -1062,6 +1063,8 @@ namespace temp
             );
 
             model_.vertex_layouts.push_back(vertex_layout);
+
+            auto oct = math::encode_unit_vector_to_oct_fast<std::int8_t>(1, 2, 3);
 
             auto vertices = generate_plane(1.f, 1.f, 8u, 8u, vertex_layout);
 
