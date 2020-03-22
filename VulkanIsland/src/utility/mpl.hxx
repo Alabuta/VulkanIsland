@@ -161,6 +161,15 @@ namespace mpl
     template<class T>
     concept enumeration = std::is_enum_v<T>;
 
+    template<class T>
+    concept arithmetic = std::is_arithmetic_v<T>;
+
+    template<class T, class... Ts>
+    concept all_arithmetic = std::conjunction_v<mpl::arithmetic<Ts>...>;
+
+    template<class... Ts, std::size_t N>
+    concept is_length_equal_to = sizeof...(Ts) == N;
+
     template<class T, class... Ts>
     concept variant_alternative = is_variant_alternative_v<T, Ts...>;
 }
