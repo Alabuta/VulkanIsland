@@ -18,6 +18,7 @@ auto constexpr kPI = 3.14159265358979323846f;
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #define GLM_FORCE_SWIZZLE
+#define GLM_GTX_norm
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -26,6 +27,7 @@ auto constexpr kPI = 3.14159265358979323846f;
 #include <glm/gtx/polar_coordinates.hpp> 
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/hash.hpp>
+#include <glm/gtx/norm.hpp>
 
 #include "utility/mpl.hxx"
 
