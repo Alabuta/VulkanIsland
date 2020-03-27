@@ -42,7 +42,7 @@ namespace math {
 
         vec() = default;
 
-        template<class... Ts, typename = std::enable_if_t<std::conjunction_v<std::is_arithmetic<Ts>...> && sizeof...(Ts) == size>>
+        template<class... Ts> requires (sizeof...(Ts) == size && mpl::all_arithmetic<Ts>)
         constexpr vec(Ts... values) noexcept : array{static_cast<T>(values)...} { }
     };
 

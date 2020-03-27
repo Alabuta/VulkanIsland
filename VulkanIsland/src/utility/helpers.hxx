@@ -2,6 +2,7 @@
 
 #include <type_traits>
 #include <iterator>
+#include <cstdint>
 #include <utility>
 #include <cstddef>
 #include <cmath>
