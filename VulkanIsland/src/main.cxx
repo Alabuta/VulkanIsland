@@ -1065,9 +1065,10 @@ namespace temp
             model_.vertex_layouts.push_back(vertex_layout);
 
             //vertex::static_array<2, std::int8_t> oct;
-            std::int8_t oct[2];
+            std::array<std::int8_t, 2> oct;
+            //std::int8_t oct[2];
             glm::vec3 normal = glm::normalize(glm::vec3{0, 0, 1});
-            math::encode_unit_vector_to_oct_fast(oct, normal);
+            math::encode_unit_vector_to_oct_precise(oct, normal);
             std::cout << oct[0] << '\t' << oct[1] << std::endl;
 
             auto vertices = generate_plane(1.f, 1.f, 8u, 8u, vertex_layout);

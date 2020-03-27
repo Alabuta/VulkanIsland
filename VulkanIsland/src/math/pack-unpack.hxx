@@ -13,9 +13,12 @@
 namespace math
 {
     template<class O, class V>
-    requires (mpl::one_of<O, std::int8_t, std::int16_t> && mpl::same_as<std::remove_cvref_t<V>, glm::vec3>)
-    void encode_unit_vector_to_oct_fast(O (&oct)[2], V &&vec)
+    requires (mpl::same_as<std::remove_cvref_t<V>, glm::vec3> && mpl::container<O> &&
+              mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
+    void encode_unit_vector_to_oct_fast(O &oct, V &&vec)
     {
+        using T = typename std::remove_cvref_t<O>::value_type;
+
         float const inv_l1_norm = 1.f / glm::l1Norm(vec);
 
         bool const is_bottom_hemisphere = vec.z < 0.f;
@@ -29,14 +32,54 @@ namespace math
 
         vec.xy = glm::clamp(glm::vec2{vec}, -1.f, 1.f);
 
-        oct[0] = static_cast<O>(std::round(vec.x * std::numeric_limits<O>::max()));
-        oct[1] = static_cast<O>(std::round(vec.y * std::numeric_limits<O>::max()));
+        oct[0] = static_cast<T>(std::round(vec.x * std::numeric_limits<T>::max()));
+        oct[1] = static_cast<T>(std::round(vec.y * std::numeric_limits<T>::max()));
     }
 
     template<class O, class... Ts>
-    requires (sizeof...(Ts) == 3 && mpl::all_arithmetic<Ts> && mpl::one_of<O, std::int8_t, std::int16_t>)
-    void encode_unit_vector_to_oct_fast(O (&oct)[2], Ts... values)
+    requires (sizeof...(Ts) == 3 && mpl::all_arithmetic<Ts> && mpl::container<O> &&
+              mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
+    void encode_unit_vector_to_oct_fast(O &oct, Ts... values)
     {
         encode_unit_vector_to_oct_fast(oct, glm::vec3{static_cast<float>(values)...});
+    }
+
+    template<class O, class V>
+    requires (mpl::same_as<std::remove_cvref_t<V>, glm::vec3> && mpl::container<O> &&
+              mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
+    void encode_unit_vector_to_oct_precise(O &oct, V &&vec)
+    {
+        using T = typename std::remove_cvref_t<O>::value_type;
+
+        float const inv_l1_norm = 1.f / glm::l1Norm(vec);
+
+        bool const is_bottom_hemisphere = vec.z <= 0.f;
+
+        if (is_bottom_hemisphere) {
+            glm::vec2 sign = 1.f - 2.f * glm::vec2{glm::lessThan(glm::vec2{vec}, glm::vec2{0})};
+            vec.xy = (1.f - glm::abs(vec.yx * inv_l1_norm)) * sign;
+        }
+
+        else vec.xy = vec.xy * inv_l1_norm;
+
+        vec.xy = glm::clamp(glm::vec2{vec}, -1.f, 1.f);
+
+        oct[0] = static_cast<T>(std::round(vec.x * std::numeric_limits<T>::max()));
+        oct[1] = static_cast<T>(std::round(vec.y * std::numeric_limits<T>::max()));
+
+        std::array<T, 2> projected{oct};
+
+        auto const ubits = oct[0];
+        auto const vbits = oct[1];
+
+        float error = 0.f;
+    }
+
+    template<class O, class... Ts>
+    requires (sizeof...(Ts) == 3 && mpl::all_arithmetic<Ts> && mpl::container<O> &&
+              mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
+    void encode_unit_vector_to_oct_precise(O &oct, Ts... values)
+    {
+        encode_unit_vector_to_oct_precise(oct, glm::vec3{static_cast<float>(values)...});
     }
 }
