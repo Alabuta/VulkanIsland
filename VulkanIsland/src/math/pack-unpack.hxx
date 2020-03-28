@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <algorithm>
 #include <numeric>
 #include <limits>
 #include <array>
@@ -13,7 +14,27 @@
 namespace math
 {
     template<class O, class V>
-    requires (mpl::same_as<std::remove_cvref_t<V>, glm::vec3> && mpl::container<O> &&
+    requires (mpl::same_as<std::remove_cvref_t<V>, glm::vec3> && mpl::container<std::remove_cvref_t<O>> &&
+              mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
+    void decode_oct_to_vec(O &&oct, V &vec)
+    {
+        vec = glm::vec3{
+            static_cast<float>(oct[0]),
+            static_cast<float>(oct[1]),
+            1.f - std::abs(static_cast<float>(oct[0])) - std::abs(static_cast<float>(oct[1]))
+        };
+
+        if (vec.z < 0.f) {
+            glm::vec2 sign = 1.f - 2.f * glm::vec2{glm::lessThan(glm::vec2{vec}, glm::vec2{0})};
+
+            vec.xy = (1.f - glm::abs(glm::vec2{vec.yx})) * sign;
+        }
+
+        vec = glm::normalize(vec);
+    }
+
+    template<class O, class V>
+    requires (mpl::same_as<std::remove_cvref_t<V>, glm::vec3> && mpl::container<std::remove_cvref_t<O>> &&
               mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
     void encode_unit_vector_to_oct_fast(O &oct, V &&vec)
     {
@@ -37,7 +58,7 @@ namespace math
     }
 
     template<class O, class... Ts>
-    requires (sizeof...(Ts) == 3 && mpl::all_arithmetic<Ts> && mpl::container<O> &&
+    requires (sizeof...(Ts) == 3 && mpl::all_arithmetic<Ts> && mpl::container<std::remove_cvref_t<O>> &&
               mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
     void encode_unit_vector_to_oct_fast(O &oct, Ts... values)
     {
@@ -45,7 +66,7 @@ namespace math
     }
 
     template<class O, class V>
-    requires (mpl::same_as<std::remove_cvref_t<V>, glm::vec3> && mpl::container<O> &&
+    requires (mpl::same_as<std::remove_cvref_t<V>, glm::vec3> && mpl::container<std::remove_cvref_t<O>> &&
               mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
     void encode_unit_vector_to_oct_precise(O &oct, V &&vec)
     {
@@ -67,16 +88,28 @@ namespace math
         oct[0] = static_cast<T>(std::round(vec.x * std::numeric_limits<T>::max()));
         oct[1] = static_cast<T>(std::round(vec.y * std::numeric_limits<T>::max()));
 
-        std::array<T, 2> projected{oct};
-
-        auto const ubits = oct[0];
-        auto const vbits = oct[1];
+        std::array<T, 2> projected;
 
         float error = 0.f;
+        glm::vec3 decoded;
+
+        for (auto index : {0, 1, 2, 3}) {
+            projected[0] = oct[0] + index / 2;
+            projected[1] = oct[1] + index % 2;
+
+            decode_oct_to_vec(projected, decoded);
+
+            auto sq_distance = glm::distance2(vec, decoded);
+
+            if (sq_distance > error) {
+                oct = projected;
+                error = sq_distance;
+            }
+        }
     }
 
     template<class O, class... Ts>
-    requires (sizeof...(Ts) == 3 && mpl::all_arithmetic<Ts> && mpl::container<O> &&
+    requires (sizeof...(Ts) == 3 && mpl::all_arithmetic<Ts> && mpl::container<std::remove_cvref_t<O>> &&
               mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
     void encode_unit_vector_to_oct_precise(O &oct, Ts... values)
     {

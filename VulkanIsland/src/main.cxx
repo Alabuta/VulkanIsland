@@ -52,6 +52,7 @@
 #ifdef _MSC_VER
     #include <execution>
 #endif
+#include <random>
 
 #include <fmt/format.h>
 
@@ -1063,13 +1064,23 @@ namespace temp
             );
 
             model_.vertex_layouts.push_back(vertex_layout);
+            std::random_device rd;
+            std::mt19937 gen{rd()};
+            std::uniform_real_distribution<float> dis(-1.f, 1.f);
+            for (auto i = 0; i < 10; ++i) {
+                //vertex::static_array<2, std::int8_t> oct;
+                std::array<std::int8_t, 2> oct;
+                //std::int8_t oct[2];
+                glm::vec3 normal = glm::normalize(glm::vec3{0, 0, -1});
+                //glm::vec3 normal = glm::normalize(glm::vec3{dis(gen), dis(gen), dis(gen)});
+                std::cout << normal.x << '\t' << normal.y << '\t' << normal.z << std::endl;
+                math::encode_unit_vector_to_oct_fast(oct, normal);
+                std::cout << (int)oct[0] << '\t' << (int)oct[1] << std::endl;
 
-            //vertex::static_array<2, std::int8_t> oct;
-            std::array<std::int8_t, 2> oct;
-            //std::int8_t oct[2];
-            glm::vec3 normal = glm::normalize(glm::vec3{0, 0, 1});
-            math::encode_unit_vector_to_oct_precise(oct, normal);
-            std::cout << oct[0] << '\t' << oct[1] << std::endl;
+                math::decode_oct_to_vec(oct, normal);
+                std::cout << normal.x << '\t' << normal.y << '\t' << normal.z << std::endl;
+                std::cout << "===================" << std::endl;
+            }
 
             auto vertices = generate_plane(1.f, 1.f, 8u, 8u, vertex_layout);
 
