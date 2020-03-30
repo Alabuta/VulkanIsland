@@ -18,11 +18,16 @@ namespace math
               mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
     void decode_oct_to_vec(O &&oct, V &vec)
     {
+        using T = typename std::remove_cvref_t<O>::value_type;
+
         vec = glm::vec3{
-            static_cast<float>(oct[0]),
-            static_cast<float>(oct[1]),
-            1.f - std::abs(static_cast<float>(oct[0])) - std::abs(static_cast<float>(oct[1]))
+            oct[0] / static_cast<float>(std::numeric_limits<T>::max()),
+            oct[1] / static_cast<float>(std::numeric_limits<T>::max()),
+            0
         };
+
+        vec.xy = glm::clamp(glm::vec2{vec}, -1.f, 1.f);
+        vec.z = 1.f - std::abs(vec.x) - std::abs(vec.y);
 
         if (vec.z < 0.f) {
             glm::vec2 sign = 1.f - 2.f * glm::vec2{glm::lessThan(glm::vec2{vec}, glm::vec2{0})};
@@ -88,10 +93,10 @@ namespace math
         oct[0] = static_cast<T>(std::round(vec.x * std::numeric_limits<T>::max()));
         oct[1] = static_cast<T>(std::round(vec.y * std::numeric_limits<T>::max()));
 
-        std::array<T, 2> projected;
-
         float error = 0.f;
         glm::vec3 decoded;
+
+        std::array<T, 2> projected;
 
         for (auto index : {0, 1, 2, 3}) {
             projected[0] = oct[0] + index / 2;
@@ -102,7 +107,9 @@ namespace math
             auto sq_distance = glm::distance2(vec, decoded);
 
             if (sq_distance > error) {
-                oct = projected;
+                oct[0] = projected[0];
+                oct[1] = projected[1];
+
                 error = sq_distance;
             }
         }
