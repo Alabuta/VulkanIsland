@@ -41,15 +41,15 @@
     "vertexAttributes": [
         {
             "semantic": "POSITION",
-            "type": "vec3"
+            "type": "rgb32sfloat"
         },
         {
             "semantic": "NORMAL",
-            "type": "vec3"
+            "type": "rgb32sfloat"
         },
         {
             "semantic": "NORMAL",
-            "type": "uvec2"
+            "type": "rg8snorm"
         }
     ]
 }

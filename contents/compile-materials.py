@@ -1,6 +1,7 @@
 import os
 import re
 import json
+from operator import itemgetter
 import subprocess
 import uuid
 
@@ -18,6 +19,7 @@ class Shaders(NamedTuple):
     file_extensions: tuple
     glsl_settings: GLSLSettings
     vertex_attributes_locations: dict
+    vertex_attributes_types: dict
     stage2extension: dict
     processed_shaders: dict
 
@@ -51,7 +53,14 @@ shaders = Shaders(
         'JOINTS_0': 6,
         'WEIGHTS_0': 7
     },
-    stage2extension = {
+    vertex_attributes_types={
+        'rg32sfloat': 'vec2',
+        'rgb32sfloat': 'vec3',
+        'rgba32sfloat': 'vec4',
+        'rg8snorm': 'vec2'
+    }
+    ,
+    stage2extension={
         'vertex': 'vert',
         'tesselation_control': 'tesc',
         'tesselation_evaluation': 'tese',
@@ -100,9 +109,10 @@ def shader_vertex_attribute_layout(vertex_attributes, technique):
     vertex_attributes_lines = ''
 
     for vertex_attribute in vertex_attribute_layout:
-        semantic, attribute_type = vertex_attribute
+        semantic, attribute_type=vertex_attribute
+        attribute_type=shaders.vertex_attributes_types[attribute_type]
 
-        location = shaders.vertex_attributes_locations[semantic]
+        location=shaders.vertex_attributes_locations[semantic]
 
         vertex_attributes_lines +=  f'layout (location = {location}) in {attribute_type} {semantic};\n'
 
