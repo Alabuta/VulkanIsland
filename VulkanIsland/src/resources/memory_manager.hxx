@@ -53,7 +53,8 @@ namespace resource
 
         memory_manager(vulkan::device const &device);
 
-        template<class T, typename std::enable_if_t<mpl::is_one_of_v<std::remove_cvref_t<T>, resource::buffer, resource::image>>* = nullptr>
+        template<class T>
+        requires mpl::is_one_of_v<std::remove_cvref_t<T>, resource::buffer, resource::image>
         std::shared_ptr<resource::device_memory> allocate_memory(T &&resource, graphics::MEMORY_PROPERTY_TYPE memory_property_types);
 
     private:

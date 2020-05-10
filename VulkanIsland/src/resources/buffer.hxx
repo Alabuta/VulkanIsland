@@ -39,10 +39,12 @@ namespace resource
     class index_buffer final {
     public:
 
-        template<class T, typename std::enable_if_t<mpl::is_one_of_v<T, std::uint16_t, std::uint32_t>> * = nullptr>
+        template<class T>
+        requires mpl::is_one_of_v<T, std::uint16_t, std::uint32_t>
         index_buffer(std::shared_ptr<resource::buffer> buffer) noexcept : buffer{buffer}, type{T{}} { }
 
-        template<class T, typename std::enable_if_t<mpl::are_same_v<std::remove_cvref_t<T>, resource::index_buffer>>* = nullptr>
+        template<class T>
+        requires mpl::are_same_v<std::remove_cvref_t<T>, resource::index_buffer>
         bool constexpr operator< (T &&rhs) const
         {
             return buffer->handle() < rhs.buffer->handle();

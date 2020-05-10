@@ -18,7 +18,8 @@ using namespace std::string_literals;
 
 void end_single_time_command(VkCommandBuffer command_buffer);
 
-template<class Q, typename std::enable_if_t<std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>>* = nullptr>
+template<class Q>
+requires std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>
 void submit_and_free_single_time_command_buffer(vulkan::device const &device, Q &queue, VkCommandPool command_pool, VkCommandBuffer &command_buffer)
 {
     VkSubmitInfo const submit_info{
@@ -39,7 +40,7 @@ void submit_and_free_single_time_command_buffer(vulkan::device const &device, Q 
 }
 
 
-template<class R, typename std::enable_if_t<mpl::container<std::remove_cvref_t<R>>>* = nullptr>
+template<mpl::container R>
 void copy_buffer_to_buffer(vulkan::device const &device, graphics::transfer_queue const &queue, VkBuffer src, VkBuffer dst, R &&copy_region, VkCommandPool command_pool)
 {
     static_assert(std::is_same_v<typename std::remove_cvref_t<R>::value_type, VkBufferCopy>, "'copyRegion' argument does not contain 'VkBufferCopy' elements");
@@ -55,7 +56,8 @@ void copy_buffer_to_buffer(vulkan::device const &device, graphics::transfer_queu
 
 void copy_buffer_to_image(vulkan::device const &device, graphics::transfer_queue const &queue, VkBuffer src, VkImage dst, renderer::extent extent, VkCommandPool command_pool);
 
-template<class Q, typename std::enable_if_t<std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>>* = nullptr>
+template<class Q>
+requires std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>
 void generate_mip_maps(vulkan::device const &device, Q &queue, resource::image const &image, VkCommandPool command_pool) noexcept
 {
     auto command_buffer = begin_single_time_command(device, command_pool);
@@ -115,7 +117,8 @@ void generate_mip_maps(vulkan::device const &device, Q &queue, resource::image c
     submit_and_free_single_time_command_buffer(device, queue, command_pool, command_buffer);
 }
 
-template<class Q, typename std::enable_if_t<std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>>* = nullptr>
+template<class Q>
+requires std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>
 void image_layout_transition(vulkan::device const &device, Q &queue, resource::image const &image,
                              graphics::IMAGE_LAYOUT src, graphics::IMAGE_LAYOUT dst, VkCommandPool command_pool)
 {
@@ -182,7 +185,8 @@ void image_layout_transition(vulkan::device const &device, Q &queue, resource::i
 }
 
 
-template<class Q, typename std::enable_if_t<std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>>* = nullptr>
+template<class Q>
+requires std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>
 std::optional<VkCommandPool> create_command_pool(vulkan::device const &device, Q &queue, VkCommandPoolCreateFlags flags)
 {
     VkCommandPoolCreateInfo const create_info{

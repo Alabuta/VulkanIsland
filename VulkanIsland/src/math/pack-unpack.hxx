@@ -62,8 +62,8 @@ namespace math
         oct[1] = static_cast<T>(std::round(vec.y * std::numeric_limits<T>::max()));
     }
 
-    template<class O, class... Ts>
-    requires (sizeof...(Ts) == 3 && mpl::all_arithmetic<Ts> && mpl::container<std::remove_cvref_t<O>> &&
+    template<mpl::container O, mpl::arithmetic... Ts>
+    requires (sizeof...(Ts) == 3 &&
               mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
     void encode_unit_vector_to_oct_fast(O &oct, Ts... values)
     {
@@ -115,8 +115,8 @@ namespace math
         }
     }
 
-    template<class O, class... Ts>
-    requires (sizeof...(Ts) == 3 && mpl::all_arithmetic<Ts> && mpl::container<std::remove_cvref_t<O>> &&
+    template<class O, mpl::arithmetic... Ts>
+    requires (sizeof...(Ts) == 3 && mpl::container<std::remove_cvref_t<O>> &&
               mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
     void encode_unit_vector_to_oct_precise(O &oct, Ts... values)
     {

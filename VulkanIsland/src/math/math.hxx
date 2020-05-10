@@ -42,7 +42,7 @@ namespace math {
 
         vec() = default;
 
-        template<class... Ts> requires (sizeof...(Ts) == size && mpl::all_arithmetic<Ts>)
+        template<mpl::arithmetic... Ts> requires (sizeof...(Ts) == size)
         constexpr vec(Ts... values) noexcept : array{static_cast<T>(values)...} { }
     };
 

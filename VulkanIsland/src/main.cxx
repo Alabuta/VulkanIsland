@@ -118,7 +118,8 @@ void cleanup_frame_data(struct app_t &app);
 void create_semaphores(app_t &app);
 void recreate_swap_chain(app_t &app);
 
-template<class T, typename std::enable_if_t<mpl::is_container_v<std::remove_cvref_t<T>>>...>
+template<class T>
+requires mpl::is_container_v<std::remove_cvref_t<T>>
 [[nodiscard]] std::shared_ptr<resource::buffer> stage_data(vulkan::device &device, resource::resource_manager &resource_manager, T &&container);
 
 [[nodiscard]] std::shared_ptr<resource::texture>
@@ -1472,7 +1473,8 @@ int main()
 }
 
 
-template<class T, typename std::enable_if_t<mpl::is_container_v<std::remove_cvref_t<T>>>...>
+template<class T>
+requires mpl::is_container_v<std::remove_cvref_t<T>>
 [[nodiscard]] std::shared_ptr<resource::buffer>
 stage_data(vulkan::device &device, resource::resource_manager &resource_manager, T &&container)
 {

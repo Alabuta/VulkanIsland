@@ -125,7 +125,7 @@ namespace graphics
     };
 }
 
-template<class T> requires mpl::container<std::remove_cvref_t<T>>
+template<mpl::container T>
 /* [[nodiscard]] */ std::optional<VkPipelineLayout>
 create_pipeline_layout(vulkan::device const &device, T &&descriptorSetLayouts) noexcept
 {

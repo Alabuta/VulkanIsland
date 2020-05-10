@@ -53,7 +53,7 @@ namespace mpl
     template<class T, class... Ts>
     auto constexpr is_one_of_v = is_one_of<T, Ts...>::value;
 
-    template<std::size_t i = 0, typename T, typename V>
+    template<std::size_t i = 0, class T, class V>
     constexpr void set_tuple(T &&tuple, V value)
     {
         std::get<i>(tuple) = value;
@@ -165,9 +165,6 @@ namespace mpl
 
     template<class T>
     concept arithmetic = std::is_arithmetic_v<T>;
-
-    template<class T, class... Ts>
-    concept all_arithmetic = std::conjunction_v<mpl::arithmetic<Ts>...>;
 
     template<class... Ts, std::size_t N>
     concept length_equal_to = sizeof...(Ts) == N;
