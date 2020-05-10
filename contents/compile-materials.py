@@ -248,7 +248,7 @@ def get_specialization_constants(specialization_constants):
     constants=''
 
     for index, specialization_constant in enumerate(specialization_constants):
-        name, value, type=[ specialization_constant[k] for k in ('name', 'value', 'type') ]
+        name, value, type=itemgetter('name', 'value', 'type')(specialization_constant)
 
         constants += f'layout(constant_id = {index}) const {type} {name} = {type}({value});\n'
 
@@ -256,9 +256,7 @@ def get_specialization_constants(specialization_constants):
 
 
 def compile_material(material_data):
-    techniques, shader_modules=[
-        material_data[k] for k in ('techniques', 'shaderModules')
-    ]
+    techniques, shader_modules=itemgetter('techniques', 'shaderModules')(material_data)
     
     for technique in techniques:
         inputs=shader_inputs(material_data, technique)
@@ -310,7 +308,9 @@ def compile_material(material_data):
 
             output, errors=compiler.communicate(source_code.encode('UTF-8'))
 
-            # print(output.decode('UTF-8'))
+            output=output.decode('UTF-8')[len('stdin'):]
+            if output:
+                print(output)
 
             if compiler.returncode!=0:
                 print(errors.decode('UTF-8'))
