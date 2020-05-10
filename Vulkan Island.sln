@@ -33,9 +33,11 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "debug", "debug", "{DB0DEA69
 		contents\shaders\debug\texture-coordinate-debug.glsl = contents\shaders\debug\texture-coordinate-debug.glsl
 	EndProjectSection
 EndProject
-Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "vertex", "vertex", "{6569D725-E53C-4C9F-B236-787C1E2740D9}"
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "include", "include", "{6569D725-E53C-4C9F-B236-787C1E2740D9}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "vertex", "vertex", "{35E21DED-7A2A-4FAA-9FD3-245F272084A0}"
 	ProjectSection(SolutionItems) = preProject
-		contents\shaders\vertex\vertex-attributes-unpack.glsl = contents\shaders\vertex\vertex-attributes-unpack.glsl
+		contents\shaders\include\vertex\vertex-attributes-unpack.glsl = contents\shaders\include\vertex\vertex-attributes-unpack.glsl
 	EndProjectSection
 EndProject
 Global
@@ -69,6 +71,7 @@ Global
 		{675A947D-6429-473C-AF62-871297F5BC0D} = {44F1DF1F-3B41-4EC3-8A88-F9BB152CB57D}
 		{DB0DEA69-CFBA-4E29-8103-6257FBB4C9E9} = {44F1DF1F-3B41-4EC3-8A88-F9BB152CB57D}
 		{6569D725-E53C-4C9F-B236-787C1E2740D9} = {44F1DF1F-3B41-4EC3-8A88-F9BB152CB57D}
+		{35E21DED-7A2A-4FAA-9FD3-245F272084A0} = {6569D725-E53C-4C9F-B236-787C1E2740D9}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {AD80E3AC-EC0F-4F59-A31A-561E05C706D7}

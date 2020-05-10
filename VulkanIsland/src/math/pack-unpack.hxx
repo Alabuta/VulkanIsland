@@ -63,8 +63,7 @@ namespace math
     }
 
     template<mpl::container O, mpl::arithmetic... Ts>
-    requires (sizeof...(Ts) == 3 &&
-              mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
+    requires (sizeof...(Ts) == 3 && mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
     void encode_unit_vector_to_oct_fast(O &oct, Ts... values)
     {
         encode_unit_vector_to_oct_fast(oct, glm::vec3{static_cast<float>(values)...});
