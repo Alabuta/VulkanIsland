@@ -1,5 +1,6 @@
 #include <vector>
 #include <optional>
+#include <unordered_map>
 
 #include <iostream>
 #include <fstream>
@@ -19,52 +20,66 @@ namespace loader
 {
     std::optional<graphics::SHADER_STAGE> shader_stage_semantic(std::string_view name)
     {
-        if (name == "vertex"sv)
-            return graphics::SHADER_STAGE::VERTEX;
+        static const std::unordered_map<std::string_view, graphics::SHADER_STAGE> stages{
+            {"vertex"sv, graphics::SHADER_STAGE::VERTEX},
+            {"tesselation_control"sv, graphics::SHADER_STAGE::TESS_CONTROL},
+            {"tesselation_evaluation"sv, graphics::SHADER_STAGE::TESS_EVAL},
+            {"geometry"sv, graphics::SHADER_STAGE::GEOMETRY},
+            {"fragment"sv, graphics::SHADER_STAGE::FRAGMENT},
+            {"compute"sv, graphics::SHADER_STAGE::COMPUTE}
+        };
 
-        else if (name == "tesselation_control"sv)
-            return graphics::SHADER_STAGE::TESS_CONTROL;
-
-        else if (name == "tesselation_evaluation"sv)
-            return graphics::SHADER_STAGE::TESS_EVAL;
-
-        else if (name == "geometry"sv)
-            return graphics::SHADER_STAGE::GEOMETRY;
-
-        else if (name == "fragment"sv)
-            return graphics::SHADER_STAGE::FRAGMENT;
-
-        else if (name == "compute"sv)
-            return graphics::SHADER_STAGE::COMPUTE;
+        if (auto it = stages.find(name); it != std::end(stages))
+            return it->second;
 
         return { };
     }
 
     std::optional<vertex::attribute_semantic> attribute_semantic(std::string_view name)
     {
-        if (name == "POSITION"sv)
-            return vertex::position{ };
+        static const std::unordered_map<std::string_view, vertex::attribute_semantic> semantics{
+            {"POSITION"sv, vertex::position{ }},
+            {"NORMAL"sv, vertex::normal{ }},
+            {"TEXCOORD_0"sv, vertex::tex_coord_0{ }},
+            {"TEXCOORD_1"sv, vertex::tex_coord_1{ }},
+            {"TANGENT"sv, vertex::tangent{ }},
+            {"COLOR_0"sv, vertex::color_0{ }},
+            {"JOINTS_0"sv, vertex::joints_0{ }},
+            {"WEIGHTS_0"sv, vertex::weights_0{ }}
+        };
 
-        else if (name == "NORMAL"sv)
-            return vertex::normal{ };
+        if (auto it = semantics.find(name); it != std::end(semantics))
+            return it->second;
 
-        else if (name == "TEXCOORD_0"sv)
-            return vertex::tex_coord_0{ };
+        return { };
+    }
 
-        else if (name == "TEXCOORD_1"sv)
-            return vertex::tex_coord_1{ };
+    std::optional<graphics::FORMAT> attribute_format(std::string_view type)
+    {
+        static const std::unordered_map<std::string_view, graphics::FORMAT> formats{
+            {"r8snorm"sv, graphics::FORMAT::R8_SNORM},
+            {"rg8snorm"sv, graphics::FORMAT::RG8_SNORM},
+            {"rgb8snorm"sv, graphics::FORMAT::RGB8_SNORM},
+            {"rgba8snorm"sv, graphics::FORMAT::RGBA8_SNORM},
 
-        else if (name == "TANGENT"sv)
-            return vertex::tangent{ };
+            {"r32sint"sv, graphics::FORMAT::R32_SINT},
+            {"rg32sint"sv, graphics::FORMAT::RG32_SINT},
+            {"rgb32sint"sv, graphics::FORMAT::RGB32_SINT},
+            {"rgba32sint"sv, graphics::FORMAT::RGBA32_SINT},
 
-        else if (name == "COLOR_0"sv)
-            return vertex::color_0{ };
+            {"r32uint"sv, graphics::FORMAT::R32_UINT},
+            {"rg32uint"sv, graphics::FORMAT::RG32_UINT},
+            {"rgb32uint"sv, graphics::FORMAT::RGB32_UINT},
+            {"rgba32uint"sv, graphics::FORMAT::RGBA32_UINT},
 
-        else if (name == "JOINTS_0"sv)
-            return vertex::joints_0{ };
+            {"r32sfloat"sv, graphics::FORMAT::R32_SFLOAT},
+            {"rg32sfloat"sv, graphics::FORMAT::RG32_SFLOAT},
+            {"rgb32sfloat"sv, graphics::FORMAT::RGB32_SFLOAT},
+            {"rgba32sfloat"sv, graphics::FORMAT::RGBA32_SFLOAT}
+        };
 
-        else if (name == "WEIGHTS_0"sv)
-            return vertex::weights_0{ };
+        if (auto it = formats.find(type); it != std::end(formats))
+            return it->second;
 
         return { };
     }
@@ -115,204 +130,124 @@ namespace loader
 
     std::optional<graphics::CULL_MODE> cull_mode(std::string_view name)
     {
-        if (name == "none"sv)
-            return graphics::CULL_MODE::NONE;
+        static const std::unordered_map<std::string_view, graphics::CULL_MODE> modes{
+            {"none"sv, graphics::CULL_MODE::NONE},
+            {"front"sv, graphics::CULL_MODE::FRONT},
+            {"back"sv, graphics::CULL_MODE::BACK},
+            {"front_and_back"sv, graphics::CULL_MODE::FRONT_AND_BACK}
+        };
 
-        else if (name == "front"sv)
-            return graphics::CULL_MODE::FRONT;
-
-        else if (name == "back"sv)
-            return graphics::CULL_MODE::BACK;
-
-        else if (name == "front_and_back"sv)
-            return graphics::CULL_MODE::FRONT_AND_BACK;
+        if (auto it = modes.find(name); it != std::end(modes))
+            return it->second;
 
         return { };
     }
 
     std::optional<graphics::POLYGON_MODE> polygon_mode(std::string_view name)
     {
-        if (name == "fill"sv)
-            return graphics::POLYGON_MODE::FILL;
+        static const std::unordered_map<std::string_view, graphics::POLYGON_MODE> modes{
+            {"fill"sv, graphics::POLYGON_MODE::FILL},
+            {"line"sv, graphics::POLYGON_MODE::LINE},
+            {"point"sv, graphics::POLYGON_MODE::POINT}
+        };
 
-        else if (name == "line"sv)
-            return graphics::POLYGON_MODE::LINE;
-
-        else if (name == "point"sv)
-            return graphics::POLYGON_MODE::POINT;
+        if (auto it = modes.find(name); it != std::end(modes))
+            return it->second;
 
         return { };
     }
 
     std::optional<graphics::COMPARE_OPERATION> compare_operation(std::string_view name)
     {
-        if (name == "never"sv)
-            return graphics::COMPARE_OPERATION::NEVER;
+        static const std::unordered_map<std::string_view, graphics::COMPARE_OPERATION> operations{
+            {"never"sv, graphics::COMPARE_OPERATION::NEVER},
+            {"less"sv, graphics::COMPARE_OPERATION::LESS},
+            {"equal"sv, graphics::COMPARE_OPERATION::EQUAL},
+            {"less_or_equal"sv, graphics::COMPARE_OPERATION::LESS_OR_EQUAL},
+            {"greater"sv, graphics::COMPARE_OPERATION::GREATER},
+            {"not_equal"sv, graphics::COMPARE_OPERATION::NOT_EQUAL},
+            {"greater_or_equal"sv, graphics::COMPARE_OPERATION::GREATER_OR_EQUAL},
+            {"always"sv, graphics::COMPARE_OPERATION::ALWAYS}
+        };
 
-        else if (name == "less"sv)
-            return graphics::COMPARE_OPERATION::LESS;
-
-        else if (name == "equal"sv)
-            return graphics::COMPARE_OPERATION::EQUAL;
-
-        else if (name == "less_or_equal"sv)
-            return graphics::COMPARE_OPERATION::LESS_OR_EQUAL;
-
-        else if (name == "greater"sv)
-            return graphics::COMPARE_OPERATION::GREATER;
-
-        else if (name == "not_equal"sv)
-            return graphics::COMPARE_OPERATION::NOT_EQUAL;
-
-        else if (name == "greater_or_equal"sv)
-            return graphics::COMPARE_OPERATION::GREATER_OR_EQUAL;
-
-        else if (name == "always"sv)
-            return graphics::COMPARE_OPERATION::ALWAYS;
+        if (auto it = operations.find(name); it != std::end(operations))
+            return it->second;
 
         return { };
     }
 
     std::optional<graphics::STENCIL_OPERATION> stencil_operation(std::string_view name)
     {
-        if (name == "keep"sv)
-            return graphics::STENCIL_OPERATION::KEEP;
+        static const std::unordered_map<std::string_view, graphics::STENCIL_OPERATION> operations{
+            {"keep"sv, graphics::STENCIL_OPERATION::KEEP},
+            {"zero"sv, graphics::STENCIL_OPERATION::ZERO},
+            {"replace"sv, graphics::STENCIL_OPERATION::REPLACE},
+            {"increment_and_clamp"sv, graphics::STENCIL_OPERATION::INCREMENT_AND_CLAMP},
+            {"decrement_and_clamp"sv, graphics::STENCIL_OPERATION::DECREMENT_AND_CLAMP},
+            {"invert"sv, graphics::STENCIL_OPERATION::INVERT},
+            {"increment_and_wrap"sv, graphics::STENCIL_OPERATION::INCREMENT_AND_WRAP},
+            {"decrement_and_wrap"sv, graphics::STENCIL_OPERATION::DECREMENT_AND_WRAP}
+        };
 
-        else if (name == "zero"sv)
-            return graphics::STENCIL_OPERATION::ZERO;
-
-        else if (name == "replace"sv)
-            return graphics::STENCIL_OPERATION::REPLACE;
-
-        else if (name == "increment_and_clamp"sv)
-            return graphics::STENCIL_OPERATION::INCREMENT_AND_CLAMP;
-
-        else if (name == "decrement_and_clamp"sv)
-            return graphics::STENCIL_OPERATION::DECREMENT_AND_CLAMP;
-
-        else if (name == "invert"sv)
-            return graphics::STENCIL_OPERATION::INVERT;
-
-        else if (name == "increment_and_wrap"sv)
-            return graphics::STENCIL_OPERATION::INCREMENT_AND_WRAP;
-
-        else if (name == "decrement_and_wrap"sv)
-            return graphics::STENCIL_OPERATION::DECREMENT_AND_WRAP;
+        if (auto it = operations.find(name); it != std::end(operations))
+            return it->second;
 
         return { };
     }
 
     std::optional<graphics::LOGIC_OPERATION> logic_operation(std::string_view name)
     {
-        if (name == "clear"sv)
-            return graphics::LOGIC_OPERATION::CLEAR;
+        static const std::unordered_map<std::string_view, graphics::LOGIC_OPERATION> operations{
+            {"clear"sv, graphics::LOGIC_OPERATION::CLEAR},
+            {"and"sv, graphics::LOGIC_OPERATION::AND},
+            {"and_reverse"sv, graphics::LOGIC_OPERATION::AND_REVERSE},
+            {"copy"sv, graphics::LOGIC_OPERATION::COPY},
+            {"and_inverted"sv, graphics::LOGIC_OPERATION::AND_INVERTED},
+            {"no_op"sv, graphics::LOGIC_OPERATION::NO_OP},
+            {"xor"sv, graphics::LOGIC_OPERATION::XOR},
+            {"or"sv, graphics::LOGIC_OPERATION::OR},
+            {"nor"sv, graphics::LOGIC_OPERATION::NOR},
+            {"equivalent"sv, graphics::LOGIC_OPERATION::EQUIVALENT},
+            {"invert"sv, graphics::LOGIC_OPERATION::INVERT},
+            {"OR_REVERSE"sv, graphics::LOGIC_OPERATION::OR_REVERSE},
+            {"copy_inverted"sv, graphics::LOGIC_OPERATION::COPY_INVERTED},
+            {"or_inverted"sv, graphics::LOGIC_OPERATION::OR_INVERTED},
+            {"nand"sv, graphics::LOGIC_OPERATION::NAND},
+            {"set"sv, graphics::LOGIC_OPERATION::SET}
+        };
 
-        else if (name == "and"sv)
-            return graphics::LOGIC_OPERATION::AND;
-
-        else if (name == "and_reverse"sv)
-            return graphics::LOGIC_OPERATION::AND_REVERSE;
-
-        else if (name == "copy"sv)
-            return graphics::LOGIC_OPERATION::COPY;
-
-        else if (name == "and_inverted"sv)
-            return graphics::LOGIC_OPERATION::AND_INVERTED;
-
-        else if (name == "no_op"sv)
-            return graphics::LOGIC_OPERATION::NO_OP;
-
-        else if (name == "xor"sv)
-            return graphics::LOGIC_OPERATION::XOR;
-
-        else if (name == "or"sv)
-            return graphics::LOGIC_OPERATION::OR;
-
-        else if (name == "nor"sv)
-            return graphics::LOGIC_OPERATION::NOR;
-
-        else if (name == "equivalent"sv)
-            return graphics::LOGIC_OPERATION::EQUIVALENT;
-
-        else if (name == "invert"sv)
-            return graphics::LOGIC_OPERATION::INVERT;
-
-        else if (name == "OR_REVERSE"sv)
-            return graphics::LOGIC_OPERATION::OR_REVERSE;
-
-        else if (name == "copy_inverted"sv)
-            return graphics::LOGIC_OPERATION::COPY_INVERTED;
-
-        else if (name == "or_inverted"sv)
-            return graphics::LOGIC_OPERATION::OR_INVERTED;
-
-        else if (name == "nand"sv)
-            return graphics::LOGIC_OPERATION::NAND;
-
-        else if (name == "set"sv)
-            return graphics::LOGIC_OPERATION::SET;
+        if (auto it = operations.find(name); it != std::end(operations))
+            return it->second;
 
         return { };
     }
 
     std::optional<graphics::BLEND_FACTOR> blend_factor(std::string_view name)
     {
-        if (name == "zero"sv)
-            return graphics::BLEND_FACTOR::ZERO;
+        static const std::unordered_map<std::string_view, graphics::BLEND_FACTOR> factors{
+            {"zero"sv, graphics::BLEND_FACTOR::ZERO},
+            {"one"sv, graphics::BLEND_FACTOR::ONE},
+            {"src_color"sv, graphics::BLEND_FACTOR::SRC_COLOR},
+            {"one_minus_src_color"sv, graphics::BLEND_FACTOR::ONE_MINUS_SRC_COLOR},
+            {"dst_color"sv, graphics::BLEND_FACTOR::DST_COLOR},
+            {"one_minus_dst_color"sv, graphics::BLEND_FACTOR::ONE_MINUS_DST_COLOR},
+            {"src_alpha"sv, graphics::BLEND_FACTOR::SRC_ALPHA},
+            {"one_minus_src_alpha"sv, graphics::BLEND_FACTOR::ONE_MINUS_SRC_ALPHA},
+            {"dst_alpha"sv, graphics::BLEND_FACTOR::DST_ALPHA},
+            {"one_minus_dst_alpha"sv, graphics::BLEND_FACTOR::ONE_MINUS_DST_ALPHA},
+            {"constant_color"sv, graphics::BLEND_FACTOR::CONSTANT_COLOR},
+            {"one_minus_constant_color"sv, graphics::BLEND_FACTOR::ONE_MINUS_CONSTANT_COLOR},
+            {"constant_alpha"sv, graphics::BLEND_FACTOR::CONSTANT_ALPHA},
+            {"one_minus_constant_alpha"sv, graphics::BLEND_FACTOR::ONE_MINUS_CONSTANT_ALPHA},
+            {"src_alpha_saturate"sv, graphics::BLEND_FACTOR::SRC_ALPHA_SATURATE},
+            {"src1_color"sv, graphics::BLEND_FACTOR::SRC1_COLOR},
+            {"one_minus_src1_color"sv, graphics::BLEND_FACTOR::ONE_MINUS_SRC1_COLOR},
+            {"src1_alpha"sv, graphics::BLEND_FACTOR::SRC1_ALPHA},
+            {"one_minus_src1_alpha"sv, graphics::BLEND_FACTOR::ONE_MINUS_SRC1_ALPHA}
+        };
 
-        else if (name == "one"sv)
-            return graphics::BLEND_FACTOR::ONE;
-
-        else if (name == "src_color"sv)
-            return graphics::BLEND_FACTOR::SRC_COLOR;
-
-        else if (name == "one_minus_src_color"sv)
-            return graphics::BLEND_FACTOR::ONE_MINUS_SRC_COLOR;
-
-        else if (name == "dst_color"sv)
-            return graphics::BLEND_FACTOR::DST_COLOR;
-
-        else if (name == "one_minus_dst_color"sv)
-            return graphics::BLEND_FACTOR::ONE_MINUS_DST_COLOR;
-
-        else if (name == "src_alpha"sv)
-            return graphics::BLEND_FACTOR::SRC_ALPHA;
-
-        else if (name == "one_minus_src_alpha"sv)
-            return graphics::BLEND_FACTOR::ONE_MINUS_SRC_ALPHA;
-
-        else if (name == "dst_alpha"sv)
-            return graphics::BLEND_FACTOR::DST_ALPHA;
-
-        else if (name == "one_minus_dst_alpha"sv)
-            return graphics::BLEND_FACTOR::ONE_MINUS_DST_ALPHA;
-
-        else if (name == "constant_color"sv)
-            return graphics::BLEND_FACTOR::CONSTANT_COLOR;
-
-        else if (name == "one_minus_constant_color"sv)
-            return graphics::BLEND_FACTOR::ONE_MINUS_CONSTANT_COLOR;
-
-        else if (name == "constant_alpha"sv)
-            return graphics::BLEND_FACTOR::CONSTANT_ALPHA;
-
-        else if (name == "one_minus_constant_alpha"sv)
-            return graphics::BLEND_FACTOR::ONE_MINUS_CONSTANT_ALPHA;
-
-        else if (name == "src_alpha_saturate"sv)
-            return graphics::BLEND_FACTOR::SRC_ALPHA_SATURATE;
-
-        else if (name == "src1_color"sv)
-            return graphics::BLEND_FACTOR::SRC1_COLOR;
-
-        else if (name == "one_minus_src1_color"sv)
-            return graphics::BLEND_FACTOR::ONE_MINUS_SRC1_COLOR;
-
-        else if (name == "src1_alpha"sv)
-            return graphics::BLEND_FACTOR::SRC1_ALPHA;
-
-        else if (name == "one_minus_src1_alpha"sv)
-            return graphics::BLEND_FACTOR::ONE_MINUS_SRC1_ALPHA;
+        if (auto it = factors.find(name); it != std::end(factors))
+            return it->second;
 
         return { };
     }
@@ -330,23 +265,17 @@ namespace loader
 
     std::optional<graphics::COLOR_COMPONENT> color_component(std::string_view name)
     {
-        if (name == "red"sv)
-            return graphics::COLOR_COMPONENT::R;
+        static const std::unordered_map<std::string_view, graphics::COLOR_COMPONENT> components{
+            {"red"sv, graphics::COLOR_COMPONENT::R},
+            {"green"sv, graphics::COLOR_COMPONENT::G},
+            {"blue"sv, graphics::COLOR_COMPONENT::B},
+            {"alpha"sv, graphics::COLOR_COMPONENT::A},
+            {"rgb"sv, graphics::COLOR_COMPONENT::RGB},
+            {"rgba"sv, graphics::COLOR_COMPONENT::RGBA}
+        };
 
-        else if (name == "green"sv)
-            return graphics::COLOR_COMPONENT::G;
-
-        else if (name == "blue"sv)
-            return graphics::COLOR_COMPONENT::B;
-
-        else if (name == "alpha"sv)
-            return graphics::COLOR_COMPONENT::A;
-
-        else if (name == "rgb"sv)
-            return graphics::COLOR_COMPONENT::RGB;
-
-        else if (name == "rgba"sv)
-            return graphics::COLOR_COMPONENT::RGBA;
+        if (auto it = components.find(name); it != std::end(components))
+            return it->second;
 
         return { };
     }
@@ -361,7 +290,6 @@ namespace loader
 
         return { };
     }
-
 }
 
 namespace nlohmann
