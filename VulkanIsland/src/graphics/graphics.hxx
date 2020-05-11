@@ -545,6 +545,8 @@ namespace graphics
         using E = std::underlying_type_t<T>;
         return static_cast<T>(static_cast<E>(lhs) & static_cast<E>(rhs));
     }
+
+    std::size_t constexpr size_in_bytes(graphics::FORMAT format);
 }
 
 namespace renderer

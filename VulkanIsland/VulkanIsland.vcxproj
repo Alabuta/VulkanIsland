@@ -211,7 +211,7 @@
       <AdditionalOptions> /bigobj /Zm2000 /experimental:external /external:anglebrackets  /external:W0 %(AdditionalOptions)</AdditionalOptions>
       <EnableModules>false</EnableModules>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
-      <EnableEnhancedInstructionSet>AdvancedVectorExtensions2</EnableEnhancedInstructionSet>
+      <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
     </ClCompile>
     <Link>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
@@ -241,6 +241,7 @@
     </PostBuildEvent>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\graphics\graphics.cxx" />
     <ClCompile Include="src\renderer\config.cxx" />
     <ClCompile Include="src\resources\framebuffer.cxx" />
     <ClCompile Include="src\renderer\command_buffer.cxx" />
