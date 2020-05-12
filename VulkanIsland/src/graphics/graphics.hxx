@@ -1,6 +1,12 @@
 #pragma once
 
+#include <array>
+#include <variant>
+#include <cstdint>
+#include <optional>
 #include <type_traits>
+
+#include <boost/cstdfloat.hpp>
 
 #include "utility/mpl.hxx"
 
@@ -560,4 +566,68 @@ namespace renderer
             return width == rhs.width && height == rhs.height;
         }
     };
+}
+
+namespace graphics
+{
+    using format_instance = std::variant<
+        std::array<std::int8_t, 1>,
+        std::array<std::int8_t, 2>,
+        std::array<std::int8_t, 3>,
+        std::array<std::int8_t, 4>,
+
+        std::array<std::uint8_t, 1>,
+        std::array<std::uint8_t, 2>,
+        std::array<std::uint8_t, 3>,
+        std::array<std::uint8_t, 4>,
+
+        std::array<std::int16_t, 1>,
+        std::array<std::int16_t, 2>,
+        std::array<std::int16_t, 3>,
+        std::array<std::int16_t, 4>,
+
+        std::array<std::uint16_t, 1>,
+        std::array<std::uint16_t, 2>,
+        std::array<std::uint16_t, 3>,
+        std::array<std::uint16_t, 4>,
+
+        std::array<std::int32_t, 1>,
+        std::array<std::int32_t, 2>,
+        std::array<std::int32_t, 3>,
+        std::array<std::int32_t, 4>,
+
+        std::array<std::uint32_t, 1>,
+        std::array<std::uint32_t, 2>,
+        std::array<std::uint32_t, 3>,
+        std::array<std::uint32_t, 4>,
+
+    #if defined(BOOST_FLOAT16_C)
+        std::array<boost::float16_t, 1>,
+        std::array<boost::float16_t, 2>,
+        std::array<boost::float16_t, 3>,
+        std::array<boost::float16_t, 4>
+    #endif
+
+        std::array<boost::float32_t, 1>,
+        std::array<boost::float32_t, 2>,
+        std::array<boost::float32_t, 3>,
+        std::array<boost::float32_t, 4>,
+
+        std::array<std::int64_t, 1>,
+        std::array<std::int64_t, 2>,
+        std::array<std::int64_t, 3>,
+        std::array<std::int64_t, 4>,
+
+        std::array<std::uint64_t, 1>,
+        std::array<std::uint64_t, 2>,
+        std::array<std::uint64_t, 3>,
+        std::array<std::uint64_t, 4>,
+
+        std::array<boost::float64_t, 1>,
+        std::array<boost::float64_t, 2>,
+        std::array<boost::float64_t, 3>,
+        std::array<boost::float64_t, 4>
+    >;
+
+    std::optional<format_instance> constexpr instantiate_format(graphics::FORMAT format);
 }
