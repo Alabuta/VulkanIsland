@@ -423,6 +423,15 @@ namespace graphics
         RGBA12X4_UNORM_4PACK16
     };
 
+    enum class NUMERIC_FORMAT {
+        UNDEFINED = 0,
+        NORMALIZED = 0x01,
+        SCALED = 0x02,
+        INT = 0x04,
+        FLOAT = 0x08,
+        SRGB = 0x10
+    };
+
     enum class FORMAT_FEATURE {
         SAMPLED_IMAGE = 0x00001,
         STORAGE_IMAGE = 0x00002,
@@ -551,8 +560,6 @@ namespace graphics
         using E = std::underlying_type_t<T>;
         return static_cast<T>(static_cast<E>(lhs) & static_cast<E>(rhs));
     }
-
-    std::size_t constexpr size_in_bytes(graphics::FORMAT format);
 }
 
 namespace renderer
@@ -629,5 +636,7 @@ namespace graphics
         std::array<boost::float64_t, 4>
     >;
 
-    std::optional<format_instance> constexpr instantiate_format(graphics::FORMAT format);
+    graphics::NUMERIC_FORMAT numeric_format(graphics::FORMAT format);
+
+    std::optional<graphics::format_instance> instantiate_format(graphics::FORMAT format);
 }
