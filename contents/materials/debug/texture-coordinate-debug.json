@@ -28,11 +28,11 @@
     "vertexAttributes": [
         {
             "semantic": "POSITION",
-            "type": "rgb32sfloat"
+            "type": "rgb32f"
         },
         {
             "semantic": "TEXCOORD_0",
-            "type": "rg32sfloat"
+            "type": "rg32f"
         }
     ]
 }

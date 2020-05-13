@@ -41,15 +41,15 @@
     "vertexAttributes": [
         {
             "semantic": "POSITION",
-            "type": "rgb32sfloat"
+            "type": "rgb32f"
         },
         {
             "semantic": "NORMAL",
-            "type": "rgb32sfloat"
+            "type": "rgb32f"
         },
         {
             "semantic": "NORMAL",
-            "type": "rg8snorm"
+            "type": "rg16i_norm"
         }
     ]
 }

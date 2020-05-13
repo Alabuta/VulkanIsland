@@ -55,10 +55,85 @@ shaders=Shaders(
         'WEIGHTS_0': 7
     },
     vertex_attributes_types={
-        'rg32sfloat': 'vec2',
-        'rgb32sfloat': 'vec3',
-        'rgba32sfloat': 'vec4',
-        'rg8snorm': 'vec2'
+        'r8i_norm': 'float',
+        'rg8i_norm': 'vec2',
+        'rgb8i_norm': 'vec3',
+        'rgba8i_norm': 'vec4',
+
+        'r8ui_norm': 'float',
+        'rg8ui_norm': 'vec2',
+        'rgb8ui_norm': 'vec3',
+        'rgba8ui_norm': 'vec4',
+
+        'r16i_norm': 'float',
+        'rg16i_norm': 'vec2',
+        'rgb16i_norm': 'vec3',
+        'rgba16i_norm': 'vec4',
+
+        'r16ui_norm': 'float',
+        'rg16ui_norm': 'vec2',
+        'rgb16ui_norm': 'vec3',
+        'rgba16ui_norm': 'vec4',
+
+        'r8i_scaled': 'float',
+        'rg8i_scaled': 'vec2',
+        'rgb8i_scaled': 'vec3',
+        'rgba8i_scaled': 'vec4',
+
+        'r8ui_scaled': 'float',
+        'rg8ui_scaled': 'vec2',
+        'rgb8ui_scaled': 'vec3',
+        'rgba8ui_scaled': 'vec4',
+
+        'r16i_scaled': 'float',
+        'rg16i_scaled': 'vec2',
+        'rgb16i_scaled': 'vec3',
+        'rgba16i_scaled': 'vec4',
+
+        'r16ui_scaled': 'float',
+        'rg16ui_scaled': 'vec2',
+        'rgb16ui_scaled': 'vec3',
+        'rgba16ui_scaled': 'vec4',
+
+        'r8i': 'int',
+        'rg8i': 'ivec2',
+        'rgb8i': 'ivec3',
+        'rgba8i': 'ivec4',
+
+        'r8ui': 'uint',
+        'rg8ui': 'uvec2',
+        'rgb8ui': 'uvec3',
+        'rgba8ui': 'uvec4',
+
+        'r16i': 'int',
+        'rg16i': 'ivec2',
+        'rgb16i': 'ivec3',
+        'rgba16i': 'ivec4',
+
+        'r16ui': 'uint',
+        'rg16ui': 'uvec2',
+        'rgb16ui': 'uvec3',
+        'rgba16ui': 'uvec4',
+
+        'r32i': 'int',
+        'rg32i': 'ivec2',
+        'rgb32i': 'ivec3',
+        'rgba32i': 'ivec4',
+
+        'r32ui': 'uint',
+        'rg32ui': 'uvec2',
+        'rgb32ui': 'uvec3',
+        'rgba32ui': 'uvec4',
+
+        'r32f': 'float',
+        'rg32f': 'vec2',
+        'rgb32f': 'vec3',
+        'rgba32f': 'vec4',
+
+        'r64f': 'double',
+        'rg64f': 'dvec2',
+        'rgb64f': 'dvec3',
+        'rgba64f': 'dvec4'
     }
     ,
     stage2extension={
@@ -291,7 +366,7 @@ def compile_material(material_data):
             hashed_name=str(uuid.uuid5(uuid.NAMESPACE_DNS, f'{name}.{technique_index}'))
             output_path=os.path.join(shaders.source_path, f'{hashed_name}.spv')
 
-            print(f'{name}.{technique_index}', output_path)
+            print(f'{name}.{technique_index} -> {output_path}')
 
             compiler=subprocess.Popen([
                 shaders.compiler_path,
@@ -309,7 +384,7 @@ def compile_material(material_data):
             output, errors=compiler.communicate(source_code.encode('UTF-8'))
 
             output=output.decode('UTF-8')[len('stdin'):]
-            if output:
+            if len(output) > 2:
                 print(output)
 
             if compiler.returncode!=0:

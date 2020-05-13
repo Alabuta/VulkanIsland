@@ -53,15 +53,15 @@
     "vertexAttributes": [
         {
             "semantic": "POSITION",
-            "type": "rgb32sfloat"
+            "type": "rgb32f"
         },
         {
             "semantic": "COLOR_0",
-            "type": "rgba32sfloat"
+            "type": "rgba32f"
         },
         {
             "semantic": "COLOR_0",
-            "type": "rgb32sfloat"
+            "type": "rgb32f"
         }
     ],
     "descriptors": {
