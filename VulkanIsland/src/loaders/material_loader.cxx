@@ -57,73 +57,89 @@ namespace loader
     std::optional<graphics::FORMAT> attribute_format(std::string_view type)
     {
         static const std::unordered_map<std::string_view, graphics::FORMAT> formats{
-            {"r8snorm"sv, graphics::FORMAT::R8_SNORM},
-            {"rg8snorm"sv, graphics::FORMAT::RG8_SNORM},
-            {"rgb8snorm"sv, graphics::FORMAT::RGB8_SNORM},
-            {"rgba8snorm"sv, graphics::FORMAT::RGBA8_SNORM},
+            {"r8i_norm"sv, graphics::FORMAT::R8_SNORM},
+            {"rg8i_norm"sv, graphics::FORMAT::RG8_SNORM},
+            {"rgb8i_norm"sv, graphics::FORMAT::RGB8_SNORM},
+            {"rgba8i_norm"sv, graphics::FORMAT::RGBA8_SNORM},
 
-            {"r32sint"sv, graphics::FORMAT::R32_SINT},
-            {"rg32sint"sv, graphics::FORMAT::RG32_SINT},
-            {"rgb32sint"sv, graphics::FORMAT::RGB32_SINT},
-            {"rgba32sint"sv, graphics::FORMAT::RGBA32_SINT},
+            {"r8ui_norm"sv, graphics::FORMAT::R8_UNORM},
+            {"rg8ui_norm"sv, graphics::FORMAT::RG8_UNORM},
+            {"rgb8ui_norm"sv, graphics::FORMAT::RGB8_UNORM},
+            {"rgba8ui_norm"sv, graphics::FORMAT::RGBA8_UNORM},
 
-            {"r32uint"sv, graphics::FORMAT::R32_UINT},
-            {"rg32uint"sv, graphics::FORMAT::RG32_UINT},
-            {"rgb32uint"sv, graphics::FORMAT::RGB32_UINT},
-            {"rgba32uint"sv, graphics::FORMAT::RGBA32_UINT},
+            {"r16i_norm"sv, graphics::FORMAT::R16_SNORM},
+            {"rg16i_norm"sv, graphics::FORMAT::RG16_SNORM},
+            {"rgb16i_norm"sv, graphics::FORMAT::RGB16_SNORM},
+            {"rgba16i_norm"sv, graphics::FORMAT::RGBA16_SNORM},
 
-            {"r32sfloat"sv, graphics::FORMAT::R32_SFLOAT},
-            {"rg32sfloat"sv, graphics::FORMAT::RG32_SFLOAT},
-            {"rgb32sfloat"sv, graphics::FORMAT::RGB32_SFLOAT},
-            {"rgba32sfloat"sv, graphics::FORMAT::RGBA32_SFLOAT}
+            {"r16ui_norm"sv, graphics::FORMAT::R16_UNORM},
+            {"rg16ui_norm"sv, graphics::FORMAT::RG16_UNORM},
+            {"rgb16ui_norm"sv, graphics::FORMAT::RGB16_UNORM},
+            {"rgba16ui_norm"sv, graphics::FORMAT::RGBA16_UNORM},
+
+            {"r8i_scaled"sv, graphics::FORMAT::R8_SSCALED},
+            {"rg8i_scaled"sv, graphics::FORMAT::RG8_SSCALED},
+            {"rgb8i_scaled"sv, graphics::FORMAT::RGB8_SSCALED},
+            {"rgba8i_scaled"sv, graphics::FORMAT::RGBA8_SSCALED},
+
+            {"r8ui_scaled"sv, graphics::FORMAT::R8_USCALED},
+            {"rg8ui_scaled"sv, graphics::FORMAT::RG8_USCALED},
+            {"rgb8ui_scaled"sv, graphics::FORMAT::RGB8_USCALED},
+            {"rgba8ui_scaled"sv, graphics::FORMAT::RGBA8_USCALED},
+
+            {"r16i_scaled"sv, graphics::FORMAT::R16_SSCALED},
+            {"rg16i_scaled"sv, graphics::FORMAT::RG16_SSCALED},
+            {"rgb16i_scaled"sv, graphics::FORMAT::RGB16_SSCALED},
+            {"rgba16i_scaled"sv, graphics::FORMAT::RGBA16_SSCALED},
+
+            {"r16ui_scaled"sv, graphics::FORMAT::R16_USCALED},
+            {"rg16ui_scaled"sv, graphics::FORMAT::RG16_USCALED},
+            {"rgb16ui_scaled"sv, graphics::FORMAT::RGB16_USCALED},
+            {"rgba16ui_scaled"sv, graphics::FORMAT::RGBA16_USCALED},
+
+            {"r8i"sv, graphics::FORMAT::R8_SINT},
+            {"rg8i"sv, graphics::FORMAT::RG8_SINT},
+            {"rgb8i"sv, graphics::FORMAT::RGB8_SINT},
+            {"rgba8i"sv, graphics::FORMAT::RGBA8_SINT},
+
+            {"r8ui"sv, graphics::FORMAT::R8_UINT},
+            {"rg8ui"sv, graphics::FORMAT::RG8_UINT},
+            {"rgb8ui"sv, graphics::FORMAT::RGB8_UINT},
+            {"rgba8ui"sv, graphics::FORMAT::RGBA8_UINT},
+
+            {"r16i"sv, graphics::FORMAT::R16_SINT},
+            {"rg16i"sv, graphics::FORMAT::RG16_SINT},
+            {"rgb16i"sv, graphics::FORMAT::RGB16_SINT},
+            {"rgba16i"sv, graphics::FORMAT::RGBA16_SINT},
+
+            {"r16ui"sv, graphics::FORMAT::R16_UINT},
+            {"rg16ui"sv, graphics::FORMAT::RG16_UINT},
+            {"rgb16ui"sv, graphics::FORMAT::RGB16_UINT},
+            {"rgba16ui"sv, graphics::FORMAT::RGBA16_UINT},
+
+            {"r32i"sv, graphics::FORMAT::R32_SINT},
+            {"rg32i"sv, graphics::FORMAT::RG32_SINT},
+            {"rgb32i"sv, graphics::FORMAT::RGB32_SINT},
+            {"rgba32i"sv, graphics::FORMAT::RGBA32_SINT},
+
+            {"r32ui"sv, graphics::FORMAT::R32_UINT},
+            {"rg32ui"sv, graphics::FORMAT::RG32_UINT},
+            {"rgb32ui"sv, graphics::FORMAT::RGB32_UINT},
+            {"rgba32ui"sv, graphics::FORMAT::RGBA32_UINT},
+
+            {"r32f"sv, graphics::FORMAT::R32_SFLOAT},
+            {"rg32f"sv, graphics::FORMAT::RG32_SFLOAT},
+            {"rgb32f"sv, graphics::FORMAT::RGB32_SFLOAT},
+            {"rgba32f"sv, graphics::FORMAT::RGBA32_SFLOAT},
+
+            {"r64f"sv, graphics::FORMAT::R64_SFLOAT},
+            {"rg64f"sv, graphics::FORMAT::RG64_SFLOAT},
+            {"rgb64f"sv, graphics::FORMAT::RGB64_SFLOAT},
+            {"rgba64f"sv, graphics::FORMAT::RGBA64_SFLOAT}
         };
 
         if (auto it = formats.find(type); it != std::end(formats))
             return it->second;
-
-        return { };
-    }
-
-    std::optional<vertex::attribute_type> attribute_type(std::string_view type)
-    {
-        if (type == "rg8snorm"sv)
-            return vertex::static_array<2, boost::int8_t>{};
-
-        else if (type == "r32sfloat"sv)
-            return vertex::static_array<1, boost::float32_t>{};
-
-        else if (type == "rg32sfloat"sv)
-            return vertex::static_array<2, boost::float32_t>{};
-
-        else if (type == "rgb32sfloat"sv)
-            return vertex::static_array<3, boost::float32_t>{};
-
-        else if (type == "rgba32sfloat"sv)
-            return vertex::static_array<4, boost::float32_t>{};
-
-        else if (type == "r32sint"sv)
-            return vertex::static_array<1, std::int32_t>{};
-
-        else if (type == "rg32sint"sv)
-            return vertex::static_array<2, std::int32_t>{};
-
-        else if (type == "rgb32sint"sv)
-            return vertex::static_array<3, std::int32_t>{};
-
-        else if (type == "rgba32sint"sv)
-            return vertex::static_array<4, std::int32_t>{};
-
-        else if (type == "r32uint"sv)
-            return vertex::static_array<1, std::uint32_t>{};
-
-        else if (type == "rg32uint"sv)
-            return vertex::static_array<2, std::uint32_t>{};
-
-        else if (type == "rgb32uint"sv)
-            return vertex::static_array<3, std::uint32_t>{};
-
-        else if (type == "rgba32uint"sv)
-            return vertex::static_array<4, std::uint32_t>{};
 
         return { };
     }
@@ -311,10 +327,10 @@ namespace nlohmann
 
         else throw std::runtime_error("unsupported vertex attribute semantic"s);
 
-        if (auto type = loader::attribute_type(j.at("type"s).get<std::string>()); type)
-            vertex_attribute.type = *type;
+        if (auto format = loader::attribute_format(j.at("type"s).get<std::string>()); format)
+            vertex_attribute.format = *format;
 
-        else throw std::runtime_error("unsupported vertex attribute type"s);
+        else throw std::runtime_error("unsupported vertex attribute format"s);
     }
 
     void from_json(nlohmann::json const &j, loader::material_description::specialization_constant &specialization_constant)

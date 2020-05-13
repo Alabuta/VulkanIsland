@@ -362,12 +362,10 @@ namespace graphics
 
         std::transform(std::cbegin(attributes), std::cend(attributes), std::back_inserter(attribute_descriptions), [binding_index] (auto &&attribute)
         {
-            auto format = graphics::get_vertex_attribute_format(attribute);
-
             auto location_index = graphics::get_vertex_attribute_semantic_index(attribute);
 
             return graphics::vertex_input_attribute{
-                location_index, binding_index, static_cast<std::uint32_t>(attribute.offset_in_bytes), format
+                location_index, binding_index, static_cast<std::uint32_t>(attribute.offset_in_bytes), attribute.format
             };
         });
 
@@ -391,14 +389,12 @@ namespace graphics
             auto it = std::find_if(std::cbegin(vertex_input_state.attribute_descriptions), std::cend(vertex_input_state.attribute_descriptions),
                                    [&required_attribute] (auto &&attribute_description)
             {
-                auto format = graphics::get_vertex_attribute_format(required_attribute);
-
                 auto location_index = graphics::get_vertex_attribute_semantic_index(required_attribute);
 
                 if (location_index != attribute_description.location_index)
                     return false;
 
-                if (format != attribute_description.format)
+                if (required_attribute.format != attribute_description.format)
                     return false;
 
                 return true;

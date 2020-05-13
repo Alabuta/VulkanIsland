@@ -402,6 +402,9 @@ namespace graphics
             case graphics::FORMAT::RGBA32_UINT:
                 return std::array<std::uint32_t, 4>{ };
 
+            case graphics::FORMAT::RGBA32_SFLOAT:
+                return std::array<boost::float32_t, 4>{ };
+
             case graphics::FORMAT::RG64_SINT:
                 return std::array<std::int64_t, 2>{ };
 

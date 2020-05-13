@@ -22,7 +22,7 @@ namespace vertex
         JOINTS_0,
         WEIGHTS_0,
 
-        MAX_NUMBER
+        MAX
     };
 
     template<eSEMANTIC_INDEX SI>
@@ -35,21 +35,6 @@ namespace vertex
 
         template<eSEMANTIC_INDEX si>
         auto constexpr operator== (semantic<si>) const noexcept { return SI == si; }
-    };
-
-    template<std::uint32_t N, class T>
-    struct static_array final : public std::array<T, N> {
-        template<std::uint32_t N2, class T2> requires mpl::same_as<T, T2>
-        auto constexpr operator== (static_array<N2, T2> const &) const noexcept
-        {
-            return N == N2;
-        }
-
-        template<std::uint32_t N2, class T2> requires mpl::same_as<T, T2>
-        auto constexpr operator!= (static_array<N2, T2> const &) const noexcept
-        {
-            return N != N2;
-        }
     };
 }
 
@@ -74,61 +59,15 @@ namespace vertex
         joints_0,
         weights_0
     >;
-
-    using attribute_type = std::variant<
-        static_array<1, std::int8_t>,
-        static_array<2, std::int8_t>,
-        static_array<3, std::int8_t>,
-        static_array<4, std::int8_t>,
-
-        static_array<1, std::uint8_t>,
-        static_array<2, std::uint8_t>,
-        static_array<3, std::uint8_t>,
-        static_array<4, std::uint8_t>,
-
-        static_array<1, std::int16_t>,
-        static_array<2, std::int16_t>,
-        static_array<3, std::int16_t>,
-        static_array<4, std::int16_t>,
-
-        static_array<1, std::uint16_t>,
-        static_array<2, std::uint16_t>,
-        static_array<3, std::uint16_t>,
-        static_array<4, std::uint16_t>,
-
-        static_array<1, std::int32_t>,
-        static_array<2, std::int32_t>,
-        static_array<3, std::int32_t>,
-        static_array<4, std::int32_t>,
-
-        static_array<1, std::uint32_t>,
-        static_array<2, std::uint32_t>,
-        static_array<3, std::uint32_t>,
-        static_array<4, std::uint32_t>,
-
-    #if defined(BOOST_FLOAT16_C)
-        static_array<1, boost::float16_t>,
-        static_array<2, boost::float16_t>,
-        static_array<3, boost::float16_t>,
-        static_array<4, boost::float16_t>
-    #endif
-
-        static_array<1, boost::float32_t>,
-        static_array<2, boost::float32_t>,
-        static_array<3, boost::float32_t>,
-        static_array<4, boost::float32_t>
-    >;
 }
 
 namespace graphics
 {
     struct vertex_attribute final {
         vertex::attribute_semantic semantic;
-        vertex::attribute_type type;
+        graphics::FORMAT format;
 
         std::size_t offset_in_bytes{0};
-
-        bool normalized;
 
         template<class T> requires mpl::same_as<std::remove_cvref_t<T>, vertex_attribute>
         auto constexpr operator< (T &&rhs) const
@@ -140,9 +79,8 @@ namespace graphics
         auto constexpr operator== (T &&rhs) const
         {
             return offset_in_bytes == rhs.offset_in_bytes &&
-                normalized == rhs.normalized &&
                 semantic == rhs.semantic &&
-                type == rhs.type;
+                format == rhs.format;
         }
     };
 
@@ -192,7 +130,6 @@ namespace graphics
 
     std::uint32_t get_vertex_attribute_semantic_index(graphics::vertex_attribute const &vertex_attribute);
 
-    graphics::FORMAT get_vertex_attribute_format(graphics::vertex_attribute const &vertex_attribute);
 }
 
 namespace vertex
@@ -213,40 +150,41 @@ namespace vertex
     }
 #endif
     template<class S, class T>
-    void compile_vertex_attributes(std::vector<graphics::vertex_attribute> &attributes, S semantic, T &&type, bool normalized)
+    void compile_vertex_attributes(std::vector<graphics::vertex_attribute> &attributes, S semantic, T format)
     {
-        attributes.push_back(graphics::vertex_attribute{semantic, std::forward<T>(type), 0, normalized});
+        attributes.push_back(graphics::vertex_attribute{semantic, format, 0});
     }
 
     template<class S, class T, class... Ts>
-    void compile_vertex_attributes(std::vector<graphics::vertex_attribute> &attributes, S semantic, T &&type, bool normalized, Ts &&...args)
+    void compile_vertex_attributes(std::vector<graphics::vertex_attribute> &attributes, S semantic, T format, Ts ...args)
     {
-        attributes.push_back(graphics::vertex_attribute{semantic, std::forward<T>(type), 0, normalized});
+        attributes.push_back(graphics::vertex_attribute{semantic, format, 0});
 
-        compile_vertex_attributes(attributes, std::forward<Ts>(args)...);
+        compile_vertex_attributes(attributes, args...);
     }
 
     template<class... Ts>
-    graphics::vertex_layout create_vertex_layout(Ts &&...args)
+    graphics::vertex_layout create_vertex_layout(Ts ...args)
     {
         graphics::vertex_layout vertex_layout{0, { }};
 
         auto &&vertex_attributes = vertex_layout.attributes;
 
-        compile_vertex_attributes(vertex_attributes, std::forward<Ts>(args)...);
+        compile_vertex_attributes(vertex_attributes, args...);
 
         std::sort(std::begin(vertex_attributes), std::end(vertex_attributes));
 
         for (auto &&vertex_attribute : vertex_attributes) {
             vertex_attribute.offset_in_bytes += vertex_layout.size_in_bytes;
 
-            auto size_in_bytes = std::visit([] (auto &&type)
-            {
-                return sizeof(std::remove_cvref_t<decltype(type)>);
+            if (auto format = graphics::instantiate_format(vertex_attribute.format); format) {
+                vertex_layout.size_in_bytes += std::visit([] (auto &&format)
+                {
+                    return sizeof(std::remove_cvref_t<decltype(format)>);
+                }, *format);
+            }
 
-            }, vertex_attribute.type);
-
-            vertex_layout.size_in_bytes += size_in_bytes;
+            else throw std::runtime_error("unsupported format");
         }
 
         return vertex_layout;

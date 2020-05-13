@@ -28,9 +28,8 @@ namespace loader
 
         struct vertex_attribute final {
             vertex::attribute_semantic semantic;
-            vertex::attribute_type type;
 
-            bool normalized{false};
+            graphics::FORMAT format;
         };
 
         std::vector<vertex_attribute> vertex_attributes;

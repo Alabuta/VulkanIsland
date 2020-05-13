@@ -61,15 +61,18 @@ namespace graphics
                        std::back_inserter(vertex_layout.attributes),
                        [vertex_attributes, &offset_in_bytes = vertex_layout.size_in_bytes] (auto vertex_layout_index) mutable
         {
-            auto [semantic, type, normalized] = vertex_attributes.at(vertex_layout_index);
+            auto [semantic, format] = vertex_attributes.at(vertex_layout_index);
 
-            graphics::vertex_attribute const vertex_attribute{semantic, type, offset_in_bytes, normalized};
+            graphics::vertex_attribute const vertex_attribute{semantic, format, offset_in_bytes};
 
-            offset_in_bytes += std::visit([] (auto &&type)
-            {
-                return sizeof(std::remove_cvref_t<decltype(type)>);
+            if (auto fmt = graphics::instantiate_format(format); fmt) {
+                offset_in_bytes += std::visit([] (auto &&format)
+                {
+                    return sizeof(std::remove_cvref_t<decltype(format)>);
+                }, *fmt);
+            }
 
-            }, type);
+            else throw std::runtime_error("unsupported format");
 
             return vertex_attribute;
         });
