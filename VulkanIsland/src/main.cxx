@@ -735,6 +735,7 @@ namespace temp
             }
         }
 
+        else throw std::runtime_error("unsupported components number"s);
     }
 
     template<std::size_t N, class T>
@@ -750,6 +751,8 @@ namespace temp
 
                         std::fill_n(it, vertex_count, oct);
                     }
+
+                    else throw std::runtime_error("unsupported format type"s);
 
                     break;
                 }
@@ -773,6 +776,8 @@ namespace temp
                     break;
             }
         }
+
+        else throw std::runtime_error("unsupported components number"s);
     }
 
     template<std::size_t N, class T>
@@ -797,16 +802,15 @@ namespace temp
                     break;
             }
         }
+
+        else throw std::runtime_error("unsupported components number"s);
     }
 
     std::vector<std::byte>
     generate_plane(float width, float height, std::uint32_t hsegments, std::uint32_t vsegments, const graphics::vertex_layout &vertex_layout)
     {
-        //std::size_t vertex_count = (hsegments + 1u) * (vsegments + 1u) + (vsegments - 1) * 2;
         std::size_t vertex_count = (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
         std::size_t vertex_size = vertex_layout.size_in_bytes;
-
-        //std::cout << "vertex_count " << vertex_count << std::endl;
 
         std::vector<std::byte> bytes(vertex_size * vertex_count);
 
@@ -827,7 +831,6 @@ namespace temp
                     auto data = reinterpret_cast<pointer_type>(std::data(bytes) + attribute.offset_in_bytes);
 
                     auto it = strided_bidirectional_iterator{data, vertex_size};
-                    std::cout << sizeof(it);
 
                     switch (attribute_semantic) {
                         case vertex::eSEMANTIC_INDEX::POSITION:
@@ -858,7 +861,7 @@ namespace temp
     xformat populate()
     {
         xformat model_;
-
+    #if 0
         auto constexpr vertexCountPerMeshlet = 3u;
 
         {
@@ -1098,17 +1101,9 @@ namespace temp
                 std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
             }
         }
-        
+    #endif
         {
             // TODO:: check required format by vkGetPhysicalDeviceFormatProperties() and VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT.
-            struct vertex_struct final {
-                std::array<boost::float32_t, 3> position;
-                std::array<boost::float32_t, 3> normal;
-                std::array<boost::float32_t, 2> texCoord;
-            };
-
-            auto const vertex_layout_index = std::size(model_.vertex_layouts);
-
             auto vertex_layout = vertex::create_vertex_layout(
                 vertex::position{}, graphics::FORMAT::RGB32_SFLOAT,
                 //vertex::normal{}, graphics::FORMAT::RGB32_SFLOAT,
@@ -1116,6 +1111,7 @@ namespace temp
                 vertex::tex_coord_0{}, graphics::FORMAT::RG32_SFLOAT
             );
 
+            auto const vertex_layout_index = std::size(model_.vertex_layouts);
             model_.vertex_layouts.push_back(vertex_layout);
 
             auto vertices = generate_plane(1.f, 1.f, 8u, 8u, vertex_layout);
@@ -1138,7 +1134,7 @@ namespace temp
                 meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
                 meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count);
 
-                meshlet.material_index = 4;
+                meshlet.material_index = 5;
                 meshlet.instance_count = 1;
                 meshlet.first_instance = 0;
 
@@ -1162,6 +1158,7 @@ namespace temp
         model_.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
         model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
         model_.materials.push_back(xformat::material{1, "debug/normal-debug"s});
+        model_.materials.push_back(xformat::material{2, "debug/normal-debug"s});
 
         return model_;
     }

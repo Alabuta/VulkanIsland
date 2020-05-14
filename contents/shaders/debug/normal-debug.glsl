@@ -46,3 +46,10 @@ void process(const in vec3 position, const in vec3 normal)
 
     process(POSITION, normal);
 }
+
+#pragma technique(2)
+{
+    vec3 normal = unpackAttribute(NORMAL);
+
+    process(POSITION, normal);
+}
