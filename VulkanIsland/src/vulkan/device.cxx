@@ -808,7 +808,13 @@ namespace vulkan
                            [[maybe_unused]] VkDebugUtilsMessageTypeFlagsEXT message_types,
                            [[maybe_unused]] VkDebugUtilsMessengerCallbackDataEXT const *callback_data)
     {
-        // std::cerr << message << std::endl;
+        using namespace std::string_literals;
+
+        if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
+            std::cout << fmt::format("{} - {} : {}"s, data->messageIdNumber, callback_data->pMessageIdName, data->pMessage) << std::endl;
+
+        else if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
+            std::cerr << fmt::format("{} - {} : {}"s, data->messageIdNumber, callback_data->pMessageIdName, data->pMessage) << std::endl;
 
         return VK_FALSE;
     }
