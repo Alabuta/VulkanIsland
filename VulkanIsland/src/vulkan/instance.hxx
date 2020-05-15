@@ -49,6 +49,7 @@ namespace vulkan
         VkInstance handle_{VK_NULL_HANDLE};
 
         VkDebugReportCallbackEXT debug_report_callback_{VK_NULL_HANDLE};
+        VkDebugUtilsMessengerEXT debug_messenger_{VK_NULL_HANDLE};
 
         std::map<GLFWwindow *const, renderer::platform_surface> platform_surfaces_;
 
