@@ -861,7 +861,7 @@ namespace temp
     xformat populate()
     {
         xformat model_;
-    #if 0
+    
         auto constexpr vertexCountPerMeshlet = 3u;
 
         {
@@ -1101,13 +1101,13 @@ namespace temp
                 std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
             }
         }
-    #endif
+    
         {
             // TODO:: check required format by vkGetPhysicalDeviceFormatProperties() and VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT.
             auto vertex_layout = vertex::create_vertex_layout(
                 vertex::position{}, graphics::FORMAT::RGB32_SFLOAT,
                 //vertex::normal{}, graphics::FORMAT::RGB32_SFLOAT,
-                vertex::normal{}, graphics::FORMAT::RG16_SNORM,
+                vertex::normal{}, graphics::FORMAT::RG8_SNORM,
                 vertex::tex_coord_0{}, graphics::FORMAT::RG32_SFLOAT
             );
 
@@ -1134,7 +1134,7 @@ namespace temp
                 meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
                 meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count);
 
-                meshlet.material_index = 5;
+                meshlet.material_index = 4;
                 meshlet.instance_count = 1;
                 meshlet.first_instance = 0;
 
@@ -1317,6 +1317,11 @@ void init(platform::window &window, app_t &app)
 
 void update(app_t &app)
 {
+    if (app.resize_callback) {
+        app.resize_callback();
+        app.resize_callback = nullptr;
+    }
+
     app.camera_controller->update();
     app.cameraSystem.update();
 
@@ -1490,11 +1495,6 @@ int main()
     window.update([&app]
     {
         glfwPollEvents();
-
-        if (app.resize_callback) {
-            app.resize_callback();
-            app.resize_callback = nullptr;
-        }
 
         update(app);
 
