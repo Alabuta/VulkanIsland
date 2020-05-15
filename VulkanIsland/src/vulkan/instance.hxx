@@ -3,10 +3,9 @@
 #include <type_traits>
 #include <unordered_map>
 
-#ifndef GLFW_INCLUDE_VULKAN
-    #define GLFW_INCLUDE_VULKAN
-    #include <GLFW/glfw3.h>
-#endif
+#include <volk/volk.h>
+
+#include <GLFW/glfw3.h>
 
 #include "vulkan/debug.hxx"
 #include "platform/window.hxx"

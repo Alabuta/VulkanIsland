@@ -4,15 +4,11 @@
 #include <string>
 using namespace std::string_literals;
 
-#ifndef GLFW_INCLUDE_VULKAN
-    #define GLFW_INCLUDE_VULKAN
-    #include <GLFW/glfw3.h>
-#endif
-
 #include <fmt/format.h>
 
 #include "debug.hxx"
 
+#if 0
 [[nodiscard]] VKAPI_ATTR VkResult VKAPI_CALL
 vkCreateDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerCreateInfoEXT const *pCreateInfo,
                                VkAllocationCallbacks const *pAllocator, VkDebugUtilsMessengerEXT *pDebugMessenger)
@@ -54,6 +50,7 @@ vkDestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT ca
     if (func)
         func(instance, callback, pAllocator);
 }
+#endif
 
 namespace vulkan
 {

@@ -116,6 +116,9 @@ namespace vulkan
 {
     instance::instance()
     {
+        if (auto result = volkInitialize(); result != VK_SUCCESS)
+            throw vulkan::instance_exception("failed to initialize 'volk' meta-loader"s);
+
         auto constexpr use_extensions = !vulkan_config::extensions.empty();
         auto constexpr use_layers = !vulkan_config::layers.empty();
 
@@ -225,6 +228,8 @@ namespace vulkan
 
         if (auto result = vkCreateInstance(&create_info, nullptr, &handle_); result != VK_SUCCESS)
             throw vulkan::instance_exception("failed to create instance"s);
+
+        volkLoadInstance(handle_);
 
         if constexpr (use_layers) {
         #if PREFER_DEBUG_UTILS
