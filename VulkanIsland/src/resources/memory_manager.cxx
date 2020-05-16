@@ -53,19 +53,22 @@ namespace resource
         struct comparator final {
             using is_transparent = void;
 
-            template<class L, class R, typename std::enable_if_t<mpl::are_same_v<memory_chunk, L, R>>* = nullptr>
+            template<class L, class R>
+            requires mpl::are_same_v<memory_chunk, L, R>
             bool operator() (L &&lhs, R &&rhs) const noexcept
             {
                 return lhs.size < rhs.size;
             }
 
-            template<class T, class S, typename std::enable_if_t<mpl::are_same_v<memory_chunk, std::remove_cvref_t<T>> && std::is_integral_v<S>>* = nullptr>
+            template<class T, class S>
+            requires mpl::are_same_v<memory_chunk, std::remove_cvref_t<T>> && std::is_integral_v<S>
             bool operator() (T &&chunk, S size) const noexcept
             {
                 return chunk.size < size;
             }
                 
-            template<class S, class T, typename std::enable_if_t<mpl::are_same_v<memory_chunk, std::remove_cvref_t<T>> && std::is_integral_v<S>>* = nullptr>
+            template<class S, class T>
+            requires mpl::are_same_v<memory_chunk, std::remove_cvref_t<T>> && std::is_integral_v<S>
             bool operator() (S size, T &&chunk) const noexcept
             {
                 return chunk.size < size;
@@ -95,7 +98,8 @@ namespace resource
         //std::unordered_map<resource::device_memory, resource::memory_block> memory_blocks;
         std::unordered_map<VkDeviceMemory, resource::memory_block> memory_blocks;
 
-        template<class T, typename std::enable_if_t<mpl::are_same_v<std::remove_cvref_t<T>, memory_pool>>* = nullptr>
+        template<class T>
+        requires mpl::are_same_v<std::remove_cvref_t<T>, memory_pool>
         bool constexpr operator== (T &&rhs) const noexcept
         {
             return properties == rhs.properties && type_index == rhs.type_index && linear == rhs.linear;

@@ -52,6 +52,7 @@
 #ifdef _MSC_VER
     #include <execution>
 #endif
+#include <random>
 
 #include <fmt/format.h>
 
@@ -117,7 +118,8 @@ void cleanup_frame_data(struct app_t &app);
 void create_semaphores(app_t &app);
 void recreate_swap_chain(app_t &app);
 
-template<class T, typename std::enable_if_t<mpl::is_container_v<std::remove_cvref_t<T>>>...>
+template<class T>
+requires mpl::is_container_v<std::remove_cvref_t<T>>
 [[nodiscard]] std::shared_ptr<resource::buffer> stage_data(vulkan::device &device, resource::resource_manager &resource_manager, T &&container);
 
 [[nodiscard]] std::shared_ptr<resource::texture>
@@ -625,8 +627,8 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
 namespace temp
 {
-    template<std::uint32_t N, class T>
-    vertex::static_array<N, T>
+    template<std::size_t N, class T>
+    std::array<T, N>
     generate_plane_position(float width, float height, std::size_t hsegments, std::size_t vsegments, std::size_t vertex_index)
     {
         auto [x0, y0] = std::pair{-width / 2.f, height / 2.f};
@@ -638,19 +640,19 @@ namespace temp
         //std::cout << "vertex_index " << vertex_index << '\t' << x << '\t' << y << std::endl;
 
         if constexpr (N == 4)
-            return vertex::static_array<N, T>{x, y, 0, 1};
+            return std::array<T, N>{x, y, 0, 1};
 
         else if constexpr (N == 3)
-            return vertex::static_array<N, T>{x, y, 0};
+            return std::array<T, N>{x, y, 0};
 
         else if constexpr (N == 2)
-            return vertex::static_array<N, T>{x, y};
+            return std::array<T, N>{x, y};
 
-        else return vertex::static_array<N, T>{};
+        else return std::array<T, N>{};
     }
 
-    template<std::uint32_t N, class T>
-    vertex::static_array<N, T>
+    template<std::size_t N, class T>
+    std::array<T, N>
     generate_plane_texcoord(std::size_t hsegments, std::size_t vsegments, std::size_t vertex_index)
     {
         if constexpr (N == 2) {
@@ -659,15 +661,15 @@ namespace temp
 
             //std::cout << vertex_index << '\t' << x << '\t' << y << std::endl;
 
-            return vertex::static_array<N, T>{static_cast<T>(x), static_cast<T>(y)};
+            return std::array<T, N>{static_cast<T>(x), static_cast<T>(y)};
         }
 
-        return vertex::static_array<N, T>{};
+        else throw std::runtime_error("unsupported components number"s);
     }
 
-    template<std::uint32_t N, class T, class F>
+    template<std::size_t N, class T, class F>
     void generate_plane_vertex(F generator, std::uint32_t hsegments, std::uint32_t vsegments,
-                               strided_bidirectional_iterator<vertex::static_array<N, T>> it_begin, std::size_t vertex_count)
+                               strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
     {
         auto it_end = std::next(it_begin, vertex_count);
 
@@ -710,32 +712,76 @@ namespace temp
         }
     }
 
-    template<std::uint32_t N, class T>
-    void generate_plane_positions(float width, float height, std::uint32_t hsegments, std::uint32_t vsegments,
-                                  strided_bidirectional_iterator<vertex::static_array<N, T>> it_begin, std::size_t vertex_count)
+    template<std::size_t N, class T>
+    void generate_plane_positions(graphics::FORMAT format, float width, float height, std::uint32_t hsegments, std::uint32_t vsegments,
+                                  strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
     {
-        if constexpr (N != 2 && N != 3)
-            return;
-
         using std::placeholders::_1;
         using std::placeholders::_2;
         using std::placeholders::_3;
 
-        generate_plane_vertex<N, T>(
-            std::bind(generate_plane_position<N, T>, width, height, _1, _2, _3),
-            hsegments, vsegments, it_begin, vertex_count
-        );
+        if constexpr (N == 2 || N == 3) {
+            switch (graphics::numeric_format(format)) {
+                case graphics::NUMERIC_FORMAT::FLOAT:
+                    generate_plane_vertex<N, T>(
+                        std::bind(generate_plane_position<N, T>, width, height, _1, _2, _3),
+                        hsegments, vsegments, it_begin, vertex_count
+                    );
+                    break;
+
+                default:
+                    throw std::runtime_error("unsupported numeric format"s);
+                    break;
+            }
+        }
+
+        else throw std::runtime_error("unsupported components number"s);
     }
 
-    template<std::uint32_t N, class T>
-    void generate_normals(strided_bidirectional_iterator<vertex::static_array<N, T>> it, std::size_t vertex_count)
+    template<std::size_t N, class T>
+    void generate_normals(graphics::FORMAT format, strided_bidirectional_iterator<std::array<T, N>> it, std::size_t vertex_count)
     {
-        if constexpr (N == 3)
-            std::fill_n(it, vertex_count, vertex::static_array<N, T>{0, 0, 1});
+        if constexpr (N == 2) {
+            switch (graphics::numeric_format(format)) {
+                case graphics::NUMERIC_FORMAT::NORMALIZED:
+                {
+                    if constexpr (mpl::is_one_of_v<T, std::int8_t, std::int16_t>) {
+                        std::array<T, 2> oct;
+                        math::encode_unit_vector_to_oct_precise(oct, glm::vec3{0, 0, 1});
+
+                        std::fill_n(it, vertex_count, oct);
+                    }
+
+                    else throw std::runtime_error("unsupported format type"s);
+
+                    break;
+                }
+
+                default:
+                    throw std::runtime_error("unsupported numeric format"s);
+                    break;
+            }
+        }
+
+        else if constexpr (N == 3) {
+            switch (graphics::numeric_format(format)) {
+                case graphics::NUMERIC_FORMAT::SCALED:
+                case graphics::NUMERIC_FORMAT::INT:
+                case graphics::NUMERIC_FORMAT::FLOAT:
+                    std::fill_n(it, vertex_count, std::array<T, 3>{0, 0, 1});
+                    break;
+
+                default:
+                    throw std::runtime_error("unsupported numeric format"s);
+                    break;
+            }
+        }
+
+        else throw std::runtime_error("unsupported components number"s);
     }
 
-    template<std::uint32_t N, class T>
-    void generate_texcoords(strided_bidirectional_iterator<vertex::static_array<N, T>> it_begin,
+    template<std::size_t N, class T>
+    void generate_texcoords(graphics::FORMAT format, strided_bidirectional_iterator<std::array<T, N>> it_begin,
                             std::uint32_t hsegments, std::uint32_t vsegments, std::size_t vertex_count)
     {
         using std::placeholders::_1;
@@ -743,21 +789,28 @@ namespace temp
         using std::placeholders::_3;
 
         if constexpr (N == 2) {
-            generate_plane_vertex<N, T>(
-                std::bind(generate_plane_texcoord<N, T>, _1, _2, _3),
-                hsegments, vsegments, it_begin, vertex_count
-            );
+            switch (graphics::numeric_format(format)) {
+                case graphics::NUMERIC_FORMAT::FLOAT:
+                    generate_plane_vertex<N, T>(
+                        std::bind(generate_plane_texcoord<N, T>, _1, _2, _3),
+                        hsegments, vsegments, it_begin, vertex_count
+                    );
+                    break;
+
+                default:
+                    throw std::runtime_error("unsupported numeric format"s);
+                    break;
+            }
         }
+
+        else throw std::runtime_error("unsupported components number"s);
     }
 
     std::vector<std::byte>
     generate_plane(float width, float height, std::uint32_t hsegments, std::uint32_t vsegments, const graphics::vertex_layout &vertex_layout)
     {
-        //std::size_t vertex_count = (hsegments + 1u) * (vsegments + 1u) + (vsegments - 1) * 2;
         std::size_t vertex_count = (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
         std::size_t vertex_size = vertex_layout.size_in_bytes;
-
-        //std::cout << "vertex_count " << vertex_count << std::endl;
 
         std::vector<std::byte> bytes(vertex_size * vertex_count);
 
@@ -769,33 +822,37 @@ namespace temp
                 return semantic.semantic_index;
             }, attribute.semantic);
 
-            std::visit([&] (auto attribute_type)
-            {
-                using type = typename std::remove_cvref_t<decltype(attribute_type)>;
-                using pointer_type = typename std::add_pointer_t<type>;
+            if (auto format_inst = graphics::instantiate_format(attribute.format); format_inst) {
+                std::visit([&] (auto &&format_inst)
+                {
+                    using type = typename std::remove_cvref_t<decltype(format_inst)>;
+                    using pointer_type = typename std::add_pointer_t<type>;
 
-                auto data = reinterpret_cast<pointer_type>(std::data(bytes) + attribute.offset_in_bytes);
+                    auto data = reinterpret_cast<pointer_type>(std::data(bytes) + attribute.offset_in_bytes);
 
-                auto it = strided_bidirectional_iterator{data, vertex_size};
+                    auto it = strided_bidirectional_iterator{data, vertex_size};
 
-                switch (attribute_semantic) {
-                    case vertex::eSEMANTIC_INDEX::POSITION:
-                        generate_plane_positions(width, height, hsegments, vsegments, it, vertex_count);
-                        break;
+                    switch (attribute_semantic) {
+                        case vertex::eSEMANTIC_INDEX::POSITION:
+                            generate_plane_positions(attribute.format, width, height, hsegments, vsegments, it, vertex_count);
+                            break;
 
-                    case vertex::eSEMANTIC_INDEX::NORMAL:
-                        generate_normals(it, vertex_count);
-                        break;
+                        case vertex::eSEMANTIC_INDEX::NORMAL:
+                            generate_normals(attribute.format, it, vertex_count);
+                            break;
 
-                    case vertex::eSEMANTIC_INDEX::TEXCOORD_0:
-                        generate_texcoords(it, hsegments, vsegments, vertex_count);
-                        break;
+                        case vertex::eSEMANTIC_INDEX::TEXCOORD_0:
+                            generate_texcoords(attribute.format, it, hsegments, vsegments, vertex_count);
+                            break;
 
-                    default:
-                        break;
-                }
+                        default:
+                            break;
+                    }
 
-            }, attribute.type);
+                }, *format_inst);
+            }
+
+            else throw std::runtime_error("unsupported attribute format"s);
         }
 
         return bytes;
@@ -804,25 +861,24 @@ namespace temp
     xformat populate()
     {
         xformat model_;
-
+    
         auto constexpr vertexCountPerMeshlet = 3u;
 
         {
             // First triangle
             struct vertex_struct final {
-                vertex::static_array<3, boost::float32_t> position;
-                //vertex::static_array<3, boost::float32_t> normal;
-                vertex::static_array<2, boost::float32_t> texCoord;
-                vertex::static_array<3, boost::float32_t> color;
+                std::array<boost::float32_t, 3> position;
+                std::array<boost::float32_t, 2> texCoord;
+                std::array<boost::float32_t, 3> color;
             };
 
             auto const vertex_layout_index = std::size(model_.vertex_layouts);
 
             auto vertex_layout = vertex::create_vertex_layout(
-                vertex::position{}, decltype(vertex_struct::position){}, false,
+                vertex::position{}, graphics::FORMAT::RGB32_SFLOAT,
                 //vertex::normal{}, decltype(vertex_struct::normal){}, false,
-                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
-                vertex::color_0{}, decltype(vertex_struct::color){}, false
+                vertex::tex_coord_0{}, graphics::FORMAT::RG32_SFLOAT,
+                vertex::color_0{}, graphics::FORMAT::RGB32_SFLOAT
             );
 
             model_.vertex_layouts.push_back(vertex_layout);
@@ -878,18 +934,18 @@ namespace temp
 
         {
             struct vertex_struct final {
-                vertex::static_array<3, boost::float32_t> position;
-                vertex::static_array<2, boost::float32_t> texCoord;
-                vertex::static_array<4, boost::float32_t> color;
+                std::array<boost::float32_t, 3> position;
+                std::array<boost::float32_t, 2> texCoord;
+                std::array<boost::float32_t, 4> color;
             };
 
             auto const vertex_layout_index = std::size(model_.vertex_layouts);
 
             model_.vertex_layouts.push_back(
                 vertex::create_vertex_layout(
-                    vertex::position{}, decltype(vertex_struct::position){}, false,
-                    vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
-                    vertex::color_0{}, decltype(vertex_struct::color){}, false
+                    vertex::position{}, graphics::FORMAT::RGB32_SFLOAT,
+                    vertex::tex_coord_0{}, graphics::FORMAT::RG32_SFLOAT,
+                    vertex::color_0{}, graphics::FORMAT::RGBA32_SFLOAT
                 )
             );
 
@@ -978,17 +1034,17 @@ namespace temp
         
         {
             struct vertex_struct final {
-                vertex::static_array<3, boost::float32_t> position;
-                vertex::static_array<2, boost::float32_t> texCoord;
-                vertex::static_array<3, boost::float32_t> color;
+                std::array<boost::float32_t, 3> position;
+                std::array<boost::float32_t, 2> texCoord;
+                std::array<boost::float32_t, 3> color;
             };
 
             auto const vertex_layout_index = std::size(model_.vertex_layouts);
 
             auto vertex_layout = vertex::create_vertex_layout(
-                vertex::position{}, decltype(vertex_struct::position){}, false,
-                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false,
-                vertex::color_0{}, decltype(vertex_struct::color){}, false
+                vertex::position{}, graphics::FORMAT::RGB32_SFLOAT,
+                vertex::tex_coord_0{}, graphics::FORMAT::RG32_SFLOAT,
+                vertex::color_0{}, graphics::FORMAT::RGB32_SFLOAT
             );
 
             model_.vertex_layouts.push_back(vertex_layout);
@@ -1045,30 +1101,18 @@ namespace temp
                 std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
             }
         }
-        
+    
         {
             // TODO:: check required format by vkGetPhysicalDeviceFormatProperties() and VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT.
-            struct vertex_struct final {
-                vertex::static_array<3, boost::float32_t> position;
-                vertex::static_array<3, boost::float32_t> normal;
-                vertex::static_array<2, boost::float32_t> texCoord;
-            };
-
-            auto const vertex_layout_index = std::size(model_.vertex_layouts);
-
             auto vertex_layout = vertex::create_vertex_layout(
-                vertex::position{}, decltype(vertex_struct::position){}, false,
-                vertex::normal{}, decltype(vertex_struct::normal){}, false,
-                vertex::tex_coord_0{}, decltype(vertex_struct::texCoord){}, false
+                vertex::position{}, graphics::FORMAT::RGB32_SFLOAT,
+                //vertex::normal{}, graphics::FORMAT::RGB32_SFLOAT,
+                vertex::normal{}, graphics::FORMAT::RG16_SNORM,
+                vertex::tex_coord_0{}, graphics::FORMAT::RG32_SFLOAT
             );
 
+            auto const vertex_layout_index = std::size(model_.vertex_layouts);
             model_.vertex_layouts.push_back(vertex_layout);
-
-            //vertex::static_array<2, std::int8_t> oct;
-            std::int8_t oct[2];
-            glm::vec3 normal = glm::normalize(glm::vec3{0, 0, 1});
-            math::encode_unit_vector_to_oct_fast(oct, normal);
-            std::cout << oct[0] << '\t' << oct[1] << std::endl;
 
             auto vertices = generate_plane(1.f, 1.f, 8u, 8u, vertex_layout);
 
@@ -1090,7 +1134,7 @@ namespace temp
                 meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
                 meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count);
 
-                meshlet.material_index = 3;
+                meshlet.material_index = 4;
                 meshlet.instance_count = 1;
                 meshlet.first_instance = 0;
 
@@ -1113,6 +1157,8 @@ namespace temp
         model_.materials.push_back(xformat::material{0, "debug/color-debug-material"s});
         model_.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
         model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
+        model_.materials.push_back(xformat::material{1, "debug/normal-debug"s});
+        model_.materials.push_back(xformat::material{2, "debug/normal-debug"s});
 
         return model_;
     }
@@ -1271,6 +1317,11 @@ void init(platform::window &window, app_t &app)
 
 void update(app_t &app)
 {
+    if (app.resize_callback) {
+        app.resize_callback();
+        app.resize_callback = nullptr;
+    }
+
     app.camera_controller->update();
     app.cameraSystem.update();
 
@@ -1441,14 +1492,15 @@ int main()
 
     std::cout << measure<>::execution(init, window, std::ref(app)) << " ms\n"s;
 
+    {
+        auto feature = graphics::FORMAT_FEATURE::VERTEX_BUFFER;
+        auto supported = app.device->is_format_supported_as_buffer_features(graphics::FORMAT::RG8_SNORM, feature);
+        std::cout << "format can be used as vertex attribute format: "s << std::boolalpha << supported << std::endl;
+    }
+
     window.update([&app]
     {
         glfwPollEvents();
-
-        if (app.resize_callback) {
-            app.resize_callback();
-            app.resize_callback = nullptr;
-        }
 
         update(app);
 
@@ -1461,7 +1513,8 @@ int main()
 }
 
 
-template<class T, typename std::enable_if_t<mpl::is_container_v<std::remove_cvref_t<T>>>...>
+template<class T>
+requires mpl::is_container_v<std::remove_cvref_t<T>>
 [[nodiscard]] std::shared_ptr<resource::buffer>
 stage_data(vulkan::device &device, resource::resource_manager &resource_manager, T &&container)
 {
@@ -1513,8 +1566,6 @@ load_texture(app_t &app, vulkan::device &device, resource::resource_manager &res
             auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
 
             auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
-
-            std::shared_ptr<resource::texture> texture;
 
             auto type = graphics::IMAGE_TYPE::TYPE_2D;
             auto format = rawImage->format;

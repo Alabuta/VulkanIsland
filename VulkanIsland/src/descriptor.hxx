@@ -58,7 +58,7 @@ std::optional<VkDescriptorPool> CreateDescriptorPool(vulkan::device const &devic
 
 std::optional<VkDescriptorSetLayout> CreateDescriptorSetLayout(vulkan::device const &device);
 
-template<class T> requires mpl::container<std::remove_cvref_t<T>>
+template<mpl::container T>
 std::optional<VkDescriptorSet> CreateDescriptorSets(vulkan::device const &device, VkDescriptorPool descriptorPool, T &&descriptorSetLayouts)
 {
     std::optional<VkDescriptorSet> descriptorSet;

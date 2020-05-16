@@ -36,20 +36,37 @@
                 }
             ],
             "vertexLayout": [ 0, 2 ]
+        },
+        {
+            "shadersBundle": [
+                {
+                    "index": 0,
+                    "technique": 2
+                },
+                {
+                    "index": 1,
+                    "technique": 0
+                }
+            ],
+            "vertexLayout": [ 0, 3 ]
         }
     ],
     "vertexAttributes": [
         {
             "semantic": "POSITION",
-            "type": "vec3"
+            "type": "rgb32f"
         },
         {
             "semantic": "NORMAL",
-            "type": "vec3"
+            "type": "rgb32f"
         },
         {
             "semantic": "NORMAL",
-            "type": "uvec2"
+            "type": "rg8i_norm"
+        },
+        {
+            "semantic": "NORMAL",
+            "type": "rg16i_norm"
         }
     ]
 }

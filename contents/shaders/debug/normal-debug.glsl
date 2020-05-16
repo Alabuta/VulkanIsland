@@ -23,22 +23,8 @@ out gl_PerVertex {
 };
 
 
-#pragma technique(0)
+void process(const in vec3 position, const in vec3 normal)
 {
-    gl_Position = camera.view * object.world * vec4(POSITION, 1.0);
-    gl_Position = camera.projection * gl_Position;
-
-    vec4 worldSpaceNormal = object.normal * vec4(NORMAL, 0.0);
-    vec4 viewSpaceNormal = camera.view * worldSpaceNormal;
-
-    outColor = vec4(normalize(vec3(viewSpaceNormal)), 1.0);
-}
-
-#pragma technique(1)
-{
-    vec3 position = unpackAttribute(POSITION);
-    vec3 normal = unpackAttribute(NORMAL);
-
     gl_Position = camera.view * object.world * vec4(position, 1.0);
     gl_Position = camera.projection * gl_Position;
 
@@ -46,4 +32,24 @@ out gl_PerVertex {
     vec4 viewSpaceNormal = camera.view * worldSpaceNormal;
 
     outColor = vec4(normalize(vec3(viewSpaceNormal)), 1.0);
+}
+
+
+#pragma technique(0)
+{
+    process(POSITION, NORMAL);
+}
+
+#pragma technique(1)
+{
+    vec3 normal = unpackAttribute(NORMAL);
+
+    process(POSITION, normal);
+}
+
+#pragma technique(2)
+{
+    vec3 normal = unpackAttribute(NORMAL);
+
+    process(POSITION, normal);
 }

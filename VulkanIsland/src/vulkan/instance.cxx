@@ -116,6 +116,9 @@ namespace vulkan
 {
     instance::instance()
     {
+        if (auto result = volkInitialize(); result != VK_SUCCESS)
+            throw vulkan::instance_exception("failed to initialize 'volk' meta-loader"s);
+
         auto constexpr use_extensions = !vulkan_config::extensions.empty();
         auto constexpr use_layers = !vulkan_config::layers.empty();
 
@@ -126,13 +129,21 @@ namespace vulkan
             auto extensions_ = vulkan_config::extensions;
 
             if constexpr (use_layers) {
-                auto present = std::any_of(std::cbegin(extensions_), std::cend(extensions_), [] (auto &&name)
+                auto present = std::any_of(std::cbegin(extensions_), std::cend(extensions_), [] (auto extension)
                 {
-                    return std::strcmp(name, VK_EXT_DEBUG_REPORT_EXTENSION_NAME) == 0;
+                #if PREFER_DEBUG_UTILS
+                    return std::strcmp(extension, VK_EXT_DEBUG_UTILS_EXTENSION_NAME) == 0;
+                #else
+                    return std::strcmp(extension, VK_EXT_DEBUG_REPORT_EXTENSION_NAME) == 0;
+                #endif
                 });
 
                 if (!present)
-                    throw vulkan::logic_error("enabled validation layers require enabled 'VK_EXT_debug_utils' extension"s);
+                #if PREFER_DEBUG_UTILS
+                    throw vulkan::logic_error("validation layers require enabled 'VK_EXT_debug_utils' extension"s);
+                #else
+                    throw vulkan::logic_error("validation layers require enabled 'VK_EXT_debug_report' extension"s);
+                #endif
             }
 
             std::copy(std::cbegin(extensions_), std::cend(extensions_), std::back_inserter(extensions));
@@ -160,26 +171,48 @@ namespace vulkan
         if (supported_api_major != required_api_major || supported_api_minor != required_api_minor)
             throw vulkan::instance_exception("unsupported Vulkan API version"s);
 
-        auto const enabled_validation_features = std::array{
-            VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT
-        };
-
-        VkValidationFeaturesEXT const validation_features{
-            VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT,
-            nullptr,
-            static_cast<std::uint32_t>(std::size(enabled_validation_features)),
-            std::data(enabled_validation_features),
-            0, nullptr
-        };
-
         VkInstanceCreateInfo create_info{
             VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO,
-            &validation_features,
-            0,
+            nullptr, 0,
             &application_info,
             0, nullptr,
             0, nullptr
         };
+
+    #if PREFER_DEBUG_UTILS
+        VkDebugUtilsMessengerCreateInfoEXT debug_msg_create_info{
+            VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
+            nullptr, 0,
+            VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT,
+            VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
+            debug_utils_callback,
+            nullptr
+        };
+    #endif
+
+        if constexpr (use_layers) {
+            auto const enabled_validation_features = std::array{
+                //VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_EXT,
+                //VK_VALIDATION_FEATURE_ENABLE_GPU_ASSISTED_RESERVE_BINDING_SLOT_EXT,
+                VK_VALIDATION_FEATURE_ENABLE_BEST_PRACTICES_EXT
+                //VK_VALIDATION_FEATURE_ENABLE_DEBUG_PRINTF_EXT
+            };
+
+            VkValidationFeaturesEXT const validation_features{
+                VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT,
+                nullptr,
+                static_cast<std::uint32_t>(std::size(enabled_validation_features)),
+                std::data(enabled_validation_features),
+                0, nullptr
+            };
+
+        #if PREFER_DEBUG_UTILS
+            debug_msg_create_info.pNext = &validation_features;
+            create_info.pNext = &debug_msg_create_info;
+        #else
+            create_info.pNext = &validation_features;
+        #endif
+        }
 
         if (auto supported = check_required_extensions(extensions); !supported)
             throw vulkan::instance_exception("not all required extensions are supported"s);
@@ -196,8 +229,16 @@ namespace vulkan
         if (auto result = vkCreateInstance(&create_info, nullptr, &handle_); result != VK_SUCCESS)
             throw vulkan::instance_exception("failed to create instance"s);
 
-        if constexpr (use_layers)
+        volkLoadInstance(handle_);
+
+        if constexpr (use_layers) {
+        #if PREFER_DEBUG_UTILS
+            if (auto result = vkCreateDebugUtilsMessengerEXT(handle_, &debug_msg_create_info, nullptr, &debug_messenger_); result != VK_SUCCESS)
+                throw std::runtime_error(fmt::format("failed to set up debug messenger: {0:#x}\n"s, result));
+        #else
             vulkan::create_debug_report_callback(handle_, debug_report_callback_);
+        #endif
+        }
     }
 
     instance::~instance()
@@ -207,6 +248,11 @@ namespace vulkan
 
         for (auto [window_handle, platform_surface] : platform_surfaces_)
             vkDestroySurfaceKHR(handle_, platform_surface.handle(), nullptr);
+
+        if (debug_messenger_ != VK_NULL_HANDLE)
+            vkDestroyDebugUtilsMessengerEXT(handle_, debug_messenger_, nullptr);
+
+        debug_messenger_ = VK_NULL_HANDLE;
 
         if (debug_report_callback_ != VK_NULL_HANDLE)
             vkDestroyDebugReportCallbackEXT(handle_, debug_report_callback_, nullptr);

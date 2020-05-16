@@ -3,10 +3,9 @@
 #include <type_traits>
 #include <unordered_map>
 
-#ifndef GLFW_INCLUDE_VULKAN
-    #define GLFW_INCLUDE_VULKAN
-    #include <GLFW/glfw3.h>
-#endif
+#include <volk/volk.h>
+
+#include <GLFW/glfw3.h>
 
 #include "vulkan/debug.hxx"
 #include "platform/window.hxx"
@@ -47,11 +46,16 @@ namespace vulkan
     private:
 
         VkInstance handle_{VK_NULL_HANDLE};
+
         VkDebugReportCallbackEXT debug_report_callback_{VK_NULL_HANDLE};
+        VkDebugUtilsMessengerEXT debug_messenger_{VK_NULL_HANDLE};
 
         std::map<GLFWwindow *const, renderer::platform_surface> platform_surfaces_;
 
         instance(instance const &) = delete;
         instance(instance &&) = delete;
+
+        instance const &operator=(instance const &) = delete;
+        instance const &operator=(instance &&) = delete;
     };
 }

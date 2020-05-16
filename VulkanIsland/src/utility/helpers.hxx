@@ -2,6 +2,7 @@
 
 #include <type_traits>
 #include <iterator>
+#include <cstdint>
 #include <utility>
 #include <cstddef>
 #include <cmath>
@@ -11,7 +12,8 @@
 template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
 template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
-//template<class T, typename std::enable_if_t<std::is_integral_v<std::remove_cvref_t<T>>>* = nullptr>
+// template<class T>
+// requires std::is_integral_v<std::remove_cvref_t<T>>
 constexpr std::uint16_t operator"" _ui16(unsigned long long value)
 {
     return static_cast<std::uint16_t>(value);
@@ -20,7 +22,7 @@ constexpr std::uint16_t operator"" _ui16(unsigned long long value)
 // A function execution duration measurement.
 template<typename TimeT = std::chrono::milliseconds>
 struct measure {
-    template<typename F, typename... Args>
+    template<class F, class... Args>
     static auto execution(F func, Args &&... args)
     {
         auto start = std::chrono::system_clock::now();

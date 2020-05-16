@@ -2,17 +2,21 @@
 
 #include <array>
 
-#ifndef GLFW_INCLUDE_VULKAN
-    #define GLFW_INCLUDE_VULKAN
-    #include <GLFW/glfw3.h>
-#endif
+#include <volk/volk.h>
 
 #include "config.hxx"
 
 
 namespace vulkan_config
 {
+    #define PREFER_DEBUG_UTILS 1
+
     auto constexpr extensions = std::array{
+    #if PREFER_DEBUG_UTILS
+        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
+    #else
+        VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
+    #endif
     #ifdef _MSC_VER
         #if USE_WIN32
             VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
@@ -22,11 +26,7 @@ namespace vulkan_config
     #else
         "VK_KHR_xcb_surface",
     #endif
-        VK_KHR_SURFACE_EXTENSION_NAME,
-    #if NOT_YET_IMPLEMNTED
-        VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
-    #endif
-        VK_EXT_DEBUG_REPORT_EXTENSION_NAME
+        VK_KHR_SURFACE_EXTENSION_NAME
     };
 
     auto constexpr layers = std::array{
