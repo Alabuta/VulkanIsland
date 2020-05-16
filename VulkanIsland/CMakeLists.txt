@@ -26,7 +26,7 @@ target_sources(${EXECUTABLE_TARGET_NAME}
         src/graphics/descriptors.hxx		            src/graphics/descriptors.cxx
         src/graphics/graphics_api.hxx                   src/graphics/graphics_api.cxx
         src/graphics/graphics_pipeline.hxx              src/graphics/graphics_pipeline.cxx
-        src/graphics/graphics.hxx
+        src/graphics/graphics.hxx                       src/graphics/graphics.cxx
         src/graphics/pipeline_states.hxx                src/graphics/pipeline_states.cxx
         src/graphics/render_pass.hxx                    src/graphics/render_pass.cxx
         src/graphics/shader_program.hxx                 src/graphics/shader_program.cxx
@@ -130,7 +130,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 
             -fasynchronous-unwind-tables                # Increased reliability of backtraces
             -fexceptions                                # Enable table-based thread cancellation
-            -fpie
+            # -fPIE
+            # -fpie
 
             -pipe
 
@@ -164,13 +165,13 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 
     target_link_options(${EXECUTABLE_TARGET_NAME}
         PRIVATE
-            -pie
-            -Wl, -z,defs                             # Detect and reject underlinking
-            -Wl, -z,now                              # Disable lazy binding
-            -Wl, -z,relro                            # Read-only segments after relocation
-            # -Wl, -no-undefined                       # Report unresolved symbol references from regular object files
-            # -Wl, -no-allow-shlib-undefined           # Disallows undefined symbols in shared libraries
-            -Wl, -unresolved-symbols=report-all
+            # LINKER: -pie
+            # LINKER: -z,defs                             # Detect and reject underlinking
+            # LINKER: -z,now                              # Disable lazy binding
+            # LINKER: -z,relro                            # Read-only segments after relocation
+            # LINKER: -no-undefined                       # Report unresolved symbol references from regular object files
+            # LINKER: -no-allow-shlib-undefined           # Disallows undefined symbols in shared libraries
+            LINKER: -unresolved-symbols=report-all
     )
 endif ()
 
