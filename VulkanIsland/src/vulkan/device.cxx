@@ -514,6 +514,17 @@ namespace
         auto &&limits = properties.limits;
 
         return vulkan::device_limits{
+            limits.bufferImageGranularity,
+            limits.sparseAddressSpaceSize,
+            limits.minTexelBufferOffsetAlignment,
+            limits.minUniformBufferOffsetAlignment,
+            limits.minStorageBufferOffsetAlignment,
+            limits.optimalBufferCopyOffsetAlignment,
+            limits.optimalBufferCopyRowPitchAlignment,
+            limits.nonCoherentAtomSize,
+
+            limits.minMemoryMapAlignment,
+
             limits.maxImageDimension1D,
             limits.maxImageDimension2D,
             limits.maxImageDimension3D,
@@ -525,8 +536,6 @@ namespace
             limits.maxPushConstantsSize,
             limits.maxMemoryAllocationCount,
             limits.maxSamplerAllocationCount,
-            limits.bufferImageGranularity,
-            limits.sparseAddressSpaceSize,
             limits.maxBoundDescriptorSets,
             limits.maxPerStageDescriptorSamplers,
             limits.maxPerStageDescriptorUniformBuffers,
@@ -580,10 +589,6 @@ namespace
             mpl::to_array(limits.maxViewportDimensions),
             mpl::to_array(limits.viewportBoundsRange),
             limits.viewportSubPixelBits,
-            limits.minMemoryMapAlignment,
-            limits.minTexelBufferOffsetAlignment,
-            limits.minUniformBufferOffsetAlignment,
-            limits.minStorageBufferOffsetAlignment,
             limits.minTexelOffset,
             limits.maxTexelOffset,
             limits.minTexelGatherOffset,
@@ -605,7 +610,6 @@ namespace
             limits.sampledImageStencilSampleCounts,
             limits.storageImageSampleCounts,
             limits.maxSampleMaskWords,
-            limits.timestampComputeAndGraphics == VK_TRUE,
             limits.timestampPeriod,
             limits.maxClipDistances,
             limits.maxCullDistances,
@@ -615,11 +619,9 @@ namespace
             mpl::to_array(limits.lineWidthRange),
             limits.pointSizeGranularity,
             limits.lineWidthGranularity,
+            limits.timestampComputeAndGraphics == VK_TRUE,
             limits.strictLines == VK_TRUE,
-            limits.standardSampleLocations == VK_TRUE,
-            limits.optimalBufferCopyOffsetAlignment,
-            limits.optimalBufferCopyRowPitchAlignment,
-            limits.nonCoherentAtomSize
+            limits.standardSampleLocations == VK_TRUE
         };
     }
 }
@@ -800,6 +802,14 @@ namespace vulkan
     renderer::swapchain_support_details device::query_swapchain_support_details(renderer::platform_surface platform_surface) const
     {
         return ::query_swapchain_support_details(physical_handle_, platform_surface.handle());
+    }
+
+    bool device::is_format_supported_as_buffer_features(graphics::FORMAT format, graphics::FORMAT_FEATURE features) const noexcept
+    {
+        VkFormatProperties properties;
+        vkGetPhysicalDeviceFormatProperties(physical_handle_, convert_to::vulkan(format), &properties);
+
+        return (properties.linearTilingFeatures & convert_to::vulkan(features)) == convert_to::vulkan(features);
     }
 
 #if NOT_YET_IMPLEMNTED

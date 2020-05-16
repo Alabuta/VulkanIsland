@@ -54,5 +54,8 @@ namespace vulkan
 
         instance(instance const &) = delete;
         instance(instance &&) = delete;
+
+        instance const &operator=(instance const &) = delete;
+        instance const &operator=(instance &&) = delete;
     };
 }

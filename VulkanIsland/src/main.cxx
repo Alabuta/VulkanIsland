@@ -664,7 +664,7 @@ namespace temp
             return std::array<T, N>{static_cast<T>(x), static_cast<T>(y)};
         }
 
-        return std::array<T, N>{ };
+        else throw std::runtime_error("unsupported components number"s);
     }
 
     template<std::size_t N, class T, class F>
@@ -1107,7 +1107,7 @@ namespace temp
             auto vertex_layout = vertex::create_vertex_layout(
                 vertex::position{}, graphics::FORMAT::RGB32_SFLOAT,
                 //vertex::normal{}, graphics::FORMAT::RGB32_SFLOAT,
-                vertex::normal{}, graphics::FORMAT::RG8_SNORM,
+                vertex::normal{}, graphics::FORMAT::RG16_SNORM,
                 vertex::tex_coord_0{}, graphics::FORMAT::RG32_SFLOAT
             );
 
@@ -1492,6 +1492,12 @@ int main()
 
     std::cout << measure<>::execution(init, window, std::ref(app)) << " ms\n"s;
 
+    {
+        auto feature = graphics::FORMAT_FEATURE::VERTEX_BUFFER;
+        auto supported = app.device->is_format_supported_as_buffer_features(graphics::FORMAT::RG8_SNORM, feature);
+        std::cout << "format can be used as vertex attribute format: "s << std::boolalpha << supported << std::endl;
+    }
+
     window.update([&app]
     {
         glfwPollEvents();
@@ -1560,8 +1566,6 @@ load_texture(app_t &app, vulkan::device &device, resource::resource_manager &res
             auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
 
             auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
-
-            std::shared_ptr<resource::texture> texture;
 
             auto type = graphics::IMAGE_TYPE::TYPE_2D;
             auto format = rawImage->format;

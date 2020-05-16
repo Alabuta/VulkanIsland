@@ -56,8 +56,8 @@ namespace vulkan
 {
     VKAPI_ATTR VkBool32 VKAPI_CALL
     debug_utils_callback([[maybe_unused]] VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
-                         VkDebugUtilsMessageTypeFlagsEXT message_type,
-                         const VkDebugUtilsMessengerCallbackDataEXT *data, [[maybe_unused]] void *user_data)
+                         [[maybe_unused]] VkDebugUtilsMessageTypeFlagsEXT message_type,
+                         VkDebugUtilsMessengerCallbackDataEXT const *data, [[maybe_unused]] void *user_data)
     {
         using namespace std::string_literals;
 

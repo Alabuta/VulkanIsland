@@ -8,7 +8,19 @@
 
 namespace vulkan
 {
+#pragma warning(error : 4820)
     struct device_limits final {
+        std::uint64_t                     buffer_image_granularity;
+        std::uint64_t                     sparse_address_space_size;
+        std::uint64_t                     min_texel_buffer_offset_alignment;
+        std::uint64_t                     min_uniform_buffer_offset_alignment;
+        std::uint64_t                     min_storage_buffer_offset_alignment;
+        std::uint64_t                     optimal_buffer_copy_offset_alignment;
+        std::uint64_t                     optimal_buffer_copy_row_pitch_alignment;
+        std::uint64_t                     non_coherent_atom_size;
+
+        std::size_t                       min_memory_map_alignment;
+
         std::uint32_t                     max_image_dimension_1D;
         std::uint32_t                     max_image_dimension_2D;
         std::uint32_t                     max_image_dimension_3D;
@@ -20,8 +32,6 @@ namespace vulkan
         std::uint32_t                     max_push_constants_size;
         std::uint32_t                     max_memory_allocation_count;
         std::uint32_t                     max_sampler_allocation_count;
-        std::uint64_t                     buffer_image_granularity;
-        std::uint64_t                     sparse_address_space_size;
         std::uint32_t                     max_bound_descriptor_sets;
         std::uint32_t                     max_per_stage_descriptor_samplers;
         std::uint32_t                     max_per_stage_descriptor_uniform_buffers;
@@ -75,10 +85,6 @@ namespace vulkan
         std::array<std::uint32_t, 2>      max_viewport_dimensions;
         std::array<float, 2>              viewport_bounds_range;
         std::uint32_t                     viewport_sub_pixel_bits;
-        std::size_t                       min_memory_map_alignment;
-        std::uint64_t                     min_texel_buffer_offset_alignment;
-        std::uint64_t                     min_uniform_buffer_offset_alignment;
-        std::uint64_t                     min_storage_buffer_offset_alignment;
         std::int32_t                      min_texel_offset;
         std::uint32_t                     max_texel_offset;
         std::int32_t                      min_texel_gather_offset;
@@ -100,7 +106,6 @@ namespace vulkan
         std::uint32_t                     sampled_image_stencil_sample_counts;
         std::uint32_t                     storage_image_sample_counts;
         std::uint32_t                     max_sample_mask_words;
-        bool                              timestamp_compute_and_graphics;
         float                             timestamp_period;
         std::uint32_t                     max_clip_distances;
         std::uint32_t                     max_cull_distances;
@@ -110,10 +115,10 @@ namespace vulkan
         std::array<float, 2>              line_width_range;
         float                             point_size_granularity;
         float                             line_width_granularity;
+        bool                              timestamp_compute_and_graphics;
         bool                              strict_lines;
         bool                              standard_sample_locations;
-        std::uint64_t                     optimal_buffer_copy_offset_alignment;
-        std::uint64_t                     optimal_buffer_copy_row_pitch_alignment;
-        std::uint64_t                     non_coherent_atom_size;
+    #pragma warning(suppress : 4820)
     };
+#pragma warning(default : 4820)
 }

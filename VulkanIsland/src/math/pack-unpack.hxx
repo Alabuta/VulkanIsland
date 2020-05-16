@@ -98,8 +98,8 @@ namespace math
         std::array<T, 2> projected;
 
         for (auto index : {0, 1, 2, 3}) {
-            projected[0] = oct[0] + index / 2;
-            projected[1] = oct[1] + index % 2;
+            projected[0] = oct[0] + static_cast<T>(index / 2);
+            projected[1] = oct[1] + static_cast<T>(index % 2);
 
             decode_oct_to_vec(projected, decoded);
 

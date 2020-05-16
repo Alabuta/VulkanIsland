@@ -197,6 +197,7 @@ namespace graphics
             case graphics::FORMAT::ABGR8_SRGB_PACK32:
                 return graphics::NUMERIC_FORMAT::SRGB;
 
+            case graphics::FORMAT::UNDEFINED:
             default:
                 return graphics::NUMERIC_FORMAT::UNDEFINED;
         }
@@ -248,9 +249,11 @@ namespace graphics
             case graphics::FORMAT::R12X4_UNORM_PACK16:
                 return std::array<std::uint16_t, 1>{ };
 
-    #if defined(BOOST_FLOAT16_C)
             case graphics::FORMAT::R16_SFLOAT:
+    #if defined(BOOST_FLOAT16_C)
                 return std::array<boost::float16_t, 1>{ };
+    #else
+                return { };
     #endif
 
             case graphics::FORMAT::RGB8_SNORM:
@@ -298,6 +301,8 @@ namespace graphics
             case graphics::FORMAT::RG16_UNORM:
             case graphics::FORMAT::RG16_USCALED:
             case graphics::FORMAT::RG16_UINT:
+            case graphics::FORMAT::RG10X6_UNORM_2PACK16:
+            case graphics::FORMAT::RG12X4_UNORM_2PACK16:
                 return std::array<std::uint16_t, 2>{ };
 
             case graphics::FORMAT::ABGR8_SNORM_PACK32:
@@ -329,9 +334,11 @@ namespace graphics
             case graphics::FORMAT::D24_UNORM_S8_UINT:
                 return std::array<std::uint32_t, 1>{ };
 
-    #if defined(BOOST_FLOAT16_C)
             case graphics::FORMAT::RG16_SFLOAT:
+    #if defined(BOOST_FLOAT16_C)
                 return std::array<boost::float16_t, 2>{ };
+    #else
+                return { };
     #endif
 
             case graphics::FORMAT::R32_SFLOAT:
@@ -348,9 +355,11 @@ namespace graphics
             case graphics::FORMAT::RGB16_UINT:
                 return std::array<std::uint16_t, 3>{ };
 
-    #if defined(BOOST_FLOAT16_C)
             case graphics::FORMAT::RGB16_SFLOAT:
+    #if defined(BOOST_FLOAT16_C)
                 return std::array<boost::float16_t, 3>{ };
+    #else
+                return { };
     #endif
 
             case graphics::FORMAT::RGBA16_SNORM:
@@ -361,6 +370,8 @@ namespace graphics
             case graphics::FORMAT::RGBA16_UNORM:
             case graphics::FORMAT::RGBA16_USCALED:
             case graphics::FORMAT::RGBA16_UINT:
+            case graphics::FORMAT::RGBA10X6_UNORM_4PACK16:
+            case graphics::FORMAT::RGBA12X4_UNORM_4PACK16:
                 return std::array<std::uint16_t, 4>{ };
 
             case graphics::FORMAT::RG32_SINT:
@@ -376,9 +387,11 @@ namespace graphics
             case graphics::FORMAT::R64_UINT:
                 return std::array<std::uint64_t, 1>{ };
 
-    #if defined(BOOST_FLOAT16_C)
             case graphics::FORMAT::RGBA16_SFLOAT:
+    #if defined(BOOST_FLOAT16_C)
                 return std::array<boost::float16_t, 4>{ };
+    #else
+                return { };
     #endif
 
             case graphics::FORMAT::RG32_SFLOAT:
@@ -431,6 +444,56 @@ namespace graphics
 
             case graphics::FORMAT::RGBA64_SFLOAT:
                 return std::array<boost::float64_t, 4>{ };
+
+            case graphics::FORMAT::UNDEFINED:
+
+            case graphics::FORMAT::GBGR8_422_UNORM:
+            case graphics::FORMAT::BGRG8_422_UNORM:
+            case graphics::FORMAT::GBGR10X6_422_UNORM_4PACK16:
+            case graphics::FORMAT::BGRG10X6_422_UNORM_4PACK16:
+            case graphics::FORMAT::GBGR12X4_422_UNORM_4PACK16:
+            case graphics::FORMAT::BGRG12X4_422_UNORM_4PACK16:
+            case graphics::FORMAT::GBGR16_422_UNORM:
+            case graphics::FORMAT::BGRG16_422_UNORM:
+
+            case graphics::FORMAT::G8_B8_R8_3PLANE_420_UNORM:
+            case graphics::FORMAT::G8_B8R8_2PLANE_420_UNORM:
+            case graphics::FORMAT::G8_B8_R8_3PLANE_422_UNORM:
+            case graphics::FORMAT::G8_B8R8_2PLANE_422_UNORM:
+            case graphics::FORMAT::G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:
+            case graphics::FORMAT::G10X6_BR10X6_2PLANE_420_UNORM_3PACK16:
+            case graphics::FORMAT::G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16:
+            case graphics::FORMAT::G10X6_BR10X6_2PLANE_422_UNORM_3PACK16:
+            case graphics::FORMAT::G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:
+            case graphics::FORMAT::G12X4_BR12X4_2PLANE_420_UNORM_3PACK16:
+            case graphics::FORMAT::G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16:
+            case graphics::FORMAT::G12X4_BR12X4_2PLANE_422_UNORM_3PACK16:
+            case graphics::FORMAT::G16_B16_R16_3PLANE_420_UNORM:
+            case graphics::FORMAT::G16_BR16_2PLANE_420_UNORM:
+            case graphics::FORMAT::G16_B16_R16_3PLANE_422_UNORM:
+            case graphics::FORMAT::G16_BR16_2PLANE_422_UNORM:
+
+            case graphics::FORMAT::G8_B8_R8_3PLANE_444_UNORM:
+            case graphics::FORMAT::G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16:
+            case graphics::FORMAT::G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16:
+            case graphics::FORMAT::G16_B16_R16_3PLANE_444_UNORM:
+
+            case graphics::FORMAT::BC1_RGB_UNORM_BLOCK:
+            case graphics::FORMAT::BC1_RGB_SRGB_BLOCK:
+            case graphics::FORMAT::BC1_RGBA_UNORM_BLOCK:
+            case graphics::FORMAT::BC1_RGBA_SRGB_BLOCK:
+            case graphics::FORMAT::BC2_UNORM_BLOCK:
+            case graphics::FORMAT::BC2_SRGB_BLOCK:
+            case graphics::FORMAT::BC3_UNORM_BLOCK:
+            case graphics::FORMAT::BC3_SRGB_BLOCK:
+            case graphics::FORMAT::BC4_UNORM_BLOCK:
+            case graphics::FORMAT::BC4_SNORM_BLOCK:
+            case graphics::FORMAT::BC5_UNORM_BLOCK:
+            case graphics::FORMAT::BC5_SNORM_BLOCK:
+            case graphics::FORMAT::BC6H_UFLOAT_BLOCK:
+            case graphics::FORMAT::BC6H_SFLOAT_BLOCK:
+            case graphics::FORMAT::BC7_UNORM_BLOCK:
+            case graphics::FORMAT::BC7_SRGB_BLOCK:
 
             default:
                 return { };
