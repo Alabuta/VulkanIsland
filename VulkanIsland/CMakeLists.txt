@@ -21,11 +21,6 @@ target_sources(${EXECUTABLE_TARGET_NAME}
         src/camera/camera_controller.hxx                src/camera/camera_controller.cxx
         src/camera/camera.hxx                           src/camera/camera.cxx
 
-        src/ecs/ecs.hxx
-        src/ecs/mesh.hxx
-        src/ecs/node.hxx                                src/ecs/node.cxx
-        src/ecs/transform.hxx                           src/ecs/transform.cxx
-
         src/graphics/attachments.hxx                    src/graphics/attachments.cxx
         src/graphics/compatibility.hxx
         src/graphics/descriptors.hxx		            src/graphics/descriptors.cxx
@@ -77,7 +72,7 @@ target_sources(${EXECUTABLE_TARGET_NAME}
         src/main.hxx                                    src/main.cxx
 )
 
-list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
+# list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 find_package(Vulkan REQUIRED)
 #find_package(fmt 6.0 CONFIG REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../external)
@@ -91,15 +86,18 @@ if (NOT WIN32)
 	# find_package(X11 REQUIRED)
 endif ()
 
-target_include_directories(${EXECUTABLE_TARGET_NAME}
-    PUBLIC
-        ${GLFW_INCLUDE_DIR}
-        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+# target_include_directories(${EXECUTABLE_TARGET_NAME}
+#     PUBLIC
+#         ${GLFW_INCLUDE_DIR}
+#         "${CMAKE_CURRENT_SOURCE_DIR}/include"
 
-    PRIVATE
-        # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>
-        "${CMAKE_CURRENT_SOURCE_DIR}/src"
-)
+#     PRIVATE
+#         # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>
+#         "${CMAKE_CURRENT_SOURCE_DIR}/src"
+# )
+# TODO:: replace by target_include_directories
+include_directories(SYSTEM include)
+include_directories(src)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     target_compile_definitions(${EXECUTABLE_TARGET_NAME}
@@ -110,7 +108,7 @@ endif ()
 
 target_compile_features(${EXECUTABLE_TARGET_NAME}
     PUBLIC
-        CXX_STD_17
+        cxx_std_20
 )
 
 set_target_properties(${EXECUTABLE_TARGET_NAME} PROPERTIES
@@ -239,6 +237,6 @@ target_link_libraries(${EXECUTABLE_TARGET_NAME}
 	    fmt::fmt
         #glfw ${GLFW_LIBRARY}
         glfw
-        glm::glm
+        glm#::glm
 	    nlohmann_json::nlohmann_json
 )
