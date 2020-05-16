@@ -8,7 +8,9 @@
 
 namespace vulkan
 {
+#ifdef _MSC_VER
 #pragma warning(error : 4820)
+#endif
     struct device_limits final {
         std::uint64_t                     buffer_image_granularity;
         std::uint64_t                     sparse_address_space_size;
@@ -118,7 +120,11 @@ namespace vulkan
         bool                              timestamp_compute_and_graphics;
         bool                              strict_lines;
         bool                              standard_sample_locations;
+#ifdef _MSC_VER
     #pragma warning(suppress : 4820)
+#endif
     };
+#ifdef _MSC_VER
 #pragma warning(default : 4820)
+#endif
 }

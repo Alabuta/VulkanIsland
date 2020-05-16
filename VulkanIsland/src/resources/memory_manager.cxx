@@ -145,14 +145,13 @@ namespace resource
     std::shared_ptr<resource::device_memory>
     memory_allocator::allocate_memory(VkMemoryRequirements &&memory_requirements, graphics::MEMORY_PROPERTY_TYPE properties, bool linear)
     {
-    #ifdef _MSC_VER
-        auto const required_size = static_cast<std::size_t>(memory_requirements.size);
-        auto const required_alignment = static_cast<std::size_t>(memory_requirements.alignment);
-    #else
+    #if !defined( _MSC_VER)
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wuseless-cast"
-            auto const required_size = static_cast<std::size_t>(memory_requirements.size);
-            auto const required_alignment = static_cast<std::size_t>(memory_requirements.alignment);
+    #endif
+        auto const required_size = static_cast<std::size_t>(memory_requirements.size);
+        auto const required_alignment = static_cast<std::size_t>(memory_requirements.alignment);
+    #if !defined( _MSC_VER)
         #pragma GCC diagnostic pop
     #endif
 
@@ -390,9 +389,8 @@ namespace resource
     memory_manager::memory_manager(vulkan::device const &device)
         : device_{device}, allocator_{std::make_shared<resource::memory_allocator>(device)} { }
 
-    template<>
     std::shared_ptr<resource::device_memory>
-    memory_manager::allocate_memory(resource::buffer &&buffer, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
+    memory_manager::allocate_buffer_memory(resource::buffer const &buffer, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
     {
         auto constexpr linear_memory = true;
 
@@ -402,9 +400,8 @@ namespace resource
         return allocator_->allocate_memory(std::move(memory_requirements), memory_property_types, linear_memory);
     }
 
-    template<>
     std::shared_ptr<resource::device_memory>
-    memory_manager::allocate_memory(resource::image &&image, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
+    memory_manager::allocate_image_memory(resource::image const &image, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
     {
         auto const linear_memory = image.tiling() == graphics::IMAGE_TILING::LINEAR;
 

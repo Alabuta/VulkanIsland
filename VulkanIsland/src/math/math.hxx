@@ -42,8 +42,13 @@ namespace math {
 
         vec() = default;
 
+#ifdef _MSC_VER
         template<mpl::arithmetic... Ts> requires (sizeof...(Ts) == size)
         constexpr vec(Ts... values) noexcept : array{static_cast<T>(values)...} { }
+#else
+        template<class... Ts>
+        constexpr vec(Ts... values) noexcept : array{static_cast<T>(values)...} { }
+#endif
     };
 
     template<class U, class V>

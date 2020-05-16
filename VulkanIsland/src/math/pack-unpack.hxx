@@ -26,13 +26,13 @@ namespace math
             0
         };
 
-        vec.xy = glm::clamp(glm::vec2{vec}, -1.f, 1.f);
+        vec.xy() = glm::clamp(glm::vec2{vec}, -1.f, 1.f);
         vec.z = 1.f - std::abs(vec.x) - std::abs(vec.y);
 
         if (vec.z < 0.f) {
             glm::vec2 sign = 1.f - 2.f * glm::vec2{glm::lessThan(glm::vec2{vec}, glm::vec2{0})};
 
-            vec.xy = (1.f - glm::abs(glm::vec2{vec.yx})) * sign;
+            vec.xy() = (1.f - glm::abs(glm::vec2{vec.yx()})) * sign;
         }
 
         vec = glm::normalize(vec);
@@ -51,7 +51,7 @@ namespace math
 
         if (is_bottom_hemisphere) {
             glm::vec2 sign = 1.f - 2.f * glm::vec2{glm::lessThan(glm::vec2{vec}, glm::vec2{0})};
-            vec.xy = (1.f - glm::abs(vec.yx * inv_l1_norm)) * sign;
+            vec.xy = (1.f - glm::abs(vec.yx() * inv_l1_norm)) * sign;
         }
 
         else vec.xy = vec.xy * inv_l1_norm;
@@ -82,12 +82,12 @@ namespace math
 
         if (is_bottom_hemisphere) {
             glm::vec2 sign = 1.f - 2.f * glm::vec2{glm::lessThan(glm::vec2{vec}, glm::vec2{0})};
-            vec.xy = (1.f - glm::abs(vec.yx * inv_l1_norm)) * sign;
+            vec.xy() = (1.f - glm::abs(vec.yx() * inv_l1_norm)) * sign;
         }
 
-        else vec.xy = vec.xy * inv_l1_norm;
+        else vec.xy() = vec.xy() * inv_l1_norm;
 
-        vec.xy = glm::clamp(glm::vec2{vec}, -1.f, 1.f);
+        vec.xy() = glm::clamp(glm::vec2{vec}, -1.f, 1.f);
 
         oct[0] = static_cast<T>(std::round(vec.x * std::numeric_limits<T>::max()));
         oct[1] = static_cast<T>(std::round(vec.y * std::numeric_limits<T>::max()));
@@ -98,8 +98,8 @@ namespace math
         std::array<T, 2> projected;
 
         for (auto index : {0, 1, 2, 3}) {
-            projected[0] = oct[0] + static_cast<T>(index / 2);
-            projected[1] = oct[1] + static_cast<T>(index % 2);
+            projected[0] = static_cast<T>(oct[0] + (index / 2));
+            projected[1] = static_cast<T>(oct[1] + (index % 2));
 
             decode_oct_to_vec(projected, decoded);
 

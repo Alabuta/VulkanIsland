@@ -119,8 +119,8 @@ void create_semaphores(app_t &app);
 void recreate_swap_chain(app_t &app);
 
 template<class T>
-requires mpl::is_container_v<std::remove_cvref_t<T>>
-[[nodiscard]] std::shared_ptr<resource::buffer> stage_data(vulkan::device &device, resource::resource_manager &resource_manager, T &&container);
+// requires mpl::is_container_v<std::remove_cvref_t<T>>
+std::shared_ptr<resource::buffer> stage_data(vulkan::device &device, resource::resource_manager &resource_manager, T &&container);
 
 [[nodiscard]] std::shared_ptr<resource::texture>
 load_texture(app_t &app, vulkan::device &device, resource::resource_manager &resource_manager, std::string_view name);
@@ -632,7 +632,7 @@ namespace temp
     generate_plane_position(float width, float height, std::size_t hsegments, std::size_t vsegments, std::size_t vertex_index)
     {
         auto [x0, y0] = std::pair{-width / 2.f, height / 2.f};
-        auto [step_x, step_y] = std::pair{width / hsegments, -height / vsegments};
+        auto [step_x, step_y] = std::pair{width / static_cast<float>(hsegments), -height / static_cast<float>(vsegments)};
 
         auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * step_x);
         auto y = static_cast<T>(y0 + static_cast<float>(vertex_index / (hsegments + 1u)) * step_y);
@@ -656,8 +656,8 @@ namespace temp
     generate_plane_texcoord(std::size_t hsegments, std::size_t vsegments, std::size_t vertex_index)
     {
         if constexpr (N == 2) {
-            auto x = static_cast<float>(vertex_index % (hsegments + 1u)) / hsegments;
-            auto y = 1.f - static_cast<float>(vertex_index / (hsegments + 1u)) / vsegments;
+            auto x = static_cast<float>(vertex_index % (hsegments + 1u)) / static_cast<float>(hsegments);
+            auto y = 1.f - static_cast<float>(vertex_index / (hsegments + 1u)) / static_cast<float>(vsegments);
 
             //std::cout << vertex_index << '\t' << x << '\t' << y << std::endl;
 
@@ -671,7 +671,7 @@ namespace temp
     void generate_plane_vertex(F generator, std::uint32_t hsegments, std::uint32_t vsegments,
                                strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
     {
-        auto it_end = std::next(it_begin, vertex_count);
+        auto it_end = std::next(it_begin, static_cast<std::ptrdiff_t>(vertex_count));
 
         std::uint32_t const vertices_per_strip = (hsegments + 1) * 2;
         std::uint32_t const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1) * 2;
@@ -713,8 +713,11 @@ namespace temp
     }
 
     template<std::size_t N, class T>
-    void generate_plane_positions(graphics::FORMAT format, float width, float height, std::uint32_t hsegments, std::uint32_t vsegments,
-                                  strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
+    void generate_plane_positions([[maybe_unused]] graphics::FORMAT format,
+                                  [[maybe_unused]] float width, [[maybe_unused]] float height,
+                                  [[maybe_unused]] std::uint32_t hsegments, [[maybe_unused]] std::uint32_t vsegments,
+                                  [[maybe_unused]] strided_bidirectional_iterator<std::array<T, N>> it_begin,
+                                  [[maybe_unused]] std::size_t vertex_count)
     {
         using std::placeholders::_1;
         using std::placeholders::_2;
@@ -739,7 +742,9 @@ namespace temp
     }
 
     template<std::size_t N, class T>
-    void generate_normals(graphics::FORMAT format, strided_bidirectional_iterator<std::array<T, N>> it, std::size_t vertex_count)
+    void generate_normals([[maybe_unused]] graphics::FORMAT format,
+                          [[maybe_unused]] strided_bidirectional_iterator<std::array<T, N>> it,
+                          [[maybe_unused]] std::size_t vertex_count)
     {
         if constexpr (N == 2) {
             switch (graphics::numeric_format(format)) {
@@ -781,8 +786,10 @@ namespace temp
     }
 
     template<std::size_t N, class T>
-    void generate_texcoords(graphics::FORMAT format, strided_bidirectional_iterator<std::array<T, N>> it_begin,
-                            std::uint32_t hsegments, std::uint32_t vsegments, std::size_t vertex_count)
+    void generate_texcoords([[maybe_unused]] graphics::FORMAT format,
+                            [[maybe_unused]] strided_bidirectional_iterator<std::array<T, N>> it_begin,
+                            [[maybe_unused]] std::uint32_t hsegments, [[maybe_unused]] std::uint32_t vsegments,
+                            [[maybe_unused]] std::size_t vertex_count)
     {
         using std::placeholders::_1;
         using std::placeholders::_2;
@@ -830,7 +837,7 @@ namespace temp
 
                     auto data = reinterpret_cast<pointer_type>(std::data(bytes) + attribute.offset_in_bytes);
 
-                    auto it = strided_bidirectional_iterator{data, vertex_size};
+                    auto it = strided_bidirectional_iterator<type>{data, vertex_size};
 
                     switch (attribute_semantic) {
                         case vertex::eSEMANTIC_INDEX::POSITION:
@@ -1142,7 +1149,7 @@ namespace temp
             }
 
             {
-                std::ptrdiff_t write_offset = vertex_buffer.count * vertex_size;
+                auto write_offset = static_cast<std::ptrdiff_t>(vertex_buffer.count * vertex_size);
 
                 vertex_buffer.buffer.resize(std::size(vertex_buffer.buffer) + std::size(vertices));
                 vertex_buffer.count += vertex_count;
@@ -1356,12 +1363,13 @@ void update(app_t &app)
         ++object_index;
     }
 
-    auto it_begin = reinterpret_cast<decltype(app.objects)::value_type *>(app.ssbo_mapped_ptr);
+    using objects_type = typename decltype(app.objects)::value_type;
+    auto it_begin = reinterpret_cast<objects_type *>(app.ssbo_mapped_ptr);
 
 #ifdef _MSC_VER
     std::copy(std::execution::par, std::cbegin(app.objects), std::cend(app.objects), strided_bidirectional_iterator{it_begin, stride});
 #else
-    std::copy(std::cbegin(app.objects), std::cend(app.objects), strided_bidirectional_iterator{it, stride});
+    std::copy(std::cbegin(app.objects), std::cend(app.objects), strided_bidirectional_iterator<objects_type>{it_begin, stride});
 #endif
 
     auto const mappedRanges = std::array{
@@ -1514,7 +1522,7 @@ int main()
 
 
 template<class T>
-requires mpl::is_container_v<std::remove_cvref_t<T>>
+// requires mpl::is_container_v<std::remove_cvref_t<T>>
 [[nodiscard]] std::shared_ptr<resource::buffer>
 stage_data(vulkan::device &device, resource::resource_manager &resource_manager, T &&container)
 {
