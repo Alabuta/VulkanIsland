@@ -78,13 +78,11 @@ namespace resource
     {
         using resource_type = typename std::remove_cvref_t<T>;
 
-        if constexpr (std::is_same_v<resource_type, resource::buffer>) {
+        if constexpr (std::is_same_v<resource_type, resource::buffer>)
             return allocate_buffer_memory(resource, memory_property_types);
-        }
 
-        else if constexpr (std::is_same_v<resource_type, resource::image>)  {
+        else if constexpr (std::is_same_v<resource_type, resource::image>)
             return allocate_image_memory(resource, memory_property_types);
-        }
 
         else return { };
     }

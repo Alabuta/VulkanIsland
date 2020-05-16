@@ -202,7 +202,5 @@ std::optional<VkCommandPool> create_command_pool(vulkan::device const &device, Q
         throw std::runtime_error(fmt::format("failed to create a command buffer: {0:#x}"s, result));
 
     else return handle;
-
-    return { };
 }
 

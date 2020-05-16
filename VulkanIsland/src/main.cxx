@@ -1141,7 +1141,7 @@ namespace temp
                 meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
                 meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count);
 
-                meshlet.material_index = 4;
+                meshlet.material_index = 5;
                 meshlet.instance_count = 1;
                 meshlet.first_instance = 0;
 
