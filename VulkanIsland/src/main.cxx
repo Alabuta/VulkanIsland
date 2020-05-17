@@ -1110,7 +1110,6 @@ namespace temp
         }
     
         {
-            // TODO:: check required format by vkGetPhysicalDeviceFormatProperties() and VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT.
             auto vertex_layout = vertex::create_vertex_layout(
                 vertex::position{}, graphics::FORMAT::RGB32_SFLOAT,
                 //vertex::normal{}, graphics::FORMAT::RGB32_SFLOAT,
@@ -1499,12 +1498,6 @@ int main()
     app.camera_controller->look_at(glm::vec3{0, 2, 1}, {0, 0, 0});
 
     std::cout << measure<>::execution(init, window, std::ref(app)) << " ms\n"s;
-
-    {
-        auto feature = graphics::FORMAT_FEATURE::VERTEX_BUFFER;
-        auto supported = app.device->is_format_supported_as_buffer_features(graphics::FORMAT::RG8_SNORM, feature);
-        std::cout << "format can be used as vertex attribute format: "s << std::boolalpha << supported << std::endl;
-    }
 
     window.update([&app]
     {

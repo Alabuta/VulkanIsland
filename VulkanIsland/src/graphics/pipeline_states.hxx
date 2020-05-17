@@ -13,7 +13,6 @@ namespace graphics
 {
     struct vertex_input_state final {
         graphics::vertex_input_binding binding_description;
-        //std::vector<graphics::vertex_input_binding> binding_descriptions;
         std::vector<graphics::vertex_input_attribute> attribute_descriptions;
 
         template<class T> requires mpl::same_as<std::remove_cvref_t<T>, vertex_input_state>

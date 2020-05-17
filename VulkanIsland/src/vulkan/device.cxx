@@ -619,6 +619,7 @@ namespace
             mpl::to_array(limits.lineWidthRange),
             limits.pointSizeGranularity,
             limits.lineWidthGranularity,
+
             limits.timestampComputeAndGraphics == VK_TRUE,
             limits.strictLines == VK_TRUE,
             limits.standardSampleLocations == VK_TRUE
@@ -728,29 +729,6 @@ namespace vulkan
         if (auto result = vkCreateDevice(physical_handle_, &device_info, nullptr, &handle_); result != VK_SUCCESS)
             throw vulkan::device_exception(fmt::format("failed to create logical device: {0:#x}"s, result));
 
-        {
-        #if NOT_YET_IMPLEMNTED
-            auto vkCreateDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(
-                vkGetDeviceProcAddr(handle_, "vkCreateDebugUtilsMessengerEXT")
-            );
-
-            if (vkCreateDebugUtilsMessengerEXT == nullptr)
-                throw vulkan::device_exception("failed to get device procedure address: 'vkCreateDebugUtilsMessengerEXT'"s);
-
-            VkDebugUtilsMessengerCreateInfoEXT const create_info{
-                VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
-                nullptr, 0,
-                VK_DEBUG_UTILS_MESSAGE_SEVERITY_VERBOSE_BIT_EXT,
-                VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT,
-                debug_callback_dispatcher,
-                reinterpret_cast<void *>(this)
-            };
-
-            if (auto result = vkCreateDebugUtilsMessengerEXT(instance.handle(), &create_info, nullptr, &debug_messenger_handle_); result != VK_SUCCESS)
-                throw vulkan::device_exception("failed to create debug messenger"s);
-        #endif
-        }
-
         for (auto &&queue : requested_queues) {
             std::visit([this] (auto &&queue)
             {
@@ -784,15 +762,6 @@ namespace vulkan
 
         vkDeviceWaitIdle(handle_);
 
-    #if NOT_YET_IMPLEMNTED
-        auto vkDestroyDebugUtilsMessengerEXT = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(
-            vkGetDeviceProcAddr(handle_, "kDestroyDebugUtilsMessengerEXT")
-        );
-
-        if (vkDestroyDebugUtilsMessengerEXT)
-            vkDestroyDebugUtilsMessengerEXT(instance_.handle(), debug_messenger_handle_, nullptr);
-    #endif
-
         vkDestroyDevice(handle_, nullptr);
 
         handle_ = nullptr;
@@ -809,37 +778,5 @@ namespace vulkan
         VkFormatProperties properties;
         vkGetPhysicalDeviceFormatProperties(physical_handle_, convert_to::vulkan(format), &properties);
 
-        return (properties.linearTilingFeatures & convert_to::vulkan(features)) == convert_to::vulkan(features);
     }
-
-#if NOT_YET_IMPLEMNTED
-    VKAPI_ATTR VkBool32 VKAPI_CALL
-    device::debug_callback([[maybe_unused]] VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
-                           [[maybe_unused]] VkDebugUtilsMessageTypeFlagsEXT message_types,
-                           [[maybe_unused]] VkDebugUtilsMessengerCallbackDataEXT const *callback_data)
-    {
-        using namespace std::string_literals;
-
-        if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-            std::cout << fmt::format("{} - {} : {}"s, data->messageIdNumber, callback_data->pMessageIdName, data->pMessage) << std::endl;
-
-        else if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-            std::cerr << fmt::format("{} - {} : {}"s, data->messageIdNumber, callback_data->pMessageIdName, data->pMessage) << std::endl;
-
-        return VK_FALSE;
-    }
-
-    VKAPI_ATTR VkBool32 VKAPI_CALL
-    device::debug_callback_dispatcher(VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,
-                                      VkDebugUtilsMessageTypeFlagsEXT message_types,
-                                      VkDebugUtilsMessengerCallbackDataEXT const *callback_data, void *user_data)
-    {
-        auto device = reinterpret_cast<vulkan::device *>(user_data);
-
-        if (device)
-            return device->debug_callback(message_severity, message_types, callback_data);
-
-        return VK_FALSE;
-    }
-#endif
 }

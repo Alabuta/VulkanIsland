@@ -344,24 +344,19 @@ namespace resource
         auto &&memory_pool = memory_pools.at(key);
         auto &&memory_blocks = memory_pool.memory_blocks;
 
-    #ifdef _MSC_VER
         VkMemoryAllocateInfo const allocation_info{
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
             nullptr,
-            static_cast<VkDeviceSize>(size_in_bytes),
-            memory_type_index
-        };
-    #else
+    #ifndef _MSC_VER
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wuseless-cast"
-            VkMemoryAllocateInfo const allocation_info{
-                VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
-                nullptr,
-                static_cast<VkDeviceSize>(size_in_bytes),
-                memory_type_index
-            };
+    #endif
+            static_cast<VkDeviceSize>(size_in_bytes),
+    #ifndef _MSC_VER
         #pragma GCC diagnostic pop
     #endif
+            memory_type_index
+        };
 
         VkDeviceMemory handle;
 
