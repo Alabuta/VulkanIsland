@@ -276,6 +276,13 @@ namespace resource
 
     std::shared_ptr<resource::vertex_buffer> resource_manager::create_vertex_buffer(graphics::vertex_layout const &layout, std::size_t size_in_bytes)
     {
+        for (auto &&attribute : layout.attributes) {
+            auto constexpr feature = graphics::FORMAT_FEATURE::VERTEX_BUFFER;
+
+            if (!device_.is_format_supported_as_buffer_features(attribute.format, feature))
+                throw resource::exception(fmt::format("unsupported vertex attribute format: {0:#x}"s, attribute.format));
+        }
+
         if (!vertex_buffers_.contains(layout)) {
             std::shared_ptr<resource::buffer> staging_buffer;
             std::shared_ptr<resource::buffer> device_buffer;

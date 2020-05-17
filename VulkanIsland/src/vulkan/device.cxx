@@ -778,5 +778,6 @@ namespace vulkan
         VkFormatProperties properties;
         vkGetPhysicalDeviceFormatProperties(physical_handle_, convert_to::vulkan(format), &properties);
 
+        return (properties.bufferFeatures & convert_to::vulkan(features)) == convert_to::vulkan(features);
     }
 }
