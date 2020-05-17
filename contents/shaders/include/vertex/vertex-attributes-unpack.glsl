@@ -1,6 +1,6 @@
 
 
-vec3 decode_oct_to_unit(const in vec2 a)
+vec3 decode_oct_to_unit(in vec2 a)
 {
     vec3 normal = vec3(a.xy, 1. - abs(a.x) - abs(a.y));
 
@@ -9,12 +9,27 @@ vec3 decode_oct_to_unit(const in vec2 a)
     return normalize(normal);
 }
 
-vec3 unpackAttribute_normal_rg8i_norm(const in vec2 a)
+vec3 unpackAttribute_normal_rg8i_norm(in vec2 a)
 {
     return decode_oct_to_unit(a);
 }
 
-vec3 unpackAttribute_normal_rg16i_norm(const in vec2 a)
+vec3 unpackAttribute_normal_rg16i_norm(in vec2 a)
 {
     return decode_oct_to_unit(a);
+}
+
+vec2 unpackAttribute_texcoord_rg16ui_norm(in vec2 a)
+{
+    return a;
+}
+
+vec4 unpackAttribute_color_rgb8ui_norm(in vec3 a)
+{
+    return vec4(a, 1.);
+}
+
+vec4 unpackAttribute_color_rgba8ui_norm(in vec4 a)
+{
+    return a;
 }

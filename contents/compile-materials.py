@@ -1,10 +1,10 @@
 import os
 import re
 import json
-from operator import itemgetter
-import subprocess
 import uuid
+import subprocess
 
+from operator import itemgetter
 from typing import NamedTuple
 
 
@@ -294,8 +294,9 @@ def sub_attributes_unpacks(source_code, technique, vertex_attributes):
         semantic, type=itemgetter('semantic', 'type')(vertex_attribute)
 
         pattern=rf'unpackAttribute[ |\t]*\([ |\t]*?{semantic}[ |\t]*?\)'
+        general_name=semantic.split('_')[0].lower()
 
-        source_code=re.sub(pattern, f'unpackAttribute_{semantic.lower()}_{type}({semantic})', source_code, 0, re.DOTALL)
+        source_code=re.sub(pattern, f'unpackAttribute_{general_name}_{type}({semantic})', source_code, 0, re.DOTALL)
 
     return source_code
 
@@ -388,7 +389,7 @@ def compile_material(material_data):
                 print(output)
 
             if compiler.returncode!=0:
-                print(errors.decode('UTF-8'))
+                print(errors.decode('UTF-8'), file=sys.stderr)
 
 
 for root, dirs, material_relative_paths in os.walk(materials.source_path):

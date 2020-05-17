@@ -37,3 +37,10 @@ out gl_PerVertex {
 
     outColor = vec4(COLOR_0 * COLOR_MULTIPLIER, 1.);
 }
+
+#pragma technique(2)
+{
+    gl_Position = camera.projectionView * object.world * vec4(POSITION, 1.);
+
+    outColor = unpackAttribute(COLOR_0);
+}

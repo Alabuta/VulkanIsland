@@ -23,6 +23,19 @@
                 }
             ],
             "vertexLayout": [ 0, 1 ]
+        },
+        {
+            "shadersBundle": [
+                {
+                    "index": 0,
+                    "technique": 1
+                },
+                {
+                    "index": 1,
+                    "technique": 0
+                }
+            ],
+            "vertexLayout": [ 0, 2 ]
         }
     ],
     "vertexAttributes": [
@@ -33,6 +46,10 @@
         {
             "semantic": "TEXCOORD_0",
             "type": "rg32f"
+        },
+        {
+            "semantic": "TEXCOORD_0",
+            "type": "rg16ui_norm"
         }
     ]
 }

@@ -48,6 +48,19 @@
                 }
             ],
             "vertexLayout": [ 0, 2 ]
+        },
+        {
+            "shadersBundle": [
+                {
+                    "index": 0,
+                    "technique": 2
+                },
+                {
+                    "index": 1,
+                    "technique": 0
+                }
+            ],
+            "vertexLayout": [ 0, 3 ]
         }
     ],
     "vertexAttributes": [
@@ -62,6 +75,10 @@
         {
             "semantic": "COLOR_0",
             "type": "rgb32f"
+        },
+        {
+            "semantic": "COLOR_0",
+            "type": "rgb8ui_norm"
         }
     ],
     "descriptors": {

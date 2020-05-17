@@ -23,10 +23,22 @@ out gl_PerVertex {
 };
 
 
-#pragma technique(0)
+void process(in vec3 position, in vec2 texcoord_0)
 {
-    gl_Position = camera.view * object.world * vec4(POSITION, 1.0);
+    gl_Position = camera.view * object.world * vec4(position, 1.);
     gl_Position = camera.projection * gl_Position;
 
-    outColor = vec4(TEXCOORD_0, 0.0, 1.0);
+    outColor = vec4(texcoord_0, 0., 1.);
+}
+
+#pragma technique(0)
+{
+    process(POSITION, TEXCOORD_0);
+}
+
+#pragma technique(1)
+{
+    vec2 texcoord_0 = unpackAttribute(TEXCOORD_0);
+
+    process(POSITION, texcoord_0);
 }

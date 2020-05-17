@@ -23,7 +23,7 @@ out gl_PerVertex {
 };
 
 
-void process(const in vec3 position, const in vec3 normal)
+void process(in vec3 position, in vec3 normal)
 {
     gl_Position = camera.view * object.world * vec4(position, 1.0);
     gl_Position = camera.projection * gl_Position;
