@@ -260,8 +260,6 @@
     <ClCompile Include="src\camera\handlers\mouse_handler.cxx" />
     <ClCompile Include="src\camera\camera.cxx" />
     <ClCompile Include="src\vulkan\device.cxx" />
-    <ClCompile Include="src\ecs\node.cxx" />
-    <ClCompile Include="src\ecs\transform.cxx" />
     <ClCompile Include="src\loaders\loaderGLTF.cxx" />
     <ClCompile Include="src\loaders\TARGA_loader.cxx" />
     <ClCompile Include="src\loaders\material_loader.cxx" />
@@ -327,10 +325,6 @@
     <ClInclude Include="src\renderer\swapchain.hxx" />
     <ClInclude Include="src\camera\camera_controller.hxx" />
     <ClInclude Include="src\camera\handlers\mouse_handler.hxx" />
-    <ClInclude Include="src\ecs\ecs.hxx" />
-    <ClInclude Include="src\ecs\mesh.hxx" />
-    <ClInclude Include="src\ecs\node.hxx" />
-    <ClInclude Include="src\ecs\transform.hxx" />
     <ClInclude Include="src\loaders\loaderGLTF.hxx" />
     <ClInclude Include="src\loaders\TARGA_loader.hxx" />
     <ClInclude Include="src\resources\buffer.hxx" />

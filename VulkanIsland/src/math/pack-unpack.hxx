@@ -14,7 +14,7 @@
 namespace math
 {
     template<class O, class V>
-    requires (mpl::same_as<std::remove_cvref_t<V>, glm::vec3> && mpl::container<std::remove_cvref_t<O>> &&
+    requires (mpl::same_as<V, std::add_lvalue_reference_t<glm::vec3>> && mpl::container<std::remove_cvref_t<O>> &&
               mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
     void decode_oct_to_vec(O &&oct, V &vec)
     {

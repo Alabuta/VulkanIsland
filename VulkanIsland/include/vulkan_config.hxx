@@ -9,14 +9,16 @@
 
 namespace vulkan_config
 {
-    #define PREFER_DEBUG_UTILS 1
+    #define USE_DEBUG_UTILS 1
 
     auto constexpr extensions = std::array{
-    #if PREFER_DEBUG_UTILS
+    #if USE_DEBUG_UTILS
         VK_EXT_DEBUG_UTILS_EXTENSION_NAME,
     #else
         VK_EXT_DEBUG_REPORT_EXTENSION_NAME,
     #endif
+        // VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME,
+
     #ifdef _MSC_VER
         #if USE_WIN32
             VK_KHR_WIN32_SURFACE_EXTENSION_NAME,

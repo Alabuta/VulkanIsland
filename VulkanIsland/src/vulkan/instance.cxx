@@ -131,7 +131,7 @@ namespace vulkan
             if constexpr (use_layers) {
                 auto present = std::any_of(std::cbegin(extensions_), std::cend(extensions_), [] (auto extension)
                 {
-                #if PREFER_DEBUG_UTILS
+                #if USE_DEBUG_UTILS
                     return std::strcmp(extension, VK_EXT_DEBUG_UTILS_EXTENSION_NAME) == 0;
                 #else
                     return std::strcmp(extension, VK_EXT_DEBUG_REPORT_EXTENSION_NAME) == 0;
@@ -139,7 +139,7 @@ namespace vulkan
                 });
 
                 if (!present)
-                #if PREFER_DEBUG_UTILS
+                #if USE_DEBUG_UTILS
                     throw vulkan::logic_error("validation layers require enabled 'VK_EXT_debug_utils' extension"s);
                 #else
                     throw vulkan::logic_error("validation layers require enabled 'VK_EXT_debug_report' extension"s);
@@ -179,7 +179,7 @@ namespace vulkan
             0, nullptr
         };
 
-    #if PREFER_DEBUG_UTILS
+    #if USE_DEBUG_UTILS
         VkDebugUtilsMessengerCreateInfoEXT debug_msg_create_info{
             VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT,
             nullptr, 0,
@@ -206,7 +206,7 @@ namespace vulkan
                 0, nullptr
             };
 
-        #if PREFER_DEBUG_UTILS
+        #if USE_DEBUG_UTILS
             debug_msg_create_info.pNext = &validation_features;
             create_info.pNext = &debug_msg_create_info;
         #else
@@ -232,7 +232,7 @@ namespace vulkan
         volkLoadInstance(handle_);
 
         if constexpr (use_layers) {
-        #if PREFER_DEBUG_UTILS
+        #if USE_DEBUG_UTILS
             if (auto result = vkCreateDebugUtilsMessengerEXT(handle_, &debug_msg_create_info, nullptr, &debug_messenger_); result != VK_SUCCESS)
                 throw std::runtime_error(fmt::format("failed to set up debug messenger: {0:#x}\n"s, result));
         #else
