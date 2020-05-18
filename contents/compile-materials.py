@@ -178,10 +178,10 @@ def shader_header(stage, shader_inputs):
     return f'{version_line}\n{extensions_lines}\n{header_files}\n{stage_inputs}\n#line 0'
 
 
-def shader_vertex_attribute_layout(vertex_attributes, technique):
+def shader_vertex_attribute_layout(vertex_attributes, vertex_layout):
     vertex_attribute_layout=[ ]
 
-    for vertex_attribute_index in technique['vertexLayout']:
+    for vertex_attribute_index in vertex_layout:
         vertex_attribute=vertex_attributes[vertex_attribute_index]
 
         semantic, type=[ vertex_attribute[k] for k in ('semantic', 'type') ]
@@ -201,11 +201,16 @@ def shader_vertex_attribute_layout(vertex_attributes, technique):
     return vertex_attributes_lines
 
 
+def compile_vertex_layout_name(vertex_attributes, vertex_layout):
+    getter=itemgetter('semantic','type')
+    return '-'.join(map(lambda a: ':'.join(getter(a)), [vertex_attributes[i] for i in vertex_layout]))
+
+
 # TODO:: add another shader input structures
-def shader_inputs(material, technique):
+def shader_inputs(material, vertex_layout):
     vertex_attributes=material['vertexAttributes']
 
-    vertex_attributes_lines=shader_vertex_attribute_layout(vertex_attributes, technique)
+    vertex_attributes_lines=shader_vertex_attribute_layout(vertex_attributes, vertex_layout)
 
     vertex_stage_inputs=f'{vertex_attributes_lines}\n'
     tesc_stage_inputs=f'\n'
@@ -288,8 +293,8 @@ def remove_inactive_techniques(technique_index, source_code):
     return source_code
 
 
-def sub_attributes_unpacks(source_code, technique, vertex_attributes):
-    for vertex_attribute_index in technique['vertexLayout']:
+def sub_attributes_unpacks(source_code, vertex_layout ,vertex_attributes):
+    for vertex_attribute_index in vertex_layout:
         vertex_attribute=vertex_attributes[vertex_attribute_index]
         semantic, type=itemgetter('semantic', 'type')(vertex_attribute)
 
@@ -335,61 +340,64 @@ def compile_material(material_data):
     techniques, shader_modules=itemgetter('techniques', 'shaderModules')(material_data)
     
     for technique in techniques:
-        inputs=shader_inputs(material_data, technique)
+        for vertex_layout in technique['vertexLayouts']:
+            inputs=shader_inputs(material_data, vertex_layout)
 
-        vertex_attributes=material_data['vertexAttributes']
+            vertex_attributes=material_data['vertexAttributes']
 
-        for shader_bundle in technique['shadersBundle']:
-            shader_module_index, technique_index=shader_bundle['index'], shader_bundle['technique']
+            vertex_layout_name=compile_vertex_layout_name(vertex_attributes, vertex_layout)
 
-            shader_module=shader_modules[shader_module_index]
+            for shader_bundle in technique['shadersBundle']:
+                shader_module_index, technique_index=shader_bundle['index'], shader_bundle['technique']
 
-            name, stage=shader_module['name'], shader_module['stage']
+                shader_module=shader_modules[shader_module_index]
 
-            header=shader_header(stage, inputs)
+                name, stage=shader_module['name'], shader_module['stage']
 
-            source_code=get_shader_source_code(name)
+                header=shader_header(stage, inputs)
 
-            if not source_code:
-                print(f'can\'t get shader source code {name}')
-                continue
+                source_code=get_shader_source_code(name)
 
-            source_code=remove_inactive_techniques(technique_index, source_code)
+                if not source_code:
+                    print(f'can\'t get shader source code {name}')
+                    continue
 
-            source_code=sub_attributes_unpacks(source_code, technique, vertex_attributes)
+                source_code=remove_inactive_techniques(technique_index, source_code)
 
-            if 'specializationConstants' in shader_bundle:
-                constants=get_specialization_constants(shader_bundle['specializationConstants'])
-                source_code=f'{constants}\n{source_code}'
+                source_code=sub_attributes_unpacks(source_code, vertex_layout, vertex_attributes)
 
-            source_code=f'{header}\n{source_code}'
+                if 'specializationConstants' in shader_bundle:
+                    constants=get_specialization_constants(shader_bundle['specializationConstants'])
+                    source_code=f'{constants}\n{source_code}'
 
-            hashed_name=str(uuid.uuid5(uuid.NAMESPACE_DNS, f'{name}.{technique_index}'))
-            output_path=os.path.join(shaders.source_path, f'{hashed_name}.spv')
+                source_code=f'{header}\n{source_code}'
 
-            print(f'{name}.{technique_index} -> {output_path}')
+                hashed_name=str(uuid.uuid5(uuid.NAMESPACE_DNS, f'{name}.{technique_index}.{vertex_layout_name}'))
+                output_path=os.path.join(shaders.source_path, f'{hashed_name}.spv')
 
-            compiler=subprocess.Popen([
-                shaders.compiler_path,
-                '-e', f'technique{technique_index}',
-                '--source-entrypoint', 'main',
-                '-V',
-                # '-H',
-                '--target-env', 'vulkan1.1',
-                f'-I{shaders.include_path}',
-                '-o', output_path,
-                '--stdin',
-                '-S', shaders.stage2extension[stage]
-            ], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                print(f'{name}.{technique_index}.{vertex_layout_name} -> {output_path}')
 
-            output, errors=compiler.communicate(source_code.encode('UTF-8'))
+                compiler=subprocess.Popen([
+                    shaders.compiler_path,
+                    '-e', f'technique{technique_index}',
+                    '--source-entrypoint', 'main',
+                    '-V',
+                    # '-H',
+                    '--target-env', 'vulkan1.1',
+                    f'-I{shaders.include_path}',
+                    '-o', output_path,
+                    '--stdin',
+                    '-S', shaders.stage2extension[stage]
+                ], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
-            output=output.decode('UTF-8')[len('stdin'):]
-            if len(output) > 2:
-                print(output)
+                output, errors=compiler.communicate(source_code.encode('UTF-8'))
 
-            if compiler.returncode!=0:
-                print(errors.decode('UTF-8'), file=sys.stderr)
+                output=output.decode('UTF-8')[len('stdin'):]
+                if len(output) > 2:
+                    print(output)
+
+                if compiler.returncode!=0:
+                    print(errors.decode('UTF-8'), file=sys.stderr)
 
 
 for root, dirs, material_relative_paths in os.walk(materials.source_path):

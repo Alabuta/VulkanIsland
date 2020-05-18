@@ -22,20 +22,10 @@
                     "technique": 0
                 }
             ],
-            "vertexLayout": [ 0, 1 ]
-        },
-        {
-            "shadersBundle": [
-                {
-                    "index": 0,
-                    "technique": 1
-                },
-                {
-                    "index": 1,
-                    "technique": 0
-                }
-            ],
-            "vertexLayout": [ 0, 2 ]
+            "vertexLayouts": [
+                [ 0, 1 ],
+                [ 0, 2 ]
+            ]
         }
     ],
     "vertexAttributes": [

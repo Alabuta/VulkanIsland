@@ -19,7 +19,17 @@ vec3 unpackAttribute_normal_rg16i_norm(in vec2 a)
     return decode_oct_to_unit(a);
 }
 
+vec3 unpackAttribute_normal_rgb32f(in vec3 a)
+{
+    return a;
+}
+
 vec2 unpackAttribute_texcoord_rg16ui_norm(in vec2 a)
+{
+    return a;
+}
+
+vec2 unpackAttribute_texcoord_rg32f(in vec2 a)
 {
     return a;
 }

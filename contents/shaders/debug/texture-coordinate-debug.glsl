@@ -33,11 +33,6 @@ void process(in vec3 position, in vec2 texcoord_0)
 
 #pragma technique(0)
 {
-    process(POSITION, TEXCOORD_0);
-}
-
-#pragma technique(1)
-{
     vec2 texcoord_0 = unpackAttribute(TEXCOORD_0);
 
     process(POSITION, texcoord_0);

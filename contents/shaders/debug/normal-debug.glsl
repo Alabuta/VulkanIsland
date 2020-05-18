@@ -34,20 +34,7 @@ void process(in vec3 position, in vec3 normal)
     outColor = vec4(normalize(vec3(viewSpaceNormal)), 1.0);
 }
 
-
 #pragma technique(0)
-{
-    process(POSITION, NORMAL);
-}
-
-#pragma technique(1)
-{
-    vec3 normal = unpackAttribute(NORMAL);
-
-    process(POSITION, normal);
-}
-
-#pragma technique(2)
 {
     vec3 normal = unpackAttribute(NORMAL);
 
