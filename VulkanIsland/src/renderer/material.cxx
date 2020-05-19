@@ -4,9 +4,13 @@ using namespace std::string_literals;
 #include <string_view>
 using namespace std::string_view_literals;
 
+#include <fmt/format.h>
+
 #include <boost/uuid/name_generator.hpp>
 #include <boost/functional/hash.hpp>
 #include <boost/uuid/uuid_io.hpp>
+
+#include <range/v3/all.hpp>
 
 #include "graphics/graphics_api.hxx"
 
@@ -15,8 +19,15 @@ using namespace std::string_view_literals;
 
 namespace graphics
 {
-    std::shared_ptr<graphics::material> material_factory::material(std::string_view name, std::uint32_t technique_index)
+    std::shared_ptr<graphics::material>
+    material_factory::material(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &)
     {
+        /*auto vertexl_layout_name = graphics::to_string(vl);
+        auto full_name = fmt::format("{}.{}.{}"s, name, technique_index, vertexl_layout_name);
+
+        boost::uuids::name_generator_sha1 gen(boost::uuids::ns::dns());
+        auto hashed_name = boost::uuids::to_string(gen(full_name));*/
+
         auto const key = std::pair{std::string{name}, technique_index};
 
         if (materials_.contains(key))
@@ -55,9 +66,36 @@ namespace graphics
 
         auto &&vertex_attributes = description.vertex_attributes;
 
-        graphics::vertex_layout vertex_layout{0, { }};
+        using namespace ranges;
 
-        std::transform(std::cbegin(technique.vertex_layout), std::cend(technique.vertex_layout),
+        for (auto &&vertex_layout_indices : technique.vertex_layouts) {
+            graphics::vertex_layout vertex_layout{0, { }};
+
+            auto &offset_in_bytes = vertex_layout.size_in_bytes;
+
+            auto attributes = vertex_layout_indices | ranges::views::transform([&] (auto vertex_layout_index)
+            {
+                auto [semantic, format] = vertex_attributes.at(vertex_layout_index);
+
+                graphics::vertex_attribute vertex_attribute{semantic, format, offset_in_bytes};
+
+                if (auto fmt = graphics::instantiate_format(format); fmt) {
+                    offset_in_bytes += std::visit([] (auto &&format)
+                    {
+                        return sizeof(std::remove_cvref_t<decltype(format)>);
+                    }, *fmt);
+                }
+
+                else throw graphics::exception("unsupported format"s);
+
+                return vertex_attribute;
+
+            }) | ranges::to<std::vector<graphics::vertex_attribute>>();
+
+            fmt::print("{}", attributes.size());
+        }
+
+        /*std::transform(std::cbegin(technique.vertex_layout), std::cend(technique.vertex_layout),
                        std::back_inserter(vertex_layout.attributes),
                        [vertex_attributes, &offset_in_bytes = vertex_layout.size_in_bytes] (auto vertex_layout_index) mutable
         {
@@ -75,13 +113,14 @@ namespace graphics
             else throw graphics::exception("unsupported format"s);
 
             return vertex_attribute;
-        });
+        });*/
 
-        auto material = std::make_shared<graphics::material>(shader_stages, vertex_layout);
+        /*auto material = std::make_shared<graphics::material>(shader_stages, vertex_layout);
 
         materials_.emplace(key, material);
 
-        return material;
+        return material;*/
+        return { };
     }
 
     loader::material_description const &material_factory::material_description(std::string_view name)

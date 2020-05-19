@@ -43,9 +43,11 @@ namespace loader
             std::vector<specialization_constant> specialization_constants;
         };
 
+        using vertex_layout = std::vector<std::size_t>;
+
         struct technique final {
             std::vector<shader_bundle> shaders_bundle;
-            std::vector<std::size_t> vertex_layout;
+            std::vector<vertex_layout> vertex_layouts;
         };
 
         std::vector<technique> techniques;

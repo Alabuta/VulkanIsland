@@ -32,7 +32,8 @@ namespace graphics
     class material_factory final {
     public:
 
-        [[nodiscard]] std::shared_ptr<graphics::material> material(std::string_view name, std::uint32_t technique_index);
+        [[nodiscard]] std::shared_ptr<graphics::material>
+        material(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &vertex_layout);
 
     private:
 

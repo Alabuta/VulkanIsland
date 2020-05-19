@@ -203,7 +203,7 @@ def shader_vertex_attribute_layout(vertex_attributes, vertex_layout):
 
 def compile_vertex_layout_name(vertex_attributes, vertex_layout):
     getter=itemgetter('semantic','type')
-    return '-'.join(map(lambda a: ':'.join(getter(a)), [vertex_attributes[i] for i in vertex_layout]))
+    return '-'.join(map(lambda a: ':'.join(getter(a)).lower(), [vertex_attributes[i] for i in vertex_layout]))
 
 
 # TODO:: add another shader input structures

@@ -361,7 +361,7 @@ namespace nlohmann
     {
         technique.shaders_bundle = j.at("shadersBundle"s).get<std::vector<loader::material_description::shader_bundle>>();
 
-        technique.vertex_layout = j.at("vertexLayout"s).get<std::vector<std::size_t>>();
+        technique.vertex_layouts = j.at("vertexLayouts"s).get<std::vector<loader::material_description::vertex_layout>>();
     }
 }
 
@@ -382,7 +382,7 @@ namespace loader
             std::ifstream file{path.native(), std::ios::in};
 
             if (file.bad() || file.fail())
-                throw resource::exception(fmt::format("failed to open file: {}"s, path));
+                throw resource::exception(fmt::format("failed to open file: {}"s, path.string()));
 
             file >> json;
         }

@@ -129,7 +129,7 @@
       <AdditionalIncludeDirectories>%VULKAN_SDK%\Include;$(ProjectDir)include;$(ProjectDir)src</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <EnablePREfast>false</EnablePREfast>
-      <AdditionalOptions> /bigobj /Zm2000 /experimental:external /external:anglebrackets  /external:W0 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions> /bigobj /Zm2000 /Zc:preprocessor /experimental:external /external:anglebrackets  /external:W0 %(AdditionalOptions)</AdditionalOptions>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
       <EnableModules>false</EnableModules>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
@@ -208,7 +208,7 @@
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <MultiProcessorCompilation>true</MultiProcessorCompilation>
-      <AdditionalOptions> /bigobj /Zm2000 /experimental:external /external:anglebrackets  /external:W0 %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalOptions> /bigobj /Zm2000 /Zc:preprocessor /experimental:external /external:anglebrackets  /external:W0 %(AdditionalOptions)</AdditionalOptions>
       <EnableModules>false</EnableModules>
       <EnableParallelCodeGeneration>true</EnableParallelCodeGeneration>
       <EnableEnhancedInstructionSet>NotSet</EnableEnhancedInstructionSet>
