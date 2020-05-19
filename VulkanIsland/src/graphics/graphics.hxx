@@ -1,6 +1,7 @@
 #pragma once
 
 #include <array>
+#include <string>
 #include <variant>
 #include <cstdint>
 #include <optional>
@@ -19,6 +20,12 @@ namespace graphics
     template<class T>
     struct compatibility;
 
+    template<class T>
+    std::string to_string(T &&);
+}
+
+namespace graphics
+{
     enum class PRIMITIVE_TOPOLOGY {
         POINTS = 0,
         LINES, LINE_STRIP,

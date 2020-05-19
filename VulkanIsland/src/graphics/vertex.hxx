@@ -21,9 +21,7 @@ namespace vertex
         TANGENT,
         COLOR_0,
         JOINTS_0,
-        WEIGHTS_0,
-
-        MAX
+        WEIGHTS_0
     };
 
     template<eSEMANTIC_INDEX SI>

@@ -584,12 +584,14 @@ void build_render_pipelines(app_t &app, xformat const &model_)
         auto material_index = meshlet.material_index;
         auto [technique_index, name] = model_.materials[material_index];
 
-        fmt::print("{}#{}\n"s, name, technique_index);
-
-        auto material = material_factory.material(name, technique_index);
-
         auto vertex_layout_index = meshlet.vertex_buffer_index;
         auto &&vertex_layout = model_.vertex_layouts[vertex_layout_index];
+
+        auto vertexl_layout_name = graphics::to_string(vertex_layout);
+
+        fmt::print("{}#{}#{}\n"s, name, technique_index, vertexl_layout_name);
+
+        auto material = material_factory.material(name, technique_index, vertex_layout);
 
         auto &&vertex_data_buffer = model_.vertex_buffers.at(vertex_layout_index);
 
