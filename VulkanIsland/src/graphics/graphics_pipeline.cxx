@@ -9,6 +9,7 @@ using namespace std::string_literals;
 
 #include <fmt/format.h>
 
+#include "utility/exceptions.hxx"
 #include "graphics_pipeline.hxx"
 #include "graphics/graphics_api.hxx"
 
@@ -319,7 +320,7 @@ namespace graphics
         VkPipeline handle;
 
         if (auto result = vkCreateGraphicsPipelines(device_.handle(), VK_NULL_HANDLE, 1, &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to create graphics pipeline: {0:#x}\n"s, result));
+            throw vulkan::exception(fmt::format("failed to create graphics pipeline: {0:#x}"s, result));
 
         auto pipeline = std::shared_ptr<graphics::pipeline>(
             new graphics::pipeline{handle}, [this] (graphics::pipeline *const ptr_pipeline)
@@ -378,7 +379,7 @@ namespace graphics
         graphics::vertex_layout const &vertex_layout, graphics::vertex_layout const &required_vertex_layout) const
     {
         if (!vertex_input_states_.contains(vertex_layout))
-            throw std::runtime_error("failed to find vertex layout"s);
+            throw resource::exception("failed to find vertex layout"s);
 
         auto &&vertex_input_state = vertex_input_states_.at(vertex_layout);
 
@@ -401,7 +402,7 @@ namespace graphics
             });
 
             if (it == std::cend(vertex_input_state.attribute_descriptions))
-                throw std::runtime_error("original vertex layout doesn't have a required vertex attribute."s);
+                throw resource::exception("original vertex layout doesn't have a required vertex attribute."s);
 
             adjusted_vertex_input_state.attribute_descriptions.push_back(*it);
         }
@@ -431,7 +432,7 @@ namespace graphics
         VkPipelineLayout handle;
 
         if (auto result = vkCreatePipelineLayout(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to create pipeline layout: {0:#x}\n"s, result));
+            throw vulkan::exception(fmt::format("failed to create pipeline layout: {0:#x}"s, result));
 
         auto pipeline_layout = std::shared_ptr<graphics::pipeline_layout>(
             new graphics::pipeline_layout{handle}, [this] (graphics::pipeline_layout *const ptr_pipeline_layout)

@@ -9,7 +9,11 @@ using namespace std::string_literals;
 
 #include "main.hxx"
 #include "vulkan/device.hxx"
+
+#include "utility/exceptions.hxx"
+
 #include "resources/image.hxx"
+
 #include "graphics/graphics.hxx"
 #include "graphics/graphics_api.hxx"
 
@@ -32,7 +36,7 @@ void submit_and_free_single_time_command_buffer(vulkan::device const &device, Q 
     };
 
     if (auto result = vkQueueSubmit(queue.handle(), 1, &submit_info, VK_NULL_HANDLE); result != VK_SUCCESS)
-        throw std::runtime_error(fmt::format("failed to submit command buffer: {0:#x}"s, result));
+        throw vulkan::exception(fmt::format("failed to submit command buffer: {0:#x}"s, result));
 
     vkQueueWaitIdle(queue.handle());
 
@@ -173,7 +177,7 @@ void image_layout_transition(vulkan::device const &device, Q &queue, resource::i
         dst_stage_flags = graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT;
     }
 
-    else throw std::runtime_error("unsupported layout transition"s);
+    else throw graphics::exception("unsupported layout transition"s);
 
     auto command_buffer = begin_single_time_command(device, command_pool);
 
@@ -199,7 +203,7 @@ std::optional<VkCommandPool> create_command_pool(vulkan::device const &device, Q
     VkCommandPool handle;
 
     if (auto result = vkCreateCommandPool(device.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-        throw std::runtime_error(fmt::format("failed to create a command buffer: {0:#x}"s, result));
+        throw vulkan::exception(fmt::format("failed to create a command buffer: {0:#x}"s, result));
 
     else return handle;
 }

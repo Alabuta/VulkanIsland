@@ -234,7 +234,7 @@ namespace vulkan
         if constexpr (use_layers) {
         #if USE_DEBUG_UTILS
             if (auto result = vkCreateDebugUtilsMessengerEXT(handle_, &debug_msg_create_info, nullptr, &debug_messenger_); result != VK_SUCCESS)
-                throw std::runtime_error(fmt::format("failed to set up debug messenger: {0:#x}\n"s, result));
+                throw vulkan::exception(fmt::format("failed to set up debug messenger: {0:#x}"s, result));
         #else
             vulkan::create_debug_report_callback(handle_, debug_report_callback_);
         #endif
@@ -270,7 +270,7 @@ namespace vulkan
             renderer::platform_surface platform_surface;
 
             if (auto result = glfwCreateWindowSurface(handle_, window.handle(), nullptr, &platform_surface.handle_); result != VK_SUCCESS)
-                throw std::runtime_error(fmt::format("failed to create window surface: {0:#x}\n"s, result));
+                throw vulkan::exception(fmt::format("failed to create window surface: {0:#x}"s, result));
 
             platform_surfaces_.emplace(window.handle(), platform_surface);
         }

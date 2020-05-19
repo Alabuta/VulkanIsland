@@ -8,6 +8,7 @@
 #include <set>
 
 #include "utility/mpl.hxx"
+#include "utility/exceptions.hxx"
 #include "vulkan/device.hxx"
 #include "renderer/config.hxx"
 #include "renderer/material.hxx"
@@ -146,7 +147,7 @@ create_pipeline_layout(vulkan::device const &device, T &&descriptorSetLayouts) n
     VkPipelineLayout handle;
 
     if (auto result = vkCreatePipelineLayout(device.handle(), &layoutCreateInfo, nullptr, &handle); result != VK_SUCCESS)
-        std::cerr << "failed to create pipeline layout: "s << result << '\n';
+        throw vulkan::exception(fmt::format("failed to create pipeline layout: {0:#x}"s, result));
 
     else pipelineLayout.emplace(handle);
 

@@ -4,6 +4,7 @@ using namespace std::string_literals;
 
 #include <fmt/format.h>
 
+#include "utility/exceptions.hxx"
 #include "graphics_api.hxx"
 #include "render_pass.hxx"
 
@@ -142,7 +143,7 @@ namespace graphics
         VkRenderPass handle;
 
         if (auto result = vkCreateRenderPass(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to create render pass: {0:#x}\n"s, result));
+            throw vulkan::exception(fmt::format("failed to create render pass: {0:#x}"s, result));
 
         else render_pass.reset(new graphics::render_pass{handle}, [device = device_.handle()] (graphics::render_pass *ptr_render_pass)
         {

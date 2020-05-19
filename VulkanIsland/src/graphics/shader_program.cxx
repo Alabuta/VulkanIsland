@@ -9,6 +9,7 @@ using namespace std::string_literals;
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/functional/hash.hpp>
 
+#include "utility/exceptions.hxx"
 #include "loaders/SPIRV_loader.hxx"
 #include "shader_program.hxx"
 
@@ -36,12 +37,12 @@ namespace graphics
         auto const shader_byte_code = loader::load_SPIRV(hashed_name);
 
         if (shader_byte_code.empty())
-            throw std::runtime_error("failed to open shader file"s);
+            throw resource::exception(fmt::format("failed to open shader file: {}"s, full_name));
 
         std::shared_ptr<graphics::shader_module> shader_module;
 
         if (std::size(shader_byte_code) % sizeof(std::uint32_t) != 0)
-            std::cerr << "invalid byte code buffer size\n"s;
+            throw resource::exception(fmt::format("invalid byte code buffer size: {}"s, full_name));
 
         else {
             VkShaderModuleCreateInfo const create_info{
@@ -54,7 +55,7 @@ namespace graphics
             VkShaderModule handle;
 
             if (auto result = vkCreateShaderModule(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-                std::cerr << fmt::format("failed to create shader module: {0:#x}\n"s, result);
+                throw vulkan::exception(fmt::format("failed to create shader module: {0:#x}"s, result));
 
             else {
                 shader_module.reset(new graphics::shader_module{handle}, [this] (graphics::shader_module *ptr_module)

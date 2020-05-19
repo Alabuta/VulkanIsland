@@ -26,14 +26,14 @@ CreateBuffer(vulkan::device &device, VkBuffer &buffer, VkDeviceSize size, VkBuff
     };
 
     if (auto result = vkCreateBuffer(device.handle(), &bufferCreateInfo, nullptr, &buffer); result != VK_SUCCESS)
-        throw std::runtime_error("failed to create buffer: "s + std::to_string(result));
+        throw vulkan::exception("failed to create buffer: "s + std::to_string(result));
 
     if (auto memory = device.memory_manager().AllocateMemory(buffer, properties); !memory)
-        throw std::runtime_error("failed to allocate buffer memory"s);
+        throw memory::exception("failed to allocate buffer memory"s);
 
     else {
         if (auto result = vkBindBufferMemory(device.handle(), buffer, memory->handle(), memory->offset()); result != VK_SUCCESS)
-            throw std::runtime_error("failed to bind buffer memory: "s + std::to_string(result));
+            throw vulkan::exception("failed to bind buffer memory: "s + std::to_string(result));
 
         return memory;
     }

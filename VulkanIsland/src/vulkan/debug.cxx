@@ -6,6 +6,7 @@ using namespace std::string_literals;
 
 #include <fmt/format.h>
 
+#include "utility/exceptions.hxx"
 #include "debug.hxx"
 
 #if 0
@@ -93,6 +94,6 @@ namespace vulkan
         };
 
         if (auto result = vkCreateDebugReportCallbackEXT(instance, &create_info, nullptr, &callback); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to set up debug callback: {0:#x}\n"s, result));
+            throw vulkan::exception(fmt::format("failed to set up debug callback: {0:#x}"s, result));
     }
 }

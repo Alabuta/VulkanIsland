@@ -72,7 +72,7 @@ namespace graphics
                 }, *fmt);
             }
 
-            else throw std::runtime_error("unsupported format");
+            else throw graphics::exception("unsupported format"s);
 
             return vertex_attribute;
         });

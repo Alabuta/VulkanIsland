@@ -4,7 +4,10 @@
 #include <iostream>
 #include <memory>
 
+#include <fmt/format.h>
+
 #include "main.hxx"
+#include "utility/exceptions.hxx"
 #include "vulkan/device.hxx"
 
 
@@ -59,7 +62,8 @@ std::optional<VkDescriptorPool> CreateDescriptorPool(vulkan::device const &devic
 std::optional<VkDescriptorSetLayout> CreateDescriptorSetLayout(vulkan::device const &device);
 
 template<mpl::container T>
-std::optional<VkDescriptorSet> CreateDescriptorSets(vulkan::device const &device, VkDescriptorPool descriptorPool, T &&descriptorSetLayouts)
+std::optional<VkDescriptorSet>
+CreateDescriptorSets(vulkan::device const &device, VkDescriptorPool descriptorPool, T &&descriptorSetLayouts)
 {
     std::optional<VkDescriptorSet> descriptorSet;
 
@@ -73,7 +77,7 @@ std::optional<VkDescriptorSet> CreateDescriptorSets(vulkan::device const &device
     VkDescriptorSet handle;
 
     if (auto result = vkAllocateDescriptorSets(device.handle(), &allocateInfo, &handle); result != VK_SUCCESS)
-        std::cerr << "failed to allocate descriptor set(s): "s << result << '\n';
+        throw vulkan::exception(fmt::format("failed to allocate descriptor set(s): {0:#x}"s, result));
 
     else descriptorSet.emplace(handle);
 

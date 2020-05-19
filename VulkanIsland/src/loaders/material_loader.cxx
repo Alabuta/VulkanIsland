@@ -10,8 +10,11 @@ namespace fs = std::filesystem;
 #include <string>
 using namespace std::string_literals;
 
+#include <fmt/format.h>
+
 #include <nlohmann/json.hpp>
 
+#include "utility/exceptions.hxx"
 #include "material_loader.hxx"
 
 
@@ -315,7 +318,7 @@ namespace nlohmann
         if (auto stage = loader::shader_stage_semantic(j.at("stage"s).get<std::string>()); stage)
             shader_module.stage = *stage;
 
-        else throw std::runtime_error("unsupported shader stage"s);
+        else throw resource::exception("unsupported shader stage"s);
 
         shader_module.name = j.at("name"s).get<std::string>();
     }
@@ -325,12 +328,12 @@ namespace nlohmann
         if (auto semantic = loader::attribute_semantic(j.at("semantic"s).get<std::string>()); semantic)
             vertex_attribute.semantic = *semantic;
 
-        else throw std::runtime_error("unsupported vertex attribute semantic"s);
+        else throw resource::exception("unsupported vertex attribute semantic"s);
 
         if (auto format = loader::attribute_format(j.at("type"s).get<std::string>()); format)
             vertex_attribute.format = *format;
 
-        else throw std::runtime_error("unsupported vertex attribute format"s);
+        else throw resource::exception("unsupported vertex attribute format"s);
     }
 
     void from_json(nlohmann::json const &j, loader::material_description::specialization_constant &specialization_constant)
@@ -340,7 +343,7 @@ namespace nlohmann
         if (auto value = loader::specialization_constant_value(type, j.at("value"s).get<float>()); value)
             specialization_constant = *value;
 
-        else throw std::runtime_error("unsupported specialization constant value"s);
+        else throw resource::exception("unsupported specialization constant value"s);
     }
 
     void from_json(nlohmann::json const &j, loader::material_description::shader_bundle &shader_bundle)
@@ -378,10 +381,8 @@ namespace loader
 
             std::ifstream file{path.native(), std::ios::in};
 
-            if (file.bad() || file.fail()) {
-                std::cerr << "failed to open file: "s << path << '\n';
-                return { };
-            }
+            if (file.bad() || file.fail())
+                throw resource::exception(fmt::format("failed to open file: {}"s, path));
 
             file >> json;
         }

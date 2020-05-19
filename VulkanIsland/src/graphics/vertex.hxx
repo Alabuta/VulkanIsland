@@ -7,6 +7,7 @@
 #include <boost/cstdfloat.hpp>
 
 #include "utility/mpl.hxx"
+#include "utility/exceptions.hxx"
 #include "graphics.hxx"
 
 
@@ -169,7 +170,7 @@ namespace vertex
                 }, *format);
             }
 
-            else throw std::runtime_error("unsupported format");
+            else throw graphics::exception("unsupported format");
         }
 
         return vertex_layout;

@@ -366,7 +366,7 @@ void create_graphics_command_buffers(app_t &app)
     };
 
     if (auto result = vkAllocateCommandBuffers(app.device->handle(), &allocate_info, std::data(app.command_buffers)); result != VK_SUCCESS)
-        throw std::runtime_error(fmt::format("failed to create allocate command buffers: {0:#x}\n"s, result));
+        throw vulkan::exception(fmt::format("failed to create allocate command buffers: {0:#x}"s, result));
 
     auto &&resource_manager = *app.resource_manager;
     auto &&vertex_buffers = resource_manager.vertex_buffers();
@@ -421,7 +421,7 @@ void create_graphics_command_buffers(app_t &app)
         };
 
         if (auto result = vkBeginCommandBuffer(command_buffer, &begin_info); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to record command buffer: {0:#x}\n"s, result));
+            throw vulkan::exception(fmt::format("failed to record command buffer: {0:#x}"s, result));
 
         auto [width, height] = app.swapchain->extent();
 
@@ -478,7 +478,7 @@ void create_graphics_command_buffers(app_t &app)
         vkCmdEndRenderPass(command_buffer);
 
         if (auto result = vkEndCommandBuffer(command_buffer); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to end command buffer: {0:#x}\n"s, result));
+            throw vulkan::exception(fmt::format("failed to end command buffer: {0:#x}"s, result));
     }
 }
 
@@ -491,27 +491,27 @@ void create_frame_data(app_t &app)
     auto swapchain = create_swapchain(device, platform_surface, renderer::extent{app.width, app.height});
 
     if (swapchain == nullptr)
-        throw std::runtime_error("failed to create the swapchain"s);
+        throw graphics::exception("failed to create the swapchain"s);
 
     auto attachment_descriptions = create_attachment_descriptions(device, app.renderer_config, *swapchain);
 
     if (attachment_descriptions.empty())
-        throw std::runtime_error("failed to create the attachment descriptions"s);
+        throw graphics::exception("failed to create the attachment descriptions"s);
 
     auto attachments = create_attachments(resource_manager, attachment_descriptions, swapchain->extent());
 
     if (attachments.empty())
-        throw std::runtime_error("failed to create the attachments"s);
+        throw graphics::exception("failed to create the attachments"s);
 
     auto render_pass = create_render_pass(*app.render_pass_manager, swapchain->surface_format(), attachment_descriptions);
 
     if (render_pass == nullptr)
-        throw std::runtime_error("failed to create the render pass"s);
+        throw graphics::exception("failed to create the render pass"s);
 
     auto framebuffers = create_framebuffers(resource_manager, *swapchain, render_pass, attachments);
 
     if (framebuffers.empty())
-        throw std::runtime_error("failed to create the framebuffers"s);
+        throw graphics::exception("failed to create the framebuffers"s);
 
     app.swapchain = std::move(swapchain);
     app.attachments = std::move(attachments);
@@ -598,7 +598,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
         if (vertex_buffer)
             resource_manager.stage_vertex_buffer_data(vertex_buffer, vertex_data_buffer.buffer);
 
-        else throw std::runtime_error("failed to get vertex buffer"s);
+        else throw graphics::exception("failed to get vertex buffer"s);
 
         [[maybe_unused]] auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(vertex_layout);
 
@@ -887,7 +887,7 @@ namespace temp
             auto vertices = primitives::generate_plane(1.f, 1.f, 8u, 8u, vertex_layout, glm::vec4{.2f, 1, .8f, 1});
 
             if (std::size(vertices) % vertex_layout.size_in_bytes != 0)
-                throw std::runtime_error("vertex buffer size is not multiple of size of vertex strcture"s);
+                throw resource::exception("vertex buffer size is not multiple of size of vertex strcture"s);
 
             auto const vertex_count = std::size(vertices) / vertex_layout.size_in_bytes;
             auto const vertex_size = vertex_layout.size_in_bytes;
@@ -967,12 +967,12 @@ void create_semaphores(app_t &app)
     auto &&resource_manager = *app.resource_manager;
 
     if (auto semaphore = resource_manager.create_semaphore(); !semaphore)
-        throw std::runtime_error("failed to create image semaphore"s);
+        throw resource::exception("failed to create image semaphore"s);
 
     else app.image_available_semaphore = semaphore;
 
     if (auto semaphore = resource_manager.create_semaphore(); !semaphore)
-        throw std::runtime_error("failed to create render semaphore"s);
+        throw resource::exception("failed to create render semaphore"s);
 
     else app.render_finished_semaphore = semaphore;
 }
@@ -1002,27 +1002,27 @@ void init(platform::window &window, app_t &app)
     if (auto command_pool = create_command_pool(*app.device, app.device->transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); command_pool)
         app.transfer_command_pool = *command_pool;
 
-    else throw std::runtime_error("failed to transfer command pool"s);
+    else throw graphics::exception("failed to transfer command pool"s);
 
     if (auto command_pool = create_command_pool(*app.device, app.device->graphics_queue, 0); command_pool)
         app.graphics_command_pool = *command_pool;
 
-    else throw std::runtime_error("failed to graphics command pool"s);
+    else throw graphics::exception("failed to graphics command pool"s);
 
     create_frame_data(app);
 
     if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.device); !descriptorSetLayout)
-        throw std::runtime_error("failed to create the descriptor set layout"s);
+        throw graphics::exception("failed to create the descriptor set layout"s);
 
     else app.descriptorSetLayout = std::move(descriptorSetLayout.value());
 
 #if TEMPORARILY_DISABLED
     if (auto result = glTF::load(sceneName, app.scene, app.nodeSystem); !result)
-        throw std::runtime_error("failed to load a mesh"s);
+        throw resource::exception("failed to load a mesh"s);
 #endif
 
     if (auto pipelineLayout = create_pipeline_layout(*app.device, std::array{app.descriptorSetLayout}); !pipelineLayout)
-        throw std::runtime_error("failed to create the pipeline layout"s);
+        throw graphics::exception("failed to create the pipeline layout"s);
 
     else app.pipelineLayout = std::move(pipelineLayout.value());
 
@@ -1030,12 +1030,12 @@ void init(platform::window &window, app_t &app)
     // "chalet/textures/chalet.tga"sv
     // "Hebe/textures/HebehebemissinSG1_metallicRoughness.tga"sv
     if (auto result = load_texture(app, *app.device, "sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
-        throw std::runtime_error("failed to load a texture"s);
+        throw resource::exception("failed to load a texture"s);
 
     else app.texture = std::move(result.value());
 
     if (auto result = app.device->resource_manager.create_image_sampler(app.texture.image->mip_levels()); !result)
-        throw std::runtime_error("failed to create a texture sampler"s);
+        throw resource::exception("failed to create a texture sampler"s);
 
     else app.texture.sampler = result;
 #endif
@@ -1054,21 +1054,21 @@ void init(platform::window &window, app_t &app)
         auto size = buffer.memory()->size();
 
         if (auto result = vkMapMemory(app.device->handle(), buffer.memory()->handle(), offset, size, 0, &app.ssbo_mapped_ptr); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to map per object uniform buffer memory: {0:#x}\n"s, result));
+            throw vulkan::exception(fmt::format("failed to map per object uniform buffer memory: {0:#x}"s, result));
     }
 
-    else throw std::runtime_error("failed to init per object uniform buffer"s);
+    else throw graphics::exception("failed to init per object uniform buffer"s);
 
     if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.resource_manager, sizeof(camera::data_t)); !app.perCameraBuffer)
-        throw std::runtime_error("failed to init per camera uniform buffer"s);
+        throw graphics::exception("failed to init per camera uniform buffer"s);
 
     if (auto descriptorPool = CreateDescriptorPool(*app.device); !descriptorPool)
-        throw std::runtime_error("failed to create the descriptor pool"s);
+        throw graphics::exception("failed to create the descriptor pool"s);
 
     else app.descriptorPool = std::move(descriptorPool.value());
 
     if (auto descriptorSet = CreateDescriptorSets(*app.device, app.descriptorPool, std::array{app.descriptorSetLayout}); !descriptorSet)
-        throw std::runtime_error("failed to create the descriptor pool"s);
+        throw graphics::exception("failed to create the descriptor pool"s);
 
     else app.descriptorSet = std::move(descriptorSet.value());
 
@@ -1108,7 +1108,7 @@ void update(app_t &app)
         void *data;
 
         if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
-            throw std::runtime_error(fmt::format("failed to map per camera uniform buffer memory: {0:#x}\n"s, result));
+            throw vulkan::exception(fmt::format("failed to map per camera uniform buffer memory: {0:#x}"s, result));
 
         std::uninitialized_copy_n(&app.camera_->data, 1, reinterpret_cast<camera::data_t *>(data));
 
@@ -1182,7 +1182,7 @@ void render_frame(app_t &app)
             break;
 
         default:
-            throw std::runtime_error(fmt::format("failed to acquire next image index: {0:#x}\n"s, result));
+            throw vulkan::exception(fmt::format("failed to acquire next image index: {0:#x}"s, result));
     }
 
     auto const wait_semaphores = std::array{ app.image_available_semaphore->handle() };
@@ -1202,7 +1202,7 @@ void render_frame(app_t &app)
     };
 
     if (auto result = vkQueueSubmit(device.graphics_queue.handle(), 1, &submit_info, VK_NULL_HANDLE); result != VK_SUCCESS)
-        throw std::runtime_error(fmt::format("failed to submit draw command buffer: {0:#x}\n"s, result));
+        throw vulkan::exception(fmt::format("failed to submit draw command buffer: {0:#x}"s, result));
 
     auto swapchain_handle = swapchain.handle();
 
@@ -1224,7 +1224,7 @@ void render_frame(app_t &app)
             break;
 
         default:
-            throw std::runtime_error(fmt::format("failed to submit request to present framebuffer: {0:#x}\n"s, result));
+            throw vulkan::exception(fmt::format("failed to submit request to present framebuffer: {0:#x}"s, result));
     }
 }
 
@@ -1245,7 +1245,7 @@ int main()
 #endif
 
     if (auto result = glfwInit(); result != GLFW_TRUE)
-        throw std::runtime_error(fmt::format("failed to init GLFW: {0:#x}\n"s, result));
+        throw std::runtime_error(fmt::format("failed to init GLFW: {0:#x}"s, result));
 
     app_t app;
 
@@ -1300,7 +1300,7 @@ stage_data(vulkan::device &device, resource::resource_manager &resource_manager,
         auto &&memory = buffer->memory();
 
         if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, &data); result != VK_SUCCESS)
-            std::cerr << "failed to map staging buffer memory: "s << result << '\n';
+            throw vulkan::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
 
         else {
             std::uninitialized_copy(std::begin(container), std::end(container), reinterpret_cast<type *>(data));
@@ -1368,7 +1368,8 @@ load_texture(app_t &app, vulkan::device &device, resource::resource_manager &res
         }
     }
 
-    else std::cerr << "failed to load an image\n"s;
+    else throw resource::exception(fmt::format("failed to load an image: {0:#x}"s, name));
+
 
     return texture;
 }
