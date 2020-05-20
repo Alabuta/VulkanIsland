@@ -81,6 +81,7 @@ find_package(glfw3 3.3 CONFIG REQUIRED)
 find_package(glm 0.9 CONFIG REQUIRED)
 find_package(nlohmann_json 3.7 CONFIG REQUIRED)
 find_package(Boost 1.68 REQUIRED)
+find_package(range-v3 CONFIG REQUIRED)
 
 if (NOT WIN32)
 	# find_package(X11 REQUIRED)
@@ -240,4 +241,6 @@ target_link_libraries(${EXECUTABLE_TARGET_NAME}
         glfw
         glm#::glm
 	    nlohmann_json::nlohmann_json
+
+        range-v3 range-v3-meta range-v3::meta range-v3-concepts
 )

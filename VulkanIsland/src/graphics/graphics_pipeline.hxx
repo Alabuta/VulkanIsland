@@ -128,7 +128,7 @@ namespace graphics
 
 template<mpl::container T>
 /* [[nodiscard]] */ std::optional<VkPipelineLayout>
-create_pipeline_layout(vulkan::device const &device, T &&descriptorSetLayouts) noexcept
+create_pipeline_layout(vulkan::device const &device, T &&descriptorSetLayouts)
 {
     static_assert(
         std::is_same_v<typename std::remove_cvref_t<T>::value_type, VkDescriptorSetLayout>,
@@ -142,14 +142,10 @@ create_pipeline_layout(vulkan::device const &device, T &&descriptorSetLayouts) n
         0, nullptr
     };
 
-    std::optional<VkPipelineLayout> pipelineLayout;
-
     VkPipelineLayout handle;
 
     if (auto result = vkCreatePipelineLayout(device.handle(), &layoutCreateInfo, nullptr, &handle); result != VK_SUCCESS)
         throw vulkan::exception(fmt::format("failed to create pipeline layout: {0:#x}"s, result));
 
-    else pipelineLayout.emplace(handle);
-
-    return pipelineLayout;
+    return handle;
 }
