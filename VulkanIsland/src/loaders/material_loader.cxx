@@ -10,6 +10,8 @@ namespace fs = std::filesystem;
 #include <string>
 using namespace std::string_literals;
 
+#include <range/v3/all.hpp>
+
 #include <fmt/format.h>
 
 #include <nlohmann/json.hpp>
@@ -21,6 +23,11 @@ using namespace std::string_literals;
 
 namespace loader
 {
+    struct technique final {
+        std::vector<material_description::shader_bundle> shaders_bundle;
+        std::vector<std::vector<std::size_t>> vertex_layouts;
+    };
+
     std::optional<graphics::SHADER_STAGE> shader_stage_semantic(std::string_view name)
     {
         static const std::unordered_map<std::string_view, graphics::SHADER_STAGE> stages{
@@ -323,7 +330,7 @@ namespace nlohmann
         shader_module.name = j.at("name"s).get<std::string>();
     }
 
-    void from_json(nlohmann::json const &j, loader::material_description::vertex_attribute &vertex_attribute)
+    void from_json(nlohmann::json const &j, graphics::vertex_attribute &vertex_attribute)
     {
         if (auto semantic = loader::attribute_semantic(j.at("semantic"s).get<std::string>()); semantic)
             vertex_attribute.semantic = *semantic;
@@ -357,16 +364,31 @@ namespace nlohmann
             shader_bundle.specialization_constants = j.at("specializationConstants"s).get<specialization_constants>();
     }
 
-    void from_json(nlohmann::json const &j, loader::material_description::technique &technique)
+    void from_json(nlohmann::json const &j, loader::technique &technique)
     {
         technique.shaders_bundle = j.at("shadersBundle"s).get<std::vector<loader::material_description::shader_bundle>>();
 
-        technique.vertex_layouts = j.at("vertexLayouts"s).get<std::vector<loader::material_description::vertex_layout>>();
+        technique.vertex_layouts = j.at("vertexLayouts"s).get<std::vector<std::vector<std::size_t>>>();
     }
 }
 
 namespace loader
 {
+    auto transform_technique = [] (loader::technique const &technique)
+    {
+        using namespace ranges;
+
+        auto transform_vertex_layout = [&] (std::vector<std::size_t> const &indices)
+        {
+            auto x = indices | ranges::views::transform([&] (auto index)
+            {
+                ;
+            });
+        };
+
+        auto y = technique.vertex_layouts | ranges::views::transform(transform_vertex_layout);
+    };
+
     loader::material_description load_material_description(std::string_view name)
     {
         nlohmann::json json;
@@ -389,9 +411,15 @@ namespace loader
 
         auto shader_modules = json.at("shaderModules"s).get<std::vector<material_description::shader_module>>();
 
-        auto techniques = json.at("techniques"s).get<std::vector<material_description::technique>>();
+        auto vertex_attributes = json.at("vertexAttributes"s).get<std::vector<graphics::vertex_attribute>>();
 
-        auto vertex_attributes = json.at("vertexAttributes"s).get<std::vector<material_description::vertex_attribute>>();
+        auto techniques = json.at("techniques"s).get<std::vector<loader::technique>>();
+
+        using namespace ranges;
+
+        auto x = techniques | ranges::view::transform(transform_technique);
+
+        //std::vector<graphics::vertex_layout>
 
         return loader::material_description{
             std::string{name},

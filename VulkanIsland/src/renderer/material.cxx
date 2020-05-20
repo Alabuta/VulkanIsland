@@ -17,10 +17,83 @@ using namespace std::string_view_literals;
 #include "material.hxx"
 
 
+namespace
+{
+    bool compatible(std::vector<loader::material_description::vertex_attribute> const &vertex_attributes,
+                    loader::material_description::technique const &technique, graphics::vertex_layout const &required_vertex_layout)
+    {
+        using namespace ranges;
+
+        auto &&required_vertex_attributes = required_vertex_layout.attributes;
+
+        auto pred_0 = [&required_attributes = required_vertex_layout.attributes] (auto &&indices)
+        {
+            return std::size(required_attributes) >= std::size(indices);
+        };
+
+        auto pred_1 = [&] (auto vertex_layout_index, auto &&required_attribute)
+        {
+            auto &&attribute_description = vertex_attributes.at(vertex_layout_index);
+
+            if (required_attribute.semantic != attribute_description.semantic)
+                return false;
+
+            if (required_attribute.format != attribute_description.format)
+                return false;
+
+            return true;
+        };
+
+        auto pred_2 = [&] (auto &&indices)
+        {
+            /*auto zipped = ranges::view::zip(indices, required_vertex_attributes);
+
+            auto y = ranges::view::filter(zipped, pred_1);*/
+
+            auto x = ranges::view::set_intersection(indices, required_vertex_attributes, pred_1);
+
+            return true;
+        };
+
+        auto vertex_layouts = technique.vertex_layouts
+                            | ranges::views::filter(pred_0)
+                            | ranges::views::filter(pred_2);
+
+        /*for (auto &&vertex_layout_indices : technique.vertex_layouts) {
+            graphics::vertex_layout vertex_layout{0, { }};
+
+            auto &offset_in_bytes = vertex_layout.size_in_bytes;
+
+            auto attributes = vertex_layout_indices | ranges::views::transform([&] (auto vertex_layout_index)
+            {
+                auto [semantic, format] = vertex_attributes.at(vertex_layout_index);
+
+                graphics::vertex_attribute vertex_attribute{semantic, format, offset_in_bytes};
+
+                if (auto fmt = graphics::instantiate_format(format); fmt) {
+                    offset_in_bytes += std::visit([] (auto &&format)
+                    {
+                        return sizeof(std::remove_cvref_t<decltype(format)>);
+                    }, *fmt);
+                }
+
+                else throw graphics::exception("unsupported format"s);
+
+                return vertex_attribute;
+
+            }) | ranges::to<std::vector<graphics::vertex_attribute>>();
+
+            fmt::print("{}", attributes.size());
+        }*/
+
+        return false;
+    }
+}
+
 namespace graphics
 {
     std::shared_ptr<graphics::material>
-    material_factory::material(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &)
+    material_factory::material(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &required_vertex_layout)
     {
         /*auto vertexl_layout_name = graphics::to_string(vl);
         auto full_name = fmt::format("{}.{}.{}"s, name, technique_index, vertexl_layout_name);
@@ -66,34 +139,8 @@ namespace graphics
 
         auto &&vertex_attributes = description.vertex_attributes;
 
-        using namespace ranges;
+        compatible(vertex_attributes, technique, required_vertex_layout);
 
-        for (auto &&vertex_layout_indices : technique.vertex_layouts) {
-            graphics::vertex_layout vertex_layout{0, { }};
-
-            auto &offset_in_bytes = vertex_layout.size_in_bytes;
-
-            auto attributes = vertex_layout_indices | ranges::views::transform([&] (auto vertex_layout_index)
-            {
-                auto [semantic, format] = vertex_attributes.at(vertex_layout_index);
-
-                graphics::vertex_attribute vertex_attribute{semantic, format, offset_in_bytes};
-
-                if (auto fmt = graphics::instantiate_format(format); fmt) {
-                    offset_in_bytes += std::visit([] (auto &&format)
-                    {
-                        return sizeof(std::remove_cvref_t<decltype(format)>);
-                    }, *fmt);
-                }
-
-                else throw graphics::exception("unsupported format"s);
-
-                return vertex_attribute;
-
-            }) | ranges::to<std::vector<graphics::vertex_attribute>>();
-
-            fmt::print("{}", attributes.size());
-        }
 
         /*std::transform(std::cbegin(technique.vertex_layout), std::cend(technique.vertex_layout),
                        std::back_inserter(vertex_layout.attributes),
