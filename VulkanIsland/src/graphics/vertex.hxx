@@ -13,7 +13,7 @@
 
 namespace vertex
 {
-    enum class eSEMANTIC_INDEX : std::uint32_t {
+    enum class SEMANTIC : std::uint32_t {
         POSITION = 0,
         NORMAL,
         TEXCOORD_0,
@@ -24,29 +24,29 @@ namespace vertex
         WEIGHTS_0
     };
 
-    template<eSEMANTIC_INDEX SI>
+    /*template<SEMANTIC SI>
     struct semantic {
-        static eSEMANTIC_INDEX constexpr semantic_index{SI};
+        static SEMANTIC constexpr semantic_index{SI};
         static auto constexpr index{static_cast<std::uint32_t>(SI)};
 
-        template<eSEMANTIC_INDEX si>
+        template<SEMANTIC si>
         auto constexpr operator< (semantic<si>) const noexcept { return SI < si; }
 
-        template<eSEMANTIC_INDEX si>
+        template<SEMANTIC si>
         auto constexpr operator== (semantic<si>) const noexcept { return SI == si; }
-    };
+    };*/
 }
 
 namespace vertex
 {
-    struct position final : semantic<eSEMANTIC_INDEX::POSITION> { };
-    struct normal final : semantic<eSEMANTIC_INDEX::NORMAL> { };
-    struct tex_coord_0 final : semantic<eSEMANTIC_INDEX::TEXCOORD_0> { };
-    struct tex_coord_1 final : semantic<eSEMANTIC_INDEX::TEXCOORD_1> { };
-    struct tangent final : semantic<eSEMANTIC_INDEX::TANGENT> { };
-    struct color_0 final : semantic<eSEMANTIC_INDEX::COLOR_0> { };
-    struct joints_0 final : semantic<eSEMANTIC_INDEX::JOINTS_0> { };
-    struct weights_0 final : semantic<eSEMANTIC_INDEX::WEIGHTS_0> { };
+    /*struct position final : semantic<SEMANTIC::POSITION> { };
+    struct normal final : semantic<SEMANTIC::NORMAL> { };
+    struct tex_coord_0 final : semantic<SEMANTIC::TEXCOORD_0> { };
+    struct tex_coord_1 final : semantic<SEMANTIC::TEXCOORD_1> { };
+    struct tangent final : semantic<SEMANTIC::TANGENT> { };
+    struct color_0 final : semantic<SEMANTIC::COLOR_0> { };
+    struct joints_0 final : semantic<SEMANTIC::JOINTS_0> { };
+    struct weights_0 final : semantic<SEMANTIC::WEIGHTS_0> { };
 
     using attribute_semantic = std::variant<
         position,
@@ -57,13 +57,13 @@ namespace vertex
         color_0,
         joints_0,
         weights_0
-    >;
+    >;*/
 }
 
 namespace graphics
 {
     struct vertex_attribute final {
-        vertex::attribute_semantic semantic;
+        vertex::SEMANTIC semantic;
         graphics::FORMAT format;
 
         template<class T> requires mpl::same_as<std::remove_cvref_t<T>, vertex_attribute>
@@ -128,10 +128,10 @@ namespace graphics
 
 namespace vertex
 {
-    std::size_t compile_vertex_attributes(graphics::vertex_layout &vertex_layout, vertex::attribute_semantic semantic, graphics::FORMAT format);
+    std::size_t compile_vertex_attributes(graphics::vertex_layout &vertex_layout, vertex::SEMANTIC semantic, graphics::FORMAT format);
 
     template<class... Ts>
-    std::size_t compile_vertex_attributes(graphics::vertex_layout &vertex_layout, vertex::attribute_semantic semantic, graphics::FORMAT format, Ts ...args)
+    std::size_t compile_vertex_attributes(graphics::vertex_layout &vertex_layout, vertex::SEMANTIC semantic, graphics::FORMAT format, Ts ...args)
     {
         auto size_in_bytes = compile_vertex_attributes(vertex_layout, semantic, format);
 

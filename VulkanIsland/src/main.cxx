@@ -636,7 +636,7 @@ namespace temp
         xformat model_;
     
         auto constexpr vertexCountPerMeshlet = 3u;
-
+    #if 0
         {
             // First triangle
             struct vertex_struct final {
@@ -648,10 +648,10 @@ namespace temp
             auto const vertex_layout_index = std::size(model_.vertex_layouts);
 
             auto vertex_layout = vertex::create_vertex_layout(
-                vertex::position{}, graphics::FORMAT::RGB32_SFLOAT,
-                //vertex::normal{}, decltype(vertex_struct::normal){}, false,
-                vertex::tex_coord_0{}, graphics::FORMAT::RG32_SFLOAT,
-                vertex::color_0{}, graphics::FORMAT::RGB32_SFLOAT
+                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
+                //vertex::SEMANTIC::NORMAL, decltype(vertex_struct::normal){}, false,
+                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG32_SFLOAT,
+                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGB32_SFLOAT
             );
 
             model_.vertex_layouts.push_back(vertex_layout);
@@ -716,9 +716,9 @@ namespace temp
 
             model_.vertex_layouts.push_back(
                 vertex::create_vertex_layout(
-                    vertex::position{}, graphics::FORMAT::RGB32_SFLOAT,
-                    vertex::tex_coord_0{}, graphics::FORMAT::RG32_SFLOAT,
-                    vertex::color_0{}, graphics::FORMAT::RGBA32_SFLOAT
+                    vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
+                    vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG32_SFLOAT,
+                    vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA32_SFLOAT
                 )
             );
 
@@ -815,9 +815,9 @@ namespace temp
             auto const vertex_layout_index = std::size(model_.vertex_layouts);
 
             auto vertex_layout = vertex::create_vertex_layout(
-                vertex::position{}, graphics::FORMAT::RGB32_SFLOAT,
-                vertex::tex_coord_0{}, graphics::FORMAT::RG32_SFLOAT,
-                vertex::color_0{}, graphics::FORMAT::RGB32_SFLOAT
+                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
+                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG32_SFLOAT,
+                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGB32_SFLOAT
             );
 
             model_.vertex_layouts.push_back(vertex_layout);
@@ -874,13 +874,13 @@ namespace temp
                 std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
             }
         }
-    
+    #endif
         {
             auto vertex_layout = vertex::create_vertex_layout(
-                vertex::position{}, graphics::FORMAT::RGB32_SFLOAT,
-                vertex::normal{}, graphics::FORMAT::RG8_SNORM,
-                vertex::tex_coord_0{}, graphics::FORMAT::RG16_UNORM,
-                vertex::color_0{}, graphics::FORMAT::RGB8_UNORM
+                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
+                vertex::SEMANTIC::NORMAL, graphics::FORMAT::RG16_SNORM,
+                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
+                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGB8_UNORM
             );
 
             auto const vertex_layout_index = std::size(model_.vertex_layouts);
@@ -906,7 +906,7 @@ namespace temp
                 meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
                 meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count);
 
-                meshlet.material_index = 4;
+                meshlet.material_index = 1;
                 meshlet.instance_count = 1;
                 meshlet.first_instance = 0;
 
@@ -926,13 +926,9 @@ namespace temp
         }
 
         model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
-        model_.materials.push_back(xformat::material{1, "debug/texture-coordinate-debug"s});
         model_.materials.push_back(xformat::material{0, "debug/color-debug-material"s});
         model_.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
-        model_.materials.push_back(xformat::material{2, "debug/color-debug-material"s});
         model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
-        model_.materials.push_back(xformat::material{1, "debug/normal-debug"s});
-        model_.materials.push_back(xformat::material{2, "debug/normal-debug"s});
 
         return model_;
     }

@@ -279,10 +279,10 @@ namespace primitives
         std::size_t offset_in_bytes = 0;
 
         for (auto &&attribute : attributes) {
-            auto attribute_semantic = std::visit([] (auto semantic)
+            /*auto attribute_semantic = std::visit([] (auto semantic)
             {
                 return semantic.semantic_index;
-            }, attribute.semantic);
+            }, attribute.semantic);*/
 
             if (auto format_inst = graphics::instantiate_format(attribute.format); format_inst) {
                 std::visit([&] (auto &&format_inst)
@@ -296,20 +296,20 @@ namespace primitives
 
                     auto it = strided_bidirectional_iterator<type>{data, vertex_size};
 
-                    switch (attribute_semantic) {
-                        case vertex::eSEMANTIC_INDEX::POSITION:
+                    switch (attribute.semantic) {
+                        case vertex::SEMANTIC::POSITION:
                             generate_positions(attribute.format, width, height, hsegments, vsegments, it, vertex_count);
                             break;
 
-                        case vertex::eSEMANTIC_INDEX::NORMAL:
+                        case vertex::SEMANTIC::NORMAL:
                             generate_normals(attribute.format, it, vertex_count);
                             break;
 
-                        case vertex::eSEMANTIC_INDEX::TEXCOORD_0:
+                        case vertex::SEMANTIC::TEXCOORD_0:
                             generate_texcoords(attribute.format, it, hsegments, vsegments, vertex_count);
                             break;
 
-                        case vertex::eSEMANTIC_INDEX::COLOR_0:
+                        case vertex::SEMANTIC::COLOR_0:
                             generate_colors(color, attribute.format, it, hsegments, vsegments, vertex_count);
                             break;
 

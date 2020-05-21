@@ -27,8 +27,7 @@ namespace loader
         std::vector<shader_module> shader_modules;
 
         struct vertex_attribute final {
-            vertex::attribute_semantic semantic;
-
+            vertex::SEMANTIC semantic;
             graphics::FORMAT format;
         };
 

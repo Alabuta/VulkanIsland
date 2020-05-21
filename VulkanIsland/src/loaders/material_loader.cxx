@@ -38,17 +38,17 @@ namespace loader
         return { };
     }
 
-    std::optional<vertex::attribute_semantic> attribute_semantic(std::string_view name)
+    std::optional<vertex::SEMANTIC> attribute_semantic(std::string_view name)
     {
-        static const std::unordered_map<std::string_view, vertex::attribute_semantic> semantics{
-            {"POSITION"sv, vertex::position{ }},
-            {"NORMAL"sv, vertex::normal{ }},
-            {"TEXCOORD_0"sv, vertex::tex_coord_0{ }},
-            {"TEXCOORD_1"sv, vertex::tex_coord_1{ }},
-            {"TANGENT"sv, vertex::tangent{ }},
-            {"COLOR_0"sv, vertex::color_0{ }},
-            {"JOINTS_0"sv, vertex::joints_0{ }},
-            {"WEIGHTS_0"sv, vertex::weights_0{ }}
+        static const std::unordered_map<std::string_view, vertex::SEMANTIC> semantics{
+            {"POSITION"sv, vertex::SEMANTIC::POSITION},
+            {"NORMAL"sv, vertex::SEMANTIC::NORMAL},
+            {"TEXCOORD_0"sv, vertex::SEMANTIC::TEXCOORD_0},
+            {"TEXCOORD_1"sv, vertex::SEMANTIC::TEXCOORD_1},
+            {"TANGENT"sv, vertex::SEMANTIC::TANGENT},
+            {"COLOR_0"sv, vertex::SEMANTIC::COLOR_0},
+            {"JOINTS_0"sv, vertex::SEMANTIC::JOINTS_0},
+            {"WEIGHTS_0"sv, vertex::SEMANTIC::WEIGHTS_0}
         };
 
         if (auto it = semantics.find(name); it != std::end(semantics))

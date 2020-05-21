@@ -12,6 +12,7 @@ using namespace std::string_view_literals;
 
 #include <range/v3/all.hpp>
 
+#include "graphics/graphics.hxx"
 #include "graphics/graphics_api.hxx"
 
 #include "material.hxx"
@@ -19,7 +20,7 @@ using namespace std::string_view_literals;
 
 namespace
 {
-    bool compatible(std::vector<loader::material_description::vertex_attribute> const &vertex_attributes,
+    bool compatible(std::vector<loader::material_description::vertex_attribute> const &material_vertex_attributes,
                     loader::material_description::technique const &technique, graphics::vertex_layout const &required_vertex_layout)
     {
         using namespace ranges;
@@ -31,33 +32,53 @@ namespace
             return std::size(required_attributes) >= std::size(indices);
         };
 
-        auto pred_1 = [&] (auto vertex_layout_index, auto &&required_attribute)
+        auto pred_1 = [&] (auto &&lhs, auto &&rhs)
         {
-            auto &&attribute_description = vertex_attributes.at(vertex_layout_index);
-
-            if (required_attribute.semantic != attribute_description.semantic)
+            if (lhs.semantic != rhs.semantic)
                 return false;
 
-            if (required_attribute.format != attribute_description.format)
+            if (lhs.format != rhs.format)
                 return false;
 
             return true;
         };
+
+        auto b = [&] (auto index) { return material_vertex_attributes.at(index); };
 
         auto pred_2 = [&] (auto &&indices)
         {
-            /*auto zipped = ranges::view::zip(indices, required_vertex_attributes);
+            if (std::size(required_vertex_layout.attributes) < std::size(indices))
+                return false;
 
-            auto y = ranges::view::filter(zipped, pred_1);*/
+            auto vertex_attributes = indices
+                                   | ranges::view::transform([&] (auto index) { return material_vertex_attributes.at(index); });
 
-            auto x = ranges::view::set_intersection(indices, required_vertex_attributes, pred_1);
+            auto intersection = ranges::view::set_intersection(required_vertex_attributes, vertex_attributes, pred_1);
 
-            return true;
+            return ranges::distance(intersection) == ranges::distance(indices);
         };
 
+        /*for (auto &&indices : technique.vertex_layouts | ranges::views::filter(pred_0)) {
+            ;
+        }*/
+
         auto vertex_layouts = technique.vertex_layouts
-                            | ranges::views::filter(pred_0)
+                            //| ranges::views::filter(pred_0)
                             | ranges::views::filter(pred_2);
+                            //| ranges::views::transform(b)
+                            //| ranges::to<std::vector<graphics::vertex_layout>>();
+
+        if (ranges::distance(vertex_layouts) == 0)
+            return false;
+
+        auto vl = ranges::front(vertex_layouts) | ranges::views::transform(b);// | ranges::to<graphics::vertex_layout>();
+
+        for (auto &&xxx : vl) {
+            fmt::print("{}", graphics::to_string(xxx.semantic));
+        }
+
+        fmt::print("{}", ranges::distance(vertex_layouts));
+
 
         /*for (auto &&vertex_layout_indices : technique.vertex_layouts) {
             graphics::vertex_layout vertex_layout{0, { }};
@@ -174,8 +195,21 @@ namespace graphics
     {
         auto key = std::string{name};
 
-        if (material_descriptions_.count(key) == 0)
-            material_descriptions_.emplace(key, loader::load_material_description(name));
+        if (material_descriptions_.count(key) == 0) {
+            auto material_description = loader::load_material_description(name);
+            auto &&vertex_attributes = material_description.vertex_attributes;
+
+            for (auto &&technique : material_description.techniques) {
+                for (auto &&indices : technique.vertex_layouts) {
+                    ranges::sort(indices, [&] (auto lhs, auto rhs)
+                    {
+                        return vertex_attributes.at(lhs).semantic < vertex_attributes.at(rhs).semantic;
+                    });
+                }
+            }
+
+            material_descriptions_.emplace(key, std::move(material_description));
+        }
 
         return material_descriptions_.at(key);
     }

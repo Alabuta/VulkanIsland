@@ -33,7 +33,7 @@ namespace graphics
     public:
 
         [[nodiscard]] std::shared_ptr<graphics::material>
-        material(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &vertex_layout);
+        material(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &required_vertex_layout);
 
     private:
 

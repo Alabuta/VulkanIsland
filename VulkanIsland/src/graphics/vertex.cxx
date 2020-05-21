@@ -10,7 +10,7 @@ using namespace std::string_literals;
 
 namespace vertex
 {
-    std::size_t compile_vertex_attributes(graphics::vertex_layout &vertex_layout, vertex::attribute_semantic semantic, graphics::FORMAT format)
+    std::size_t compile_vertex_attributes(graphics::vertex_layout &vertex_layout, vertex::SEMANTIC semantic, graphics::FORMAT format)
     {
         vertex_layout.attributes.push_back(graphics::vertex_attribute{semantic, format});
 
@@ -30,12 +30,13 @@ namespace graphics
 {
     std::uint32_t get_vertex_attribute_semantic_index(graphics::vertex_attribute const &vertex_attribute)
     {
-        return std::visit([] (auto semantic)
+        return static_cast<std::uint32_t>(vertex_attribute.semantic);
+        /*return std::visit([] (auto semantic)
         {
             using S = std::remove_cvref_t<decltype(semantic)>;
             return S::index;
 
-        }, vertex_attribute.semantic);
+        }, vertex_attribute.semantic);*/
     }
 }
 
@@ -45,7 +46,8 @@ namespace graphics
     {
         std::size_t seed = 0;
 
-        boost::hash_combine(seed, attribute.semantic.index());
+        boost::hash_combine(seed, attribute.semantic);
+        //boost::hash_combine(seed, attribute.semantic.index());
         boost::hash_combine(seed, attribute.format);
 
         return seed;
@@ -92,40 +94,40 @@ namespace graphics
 namespace graphics
 {
     template<>
-    std::string to_string(vertex::attribute_semantic const &semantic)
+    std::string to_string(vertex::SEMANTIC const &semantic)
     {
-        return std::visit([] (auto semantic)
-        {
-            switch (static_cast<vertex::eSEMANTIC_INDEX>(semantic.index)) {
-                case vertex::eSEMANTIC_INDEX::POSITION:
+        /*return std::visit([] (auto semantic)
+        {*/
+            switch (semantic) {
+                case vertex::SEMANTIC::POSITION:
                     return "position"s;
 
-                case vertex::eSEMANTIC_INDEX::NORMAL:
+                case vertex::SEMANTIC::NORMAL:
                     return "normal"s;
 
-                case vertex::eSEMANTIC_INDEX::TEXCOORD_0:
+                case vertex::SEMANTIC::TEXCOORD_0:
                     return "texcoord_0"s;
 
-                case vertex::eSEMANTIC_INDEX::TEXCOORD_1:
+                case vertex::SEMANTIC::TEXCOORD_1:
                     return "texcoord_1"s;
 
-                case vertex::eSEMANTIC_INDEX::TANGENT:
+                case vertex::SEMANTIC::TANGENT:
                     return "tangent"s;
 
-                case vertex::eSEMANTIC_INDEX::COLOR_0:
+                case vertex::SEMANTIC::COLOR_0:
                     return "color_0"s;
 
-                case vertex::eSEMANTIC_INDEX::JOINTS_0:
+                case vertex::SEMANTIC::JOINTS_0:
                     return "joints_0"s;
 
-                case vertex::eSEMANTIC_INDEX::WEIGHTS_0:
+                case vertex::SEMANTIC::WEIGHTS_0:
                     return "weights_0"s;
 
                 default:
                     return ""s;
             }
 
-        }, semantic);
+        //}, semantic);
     }
 
     template<>
