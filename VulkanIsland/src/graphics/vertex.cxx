@@ -8,6 +8,24 @@ using namespace std::string_literals;
 #include "vertex.hxx"
 
 
+namespace vertex
+{
+    std::size_t compile_vertex_attributes(graphics::vertex_layout &vertex_layout, vertex::attribute_semantic semantic, graphics::FORMAT format)
+    {
+        vertex_layout.attributes.push_back(graphics::vertex_attribute{semantic, format});
+
+        if (auto format_inst = graphics::instantiate_format(format); format_inst) {
+            return std::visit([] (auto &&format_inst)
+            {
+                return sizeof(std::remove_cvref_t<decltype(format_inst)>);
+
+            }, *format_inst);
+        }
+
+        else throw graphics::exception("unsupported format");
+    }
+}
+
 namespace graphics
 {
     std::uint32_t get_vertex_attribute_semantic_index(graphics::vertex_attribute const &vertex_attribute)
@@ -29,7 +47,6 @@ namespace graphics
 
         boost::hash_combine(seed, attribute.semantic.index());
         boost::hash_combine(seed, attribute.format);
-        boost::hash_combine(seed, attribute.offset_in_bytes);
 
         return seed;
     }

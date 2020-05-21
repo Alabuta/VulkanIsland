@@ -26,13 +26,13 @@ namespace loader
 
         std::vector<shader_module> shader_modules;
 
-        /*struct vertex_attribute final {
+        struct vertex_attribute final {
             vertex::attribute_semantic semantic;
 
             graphics::FORMAT format;
-        };*/
+        };
 
-        std::vector<graphics::vertex_attribute> vertex_attributes;
+        std::vector<vertex_attribute> vertex_attributes;
 
         using specialization_constant = std::variant<std::int32_t, boost::float32_t>;
 
@@ -43,11 +43,11 @@ namespace loader
             std::vector<specialization_constant> specialization_constants;
         };
 
-        //using vertex_layout = std::vector<std::size_t>;
+        using vertex_layout = std::vector<std::size_t>;
 
         struct technique final {
             std::vector<shader_bundle> shaders_bundle;
-            std::vector<graphics::vertex_layout> vertex_layouts;
+            std::vector<vertex_layout> vertex_layouts;
         };
 
         std::vector<technique> techniques;

@@ -66,8 +66,6 @@ namespace graphics
         vertex::attribute_semantic semantic;
         graphics::FORMAT format;
 
-        std::size_t offset_in_bytes{0};
-
         template<class T> requires mpl::same_as<std::remove_cvref_t<T>, vertex_attribute>
         auto constexpr operator< (T &&rhs) const
         {
@@ -77,9 +75,7 @@ namespace graphics
         template<class T> requires mpl::same_as<std::remove_cvref_t<T>, vertex_attribute>
         auto constexpr operator== (T &&rhs) const
         {
-            return offset_in_bytes == rhs.offset_in_bytes &&
-                semantic == rhs.semantic &&
-                format == rhs.format;
+            return semantic == rhs.semantic && format == rhs.format;
         }
     };
 
@@ -128,48 +124,28 @@ namespace graphics
     };
 
     std::uint32_t get_vertex_attribute_semantic_index(graphics::vertex_attribute const &vertex_attribute);
-
 }
 
 namespace vertex
 {
-    template<class S, class T>
-    void compile_vertex_attributes(std::vector<graphics::vertex_attribute> &attributes, S semantic, T format)
-    {
-        attributes.push_back(graphics::vertex_attribute{semantic, format, 0});
-    }
+    std::size_t compile_vertex_attributes(graphics::vertex_layout &vertex_layout, vertex::attribute_semantic semantic, graphics::FORMAT format);
 
-    template<class S, class T, class... Ts>
-    void compile_vertex_attributes(std::vector<graphics::vertex_attribute> &attributes, S semantic, T format, Ts ...args)
+    template<class... Ts>
+    std::size_t compile_vertex_attributes(graphics::vertex_layout &vertex_layout, vertex::attribute_semantic semantic, graphics::FORMAT format, Ts ...args)
     {
-        attributes.push_back(graphics::vertex_attribute{semantic, format, 0});
+        auto size_in_bytes = compile_vertex_attributes(vertex_layout, semantic, format);
 
-        compile_vertex_attributes(attributes, args...);
+        return size_in_bytes + compile_vertex_attributes(vertex_layout, args...);
     }
 
     template<class... Ts>
     graphics::vertex_layout create_vertex_layout(Ts ...args)
     {
-        graphics::vertex_layout vertex_layout{0, { }};
+        graphics::vertex_layout vertex_layout;
 
-        auto &&vertex_attributes = vertex_layout.attributes;
+        vertex_layout.size_in_bytes = compile_vertex_attributes(vertex_layout, args...);
 
-        compile_vertex_attributes(vertex_attributes, args...);
-
-        std::sort(std::begin(vertex_attributes), std::end(vertex_attributes));
-
-        for (auto &&vertex_attribute : vertex_attributes) {
-            vertex_attribute.offset_in_bytes += vertex_layout.size_in_bytes;
-
-            if (auto format = graphics::instantiate_format(vertex_attribute.format); format) {
-                vertex_layout.size_in_bytes += std::visit([] (auto &&format)
-                {
-                    return sizeof(std::remove_cvref_t<decltype(format)>);
-                }, *format);
-            }
-
-            else throw graphics::exception("unsupported format");
-        }
+        std::sort(std::begin(vertex_layout.attributes), std::end(vertex_layout.attributes));
 
         return vertex_layout;
     }

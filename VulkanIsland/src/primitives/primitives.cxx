@@ -276,6 +276,8 @@ namespace primitives
 
         auto &&attributes = vertex_layout.attributes;
 
+        std::size_t offset_in_bytes = 0;
+
         for (auto &&attribute : attributes) {
             auto attribute_semantic = std::visit([] (auto semantic)
             {
@@ -288,7 +290,9 @@ namespace primitives
                     using type = typename std::remove_cvref_t<decltype(format_inst)>;
                     using pointer_type = typename std::add_pointer_t<type>;
 
-                    auto data = reinterpret_cast<pointer_type>(std::data(bytes) + attribute.offset_in_bytes);
+                    auto data = reinterpret_cast<pointer_type>(std::data(bytes) + offset_in_bytes);
+
+                    offset_in_bytes += sizeof(type);
 
                     auto it = strided_bidirectional_iterator<type>{data, vertex_size};
 
