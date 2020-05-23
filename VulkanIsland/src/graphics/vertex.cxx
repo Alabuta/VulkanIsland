@@ -93,45 +93,39 @@ namespace graphics
 
 namespace graphics
 {
-    template<>
-    std::string to_string(vertex::SEMANTIC const &semantic)
+    std::string to_string(vertex::SEMANTIC semantic)
     {
-        /*return std::visit([] (auto semantic)
-        {*/
-            switch (semantic) {
-                case vertex::SEMANTIC::POSITION:
-                    return "position"s;
+        switch (semantic) {
+            case vertex::SEMANTIC::POSITION:
+                return "position"s;
 
-                case vertex::SEMANTIC::NORMAL:
-                    return "normal"s;
+            case vertex::SEMANTIC::NORMAL:
+                return "normal"s;
 
-                case vertex::SEMANTIC::TEXCOORD_0:
-                    return "texcoord_0"s;
+            case vertex::SEMANTIC::TEXCOORD_0:
+                return "texcoord_0"s;
 
-                case vertex::SEMANTIC::TEXCOORD_1:
-                    return "texcoord_1"s;
+            case vertex::SEMANTIC::TEXCOORD_1:
+                return "texcoord_1"s;
 
-                case vertex::SEMANTIC::TANGENT:
-                    return "tangent"s;
+            case vertex::SEMANTIC::TANGENT:
+                return "tangent"s;
 
-                case vertex::SEMANTIC::COLOR_0:
-                    return "color_0"s;
+            case vertex::SEMANTIC::COLOR_0:
+                return "color_0"s;
 
-                case vertex::SEMANTIC::JOINTS_0:
-                    return "joints_0"s;
+            case vertex::SEMANTIC::JOINTS_0:
+                return "joints_0"s;
 
-                case vertex::SEMANTIC::WEIGHTS_0:
-                    return "weights_0"s;
+            case vertex::SEMANTIC::WEIGHTS_0:
+                return "weights_0"s;
 
-                default:
-                    return ""s;
-            }
-
-        //}, semantic);
+            default:
+                return ""s;
+        }
     }
 
-    template<>
-    std::string to_string(graphics::FORMAT const &format)
+    std::string to_string(graphics::FORMAT format)
     {
         switch (format) {
             // Signed and usigned byte integer formats.
@@ -212,7 +206,6 @@ namespace graphics
         }
     }
 
-    template<>
     std::string to_string(graphics::vertex_layout const &layout)
     {
         std::string str;
@@ -224,7 +217,7 @@ namespace graphics
             if (str.empty())
                 str = fmt::format("{}:{}"s, semantic, format);
 
-            else str = fmt::format("{}-{}:{}"s, str, semantic, format);
+            else str = fmt::format("{}|{}:{}"s, str, semantic, format);
         }
 
         return str;

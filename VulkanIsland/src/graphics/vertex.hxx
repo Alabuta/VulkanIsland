@@ -23,41 +23,6 @@ namespace vertex
         JOINTS_0,
         WEIGHTS_0
     };
-
-    /*template<SEMANTIC SI>
-    struct semantic {
-        static SEMANTIC constexpr semantic_index{SI};
-        static auto constexpr index{static_cast<std::uint32_t>(SI)};
-
-        template<SEMANTIC si>
-        auto constexpr operator< (semantic<si>) const noexcept { return SI < si; }
-
-        template<SEMANTIC si>
-        auto constexpr operator== (semantic<si>) const noexcept { return SI == si; }
-    };*/
-}
-
-namespace vertex
-{
-    /*struct position final : semantic<SEMANTIC::POSITION> { };
-    struct normal final : semantic<SEMANTIC::NORMAL> { };
-    struct tex_coord_0 final : semantic<SEMANTIC::TEXCOORD_0> { };
-    struct tex_coord_1 final : semantic<SEMANTIC::TEXCOORD_1> { };
-    struct tangent final : semantic<SEMANTIC::TANGENT> { };
-    struct color_0 final : semantic<SEMANTIC::COLOR_0> { };
-    struct joints_0 final : semantic<SEMANTIC::JOINTS_0> { };
-    struct weights_0 final : semantic<SEMANTIC::WEIGHTS_0> { };
-
-    using attribute_semantic = std::variant<
-        position,
-        normal,
-        tex_coord_0,
-        tex_coord_1,
-        tangent,
-        color_0,
-        joints_0,
-        weights_0
-    >;*/
 }
 
 namespace graphics
@@ -172,4 +137,10 @@ namespace graphics
     struct hash<graphics::vertex_input_attribute> {
         std::size_t operator() (graphics::vertex_input_attribute const &input_attribute) const;
     };
+
+    std::string to_string(vertex::SEMANTIC semantic);
+
+    std::string to_string(graphics::FORMAT format);
+
+    std::string to_string(graphics::vertex_layout const &layout);
 }

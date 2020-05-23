@@ -19,9 +19,6 @@ namespace graphics
 
     template<class T>
     struct compatibility;
-
-    template<class T>
-    std::string to_string(T &&);
 }
 
 namespace graphics
