@@ -15,7 +15,6 @@
 namespace graphics
 {
     struct material final {
-
         material(std::vector<graphics::shader_stage> shader_stages, graphics::vertex_layout vertex_layout)
             : shader_stages{shader_stages}, vertex_layout{vertex_layout}  { }
 
@@ -32,12 +31,13 @@ namespace graphics
     class material_factory final {
     public:
 
+        // TODO:: replace 'renderable_vertex_layout' method argument by reference to renderable instance.
         [[nodiscard]] std::shared_ptr<graphics::material>
-        material(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &required_vertex_layout);
+        material(std::string_view name, std::uint32_t technique, graphics::vertex_layout const &renderable_vertex_layout);
 
     private:
 
-        std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<graphics::material>> materials_;
+        std::map<std::string, std::shared_ptr<graphics::material>> materials_;
 
         // TODO:: move to general loader manager.
         std::unordered_map<std::string, loader::material_description> material_descriptions_;

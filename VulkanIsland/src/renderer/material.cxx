@@ -1,3 +1,5 @@
+#include <optional>
+
 #include <string>
 using namespace std::string_literals;
 
@@ -12,7 +14,6 @@ using namespace std::string_view_literals;
 
 #include <range/v3/all.hpp>
 
-#include "graphics/graphics.hxx"
 #include "graphics/graphics_api.hxx"
 
 #include "material.hxx"
@@ -20,112 +21,90 @@ using namespace std::string_view_literals;
 
 namespace
 {
-    bool compatible(std::vector<loader::material_description::vertex_attribute> const &material_vertex_attributes,
-                    loader::material_description::technique const &technique, graphics::vertex_layout const &required_vertex_layout)
+    std::optional<graphics::vertex_layout>
+    compatible_vertex_layout(std::vector<loader::material_description::vertex_attribute> const &material_vertex_attributes,
+                             loader::material_description::technique const &technique, graphics::vertex_layout const &renderable_vertex_layout)
     {
-        using namespace ranges;
+        fmt::print("renderable_vertex_layout {}\n"s, graphics::to_string(renderable_vertex_layout));
 
-        auto &&required_vertex_attributes = required_vertex_layout.attributes;
+        auto &&required_vertex_attributes = renderable_vertex_layout.attributes;
 
-        auto pred_0 = [&required_attributes = required_vertex_layout.attributes] (auto &&indices)
-        {
-            return std::size(required_attributes) >= std::size(indices);
-        };
-
-        auto pred_1 = [&] (auto &&lhs, auto &&rhs)
+        auto compare_attributes = [&] (auto &&lhs, auto &&rhs)
         {
             if (lhs.semantic != rhs.semantic)
-                return false;
+                return true;
 
             if (lhs.format != rhs.format)
-                return false;
+                return true;
 
-            return true;
+            return false;
         };
 
-        auto b = [&] (auto index) { return material_vertex_attributes.at(index); };
+        auto transform_indices = [&] (auto index) { return material_vertex_attributes.at(index); };
 
-        auto pred_2 = [&] (auto &&indices)
+        auto filter_vertex_layouts = [&] (auto &&indices)
         {
-            if (std::size(required_vertex_layout.attributes) < std::size(indices))
-                return false;
-
-            auto vertex_attributes = indices
-                                   | ranges::view::transform([&] (auto index) { return material_vertex_attributes.at(index); });
-
-            auto intersection = ranges::view::set_intersection(required_vertex_attributes, vertex_attributes, pred_1);
+            auto vertex_attributes = indices | ranges::view::transform(transform_indices);
+            auto intersection = ranges::view::set_intersection(required_vertex_attributes, vertex_attributes, compare_attributes);
 
             return ranges::distance(intersection) == ranges::distance(indices);
         };
 
-        /*for (auto &&indices : technique.vertex_layouts | ranges::views::filter(pred_0)) {
-            ;
-        }*/
-
-        auto vertex_layouts = technique.vertex_layouts
-                            //| ranges::views::filter(pred_0)
-                            | ranges::views::filter(pred_2);
-                            //| ranges::views::transform(b)
-                            //| ranges::to<std::vector<graphics::vertex_layout>>();
+        auto vertex_layouts = technique.vertex_layouts | ranges::views::filter(filter_vertex_layouts);
 
         if (ranges::distance(vertex_layouts) == 0)
-            return false;
+            return { };
 
-        auto vl = ranges::front(vertex_layouts) | ranges::views::transform(b);// | ranges::to<graphics::vertex_layout>();
+        graphics::vertex_layout vertex_layout;
 
-        for (auto &&xxx : vl) {
-            fmt::print("{}", graphics::to_string(xxx.semantic));
+        auto &&vertex_attributes = vertex_layout.attributes;
+
+        for (auto [semantic, format] : ranges::front(vertex_layouts) | ranges::views::transform(transform_indices)) {
+            fmt::print("{}:{}|"s, graphics::to_string(semantic), graphics::to_string(format));
+
+            vertex_attributes.push_back({semantic, format});
         }
 
-        fmt::print("{}", ranges::distance(vertex_layouts));
+        std::sort(std::begin(vertex_attributes), std::end(vertex_attributes));
 
+        vertex_layout.size_in_bytes = std::accumulate(std::begin(vertex_attributes), std::end(vertex_attributes), vertex_layout.size_in_bytes,
+                                                      [] (auto size_in_bytes, auto attribute)
+        {
+            if (auto format_instance = graphics::instantiate_format(attribute.format); format_instance) {
+                return size_in_bytes + std::visit([] (auto &&format)
+                {
+                    return sizeof(std::remove_cvref_t<decltype(format)>);
+                }, *format_instance);
+            }
 
-        /*for (auto &&vertex_layout_indices : technique.vertex_layouts) {
-            graphics::vertex_layout vertex_layout{0, { }};
+            else throw graphics::exception("unsupported format"s);
+        });
 
-            auto &offset_in_bytes = vertex_layout.size_in_bytes;
+        return vertex_layout;
+    }
 
-            auto attributes = vertex_layout_indices | ranges::views::transform([&] (auto vertex_layout_index)
-            {
-                auto [semantic, format] = vertex_attributes.at(vertex_layout_index);
+    // TODO:: replace 'renderable_vertex_layout' method argument by reference to renderable instance.
+    [[nodiscard]] std::string
+    compile_name(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &renderable_vertex_layout)
+    {
+        auto vertexl_layout_name = graphics::to_string(renderable_vertex_layout);
+        auto full_name = fmt::format("{}.{}.{}"s, name, technique_index, vertexl_layout_name);
 
-                graphics::vertex_attribute vertex_attribute{semantic, format, offset_in_bytes};
+        boost::uuids::name_generator_sha1 gen(boost::uuids::ns::dns());
 
-                if (auto fmt = graphics::instantiate_format(format); fmt) {
-                    offset_in_bytes += std::visit([] (auto &&format)
-                    {
-                        return sizeof(std::remove_cvref_t<decltype(format)>);
-                    }, *fmt);
-                }
-
-                else throw graphics::exception("unsupported format"s);
-
-                return vertex_attribute;
-
-            }) | ranges::to<std::vector<graphics::vertex_attribute>>();
-
-            fmt::print("{}", attributes.size());
-        }*/
-
-        return false;
+        return boost::uuids::to_string(gen(full_name));
     }
 }
 
 namespace graphics
 {
     std::shared_ptr<graphics::material>
-    material_factory::material(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &required_vertex_layout)
+    material_factory::material(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &renderable_vertex_layout)
     {
-        /*auto vertexl_layout_name = graphics::to_string(vl);
-        auto full_name = fmt::format("{}.{}.{}"s, name, technique_index, vertexl_layout_name);
+        auto hashed_name = compile_name(name, technique_index, renderable_vertex_layout);
 
-        boost::uuids::name_generator_sha1 gen(boost::uuids::ns::dns());
-        auto hashed_name = boost::uuids::to_string(gen(full_name));*/
-
-        auto const key = std::pair{std::string{name}, technique_index};
-
-        if (materials_.contains(key))
-            return materials_.at(key);
+        if (materials_.contains(hashed_name))
+            return materials_.at(hashed_name);
 
         auto &&description = material_description(name);
 
@@ -138,7 +117,7 @@ namespace graphics
         std::vector<graphics::shader_stage> shader_stages;
 
         std::transform(std::cbegin(shaders_bundle), std::cend(shaders_bundle),
-                       std::back_inserter(shader_stages), [&shader_modules] (auto shader_bundle)
+                       std::back_inserter(shader_stages), [&shader_modules, &renderable_vertex_layout] (auto shader_bundle)
         {
             std::set<graphics::specialization_constant> constants;
 
@@ -151,17 +130,28 @@ namespace graphics
                 }, value);
             }
 
-            auto &&[shader_semantic, shader_name] = shader_modules.at(shader_bundle.module_index);
+            auto [shader_semantic, shader_name] = shader_modules.at(shader_bundle.module_index);
+
+            auto const shader_technique_index = static_cast<std::uint32_t>(shader_bundle.technique_index);
+
+            shader_name = compile_name(shader_name, shader_technique_index, renderable_vertex_layout);
 
             return graphics::shader_stage{
-                shader_name, static_cast<std::uint32_t>(shader_bundle.technique_index), shader_semantic, constants
+                shader_name, shader_technique_index, shader_semantic, constants
             };
         });
 
         auto &&vertex_attributes = description.vertex_attributes;
 
-        compatible(vertex_attributes, technique, required_vertex_layout);
+        if (auto vertex_layout = compatible_vertex_layout(vertex_attributes, technique, renderable_vertex_layout); vertex_layout) {
+            auto material = std::make_shared<graphics::material>(shader_stages, *vertex_layout);
 
+            materials_.emplace(hashed_name, material);
+
+            return material;
+        }
+
+        else return { };
 
         /*std::transform(std::cbegin(technique.vertex_layout), std::cend(technique.vertex_layout),
                        std::back_inserter(vertex_layout.attributes),
@@ -188,7 +178,6 @@ namespace graphics
         materials_.emplace(key, material);
 
         return material;*/
-        return { };
     }
 
     loader::material_description const &material_factory::material_description(std::string_view name)

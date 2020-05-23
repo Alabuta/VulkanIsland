@@ -16,33 +16,26 @@ using namespace std::string_literals;
 
 namespace graphics
 {
-    std::shared_ptr<graphics::shader_module> shader_manager::shader_module(std::string_view name, std::uint32_t technique_index)
+    std::shared_ptr<graphics::shader_module> shader_manager::shader_module(std::string_view name)
     {
-        auto const key = std::pair{std::string{name}, technique_index};
+        if (shader_modules_.contains(std::string{name}))
+            return shader_modules_.at(std::string{name});
 
-        if (modules_by_techinques_.contains(key))
-            return modules_by_techinques_.at(key);
-
-        else return create_shader_module(name, technique_index);
+        else return create_shader_module(name);
     }
 
-    std::shared_ptr<graphics::shader_module> shader_manager::create_shader_module(std::string_view name, std::uint32_t technique_index)
+    std::shared_ptr<graphics::shader_module> shader_manager::create_shader_module(std::string_view name)
     {
-        auto full_name = fmt::format("{}.{}"s, name, technique_index);
-
-        boost::uuids::name_generator_sha1 gen(boost::uuids::ns::dns());
-        auto hashed_name = boost::uuids::to_string(gen(full_name));
-
         // TODO:: move to loader class.
-        auto const shader_byte_code = loader::load_SPIRV(hashed_name);
+        auto const shader_byte_code = loader::load_SPIRV(name);
 
         if (shader_byte_code.empty())
-            throw resource::exception(fmt::format("failed to open shader file: {}"s, full_name));
+            throw resource::exception(fmt::format("failed to open shader file: {}"s, name));
 
         std::shared_ptr<graphics::shader_module> shader_module;
 
         if (std::size(shader_byte_code) % sizeof(std::uint32_t) != 0)
-            throw resource::exception(fmt::format("invalid byte code buffer size: {}"s, full_name));
+            throw resource::exception(fmt::format("invalid byte code buffer size: {}"s, name));
 
         else {
             VkShaderModuleCreateInfo const create_info{
@@ -66,7 +59,7 @@ namespace graphics
                     }
                 );
 
-                modules_by_techinques_.emplace(std::pair{std::string{name}, technique_index}, shader_module);
+                shader_modules_.emplace(name, shader_module);
             }
         }
 
@@ -91,7 +84,7 @@ namespace graphics
         std::size_t seed = 0;
 
         boost::hash_combine(seed, stage.module_name);
-        boost::hash_combine(seed, stage.techique_index);
+        boost::hash_combine(seed, stage.technique_index);
         boost::hash_combine(seed, stage.semantic);
 
         for (auto [id, value] : stage.constants) {

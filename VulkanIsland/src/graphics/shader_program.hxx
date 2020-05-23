@@ -60,7 +60,7 @@ namespace graphics
 {
     struct shader_stage final {
         std::string module_name;
-        std::uint32_t techique_index;
+        std::uint32_t technique_index;
 
         graphics::SHADER_STAGE semantic;
 
@@ -70,7 +70,7 @@ namespace graphics
         auto constexpr operator== (T &&stage) const
         {
             return module_name == stage.module_name &&
-                techique_index == stage.techique_index &&
+                technique_index == stage.technique_index &&
                 semantic == stage.semantic &&
                 constants == stage.constants;
         }
@@ -97,14 +97,14 @@ namespace graphics
 
         shader_manager(vulkan::device &device) noexcept : device_{device} { }
 
-        [[nodiscard]] std::shared_ptr<graphics::shader_module> shader_module(std::string_view name, std::uint32_t technique_index);
+        [[nodiscard]] std::shared_ptr<graphics::shader_module> shader_module(std::string_view name);
 
     private:
 
         vulkan::device &device_;
 
-        std::map<std::pair<std::string, std::uint32_t>, std::shared_ptr<graphics::shader_module>> modules_by_techinques_;
+        std::map<std::string, std::shared_ptr<graphics::shader_module>> shader_modules_;
 
-        [[nodiscard]] std::shared_ptr<graphics::shader_module> create_shader_module(std::string_view name, std::uint32_t technique_index);
+        [[nodiscard]] std::shared_ptr<graphics::shader_module> create_shader_module(std::string_view name);
     };
 }

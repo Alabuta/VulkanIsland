@@ -379,7 +379,7 @@ def compile_material(material_data):
 
                 compiler=subprocess.Popen([
                     shaders.compiler_path,
-                    '-e', f'technique{technique_index}',
+                    '--entry-point', f'technique{technique_index}',
                     '--source-entrypoint', 'main',
                     '-V',
                     # '-H',

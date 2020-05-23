@@ -176,14 +176,14 @@ namespace graphics
         std::size_t shader_stage_index = 0;
 
         for (auto &&shader_stage : shader_stages) {
-            auto shader_module = shader_manager_.shader_module(shader_stage.module_name, shader_stage.techique_index);
+            auto shader_module = shader_manager_.shader_module(shader_stage.module_name);
 
             VkPipelineShaderStageCreateInfo create_info{
                     VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
                     nullptr, 0,
                     convert_to::vulkan(shader_stage.semantic),
                     shader_module->handle(),
-                    kENTRY_POINTS.at(shader_stage.techique_index).c_str(),
+                    kENTRY_POINTS.at(shader_stage.technique_index).c_str(),
                     nullptr
             };
 
