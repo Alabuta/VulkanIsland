@@ -279,11 +279,6 @@ namespace primitives
         std::size_t offset_in_bytes = 0;
 
         for (auto &&attribute : attributes) {
-            /*auto attribute_semantic = std::visit([] (auto semantic)
-            {
-                return semantic.semantic_index;
-            }, attribute.semantic);*/
-
             if (auto format_inst = graphics::instantiate_format(attribute.format); format_inst) {
                 std::visit([&] (auto &&format_inst)
                 {

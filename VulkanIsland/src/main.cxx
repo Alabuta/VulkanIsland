@@ -406,13 +406,7 @@ void create_graphics_command_buffers(app_t &app)
     };
 #endif
 
-#ifdef _MSC_VER
-    std::size_t i = 0;
-
-    for (auto &command_buffer : app.command_buffers) {
-#else
     for (std::size_t i = 0; auto &command_buffer : app.command_buffers) {
-#endif
         VkCommandBufferBeginInfo const begin_info{
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             nullptr,
@@ -587,9 +581,9 @@ void build_render_pipelines(app_t &app, xformat const &model_)
         auto vertex_layout_index = meshlet.vertex_buffer_index;
         auto &&vertex_layout = model_.vertex_layouts[vertex_layout_index];
 
-        auto vertexl_layout_name = graphics::to_string(vertex_layout);
+        auto vertex_layout_name = graphics::to_string(vertex_layout);
 
-        fmt::print("{}#{}#{}\n"s, name, technique_index, vertexl_layout_name);
+        fmt::print("{}.{}.{}\n"s, name, technique_index, vertex_layout_name);
 
         auto material = material_factory.material(name, technique_index, vertex_layout);
 
@@ -635,8 +629,9 @@ namespace temp
     {
         xformat model_;
     
-        auto constexpr vertexCountPerMeshlet = 3u;
     #if 0
+        auto constexpr vertexCountPerMeshlet = 3u;
+
         {
             // First triangle
             struct vertex_struct final {
@@ -880,13 +875,13 @@ namespace temp
                 vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
                 vertex::SEMANTIC::NORMAL, graphics::FORMAT::RG16_SNORM,
                 vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
-                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGB8_UNORM
+                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
             );
 
             auto const vertex_layout_index = std::size(model_.vertex_layouts);
             model_.vertex_layouts.push_back(vertex_layout);
 
-            auto vertices = primitives::generate_plane(1.f, 1.f, 8u, 8u, vertex_layout, glm::vec4{.2f, 1, .8f, 1});
+            auto vertices = primitives::generate_plane(1.f, 1.f, 1u, 1u, vertex_layout, glm::vec4{.2f, .4f, .8f, 1});
 
             if (std::size(vertices) % vertex_layout.size_in_bytes != 0)
                 throw resource::exception("vertex buffer size is not multiple of size of vertex strcture"s);
@@ -925,10 +920,10 @@ namespace temp
             }
         }
 
-        model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
         model_.materials.push_back(xformat::material{0, "debug/color-debug-material"s});
         model_.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
         model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
+        model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
 
         return model_;
     }

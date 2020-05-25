@@ -25,8 +25,6 @@ namespace
     compatible_vertex_layout(std::vector<loader::material_description::vertex_attribute> const &material_vertex_attributes,
                              loader::material_description::technique const &technique, graphics::vertex_layout const &renderable_vertex_layout)
     {
-        fmt::print("renderable_vertex_layout {}\n"s, graphics::to_string(renderable_vertex_layout));
-
         auto &&required_vertex_attributes = renderable_vertex_layout.attributes;
 
         auto compare_attributes = [&] (auto &&lhs, auto &&rhs)
@@ -59,11 +57,8 @@ namespace
 
         auto &&vertex_attributes = vertex_layout.attributes;
 
-        for (auto [semantic, format] : ranges::front(vertex_layouts) | ranges::views::transform(transform_indices)) {
-            fmt::print("{}:{}|"s, graphics::to_string(semantic), graphics::to_string(format));
-
+        for (auto [semantic, format] : ranges::front(vertex_layouts) | ranges::views::transform(transform_indices))
             vertex_attributes.push_back({semantic, format});
-        }
 
         std::sort(std::begin(vertex_attributes), std::end(vertex_attributes));
 
@@ -152,32 +147,6 @@ namespace graphics
         }
 
         else return { };
-
-        /*std::transform(std::cbegin(technique.vertex_layout), std::cend(technique.vertex_layout),
-                       std::back_inserter(vertex_layout.attributes),
-                       [vertex_attributes, &offset_in_bytes = vertex_layout.size_in_bytes] (auto vertex_layout_index) mutable
-        {
-            auto [semantic, format] = vertex_attributes.at(vertex_layout_index);
-
-            graphics::vertex_attribute const vertex_attribute{semantic, format, offset_in_bytes};
-
-            if (auto fmt = graphics::instantiate_format(format); fmt) {
-                offset_in_bytes += std::visit([] (auto &&format)
-                {
-                    return sizeof(std::remove_cvref_t<decltype(format)>);
-                }, *fmt);
-            }
-
-            else throw graphics::exception("unsupported format"s);
-
-            return vertex_attribute;
-        });*/
-
-        /*auto material = std::make_shared<graphics::material>(shader_stages, vertex_layout);
-
-        materials_.emplace(key, material);
-
-        return material;*/
     }
 
     loader::material_description const &material_factory::material_description(std::string_view name)
