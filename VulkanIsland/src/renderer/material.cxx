@@ -114,37 +114,37 @@ namespace graphics
         auto &&shader_modules = description.shader_modules;
         auto &&shaders_bundle = technique.shaders_bundle;
 
-        std::vector<graphics::shader_stage> shader_stages;
-
-        std::transform(std::cbegin(shaders_bundle), std::cend(shaders_bundle),
-                       std::back_inserter(shader_stages), [&shader_modules, &renderable_vertex_layout] (auto shader_bundle)
-        {
-            std::set<graphics::specialization_constant> constants;
-
-            std::uint32_t id = 0;
-
-            for (auto &&value : shader_bundle.specialization_constants) {
-                std::visit([&id, &constants] (auto value)
-                {
-                    constants.emplace(id++, value);
-                }, value);
-            }
-
-            auto [shader_semantic, shader_name] = shader_modules.at(shader_bundle.module_index);
-
-            auto const shader_technique_index = static_cast<std::uint32_t>(shader_bundle.technique_index);
-
-            shader_name = compile_name(shader_name, shader_technique_index, renderable_vertex_layout);
-
-            return graphics::shader_stage{
-                shader_name, shader_technique_index, shader_semantic, constants
-            };
-        });
-
         auto &&vertex_attributes = description.vertex_attributes;
 
         if (auto vertex_layout = compatible_vertex_layout(vertex_attributes, technique, renderable_vertex_layout); vertex_layout) {
-            auto material = std::make_shared<graphics::material>(shader_stages, *vertex_layout);
+            std::vector<graphics::shader_stage> shader_stages;
+
+            std::transform(std::cbegin(shaders_bundle), std::cend(shaders_bundle),
+                           std::back_inserter(shader_stages), [&shader_modules, &vertex_layout] (auto shader_bundle)
+            {
+                std::set<graphics::specialization_constant> constants;
+
+                std::uint32_t id = 0;
+
+                for (auto &&value : shader_bundle.specialization_constants) {
+                    std::visit([&id, &constants] (auto value)
+                    {
+                        constants.emplace(id++, value);
+                    }, value);
+                }
+
+                auto [shader_semantic, shader_name] = shader_modules.at(shader_bundle.module_index);
+
+                auto const shader_technique_index = static_cast<std::uint32_t>(shader_bundle.technique_index);
+
+                shader_name = compile_name(shader_name, shader_technique_index, *vertex_layout);
+
+                return graphics::shader_stage{
+                    shader_name, shader_technique_index, shader_semantic, constants
+                };
+            });
+
+            auto material = std::make_shared<graphics::material>(std::move(shader_stages), *vertex_layout);
 
             materials_.emplace(hashed_name, material);
 
