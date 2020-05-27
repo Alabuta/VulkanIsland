@@ -631,89 +631,83 @@ namespace temp
     xformat populate()
     {
         xformat model_;
-
-            #if 0
-                model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
-                model_.materials.push_back(xformat::material{1, "debug/texture-coordinate-debug"s});
-                model_.materials.push_back(xformat::material{0, "debug/color-debug-material"s});
-                model_.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
-                model_.materials.push_back(xformat::material{2, "debug/color-debug-material"s});
-                model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
-                model_.materials.push_back(xformat::material{1, "debug/normal-debug"s});
-                model_.materials.push_back(xformat::material{2, "debug/normal-debug"s});
-            #endif
     
-    #if 0
-        auto constexpr vertexCountPerMeshlet = 3u;
+        model_.materials.push_back(xformat::material{0, "debug/color-debug-material"s});
+        model_.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
+        model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
+        model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
 
         {
             // First triangle
-            struct vertex_struct final {
-                std::array<boost::float32_t, 3> position;
-                std::array<boost::float32_t, 2> texCoord;
-                std::array<boost::float32_t, 3> color;
-            };
-
-            auto const vertex_layout_index = std::size(model_.vertex_layouts);
-
             auto vertex_layout = vertex::create_vertex_layout(
                 vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
-                //vertex::SEMANTIC::NORMAL, decltype(vertex_struct::normal){}, false,
-                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG32_SFLOAT,
-                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGB32_SFLOAT
+                vertex::SEMANTIC::NORMAL, graphics::FORMAT::RGB32_SFLOAT,
+                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
+                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
             );
 
+            auto const vertex_layout_index = std::size(model_.vertex_layouts);
             model_.vertex_layouts.push_back(vertex_layout);
+
+            struct vertex_struct final {
+                std::array<boost::float32_t, 3> position;
+                std::array<boost::float32_t, 3> normal;
+                std::array<std::uint16_t, 2> texCoord;
+                std::array<std::uint8_t, 4> color;
+            };
 
             std::vector<vertex_struct> vertices;
 
+            auto constexpr max_8ui = std::numeric_limits<std::uint8_t>::max();
+            auto constexpr max_16ui = std::numeric_limits<std::uint16_t>::max();
+
             vertices.push_back(vertex_struct{
-                {0.f, 0.f, 0.f}/*, { 0.f, 1.f, 0.f }*/, {.5f, .5f}, { .8f, 1.f, .2f }
+                {0.f, 0.f, 0.f}, { 0.f, 1.f, 0.f }, {max_16ui / 2, max_16ui / 2}, { max_8ui * 4 / 5, max_8ui, max_8ui / 5, max_8ui }
             });
 
             vertices.push_back(vertex_struct{
-                {-1.f, 0.f, 1.f}/*, { 0.f, 1.f, 0.f }*/, {0.f, 0.f}, { 1.f, .8f, .2f }
+                {-1.f, 0.f, 1.f}, { 0.f, 1.f, 0.f }, {0, 0}, { max_8ui, max_8ui * 4 / 5, max_8ui / 5, max_8ui }
             });
 
             vertices.push_back(vertex_struct{
-                {0.f, 0.f, 1.f}/*, { 0.f, 1.f, 0.f }*/, {1.f, 0.f}, { .2f, 0.8f, 1.f }
+                {0.f, 0.f, 1.f}, { 0.f, 1.f, 0.f }, {1, 0}, { max_8ui / 5, max_8ui * 4 / 5, max_8ui,max_8ui }
             });
 
-            xformat::non_indexed_meshlet meshlet;
+            auto const vertex_count = std::size(vertices);
 
-            meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
+            auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
 
             {
-                auto const vertexSize = sizeof(vertex_struct);
-                auto const vertex_count = std::size(vertices);
-                auto const bytesCount = vertexSize * vertex_count;
+                // First triangle
+                xformat::non_indexed_meshlet meshlet;
 
-                auto &&vertexBuffer = model_.vertex_buffers[vertex_layout_index];
-
-                using buffer_type_t = std::remove_cvref_t<decltype(vertexBuffer.buffer)>;
+                meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
                 meshlet.vertex_buffer_index = vertex_layout_index;
-                meshlet.vertex_count = static_cast<std::uint32_t>(vertexCountPerMeshlet);
-                meshlet.first_vertex = static_cast<std::uint32_t>(vertexBuffer.count);
+                meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
+                meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count);
 
-                vertexBuffer.buffer.resize(std::size(vertexBuffer.buffer) + bytesCount);
+                meshlet.material_index = 1;
+                meshlet.instance_count = 1;
+                meshlet.first_instance = 0;
 
-                auto writeOffset = static_cast<buffer_type_t::difference_type>(vertexBuffer.count * vertexSize);
-
-                vertexBuffer.count += vertex_count;
-
-                auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
-
-                std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
+                model_.non_indexed_meshlets.push_back(std::move(meshlet));
             }
 
-            meshlet.material_index = 3;
-            meshlet.instance_count = 1;
-            meshlet.first_instance = 0;
+            {
+                auto const vertex_size = vertex_layout.size_in_bytes;
 
-            model_.non_indexed_meshlets.push_back(std::move(meshlet));
+                auto const bytes_count = vertex_count * vertex_size;
+                auto const write_offset = static_cast<std::ptrdiff_t>(vertex_buffer.count * vertex_size);
+
+                vertex_buffer.buffer.resize(vertex_buffer.count * vertex_size + bytes_count);
+                vertex_buffer.count += vertex_count;
+
+                auto it_dst = std::next(std::begin(vertex_buffer.buffer), write_offset);
+
+                std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytes_count, it_dst);
+            }
         }
-    #endif
 
         {
             auto vertex_layout = vertex::create_vertex_layout(
@@ -812,22 +806,6 @@ namespace temp
 
                 std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytes_count, it_dst);
             }
-
-            /*{
-                auto const vertexSize = sizeof(vertex_struct);
-                auto const vertex_count = std::size(vertices);
-                auto const bytesCount = vertexSize * vertex_count;
-
-                vertexBuffer.buffer.resize(std::size(vertexBuffer.buffer) + bytesCount);
-
-                auto writeOffset = static_cast<buffer_type_t::difference_type>(vertexBuffer.count * vertexSize);
-
-                vertexBuffer.count += vertex_count;
-
-                auto dstBegin = std::next(std::begin(vertexBuffer.buffer), writeOffset);
-
-                std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytesCount, dstBegin);
-            }*/
         }
         
         {
@@ -837,8 +815,8 @@ namespace temp
                 vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
             );
 
-            auto const vertex_layout_index = std::size(model_.vertex_layouts);
-            model_.vertex_layouts.push_back(vertex_layout);
+            auto const vertex_layout_index = 1u;// std::size(model_.vertex_layouts);
+            //model_.vertex_layouts.push_back(vertex_layout);
 
             struct vertex_struct final {
                 std::array<boost::float32_t, 3> position;
@@ -897,7 +875,7 @@ namespace temp
                 auto const bytes_count = vertex_count * vertex_size;
                 auto const write_offset = static_cast<std::ptrdiff_t>(vertex_buffer.count * vertex_size);
 
-                vertex_buffer.buffer.resize(vertex_buffer.count *vertex_size + bytes_count);
+                vertex_buffer.buffer.resize(vertex_buffer.count * vertex_size + bytes_count);
                 vertex_buffer.count += vertex_count;
 
                 auto it_dst = std::next(std::begin(vertex_buffer.buffer), write_offset);
@@ -954,11 +932,6 @@ namespace temp
                 std::uninitialized_copy_n(std::data(vertices), std::size(vertices), it_dst);
             }
         }
-
-        model_.materials.push_back(xformat::material{0, "debug/color-debug-material"s});
-        model_.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
-        model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
-        model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
 
         return model_;
     }
