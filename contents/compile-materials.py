@@ -184,7 +184,7 @@ def shader_vertex_attribute_layout(vertex_attributes, vertex_layout):
     for vertex_attribute_index in vertex_layout:
         vertex_attribute=vertex_attributes[vertex_attribute_index]
 
-        semantic, type=[ vertex_attribute[k] for k in ('semantic', 'type') ]
+        semantic, type=itemgetter('semantic', 'type')(vertex_attribute)
 
         vertex_attribute_layout.append([ semantic, type ])
 
@@ -348,11 +348,11 @@ def compile_material(material_data):
             vertex_layout_name=compile_vertex_layout_name(vertex_attributes, vertex_layout)
 
             for shader_bundle in technique['shadersBundle']:
-                shader_module_index, technique_index=shader_bundle['index'], shader_bundle['technique']
+                shader_module_index, technique_index=itemgetter('index', 'technique')(shader_bundle)
 
                 shader_module=shader_modules[shader_module_index]
 
-                name, stage=shader_module['name'], shader_module['stage']
+                name, stage=itemgetter('name', 'stage')(shader_module)
 
                 header=shader_header(stage, inputs)
 
@@ -404,9 +404,6 @@ for root, dirs, material_relative_paths in os.walk(materials.source_path):
     for material_relative_path in material_relative_paths:
         if not material_relative_path.endswith(materials.file_extensions):
             continue
-
-        #if material_relative_path != 'color-debug-material.json':
-        #    continue
 
         material_absolute_path=os.path.join(root, material_relative_path)
 
