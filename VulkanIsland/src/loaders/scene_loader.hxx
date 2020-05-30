@@ -5,6 +5,7 @@
 #include <vector>
 #include <unordered_map>
 
+#include "math/math.hxx"
 #include "graphics/graphics.hxx"
 #include "graphics/vertex.hxx"
 
@@ -77,8 +78,6 @@ struct xformat final {
 
         std::size_t vertex_buffer_index;
 
-        std::size_t material_index;
-
         std::uint32_t vertex_count{0};
         std::uint32_t instance_count{0};
         std::uint32_t first_vertex{0};
@@ -93,8 +92,6 @@ struct xformat final {
         std::size_t vertex_buffer_index;
         std::size_t index_buffer_index;
 
-        std::size_t material_index;
-
         std::uint32_t index_count{0};
         std::uint32_t instance_count{0};
         std::uint32_t first_index{0};
@@ -103,4 +100,20 @@ struct xformat final {
     };
 
     std::vector<indexed_meshlet> indexed_meshlets;
+
+    std::vector<glm::mat4> transforms;
+
+    struct mesh final {
+        std::size_t material_index;
+        std::vector<std::size_t> meshlets;
+    };
+
+    std::vector<mesh> meshes;
+
+    struct scene_node final {
+        std::size_t transfom_index;
+        std::size_t mesh_index;
+    };
+
+    std::vector<scene_node> scene_nodes;
 };

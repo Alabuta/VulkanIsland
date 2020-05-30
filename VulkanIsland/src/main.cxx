@@ -637,6 +637,17 @@ namespace temp
         model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
         model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
 
+        model_.transforms.push_back(
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 0, +1}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
+        model_.transforms.push_back(
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 1, -1}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
+        model_.transforms.push_back(
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, -1}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
+        model_.transforms.push_back(
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, +1}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
+        model_.transforms.push_back(
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(0.f), glm::vec3{1, 0, 0}));
+
         {
             // First triangle
             auto vertex_layout = vertex::create_vertex_layout(
@@ -895,7 +906,7 @@ namespace temp
             auto const vertex_layout_index = std::size(model_.vertex_layouts);
             model_.vertex_layouts.push_back(vertex_layout);
 
-            auto vertices = primitives::generate_plane(1.f, 1.f, 1u, 1u, vertex_layout, glm::vec4{.2f, .4f, .8f, 1});
+            auto vertices = primitives::generate_plane(1.f, 1.f, 8u, 8u, vertex_layout, glm::vec4{.2f, .4f, .8f, 1});
 
             if (std::size(vertices) % vertex_layout.size_in_bytes != 0)
                 throw resource::exception("vertex buffer size is not multiple of size of vertex strcture"s);
