@@ -574,6 +574,15 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
     auto &&resource_manager = *app.resource_manager;
 
+    for (auto &&scene_node : model_.scene_nodes) {
+        auto [transform_index, mesh_index] = scene_node;
+
+        auto &&mesh = model_.meshes.at(mesh_index);
+        auto &&[material_index, meshlets] = mesh;
+
+        auto &&transform = model_.transforms.at(transform_index);
+    }
+
     for (auto &&meshlet : model_.non_indexed_meshlets) {
         auto material_index = meshlet.material_index;
         auto [technique_index, name] = model_.materials[material_index];
@@ -647,6 +656,10 @@ namespace temp
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, +1}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(0.f), glm::vec3{1, 0, 0}));
+
+        model_.meshes.push_back(xformat::mesh{0u, {0u}});
+
+        model_.scene_nodes.emplace_back(0u, 0u);
 
         {
             // First triangle

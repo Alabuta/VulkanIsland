@@ -78,6 +78,8 @@ struct xformat final {
 
         std::size_t vertex_buffer_index;
 
+        std::size_t material_index;
+
         std::uint32_t vertex_count{0};
         std::uint32_t instance_count{0};
         std::uint32_t first_vertex{0};
@@ -92,6 +94,8 @@ struct xformat final {
         std::size_t vertex_buffer_index;
         std::size_t index_buffer_index;
 
+        std::size_t material_index;
+
         std::uint32_t index_count{0};
         std::uint32_t instance_count{0};
         std::uint32_t first_index{0};
@@ -104,7 +108,6 @@ struct xformat final {
     std::vector<glm::mat4> transforms;
 
     struct mesh final {
-        std::size_t material_index;
         std::vector<std::size_t> meshlets;
     };
 
