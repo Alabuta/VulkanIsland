@@ -574,14 +574,14 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
     auto &&resource_manager = *app.resource_manager;
 
-    for (auto &&scene_node : model_.scene_nodes) {
+    /*for (auto &&scene_node : model_.scene_nodes) {
         auto [transform_index, mesh_index] = scene_node;
 
         auto &&mesh = model_.meshes.at(mesh_index);
-        auto &&[material_index, meshlets] = mesh;
+        auto &&[meshlets] = mesh;
 
         auto &&transform = model_.transforms.at(transform_index);
-    }
+    }*/
 
     for (auto &&meshlet : model_.non_indexed_meshlets) {
         auto material_index = meshlet.material_index;
@@ -657,10 +657,6 @@ namespace temp
         model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(0.f), glm::vec3{1, 0, 0}));
 
-        model_.meshes.push_back(xformat::mesh{0u, {0u}});
-
-        model_.scene_nodes.emplace_back(0u, 0u);
-
         {
             // First triangle
             auto vertex_layout = vertex::create_vertex_layout(
@@ -700,6 +696,11 @@ namespace temp
             auto const vertex_count = std::size(vertices);
 
             auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
+
+            std::vector<std::size_t> meshlets{std::size(model_.non_indexed_meshlets)};
+            model_.meshes.push_back(xformat::mesh{meshlets});
+
+            model_.scene_nodes.push_back(xformat::scene_node{0u, std::size(model_.meshes)});
 
             {
                 // First triangle
