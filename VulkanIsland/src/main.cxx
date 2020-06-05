@@ -109,8 +109,6 @@ namespace temp
     xformat model;
 }
 
-auto constexpr kOBJECTS_NUMBER = 5u;
-
 struct per_object_t final {
     glm::mat4 world{1};
     glm::mat4 normal{1};  // Transposed of the inversed of the upper left 3x3 sub-matrix of model(world)-view matrix.
@@ -574,69 +572,118 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
     auto &&resource_manager = *app.resource_manager;
 
-    /*for (auto &&scene_node : model_.scene_nodes) {
+    for (auto &&scene_node : model_.scene_nodes) {
         auto [transform_index, mesh_index] = scene_node;
+
+        [[maybe_unused]] auto &&transform = model_.transforms.at(transform_index);
 
         auto &&mesh = model_.meshes.at(mesh_index);
         auto &&[meshlets] = mesh;
 
-        auto &&transform = model_.transforms.at(transform_index);
-    }*/
+        for (auto meshlet_index : meshlets) {
+            auto &&meshlet = model_.non_indexed_meshlets.at(meshlet_index);
 
-    for (auto &&meshlet : model_.non_indexed_meshlets) {
-        auto material_index = meshlet.material_index;
-        auto [technique_index, name] = model_.materials[material_index];
+            auto material_index = meshlet.material_index;
+            auto [technique_index, name] = model_.materials[material_index];
 
-        auto vertex_layout_index = meshlet.vertex_buffer_index;
-        auto &&vertex_layout = model_.vertex_layouts[vertex_layout_index];
+            auto vertex_layout_index = meshlet.vertex_buffer_index;
+            auto &&vertex_layout = model_.vertex_layouts[vertex_layout_index];
 
-        auto vertex_layout_name = graphics::to_string(vertex_layout);
+            auto vertex_layout_name = graphics::to_string(vertex_layout);
 
-        fmt::print("{}.{}.{}\n"s, name, technique_index, vertex_layout_name);
+            fmt::print("{}.{}.{}\n"s, name, technique_index, vertex_layout_name);
 
-        auto material = material_factory.material(name, technique_index, vertex_layout);
+            auto material = material_factory.material(name, technique_index, vertex_layout);
 
-        if (material == nullptr)
-            throw graphics::exception("failed to create material"s);
+            if (material == nullptr)
+                throw graphics::exception("failed to create material"s);
 
-        auto &&vertex_data_buffer = model_.vertex_buffers.at(vertex_layout_index);
+            auto &&vertex_data_buffer = model_.vertex_buffers.at(vertex_layout_index);
 
-        auto vertex_buffer = resource_manager.create_vertex_buffer(vertex_layout, std::size(vertex_data_buffer.buffer));
+            auto vertex_buffer = resource_manager.create_vertex_buffer(vertex_layout, std::size(vertex_data_buffer.buffer));
 
-        if (vertex_buffer)
-            resource_manager.stage_vertex_buffer_data(vertex_buffer, vertex_data_buffer.buffer);
+            if (vertex_buffer)
+                resource_manager.stage_vertex_buffer_data(vertex_buffer, vertex_data_buffer.buffer);
 
-        else throw graphics::exception("failed to get vertex buffer"s);
+            else throw graphics::exception("failed to get vertex buffer"s);
 
-        [[maybe_unused]] auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(vertex_layout);
+            [[maybe_unused]] auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(vertex_layout);
 
-        auto adjusted_vertex_input_state = vertex_input_state_manager.get_adjusted_vertex_input_state(vertex_layout, material->vertex_layout);
+            auto adjusted_vertex_input_state = vertex_input_state_manager.get_adjusted_vertex_input_state(vertex_layout, material->vertex_layout);
 
-        auto primitive_topology = meshlet.topology;
+            auto primitive_topology = meshlet.topology;
 
-        graphics::pipeline_states pipeline_states{
-            primitive_topology,
-            adjusted_vertex_input_state,
-            rasterization_state,
-            depth_stencil_state,
-            color_blend_state
-        };
+            graphics::pipeline_states pipeline_states{
+                primitive_topology,
+                adjusted_vertex_input_state,
+                rasterization_state,
+                depth_stencil_state,
+                color_blend_state
+            };
 
-        auto pipeline = pipeline_factory.create_pipeline(material, pipeline_states, app.pipelineLayout, app.render_pass, 0u);
+            auto pipeline = pipeline_factory.create_pipeline(material, pipeline_states, app.pipelineLayout, app.render_pass, 0u);
 
-        app.draw_commands.push_back(
-            draw_command{
-                material, pipeline, vertex_buffer,
-                meshlet.vertex_count, meshlet.first_vertex,
-                app.pipelineLayout, app.render_pass, app.descriptorSet
-            }
-        );
+            app.draw_commands.push_back(
+                draw_command{
+                    material, pipeline, vertex_buffer,
+                    meshlet.vertex_count, meshlet.first_vertex,
+                    app.pipelineLayout, app.render_pass, app.descriptorSet
+                }
+            );
+        }
     }
 }
 
 
 namespace temp
 {
+    void add_plane(xformat &model_, std::size_t vertex_layout_index)
+    {
+        auto const &vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
+
+        auto vertices = primitives::generate_plane(1.f, 1.f, 8u, 8u, vertex_layout, glm::vec4{.2f, .4f, .8f, 1});
+
+        if (std::size(vertices) % vertex_layout.size_in_bytes != 0)
+            throw resource::exception("vertex buffer size is not multiple of size of vertex strcture"s);
+
+        auto const vertex_count = std::size(vertices) / vertex_layout.size_in_bytes;
+        auto const vertex_size = vertex_layout.size_in_bytes;
+
+        auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
+
+        {
+            model_.scene_nodes.push_back(xformat::scene_node{4u, std::size(model_.meshes)});
+
+            std::vector<std::size_t> meshlets{std::size(model_.non_indexed_meshlets)};
+            model_.meshes.push_back(xformat::mesh{meshlets});
+
+            xformat::non_indexed_meshlet meshlet;
+
+            meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
+
+            meshlet.vertex_buffer_index = vertex_layout_index;
+            meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
+            meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count);
+
+            meshlet.material_index = 0;
+            meshlet.instance_count = 1;
+            meshlet.first_instance = 0;
+
+            model_.non_indexed_meshlets.push_back(std::move(meshlet));
+        }
+
+        {
+            auto write_offset = static_cast<std::ptrdiff_t>(vertex_buffer.count * vertex_size);
+
+            vertex_buffer.buffer.resize(std::size(vertex_buffer.buffer) + std::size(vertices));
+            vertex_buffer.count += vertex_count;
+
+            auto it_dst = std::next(std::begin(vertex_buffer.buffer), write_offset);
+
+            std::uninitialized_copy_n(std::data(vertices), std::size(vertices), it_dst);
+        }
+    }
+
     xformat populate()
     {
         xformat model_;
@@ -647,13 +694,13 @@ namespace temp
         model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
 
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 0, +1}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 0, +1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 1, -1}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 1, -1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, -1}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, -1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, +1}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, +1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(0.f), glm::vec3{1, 0, 0}));
 
@@ -697,10 +744,9 @@ namespace temp
 
             auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
 
+            model_.scene_nodes.push_back(xformat::scene_node{0u, std::size(model_.meshes)});
             std::vector<std::size_t> meshlets{std::size(model_.non_indexed_meshlets)};
             model_.meshes.push_back(xformat::mesh{meshlets});
-
-            model_.scene_nodes.push_back(xformat::scene_node{0u, std::size(model_.meshes)});
 
             {
                 // First triangle
@@ -784,6 +830,10 @@ namespace temp
             auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
 
             {
+                model_.scene_nodes.push_back(xformat::scene_node{1u, std::size(model_.meshes)});
+                std::vector<std::size_t> meshlets{std::size(model_.non_indexed_meshlets)};
+                model_.meshes.push_back(xformat::mesh{meshlets});
+
                 // Second triangle
                 xformat::non_indexed_meshlet meshlet;
 
@@ -801,6 +851,10 @@ namespace temp
             }
 
             {
+                model_.scene_nodes.push_back(xformat::scene_node{2u, std::size(model_.meshes)});
+                std::vector<std::size_t> meshlets{std::size(model_.non_indexed_meshlets)};
+                model_.meshes.push_back(xformat::mesh{meshlets});
+
                 // Third triangle
                 xformat::non_indexed_meshlet meshlet;
 
@@ -878,6 +932,10 @@ namespace temp
             auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
 
             {
+                model_.scene_nodes.push_back(xformat::scene_node{3u, std::size(model_.meshes)});
+                std::vector<std::size_t> meshlets{std::size(model_.non_indexed_meshlets)};
+                model_.meshes.push_back(xformat::mesh{meshlets});
+
                 // Fourth triangle
                 xformat::non_indexed_meshlet meshlet;
 
@@ -931,6 +989,10 @@ namespace temp
             auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
 
             {
+                model_.scene_nodes.push_back(xformat::scene_node{4u, std::size(model_.meshes)});
+                std::vector<std::size_t> meshlets{std::size(model_.non_indexed_meshlets)};
+                model_.meshes.push_back(xformat::mesh{meshlets});
+
                 xformat::non_indexed_meshlet meshlet;
 
                 meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
@@ -1066,10 +1128,12 @@ void init(platform::window &window, app_t &app)
     else app.texture.sampler = result;
 #endif
 
+    temp::model = temp::populate();
+
     auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
     auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
 
-    app.objects.resize(kOBJECTS_NUMBER);
+    app.objects.resize(std::size(temp::model.scene_nodes));
 
     app.aligned_buffer_size = aligned_offset * std::size(app.objects);
 
@@ -1099,8 +1163,6 @@ void init(platform::window &window, app_t &app)
     else app.descriptorSet = std::move(descriptorSet.value());
 
     update_descriptor_set(app, *app.device, app.descriptorSet);
-
-    temp::model = temp::populate();
 
     build_render_pipelines(app, temp::model);
 
@@ -1141,21 +1203,20 @@ void update(app_t &app)
         vkUnmapMemory(device.handle(), buffer.memory()->handle());
     }
 
-    std::size_t const stride = app.aligned_buffer_size / std::size(app.objects);
-    std::size_t object_index = 0;
+    std::transform(std::cbegin(temp::model.scene_nodes), std::cend(temp::model.scene_nodes),
+                   std::begin(app.objects), [] (auto &&scene_node)
+    {
+        auto &&transform = temp::model.transforms.at(scene_node.transform_index);
 
-    for (auto &&object : app.objects) {
-        object.world = glm::translate(glm::mat4{1.f}, glm::vec3{0, .1f * static_cast<float>(object_index), 0});
-        //object.world = glm::rotate(object.world, glm::radians(-30.f * instanceIndex), glm::vec3{0, 1, 0});
-        //object.world = glm::scale(object.world, glm::vec3{.01f});
+        auto normal = glm::inverseTranspose(transform);
 
-        object.normal = glm::inverseTranspose(object.world);
-
-        ++object_index;
-    }
+        return per_object_t{transform, normal};
+    });
 
     using objects_type = typename decltype(app.objects)::value_type;
     auto it_begin = reinterpret_cast<objects_type *>(app.ssbo_mapped_ptr);
+
+    std::size_t const stride = app.aligned_buffer_size / std::size(app.objects);
 
 #ifdef _MSC_VER
     std::copy(std::execution::par, std::cbegin(app.objects), std::cend(app.objects), strided_bidirectional_iterator{it_begin, stride});

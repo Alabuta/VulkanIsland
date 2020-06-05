@@ -56,6 +56,7 @@ struct xformat final {
 
     std::unordered_map<std::size_t, vertex_buffer> vertex_buffers;
 
+#if NOT_YET_IMPLEMETED
     struct index_buffer final {
         std::variant<std::uint16_t, std::uint32_t> type;
 
@@ -65,6 +66,7 @@ struct xformat final {
     };
 
     std::vector<index_buffer> index_buffers;
+#endif
 
     struct material final {
         std::uint32_t technique;
@@ -88,6 +90,7 @@ struct xformat final {
 
     std::vector<non_indexed_meshlet> non_indexed_meshlets;
 
+#if NOT_YET_IMPLEMETED
     struct indexed_meshlet final {
         graphics::PRIMITIVE_TOPOLOGY topology;
 
@@ -104,6 +107,7 @@ struct xformat final {
     };
 
     std::vector<indexed_meshlet> indexed_meshlets;
+#endif
 
     std::vector<glm::mat4> transforms;
 
@@ -114,7 +118,7 @@ struct xformat final {
     std::vector<mesh> meshes;
 
     struct scene_node final {
-        std::size_t transfom_index;
+        std::size_t transform_index;
         std::size_t mesh_index;
     };
 
