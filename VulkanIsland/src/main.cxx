@@ -637,11 +637,27 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
 namespace temp
 {
-    void add_plane(xformat &model_, std::size_t vertex_layout_index)
+    void add_plane(xformat &model_, std::size_t vertex_layout_index, std::size_t material_index)
     {
         auto const &vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
 
-        auto vertices = primitives::generate_plane(1.f, 1.f, 8u, 8u, vertex_layout, glm::vec4{.2f, .4f, .8f, 1});
+        glm::vec4 color;
+
+        {
+            std::random_device random_device;
+            std::mt19937 generator{random_device()};
+
+            std::uniform_real_distribution<float> uniform_real_distribution{0.f, 1.f};
+
+            color = glm::vec4{
+                uniform_real_distribution(generator),
+                uniform_real_distribution(generator),
+                uniform_real_distribution(generator),
+                1.f
+            };
+        }
+
+        auto vertices = primitives::generate_plane(1.f, 1.f, 8u, 8u, vertex_layout, color);
 
         if (std::size(vertices) % vertex_layout.size_in_bytes != 0)
             throw resource::exception("vertex buffer size is not multiple of size of vertex strcture"s);
@@ -652,11 +668,6 @@ namespace temp
         auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
 
         {
-            model_.scene_nodes.push_back(xformat::scene_node{4u, std::size(model_.meshes)});
-
-            std::vector<std::size_t> meshlets{std::size(model_.non_indexed_meshlets)};
-            model_.meshes.push_back(xformat::mesh{meshlets});
-
             xformat::non_indexed_meshlet meshlet;
 
             meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
@@ -665,9 +676,12 @@ namespace temp
             meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
             meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count);
 
-            meshlet.material_index = 0;
+            meshlet.material_index = material_index;
             meshlet.instance_count = 1;
             meshlet.first_instance = 0;
+
+            std::vector<std::size_t> meshlets{std::size(model_.non_indexed_meshlets)};
+            model_.meshes.push_back(xformat::mesh{meshlets});
 
             model_.non_indexed_meshlets.push_back(std::move(meshlet));
         }
@@ -804,28 +818,28 @@ namespace temp
             // Second triangle
             vertices.push_back(vertex_struct{
                 {0.f, 0.f, 0.f}, {max_16ui / 2, max_16ui / 2}, {0, 0, 0, max_8ui}
-            });
+                               });
 
             vertices.push_back(vertex_struct{
                 {1.f, 0.f, -1.f}, {max_16ui, max_16ui}, {max_8ui, 0, max_8ui, max_8ui}
-            });
+                               });
 
             vertices.push_back(vertex_struct{
                 {0.f, 0.f, -1.f}, {max_16ui / 2, max_16ui}, {0, 0, max_8ui, max_8ui}
-            });
+                               });
 
             // Third triangle
             vertices.push_back(vertex_struct{
                 {0.f, 0.f, 0.f}, {max_16ui / 2, max_16ui / 2}, {max_8ui, 0, max_8ui, max_8ui}
-            });
+                               });
 
             vertices.push_back(vertex_struct{
                 {-1.f, 0.f, -1.f}, {0, max_16ui}, {0, max_8ui, max_8ui, max_8ui}
-            });
+                               });
 
             vertices.push_back(vertex_struct{
                 {-1.f, 0.f, 0.f}, {0, max_16ui / 2}, {max_8ui, max_8ui, 0, max_8ui}
-            });
+                               });
 
             auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
 
@@ -888,6 +902,20 @@ namespace temp
         }
         
         {
+            auto vertex_layout = vertex::create_vertex_layout(
+                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
+                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
+                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
+            );
+
+            auto const vertex_layout_index = std::size(model_.vertex_layouts);
+            model_.vertex_layouts.push_back(vertex_layout);
+
+            model_.scene_nodes.push_back(xformat::scene_node{4u, std::size(model_.meshes)});
+
+            add_plane(model_, vertex_layout_index, 0);
+        }
+        if (false) {
             auto vertex_layout = vertex::create_vertex_layout(
                 vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
                 vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
@@ -968,6 +996,22 @@ namespace temp
         }
 
         {
+            auto vertex_layout = vertex::create_vertex_layout(
+                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
+                vertex::SEMANTIC::NORMAL, graphics::FORMAT::RG16_SNORM,
+                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
+                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
+            );
+
+            auto const vertex_layout_index = std::size(model_.vertex_layouts);
+            model_.vertex_layouts.push_back(vertex_layout);
+
+            model_.scene_nodes.push_back(xformat::scene_node{4u, std::size(model_.meshes)});
+
+            add_plane(model_, vertex_layout_index, 0);
+        }
+
+        if (false) {
             auto vertex_layout = vertex::create_vertex_layout(
                 vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
                 vertex::SEMANTIC::NORMAL, graphics::FORMAT::RG16_SNORM,
