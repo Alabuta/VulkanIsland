@@ -708,101 +708,42 @@ namespace temp
         model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
 
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 0, +1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-.5, 0, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 1, -1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, -1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, +1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+.5, 0, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(0.f), glm::vec3{1, 0, 0}));
 
-        {
-            // First triangle
-            auto vertex_layout = vertex::create_vertex_layout(
-                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
-                vertex::SEMANTIC::NORMAL, graphics::FORMAT::RGB32_SFLOAT,
-                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
-                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
-            );
+        model_.vertex_layouts.push_back(vertex::create_vertex_layout(
+            vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
+            vertex::SEMANTIC::NORMAL, graphics::FORMAT::RGB32_SFLOAT,
+            vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
+            vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
+        ));
 
-            auto const vertex_layout_index = std::size(model_.vertex_layouts);
-            model_.vertex_layouts.push_back(vertex_layout);
+        model_.vertex_layouts.push_back(vertex::create_vertex_layout(
+            vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
+            vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
+            vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
+        ));
 
-            struct vertex_struct final {
-                std::array<boost::float32_t, 3> position;
-                std::array<boost::float32_t, 3> normal;
-                std::array<std::uint16_t, 2> texCoord;
-                std::array<std::uint8_t, 4> color;
-            };
+        model_.vertex_layouts.push_back(vertex::create_vertex_layout(
+            vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
+            vertex::SEMANTIC::NORMAL, graphics::FORMAT::RG16_SNORM,
+            vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
+            vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
+        ));
 
-            std::vector<vertex_struct> vertices;
-
-            auto constexpr max_8ui = std::numeric_limits<std::uint8_t>::max();
-            auto constexpr max_16ui = std::numeric_limits<std::uint16_t>::max();
-
-            vertices.push_back(vertex_struct{
-                {0.f, 0.f, 0.f}, { 0.f, 1.f, 0.f }, {max_16ui / 2, max_16ui / 2}, { max_8ui * 4 / 5, max_8ui, max_8ui / 5, max_8ui }
-            });
-
-            vertices.push_back(vertex_struct{
-                {-1.f, 0.f, 1.f}, { 0.f, 1.f, 0.f }, {0, 0}, { max_8ui, max_8ui * 4 / 5, max_8ui / 5, max_8ui }
-            });
-
-            vertices.push_back(vertex_struct{
-                {0.f, 0.f, 1.f}, { 0.f, 1.f, 0.f }, {1, 0}, { max_8ui / 5, max_8ui * 4 / 5, max_8ui,max_8ui }
-            });
-
-            auto const vertex_count = std::size(vertices);
-
-            auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
-
-            model_.scene_nodes.push_back(xformat::scene_node{0u, std::size(model_.meshes)});
-            std::vector<std::size_t> meshlets{std::size(model_.non_indexed_meshlets)};
-            model_.meshes.push_back(xformat::mesh{meshlets});
-
-            {
-                // First triangle
-                xformat::non_indexed_meshlet meshlet;
-
-                meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
-
-                meshlet.vertex_buffer_index = vertex_layout_index;
-                meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
-                meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count);
-
-                meshlet.material_index = 1;
-                meshlet.instance_count = 1;
-                meshlet.first_instance = 0;
-
-                model_.non_indexed_meshlets.push_back(std::move(meshlet));
-            }
-
-            {
-                auto const vertex_size = vertex_layout.size_in_bytes;
-
-                auto const bytes_count = vertex_count * vertex_size;
-                auto const write_offset = static_cast<std::ptrdiff_t>(vertex_buffer.count * vertex_size);
-
-                vertex_buffer.buffer.resize(vertex_buffer.count * vertex_size + bytes_count);
-                vertex_buffer.count += vertex_count;
-
-                auto it_dst = std::next(std::begin(vertex_buffer.buffer), write_offset);
-
-                std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytes_count, it_dst);
-            }
-        }
+        model_.scene_nodes.push_back(xformat::scene_node{0u, std::size(model_.meshes)});
+        add_plane(model_, 0, 1);
 
         {
-            auto vertex_layout = vertex::create_vertex_layout(
-                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
-                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
-                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
-            );
-
-            auto const vertex_layout_index = std::size(model_.vertex_layouts);
-            model_.vertex_layouts.push_back(vertex_layout);
+            auto const vertex_layout_index = 1u;
+            auto &&vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
 
             struct vertex_struct final {
                 std::array<boost::float32_t, 3> position;
@@ -901,168 +842,11 @@ namespace temp
             }
         }
         
-        {
-            auto vertex_layout = vertex::create_vertex_layout(
-                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
-                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
-                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
-            );
+        model_.scene_nodes.push_back(xformat::scene_node{3u, std::size(model_.meshes)});
+        add_plane(model_, 1, 1);
 
-            auto const vertex_layout_index = std::size(model_.vertex_layouts);
-            model_.vertex_layouts.push_back(vertex_layout);
-
-            model_.scene_nodes.push_back(xformat::scene_node{4u, std::size(model_.meshes)});
-
-            add_plane(model_, vertex_layout_index, 0);
-        }
-        if (false) {
-            auto vertex_layout = vertex::create_vertex_layout(
-                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
-                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
-                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
-            );
-
-            auto const vertex_layout_index = 1u;// std::size(model_.vertex_layouts);
-            //model_.vertex_layouts.push_back(vertex_layout);
-
-            struct vertex_struct final {
-                std::array<boost::float32_t, 3> position;
-                std::array<std::uint16_t, 2> texCoord;
-                std::array<std::uint8_t, 4> color;
-            };
-
-            std::vector<vertex_struct> vertices;
-
-            auto constexpr max_8ui = std::numeric_limits<std::uint8_t>::max();
-            auto constexpr max_16ui = std::numeric_limits<std::uint16_t>::max();
-
-            // Fourth triangle
-            vertices.push_back(vertex_struct{
-                {0.f, 0.f, 0.f}, {max_16ui / 2, max_16ui / 2}, {max_8ui, 0, 0, max_8ui}
-            });
-
-            vertices.push_back(vertex_struct{
-                {1.f, 0.f, 1.f}, {max_16ui, max_16ui}, {max_8ui, max_8ui / 2, max_8ui / 2, max_8ui}
-            });
-
-            vertices.push_back(vertex_struct{
-                {1.f, 0.f, 0.f}, {max_16ui / 2, max_16ui}, {max_8ui * 4 / 5, max_8ui / 2, 0, max_8ui}
-            });
-
-            /*if (std::size(vertices) % vertex_layout.size_in_bytes != 0)
-                throw resource::exception("vertex buffer size is not multiple of size of vertex strcture"s);
-
-            auto const vertex_count = std::size(vertices) / vertex_layout.size_in_bytes;
-            auto const vertex_size = vertex_layout.size_in_bytes;*/
-
-            auto const vertex_count = std::size(vertices);
-
-            auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
-
-            {
-                model_.scene_nodes.push_back(xformat::scene_node{3u, std::size(model_.meshes)});
-                std::vector<std::size_t> meshlets{std::size(model_.non_indexed_meshlets)};
-                model_.meshes.push_back(xformat::mesh{meshlets});
-
-                // Fourth triangle
-                xformat::non_indexed_meshlet meshlet;
-
-                meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
-
-                meshlet.vertex_buffer_index = vertex_layout_index;
-                meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
-                meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count);
-
-                meshlet.material_index = 1;
-                meshlet.instance_count = 1;
-                meshlet.first_instance = 0;
-
-                model_.non_indexed_meshlets.push_back(std::move(meshlet));
-            }
-
-            {
-                auto const vertex_size = vertex_layout.size_in_bytes;
-
-                auto const bytes_count = vertex_count * vertex_size;
-                auto const write_offset = static_cast<std::ptrdiff_t>(vertex_buffer.count * vertex_size);
-
-                vertex_buffer.buffer.resize(vertex_buffer.count * vertex_size + bytes_count);
-                vertex_buffer.count += vertex_count;
-
-                auto it_dst = std::next(std::begin(vertex_buffer.buffer), write_offset);
-
-                std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytes_count, it_dst);
-            }
-        }
-
-        {
-            auto vertex_layout = vertex::create_vertex_layout(
-                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
-                vertex::SEMANTIC::NORMAL, graphics::FORMAT::RG16_SNORM,
-                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
-                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
-            );
-
-            auto const vertex_layout_index = std::size(model_.vertex_layouts);
-            model_.vertex_layouts.push_back(vertex_layout);
-
-            model_.scene_nodes.push_back(xformat::scene_node{4u, std::size(model_.meshes)});
-
-            add_plane(model_, vertex_layout_index, 0);
-        }
-
-        if (false) {
-            auto vertex_layout = vertex::create_vertex_layout(
-                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
-                vertex::SEMANTIC::NORMAL, graphics::FORMAT::RG16_SNORM,
-                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
-                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
-            );
-
-            auto const vertex_layout_index = std::size(model_.vertex_layouts);
-            model_.vertex_layouts.push_back(vertex_layout);
-
-            auto vertices = primitives::generate_plane(1.f, 1.f, 8u, 8u, vertex_layout, glm::vec4{.2f, .4f, .8f, 1});
-
-            if (std::size(vertices) % vertex_layout.size_in_bytes != 0)
-                throw resource::exception("vertex buffer size is not multiple of size of vertex strcture"s);
-
-            auto const vertex_count = std::size(vertices) / vertex_layout.size_in_bytes;
-            auto const vertex_size = vertex_layout.size_in_bytes;
-
-            auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
-
-            {
-                model_.scene_nodes.push_back(xformat::scene_node{4u, std::size(model_.meshes)});
-                std::vector<std::size_t> meshlets{std::size(model_.non_indexed_meshlets)};
-                model_.meshes.push_back(xformat::mesh{meshlets});
-
-                xformat::non_indexed_meshlet meshlet;
-
-                meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
-
-                meshlet.vertex_buffer_index = vertex_layout_index;
-                meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
-                meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count);
-
-                meshlet.material_index = 0;
-                meshlet.instance_count = 1;
-                meshlet.first_instance = 0;
-
-                model_.non_indexed_meshlets.push_back(std::move(meshlet));
-            }
-
-            {
-                auto write_offset = static_cast<std::ptrdiff_t>(vertex_buffer.count * vertex_size);
-
-                vertex_buffer.buffer.resize(std::size(vertex_buffer.buffer) + std::size(vertices));
-                vertex_buffer.count += vertex_count;
-
-                auto it_dst = std::next(std::begin(vertex_buffer.buffer), write_offset);
-
-                std::uninitialized_copy_n(std::data(vertices), std::size(vertices), it_dst);
-            }
-        }
+        model_.scene_nodes.push_back(xformat::scene_node{4u, std::size(model_.meshes)});
+        add_plane(model_, 2, 2);
 
         return model_;
     }
