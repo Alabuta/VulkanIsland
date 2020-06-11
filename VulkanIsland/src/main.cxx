@@ -395,12 +395,12 @@ void create_graphics_command_buffers(app_t &app)
 #ifdef __clang__
     auto const clear_colors = std::array{
         VkClearValue{{{ .64f, .64f, .64f, 1.f }}},
-        VkClearValue{{{ kREVERSED_DEPTH ? 0.f : 1.f, 0 }}}
+        VkClearValue{{{ app.renderer_config.reversed_depth ? 0.f : 1.f, 0 }}}
     };
 #else
     auto const clear_colors = std::array{
         VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f } } },
-        VkClearValue{ .depthStencil = { kREVERSED_DEPTH ? 0.f : 1.f, 0 } }
+        VkClearValue{ .depthStencil = { app.renderer_config.reversed_depth ? 0.f : 1.f, 0 } }
     };
 #endif
 

@@ -68,9 +68,7 @@ namespace graphics
         bool depth_test_enable{true};
         bool depth_write_enable{true};
 
-        graphics::COMPARE_OPERATION depth_compare_operation{
-            kREVERSED_DEPTH ? graphics::COMPARE_OPERATION::GREATER : graphics::COMPARE_OPERATION::LESS
-        };
+        graphics::COMPARE_OPERATION depth_compare_operation{graphics::COMPARE_OPERATION::GREATER};
 
         bool depth_bounds_test_enable{false};
         std::array<float, 2> depth_bounds{0, 1};
