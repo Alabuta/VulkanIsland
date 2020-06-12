@@ -194,13 +194,15 @@ namespace graphics
 
             std::uint32_t offset = 0;
 
-            auto &&[
-                specialization_info, specialization_map_entry, specialization_constants_data
-            ] = pipeline_shader_stage_invariants.at(shader_stage_index++);
+            auto &&shader_stage_invariant = pipeline_shader_stage_invariants.at(shader_stage_index++);
 
             for (auto [id, value] : shader_stage.constants) {
-                std::visit([id, &offset, &specialization_info, &specialization_map_entry, &specialization_constants_data] (auto constant)
+                std::visit([id = id, &offset, &shader_stage_invariant] (auto constant)
                 {
+                    auto &&[
+                        specialization_info, specialization_map_entry, specialization_constants_data
+                    ] = shader_stage_invariant;
+
                     specialization_map_entry.push_back({
                         id, offset, sizeof(constant)
                     });
@@ -214,6 +216,10 @@ namespace graphics
 
                 }, value);
             }
+
+            auto &&[
+                specialization_info, specialization_map_entry, specialization_constants_data
+            ] = shader_stage_invariant;
 
             specialization_info = VkSpecializationInfo{
                 static_cast<std::uint32_t>(std::size(specialization_map_entry)), std::data(specialization_map_entry),
@@ -366,7 +372,14 @@ namespace graphics
         {
             auto location_index = graphics::get_vertex_attribute_semantic_index(attribute);
 
+        #ifdef __GNUC__
+            #pragma GCC diagnostic push
+            #pragma GCC diagnostic ignored "-Wuseless-cast"
+        #endif
             auto offset_in_bytes_ = static_cast<std::uint32_t>(offset_in_bytes);
+        #ifdef __GNUC__
+            #pragma GCC diagnostic pop
+        #endif
 
             if (auto format_inst = graphics::instantiate_format(attribute.format); format_inst) {
                 offset_in_bytes += static_cast<std::uint32_t>(std::visit([] (auto &&format_inst)

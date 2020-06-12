@@ -154,7 +154,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 		    -Wduplicated-cond
 		    -Wduplicated-branches
 		    -Wlogical-op
-		    -Wuseless-cast
+            -Wuseless-cast
+            
+            -Wno-unknown-pragmas
 
             # -fsanitize=thread -fsanitize=address
     )
@@ -193,7 +195,10 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 		    -Wnull-dereference
 		    -Wdouble-promotion
 		    -Wformat=2
-            -Wlifetime
+            # -Wlifetime
+
+            -Wno-unknown-pragmas
+            -Wno-unknown-warning-option
 
             #-fsanitize=thread -fsanitize=address
     )

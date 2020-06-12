@@ -30,7 +30,7 @@ public:
 
     std::shared_ptr<camera> create_camera()
     {
-        cameras_.push_back(std::move(std::make_shared<camera>()));
+        cameras_.push_back(std::make_shared<camera>());
 
         return cameras_.back();
     }
