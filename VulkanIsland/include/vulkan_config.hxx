@@ -20,6 +20,7 @@ namespace vulkan_config
         // VK_EXT_VALIDATION_FEATURES_EXTENSION_NAME,
 
     #ifdef _MSC_VER
+        #pragma warning(suppress: 4668)
         #if USE_WIN32
             VK_KHR_WIN32_SURFACE_EXTENSION_NAME,
         #else

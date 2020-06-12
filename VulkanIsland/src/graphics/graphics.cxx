@@ -301,6 +301,7 @@ namespace graphics
             case graphics::FORMAT::RG16_UNORM:
             case graphics::FORMAT::RG16_USCALED:
             case graphics::FORMAT::RG16_UINT:
+            case graphics::FORMAT::D24_UNORM_S8_UINT:
             case graphics::FORMAT::RG10X6_UNORM_2PACK16:
             case graphics::FORMAT::RG12X4_UNORM_2PACK16:
                 return std::array<std::uint16_t, 2>{ };
@@ -331,7 +332,6 @@ namespace graphics
             case graphics::FORMAT::A2RGB10_UINT_PACK32:
             case graphics::FORMAT::ABGR8_SRGB_PACK32:
             case graphics::FORMAT::R32_UINT:
-            case graphics::FORMAT::D24_UNORM_S8_UINT:
                 return std::array<std::uint32_t, 1>{ };
 
             case graphics::FORMAT::RG16_SFLOAT:
@@ -383,7 +383,6 @@ namespace graphics
             case graphics::FORMAT::R64_SINT:
                 return std::array<std::int64_t, 1>{ };
 
-            case graphics::FORMAT::D32_SFLOAT_S8_UINT:
             case graphics::FORMAT::R64_UINT:
                 return std::array<std::uint64_t, 1>{ };
 
@@ -395,6 +394,7 @@ namespace graphics
     #endif
 
             case graphics::FORMAT::RG32_SFLOAT:
+            case graphics::FORMAT::D32_SFLOAT_S8_UINT:
                 return std::array<boost::float32_t, 2>{ };
 
             case graphics::FORMAT::R64_SFLOAT:
