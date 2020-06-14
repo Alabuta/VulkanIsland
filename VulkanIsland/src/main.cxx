@@ -739,7 +739,7 @@ namespace temp
         ));
 
         model_.scene_nodes.push_back(xformat::scene_node{0u, std::size(model_.meshes)});
-        add_plane(model_, 0, 1);
+        add_plane(model_, 0, 2);
 
         {
             auto const vertex_layout_index = 1u;

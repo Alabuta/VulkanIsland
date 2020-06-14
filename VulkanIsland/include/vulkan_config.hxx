@@ -30,6 +30,7 @@ namespace vulkan_config
         "VK_KHR_xcb_surface",
     #endif
         VK_KHR_SURFACE_EXTENSION_NAME
+        //VK_EXT_HEADLESS_SURFACE_EXTENSION_NAME
     };
 
     auto constexpr layers = std::array{
