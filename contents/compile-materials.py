@@ -400,12 +400,16 @@ def compile_material(material_data):
                     print(errors.decode('UTF-8'), file=sys.stderr)
 
 
-for root, dirs, material_relative_paths in os.walk(materials.source_path):
-    for material_relative_path in material_relative_paths:
-        if not material_relative_path.endswith(materials.file_extensions):
-            continue
+def main():
+    for root, dirs, material_relative_paths in os.walk(materials.source_path):
+        for material_relative_path in material_relative_paths:
+            if not material_relative_path.endswith(materials.file_extensions):
+                continue
 
-        material_absolute_path=os.path.join(root, material_relative_path)
+            material_absolute_path=os.path.join(root, material_relative_path)
 
-        with open(material_absolute_path, 'r') as json_file:
-            compile_material(json.load(json_file))
+            with open(material_absolute_path, 'r') as json_file:
+                compile_material(json.load(json_file))
+
+
+if __main__=='__main__': main()

@@ -660,7 +660,7 @@ namespace temp
         auto vertices = primitives::generate_plane(1.f, 1.f, 8u, 8u, vertex_layout, color);
 
         if (std::size(vertices) % vertex_layout.size_in_bytes != 0)
-            throw resource::exception("vertex buffer size is not multiple of size of vertex strcture"s);
+            throw app::exception("vertex buffer size is not multiple of size of vertex strcture"s);
 
         auto const vertex_count = std::size(vertices) / vertex_layout.size_in_bytes;
         auto const vertex_size = vertex_layout.size_in_bytes;

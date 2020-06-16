@@ -70,3 +70,10 @@ namespace vulkan
         explicit logic_error(std::string const &what_arg) : vulkan::exception(what_arg) { }
     };
 }
+
+namespace app
+{
+    struct exception : public std::runtime_error {
+        explicit exception(std::string const &what_arg) : std::runtime_error(what_arg.c_str()) { }
+    };
+}
