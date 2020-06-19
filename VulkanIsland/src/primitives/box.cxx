@@ -36,7 +36,7 @@ namespace primitives
             {
                 auto vertex_index = (strip_index + offset++) * (hsegments + 1);
 
-                return generator(hsegments, vsegments, vertex_index);
+                return generator(hsegments, vsegments, dsegments, vertex_index);
             });
 
             std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2] () mutable
@@ -50,7 +50,7 @@ namespace primitives
 
                 auto vertex_index = row * (hsegments + 1) + column;
 
-                return generator(hsegments, vsegments, vertex_index);
+                return generator(hsegments, vsegments, dsegments, vertex_index);
             });
 
             it = std::next(it, vertices_per_strip);
@@ -59,7 +59,7 @@ namespace primitives
                 std::generate_n(it, 2, [&, i = 0u] () mutable {
                     auto vertex_index = (strip_index + 1) * (hsegments + 1) + hsegments * (1 - i++);
 
-                    return generator(hsegments, vsegments, vertex_index);
+                    return generator(hsegments, vsegments, dsegments, vertex_index);
                 });
             }
         }
