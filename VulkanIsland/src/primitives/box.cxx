@@ -121,8 +121,8 @@ namespace primitives
 
 
     std::vector<std::byte>
-    generate_box(float width, float height, float depth, std::uint32_t hsegments, std::uint32_t vsegments, std::uint32_t dsegments,
-                 graphics::vertex_layout const &vertex_layout, glm::vec4 const &color)
+    generate_box_indexed(float width, float height, float depth, std::uint32_t hsegments, std::uint32_t vsegments, std::uint32_t dsegments,
+                         graphics::vertex_layout const &vertex_layout, glm::vec4 const &color)
     {
         std::size_t vertex_count = (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
         std::size_t vertex_size = vertex_layout.size_in_bytes;
