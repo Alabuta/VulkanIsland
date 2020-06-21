@@ -10,6 +10,48 @@
 #include "graphics/vertex.hxx"
 
 
+namespace loader
+{
+    struct scene_data_header final {
+        std::size_t transforms_begin;
+        std::size_t transforms_end;
+
+        std::size_t meshlets_begin;
+        std::size_t meshlets_end;
+
+        std::size_t vertex_buffers_begin;
+        std::size_t vertex_buffers_end;
+
+        std::size_t index_buffers_begin;
+        std::size_t index_buffers_end;
+    };
+
+    struct scene_description final {
+        loader::scene_data_header data_header;
+
+        struct material final {
+            std::uint32_t technique;
+            std::string name;
+        };
+
+        std::vector<material> materials;
+
+        struct mesh final {
+            std::vector<std::size_t> meshlets;
+        };
+
+        std::vector<mesh> meshes;
+
+        struct scene_node final {
+            std::size_t transform_index;
+            std::size_t mesh_index;
+        };
+
+        std::vector<scene_node> scene_nodes;
+    };
+}
+
+
 struct xformat final {
 #if NOT_YET_IMPLEMENTED
     enum class ATTRIBUTE_TYPE : std::uint8_t {
@@ -56,9 +98,8 @@ struct xformat final {
 
     std::unordered_map<std::size_t, vertex_buffer> vertex_buffers;
 
-#if NOT_YET_IMPLEMETED
     struct index_buffer final {
-        std::variant<std::uint16_t, std::uint32_t> type;
+        graphics::FORMAT format;
 
         std::size_t count{0};
 
@@ -66,7 +107,6 @@ struct xformat final {
     };
 
     std::vector<index_buffer> index_buffers;
-#endif
 
     struct material final {
         std::uint32_t technique;
@@ -90,7 +130,6 @@ struct xformat final {
 
     std::vector<non_indexed_meshlet> non_indexed_meshlets;
 
-#if NOT_YET_IMPLEMETED
     struct indexed_meshlet final {
         graphics::PRIMITIVE_TOPOLOGY topology;
 
@@ -107,7 +146,6 @@ struct xformat final {
     };
 
     std::vector<indexed_meshlet> indexed_meshlets;
-#endif
 
     std::vector<glm::mat4> transforms;
 
