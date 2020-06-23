@@ -12,22 +12,34 @@
 
 namespace loader
 {
-    struct scene_data_header final {
-        std::size_t transforms_begin;
-        std::size_t transforms_end;
+    struct vertex_buffer_description final {
+        std::size_t vertex_layout_index;
+        std::size_t offset;
+        std::size_t size_in_bytes;
+    };
 
+    struct index_buffer_description final {
+        graphics::FORMAT format;
+        std::size_t offset;
+        std::size_t size_in_bytes;
+    };
+
+    struct transform_buffer final {
+        std::size_t offset;
+        std::size_t size_in_bytes;
+    };
+
+    struct scene_data_header final {
         std::size_t meshlets_begin;
         std::size_t meshlets_end;
 
-        std::size_t vertex_buffers_begin;
-        std::size_t vertex_buffers_end;
-
-        std::size_t index_buffers_begin;
-        std::size_t index_buffers_end;
+        std::size_t transforms_begin;
+        std::size_t transforms_end;
     };
 
     struct scene_description final {
-        loader::scene_data_header data_header;
+        std::vector<vertex_buffer_description> vertex_buffer_descriptions;
+        std::vector<index_buffer_description> index_buffer_descriptions;
 
         struct material final {
             std::uint32_t technique;
