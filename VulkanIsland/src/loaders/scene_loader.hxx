@@ -13,33 +13,31 @@
 namespace loader
 {
     struct vertex_buffer_description final {
-        std::size_t vertex_layout_index;
         std::size_t offset;
         std::size_t size_in_bytes;
+
+        std::uint32_t vertex_layout_index;
     };
 
     struct index_buffer_description final {
+        std::size_t offset;
+        std::size_t size_in_bytes;
+
         graphics::FORMAT format;
-        std::size_t offset;
-        std::size_t size_in_bytes;
     };
 
-    struct transform_buffer final {
+    struct transforms_buffer final {
         std::size_t offset;
         std::size_t size_in_bytes;
-    };
-
-    struct scene_data_header final {
-        std::size_t meshlets_begin;
-        std::size_t meshlets_end;
-
-        std::size_t transforms_begin;
-        std::size_t transforms_end;
     };
 
     struct scene_description final {
-        std::vector<vertex_buffer_description> vertex_buffer_descriptions;
-        std::vector<index_buffer_description> index_buffer_descriptions;
+        std::vector<loader::vertex_buffer_description> vertex_buffer_descriptions;
+        //std::vector<loader::index_buffer_description> index_buffer_descriptions;
+
+        loader::transforms_buffer transforms_buffer;
+
+        std::vector<graphics::vertex_layout> vertex_layouts;
 
         struct material final {
             std::uint32_t technique;
@@ -47,6 +45,21 @@ namespace loader
         };
 
         std::vector<material> materials;
+
+        struct non_indexed_meshlet final {
+            graphics::PRIMITIVE_TOPOLOGY topology;
+
+            std::size_t vertex_buffer_index;
+
+            std::size_t material_index;
+
+            std::uint32_t vertex_count{0};
+            std::uint32_t instance_count{0};
+            std::uint32_t first_vertex{0};
+            std::uint32_t first_instance{0};
+        };
+
+        std::vector<non_indexed_meshlet> non_indexed_meshlets;
 
         struct mesh final {
             std::vector<std::size_t> meshlets;
