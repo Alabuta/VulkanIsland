@@ -175,4 +175,9 @@ namespace primitives
 
         return bytes;
     }
+
+    std::size_t calculate_box_vertices_number(std::uint32_t hsegments, std::uint32_t vsegments, std::uint32_t dsegments)
+    {
+        return 6 * 4 + (hsegments - 1 + vsegments - 1) - 1;
+    }
 }
