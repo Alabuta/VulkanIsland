@@ -176,8 +176,35 @@ namespace primitives
         return bytes;
     }
 
-    std::size_t calculate_box_vertices_number(std::uint32_t hsegments, std::uint32_t vsegments, std::uint32_t dsegments)
+    std::uint32_t calculate_box_vertices_number(std::uint32_t hsegments, std::uint32_t vsegments, std::uint32_t dsegments)
     {
-        return 6 * 4 + (hsegments - 1 + vsegments - 1) - 1;
+        std::uint32_t xface_vertices_number = (hsegments + 1) * (dsegments + 1);
+        std::uint32_t yface_vertices_number = (vsegments + 1) * (dsegments + 1);
+        std::uint32_t zface_vertices_number = (hsegments + 1) * (vsegments + 1);
+
+        return (xface_vertices_number + yface_vertices_number + zface_vertices_number) * 2;
+    }
+
+    std::uint32_t calculate_box_indices_number(graphics::PRIMITIVE_TOPOLOGY topology, std::uint32_t hsegments, std::uint32_t vsegments, std::uint32_t dsegments)
+    {
+        std::uint32_t xface_indices_number = 0;
+        std::uint32_t yface_indices_number = 0;
+        std::uint32_t zface_indices_number = 0;
+
+        switch (topology) {
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+                xface_indices_number = (hsegments + 1) * (dsegments + 1);
+                yface_indices_number = (vsegments + 1) * (dsegments + 1);
+                zface_indices_number = (hsegments + 1) * (vsegments + 1);
+                break;
+
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+                break;
+
+            default:
+                throw resource::exception("unsupported primitive topology"s);
+        }
+
+        return (xface_indices_number + yface_indices_number + zface_indices_number) * 2;
     }
 }
