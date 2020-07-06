@@ -193,18 +193,21 @@ namespace primitives
 
         switch (topology) {
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                xface_indices_number = (hsegments + 1) * (dsegments + 1);
-                yface_indices_number = (vsegments + 1) * (dsegments + 1);
-                zface_indices_number = (hsegments + 1) * (vsegments + 1);
+                xface_indices_number = (vsegments + 1) * (dsegments + 1) * 2;
+                yface_indices_number = (hsegments + 1) * (dsegments + 1) * 2;
+                zface_indices_number = (hsegments + 1) * (vsegments + 1) * 2;
                 break;
 
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+                xface_indices_number = ((dsegments + 1) * 2 * vsegments + (vsegments - 1) * 2) * 2;
+                yface_indices_number = ((hsegments + 1) * 2 * dsegments + (dsegments - 1) * 2) * 2;
+                zface_indices_number = ((hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2) * 2;
                 break;
 
             default:
                 throw resource::exception("unsupported primitive topology"s);
         }
 
-        return (xface_indices_number + yface_indices_number + zface_indices_number) * 2;
+        return xface_indices_number + yface_indices_number + zface_indices_number;
     }
 }
