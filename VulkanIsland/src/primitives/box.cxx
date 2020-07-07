@@ -21,9 +21,13 @@ using namespace std::string_literals;
 namespace primitives
 {
     template<std::size_t N, class T, class F>
-    void generate_vertex(F generator, std::uint32_t hsegments, std::uint32_t vsegments, std::uint32_t dsegments,
+    void generate_vertex(F generator, primitives::box_create_info const &create_info,
                          strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
     {
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+        auto const dsegments = create_info.dsegments;
+
         auto it_end = std::next(it_begin, static_cast<std::ptrdiff_t>(vertex_count));
 
         std::uint32_t const vertices_per_strip = (hsegments + 1) * 2;
@@ -36,7 +40,7 @@ namespace primitives
             {
                 auto vertex_index = (strip_index + offset++) * (hsegments + 1);
 
-                return generator(hsegments, vsegments, dsegments, vertex_index);
+                return generator(vertex_index);
             });
 
             std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2] () mutable
@@ -50,7 +54,7 @@ namespace primitives
 
                 auto vertex_index = row * (hsegments + 1) + column;
 
-                return generator(hsegments, vsegments, dsegments, vertex_index);
+                return generator(vertex_index);
             });
 
             it = std::next(it, vertices_per_strip);
@@ -59,7 +63,7 @@ namespace primitives
                 std::generate_n(it, 2, [&, i = 0u] () mutable {
                     auto vertex_index = (strip_index + 1) * (hsegments + 1) + hsegments * (1 - i++);
 
-                    return generator(hsegments, vsegments, dsegments, vertex_index);
+                    return generator(vertex_index);
                 });
             }
         }
@@ -67,10 +71,13 @@ namespace primitives
     
     template<std::size_t N, class T>
     std::array<T, N>
-    generate_position(float width, float height, float depth,
-                      std::size_t hsegments, std::size_t vsegments, std::size_t dsegments, std::size_t vertex_index)
+    generate_position(primitives::box_create_info const &create_info, std::size_t vertex_index)
     {
-        /*auto [x0, y0] = std::pair{-width / 2.f, height / 2.f};
+        /*auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+        auto const dsegments = create_info.dsegments;
+
+        auto [x0, y0] = std::pair{-width / 2.f, height / 2.f};
         auto [step_x, step_y] = std::pair{width / static_cast<float>(hsegments), -height / static_cast<float>(vsegments)};
 
         auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * step_x);
@@ -92,21 +99,15 @@ namespace primitives
 
     
     template<std::size_t N, class T>
-    void generate_positions(graphics::FORMAT format, float width, float height, float depth,
-                            std::uint32_t hsegments, std::uint32_t vsegments, std::uint32_t dsegments,
+    void generate_positions(primitives::box_create_info const &create_info, graphics::FORMAT attribute_format,
                             strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
     {
-        using std::placeholders::_1;
-        using std::placeholders::_2;
-        using std::placeholders::_3;
-        using std::placeholders::_4;
-
         if constexpr (N == 2 || N == 3) {
-            switch (graphics::numeric_format(format)) {
+            switch (graphics::numeric_format(attribute_format)) {
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     generate_vertex<N, T>(
-                        std::bind(generate_position<N, T>, width, height, depth, _1, _2, _3, _4),
-                        hsegments, vsegments, dsegments, it_begin, vertex_count
+                        std::bind(generate_position<N, T>, create_info, std::placeholders::_1),
+                        create_info, it_begin, vertex_count
                     );
                     break;
 
@@ -121,13 +122,16 @@ namespace primitives
 
 
     std::vector<std::byte>
-    generate_box_indexed(float width, float height, float depth, std::uint32_t hsegments, std::uint32_t vsegments, std::uint32_t dsegments,
-                         graphics::vertex_layout const &vertex_layout, glm::vec4 const &color)
+    generate_box_indexed(primitives::box_create_info const &create_info, glm::vec4 const &)
     {
-        std::size_t vertex_count = (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
-        std::size_t vertex_size = vertex_layout.size_in_bytes;
+        auto &&vertex_layout = create_info.vertex_layout;
 
-        std::vector<std::byte> bytes(vertex_size * vertex_count);
+        std::uint32_t vertex_number = calculate_box_vertices_number(create_info);
+        std::uint32_t vertex_size = static_cast<std::uint32_t>(vertex_layout.size_in_bytes);
+
+        //std::uint32_t indices_number = calculate_box_indices_number(create_info);
+
+        std::vector<std::byte> bytes(vertex_size * vertex_number);
 
         auto &&attributes = vertex_layout.attributes;
 
@@ -148,19 +152,19 @@ namespace primitives
 
                     switch (attribute.semantic) {
                         case vertex::SEMANTIC::POSITION:
-                            generate_positions(attribute.format, width, height, depth, hsegments, vsegments, dsegments, it, vertex_count);
+                            generate_positions(create_info, attribute.format, it, vertex_number);
                             break;
 
                         case vertex::SEMANTIC::NORMAL:
-                            //generate_normals(attribute.format, it, vertex_count);
+                            //generate_normals(attribute.format, it, vertex_number);
                             break;
 
                         case vertex::SEMANTIC::TEXCOORD_0:
-                            //generate_texcoords(attribute.format, it, hsegments, vsegments, vertex_count);
+                            //generate_texcoords(attribute.format, it, hsegments, vsegments, vertex_number);
                             break;
 
                         case vertex::SEMANTIC::COLOR_0:
-                            //generate_colors(color, attribute.format, it, hsegments, vsegments, vertex_count);
+                            //generate_colors(color, attribute.format, it, hsegments, vsegments, vertex_number);
                             break;
 
                         default:
@@ -176,22 +180,26 @@ namespace primitives
         return bytes;
     }
 
-    std::uint32_t calculate_box_vertices_number(std::uint32_t hsegments, std::uint32_t vsegments, std::uint32_t dsegments)
+    std::uint32_t calculate_box_vertices_number(primitives::box_create_info const &create_info)
     {
-        std::uint32_t xface_vertices_number = (hsegments + 1) * (dsegments + 1);
-        std::uint32_t yface_vertices_number = (vsegments + 1) * (dsegments + 1);
-        std::uint32_t zface_vertices_number = (hsegments + 1) * (vsegments + 1);
+        std::uint32_t xface_vertices_number = (create_info.hsegments + 1) * (create_info.dsegments + 1);
+        std::uint32_t yface_vertices_number = (create_info.vsegments + 1) * (create_info.dsegments + 1);
+        std::uint32_t zface_vertices_number = (create_info.hsegments + 1) * (create_info.vsegments + 1);
 
         return (xface_vertices_number + yface_vertices_number + zface_vertices_number) * 2;
     }
 
-    std::uint32_t calculate_box_indices_number(graphics::PRIMITIVE_TOPOLOGY topology, std::uint32_t hsegments, std::uint32_t vsegments, std::uint32_t dsegments)
+    std::uint32_t calculate_box_indices_number(primitives::box_create_info const &create_info)
     {
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+        auto const dsegments = create_info.dsegments;
+
         std::uint32_t xface_indices_number = 0;
         std::uint32_t yface_indices_number = 0;
         std::uint32_t zface_indices_number = 0;
 
-        switch (topology) {
+        switch (create_info.topology) {
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
                 xface_indices_number = (vsegments + 1) * (dsegments + 1) * 2;
                 yface_indices_number = (hsegments + 1) * (dsegments + 1) * 2;
@@ -199,9 +207,9 @@ namespace primitives
                 break;
 
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-                xface_indices_number = ((dsegments + 1) * 2 * vsegments + (vsegments - 1) * 2) * 2;
-                yface_indices_number = ((hsegments + 1) * 2 * dsegments + (dsegments - 1) * 2) * 2;
-                zface_indices_number = ((hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2) * 2;
+                xface_indices_number = ((dsegments + 1) * 2 * vsegments + (vsegments - 1) * 2 + 2) * 2;
+                yface_indices_number = ((hsegments + 1) * 2 * dsegments + (dsegments - 1) * 2 + 2) * 2;
+                zface_indices_number = ((hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2) * 2 + 2;
                 break;
 
             default:
