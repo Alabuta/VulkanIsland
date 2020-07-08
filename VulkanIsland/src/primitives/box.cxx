@@ -28,12 +28,16 @@ namespace primitives
         auto const vsegments = create_info.vsegments;
         auto const dsegments = create_info.dsegments;
 
+        auto const faces = std::array{
+            std::tuple<vsegments, dsegments, 0u>
+        };
+
         auto it_end = std::next(it_begin, static_cast<std::ptrdiff_t>(vertex_count));
 
-        std::uint32_t const vertices_per_strip = (hsegments + 1) * 2;
-        std::uint32_t const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1) * 2;
+        auto const vertices_per_strip = (hsegments + 1) * 2;
+        auto const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1) * 2;
 
-        for (std::uint32_t strip_index = 0u; strip_index < vsegments; ++strip_index) {
+        for (auto strip_index = 0u; strip_index < vsegments; ++strip_index) {
             auto it = std::next(it_begin, strip_index * (vertices_per_strip + extra_vertices_per_strip));
 
             std::generate_n(it, 2, [&, offset = 0u] () mutable
@@ -73,9 +77,13 @@ namespace primitives
     std::array<T, N>
     generate_position(primitives::box_create_info const &create_info, std::size_t vertex_index)
     {
-        /*auto const hsegments = create_info.hsegments;
+        auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
         auto const dsegments = create_info.dsegments;
+
+        auto const width = create_info.width;
+        auto const height = create_info.height;
+        auto const depth = create_info.depth;
 
         auto [x0, y0] = std::pair{-width / 2.f, height / 2.f};
         auto [step_x, step_y] = std::pair{width / static_cast<float>(hsegments), -height / static_cast<float>(vsegments)};
@@ -92,7 +100,7 @@ namespace primitives
         else if constexpr (N == 2)
             return std::array<T, N>{x, y};
 
-        else throw resource::exception("unsupported components number"s);*/
+        else throw resource::exception("unsupported components number"s);
 
         return { };
     }
@@ -182,6 +190,9 @@ namespace primitives
 
     std::uint32_t calculate_box_vertices_number(primitives::box_create_info const &create_info)
     {
+        if (create_info.hsegments * create_info.vsegments * create_info.dsegments < 1)
+            throw resource::exception("invalid box segments' values"s);
+
         std::uint32_t xface_vertices_number = (create_info.hsegments + 1) * (create_info.dsegments + 1);
         std::uint32_t yface_vertices_number = (create_info.vsegments + 1) * (create_info.dsegments + 1);
         std::uint32_t zface_vertices_number = (create_info.hsegments + 1) * (create_info.vsegments + 1);
@@ -191,6 +202,9 @@ namespace primitives
 
     std::uint32_t calculate_box_indices_number(primitives::box_create_info const &create_info)
     {
+        if (create_info.hsegments * create_info.vsegments * create_info.dsegments < 1)
+            throw resource::exception("invalid box segments' values"s);
+
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
         auto const dsegments = create_info.dsegments;
