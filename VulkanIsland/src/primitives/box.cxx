@@ -24,52 +24,56 @@ namespace primitives
     void generate_vertex(F generator, primitives::box_create_info const &create_info,
                          strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
     {
-        auto const hsegments = create_info.hsegments;
+        /*auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
-        auto const dsegments = create_info.dsegments;
-
-        auto const faces = std::array{
-            std::tuple<vsegments, dsegments, 0u>
-        };
+        auto const dsegments = create_info.dsegments;*/
 
         auto it_end = std::next(it_begin, static_cast<std::ptrdiff_t>(vertex_count));
 
-        auto const vertices_per_strip = (hsegments + 1) * 2;
-        auto const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1) * 2;
+        auto const faces = std::array{
+            std::tuple{create_info.dsegments, create_info.vsegments}
+        };
 
-        for (auto strip_index = 0u; strip_index < vsegments; ++strip_index) {
-            auto it = std::next(it_begin, strip_index * (vertices_per_strip + extra_vertices_per_strip));
+        for (auto [hsegments, vsegments] : faces) {
+            auto const vertices_per_strip = (hsegments + 1) * 2;
+            auto const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1) * 2;
 
-            std::generate_n(it, 2, [&, offset = 0u] () mutable
-            {
-                auto vertex_index = (strip_index + offset++) * (hsegments + 1);
+            for (auto strip_index = 0u; strip_index < vsegments; ++strip_index) {
+                auto it = std::next(it_begin, strip_index * (vertices_per_strip + extra_vertices_per_strip));
 
-                return generator(vertex_index);
-            });
-
-            std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2] () mutable
-            {
-                auto quad_index = triangle_index / 2;
-
-                auto column = quad_index % hsegments + 1;
-                auto row = quad_index / hsegments + (triangle_index % 2);
-
-                ++triangle_index;
-
-                auto vertex_index = row * (hsegments + 1) + column;
-
-                return generator(vertex_index);
-            });
-
-            it = std::next(it, vertices_per_strip);
-
-            if (it < it_end) {
-                std::generate_n(it, 2, [&, i = 0u] () mutable {
-                    auto vertex_index = (strip_index + 1) * (hsegments + 1) + hsegments * (1 - i++);
+                std::generate_n(it, 2, [&, offset = 0u] () mutable
+                {
+                    auto vertex_index = (strip_index + offset++) * (hsegments + 1);
 
                     return generator(vertex_index);
                 });
+
+                std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2] () mutable
+                {
+                    auto quad_index = triangle_index / 2;
+
+                    auto column = quad_index % hsegments + 1;
+                    auto row = quad_index / hsegments + (triangle_index % 2);
+
+                    ++triangle_index;
+
+                    auto vertex_index = row * (hsegments + 1) + column;
+
+                    return generator(vertex_index);
+                });
+
+                it = std::next(it, vertices_per_strip);
+
+                if (it < it_end) {
+                    std::generate_n(it, 2, [&, i = 0u] () mutable {
+                        auto vertex_index = (strip_index + 1) * (hsegments + 1) + hsegments * (1 - i++);
+
+                        return generator(vertex_index);
+                    });
+                }
             }
+
+            it_begin = it;
         }
     }
     
@@ -105,7 +109,6 @@ namespace primitives
         return { };
     }
 
-    
     template<std::size_t N, class T>
     void generate_positions(primitives::box_create_info const &create_info, graphics::FORMAT attribute_format,
                             strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
@@ -128,10 +131,12 @@ namespace primitives
         else throw resource::exception("unsupported components number"s);
     }
 
-
     std::vector<std::byte>
     generate_box_indexed(primitives::box_create_info const &create_info, glm::vec4 const &)
     {
+        if (create_info.topology != graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP)
+            throw resource::exception("unsupported primitive topology"s);
+
         auto &&vertex_layout = create_info.vertex_layout;
 
         std::uint32_t vertex_number = calculate_box_vertices_number(create_info);
