@@ -22,58 +22,60 @@ namespace primitives
 {
     template<std::size_t N, class T, class F>
     void generate_vertex(F generator, primitives::box_create_info const &create_info,
-                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
+                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t total_vertex_count)
     {
-        /*auto const hsegments = create_info.hsegments;
+        auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
-        auto const dsegments = create_info.dsegments;*/
+        auto const dsegments = create_info.dsegments;
 
-        auto it_end = std::next(it_begin, static_cast<std::ptrdiff_t>(vertex_count));
+        auto it_end = std::next(it_begin, static_cast<std::ptrdiff_t>(total_vertex_count));
 
         auto const faces = std::array{
-            std::tuple{create_info.dsegments, create_info.vsegments}
+            std::tuple{hsegments, vsegments, (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2}
         };
 
-        for (auto [hsegments, vsegments] : faces) {
-            auto const vertices_per_strip = (hsegments + 1) * 2;
-            auto const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1) * 2;
+        for (auto [hsegs, vsegs, vertex_count] : faces) {
+            auto it_face_end = std::next(it_begin, static_cast<std::ptrdiff_t>(vertex_count));
 
-            for (auto strip_index = 0u; strip_index < vsegments; ++strip_index) {
-                auto it = std::next(it_begin, strip_index * (vertices_per_strip + extra_vertices_per_strip));
+            auto const vertices_per_strip = (hsegs + 1) * 2;
+            auto const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegs > 1) * 2;
+
+            for (auto strip_index = 0u; strip_index < vsegs; ++strip_index) {
+                auto it = std::next(it_begin, vertices_per_strip + extra_vertices_per_strip);
 
                 std::generate_n(it, 2, [&, offset = 0u] () mutable
                 {
-                    auto vertex_index = (strip_index + offset++) * (hsegments + 1);
+                    auto vertex_index = (strip_index + offset++) * (hsegs + 1);
 
                     return generator(vertex_index);
                 });
 
-                std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2] () mutable
+                std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegs * 2] () mutable
                 {
                     auto quad_index = triangle_index / 2;
 
-                    auto column = quad_index % hsegments + 1;
-                    auto row = quad_index / hsegments + (triangle_index % 2);
+                    auto column = quad_index % hsegs + 1;
+                    auto row = quad_index / hsegs + (triangle_index % 2);
 
                     ++triangle_index;
 
-                    auto vertex_index = row * (hsegments + 1) + column;
+                    auto vertex_index = row * (hsegs + 1) + column;
 
                     return generator(vertex_index);
                 });
 
                 it = std::next(it, vertices_per_strip);
 
-                if (it < it_end) {
+                if (it < it_face_end) {
                     std::generate_n(it, 2, [&, i = 0u] () mutable {
-                        auto vertex_index = (strip_index + 1) * (hsegments + 1) + hsegments * (1 - i++);
+                        auto vertex_index = (strip_index + 1) * (hsegs + 1) + hsegs * (1 - i++);
 
                         return generator(vertex_index);
                     });
                 }
-            }
 
-            it_begin = it;
+                it_begin = it;
+            }
         }
     }
     
@@ -105,8 +107,6 @@ namespace primitives
             return std::array<T, N>{x, y};
 
         else throw resource::exception("unsupported components number"s);
-
-        return { };
     }
 
     template<std::size_t N, class T>
