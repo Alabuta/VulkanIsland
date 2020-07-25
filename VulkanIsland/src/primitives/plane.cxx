@@ -20,10 +20,64 @@ using namespace std::string_literals;
 
 namespace primitives
 {
+    template<std::size_t N, class T, class F>
+    void generate_vertex(F generator, primitives::plane_create_info const &create_info,
+                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
+    {
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+
+        auto it_end = std::next(it_begin, static_cast<std::ptrdiff_t>(vertex_count));
+
+        std::uint32_t const vertices_per_strip = (hsegments + 1) * 2;
+        std::uint32_t const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1) * 2;
+
+        for (std::uint32_t strip_index = 0u; strip_index < vsegments; ++strip_index) {
+            auto it = std::next(it_begin, strip_index * (vertices_per_strip + extra_vertices_per_strip));
+
+            std::generate_n(it, 2, [&, offset = 0u] () mutable
+            {
+                auto vertex_index = (strip_index + offset++) * (hsegments + 1);
+
+                return generator(vertex_index);
+            });
+
+            std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2] () mutable
+            {
+                auto quad_index = triangle_index / 2;
+
+                auto column = quad_index % hsegments + 1;
+                auto row = quad_index / hsegments + (triangle_index % 2);
+
+                ++triangle_index;
+
+                auto vertex_index = row * (hsegments + 1) + column;
+
+                return generator(vertex_index);
+            });
+
+            it = std::next(it, vertices_per_strip);
+
+            if (it < it_end) {
+                std::generate_n(it, 2, [&, i = 0u] () mutable {
+                    auto vertex_index = (strip_index + 1) * (hsegments + 1) + hsegments * (1 - i++);
+
+                    return generator(vertex_index);
+                });
+            }
+        }
+    }
+
     template<std::size_t N, class T>
     std::array<T, N>
-    generate_position(float width, float height, std::size_t hsegments, std::size_t vsegments, std::size_t vertex_index)
+    generate_position(primitives::plane_create_info const &create_info, std::size_t vertex_index)
     {
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+
+        auto const width = create_info.width;
+        auto const height = create_info.height;
+
         auto [x0, y0] = std::pair{-width / 2.f, height / 2.f};
         auto [step_x, step_y] = std::pair{width / static_cast<float>(hsegments), -height / static_cast<float>(vsegments)};
 
@@ -44,8 +98,11 @@ namespace primitives
 
     template<std::size_t N, class T>
     std::array<T, N>
-    generate_texcoord(graphics::FORMAT format, std::size_t hsegments, std::size_t vsegments, std::size_t vertex_index)
+    generate_texcoord(primitives::plane_create_info const &create_info, graphics::FORMAT format, std::size_t vertex_index)
     {
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+
         if constexpr (N == 2) {
             auto x = static_cast<float>(vertex_index % (hsegments + 1u)) / static_cast<float>(hsegments);
             auto y = 1.f - static_cast<float>(vertex_index / (hsegments + 1u)) / static_cast<float>(vsegments);
@@ -75,7 +132,7 @@ namespace primitives
     }
 
     template<std::size_t N, class T>
-    std::array<T, N> generate_color(glm::vec4 const &color, graphics::FORMAT format, std::size_t, std::size_t, std::size_t)
+    std::array<T, N> generate_color(glm::vec4 const &color, graphics::FORMAT format)
     {
         if constexpr (N == 3 || N == 4) {
             switch (graphics::numeric_format(format)) {
@@ -122,68 +179,15 @@ namespace primitives
         else throw resource::exception("unsupported components number"s);
     }
 
-    template<std::size_t N, class T, class F>
-    void generate_vertex(F generator, std::uint32_t hsegments, std::uint32_t vsegments,
-                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
-    {
-        auto it_end = std::next(it_begin, static_cast<std::ptrdiff_t>(vertex_count));
-
-        std::uint32_t const vertices_per_strip = (hsegments + 1) * 2;
-        std::uint32_t const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1) * 2;
-
-        for (std::uint32_t strip_index = 0u; strip_index < vsegments; ++strip_index) {
-            auto it = std::next(it_begin, strip_index * (vertices_per_strip + extra_vertices_per_strip));
-
-            std::generate_n(it, 2, [&, offset = 0u] () mutable
-            {
-                auto vertex_index = (strip_index + offset++) * (hsegments + 1);
-
-                return generator(hsegments, vsegments, vertex_index);
-            });
-
-            std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2] () mutable
-            {
-                auto quad_index = triangle_index / 2;
-
-                auto column = quad_index % hsegments + 1;
-                auto row = quad_index / hsegments + (triangle_index % 2);
-
-                ++triangle_index;
-
-                auto vertex_index = row * (hsegments + 1) + column;
-
-                return generator(hsegments, vsegments, vertex_index);
-            });
-
-            it = std::next(it, vertices_per_strip);
-
-            if (it < it_end) {
-                std::generate_n(it, 2, [&, i = 0u] () mutable {
-                    auto vertex_index = (strip_index + 1) * (hsegments + 1) + hsegments * (1 - i++);
-
-                    return generator(hsegments, vsegments, vertex_index);
-                });
-            }
-        }
-    }
-
     template<std::size_t N, class T>
-    void generate_positions([[maybe_unused]] graphics::FORMAT format,
-                            [[maybe_unused]] float width, [[maybe_unused]] float height,
-                            [[maybe_unused]] std::uint32_t hsegments, [[maybe_unused]] std::uint32_t vsegments,
-                            [[maybe_unused]] strided_bidirectional_iterator<std::array<T, N>> it_begin,
-                            [[maybe_unused]] std::size_t vertex_count)
+    void generate_positions(primitives::plane_create_info const &create_info, graphics::FORMAT format,
+                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
     {
-        using std::placeholders::_1;
-        using std::placeholders::_2;
-        using std::placeholders::_3;
-
         if constexpr (N == 2 || N == 3) {
             switch (graphics::numeric_format(format)) {
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     generate_vertex<N, T>(
-                        std::bind(generate_position<N, T>, width, height, _1, _2, _3),
-                        hsegments, vsegments, it_begin, vertex_count
+                        std::bind(generate_position<N, T>, create_info, std::placeholders::_1), create_info, it_begin, vertex_count
                     );
                     break;
 
@@ -197,9 +201,7 @@ namespace primitives
     }
 
     template<std::size_t N, class T>
-    void generate_normals([[maybe_unused]] graphics::FORMAT format,
-                          [[maybe_unused]] strided_bidirectional_iterator<std::array<T, N>> it,
-                          [[maybe_unused]] std::size_t vertex_count)
+    void generate_normals(graphics::FORMAT format, strided_bidirectional_iterator<std::array<T, N>> it, std::size_t vertex_count)
     {
         if constexpr (N == 2) {
             switch (graphics::numeric_format(format)) {
@@ -240,37 +242,39 @@ namespace primitives
     }
 
     template<std::size_t N, class T>
-    void generate_texcoords(graphics::FORMAT format,
-                            strided_bidirectional_iterator<std::array<T, N>> it_begin,
-                            std::uint32_t hsegments, std::uint32_t vsegments, std::size_t vertex_count)
+    void generate_texcoords(primitives::plane_create_info const &create_info, graphics::FORMAT format,
+                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
     {
-        using std::placeholders::_1;
-        using std::placeholders::_2;
-        using std::placeholders::_3;
-
-        generate_vertex<N, T>(std::bind(generate_texcoord<N, T>, format, _1, _2, _3),
-                              hsegments, vsegments, it_begin, vertex_count);
+        generate_vertex<N, T>(std::bind(generate_texcoord<N, T>, create_info, format, std::placeholders::_1),
+                              create_info, it_begin, vertex_count);
     }
 
     template<std::size_t N, class T>
-    void generate_colors(glm::vec4 const &color, graphics::FORMAT format,
-                         strided_bidirectional_iterator<std::array<T, N>> it_begin,
-                         std::uint32_t hsegments, std::uint32_t vsegments, std::size_t vertex_count)
+    void generate_colors(primitives::plane_create_info const &create_info, glm::vec4 const &color, graphics::FORMAT format,
+                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
     {
-        using std::placeholders::_1;
-        using std::placeholders::_2;
-        using std::placeholders::_3;
+        generate_vertex<N, T>(std::bind(generate_color<N, T>, color, format),
+                              create_info, it_begin, vertex_count);
+    }
 
-        generate_vertex<N, T>(std::bind(generate_color<N, T>, color, format, _1, _2, _3),
-                              hsegments, vsegments, it_begin, vertex_count);
+    std::uint32_t calculate_plane_vertices_number(primitives::plane_create_info const &create_info)
+    {
+        if (create_info.hsegments * create_info.vsegments < 1)
+            throw resource::exception("invalid plane segments' values"s);
+
+        return (create_info.hsegments + 1) * 2 * create_info.vsegments + (create_info.vsegments - 1) * 2;
     }
     
     std::vector<std::byte>
-    generate_plane(float width, float height, std::uint32_t hsegments, std::uint32_t vsegments,
-                   graphics::vertex_layout const &vertex_layout, glm::vec4 const &color)
+    generate_plane(primitives::plane_create_info const &create_info, glm::vec4 const &color)
     {
-        std::size_t vertex_count = (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
-        std::size_t vertex_size = vertex_layout.size_in_bytes;
+        if (create_info.topology != graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP)
+            throw resource::exception("unsupported primitive topology"s);
+
+        auto &&vertex_layout = create_info.vertex_layout;
+
+        std::uint32_t vertex_count = calculate_plane_vertices_number(create_info);
+        std::uint32_t vertex_size = static_cast<std::uint32_t>(vertex_layout.size_in_bytes);
 
         std::vector<std::byte> bytes(vertex_size * vertex_count);
 
@@ -293,7 +297,7 @@ namespace primitives
 
                     switch (attribute.semantic) {
                         case vertex::SEMANTIC::POSITION:
-                            generate_positions(attribute.format, width, height, hsegments, vsegments, it, vertex_count);
+                            generate_positions(create_info, attribute.format, it, vertex_count);
                             break;
 
                         case vertex::SEMANTIC::NORMAL:
@@ -301,11 +305,11 @@ namespace primitives
                             break;
 
                         case vertex::SEMANTIC::TEXCOORD_0:
-                            generate_texcoords(attribute.format, it, hsegments, vsegments, vertex_count);
+                            generate_texcoords(create_info, attribute.format, it, vertex_count);
                             break;
 
                         case vertex::SEMANTIC::COLOR_0:
-                            generate_colors(color, attribute.format, it, hsegments, vsegments, vertex_count);
+                            generate_colors(create_info, color, attribute.format, it, vertex_count);
                             break;
 
                         default:

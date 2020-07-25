@@ -643,6 +643,8 @@ namespace temp
 
         glm::vec4 color;
 
+        auto constexpr topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
+
         {
             std::random_device random_device;
             std::mt19937 generator{random_device()};
@@ -656,8 +658,12 @@ namespace temp
                 1.f
             };
         }
+        primitives::plane_create_info const create_info{
+            vertex_layout, topology, graphics::FORMAT::UNDEFINED,
+            1.f, 1.f, 8u, 8u
+        };
 
-        auto vertices = primitives::generate_plane(1.f, 1.f, 8u, 8u, vertex_layout, color);
+        auto vertices = primitives::generate_plane(create_info, color);
 
         if (std::size(vertices) % vertex_layout.size_in_bytes != 0)
             throw app::exception("vertex buffer size is not multiple of size of vertex strcture"s);
@@ -670,7 +676,7 @@ namespace temp
         {
             xformat::non_indexed_meshlet meshlet;
 
-            meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
+            meshlet.topology = topology;
 
             meshlet.vertex_buffer_index = vertex_layout_index;
             meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
