@@ -8,6 +8,7 @@ using namespace std::string_view_literals;
 
 #include "SPIRV_loader.hxx"
 
+
 namespace loader
 {
     std::vector<std::byte> load_SPIRV(std::string_view name)

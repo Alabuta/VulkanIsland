@@ -643,8 +643,6 @@ namespace temp
 
         glm::vec4 color;
 
-        auto constexpr topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
-
         {
             std::random_device random_device;
             std::mt19937 generator{random_device()};
@@ -658,18 +656,18 @@ namespace temp
                 1.f
             };
         }
+
+        auto constexpr topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
+
         primitives::plane_create_info const create_info{
             vertex_layout, topology, graphics::FORMAT::UNDEFINED,
             1.f, 1.f, 8u, 8u
         };
 
-        auto vertices = primitives::generate_plane(create_info, color);
-
-        if (std::size(vertices) % vertex_layout.size_in_bytes != 0)
-            throw app::exception("vertex buffer size is not multiple of size of vertex strcture"s);
-
-        auto const vertex_count = std::size(vertices) / vertex_layout.size_in_bytes;
+        auto const vertex_count = primitives::calculate_plane_vertices_number(create_info);
         auto const vertex_size = vertex_layout.size_in_bytes;
+
+        auto const vertex_buffer_allocation_size = vertex_count * vertex_size;
 
         auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
 
@@ -695,12 +693,12 @@ namespace temp
         {
             auto write_offset = static_cast<std::ptrdiff_t>(vertex_buffer.count * vertex_size);
 
-            vertex_buffer.buffer.resize(std::size(vertex_buffer.buffer) + std::size(vertices));
+            vertex_buffer.buffer.resize(std::size(vertex_buffer.buffer) + vertex_buffer_allocation_size);
             vertex_buffer.count += vertex_count;
 
-            auto it_dst = std::next(std::begin(vertex_buffer.buffer), write_offset);
+            auto it_vertex_buffer = std::next(std::begin(vertex_buffer.buffer), write_offset);
 
-            std::uninitialized_copy_n(std::data(vertices), std::size(vertices), it_dst);
+            primitives::generate_plane(create_info, it_vertex_buffer, {}, color);
         }
     }
 

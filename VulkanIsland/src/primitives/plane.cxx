@@ -262,21 +262,63 @@ namespace primitives
         if (create_info.hsegments * create_info.vsegments < 1)
             throw resource::exception("invalid plane segments' values"s);
 
-        return (create_info.hsegments + 1) * 2 * create_info.vsegments + (create_info.vsegments - 1) * 2;
-    }
-    
-    std::vector<std::byte>
-    generate_plane(primitives::plane_create_info const &create_info, glm::vec4 const &color)
-    {
-        if (create_info.topology != graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP)
-            throw resource::exception("unsupported primitive topology"s);
+        bool is_indexed_primitive = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
 
+        if (is_indexed_primitive)
+            return (create_info.hsegments + 1) * (create_info.vsegments + 1);
+
+        switch (create_info.topology) {
+            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+                return create_info.hsegments * create_info.vsegments * 2 * 3;
+
+            case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+                return (create_info.hsegments + 1) * 2 * create_info.vsegments + (create_info.vsegments - 1) * 2;
+
+            default:
+                throw resource::exception("unsupported primitive topology"s);
+        }
+    }
+
+    std::uint32_t calculate_plane_indices_number(primitives::plane_create_info const &create_info)
+    {
+        if (create_info.hsegments * create_info.vsegments < 1)
+            throw resource::exception("invalid plane segments' values"s);
+
+        bool is_indexed_primitive = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+
+        if (!is_indexed_primitive)
+            return 0;
+
+        switch (create_info.topology) {
+            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+                return create_info.hsegments * create_info.vsegments * 2 * 3;
+
+            case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+                return (create_info.hsegments + 1) * 2 * create_info.vsegments + (create_info.vsegments - 1) * 2;
+
+            default:
+                throw resource::exception("unsupported primitive topology"s);
+        }
+    }
+
+    void generate_plane_indexed(primitives::plane_create_info const &create_info, std::vector<std::byte>::iterator it_vertex_buffer,
+                        std::vector<std::byte>::iterator it_index_buffer, glm::vec4 const &color)
+    {
+        ;
+    }
+
+    void generate_plane(primitives::plane_create_info const &create_info, std::vector<std::byte>::iterator it_vertex_buffer, glm::vec4 const &color)
+    {
         auto &&vertex_layout = create_info.vertex_layout;
 
         std::uint32_t vertex_count = calculate_plane_vertices_number(create_info);
         std::uint32_t vertex_size = static_cast<std::uint32_t>(vertex_layout.size_in_bytes);
-
-        std::vector<std::byte> bytes(vertex_size * vertex_count);
 
         auto &&attributes = vertex_layout.attributes;
 
@@ -289,7 +331,7 @@ namespace primitives
                     using type = typename std::remove_cvref_t<decltype(format_inst)>;
                     using pointer_type = typename std::add_pointer_t<type>;
 
-                    auto data = reinterpret_cast<pointer_type>(std::data(bytes) + offset_in_bytes);
+                    auto data = reinterpret_cast<pointer_type>(std::addressof(*it_vertex_buffer) + offset_in_bytes);
 
                     offset_in_bytes += sizeof(type);
 
@@ -321,7 +363,17 @@ namespace primitives
 
             else throw resource::exception("unsupported attribute format"s);
         }
+    }
+    
+    void generate_plane(primitives::plane_create_info const &create_info, std::vector<std::byte>::iterator it_vertex_buffer,
+                        std::vector<std::byte>::iterator it_index_buffer, glm::vec4 const &color)
+    {
+        if (create_info.topology != graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP)
+            throw resource::exception("unsupported primitive topology"s);
 
-        return bytes;
+        if (create_info.index_buffer_format != graphics::FORMAT::UNDEFINED && it_index_buffer != std::vector<std::byte>::iterator{})
+            primitives::generate_plane_indexed(create_info, it_vertex_buffer, it_index_buffer, color);
+
+        else primitives::generate_plane(create_info, it_vertex_buffer, color);
     }
 }
