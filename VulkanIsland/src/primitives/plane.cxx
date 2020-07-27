@@ -20,14 +20,64 @@ using namespace std::string_literals;
 
 namespace primitives
 {
+    std::uint32_t calculate_plane_vertices_number(primitives::plane_create_info const &create_info)
+    {
+        if (create_info.hsegments * create_info.vsegments < 1)
+            throw resource::exception("invalid plane segments' values"s);
+
+        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+
+        if (is_primitive_indexed)
+            return (create_info.hsegments + 1) * (create_info.vsegments + 1);
+
+        switch (create_info.topology) {
+            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+                return create_info.hsegments * create_info.vsegments * 2 * 3;
+
+            case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+                return (create_info.hsegments + 1) * 2 * create_info.vsegments + (create_info.vsegments - 1) * 2;
+
+            default:
+                throw resource::exception("unsupported primitive topology"s);
+        }
+    }
+
+    std::uint32_t calculate_plane_indices_number(primitives::plane_create_info const &create_info)
+    {
+        if (create_info.hsegments * create_info.vsegments < 1)
+            throw resource::exception("invalid plane segments' values"s);
+
+        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+
+        if (!is_primitive_indexed)
+            return 0;
+
+        switch (create_info.topology) {
+            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+                return create_info.hsegments * create_info.vsegments * 2 * 3;
+
+            case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+                return (create_info.hsegments + 1) * 2 * create_info.vsegments + (create_info.vsegments - 1) * 2;
+
+            default:
+                throw resource::exception("unsupported primitive topology"s);
+        }
+    }
+    
     template<std::size_t N, class T, class F>
     void generate_vertex(F generator, primitives::plane_create_info const &create_info,
-                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
+                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_number)
     {
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
 
-        auto it_end = std::next(it_begin, static_cast<std::ptrdiff_t>(vertex_count));
+        auto it_end = std::next(it_begin, static_cast<std::ptrdiff_t>(vertex_number));
 
         std::uint32_t const vertices_per_strip = (hsegments + 1) * 2;
         std::uint32_t const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1) * 2;
@@ -181,13 +231,13 @@ namespace primitives
 
     template<std::size_t N, class T>
     void generate_positions(primitives::plane_create_info const &create_info, graphics::FORMAT format,
-                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
+                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_number)
     {
         if constexpr (N == 2 || N == 3) {
             switch (graphics::numeric_format(format)) {
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     generate_vertex<N, T>(
-                        std::bind(generate_position<N, T>, create_info, std::placeholders::_1), create_info, it_begin, vertex_count
+                        std::bind(generate_position<N, T>, create_info, std::placeholders::_1), create_info, it_begin, vertex_number
                     );
                     break;
 
@@ -201,7 +251,7 @@ namespace primitives
     }
 
     template<std::size_t N, class T>
-    void generate_normals(graphics::FORMAT format, strided_bidirectional_iterator<std::array<T, N>> it, std::size_t vertex_count)
+    void generate_normals(graphics::FORMAT format, strided_bidirectional_iterator<std::array<T, N>> it, std::size_t vertex_number)
     {
         if constexpr (N == 2) {
             switch (graphics::numeric_format(format)) {
@@ -212,7 +262,7 @@ namespace primitives
 
                         math::encode_unit_vector_to_oct_precise(oct, glm::vec3{0, 0, 1});
 
-                        std::fill_n(it, vertex_count, oct);
+                        std::fill_n(it, vertex_number, oct);
                     }
 
                     else throw resource::exception("unsupported format type"s);
@@ -230,7 +280,7 @@ namespace primitives
                 case graphics::NUMERIC_FORMAT::SCALED:
                 case graphics::NUMERIC_FORMAT::INT:
                 case graphics::NUMERIC_FORMAT::FLOAT:
-                    std::fill_n(it, vertex_count, std::array<T, 3>{0, 0, 1});
+                    std::fill_n(it, vertex_number, std::array<T, 3>{0, 0, 1});
                     break;
 
                 default:
@@ -243,81 +293,37 @@ namespace primitives
 
     template<std::size_t N, class T>
     void generate_texcoords(primitives::plane_create_info const &create_info, graphics::FORMAT format,
-                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
+                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_number)
     {
         generate_vertex<N, T>(std::bind(generate_texcoord<N, T>, create_info, format, std::placeholders::_1),
-                              create_info, it_begin, vertex_count);
+                              create_info, it_begin, vertex_number);
     }
 
     template<std::size_t N, class T>
     void generate_colors(primitives::plane_create_info const &create_info, glm::vec4 const &color, graphics::FORMAT format,
-                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
+                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_number)
     {
         generate_vertex<N, T>(std::bind(generate_color<N, T>, color, format),
-                              create_info, it_begin, vertex_count);
-    }
-
-    std::uint32_t calculate_plane_vertices_number(primitives::plane_create_info const &create_info)
-    {
-        if (create_info.hsegments * create_info.vsegments < 1)
-            throw resource::exception("invalid plane segments' values"s);
-
-        bool is_indexed_primitive = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
-
-        if (is_indexed_primitive)
-            return (create_info.hsegments + 1) * (create_info.vsegments + 1);
-
-        switch (create_info.topology) {
-            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
-            case graphics::PRIMITIVE_TOPOLOGY::LINES:
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                return create_info.hsegments * create_info.vsegments * 2 * 3;
-
-            case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-                return (create_info.hsegments + 1) * 2 * create_info.vsegments + (create_info.vsegments - 1) * 2;
-
-            default:
-                throw resource::exception("unsupported primitive topology"s);
-        }
-    }
-
-    std::uint32_t calculate_plane_indices_number(primitives::plane_create_info const &create_info)
-    {
-        if (create_info.hsegments * create_info.vsegments < 1)
-            throw resource::exception("invalid plane segments' values"s);
-
-        bool is_indexed_primitive = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
-
-        if (!is_indexed_primitive)
-            return 0;
-
-        switch (create_info.topology) {
-            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
-            case graphics::PRIMITIVE_TOPOLOGY::LINES:
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                return create_info.hsegments * create_info.vsegments * 2 * 3;
-
-            case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-                return (create_info.hsegments + 1) * 2 * create_info.vsegments + (create_info.vsegments - 1) * 2;
-
-            default:
-                throw resource::exception("unsupported primitive topology"s);
-        }
+                              create_info, it_begin, vertex_number);
     }
 
     void generate_plane_indexed(primitives::plane_create_info const &create_info, std::vector<std::byte>::iterator it_vertex_buffer,
-                        std::vector<std::byte>::iterator it_index_buffer, glm::vec4 const &color)
+                                std::vector<std::byte>::iterator it_index_buffer, glm::vec4 const &color)
     {
+        if (create_info.topology != graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP)
+            throw resource::exception("unsupported primitive topology"s);
+
         ;
     }
 
     void generate_plane(primitives::plane_create_info const &create_info, std::vector<std::byte>::iterator it_vertex_buffer, glm::vec4 const &color)
     {
+        if (create_info.topology != graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP)
+            throw resource::exception("unsupported primitive topology"s);
+
         auto &&vertex_layout = create_info.vertex_layout;
 
-        std::uint32_t vertex_count = calculate_plane_vertices_number(create_info);
+        std::uint32_t vertex_number = calculate_plane_vertices_number(create_info);
         std::uint32_t vertex_size = static_cast<std::uint32_t>(vertex_layout.size_in_bytes);
 
         auto &&attributes = vertex_layout.attributes;
@@ -339,19 +345,19 @@ namespace primitives
 
                     switch (attribute.semantic) {
                         case vertex::SEMANTIC::POSITION:
-                            generate_positions(create_info, attribute.format, it, vertex_count);
+                            generate_positions(create_info, attribute.format, it, vertex_number);
                             break;
 
                         case vertex::SEMANTIC::NORMAL:
-                            generate_normals(attribute.format, it, vertex_count);
+                            generate_normals(attribute.format, it, vertex_number);
                             break;
 
                         case vertex::SEMANTIC::TEXCOORD_0:
-                            generate_texcoords(create_info, attribute.format, it, vertex_count);
+                            generate_texcoords(create_info, attribute.format, it, vertex_number);
                             break;
 
                         case vertex::SEMANTIC::COLOR_0:
-                            generate_colors(create_info, color, attribute.format, it, vertex_count);
+                            generate_colors(create_info, color, attribute.format, it, vertex_number);
                             break;
 
                         default:
@@ -363,17 +369,5 @@ namespace primitives
 
             else throw resource::exception("unsupported attribute format"s);
         }
-    }
-    
-    void generate_plane(primitives::plane_create_info const &create_info, std::vector<std::byte>::iterator it_vertex_buffer,
-                        std::vector<std::byte>::iterator it_index_buffer, glm::vec4 const &color)
-    {
-        if (create_info.topology != graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP)
-            throw resource::exception("unsupported primitive topology"s);
-
-        if (create_info.index_buffer_format != graphics::FORMAT::UNDEFINED && it_index_buffer != std::vector<std::byte>::iterator{})
-            primitives::generate_plane_indexed(create_info, it_vertex_buffer, it_index_buffer, color);
-
-        else primitives::generate_plane(create_info, it_vertex_buffer, color);
     }
 }

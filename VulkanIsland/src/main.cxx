@@ -698,7 +698,7 @@ namespace temp
 
             auto it_vertex_buffer = std::next(std::begin(vertex_buffer.buffer), write_offset);
 
-            primitives::generate_plane(create_info, it_vertex_buffer, {}, color);
+            primitives::generate_plane(create_info, it_vertex_buffer, color);
         }
     }
 
