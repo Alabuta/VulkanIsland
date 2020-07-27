@@ -44,7 +44,10 @@ namespace primitives
 
     std::uint32_t calculate_box_indices_number(primitives::box_create_info const &create_info);
 
-    std::vector<std::byte>
-    generate_box_indexed(primitives::box_create_info const &create_info, glm::vec4 const &color = glm::vec4{1});
+    void generate_box(primitives::box_create_info const &create_info, std::vector<std::byte>::iterator it_vertex_buffer,
+                      glm::vec4 const &color = glm::vec4{1});
+
+    void generate_box_indexed(primitives::box_create_info const &create_info, std::vector<std::byte>::iterator it_vertex_buffer,
+                              std::vector<std::byte>::iterator it_index_buffer, glm::vec4 const &color = glm::vec4{1});
 }
 

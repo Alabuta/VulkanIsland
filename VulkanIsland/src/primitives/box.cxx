@@ -20,6 +20,89 @@ using namespace std::string_literals;
 
 namespace primitives
 {
+    std::uint32_t calculate_box_vertices_number(primitives::box_create_info const &create_info)
+    {
+        if (create_info.hsegments * create_info.vsegments * create_info.dsegments < 1)
+            throw resource::exception("invalid box segments' values"s);
+
+        std::uint32_t xface_vertices_number, yface_vertices_number, zface_vertices_number;
+
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+        auto const dsegments = create_info.dsegments;
+
+        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+
+        if (is_primitive_indexed) {
+            xface_vertices_number = (hsegments + 1) * (dsegments + 1) * 2;
+            yface_vertices_number = (vsegments + 1) * (dsegments + 1) * 2;
+            zface_vertices_number = (hsegments + 1) * (vsegments + 1) * 2;
+        }
+
+        else {
+            switch (create_info.topology) {
+                case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+                case graphics::PRIMITIVE_TOPOLOGY::LINES:
+                case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+                    xface_vertices_number = hsegments * dsegments * 2 * 3;
+                    yface_vertices_number = vsegments * dsegments * 2 * 3;
+                    zface_vertices_number = hsegments * vsegments * 2 * 3;
+                    break;
+
+                case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
+                case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+                    xface_vertices_number = ((dsegments + 1) * 2 * vsegments + (vsegments - 1) * 2 + 2) * 2;
+                    yface_vertices_number = ((hsegments + 1) * 2 * dsegments + (dsegments - 1) * 2 + 2) * 2;
+                    zface_vertices_number = ((hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2) * 2 + 2;
+                    break;
+
+                default:
+                    throw resource::exception("unsupported primitive topology"s);
+            }
+        }
+
+        return xface_vertices_number + yface_vertices_number + zface_vertices_number;
+    }
+
+    std::uint32_t calculate_box_indices_number(primitives::box_create_info const &create_info)
+    {
+        if (create_info.hsegments * create_info.vsegments * create_info.dsegments < 1)
+            throw resource::exception("invalid box segments' values"s);
+
+        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+
+        if (is_primitive_indexed)
+            return 0;
+
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+        auto const dsegments = create_info.dsegments;
+
+        std::uint32_t xface_indices_number, yface_indices_number, zface_indices_number;
+
+        switch (create_info.topology) {
+            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+                xface_indices_number = hsegments * dsegments * 2 * 3;
+                yface_indices_number = vsegments * dsegments * 2 * 3;
+                zface_indices_number = hsegments * vsegments * 2 * 3;
+                break;
+
+            case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+                xface_indices_number = ((dsegments + 1) * 2 * vsegments + (vsegments - 1) * 2 + 2) * 2;
+                yface_indices_number = ((hsegments + 1) * 2 * dsegments + (dsegments - 1) * 2 + 2) * 2;
+                zface_indices_number = ((hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2) * 2 + 2;
+                break;
+
+            default:
+                throw resource::exception("unsupported primitive topology"s);
+        }
+
+        return xface_indices_number + yface_indices_number + zface_indices_number;
+    }
+
     template<std::size_t N, class T, class F>
     void generate_vertex(F generator, primitives::box_create_info const &create_info,
                          strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t total_vertex_count)
@@ -131,20 +214,18 @@ namespace primitives
         else throw resource::exception("unsupported components number"s);
     }
 
-    std::vector<std::byte>
-    generate_box_indexed(primitives::box_create_info const &create_info, glm::vec4 const &)
+    void generate_box_indexed(primitives::box_create_info const &create_info, std::vector<std::byte>::iterator it_vertex_buffer,
+                              std::vector<std::byte>::iterator it_index_buffer, glm::vec4 const &)
     {
         if (create_info.topology != graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP)
             throw resource::exception("unsupported primitive topology"s);
 
         auto &&vertex_layout = create_info.vertex_layout;
 
-        std::uint32_t vertex_number = calculate_box_vertices_number(create_info);
-        std::uint32_t vertex_size = static_cast<std::uint32_t>(vertex_layout.size_in_bytes);
+        auto vertex_number = calculate_box_vertices_number(create_info);
+        auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_in_bytes);
 
         //std::uint32_t indices_number = calculate_box_indices_number(create_info);
-
-        std::vector<std::byte> bytes(vertex_size * vertex_number);
 
         auto &&attributes = vertex_layout.attributes;
 
@@ -157,7 +238,7 @@ namespace primitives
                     using type = typename std::remove_cvref_t<decltype(format_inst)>;
                     using pointer_type = typename std::add_pointer_t<type>;
 
-                    auto data = reinterpret_cast<pointer_type>(std::data(bytes) + offset_in_bytes);
+                    auto data = reinterpret_cast<pointer_type>(std::addressof(*it_vertex_buffer) + offset_in_bytes);
 
                     offset_in_bytes += sizeof(type);
 
@@ -189,52 +270,5 @@ namespace primitives
 
             else throw resource::exception("unsupported attribute format"s);
         }
-
-        return bytes;
-    }
-
-    std::uint32_t calculate_box_vertices_number(primitives::box_create_info const &create_info)
-    {
-        if (create_info.hsegments * create_info.vsegments * create_info.dsegments < 1)
-            throw resource::exception("invalid box segments' values"s);
-
-        std::uint32_t xface_vertices_number = (create_info.hsegments + 1) * (create_info.dsegments + 1);
-        std::uint32_t yface_vertices_number = (create_info.vsegments + 1) * (create_info.dsegments + 1);
-        std::uint32_t zface_vertices_number = (create_info.hsegments + 1) * (create_info.vsegments + 1);
-
-        return (xface_vertices_number + yface_vertices_number + zface_vertices_number) * 2;
-    }
-
-    std::uint32_t calculate_box_indices_number(primitives::box_create_info const &create_info)
-    {
-        if (create_info.hsegments * create_info.vsegments * create_info.dsegments < 1)
-            throw resource::exception("invalid box segments' values"s);
-
-        auto const hsegments = create_info.hsegments;
-        auto const vsegments = create_info.vsegments;
-        auto const dsegments = create_info.dsegments;
-
-        std::uint32_t xface_indices_number = 0;
-        std::uint32_t yface_indices_number = 0;
-        std::uint32_t zface_indices_number = 0;
-
-        switch (create_info.topology) {
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                xface_indices_number = (vsegments + 1) * (dsegments + 1) * 2;
-                yface_indices_number = (hsegments + 1) * (dsegments + 1) * 2;
-                zface_indices_number = (hsegments + 1) * (vsegments + 1) * 2;
-                break;
-
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-                xface_indices_number = ((dsegments + 1) * 2 * vsegments + (vsegments - 1) * 2 + 2) * 2;
-                yface_indices_number = ((hsegments + 1) * 2 * dsegments + (dsegments - 1) * 2 + 2) * 2;
-                zface_indices_number = ((hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2) * 2 + 2;
-                break;
-
-            default:
-                throw resource::exception("unsupported primitive topology"s);
-        }
-
-        return xface_indices_number + yface_indices_number + zface_indices_number;
     }
 }
