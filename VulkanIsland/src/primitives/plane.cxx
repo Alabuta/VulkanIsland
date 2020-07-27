@@ -307,11 +307,58 @@ namespace primitives
                               create_info, it_begin, vertex_number);
     }
 
+    template<class T>
+    void generate_indices(primitives::plane_create_info const &create_info, T *it_buffer, std::size_t indices_number)
+    {
+        switch (create_info.topology) {
+            case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+                break;
+
+            default:
+                throw resource::exception("unsupported primitive topology"s);
+        }
+    }
+
     void generate_plane_indexed(primitives::plane_create_info const &create_info, std::vector<std::byte>::iterator it_vertex_buffer,
                                 std::vector<std::byte>::iterator it_index_buffer, glm::vec4 const &color)
     {
         if (create_info.topology != graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP)
             throw resource::exception("unsupported primitive topology"s);
+
+        auto indices_number = calculate_plane_indices_number(create_info);
+
+        switch (create_info.index_buffer_format) {
+            case graphics::FORMAT::R16_UINT:
+                {
+                    using pointer_type = typename std::add_pointer_t<std::uint16_t>;
+                    auto it = reinterpret_cast<pointer_type>(std::addressof(*it_index_buffer));
+
+                    generate_indices(create_info, it, indices_number);
+                }
+                break;
+
+            case graphics::FORMAT::R32_UINT:
+                {
+                    using pointer_type = typename std::add_pointer_t<std::uint32_t>;
+                    auto it = reinterpret_cast<pointer_type>(std::addressof(*it_index_buffer));
+
+                    generate_indices(create_info, it, indices_number);
+                }
+                break;
+
+            default:
+                throw resource::exception("unsupported index instance type"s);
+        }
+
+        auto &&vertex_layout = create_info.vertex_layout;
+
+        auto vertex_number = calculate_plane_vertices_number(create_info);
+        auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_in_bytes);
+
+        auto &&attributes = vertex_layout.attributes;
+
+        std::size_t offset_in_bytes = 0;
 
         ;
     }
@@ -323,8 +370,8 @@ namespace primitives
 
         auto &&vertex_layout = create_info.vertex_layout;
 
-        std::uint32_t vertex_number = calculate_plane_vertices_number(create_info);
-        std::uint32_t vertex_size = static_cast<std::uint32_t>(vertex_layout.size_in_bytes);
+        auto vertex_number = calculate_plane_vertices_number(create_info);
+        auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_in_bytes);
 
         auto &&attributes = vertex_layout.attributes;
 
