@@ -70,19 +70,19 @@ namespace primitives
         }
     }
     
-    template<std::size_t N, class T, class F>
+    template<class T, class F>
     void generate_vertex(F generator, primitives::plane_create_info const &create_info,
-                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_number)
+                         strided_bidirectional_iterator<T> it_begin, std::size_t vertex_number)
     {
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
 
         auto it_end = std::next(it_begin, static_cast<std::ptrdiff_t>(vertex_number));
 
-        std::uint32_t const vertices_per_strip = (hsegments + 1) * 2;
-        std::uint32_t const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1) * 2;
+        auto const vertices_per_strip = (hsegments + 1) * 2;
+        auto const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1) * 2;
 
-        for (std::uint32_t strip_index = 0u; strip_index < vsegments; ++strip_index) {
+        for (auto strip_index = 0u; strip_index < vsegments; ++strip_index) {
             auto it = std::next(it_begin, strip_index * (vertices_per_strip + extra_vertices_per_strip));
 
             std::generate_n(it, 2, [&, offset = 0u] () mutable
@@ -182,7 +182,8 @@ namespace primitives
     }
 
     template<std::size_t N, class T>
-    std::array<T, N> generate_color(glm::vec4 const &color, graphics::FORMAT format)
+    std::array<T, N>
+    generate_color(glm::vec4 const &color, graphics::FORMAT format)
     {
         if constexpr (N == 3 || N == 4) {
             switch (graphics::numeric_format(format)) {
@@ -236,9 +237,20 @@ namespace primitives
         if constexpr (N == 2 || N == 3) {
             switch (graphics::numeric_format(format)) {
                 case graphics::NUMERIC_FORMAT::FLOAT:
-                    generate_vertex<N, T>(
-                        std::bind(generate_position<N, T>, create_info, std::placeholders::_1), create_info, it_begin, vertex_number
-                    );
+                    {
+                        auto generator = std::bind(generate_position<N, T>, create_info, std::placeholders::_1);
+
+                        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+
+                        if (is_primitive_indexed) {
+                            std::generate_n(it_begin, vertex_number, [generator, i = 0u] () mutable
+                            {
+                                return generator(i++);
+                            });
+                        }
+
+                        else generate_vertex(generator, create_info, it_begin, vertex_number);
+                    }
                     break;
 
                 default:
@@ -295,16 +307,27 @@ namespace primitives
     void generate_texcoords(primitives::plane_create_info const &create_info, graphics::FORMAT format,
                             strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_number)
     {
-        generate_vertex<N, T>(std::bind(generate_texcoord<N, T>, create_info, format, std::placeholders::_1),
-                              create_info, it_begin, vertex_number);
+        auto generator = std::bind(generate_texcoord<N, T>, create_info, format, std::placeholders::_1);
+
+        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+
+        if (is_primitive_indexed) {
+            std::generate_n(it_begin, vertex_number, [generator, i = 0u] () mutable
+            {
+                return generator(i++);
+            });
+        }
+
+        else generate_vertex(generator, create_info, it_begin, vertex_number);
     }
 
     template<std::size_t N, class T>
-    void generate_colors(primitives::plane_create_info const &create_info, glm::vec4 const &color, graphics::FORMAT format,
+    void generate_colors(glm::vec4 const &color, graphics::FORMAT format,
                          strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_number)
     {
-        generate_vertex<N, T>(std::bind(generate_color<N, T>, color, format),
-                              create_info, it_begin, vertex_number);
+        auto generator = std::bind(generate_color<N, T>, color, format);
+
+        std::generate_n(it_begin, vertex_number, generator);
     }
 
     template<class T>
@@ -351,16 +374,7 @@ namespace primitives
                 throw resource::exception("unsupported index instance type"s);
         }
 
-        auto &&vertex_layout = create_info.vertex_layout;
-
-        auto vertex_number = calculate_plane_vertices_number(create_info);
-        auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_in_bytes);
-
-        auto &&attributes = vertex_layout.attributes;
-
-        std::size_t offset_in_bytes = 0;
-
-        ;
+        generate_plane(create_info, it_vertex_buffer, color);
     }
 
     void generate_plane(primitives::plane_create_info const &create_info, std::vector<std::byte>::iterator it_vertex_buffer, glm::vec4 const &color)
@@ -404,7 +418,7 @@ namespace primitives
                             break;
 
                         case vertex::SEMANTIC::COLOR_0:
-                            generate_colors(create_info, color, attribute.format, it, vertex_number);
+                            generate_colors(color, attribute.format, it, vertex_number);
                             break;
 
                         default:
