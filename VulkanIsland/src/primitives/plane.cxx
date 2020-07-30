@@ -22,29 +22,32 @@ namespace primitives
 {
     std::uint32_t calculate_plane_vertices_number(primitives::plane_create_info const &create_info)
     {
-        if (create_info.hsegments * create_info.vsegments < 1)
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+
+        if (hsegments * vsegments < 1)
             throw resource::exception("invalid plane segments' values"s);
 
         bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
 
         if (is_primitive_indexed)
-            return (create_info.hsegments + 1) * (create_info.vsegments + 1);
+            return (hsegments + 1) * (vsegments + 1);
 
         switch (create_info.topology) {
             case graphics::PRIMITIVE_TOPOLOGY::POINTS:
-                return (create_info.hsegments + 1) * (create_info.vsegments + 1);
+                return (hsegments + 1) * (vsegments + 1);
 
             case graphics::PRIMITIVE_TOPOLOGY::LINES:
-                return create_info.hsegments * 2 + create_info.vsegments * 2;
+                return (hsegments - 1) * 2 + (vsegments - 1) * 2 + 4 * 2;
 
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                return create_info.hsegments * create_info.vsegments * 2 * 3;
+                return hsegments * vsegments * 2 * 3;
 
             /*case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
-                return (create_info.hsegments + 1) * 2 * create_info.vsegments + (create_info.vsegments - 1) * 2 + 2 * 2;*/
+                return (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2 + 2 * 2;*/
 
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-                return (create_info.hsegments + 1) * 2 * create_info.vsegments + (create_info.vsegments - 1) * 2;
+                return (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
 
             default:
                 throw resource::exception("unsupported primitive topology"s);
@@ -53,7 +56,10 @@ namespace primitives
 
     std::uint32_t calculate_plane_indices_number(primitives::plane_create_info const &create_info)
     {
-        if (create_info.hsegments * create_info.vsegments < 1)
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+
+        if (hsegments * vsegments < 1)
             throw resource::exception("invalid plane segments' values"s);
 
         bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
@@ -63,19 +69,19 @@ namespace primitives
 
         switch (create_info.topology) {
             case graphics::PRIMITIVE_TOPOLOGY::POINTS:
-                return (create_info.hsegments + 1) * (create_info.vsegments + 1);
+                return (hsegments + 1) * (vsegments + 1);
 
             case graphics::PRIMITIVE_TOPOLOGY::LINES:
-                return create_info.hsegments * 2 + create_info.vsegments * 2;
+                return hsegments * 2 + vsegments * 2;
 
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                return create_info.hsegments * create_info.vsegments * 2 * 3;
+                return hsegments * vsegments * 2 * 3;
 
             /*case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
-                return (create_info.hsegments + 1) * 2 * create_info.vsegments + (create_info.vsegments - 1) * 2 + 2 * 2;*/
+                return (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2 + 2 * 2;*/
 
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-                return (create_info.hsegments + 1) * 2 * create_info.vsegments + (create_info.vsegments - 1) * 2;
+                return (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
 
             default:
                 throw resource::exception("unsupported primitive topology"s);
@@ -88,6 +94,37 @@ namespace primitives
     {
         ;
     }
+
+    template<class T, class F>
+    void generate_vertex_as_lines(F generator, primitives::plane_create_info const &create_info,
+                                  strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_number)
+    {
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+
+        auto const offset = (hsegments + 1) * 2;
+
+        std::generate_n(it_begin, offset, [&, i = 0u] () mutable
+        {
+            auto vertex_index = i / 2 + (i % 2) * vsegments * (hsegments + 1);
+
+            ++i;
+
+            return generator(vertex_index);
+        });
+
+        it_begin = std::next(it_begin, static_cast<std::ptrdiff_t>(offset));
+
+        std::generate_n(it_begin, (vsegments + 1) * 2, [&, i = 0u] () mutable
+        {
+            auto vertex_index = (i % 2) * hsegments + i / 2 * (hsegments + 1);
+
+            ++i;
+
+            return generator(vertex_index);
+        });
+    }
+
     template<class T, class F>
     void generate_vertex_as_triangle_strip(F generator, primitives::plane_create_info const &create_info,
                                            strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_number)
@@ -145,8 +182,11 @@ namespace primitives
                 generate_vertex_as_points(generator, create_info, it_begin, vertex_number);
                 break;
 
-            /*case graphics::PRIMITIVE_TOPOLOGY::LINES:
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
+                generate_vertex_as_lines(generator, create_info, it_begin, vertex_number);
+                break;
+
+            /*case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
             case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:*/
 
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
