@@ -43,9 +43,6 @@ namespace primitives
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
                 return hsegments * vsegments * 2 * 3;
 
-            /*case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
-                return (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2 + 2 * 2;*/
-
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
                 return (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
 
@@ -77,9 +74,6 @@ namespace primitives
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
                 return hsegments * vsegments * 2 * 3;
 
-            /*case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
-                return (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2 + 2 * 2;*/
-
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
                 return (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
 
@@ -92,7 +86,10 @@ namespace primitives
     void generate_vertex_as_points(F generator, primitives::plane_create_info const &create_info,
                                    strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_number)
     {
-        ;
+        std::generate_n(it_begin, vertex_number, [generator, i = 0u] () mutable
+        {
+            return generator(i++);
+        });
     }
 
     template<class T, class F>
@@ -120,6 +117,31 @@ namespace primitives
             auto vertex_index = (i % 2) * hsegments + i / 2 * (hsegments + 1);
 
             ++i;
+
+            return generator(vertex_index);
+        });
+    }
+
+    template<class T, class F>
+    void generate_vertex_as_triangles(F generator, primitives::plane_create_info const &create_info,
+                                      strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_number)
+    {
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+
+        auto const horizontal_vertices_number = hsegments * 2 * 3;
+
+        std::generate_n(it_begin, vertex_number, [&, i = 0u] () mutable
+        {
+            auto triangle_index = i / 3;
+            auto quad_index = triangle_index / 2;
+
+            auto column = quad_index % hsegments + 1;
+            auto row = quad_index / hsegments + (triangle_index % 2);
+
+            ++i;
+
+            auto vertex_index = row * (hsegments + 1) + column;
 
             return generator(vertex_index);
         });
@@ -186,8 +208,9 @@ namespace primitives
                 generate_vertex_as_lines(generator, create_info, it_begin, vertex_number);
                 break;
 
-            /*case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-            case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:*/
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+                generate_vertex_as_triangles(generator, create_info, it_begin, vertex_number);
+                break;
 
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
                 generate_vertex_as_triangle_strip(generator, create_info, it_begin, vertex_number);
