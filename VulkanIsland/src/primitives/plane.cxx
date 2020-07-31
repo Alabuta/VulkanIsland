@@ -1,3 +1,4 @@
+#include <iostream>
 #include <array>
 #include <tuple>
 #include <variant>
@@ -133,15 +134,29 @@ namespace primitives
 
         std::generate_n(it_begin, vertex_number, [&, i = 0u] () mutable
         {
+            std::cout << "i "s << i << std::endl;
             auto triangle_index = i / 3;
             auto quad_index = triangle_index / 2;
+            std::cout << "tr and quad indices "s << triangle_index << ' ' << quad_index << std::endl;
+
+            auto is_triangle_index_even = triangle_index % 2 == 0;
+
+            if (is_triangle_index_even) {
+                auto x = ((i % 3) % 2) * hsegments;
+            }
+
+            else {
+                ;
+            }
 
             auto column = quad_index % hsegments + 1;
             auto row = quad_index / hsegments + (triangle_index % 2);
+            std::cout << "column and row "s << column << ' ' << row << std::endl;
 
             ++i;
 
             auto vertex_index = row * (hsegments + 1) + column;
+            std::cout << "vertex_index "s << vertex_index << std::endl;
 
             return generator(vertex_index);
         });
