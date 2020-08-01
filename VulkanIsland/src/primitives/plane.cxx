@@ -1,4 +1,3 @@
-#include <iostream>
 #include <array>
 #include <tuple>
 #include <variant>
@@ -70,7 +69,7 @@ namespace primitives
                 return (hsegments + 1) * (vsegments + 1);
 
             case graphics::PRIMITIVE_TOPOLOGY::LINES:
-                return hsegments * 2 + vsegments * 2;
+                return (hsegments - 1) * 2 + (vsegments - 1) * 2 + 4 * 2;
 
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
                 return hsegments * vsegments * 2 * 3;
@@ -84,7 +83,7 @@ namespace primitives
     }
 
     template<class T, class F>
-    void generate_vertex_as_points(F generator, primitives::plane_create_info const &create_info,
+    void generate_vertex_as_points(F generator, primitives::plane_create_info const &,
                                    strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_number)
     {
         std::generate_n(it_begin, vertex_number, [generator, i = 0u] () mutable
@@ -95,7 +94,7 @@ namespace primitives
 
     template<class T, class F>
     void generate_vertex_as_lines(F generator, primitives::plane_create_info const &create_info,
-                                  strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_number)
+                                  strided_bidirectional_iterator<T> it_begin, std::uint32_t)
     {
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
@@ -125,41 +124,29 @@ namespace primitives
 
     template<class T, class F>
     void generate_vertex_as_triangles(F generator, primitives::plane_create_info const &create_info,
-                                      strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_number)
+                                      strided_bidirectional_iterator<T> it_begin, std::uint32_t)
     {
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
 
-        auto const horizontal_vertices_number = hsegments * 2 * 3;
+        auto const pattern = std::array{0u, hsegments + 1, 1u, 1u, hsegments + 1, hsegments + 2};
 
-        std::generate_n(it_begin, vertex_number, [&, i = 0u] () mutable
-        {
-            std::cout << "i "s << i << std::endl;
-            auto triangle_index = i / 3;
-            auto quad_index = triangle_index / 2;
-            std::cout << "tr and quad indices "s << triangle_index << ' ' << quad_index << std::endl;
+        auto const vertices_per_quad = 2 * 3;
+        auto const horizontal_vertices_number = hsegments * vertices_per_quad;
 
-            auto is_triangle_index_even = triangle_index % 2 == 0;
+        for (auto vsegment_index = 0u; vsegment_index < vsegments; ++vsegment_index) {
+            for (auto hsegment_index = 0u; hsegment_index < hsegments; ++hsegment_index) {
+                auto const offset = horizontal_vertices_number * vsegment_index + hsegment_index * vertices_per_quad;
+                auto it = std::next(it_begin, static_cast<std::ptrdiff_t>(offset));
 
-            if (is_triangle_index_even) {
-                auto x = ((i % 3) % 2) * hsegments;
+                std::transform(std::cbegin(pattern), std::cend(pattern), it, [&] (auto column)
+                {
+                    auto vertex_index = vsegment_index * (hsegments + 1) + column + hsegment_index;
+                    
+                    return generator(vertex_index);
+                });
             }
-
-            else {
-                ;
-            }
-
-            auto column = quad_index % hsegments + 1;
-            auto row = quad_index / hsegments + (triangle_index % 2);
-            std::cout << "column and row "s << column << ' ' << row << std::endl;
-
-            ++i;
-
-            auto vertex_index = row * (hsegments + 1) + column;
-            std::cout << "vertex_index "s << vertex_index << std::endl;
-
-            return generator(vertex_index);
-        });
+        }
     }
 
     template<class T, class F>
@@ -449,7 +436,7 @@ namespace primitives
     }
 
     template<class T>
-    void generate_indices(primitives::plane_create_info const &create_info, T *buffer_begin, std::size_t indices_number)
+    void generate_indices(primitives::plane_create_info const &create_info, T *buffer_begin, std::uint32_t indices_number)
     {
         auto it_begin = strided_bidirectional_iterator<T>{buffer_begin, sizeof(T)};
 
