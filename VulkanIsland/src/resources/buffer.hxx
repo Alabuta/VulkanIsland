@@ -39,21 +39,31 @@ namespace resource
     class index_buffer final {
     public:
 
-        template<class T>
-        requires mpl::is_one_of_v<T, std::uint16_t, std::uint32_t>
-        index_buffer(std::shared_ptr<resource::buffer> buffer) noexcept : buffer{buffer}, type{T{}} { }
+        index_buffer(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer, graphics::FORMAT format);
 
-        template<class T>
-        requires mpl::are_same_v<std::remove_cvref_t<T>, resource::index_buffer>
-        bool constexpr operator< (T &&rhs) const
-        {
-            return buffer->handle() < rhs.buffer->handle();
-        }
+        resource::buffer const &device_buffer() const { return *device_buffer_; }
+        resource::buffer const &staging_buffer() const { return *staging_buffer_; }
+
+        std::size_t device_memory_offset() const { return device_buffer_->memory()->offset() + device_buffer_offset_; }
+        std::size_t staging_memory_offset() const { return staging_buffer_->memory()->offset() + staging_buffer_offset_; }
+
+        std::size_t available_device_buffer_size() const { return device_buffer_size_ - device_buffer_offset_; }
+        std::size_t available_staging_buffer_size() const { return staging_buffer_size_ - staging_buffer_offset_; }
+
+        graphics::FORMAT format() const noexcept { return format_; }
 
     private:
-        std::shared_ptr<resource::buffer> buffer{nullptr};
 
-        std::variant<std::uint16_t, std::uint32_t> type;
+        std::shared_ptr<resource::buffer> device_buffer_{nullptr};
+        std::shared_ptr<resource::buffer> staging_buffer_{nullptr};
+
+        std::size_t device_buffer_offset_{0};
+        std::size_t device_buffer_size_{0};
+
+        std::size_t staging_buffer_offset_{0};
+        std::size_t staging_buffer_size_{0};
+
+        graphics::FORMAT format_{graphics::FORMAT::UNDEFINED};
 
         index_buffer() = delete;
         index_buffer(index_buffer const &) = delete;
@@ -87,13 +97,13 @@ namespace resource
         std::shared_ptr<resource::buffer> device_buffer_{nullptr};
         std::shared_ptr<resource::buffer> staging_buffer_{nullptr};
 
-        graphics::vertex_layout vertex_layout_;
-
         std::size_t device_buffer_offset_{0};
         std::size_t device_buffer_size_{0};
 
         std::size_t staging_buffer_offset_{0};
         std::size_t staging_buffer_size_{0};
+
+        graphics::vertex_layout vertex_layout_;
 
         vertex_buffer() = delete;
         vertex_buffer(vertex_buffer const &) = delete;

@@ -3,6 +3,14 @@
 
 namespace resource
 {
+    index_buffer::index_buffer(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer,
+                               graphics::FORMAT format)
+        : device_buffer_{device_buffer}, staging_buffer_{staging_buffer}, format_{format}
+    {
+        device_buffer_size_ = device_buffer_->memory()->size();
+        staging_buffer_size_ = staging_buffer_->memory()->size();
+    }
+
     vertex_buffer::vertex_buffer(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer,
                                  graphics::vertex_layout const &vertex_layout)
         : device_buffer_{device_buffer}, staging_buffer_{staging_buffer}, vertex_layout_{vertex_layout}

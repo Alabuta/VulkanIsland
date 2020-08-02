@@ -62,10 +62,10 @@ namespace resource
         [[nodiscard]] std::shared_ptr<resource::semaphore> create_semaphore();
 
         [[nodiscard]] std::shared_ptr<resource::vertex_buffer> create_vertex_buffer(graphics::vertex_layout const &layout, std::size_t size_in_bytes);
-
-        [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(std::size_t size_in_bytes);
+        [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(graphics::FORMAT format, std::size_t size_in_bytes);
 
         [[nodiscard]] auto &vertex_buffers() const noexcept { return vertex_buffers_; }
+        [[nodiscard]] auto &index_buffers() const noexcept { return index_buffers_; }
 
         void stage_vertex_buffer_data(std::shared_ptr<resource::vertex_buffer> vertex_buffer, std::vector<std::byte> const &container) const;
 
@@ -74,6 +74,7 @@ namespace resource
     private:
 
         static std::size_t constexpr kVERTEX_BUFFER_INCREASE_VALUE{4};
+        static std::size_t constexpr kINDEX_BUFFER_INCREASE_VALUE{4};
 
         vulkan::device const &device_;
         renderer::config const &config_;
@@ -84,5 +85,7 @@ namespace resource
 
         // TODO:: unordered_miltimap
         std::unordered_map<graphics::vertex_layout, std::shared_ptr<resource::vertex_buffer>, graphics::hash<graphics::vertex_layout>> vertex_buffers_;
+
+        std::unordered_map<graphics::FORMAT, std::shared_ptr<resource::index_buffer>> index_buffers_;
     };
 }
