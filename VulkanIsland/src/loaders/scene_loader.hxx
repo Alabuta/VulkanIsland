@@ -131,7 +131,7 @@ struct xformat final {
         std::vector<std::byte> buffer;
     };
 
-    std::vector<index_buffer> index_buffers;
+    std::unordered_map<graphics::FORMAT, index_buffer> index_buffers;
 
     struct material final {
         std::uint32_t technique;

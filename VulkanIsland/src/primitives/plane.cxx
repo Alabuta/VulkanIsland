@@ -444,9 +444,6 @@ namespace primitives
             case graphics::PRIMITIVE_TOPOLOGY::POINTS:
             case graphics::PRIMITIVE_TOPOLOGY::LINES:
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                break;
-
-            case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
                 generate_vertex([] (auto vertex_index)
                 {

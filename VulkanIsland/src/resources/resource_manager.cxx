@@ -405,36 +405,6 @@ namespace resource
         return std::shared_ptr<resource::index_buffer>();
     }
 
-    void resource_manager::stage_vertex_buffer_data(std::shared_ptr<resource::vertex_buffer> vertex_buffer, std::vector<std::byte> const &container) const
-    {
-        if (vertex_buffer == nullptr)
-            return;
-
-        auto const size_in_bytes = std::size(container);
-
-        if (vertex_buffer->available_staging_buffer_size() < size_in_bytes)
-            throw resource::not_enough_memory("not enough staging memory for vertex buffer"s);
-
-        // TODO: sparse memory binding
-        if (vertex_buffer->available_device_buffer_size() < size_in_bytes)
-            throw resource::not_enough_memory("not enough device memory for vertex buffer"s);
-
-        auto &&memory = vertex_buffer->staging_buffer().memory();
-
-        void *ptr;
-
-        if (auto result = vkMapMemory(device_.handle(), memory->handle(), vertex_buffer->staging_memory_offset(), size_in_bytes, 0, &ptr); result != VK_SUCCESS)
-            throw resource::exception(fmt::format("failed to map staging vertex buffer memory: {0:#x}"s, result));
-
-        else {
-            std::uninitialized_copy_n(std::begin(container), size_in_bytes, reinterpret_cast<std::byte *>(ptr));
-
-            vkUnmapMemory(device_.handle(), memory->handle());
-
-            vertex_buffer->staging_buffer_offset_ += size_in_bytes;
-        }
-    }
-
     void resource_manager::transfer_vertex_buffers_data(VkCommandPool command_pool, graphics::transfer_queue const &transfer_queue)
     {
         //std::vector<VkBufferCopy> copy_regions;
@@ -448,6 +418,26 @@ namespace resource
 
             auto &&device_buffer_offset = vertex_buffer->device_buffer_offset_;
             auto &&staging_buffer_offset = vertex_buffer->staging_buffer_offset_;
+
+            auto copy_regions = std::array{
+                VkBufferCopy{ 0, device_buffer_offset, staging_buffer_offset }
+            };
+
+            copy_buffer_to_buffer(device_, transfer_queue, staging_buffer.handle(), device_buffer.handle(), std::move(copy_regions), command_pool);
+
+            device_buffer_offset += staging_buffer_offset;
+            staging_buffer_offset = 0;
+        }
+    }
+
+    void resource_manager::transfer_index_buffers_data(VkCommandPool command_pool, graphics::transfer_queue const &transfer_queue)
+    {
+        for (auto &&[format, index_buffer] : index_buffers_) {
+            auto &&staging_buffer = index_buffer->staging_buffer();
+            auto &&device_buffer = index_buffer->device_buffer();
+
+            auto &&device_buffer_offset = index_buffer->device_buffer_offset_;
+            auto &&staging_buffer_offset = index_buffer->staging_buffer_offset_;
 
             auto copy_regions = std::array{
                 VkBufferCopy{ 0, device_buffer_offset, staging_buffer_offset }

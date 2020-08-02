@@ -138,10 +138,14 @@ create_swapchain(vulkan::device const &device, renderer::platform_surface const 
 struct draw_command final {
     std::shared_ptr<graphics::material> material;
     std::shared_ptr<graphics::pipeline> pipeline;
+
     std::shared_ptr<resource::vertex_buffer> vertex_buffer;
+    std::shared_ptr<resource::index_buffer> index_buffer;
 
     std::uint32_t vertex_count{0};
     std::uint32_t first_vertex{0};
+
+    std::uint32_t index_count{0};
 
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
 
@@ -452,17 +456,26 @@ void create_graphics_command_buffers(app_t &app)
 
         for (auto &&draw_command : app.draw_commands) {
             auto [
-                material, pipeline, vertex_buffer,
-                vertex_count, first_vertex,
+                material, pipeline, vertex_buffer, index_buffer,
+                vertex_count, first_vertex, index_count,
                 pipeline_layout, render_pass, descriptor_set
             ] = draw_command;
+
+            if (index_buffer && index_count) {
+                auto index_type = index_buffer->format() == graphics::FORMAT::R16_UINT ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+
+                vkCmdBindIndexBuffer(command_buffer, index_buffer->device_buffer().handle(), 0, index_type);
+            }
 
             vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
 
             vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
                                     0, 1, &descriptor_set, 1, &dynamic_offset);
 
-            vkCmdDraw(command_buffer, vertex_count, 1, first_vertex, 0);
+            if (index_buffer && index_count)
+                vkCmdDrawIndexed(command_buffer, index_count, 1, first_vertex, 0, 0);
+
+            else vkCmdDraw(command_buffer, vertex_count, 1, first_vertex, 0);
 
             dynamic_offset += static_cast<std::uint32_t>(aligned_offset);
         }
@@ -625,8 +638,8 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
             app.draw_commands.push_back(
                 draw_command{
-                    material, pipeline, vertex_buffer,
-                    meshlet.vertex_count, meshlet.first_vertex,
+                    material, pipeline, vertex_buffer, nullptr,
+                    meshlet.vertex_count, meshlet.first_vertex, 0u,
                     app.pipelineLayout, app.render_pass, app.descriptorSet
                 }
             );
@@ -999,6 +1012,7 @@ void init(platform::window &window, app_t &app)
     build_render_pipelines(app, temp::model);
 
     app.resource_manager->transfer_vertex_buffers_data(app.transfer_command_pool, app.device->transfer_queue);
+    app.resource_manager->transfer_index_buffers_data(app.transfer_command_pool, app.device->transfer_queue);
 
     create_graphics_command_buffers(app);
 
