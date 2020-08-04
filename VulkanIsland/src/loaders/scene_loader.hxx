@@ -121,7 +121,7 @@ struct xformat final {
         std::vector<std::byte> buffer;
     };
 
-    std::unordered_map<std::size_t, vertex_buffer> vertex_buffers;
+    std::unordered_map<std::int64_t, vertex_buffer> vertex_buffers;
 
     struct index_buffer final {
         graphics::FORMAT format;
@@ -131,7 +131,7 @@ struct xformat final {
         std::vector<std::byte> buffer;
     };
 
-    std::unordered_map<graphics::FORMAT, index_buffer> index_buffers;
+    std::unordered_map<std::int64_t, index_buffer> index_buffers;
 
     struct material final {
         std::uint32_t technique;
@@ -140,7 +140,7 @@ struct xformat final {
 
     std::vector<material> materials;
 
-    struct non_indexed_meshlet final {
+    /*struct non_indexed_meshlet final {
         graphics::PRIMITIVE_TOPOLOGY topology;
 
         std::size_t vertex_buffer_index;
@@ -153,24 +153,26 @@ struct xformat final {
         std::uint32_t first_instance{0};
     };
 
-    std::vector<non_indexed_meshlet> non_indexed_meshlets;
+    std::vector<non_indexed_meshlet> non_indexed_meshlets;*/
 
-    struct indexed_meshlet final {
+    struct meshlet final {
         graphics::PRIMITIVE_TOPOLOGY topology;
 
-        std::size_t vertex_buffer_index;
-        std::size_t index_buffer_index;
+        std::int64_t vertex_buffer_index{-1};
+        std::int64_t index_buffer_index{-1};
 
         std::size_t material_index;
 
+        std::uint32_t vertex_count{0};
         std::uint32_t index_count{0};
         std::uint32_t instance_count{0};
+        std::uint32_t first_vertex{0};
         std::uint32_t first_index{0};
         std::uint32_t vertex_offset{0};
         std::uint32_t first_instance{0};
     };
 
-    std::vector<indexed_meshlet> indexed_meshlets;
+    std::vector<meshlet> meshlets;
 
     std::vector<glm::mat4> transforms;
 

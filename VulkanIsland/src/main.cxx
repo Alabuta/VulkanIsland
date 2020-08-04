@@ -594,12 +594,15 @@ void build_render_pipelines(app_t &app, xformat const &model_)
         auto &&[meshlets] = mesh;
 
         for (auto meshlet_index : meshlets) {
-            auto &&meshlet = model_.non_indexed_meshlets.at(meshlet_index);
+            auto &&meshlet = model_.meshlets.at(meshlet_index);
 
             auto material_index = meshlet.material_index;
             auto [technique_index, name] = model_.materials[material_index];
 
             auto vertex_layout_index = meshlet.vertex_buffer_index;
+            if (vertex_layout_index == -1)
+                throw graphics::exception("invalid vertex buffer index"s);
+
             auto &&vertex_layout = model_.vertex_layouts[vertex_layout_index];
 
             auto vertex_layout_name = graphics::to_string(vertex_layout);
@@ -616,9 +619,27 @@ void build_render_pipelines(app_t &app, xformat const &model_)
             auto vertex_buffer = resource_manager.create_vertex_buffer(vertex_layout, std::size(vertex_data_buffer.buffer));
 
             if (vertex_buffer)
-                resource_manager.stage_vertex_buffer_data(vertex_buffer, vertex_data_buffer.buffer);
+                resource_manager.stage_buffer_data(vertex_buffer, vertex_data_buffer.buffer);
 
             else throw graphics::exception("failed to get vertex buffer"s);
+
+            std::shared_ptr<resource::index_buffer> index_buffer;
+            
+            if (auto index_buffer_index = meshlet.index_buffer_index; vertex_layout_index != -1) {
+                auto &&index_data_buffer = model_.index_buffers.at(index_buffer_index);
+            }
+
+            /*
+
+            if () {
+
+                auto vertex_buffer = resource_manager.create_index_buffer(vertex_layout, std::size(vertex_data_buffer.buffer));
+
+                if (vertex_buffer)
+                    resource_manager.stage_buffer_data(vertex_buffer, vertex_data_buffer.buffer);
+
+                else throw graphics::exception("failed to get vertex buffer"s);
+            }*/
 
             [[maybe_unused]] auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(vertex_layout);
 
@@ -671,6 +692,7 @@ namespace temp
         }
 
         auto constexpr topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
+        auto constexpr indices_format = graphics::FORMAT::R16_UINT;
 
         primitives::plane_create_info const create_info{
             vertex_layout, topology, graphics::FORMAT::UNDEFINED,
@@ -681,11 +703,13 @@ namespace temp
         auto const vertex_size = vertex_layout.size_in_bytes;
 
         auto const vertex_buffer_allocation_size = vertex_count * vertex_size;
+        std::cout << "vertex_buffer_allocation_size "s << vertex_buffer_allocation_size << std::endl;
 
         auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
+        //auto &&index_buffer = model_.index_buffers[indices_format];
 
         {
-            xformat::non_indexed_meshlet meshlet;
+            xformat::meshlet meshlet;
 
             meshlet.topology = topology;
 
@@ -697,10 +721,10 @@ namespace temp
             meshlet.instance_count = 1;
             meshlet.first_instance = 0;
 
-            std::vector<std::size_t> meshlets{std::size(model_.non_indexed_meshlets)};
+            std::vector<std::size_t> meshlets{std::size(model_.meshlets)};
             model_.meshes.push_back(xformat::mesh{meshlets});
 
-            model_.non_indexed_meshlets.push_back(std::move(meshlet));
+            model_.meshlets.push_back(std::move(meshlet));
         }
 
         {
@@ -712,6 +736,59 @@ namespace temp
             auto it_vertex_buffer = std::next(std::begin(vertex_buffer.buffer), write_offset);
 
             primitives::generate_plane(create_info, it_vertex_buffer, color);
+        }
+
+        {
+            auto const vl = vertex::create_vertex_layout(
+                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
+                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
+                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
+            );
+
+            struct vertex final {
+                std::array<float, 3> p;
+                std::array<std::uint16_t, 2> n;
+                std::array<std::uint8_t, 4> c;
+            };
+
+            auto constexpr tpl = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
+
+            primitives::plane_create_info const ci{
+                vl, tpl, indices_format,
+                1.f, 1.f, 1u, 2u
+            };
+
+            auto const vc = primitives::calculate_plane_vertices_number(ci);
+            auto const ic = primitives::calculate_plane_indices_number(ci);
+
+            auto format_inst = graphics::instantiate_format(indices_format);
+
+            if (!format_inst.has_value())
+                throw resource::exception("failed to instantiate indices format"s);
+
+            auto index_size_in_bytes = std::visit([] (auto type)
+            {
+                return sizeof(decltype(type));
+
+            }, format_inst.value());
+
+            std::vector<std::byte> vbuffer(vc * vl.size_in_bytes);
+            std::vector<std::byte> ibuffer(ic *index_size_in_bytes);
+
+            primitives::generate_plane_indexed(ci, std::begin(vbuffer), std::begin(ibuffer), color);
+
+            auto it_vertex = reinterpret_cast<vertex *>(std::data(vbuffer));
+            auto it_index = reinterpret_cast<std::uint16_t *>(std::data(ibuffer));
+
+            for (auto i = 0u; i < vc; ++i, ++it_vertex) {
+                std::cout << "p " << it_vertex->p[0] << ' ' << it_vertex->p[1] << ' ' << it_vertex->p[2] << std::endl;
+                std::cout << "n " << it_vertex->n[0] << ' ' << it_vertex->n[1] << std::endl;
+                std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;
+            }
+
+            for (auto i = 0u; i < ic; i += 3, ++it_index) {
+                std::cout << "i " << *it_index << ' ' << *++it_index << ' ' << *++it_index << std::endl;
+            }
         }
     }
 
@@ -803,11 +880,11 @@ namespace temp
 
             {
                 model_.scene_nodes.push_back(xformat::scene_node{1u, std::size(model_.meshes)});
-                std::vector<std::size_t> meshlets{std::size(model_.non_indexed_meshlets)};
+                std::vector<std::size_t> meshlets{std::size(model_.meshlets)};
                 model_.meshes.push_back(xformat::mesh{meshlets});
 
                 // Second triangle
-                xformat::non_indexed_meshlet meshlet;
+                xformat::meshlet meshlet;
 
                 meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
@@ -819,16 +896,16 @@ namespace temp
                 meshlet.instance_count = 1;
                 meshlet.first_instance = 0;
 
-                model_.non_indexed_meshlets.push_back(std::move(meshlet));
+                model_.meshlets.push_back(std::move(meshlet));
             }
 
             {
                 model_.scene_nodes.push_back(xformat::scene_node{2u, std::size(model_.meshes)});
-                std::vector<std::size_t> meshlets{std::size(model_.non_indexed_meshlets)};
+                std::vector<std::size_t> meshlets{std::size(model_.meshlets)};
                 model_.meshes.push_back(xformat::mesh{meshlets});
 
                 // Third triangle
-                xformat::non_indexed_meshlet meshlet;
+                xformat::meshlet meshlet;
 
                 meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
@@ -840,7 +917,7 @@ namespace temp
                 meshlet.instance_count = 1;
                 meshlet.first_instance = 0;
 
-                model_.non_indexed_meshlets.push_back(std::move(meshlet));
+                model_.meshlets.push_back(std::move(meshlet));
             }
 
             {
