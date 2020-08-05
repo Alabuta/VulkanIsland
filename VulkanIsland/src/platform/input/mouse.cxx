@@ -17,6 +17,9 @@ namespace platform
 {
     void mouse::connect_handler(std::shared_ptr<handler_interface> slot)
     {
+        using boost::placeholders::_1;
+        using boost::placeholders::_2;
+
         on_move_.connect(decltype(on_move_)::slot_type(
             &handler_interface::on_move, slot.get(), _1, _2
         ).track_foreign(slot));

@@ -42,8 +42,8 @@ namespace
 
         auto filter_vertex_layouts = [&] (auto &&indices)
         {
-            auto vertex_attributes = indices | ranges::view::transform(transform_indices);
-            auto intersection = ranges::view::set_intersection(required_vertex_attributes, vertex_attributes, compare_attributes);
+            auto vertex_attributes = indices | ranges::views::transform(transform_indices);
+            auto intersection = ranges::views::set_intersection(required_vertex_attributes, vertex_attributes, compare_attributes);
 
             return ranges::distance(intersection) == ranges::distance(indices);
         };

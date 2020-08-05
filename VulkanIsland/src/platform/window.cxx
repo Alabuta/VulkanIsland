@@ -31,6 +31,9 @@ namespace platform
 
     void window::connect_event_handler(std::shared_ptr<event_handler_interface> handler)
     {
+        using boost::placeholders::_1;
+        using boost::placeholders::_2;
+
         resize_callback_.connect(decltype(resize_callback_)::slot_type(
             &event_handler_interface::on_resize, handler.get(), _1, _2
         ).track_foreign(handler));
@@ -38,6 +41,8 @@ namespace platform
 
     void window::connect_input_handler(std::shared_ptr<input_handler_interface> handler)
     {
+        using boost::placeholders::_1;
+
         input_update_callback_.connect(decltype(input_update_callback_)::slot_type(
             &input_handler_interface::update, handler.get(), _1
         ).track_foreign(handler));
