@@ -660,6 +660,27 @@ namespace convert_to
             case graphics::FORMAT::BGRA8_SRGB:
                 return VkFormat::VK_FORMAT_B8G8R8A8_SRGB;
 
+            case graphics::FORMAT::A2RGB10_UINT_PACK32:
+                return VkFormat::VK_FORMAT_A2R10G10B10_UINT_PACK32;
+
+            case graphics::FORMAT::A2BGR10_UINT_PACK32:
+                return VkFormat::VK_FORMAT_A2B10G10R10_UINT_PACK32;
+
+            case graphics::FORMAT::R5G6B5_UNORM_PACK16:
+                return VkFormat::VK_FORMAT_R5G6B5_UNORM_PACK16;
+
+            case graphics::FORMAT::ABGR8_UNORM_PACK32:
+                return VkFormat::VK_FORMAT_A8B8G8R8_UNORM_PACK32;
+
+            case graphics::FORMAT::ABGR8_SNORM_PACK32:
+                return VkFormat::VK_FORMAT_A8B8G8R8_SNORM_PACK32;
+
+            case graphics::FORMAT::ABGR8_SRGB_PACK32:
+                return VkFormat::VK_FORMAT_A8B8G8R8_SRGB_PACK32;
+
+            case graphics::FORMAT::A2RGB10_UNORM_PACK32:
+                return VkFormat::VK_FORMAT_A2R10G10B10_UNORM_PACK32;
+
             case graphics::FORMAT::R8_SINT:
                 return VkFormat::VK_FORMAT_R8_SINT;
 

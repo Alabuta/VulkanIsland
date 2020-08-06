@@ -412,4 +412,4 @@ def main():
                 compile_material(json.load(json_file))
 
 
-if __main__=='__main__': main()
+if __name__=='__main__': main()
