@@ -43,6 +43,6 @@ namespace vulkan_config
         nullptr,
         "VulkanIsland", VK_MAKE_VERSION(PROJECT_VERSION_MAJOR, PROJECT_VERSION_MINOR, 0),
         "VulkanIsland", VK_MAKE_VERSION(PROJECT_VERSION_MAJOR, PROJECT_VERSION_MINOR, 0),
-        VK_API_VERSION_1_1
+        VK_API_VERSION_1_2
     };
 }

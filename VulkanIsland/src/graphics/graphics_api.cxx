@@ -639,6 +639,9 @@ namespace convert_to
             case graphics::FORMAT::RGBA8_SNORM:
                 return VkFormat::VK_FORMAT_R8G8B8A8_SNORM;
 
+            case graphics::FORMAT::BGRA8_SNORM:
+                return VkFormat::VK_FORMAT_B8G8R8A8_SNORM;
+
             case graphics::FORMAT::R8_UNORM:
                 return VkFormat::VK_FORMAT_R8_UNORM;
 
@@ -680,6 +683,9 @@ namespace convert_to
 
             case graphics::FORMAT::A2RGB10_UNORM_PACK32:
                 return VkFormat::VK_FORMAT_A2R10G10B10_UNORM_PACK32;
+
+            case graphics::FORMAT::A2BGR10_UNORM_PACK32:
+                return VkFormat::VK_FORMAT_A2B10G10R10_UNORM_PACK32;
 
             case graphics::FORMAT::R8_SINT:
                 return VkFormat::VK_FORMAT_R8_SINT;
@@ -753,6 +759,24 @@ namespace convert_to
 
             case graphics::FORMAT::RGBA16_UINT:
                 return VkFormat::VK_FORMAT_R16G16B16A16_UINT;
+
+            case graphics::FORMAT::B5G6R5_UNORM_PACK16:
+                return VkFormat::VK_FORMAT_B5G6R5_UNORM_PACK16;
+
+            case graphics::FORMAT::A1RGB5_UNORM_PACK16:
+                return VkFormat::VK_FORMAT_A1R5G5B5_UNORM_PACK16;
+
+            case graphics::FORMAT::RGBA4_UNORM_PACK16:
+                return VkFormat::VK_FORMAT_R4G4B4A4_UNORM_PACK16;
+
+            case graphics::FORMAT::BGRA4_UNORM_PACK16:
+                return VkFormat::VK_FORMAT_B4G4R4A4_UNORM_PACK16;
+
+            case graphics::FORMAT::RGB5A1_UNORM_PACK16:
+                return VkFormat::VK_FORMAT_R5G5B5A1_UNORM_PACK16;
+
+            case graphics::FORMAT::BGR5A1_UNORM_PACK16:
+                return VkFormat::VK_FORMAT_B5G5R5A1_UNORM_PACK16;
 
             // Signed and unsigned four byte integer formats.
             case graphics::FORMAT::R32_SINT:
