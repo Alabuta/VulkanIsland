@@ -61,45 +61,45 @@ namespace resource
     std::shared_ptr<resource::buffer>
     resource_manager::create_buffer(std::size_t size_in_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
     {
-    #ifdef _MSC_VER
+        auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
+
         VkBufferCreateInfo const create_info{
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-            nullptr, 0,
-            static_cast<VkDeviceSize>(size_in_bytes),
-            convert_to::vulkan(usage),
-            VK_SHARING_MODE_EXCLUSIVE,
-            0, nullptr
-        };
-    #else
+            nullptr,
+            0, //VK_BUFFER_CREATE_SPARSE_BINDING_BIT,
+    #ifndef _MSC_VER
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wuseless-cast"
-            VkBufferCreateInfo const create_info{
-                VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-                nullptr, 0,
-                static_cast<VkDeviceSize>(size_in_bytes),
-                convert_to::vulkan(usage),
-                VK_SHARING_MODE_EXCLUSIVE,
-                0, nullptr
-            };
+    #endif
+            static_cast<VkDeviceSize>(size_in_bytes),
+    #ifndef _MSC_VER
         #pragma GCC diagnostic pop
     #endif
+            convert_to::vulkan(usage),
+            convert_to::vulkan(sharing_mode),
+            0, nullptr
+        };
 
         VkBuffer handle;
 
         if (auto result = vkCreateBuffer(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
             throw resource::instantiation_fail(fmt::format("failed to create a buffer: {0:#x}"s, result));
 
-        auto memory = memory_manager_.allocate_memory(resource::buffer{handle, nullptr}, memory_property_types);
+        auto memory = memory_manager_.allocate_memory(resource::buffer{
+            handle, nullptr, size_in_bytes, usage, sharing_mode, memory_property_types
+        }, memory_property_types);
 
         if (memory == nullptr)
-            throw memory::exception("failed to allocate buffer memory"s);
+            throw memory::bad_allocation("failed to allocate buffer memory"s);
 
         if (auto result = vkBindBufferMemory(device_.handle(), handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
             throw resource::memory_bind(fmt::format("failed to bind buffer memory: {0:#x}"s, result));
 
         std::shared_ptr<resource::buffer> buffer;
 
-        buffer.reset(new resource::buffer{handle, memory}, *resource_deleter_);
+        buffer.reset(new resource::buffer{
+            handle, memory, size_in_bytes, usage, sharing_mode, memory_property_types
+        }, *resource_deleter_);
 
         return buffer;
     }

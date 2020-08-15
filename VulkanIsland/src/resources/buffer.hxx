@@ -18,13 +18,26 @@ namespace resource
         std::shared_ptr<resource::device_memory> memory() const noexcept { return memory_; }
         std::shared_ptr<resource::device_memory> &memory() noexcept { return memory_; }
 
+        std::size_t size_in_bytes() const noexcept { return size_in_bytes_; }
+
+        graphics::BUFFER_USAGE usage() const noexcept { return usage_; }
+        graphics::RESOURCE_SHARING_MODE sharing_mode() const noexcept { return sharing_mode_; }
+        graphics::MEMORY_PROPERTY_TYPE memory_property_types() const noexcept { return memory_property_types_; }
+
     private:
 
         VkBuffer handle_{VK_NULL_HANDLE};
 
         std::shared_ptr<resource::device_memory> memory_;
 
-        buffer(VkBuffer handle, std::shared_ptr<resource::device_memory> memory) : handle_{handle}, memory_{memory} { }
+        std::size_t size_in_bytes_;
+
+        graphics::BUFFER_USAGE usage_;
+        graphics::RESOURCE_SHARING_MODE sharing_mode_;
+        graphics::MEMORY_PROPERTY_TYPE memory_property_types_;
+
+        buffer(VkBuffer handle, std::shared_ptr<resource::device_memory> memory, std::size_t size_in_bytes, graphics::BUFFER_USAGE usage,
+               graphics::RESOURCE_SHARING_MODE sharing_mode, graphics::MEMORY_PROPERTY_TYPE memory_property_types);
 
         buffer() = delete;
         buffer(buffer const &) = delete;

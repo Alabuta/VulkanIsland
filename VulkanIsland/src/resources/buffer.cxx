@@ -3,6 +3,10 @@
 
 namespace resource
 {
+    buffer::buffer(VkBuffer handle, std::shared_ptr<resource::device_memory> memory, std::size_t size_in_bytes, graphics::BUFFER_USAGE usage,
+                   graphics::RESOURCE_SHARING_MODE sharing_mode, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
+        : handle_{handle}, memory_{memory}, size_in_bytes_{size_in_bytes}, usage_{usage}, sharing_mode_{sharing_mode}, memory_property_types_{memory_property_types} { }
+
     index_buffer::index_buffer(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer,
                                graphics::FORMAT format)
         : device_buffer_{device_buffer}, staging_buffer_{staging_buffer}, format_{format}
