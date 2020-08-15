@@ -1214,4 +1214,18 @@ namespace convert_to
 
         return result;
     }
+
+    VkSharingMode vulkan(graphics::RESOURCE_SHARING_MODE sharing_mode) noexcept
+    {
+        switch (sharing_mode) {
+            case graphics::RESOURCE_SHARING_MODE::EXCLUSIVE:
+                return VkSharingMode::VK_SHARING_MODE_EXCLUSIVE;
+
+            case graphics::RESOURCE_SHARING_MODE::CONCURRENT:
+                return VkSharingMode::VK_SHARING_MODE_CONCURRENT;
+
+            default:
+                return VkSharingMode::VK_SHARING_MODE_MAX_ENUM;
+        }
+    }
 }

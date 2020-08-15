@@ -547,6 +547,11 @@ namespace graphics
         MEMORY_READ = 0x08000,
         MEMORY_WRITE = 0x10000
     };
+
+    enum struct RESOURCE_SHARING_MODE {
+        EXCLUSIVE = 0,
+        CONCURRENT
+    };
 }
 
 namespace graphics

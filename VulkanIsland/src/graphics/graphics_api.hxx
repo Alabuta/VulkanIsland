@@ -75,4 +75,6 @@ namespace convert_to
     VkImageAspectFlags vulkan(graphics::IMAGE_ASPECT image_aspect) noexcept;
 
     VkAccessFlags vulkan(graphics::MEMORY_ACCESS_TYPE access_type) noexcept;
+
+    VkSharingMode vulkan(graphics::RESOURCE_SHARING_MODE sharing_mode) noexcept;
 }
