@@ -10,7 +10,7 @@
 #include "graphics/graphics.hxx"
 
 
-enum class PIXEL_LAYOUT {
+enum struct PIXEL_LAYOUT {
     nUNDEFINED = 0, nRED, nRG, nRGB, nBGR, nRGBA, nBGRA
 };
 

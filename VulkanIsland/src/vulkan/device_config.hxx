@@ -86,7 +86,7 @@ namespace vulkan
         VK_FALSE, // inheritedQueries
     };
 
-    auto const/* expr */ device_extended_features = std::tuple{
+    auto constexpr device_extended_features = std::tuple{
         VkPhysicalDevice8BitStorageFeaturesKHR{
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR,
             nullptr,

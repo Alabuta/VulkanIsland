@@ -23,17 +23,17 @@ namespace graphics
 
 namespace graphics
 {
-    enum class PRIMITIVE_TOPOLOGY {
+    enum struct PRIMITIVE_TOPOLOGY {
         POINTS = 0,
         LINES, LINE_STRIP,
         TRIANGLES, TRIANGLE_STRIP, TRIANGLE_FAN
     };
 
-    enum class VERTEX_INPUT_RATE {
+    enum struct VERTEX_INPUT_RATE {
         PER_VERTEX, PER_INSTANCE
     };
 
-    enum class SHADER_STAGE {
+    enum struct SHADER_STAGE {
         VERTEX = 0x01,
         TESS_CONTROL = 0x02,
         TESS_EVAL = 0x04,
@@ -45,7 +45,7 @@ namespace graphics
         ALL_SHADER_STAGES = VERTEX | TESS_CONTROL | TESS_EVAL | GEOMETRY | FRAGMENT | COMPUTE
     };
 
-    enum class PIPELINE_STAGE {
+    enum struct PIPELINE_STAGE {
         TOP_OF_PIPE = 0x01,
         DRAW_INDIRECT = 0x02,
         VERTEX_INPUT = 0x04,
@@ -65,7 +65,7 @@ namespace graphics
         ALL_COMMANDS = 0x10000
     };
 
-    enum class DESCRIPTOR_TYPE {
+    enum struct DESCRIPTOR_TYPE {
         SAMPLER = 0,
         COMBINED_IMAGE_SAMPLER,
         SAMPLED_IMAGE,
@@ -79,19 +79,19 @@ namespace graphics
         INPUT_ATTACHMENT
     };
 
-    enum class CULL_MODE {
+    enum struct CULL_MODE {
         NONE, FRONT, BACK, FRONT_AND_BACK = FRONT | BACK
     };
 
-    enum class POLYGON_FRONT_FACE {
+    enum struct POLYGON_FRONT_FACE {
         COUNTER_CLOCKWISE, CLOCKWISE
     };
 
-    enum class POLYGON_MODE {
+    enum struct POLYGON_MODE {
         FILL, LINE, POINT
     };
 
-    enum class COMPARE_OPERATION {
+    enum struct COMPARE_OPERATION {
         NEVER,
         LESS,
         EQUAL,
@@ -102,7 +102,7 @@ namespace graphics
         ALWAYS
     };
 
-    enum class STENCIL_OPERATION {
+    enum struct STENCIL_OPERATION {
         KEEP = 0,
         ZERO,
         REPLACE,
@@ -113,7 +113,7 @@ namespace graphics
         DECREMENT_AND_WRAP
     };
 
-    enum class LOGIC_OPERATION {
+    enum struct LOGIC_OPERATION {
         CLEAR,
         AND,
         AND_REVERSE,
@@ -132,7 +132,7 @@ namespace graphics
         SET
     };
 
-    enum class BLEND_FACTOR {
+    enum struct BLEND_FACTOR {
         ZERO,
         ONE,
         SRC_COLOR,
@@ -154,12 +154,12 @@ namespace graphics
         ONE_MINUS_SRC1_ALPHA
     };
 
-    enum class BLEND_OPERATION {
+    enum struct BLEND_OPERATION {
         ADD,
         SUBTRACT
     };
 
-    enum class COLOR_COMPONENT {
+    enum struct COLOR_COMPONENT {
         R = 0x01,
         G = 0x02,
         B = 0x04,
@@ -169,7 +169,7 @@ namespace graphics
         RGBA = R | G | B | A
     };
 
-    enum class IMAGE_LAYOUT {
+    enum struct IMAGE_LAYOUT {
         UNDEFINED = 0,
         GENERAL,
         COLOR_ATTACHMENT,
@@ -185,18 +185,18 @@ namespace graphics
         PRESENT_SOURCE
     };
 
-    enum class IMAGE_TILING {
+    enum struct IMAGE_TILING {
         OPTIMAL = 0,
         LINEAR
     };
 
-    enum class IMAGE_TYPE {
+    enum struct IMAGE_TYPE {
         TYPE_1D = 0,
         TYPE_2D,
         TYPE_3D
     };
 
-    enum class IMAGE_VIEW_TYPE {
+    enum struct IMAGE_VIEW_TYPE {
         TYPE_1D = 0,
         TYPE_2D,
         TYPE_3D,
@@ -206,18 +206,18 @@ namespace graphics
         TYPE_CUBE_ARRAY
     };
 
-    enum class TEXTURE_FILTER {
+    enum struct TEXTURE_FILTER {
         NEAREST = 0,
         LINEAR = 1,
         CUBIC = 2
     };
 
-    enum class TEXTURE_MIPMAP_MODE {
+    enum struct TEXTURE_MIPMAP_MODE {
         NEAREST = 0,
         LINEAR = 1,
     };
 
-    enum class MEMORY_PROPERTY_TYPE {
+    enum struct MEMORY_PROPERTY_TYPE {
         DEVICE_LOCAL = 0x01,
         HOST_VISIBLE = 0x02,
         HOST_COHERENT = 0x04,
@@ -225,7 +225,7 @@ namespace graphics
         LAZILY_ALLOCATED = 0x10
     };
 
-    enum class FORMAT {
+    enum struct FORMAT {
         UNDEFINED = 0,
 
         RG4_UNORM_PACK8,
@@ -427,7 +427,7 @@ namespace graphics
         RGBA12X4_UNORM_4PACK16
     };
 
-    enum class NUMERIC_FORMAT {
+    enum struct NUMERIC_FORMAT {
         UNDEFINED = 0,
         NORMALIZED = 0x01,
         SCALED = 0x02,
@@ -436,7 +436,7 @@ namespace graphics
         SRGB = 0x10
     };
 
-    enum class FORMAT_FEATURE {
+    enum struct FORMAT_FEATURE {
         SAMPLED_IMAGE = 0x00001,
         STORAGE_IMAGE = 0x00002,
         STORAGE_IMAGE_ATOMIC = 0x00004,
@@ -462,18 +462,18 @@ namespace graphics
         SAMPLED_IMAGE_FILTER_CUBIC_BIT_IMAGE = 0x02000
     };
 
-    enum class ATTACHMENT_LOAD_TREATMENT {
+    enum struct ATTACHMENT_LOAD_TREATMENT {
         LOAD = 0,
         CLEAR,
         DONT_CARE
     };
 
-    enum class ATTACHMENT_STORE_TREATMENT {
+    enum struct ATTACHMENT_STORE_TREATMENT {
         STORE = 0,
         DONT_CARE
     };
 
-    enum class COLOR_SPACE {
+    enum struct COLOR_SPACE {
         SRGB_NONLINEAR = 0,
         EXTENDED_SRGB_LINEAR,
         EXTENDED_SRGB_NONLINEAR,
@@ -486,7 +486,7 @@ namespace graphics
         PASS_THROUGH
     };
 
-    enum class BUFFER_USAGE {
+    enum struct BUFFER_USAGE {
         TRANSFER_SOURCE = 0x01,
         TRANSFER_DESTINATION = 0x02,
         UNIFORM_TEXEL_BUFFER = 0x04,
@@ -498,7 +498,7 @@ namespace graphics
         INDIRECT_BUFFER = 0x100
     };
 
-    enum class IMAGE_USAGE {
+    enum struct IMAGE_USAGE {
         TRANSFER_SOURCE = 0x01,
         TRANSFER_DESTINATION = 0x02,
         SAMPLED = 0x04,
@@ -509,26 +509,26 @@ namespace graphics
         INPUT_ATTACHMENT = 0x80
     };
 
-    enum class QUEUE_CAPABILITY {
+    enum struct QUEUE_CAPABILITY {
         GRAPHICS = 0x01,
         COMPUTE = 0x02,
         TRANSFER = 0x04
     };
 
-    enum class PRESENTATION_MODE {
+    enum struct PRESENTATION_MODE {
         IMMEDIATE = 0,
         MAILBOX,
         FIFO,
         FIFO_RELAXED
     };
 
-    enum class IMAGE_ASPECT {
+    enum struct IMAGE_ASPECT {
         COLOR_BIT = 0x01,
         DEPTH_BIT = 0x02,
         STENCIL_BIT = 0x04
     };
 
-    enum class MEMORY_ACCESS_TYPE {
+    enum struct MEMORY_ACCESS_TYPE {
         INDIRECT_COMMAND_READ = 0x01,
         INDEX_READ = 0x02,
         VERTEX_ATTRIBUTE_READ = 0x04,

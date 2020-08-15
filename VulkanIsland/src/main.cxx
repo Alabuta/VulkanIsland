@@ -600,7 +600,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
             auto [technique_index, name] = model_.materials[material_index];
 
             auto vertex_layout_index = meshlet.vertex_buffer_index;
-            if (vertex_layout_index == -1)
+            if (vertex_layout_index < 0)
                 throw graphics::exception("invalid vertex buffer index"s);
 
             auto &&vertex_layout = model_.vertex_layouts[vertex_layout_index];

@@ -78,46 +78,12 @@ namespace loader
 
 
 struct xformat final {
-#if NOT_YET_IMPLEMENTED
-    enum class ATTRIBUTE_TYPE : std::uint8_t {
-        SCALAR = 0,
-        VEC2, VEC3, VEC4
-    };
-
-    enum class COMPONENT_TYPE : std::uint8_t {
-        I8 = 0, U8,
-        I16, U16,
-        I32, U32,
-        F32,
-        F64
-    };
-
-    enum class ATTRIBUTE_SEMANTIC : std::uint8_t {
-        POSITION = 0,
-        NORMAL,
-        TEXCOORD_0, TEXCOORD_1,
-        TANGENT,
-        COLOR_0,
-        JOINTS_0,
-        WEIGHTS_0
-    };
-
-
-    struct vertex_attribute final {
-        ATTRIBUTE_SEMANTIC semantic;
-        ATTRIBUTE_TYPE attributeType;
-        COMPONENT_TYPE componentType;
-        bool normalized;
-    };
-#endif
-
     std::vector<graphics::vertex_layout> vertex_layouts;
 
     struct vertex_buffer final {
         std::size_t vertex_layout_index;
 
         std::size_t count{0};
-
         std::vector<std::byte> buffer;
     };
 
@@ -127,7 +93,6 @@ struct xformat final {
         graphics::FORMAT format;
 
         std::size_t count{0};
-
         std::vector<std::byte> buffer;
     };
 

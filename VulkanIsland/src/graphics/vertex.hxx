@@ -13,7 +13,7 @@
 
 namespace vertex
 {
-    enum class SEMANTIC : std::uint32_t {
+    enum struct SEMANTIC : std::uint32_t {
         POSITION = 0,
         NORMAL,
         TEXCOORD_0,

@@ -22,7 +22,7 @@ namespace fs = std::filesystem;
 
 namespace glTF
 {
-enum class  GL {
+enum struct  GL {
     BYTE = 0x1400, UNSIGNED_BYTE,
     SHORT, UNSIGNED_SHORT,
     INT, UNSIGNED_INT,
@@ -33,7 +33,7 @@ enum class  GL {
 };
 
 
-enum class  PRIMITIVE_MODE {
+enum struct  PRIMITIVE_MODE {
     POINTS = 0,
     LINES, LINE_STRIP,
     TRIANGLES, TRIANGLE_STRIP, TRIANGLE_FAN
