@@ -625,21 +625,16 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
             std::shared_ptr<resource::index_buffer> index_buffer;
             
-            if (auto index_buffer_index = meshlet.index_buffer_index; vertex_layout_index != -1) {
+            if (auto index_buffer_index = meshlet.index_buffer_index; index_buffer_index > -1) {
                 auto &&index_data_buffer = model_.index_buffers.at(index_buffer_index);
+
+                index_buffer = resource_manager.create_index_buffer(index_data_buffer.format, std::size(vertex_data_buffer.buffer));
+
+                if (index_buffer)
+                    resource_manager.stage_buffer_data(index_buffer, index_data_buffer.buffer);
+
+                else throw graphics::exception("failed to get index buffer"s);
             }
-
-            /*
-
-            if () {
-
-                auto vertex_buffer = resource_manager.create_index_buffer(vertex_layout, std::size(vertex_data_buffer.buffer));
-
-                if (vertex_buffer)
-                    resource_manager.stage_buffer_data(vertex_buffer, vertex_data_buffer.buffer);
-
-                else throw graphics::exception("failed to get vertex buffer"s);
-            }*/
 
             [[maybe_unused]] auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(vertex_layout);
 
@@ -659,7 +654,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
             app.draw_commands.push_back(
                 draw_command{
-                    material, pipeline, vertex_buffer, nullptr,
+                    material, pipeline, vertex_buffer, index_buffer,
                     meshlet.vertex_count, meshlet.first_vertex, 0u,
                     app.pipelineLayout, app.render_pass, app.descriptorSet
                 }
@@ -738,7 +733,7 @@ namespace temp
             primitives::generate_plane(create_info, it_vertex_buffer, color);
         }
 
-        {
+        if (false) {
             auto const vl = vertex::create_vertex_layout(
                 vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
                 vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
