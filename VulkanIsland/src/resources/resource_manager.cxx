@@ -86,7 +86,7 @@ namespace resource
             throw resource::instantiation_fail(fmt::format("failed to create a buffer: {0:#x}"s, result));
 
         auto memory = memory_manager_.allocate_memory(resource::buffer{
-            handle, nullptr, size_in_bytes, usage, sharing_mode, memory_property_types
+            handle, nullptr, size_in_bytes, usage, sharing_mode
         }, memory_property_types);
 
         if (memory == nullptr)
@@ -98,7 +98,7 @@ namespace resource
         std::shared_ptr<resource::buffer> buffer;
 
         buffer.reset(new resource::buffer{
-            handle, memory, size_in_bytes, usage, sharing_mode, memory_property_types
+            handle, memory, size_in_bytes, usage, sharing_mode
         }, *resource_deleter_);
 
         return buffer;

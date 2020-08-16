@@ -18,7 +18,12 @@ namespace resource
 
 namespace resource
 {
-    class device_memory final {
+    struct memory_requirements final {
+        std::size_t size, alignment;
+        std::uint32_t memory_type_bits;
+    };
+
+    class memory_block final {
     public:
 
         VkDeviceMemory handle() const noexcept { return handle_; }
@@ -42,7 +47,7 @@ namespace resource
 
         bool linear_;
 
-        device_memory(VkDeviceMemory handle, std::size_t size, std::size_t offset, std::uint32_t type_index,
+        memory_block(VkDeviceMemory handle, std::size_t size, std::size_t offset, std::uint32_t type_index,
                       graphics::MEMORY_PROPERTY_TYPE properties, bool linear) noexcept;
 
         friend resource::memory_allocator;
@@ -55,7 +60,7 @@ namespace resource
 
         template<class T>
         requires mpl::is_one_of_v<std::remove_cvref_t<T>, resource::buffer, resource::image>
-        std::shared_ptr<resource::device_memory>
+        std::shared_ptr<resource::memory_block>
         allocate_memory(T &&resource, graphics::MEMORY_PROPERTY_TYPE memory_property_types);
 
     private:
@@ -64,16 +69,16 @@ namespace resource
 
         std::shared_ptr<resource::memory_allocator> allocator_;
 
-        std::shared_ptr<resource::device_memory>
+        std::shared_ptr<resource::memory_block>
         allocate_buffer_memory(resource::buffer const &buffer, graphics::MEMORY_PROPERTY_TYPE memory_property_types);
 
-        std::shared_ptr<resource::device_memory>
+        std::shared_ptr<resource::memory_block>
         allocate_image_memory(resource::image const &image, graphics::MEMORY_PROPERTY_TYPE memory_property_types);
     };
 
     template<class T>
     requires mpl::is_one_of_v<std::remove_cvref_t<T>, resource::buffer, resource::image>
-    std::shared_ptr<resource::device_memory>
+    std::shared_ptr<resource::memory_block>
     memory_manager::allocate_memory(T &&resource, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
     {
         using resource_type = typename std::remove_cvref_t<T>;

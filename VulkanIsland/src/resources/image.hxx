@@ -16,7 +16,7 @@ namespace renderer
 namespace resource
 {
     class resource_manager;
-    class device_memory;
+    class memory_block;
 }
 
 namespace resource
@@ -33,12 +33,12 @@ namespace resource
 
         std::uint32_t mip_levels() const noexcept { return mip_levels_; }
 
-        std::shared_ptr<resource::device_memory> memory() const noexcept { return memory_; }
-        std::shared_ptr<resource::device_memory> &memory() noexcept { return memory_; }
+        std::shared_ptr<resource::memory_block> memory() const noexcept { return memory_; }
+        std::shared_ptr<resource::memory_block> &memory() noexcept { return memory_; }
 
     private:
 
-        std::shared_ptr<resource::device_memory> memory_;
+        std::shared_ptr<resource::memory_block> memory_;
         
         VkImage handle_{VK_NULL_HANDLE};
 
@@ -53,7 +53,7 @@ namespace resource
         image(image const &) = delete;
         image(image &&) = delete;
 
-        image(std::shared_ptr<resource::device_memory> memory, VkImage handle, graphics::FORMAT format, graphics::IMAGE_TILING tiling,
+        image(std::shared_ptr<resource::memory_block> memory, VkImage handle, graphics::FORMAT format, graphics::IMAGE_TILING tiling,
               std::uint32_t mip_levels, renderer::extent extent) :
             memory_{memory}, handle_{handle}, format_{format}, tiling_{tiling}, mip_levels_{mip_levels}, extent_{extent} { }
 
