@@ -24,6 +24,21 @@ namespace resource
     }
 }
 
+#if NOT_YET_IMPLEMENTED
+namespace resource
+{
+    std::size_t hash<resource::buffer>::operator() (std::shared_ptr<resource::buffer> const buffer) const
+    {
+        std::size_t seed = 0;
+
+        boost::hash_combine(seed, buffer->usage());
+        boost::hash_combine(seed, buffer->sharing_mode());
+
+        return seed;
+    }
+}
+#endif
+
 #if OBSOLETE
 std::shared_ptr<DeviceMemory>
 CreateBuffer(vulkan::device &device, VkBuffer &buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)

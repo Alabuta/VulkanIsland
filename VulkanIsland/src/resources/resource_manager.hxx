@@ -63,6 +63,12 @@ namespace resource
 
         [[nodiscard]] std::shared_ptr<resource::semaphore> create_semaphore();
 
+        bool is_vertex_buffer_exist(graphics::vertex_layout const &layout) const noexcept;
+        bool is_index_buffer_exist(graphics::FORMAT format) const noexcept;
+
+        [[nodiscard]] std::shared_ptr<resource::vertex_buffer> create_vertex_buffer(graphics::vertex_layout const &layout);
+        [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(graphics::FORMAT format);
+
         [[nodiscard]] std::shared_ptr<resource::vertex_buffer> create_vertex_buffer(graphics::vertex_layout const &layout, std::size_t size_in_bytes);
         [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(graphics::FORMAT format, std::size_t size_in_bytes);
 
@@ -77,6 +83,8 @@ namespace resource
 
     private:
 
+        static std::size_t constexpr kVERTEX_BUFFER_INITIAL_VALUE{0x800'0000}; // 128 MB
+
         static std::size_t constexpr kVERTEX_BUFFER_INCREASE_VALUE{4};
         static std::size_t constexpr kINDEX_BUFFER_INCREASE_VALUE{4};
 
@@ -87,9 +95,11 @@ namespace resource
 
         std::shared_ptr<struct resource_deleter> resource_deleter_;
 
+        std::unordered_map<std::size_t, std::shared_ptr<resource::buffer>> buffers_;
+        std::unordered_map<std::size_t, std::shared_ptr<resource::image>> images_;
+
         // TODO:: unordered_miltimap
         std::unordered_map<graphics::vertex_layout, std::shared_ptr<resource::vertex_buffer>, graphics::hash<graphics::vertex_layout>> vertex_buffers_;
-
         std::unordered_map<graphics::FORMAT, std::shared_ptr<resource::index_buffer>> index_buffers_;
     };
 

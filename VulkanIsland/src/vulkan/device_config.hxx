@@ -73,7 +73,7 @@ namespace vulkan
         VK_TRUE,  // shaderInt16,
         VK_FALSE, // shaderResourceResidency,
         VK_FALSE, // shaderResourceMinLod,
-        VK_FALSE, // sparseBinding,
+        VK_TRUE, // sparseBinding,
         VK_FALSE, // sparseResidencyBuffer,
         VK_FALSE, // sparseResidencyImage2D,
         VK_FALSE, // sparseResidencyImage3D,

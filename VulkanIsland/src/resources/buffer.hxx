@@ -124,3 +124,13 @@ namespace resource
         friend resource::resource_manager;
     };
 }
+
+#if NOT_YET_IMPLEMENTED
+namespace resource
+{
+    template<>
+    struct hash<resource::buffer> {
+        std::size_t operator() (std::shared_ptr<resource::buffer> const buffer) const;
+    };
+}
+#endif
