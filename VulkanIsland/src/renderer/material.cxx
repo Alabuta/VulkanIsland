@@ -153,7 +153,7 @@ namespace graphics
     {
         auto key = std::string{name};
 
-        if (material_descriptions_.count(key) == 0) {
+        if (!material_descriptions_.contains(key)) {
             auto material_description = loader::load_material_description(name);
             auto &&vertex_attributes = material_description.vertex_attributes;
 

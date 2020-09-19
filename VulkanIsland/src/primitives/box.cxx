@@ -238,7 +238,7 @@ namespace primitives
                     using type = typename std::remove_cvref_t<decltype(format_inst)>;
                     using pointer_type = typename std::add_pointer_t<type>;
 
-                    auto data = reinterpret_cast<pointer_type>(std::addressof(*it_vertex_buffer) + offset_in_bytes);
+                    auto data = reinterpret_cast<pointer_type>(std::to_address(it_vertex_buffer) + offset_in_bytes);
 
                     offset_in_bytes += sizeof(type);
 

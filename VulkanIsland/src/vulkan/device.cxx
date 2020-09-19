@@ -239,10 +239,8 @@ namespace
 
         auto compare = [&overloaded_compare] (auto &&lhs, auto &&rhs)
         {
-            return std::visit([&] (auto &&lhs)
+            return std::visit([&] <class T> (T const &lhs)
             {
-                using T = std::remove_cvref_t<decltype(lhs)>;
-
                 return overloaded_compare(lhs, std::get<T>(rhs));
             }, lhs);
         };
