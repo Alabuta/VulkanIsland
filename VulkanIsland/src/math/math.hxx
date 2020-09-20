@@ -10,8 +10,7 @@
 
 #include <array>
 #include <iomanip>
-
-auto constexpr kPI = 3.14159265358979323846f;
+#include <numbers>
 
 #define GLM_FORCE_CXX17
 #define GLM_ENABLE_EXPERIMENTAL
@@ -74,7 +73,7 @@ namespace math {
 }
 
 
-template<class T> requires mpl::same_as<std::remove_cvref_t<T>, glm::mat4>
+template<class T> requires std::same_as<std::remove_cvref_t<T>, glm::mat4>
 inline std::ostream &operator<< (std::ostream &stream, T &&m)
 {
     stream << std::setprecision(4) << std::fixed;

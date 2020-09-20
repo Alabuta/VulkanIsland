@@ -2,6 +2,7 @@
 
 #include <exception>
 #include <iostream>
+#include <span>
 #include <string>
 using namespace std::string_literals;
 
@@ -44,21 +45,11 @@ void submit_and_free_single_time_command_buffer(vulkan::device const &device, Q 
 }
 
 
-template<mpl::container R>
-void copy_buffer_to_buffer(vulkan::device const &device, graphics::transfer_queue const &queue, VkBuffer src, VkBuffer dst, R &&copy_region, VkCommandPool command_pool)
-{
-    static_assert(std::is_same_v<typename std::remove_cvref_t<R>::value_type, VkBufferCopy>, "'copyRegion' argument does not contain 'VkBufferCopy' elements");
+void copy_buffer_to_buffer(vulkan::device const &device, graphics::transfer_queue const &queue,
+                           VkBuffer src, VkBuffer dst, std::span<VkBufferCopy const> const copy_region, VkCommandPool command_pool);
 
-    auto command_buffer = begin_single_time_command(device, command_pool);
-
-    vkCmdCopyBuffer(command_buffer, src, dst, static_cast<std::uint32_t>(std::size(copy_region)), std::data(copy_region));
-
-    end_single_time_command(command_buffer);
-
-    submit_and_free_single_time_command_buffer(device, queue, command_pool, command_buffer);
-}
-
-void copy_buffer_to_image(vulkan::device const &device, graphics::transfer_queue const &queue, VkBuffer src, VkImage dst, renderer::extent extent, VkCommandPool command_pool);
+void copy_buffer_to_image(vulkan::device const &device, graphics::transfer_queue const &queue,
+                          VkBuffer src, VkImage dst, renderer::extent extent, VkCommandPool command_pool);
 
 template<class Q>
 requires std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>

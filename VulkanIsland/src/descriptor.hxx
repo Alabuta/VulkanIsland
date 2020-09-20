@@ -3,6 +3,7 @@
 #include <optional>
 #include <iostream>
 #include <memory>
+#include <span>
 
 #include <fmt/format.h>
 
@@ -61,25 +62,5 @@ std::optional<VkDescriptorPool> CreateDescriptorPool(vulkan::device const &devic
 
 std::optional<VkDescriptorSetLayout> CreateDescriptorSetLayout(vulkan::device const &device);
 
-template<mpl::container T>
 std::optional<VkDescriptorSet>
-CreateDescriptorSets(vulkan::device const &device, VkDescriptorPool descriptorPool, T &&descriptorSetLayouts)
-{
-    std::optional<VkDescriptorSet> descriptorSet;
-
-    VkDescriptorSetAllocateInfo const allocateInfo{
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-        nullptr,
-        descriptorPool,
-        static_cast<std::uint32_t>(std::size(descriptorSetLayouts)), std::data(descriptorSetLayouts)
-    };
-
-    VkDescriptorSet handle;
-
-    if (auto result = vkAllocateDescriptorSets(device.handle(), &allocateInfo, &handle); result != VK_SUCCESS)
-        throw vulkan::exception(fmt::format("failed to allocate descriptor set(s): {0:#x}"s, result));
-
-    else descriptorSet.emplace(handle);
-
-    return descriptorSet;
-}
+CreateDescriptorSets(vulkan::device const &device, VkDescriptorPool descriptorPool, std::span<VkDescriptorSetLayout const> const descriptorSetLayouts);

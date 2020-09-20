@@ -47,8 +47,8 @@ private:
     float scale_{1.f};
 
     // latitude ands longitude
-    glm::vec2 min_polar{-kPI * .49f, -kPI};
-    glm::vec2 max_polar{+kPI * .49f, +kPI};
+    glm::vec2 min_polar{-std::numbers::pi * .49f, -std::numbers::pi};
+    glm::vec2 max_polar{+std::numbers::pi * .49f, +std::numbers::pi};
 
     float znear{.01f}, zfar{1000.f};
 

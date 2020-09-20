@@ -47,6 +47,7 @@
 
 #include <chrono>
 #include <cmath>
+#include <span>
 #include <unordered_map>
 
 #ifdef _MSC_VER
@@ -118,9 +119,10 @@ void cleanup_frame_data(struct app_t &app);
 void create_semaphores(app_t &app);
 void recreate_swap_chain(app_t &app);
 
+
 template<class T>
-// requires mpl::is_container_v<std::remove_cvref_t<T>>
-std::shared_ptr<resource::buffer> stage_data(vulkan::device &device, resource::resource_manager &resource_manager, T &&container);
+[[nodiscard]] std::shared_ptr<resource::buffer>
+stage_data(vulkan::device &device, resource::resource_manager &resource_manager, std::span<T> const container);
 
 [[nodiscard]] std::shared_ptr<resource::texture>
 load_texture(app_t &app, vulkan::device &device, resource::resource_manager &resource_manager, std::string_view name);
@@ -927,7 +929,8 @@ namespace temp
 
                 auto it_dst = std::next(std::begin(vertex_buffer.buffer), write_offset);
 
-                std::uninitialized_copy_n(reinterpret_cast<std::byte *>(std::data(vertices)), bytes_count, it_dst);
+                auto vertices_bytes_view = std::as_bytes(std::span{vertices});
+                std::copy_n(std::begin(vertices_bytes_view), vertices_bytes_view.size_bytes(), it_dst);
             }
         }
         
@@ -1116,7 +1119,7 @@ void update(app_t &app)
         if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
             throw vulkan::exception(fmt::format("failed to map per camera uniform buffer memory: {0:#x}"s, result));
 
-        std::uninitialized_copy_n(&app.camera_->data, 1, reinterpret_cast<camera::data_t *>(data));
+        std::copy_n(&app.camera_->data, 1, reinterpret_cast<camera::data_t *>(data));
 
         vkUnmapMemory(device.handle(), buffer.memory()->handle());
     }
@@ -1284,39 +1287,6 @@ int main()
     glfwTerminate();
 }
 
-
-template<class T>
-// requires mpl::is_container_v<std::remove_cvref_t<T>>
-[[nodiscard]] std::shared_ptr<resource::buffer>
-stage_data(vulkan::device &device, resource::resource_manager &resource_manager, T &&container)
-{
-    auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
-    auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
-
-    using type = typename std::remove_cvref_t<T>::value_type;
-
-    auto const bufferSize = sizeof(type) * std::size(container);
-
-    auto buffer = resource_manager.create_buffer(bufferSize, usage_flags, property_flags);
-
-    if (buffer) {
-        void *data;
-
-        auto &&memory = buffer->memory();
-
-        if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, &data); result != VK_SUCCESS)
-            throw vulkan::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
-
-        else {
-            std::uninitialized_copy(std::begin(container), std::end(container), reinterpret_cast<type *>(data));
-
-            vkUnmapMemory(device.handle(), buffer->memory()->handle());
-        }
-    }
-
-    return buffer;
-}
-
 [[nodiscard]] std::shared_ptr<resource::texture>
 load_texture(app_t &app, vulkan::device &device, resource::resource_manager &resource_manager, std::string_view name)
 {
@@ -1327,7 +1297,7 @@ load_texture(app_t &app, vulkan::device &device, resource::resource_manager &res
     if (auto rawImage = LoadTARGA(name); rawImage) {
         auto staging_buffer = std::visit([&device, &resource_manager] (auto &&data)
         {
-            return stage_data(device, resource_manager, std::forward<decltype(data)>(data));
+            return stage_data(device, resource_manager, std::span{data});
         }, std::move(rawImage->data));
 
         if (staging_buffer) {
@@ -1379,6 +1349,33 @@ load_texture(app_t &app, vulkan::device &device, resource::resource_manager &res
     return texture;
 }
 
+
+template<class T>
+[[nodiscard]] std::shared_ptr<resource::buffer>
+stage_data(vulkan::device &device, resource::resource_manager &resource_manager, std::span<T> const container)
+{
+    auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
+    auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
+
+    auto buffer = resource_manager.create_buffer(container.size_bytes(), usage_flags, property_flags);
+
+    if (buffer) {
+        void *data;
+
+        auto &&memory = buffer->memory();
+
+        if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, &data); result != VK_SUCCESS)
+            throw vulkan::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
+
+        else {
+            std::copy(std::begin(container), std::end(container), reinterpret_cast<T *>(data));
+
+            vkUnmapMemory(device.handle(), buffer->memory()->handle());
+        }
+    }
+
+    return buffer;
+}
 
 std::shared_ptr<resource::buffer>
 CreateUniformBuffer(resource::resource_manager &resource_manager, std::size_t size)

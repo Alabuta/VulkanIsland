@@ -210,7 +210,7 @@ namespace graphics
                     specialization_constants_data.resize(sizeof(constant) + offset);
                     auto dst_begin = std::next(std::begin(specialization_constants_data), offset);
 
-                    std::uninitialized_copy_n(reinterpret_cast<std::byte *>(&constant), sizeof(constant), dst_begin);
+                    std::copy_n(reinterpret_cast<std::byte *>(&constant), sizeof(constant), dst_begin);
 
                     offset += static_cast<std::uint32_t>(sizeof(constant));
 
@@ -491,4 +491,22 @@ namespace graphics
 
         return seed;
     }
+}
+
+std::optional<VkPipelineLayout>
+create_pipeline_layout(vulkan::device const &device, std::span<VkDescriptorSetLayout const> const descriptorSetLayouts)
+{
+    VkPipelineLayoutCreateInfo const layoutCreateInfo{
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+        nullptr, 0,
+        static_cast<std::uint32_t>(std::size(descriptorSetLayouts)), std::data(descriptorSetLayouts),
+        0, nullptr
+    };
+
+    VkPipelineLayout handle;
+
+    if (auto result = vkCreatePipelineLayout(device.handle(), &layoutCreateInfo, nullptr, &handle); result != VK_SUCCESS)
+        throw vulkan::exception(fmt::format("failed to create pipeline layout: {0:#x}"s, result));
+
+    return handle;
 }

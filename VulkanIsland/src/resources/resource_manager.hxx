@@ -2,6 +2,7 @@
 
 #include <unordered_map>
 #include <memory>
+#include <span>
 
 #include <fmt/format.h>
 
@@ -76,7 +77,7 @@ namespace resource
         [[nodiscard]] auto &index_buffers() const noexcept { return index_buffers_; }
 
         template<class T> requires mpl::one_of<T, resource::vertex_buffer, resource::index_buffer>
-        void stage_buffer_data(std::shared_ptr<T> buffer, std::vector<std::byte> const &container) const;
+        void stage_buffer_data(std::shared_ptr<T> buffer, std::span<std::byte const> const container) const;
 
         void transfer_vertex_buffers_data(VkCommandPool command_pool, graphics::transfer_queue const &transfer_queue);
         void transfer_index_buffers_data(VkCommandPool command_pool, graphics::transfer_queue const &transfer_queue);
@@ -104,33 +105,32 @@ namespace resource
     };
 
     template<class T> requires mpl::one_of<T, resource::vertex_buffer, resource::index_buffer>
-    void resource_manager::stage_buffer_data(std::shared_ptr<T> vertex_buffer, std::vector<std::byte> const &container) const
+    void resource_manager::stage_buffer_data(std::shared_ptr<T> vertex_buffer, std::span<std::byte const> const container) const
     {
         if (vertex_buffer == nullptr)
             return;
 
-        auto const size_in_bytes = std::size(container);
-
-        if (vertex_buffer->available_staging_buffer_size() < size_in_bytes)
+        if (vertex_buffer->available_staging_buffer_size() < container.size_bytes())
             throw resource::not_enough_memory("not enough staging memory for buffer"s);
 
         // TODO: sparse memory binding
-        if (vertex_buffer->available_device_buffer_size() < size_in_bytes)
+        if (vertex_buffer->available_device_buffer_size() < container.size_bytes())
             throw resource::not_enough_memory("not enough device memory for buffer"s);
 
         auto &&memory = vertex_buffer->staging_buffer().memory();
 
         void *ptr;
 
-        if (auto result = vkMapMemory(device_.handle(), memory->handle(), vertex_buffer->staging_memory_offset(), size_in_bytes, 0, &ptr); result != VK_SUCCESS)
+        if (auto result = vkMapMemory(device_.handle(), memory->handle(), vertex_buffer->staging_memory_offset(), container.size_bytes(), 0, &ptr); result != VK_SUCCESS)
             throw resource::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
 
         else {
-            std::uninitialized_copy_n(std::begin(container), size_in_bytes, reinterpret_cast<std::byte *>(ptr));
+            auto container_bytes_view = std::as_bytes(std::span{container});
+            std::copy_n(std::begin(container_bytes_view), container_bytes_view.size_bytes(), reinterpret_cast<std::byte *>(ptr));
 
             vkUnmapMemory(device_.handle(), memory->handle());
 
-            vertex_buffer->staging_buffer_offset_ += size_in_bytes;
+            vertex_buffer->staging_buffer_offset_ += container.size_bytes();
         }
     }
 }

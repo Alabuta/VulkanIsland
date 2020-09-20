@@ -5,6 +5,7 @@
 #include <numeric>
 #include <limits>
 #include <array>
+#include <span>
 
 #include "utility/mpl.hxx"
 
@@ -13,13 +14,10 @@
 
 namespace math
 {
-    template<class O, class V>
-    requires (mpl::same_as<V, std::add_lvalue_reference_t<glm::vec3>> && mpl::container<std::remove_cvref_t<O>> &&
-              mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
-    void decode_oct_to_vec(O &&oct, V &vec)
+    template<class T, class V>
+    requires (std::same_as<std::remove_cvref_t<V>, glm::vec3> && mpl::one_of<T, std::int8_t, std::int16_t>)
+    void decode_oct_to_vec(std::span<T, 2> const oct, V &vec)
     {
-        using T = typename std::remove_cvref_t<O>::value_type;
-
         vec = glm::vec3{
             oct[0] / static_cast<float>(std::numeric_limits<T>::max()),
             oct[1] / static_cast<float>(std::numeric_limits<T>::max()),
@@ -38,13 +36,10 @@ namespace math
         vec = glm::normalize(vec);
     }
 
-    template<class O, class V>
-    requires (mpl::same_as<std::remove_cvref_t<V>, glm::vec3> && mpl::container<std::remove_cvref_t<O>> &&
-              mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
-    void encode_unit_vector_to_oct_fast(O &oct, V &&vec)
+    template<class T, class V>
+    requires (std::same_as<std::remove_cvref_t<V>, glm::vec3> && mpl::one_of<T, std::int8_t, std::int16_t>)
+    void encode_unit_vector_to_oct_fast(std::span<T, 2> oct, V &&vec)
     {
-        using T = typename std::remove_cvref_t<O>::value_type;
-
         float const inv_l1_norm = 1.f / glm::l1Norm(vec);
 
         bool const is_bottom_hemisphere = vec.z < 0.f;
@@ -62,20 +57,17 @@ namespace math
         oct[1] = static_cast<T>(std::round(vec.y * std::numeric_limits<T>::max()));
     }
 
-    template<mpl::container O, mpl::arithmetic... Ts>
-    requires (sizeof...(Ts) == 3 && mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
-    void encode_unit_vector_to_oct_fast(O &oct, Ts... values)
+    template<class T, mpl::arithmetic... Ts>
+    requires (sizeof...(Ts) == 3 && mpl::one_of<T, std::int8_t, std::int16_t>)
+    void encode_unit_vector_to_oct_fast(std::span<T, 2> oct, Ts... values)
     {
         encode_unit_vector_to_oct_fast(oct, glm::vec3{static_cast<float>(values)...});
     }
 
-    template<class O, class V>
-    requires (mpl::same_as<std::remove_cvref_t<V>, glm::vec3> && mpl::container<std::remove_cvref_t<O>> &&
-              mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
-    void encode_unit_vector_to_oct_precise(O &oct, V &&vec)
+    template<class T, class V>
+    requires (std::same_as<std::remove_cvref_t<V>, glm::vec3> && mpl::one_of<T, std::int8_t, std::int16_t>)
+    void encode_unit_vector_to_oct_precise(std::span<T, 2> oct, V &&vec)
     {
-        using T = typename std::remove_cvref_t<O>::value_type;
-
         float const inv_l1_norm = 1.f / glm::l1Norm(vec);
 
         bool const is_bottom_hemisphere = vec.z <= 0.f;
@@ -101,7 +93,7 @@ namespace math
             projected[0] = static_cast<T>(oct[0] + (index / 2));
             projected[1] = static_cast<T>(oct[1] + (index % 2));
 
-            decode_oct_to_vec(projected, decoded);
+            decode_oct_to_vec(std::span{projected}, decoded);
 
             auto sq_distance = glm::distance2(vec, decoded);
 
@@ -114,10 +106,9 @@ namespace math
         }
     }
 
-    template<class O, mpl::arithmetic... Ts>
-    requires (sizeof...(Ts) == 3 && mpl::container<std::remove_cvref_t<O>> &&
-              mpl::one_of<typename std::remove_cvref_t<O>::value_type, std::int8_t, std::int16_t>)
-    void encode_unit_vector_to_oct_precise(O &oct, Ts... values)
+    template<class T, mpl::arithmetic... Ts>
+    requires (sizeof...(Ts) == 3 && mpl::one_of<T, std::int8_t, std::int16_t>)
+    void encode_unit_vector_to_oct_precise(std::span<T, 2> oct, Ts... values)
     {
         encode_unit_vector_to_oct_precise(oct, glm::vec3{static_cast<float>(values)...});
     }

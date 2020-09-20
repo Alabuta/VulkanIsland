@@ -42,7 +42,7 @@ namespace resource
 
         std::vector<std::shared_ptr<resource::image_view>> attachments;
 
-        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, resource::framebuffer_invariant>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, resource::framebuffer_invariant>
         auto constexpr operator== (T &&rhs) const
         {
             return extent == rhs.extent && render_pass == rhs.render_pass && attachments == rhs.attachments;

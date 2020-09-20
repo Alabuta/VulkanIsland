@@ -80,7 +80,7 @@ namespace
         std::transform(std::cbegin(extensions), std::cend(extensions), std::back_inserter(required_extensions), [] (auto &&name)
         {
             VkExtensionProperties prop{};
-            std::uninitialized_copy_n(std::begin(name), std::size(name), prop.extensionName);
+            std::copy_n(std::begin(name), std::size(name), prop.extensionName);
 
             return prop;
         });

@@ -23,13 +23,13 @@ namespace graphics
         template<class T> requires mpl::variant_alternative<std::remove_cvref_t<T>, decltype(value)>
         specialization_constant(std::uint32_t id, T value) : id{id}, value{value} { }
 
-        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, specialization_constant>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, specialization_constant>
         auto constexpr operator== (T &&constant) const
         {
             return value == constant.value && id == constant.id;
         }
 
-        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, specialization_constant>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, specialization_constant>
         auto constexpr operator< (T &&constant) const
         {
             return id < constant.id;
@@ -66,7 +66,7 @@ namespace graphics
 
         std::set<graphics::specialization_constant> constants;
 
-        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, shader_stage>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, shader_stage>
         auto constexpr operator== (T &&stage) const
         {
             return module_name == stage.module_name &&

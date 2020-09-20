@@ -377,7 +377,7 @@ namespace primitives
                     if constexpr (mpl::is_one_of_v<T, std::int8_t, std::int16_t>) {
                         std::array<T, 2> oct;
 
-                        math::encode_unit_vector_to_oct_precise(oct, glm::vec3{0, 0, 1});
+                        math::encode_unit_vector_to_oct_precise(std::span{oct}, glm::vec3{0, 0, 1});
 
                         std::fill_n(it, vertex_number, oct);
                     }

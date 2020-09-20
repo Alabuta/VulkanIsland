@@ -58,3 +58,15 @@ void copy_buffer_to_image(vulkan::device const &device, graphics::transfer_queue
     submit_and_free_single_time_command_buffer(device, queue, command_pool, command_buffer);
 }
 
+void copy_buffer_to_buffer(vulkan::device const &device, graphics::transfer_queue const &queue,
+                           VkBuffer src, VkBuffer dst, std::span<VkBufferCopy const> const copy_region, VkCommandPool command_pool)
+{
+    auto command_buffer = begin_single_time_command(device, command_pool);
+
+    vkCmdCopyBuffer(command_buffer, src, dst, static_cast<std::uint32_t>(std::size(copy_region)), std::data(copy_region));
+
+    end_single_time_command(command_buffer);
+
+    submit_and_free_single_time_command_buffer(device, queue, command_pool, command_buffer);
+}
+

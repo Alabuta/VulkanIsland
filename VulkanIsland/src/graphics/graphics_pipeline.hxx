@@ -5,6 +5,7 @@
 #include <iostream>
 #include <vector>
 #include <array>
+#include <span>
 #include <set>
 
 #include "utility/mpl.hxx"
@@ -84,7 +85,7 @@ namespace graphics
         std::shared_ptr<graphics::render_pass> render_pass_;
         std::uint32_t subpass_index_;
 
-        template<class T> requires mpl::same_as<std::remove_cvref_t<T>, pipeline_invariant>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, pipeline_invariant>
         auto constexpr operator== (T &&rhs) const
         {
             return material_ == rhs.material_ &&
@@ -126,26 +127,5 @@ namespace graphics
     };
 }
 
-template<mpl::container T>
 /* [[nodiscard]] */ std::optional<VkPipelineLayout>
-create_pipeline_layout(vulkan::device const &device, T &&descriptorSetLayouts)
-{
-    static_assert(
-        std::is_same_v<typename std::remove_cvref_t<T>::value_type, VkDescriptorSetLayout>,
-        "container has to contain VkDescriptorSetLayout elements"
-    );
-
-    VkPipelineLayoutCreateInfo const layoutCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        nullptr, 0,
-        static_cast<std::uint32_t>(std::size(descriptorSetLayouts)), std::data(descriptorSetLayouts),
-        0, nullptr
-    };
-
-    VkPipelineLayout handle;
-
-    if (auto result = vkCreatePipelineLayout(device.handle(), &layoutCreateInfo, nullptr, &handle); result != VK_SUCCESS)
-        throw vulkan::exception(fmt::format("failed to create pipeline layout: {0:#x}"s, result));
-
-    return handle;
-}
+create_pipeline_layout(vulkan::device const &device, std::span<VkDescriptorSetLayout const> const descriptorSetLayouts);

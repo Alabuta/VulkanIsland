@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iostream>
 #include <vector>
+#include <span>
 
 #include <string>
 using namespace std::string_literals;
@@ -15,7 +16,7 @@ using namespace std::string_literals;
 
 namespace
 {
-    [[nodiscard]] bool check_required_extensions(std::vector<char const *> required_extensions_)
+    [[nodiscard]] bool check_required_extensions(std::span<char const *> const required_extensions_)
     {
         std::vector<VkExtensionProperties> required_extensions;
 
@@ -23,7 +24,7 @@ namespace
                        std::back_inserter(required_extensions), [] (auto &&name)
         {
             VkExtensionProperties prop{};
-            std::uninitialized_copy_n(name, std::strlen(name), prop.extensionName);
+            std::copy_n(name, std::strlen(name), prop.extensionName);
 
             return prop;
         });
@@ -63,14 +64,14 @@ namespace
         return false;
     }
 
-    [[nodiscard]] bool check_required_layers(std::vector<char const *> required_layers_)
+    [[nodiscard]] bool check_required_layers(std::span<char const *> const required_layers_)
     {
         std::vector<VkLayerProperties> required_layers;
 
         std::transform(std::cbegin(required_layers_), std::cend(required_layers_), std::back_inserter(required_layers), [] (auto &&name)
         {
             VkLayerProperties prop{};
-            std::uninitialized_copy_n(name, std::strlen(name), prop.layerName);
+            std::copy_n(name, std::strlen(name), prop.layerName);
 
             return prop;
         });
