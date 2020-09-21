@@ -42,9 +42,9 @@ namespace math
     {
         float const inv_l1_norm = 1.f / glm::l1Norm(vec);
 
-        bool const is_bottom_hemisphere = vec.z < 0.f;
+        bool const is_hemisphere_bottom = vec.z < 0.f;
 
-        if (is_bottom_hemisphere) {
+        if (is_hemisphere_bottom) {
             glm::vec2 sign = 1.f - 2.f * glm::vec2{glm::lessThan(glm::vec2{vec}, glm::vec2{0})};
             vec.xy = (1.f - glm::abs(vec.yx() * inv_l1_norm)) * sign;
         }
@@ -70,9 +70,9 @@ namespace math
     {
         float const inv_l1_norm = 1.f / glm::l1Norm(vec);
 
-        bool const is_bottom_hemisphere = vec.z <= 0.f;
+        bool const is_hemisphere_bottom = vec.z <= 0.f;
 
-        if (is_bottom_hemisphere) {
+        if (is_hemisphere_bottom) {
             glm::vec2 sign = 1.f - 2.f * glm::vec2{glm::lessThan(glm::vec2{vec}, glm::vec2{0})};
             vec.xy() = (1.f - glm::abs(vec.yx() * inv_l1_norm)) * sign;
         }

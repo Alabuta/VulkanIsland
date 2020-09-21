@@ -84,7 +84,7 @@ namespace resource
 
     private:
 
-        static std::size_t constexpr kVERTEX_BUFFER_INITIAL_VALUE{0x800'0000}; // 128 MB
+        static std::size_t constexpr kVERTEX_BUFFER_INITIAL_VALUE{0x400'0000}; // 64 MB
 
         static std::size_t constexpr kVERTEX_BUFFER_INCREASE_VALUE{4};
         static std::size_t constexpr kINDEX_BUFFER_INCREASE_VALUE{4};

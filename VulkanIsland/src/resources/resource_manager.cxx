@@ -285,7 +285,7 @@ namespace resource
         return index_buffers_.contains(format);
     }
 
-#if 0
+#if 1
     std::shared_ptr<resource::vertex_buffer> resource_manager::create_vertex_buffer(graphics::vertex_layout const &layout)
     {
         for (auto &&attribute : layout.attributes) {
