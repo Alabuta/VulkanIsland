@@ -505,3 +505,30 @@ namespace resource
         }
     }
 }
+
+std::shared_ptr<resource::buffer>
+CreateUniformBuffer(resource::resource_manager &resource_manager, std::size_t size)
+{
+    auto constexpr usageFlags = graphics::BUFFER_USAGE::UNIFORM_BUFFER;
+    auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
+
+    return resource_manager.create_buffer(size, usageFlags, propertyFlags);
+}
+
+std::shared_ptr<resource::buffer>
+create_coherent_storage_buffer(resource::resource_manager &resource_manager, std::size_t size)
+{
+    auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
+    auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
+
+    return resource_manager.create_buffer(size, usageFlags, propertyFlags);
+}
+
+std::shared_ptr<resource::buffer>
+CreateStorageBuffer(resource::resource_manager &resource_manager, std::size_t size)
+{
+    auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
+    auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE;
+
+    return resource_manager.create_buffer(size, usageFlags, propertyFlags);
+}

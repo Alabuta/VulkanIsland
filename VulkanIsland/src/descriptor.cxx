@@ -5,7 +5,7 @@
 
 
 #if 0
-std::optional<VulkanDescriptorPool> DescriptorsManager::CreateDescriptorPool()
+std::optional<VulkanDescriptorPool> DescriptorsManager::create_descriptor_pool()
 {
     std::optional<VulkanDescriptorPool> descriptorPool;
 
@@ -48,7 +48,7 @@ private:
     std::vector<VkDescriptorPoolSize> poolSizes_;
 };
 
-std::optional<VkDescriptorPool> CreateDescriptorPool(vulkan::device const &device)
+std::optional<VkDescriptorPool> create_descriptor_pool(vulkan::device const &device)
 {
     std::optional<VkDescriptorPool> descriptorPool;
 
@@ -120,7 +120,7 @@ std::optional<VkDescriptorSetLayout> CreateDescriptorSetLayout(vulkan::device co
 }
 
 std::optional<VkDescriptorSet>
-CreateDescriptorSets(vulkan::device const &device, VkDescriptorPool descriptorPool, std::span<VkDescriptorSetLayout const> const descriptorSetLayouts)
+create_descriptor_sets(vulkan::device const &device, VkDescriptorPool descriptorPool, std::span<VkDescriptorSetLayout const> const descriptorSetLayouts)
 {
     std::optional<VkDescriptorSet> descriptorSet;
 

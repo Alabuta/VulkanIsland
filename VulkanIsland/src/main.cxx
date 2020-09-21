@@ -112,8 +112,9 @@ namespace temp
 
 struct per_object_t final {
     glm::mat4 world{1};
-    glm::mat4 normal{1};  // Transposed of the inversed of the upper left 3x3 sub-matrix of model(world)-view matrix.
+    glm::mat4 normal{1};  // Transposed and inversed upper left 3x3 sub-matrix of the model(world)-view matrix.
 };
+
 
 void cleanup_frame_data(struct app_t &app);
 void create_semaphores(app_t &app);
@@ -130,11 +131,6 @@ load_texture(app_t &app, vulkan::device &device, resource::resource_manager &res
 
 std::unique_ptr<renderer::swapchain>
 create_swapchain(vulkan::device const &device, renderer::platform_surface const &platform_surface, renderer::extent extent);
-
-
-[[nodiscard]] std::shared_ptr<resource::buffer> CreateUniformBuffer(resource::resource_manager &resource_manager, std::size_t size);
-[[nodiscard]] std::shared_ptr<resource::buffer> CreateCoherentStorageBuffer(resource::resource_manager &resource_manager, std::size_t size);
-[[nodiscard]] std::shared_ptr<resource::buffer> CreateStorageBuffer(resource::resource_manager &resource_manager, std::size_t size);
 
 
 struct draw_command final {
@@ -398,17 +394,10 @@ void create_graphics_command_buffers(app_t &app)
 
     std::vector<VkDeviceSize> vertex_buffer_offsets(binding_count, 0);
 
-#ifdef __clang__
-    auto const clear_colors = std::array{
-        VkClearValue{{{ .64f, .64f, .64f, 1.f }}},
-        VkClearValue{{{ app.renderer_config.reversed_depth ? 0.f : 1.f, 0 }}}
-    };
-#else
     auto const clear_colors = std::array{
         VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f } } },
         VkClearValue{ .depthStencil = { app.renderer_config.reversed_depth ? 0.f : 1.f, 0 } }
     };
-#endif
 
     for (std::size_t i = 0; auto &command_buffer : app.command_buffers) {
         VkCommandBufferBeginInfo const begin_info{
@@ -850,28 +839,28 @@ namespace temp
             // Second triangle
             vertices.push_back(vertex_struct{
                 {0.f, 0.f, 0.f}, {max_16ui / 2, max_16ui / 2}, {0, 0, 0, max_8ui}
-                               });
+            });
 
             vertices.push_back(vertex_struct{
                 {1.f, 0.f, -1.f}, {max_16ui, max_16ui}, {max_8ui, 0, max_8ui, max_8ui}
-                               });
+            });
 
             vertices.push_back(vertex_struct{
                 {0.f, 0.f, -1.f}, {max_16ui / 2, max_16ui}, {0, 0, max_8ui, max_8ui}
-                               });
+            });
 
             // Third triangle
             vertices.push_back(vertex_struct{
                 {0.f, 0.f, 0.f}, {max_16ui / 2, max_16ui / 2}, {max_8ui, 0, max_8ui, max_8ui}
-                               });
+            });
 
             vertices.push_back(vertex_struct{
                 {-1.f, 0.f, -1.f}, {0, max_16ui}, {0, max_8ui, max_8ui, max_8ui}
-                               });
+            });
 
             vertices.push_back(vertex_struct{
                 {-1.f, 0.f, 0.f}, {0, max_16ui / 2}, {max_8ui, max_8ui, 0, max_8ui}
-                               });
+            });
 
             auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
 
@@ -1069,15 +1058,15 @@ void init(platform::window &window, app_t &app)
 
     else throw graphics::exception("failed to init per object uniform buffer"s);
 
-    if (app.perCameraBuffer = CreateCoherentStorageBuffer(*app.resource_manager, sizeof(camera::data_t)); !app.perCameraBuffer)
+    if (app.perCameraBuffer = create_coherent_storage_buffer(*app.resource_manager, sizeof(camera::data_t)); !app.perCameraBuffer)
         throw graphics::exception("failed to init per camera uniform buffer"s);
 
-    if (auto descriptorPool = CreateDescriptorPool(*app.device); !descriptorPool)
+    if (auto descriptorPool = create_descriptor_pool(*app.device); !descriptorPool)
         throw graphics::exception("failed to create the descriptor pool"s);
 
     else app.descriptorPool = std::move(descriptorPool.value());
 
-    if (auto descriptorSet = CreateDescriptorSets(*app.device, app.descriptorPool, std::array{app.descriptorSetLayout}); !descriptorSet)
+    if (auto descriptorSet = create_descriptor_sets(*app.device, app.descriptorPool, std::array{app.descriptorSetLayout}); !descriptorSet)
         throw graphics::exception("failed to create the descriptor pool"s);
 
     else app.descriptorSet = std::move(descriptorSet.value());
@@ -1375,31 +1364,4 @@ stage_data(vulkan::device &device, resource::resource_manager &resource_manager,
     }
 
     return buffer;
-}
-
-std::shared_ptr<resource::buffer>
-CreateUniformBuffer(resource::resource_manager &resource_manager, std::size_t size)
-{
-    auto constexpr usageFlags = graphics::BUFFER_USAGE::UNIFORM_BUFFER;
-    auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
-
-    return resource_manager.create_buffer(size, usageFlags, propertyFlags);
-}
-
-std::shared_ptr<resource::buffer>
-CreateCoherentStorageBuffer(resource::resource_manager &resource_manager, std::size_t size)
-{
-    auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
-    auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
-
-    return resource_manager.create_buffer(size, usageFlags, propertyFlags);
-}
-
-std::shared_ptr<resource::buffer>
-CreateStorageBuffer(resource::resource_manager &resource_manager, std::size_t size)
-{
-    auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
-    auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE;
-
-    return resource_manager.create_buffer(size, usageFlags, propertyFlags);
 }

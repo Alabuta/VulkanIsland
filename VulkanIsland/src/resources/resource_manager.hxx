@@ -125,8 +125,7 @@ namespace resource
             throw resource::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
 
         else {
-            auto container_bytes_view = std::as_bytes(std::span{container});
-            std::copy_n(std::begin(container_bytes_view), container_bytes_view.size_bytes(), reinterpret_cast<std::byte *>(ptr));
+            std::copy(std::begin(container), std::end(container), reinterpret_cast<std::byte *>(ptr));
 
             vkUnmapMemory(device_.handle(), memory->handle());
 
@@ -134,3 +133,8 @@ namespace resource
         }
     }
 }
+
+
+[[nodiscard]] std::shared_ptr<resource::buffer> CreateUniformBuffer(resource::resource_manager &resource_manager, std::size_t size);
+[[nodiscard]] std::shared_ptr<resource::buffer> create_coherent_storage_buffer(resource::resource_manager &resource_manager, std::size_t size);
+[[nodiscard]] std::shared_ptr<resource::buffer> CreateStorageBuffer(resource::resource_manager &resource_manager, std::size_t size);

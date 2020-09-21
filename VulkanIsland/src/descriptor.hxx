@@ -37,7 +37,7 @@ public:
 
     DescriptorManager(vulkan::device &device) noexcept : device_{device} { }
 
-    [[nodiscard]] std::optional<VulkanDescriptorPool> CreateDescriptorPool();
+    [[nodiscard]] std::optional<VulkanDescriptorPool> create_descriptor_pool();
 
 private:
 
@@ -58,9 +58,9 @@ private:
 };
 #endif
 
-std::optional<VkDescriptorPool> CreateDescriptorPool(vulkan::device const &device);
+std::optional<VkDescriptorPool> create_descriptor_pool(vulkan::device const &device);
 
 std::optional<VkDescriptorSetLayout> CreateDescriptorSetLayout(vulkan::device const &device);
 
 std::optional<VkDescriptorSet>
-CreateDescriptorSets(vulkan::device const &device, VkDescriptorPool descriptorPool, std::span<VkDescriptorSetLayout const> const descriptorSetLayouts);
+create_descriptor_sets(vulkan::device const &device, VkDescriptorPool descriptorPool, std::span<VkDescriptorSetLayout const> const descriptorSetLayouts);
