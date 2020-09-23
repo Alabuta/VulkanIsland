@@ -84,7 +84,8 @@ namespace resource
 
     private:
 
-        static std::size_t constexpr kVERTEX_BUFFER_INITIAL_VALUE{0x400'0000}; // 64 MB
+        static std::size_t constexpr kVERTEX_BUFFER_FIXED_SIZE{0x400'0000}; // 64 MB
+        static std::size_t constexpr kINDEX_BUFFER_FIXED_SIZE{0x200'0000}; // 32 MB
 
         static std::size_t constexpr kVERTEX_BUFFER_INCREASE_VALUE{4};
         static std::size_t constexpr kINDEX_BUFFER_INCREASE_VALUE{4};
@@ -96,8 +97,8 @@ namespace resource
 
         std::shared_ptr<struct resource_deleter> resource_deleter_;
 
-        std::unordered_map<std::size_t, std::shared_ptr<resource::buffer>> buffers_;
-        std::unordered_map<std::size_t, std::shared_ptr<resource::image>> images_;
+        /*std::unordered_map<std::size_t, std::shared_ptr<resource::buffer>> buffers_;
+        std::unordered_map<std::size_t, std::shared_ptr<resource::image>> images_;*/
 
         // TODO:: unordered_miltimap
         std::unordered_map<graphics::vertex_layout, std::shared_ptr<resource::vertex_buffer>, graphics::hash<graphics::vertex_layout>> vertex_buffers_;

@@ -41,7 +41,7 @@ namespace vulkan
 
         renderer::swapchain_support_details query_swapchain_support_details(renderer::platform_surface platform_surface) const;
 
-        bool is_format_supported_as_buffer_features(graphics::FORMAT format, graphics::FORMAT_FEATURE features) const noexcept;
+        bool is_format_supported_as_buffer_feature(graphics::FORMAT format, graphics::FORMAT_FEATURE features) const noexcept;
 
         graphics::graphics_queue graphics_queue;
         graphics::compute_queue compute_queue;

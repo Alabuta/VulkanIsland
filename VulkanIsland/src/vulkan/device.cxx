@@ -771,7 +771,7 @@ namespace vulkan
         return ::query_swapchain_support_details(physical_handle_, platform_surface.handle());
     }
 
-    bool device::is_format_supported_as_buffer_features(graphics::FORMAT format, graphics::FORMAT_FEATURE features) const noexcept
+    bool device::is_format_supported_as_buffer_feature(graphics::FORMAT format, graphics::FORMAT_FEATURE features) const noexcept
     {
         VkFormatProperties properties;
         vkGetPhysicalDeviceFormatProperties(physical_handle_, convert_to::vulkan(format), &properties);

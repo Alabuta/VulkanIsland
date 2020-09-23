@@ -366,7 +366,7 @@ void create_graphics_command_buffers(app_t &app)
     };
 
     if (auto result = vkAllocateCommandBuffers(app.device->handle(), &allocate_info, std::data(app.command_buffers)); result != VK_SUCCESS)
-        throw vulkan::exception(fmt::format("failed to create allocate command buffers: {0:#x}"s, result));
+        throw vulkan::exception{fmt::format("failed to create allocate command buffers: {0:#x}"s, result)};
 
     auto &&resource_manager = *app.resource_manager;
     auto &&vertex_buffers = resource_manager.vertex_buffers();
@@ -388,7 +388,7 @@ void create_graphics_command_buffers(app_t &app)
     std::vector<VkBuffer> vertex_buffer_handles;
 
     std::transform(std::cbegin(vertex_bindings_and_buffers), std::cend(vertex_bindings_and_buffers),
-                               std::back_inserter(vertex_buffer_handles), [] (auto &&pair) { return pair.second; });
+                               std::back_inserter(vertex_buffer_handles), [] (auto pair) { return pair.second; });
 
     auto const binding_count = static_cast<std::uint32_t>(std::size(vertex_buffer_handles));
 
