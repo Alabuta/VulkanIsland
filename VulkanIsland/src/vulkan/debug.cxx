@@ -9,49 +9,6 @@ using namespace std::string_literals;
 #include "utility/exceptions.hxx"
 #include "debug.hxx"
 
-#if 0
-[[nodiscard]] VKAPI_ATTR VkResult VKAPI_CALL
-vkCreateDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerCreateInfoEXT const *pCreateInfo,
-                               VkAllocationCallbacks const *pAllocator, VkDebugUtilsMessengerEXT *pDebugMessenger)
-{
-    auto func = reinterpret_cast<PFN_vkCreateDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT"));
-
-    if (func)
-        return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
-
-    return VK_ERROR_EXTENSION_NOT_PRESENT;
-}
-
-VKAPI_ATTR void VKAPI_CALL
-vkDestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessenger, VkAllocationCallbacks const *pAllocator)
-{
-    auto func = reinterpret_cast<PFN_vkDestroyDebugUtilsMessengerEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT"));
-
-    if (func)
-        func(instance, debugMessenger, pAllocator);
-}
-
-[[nodiscard]] VKAPI_ATTR VkResult VKAPI_CALL
-vkCreateDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackCreateInfoEXT const *pCreateInfo,
-                               VkAllocationCallbacks const *pAllocator, VkDebugReportCallbackEXT *pCallback)
-{
-    auto func = reinterpret_cast<PFN_vkCreateDebugReportCallbackEXT>(vkGetInstanceProcAddr(instance, "vkCreateDebugReportCallbackEXT"));
-
-    if (func)
-        return func(instance, pCreateInfo, pAllocator, pCallback);
-
-    return VK_ERROR_EXTENSION_NOT_PRESENT;
-}
-
-VKAPI_ATTR void VKAPI_CALL
-vkDestroyDebugReportCallbackEXT(VkInstance instance, VkDebugReportCallbackEXT callback, VkAllocationCallbacks const *pAllocator)
-{
-    auto func = reinterpret_cast<PFN_vkDestroyDebugReportCallbackEXT>(vkGetInstanceProcAddr(instance, "vkDestroyDebugReportCallbackEXT"));
-
-    if (func)
-        func(instance, callback, pAllocator);
-}
-#endif
 
 namespace vulkan
 {
