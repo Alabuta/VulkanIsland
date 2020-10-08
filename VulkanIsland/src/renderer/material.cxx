@@ -1,11 +1,14 @@
 #include <optional>
-#include <ranges>
+#include <algorithm>
+//#include <ranges>
 
 #include <string>
 using namespace std::string_literals;
 
 #include <string_view>
 using namespace std::string_view_literals;
+
+#include <range/v3/all.hpp>
 
 #include <fmt/format.h>
 
@@ -41,22 +44,22 @@ namespace
 
         auto filter_vertex_layouts = [&] (auto &&indices)
         {
-            auto vertex_attributes = indices | std::views::transform(transform_indices);
-            auto intersection = std::views::set_intersection(required_vertex_attributes, vertex_attributes, compare_attributes);
+            auto vertex_attributes = indices | ranges::views::transform(transform_indices);
+            auto intersection = ranges::views::set_intersection(required_vertex_attributes, vertex_attributes, compare_attributes);
 
-            return std::ranges::distance(intersection) == std::ranges::distance(indices);
+            return ranges::distance(intersection) == ranges::distance(indices);
         };
 
-        auto vertex_layouts = technique.vertex_layouts | std::views::filter(filter_vertex_layouts);
+        auto vertex_layouts = technique.vertex_layouts | ranges::views::filter(filter_vertex_layouts);
 
-        if (std::ranges::size(vertex_layouts) == 0)
+        if (ranges::distance(vertex_layouts) == 0)
             return { };
 
         graphics::vertex_layout vertex_layout;
 
         auto &&vertex_attributes = vertex_layout.attributes;
 
-        for (auto [semantic, format] : std::ranges::front(vertex_layouts) | std::views::transform(transform_indices))
+        for (auto [semantic, format] : ranges::front(vertex_layouts) | ranges::views::transform(transform_indices))
             vertex_attributes.push_back({semantic, format});
 
         std::sort(std::begin(vertex_attributes), std::end(vertex_attributes));
