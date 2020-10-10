@@ -7,7 +7,7 @@
 
 namespace vulkan
 {
-    auto constexpr device_extensions = std::array{
+    inline auto constexpr device_extensions = std::array{
         VK_KHR_SWAPCHAIN_EXTENSION_NAME,
 
         VK_KHR_MAINTENANCE1_EXTENSION_NAME,
@@ -28,7 +28,7 @@ namespace vulkan
         //VK_KHR_INLINE_UNIFORM_BLOCK_EXTENSION_NAME
     };
 
-    VkPhysicalDeviceFeatures constexpr device_features{
+    inline VkPhysicalDeviceFeatures constexpr device_features{
         VK_FALSE, // robustBufferAccess,
         VK_FALSE, // fullDrawIndexUint32,
         VK_TRUE,  // imageCubeArray,
@@ -86,7 +86,7 @@ namespace vulkan
         VK_FALSE, // inheritedQueries
     };
 
-    auto constexpr device_extended_features = std::tuple{
+    inline auto constexpr device_extended_features = std::tuple{
         VkPhysicalDevice8BitStorageFeaturesKHR{
             VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_8BIT_STORAGE_FEATURES_KHR,
             nullptr,

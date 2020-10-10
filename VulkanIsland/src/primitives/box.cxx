@@ -18,6 +18,120 @@ using namespace std::string_literals;
 #include "primitives/primitives.hxx"
 
 
+namespace
+{
+    template<std::size_t N, class T, class F>
+    void generate_vertex(F generator, primitives::box_create_info const &create_info,
+                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t total_vertex_count)
+    {
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+        auto const dsegments = create_info.dsegments;
+
+        auto it_end = std::next(it_begin, static_cast<std::ptrdiff_t>(total_vertex_count));
+
+        auto const faces = std::array{
+            std::tuple{hsegments, vsegments, (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2}
+        };
+
+        for (auto [hsegs, vsegs, vertex_count] : faces) {
+            auto it_face_end = std::next(it_begin, static_cast<std::ptrdiff_t>(vertex_count));
+
+            auto const vertices_per_strip = (hsegs + 1) * 2;
+            auto const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegs > 1) * 2;
+
+            for (auto strip_index = 0u; strip_index < vsegs; ++strip_index) {
+                auto it = std::next(it_begin, vertices_per_strip + extra_vertices_per_strip);
+
+                std::generate_n(it, 2, [&, offset = 0u]() mutable
+                {
+                    auto vertex_index = (strip_index + offset++) * (hsegs + 1);
+
+                    return generator(vertex_index);
+                });
+
+                std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegs * 2]() mutable
+                {
+                    auto quad_index = triangle_index / 2;
+
+                    auto column = quad_index % hsegs + 1;
+                    auto row = quad_index / hsegs + (triangle_index % 2);
+
+                    ++triangle_index;
+
+                    auto vertex_index = row * (hsegs + 1) + column;
+
+                    return generator(vertex_index);
+                });
+
+                it = std::next(it, vertices_per_strip);
+
+                if (it < it_face_end) {
+                    std::generate_n(it, 2, [&, i = 0u]() mutable {
+                        auto vertex_index = (strip_index + 1) * (hsegs + 1) + hsegs * (1 - i++);
+
+                        return generator(vertex_index);
+                    });
+                }
+
+                it_begin = it;
+            }
+        }
+    }
+
+    template<std::size_t N, class T>
+    std::array<T, N>
+        generate_position(primitives::box_create_info const &create_info, std::size_t vertex_index)
+    {
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+        auto const dsegments = create_info.dsegments;
+
+        auto const width = create_info.width;
+        auto const height = create_info.height;
+        auto const depth = create_info.depth;
+
+        auto [x0, y0] = std::pair{-width / 2.f, height / 2.f};
+        auto [step_x, step_y] = std::pair{width / static_cast<float>(hsegments), -height / static_cast<float>(vsegments)};
+
+        auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * step_x);
+        auto y = static_cast<T>(y0 + static_cast<float>(vertex_index / (hsegments + 1u)) * step_y);
+
+        if constexpr (N == 4)
+            return std::array<T, N>{x, y, 0, 1};
+
+        else if constexpr (N == 3)
+            return std::array<T, N>{x, y, 0};
+
+        else if constexpr (N == 2)
+            return std::array<T, N>{x, y};
+
+        else throw resource::exception("unsupported components number"s);
+    }
+
+    template<std::size_t N, class T>
+    void generate_positions(primitives::box_create_info const &create_info, graphics::FORMAT attribute_format,
+                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
+    {
+        if constexpr (N == 2 || N == 3) {
+            switch (graphics::numeric_format(attribute_format)) {
+                case graphics::NUMERIC_FORMAT::FLOAT:
+                    generate_vertex<N, T>(
+                        std::bind(generate_position<N, T>, create_info, std::placeholders::_1),
+                        create_info, it_begin, vertex_count
+                        );
+                    break;
+
+                default:
+                    throw resource::exception("unsupported numeric format"s);
+                    break;
+            }
+        }
+
+        else throw resource::exception("unsupported components number"s);
+    }
+}
+
 namespace primitives
 {
     std::uint32_t calculate_box_vertices_number(primitives::box_create_info const &create_info)
@@ -101,117 +215,6 @@ namespace primitives
         }
 
         return xface_indices_number + yface_indices_number + zface_indices_number;
-    }
-
-    template<std::size_t N, class T, class F>
-    void generate_vertex(F generator, primitives::box_create_info const &create_info,
-                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t total_vertex_count)
-    {
-        auto const hsegments = create_info.hsegments;
-        auto const vsegments = create_info.vsegments;
-        auto const dsegments = create_info.dsegments;
-
-        auto it_end = std::next(it_begin, static_cast<std::ptrdiff_t>(total_vertex_count));
-
-        auto const faces = std::array{
-            std::tuple{hsegments, vsegments, (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2}
-        };
-
-        for (auto [hsegs, vsegs, vertex_count] : faces) {
-            auto it_face_end = std::next(it_begin, static_cast<std::ptrdiff_t>(vertex_count));
-
-            auto const vertices_per_strip = (hsegs + 1) * 2;
-            auto const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegs > 1) * 2;
-
-            for (auto strip_index = 0u; strip_index < vsegs; ++strip_index) {
-                auto it = std::next(it_begin, vertices_per_strip + extra_vertices_per_strip);
-
-                std::generate_n(it, 2, [&, offset = 0u] () mutable
-                {
-                    auto vertex_index = (strip_index + offset++) * (hsegs + 1);
-
-                    return generator(vertex_index);
-                });
-
-                std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegs * 2] () mutable
-                {
-                    auto quad_index = triangle_index / 2;
-
-                    auto column = quad_index % hsegs + 1;
-                    auto row = quad_index / hsegs + (triangle_index % 2);
-
-                    ++triangle_index;
-
-                    auto vertex_index = row * (hsegs + 1) + column;
-
-                    return generator(vertex_index);
-                });
-
-                it = std::next(it, vertices_per_strip);
-
-                if (it < it_face_end) {
-                    std::generate_n(it, 2, [&, i = 0u] () mutable {
-                        auto vertex_index = (strip_index + 1) * (hsegs + 1) + hsegs * (1 - i++);
-
-                        return generator(vertex_index);
-                    });
-                }
-
-                it_begin = it;
-            }
-        }
-    }
-    
-    template<std::size_t N, class T>
-    std::array<T, N>
-    generate_position(primitives::box_create_info const &create_info, std::size_t vertex_index)
-    {
-        auto const hsegments = create_info.hsegments;
-        auto const vsegments = create_info.vsegments;
-        auto const dsegments = create_info.dsegments;
-
-        auto const width = create_info.width;
-        auto const height = create_info.height;
-        auto const depth = create_info.depth;
-
-        auto [x0, y0] = std::pair{-width / 2.f, height / 2.f};
-        auto [step_x, step_y] = std::pair{width / static_cast<float>(hsegments), -height / static_cast<float>(vsegments)};
-
-        auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * step_x);
-        auto y = static_cast<T>(y0 + static_cast<float>(vertex_index / (hsegments + 1u)) * step_y);
-
-        if constexpr (N == 4)
-            return std::array<T, N>{x, y, 0, 1};
-
-        else if constexpr (N == 3)
-            return std::array<T, N>{x, y, 0};
-
-        else if constexpr (N == 2)
-            return std::array<T, N>{x, y};
-
-        else throw resource::exception("unsupported components number"s);
-    }
-
-    template<std::size_t N, class T>
-    void generate_positions(primitives::box_create_info const &create_info, graphics::FORMAT attribute_format,
-                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
-    {
-        if constexpr (N == 2 || N == 3) {
-            switch (graphics::numeric_format(attribute_format)) {
-                case graphics::NUMERIC_FORMAT::FLOAT:
-                    generate_vertex<N, T>(
-                        std::bind(generate_position<N, T>, create_info, std::placeholders::_1),
-                        create_info, it_begin, vertex_count
-                    );
-                    break;
-
-                default:
-                    throw resource::exception("unsupported numeric format"s);
-                    break;
-            }
-        }
-
-        else throw resource::exception("unsupported components number"s);
     }
 
     void generate_box_indexed(primitives::box_create_info const &create_info, std::vector<std::byte>::iterator it_vertex_buffer,

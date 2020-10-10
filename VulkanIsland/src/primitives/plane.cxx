@@ -18,75 +18,13 @@ using namespace std::string_literals;
 #include "primitives/primitives.hxx"
 
 
-namespace primitives
+namespace
 {
-    std::uint32_t calculate_plane_vertices_number(primitives::plane_create_info const &create_info)
-    {
-        auto const hsegments = create_info.hsegments;
-        auto const vsegments = create_info.vsegments;
-
-        if (hsegments * vsegments < 1)
-            throw resource::exception("invalid plane segments' values"s);
-
-        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
-
-        if (is_primitive_indexed)
-            return (hsegments + 1) * (vsegments + 1);
-
-        switch (create_info.topology) {
-            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
-                return (hsegments + 1) * (vsegments + 1);
-
-            case graphics::PRIMITIVE_TOPOLOGY::LINES:
-                return (hsegments - 1) * 2 + (vsegments - 1) * 2 + 4 * 2;
-
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                return hsegments * vsegments * 2 * 3;
-
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-                return (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
-
-            default:
-                throw resource::exception("unsupported primitive topology"s);
-        }
-    }
-
-    std::uint32_t calculate_plane_indices_number(primitives::plane_create_info const &create_info)
-    {
-        auto const hsegments = create_info.hsegments;
-        auto const vsegments = create_info.vsegments;
-
-        if (hsegments * vsegments < 1)
-            throw resource::exception("invalid plane segments' values"s);
-
-        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
-
-        if (!is_primitive_indexed)
-            return 0;
-
-        switch (create_info.topology) {
-            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
-                return (hsegments + 1) * (vsegments + 1);
-
-            case graphics::PRIMITIVE_TOPOLOGY::LINES:
-                return (hsegments - 1) * 2 + (vsegments - 1) * 2 + 4 * 2;
-
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                return hsegments * vsegments * 2 * 3;
-
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-                return (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
-
-            default:
-                throw resource::exception("unsupported primitive topology"s);
-        }
-    }
-
     template<class T, class F>
     void generate_vertex_as_points(F generator, primitives::plane_create_info const &,
                                    strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_number)
     {
-        std::generate_n(it_begin, vertex_number, [generator, i = 0u] () mutable
+        std::generate_n(it_begin, vertex_number, [generator, i = 0u]() mutable
         {
             return generator(i++);
         });
@@ -101,7 +39,7 @@ namespace primitives
 
         auto const offset = (hsegments + 1) * 2;
 
-        std::generate_n(it_begin, offset, [&, i = 0u] () mutable
+        std::generate_n(it_begin, offset, [&, i = 0u]() mutable
         {
             auto vertex_index = i / 2 + (i % 2) * vsegments * (hsegments + 1);
 
@@ -112,7 +50,7 @@ namespace primitives
 
         it_begin = std::next(it_begin, static_cast<std::ptrdiff_t>(offset));
 
-        std::generate_n(it_begin, (vsegments + 1) * 2, [&, i = 0u] () mutable
+        std::generate_n(it_begin, (vsegments + 1) * 2, [&, i = 0u]() mutable
         {
             auto vertex_index = (i % 2) * hsegments + i / 2 * (hsegments + 1);
 
@@ -142,7 +80,7 @@ namespace primitives
                 std::transform(std::cbegin(pattern), std::cend(pattern), it, [&] (auto column)
                 {
                     auto vertex_index = vsegment_index * (hsegments + 1) + column + hsegment_index;
-                    
+
                     return generator(vertex_index);
                 });
             }
@@ -164,14 +102,14 @@ namespace primitives
         for (auto strip_index = 0u; strip_index < vsegments; ++strip_index) {
             auto it = std::next(it_begin, strip_index * (vertices_per_strip + extra_vertices_per_strip));
 
-            std::generate_n(it, 2, [&, offset = 0u] () mutable
+            std::generate_n(it, 2, [&, offset = 0u]() mutable
             {
                 auto vertex_index = (strip_index + offset++) * (hsegments + 1);
 
                 return generator(vertex_index);
             });
 
-            std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2] () mutable
+            std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2]() mutable
             {
                 auto quad_index = triangle_index / 2;
 
@@ -188,7 +126,7 @@ namespace primitives
             it = std::next(it, vertices_per_strip);
 
             if (it < it_end) {
-                std::generate_n(it, 2, [&, i = 0u] () mutable {
+                std::generate_n(it, 2, [&, i = 0u]() mutable {
                     auto vertex_index = (strip_index + 1) * (hsegments + 1) + hsegments * (1 - i++);
 
                     return generator(vertex_index);
@@ -225,7 +163,7 @@ namespace primitives
 
     template<std::size_t N, class T>
     std::array<T, N>
-    generate_position(primitives::plane_create_info const &create_info, std::uint32_t vertex_index)
+        generate_position(primitives::plane_create_info const &create_info, std::uint32_t vertex_index)
     {
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
@@ -253,7 +191,7 @@ namespace primitives
 
     template<std::size_t N, class T>
     std::array<T, N>
-    generate_texcoord(primitives::plane_create_info const &create_info, graphics::FORMAT format, std::uint32_t vertex_index)
+        generate_texcoord(primitives::plane_create_info const &create_info, graphics::FORMAT format, std::uint32_t vertex_index)
     {
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
@@ -267,7 +205,7 @@ namespace primitives
                     if constexpr (std::is_same_v<T, std::uint16_t>) {
                         auto constexpr type_max = static_cast<float>(std::numeric_limits<T>::max());
 
-                        return std::array<T, N>{static_cast<T>(x * type_max), static_cast<T>(y * type_max)};
+                        return std::array<T, N>{static_cast<T>(x *type_max), static_cast<T>(y *type_max)};
                     }
 
                     else throw resource::exception("unsupported format type"s);
@@ -288,7 +226,7 @@ namespace primitives
 
     template<std::size_t N, class T>
     std::array<T, N>
-    generate_color(glm::vec4 const &color, graphics::FORMAT format)
+        generate_color(glm::vec4 const &color, graphics::FORMAT format)
     {
         if constexpr (N == 3 || N == 4) {
             switch (graphics::numeric_format(format)) {
@@ -298,18 +236,18 @@ namespace primitives
 
                         if constexpr (N == 4) {
                             return std::array<T, N>{
-                                static_cast<T>(color.r * type_max),
-                                static_cast<T>(color.g * type_max),
-                                static_cast<T>(color.b * type_max),
-                                static_cast<T>(color.a * type_max)
+                                static_cast<T>(color.r *type_max),
+                                    static_cast<T>(color.g *type_max),
+                                    static_cast<T>(color.b *type_max),
+                                    static_cast<T>(color.a *type_max)
                             };
                         }
 
                         else if constexpr (N == 3) {
                             return std::array<T, N>{
-                                static_cast<T>(color.r * type_max),
-                                static_cast<T>(color.g * type_max),
-                                static_cast<T>(color.b * type_max)
+                                static_cast<T>(color.r *type_max),
+                                    static_cast<T>(color.g *type_max),
+                                    static_cast<T>(color.b *type_max)
                             };
                         }
                     }
@@ -342,21 +280,21 @@ namespace primitives
         if constexpr (N == 2 || N == 3) {
             switch (graphics::numeric_format(format)) {
                 case graphics::NUMERIC_FORMAT::FLOAT:
-                    {
-                        auto generator = std::bind(generate_position<N, T>, create_info, std::placeholders::_1);
+                {
+                    auto generator = std::bind(generate_position<N, T>, create_info, std::placeholders::_1);
 
-                        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+                    bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
 
-                        if (is_primitive_indexed) {
-                            std::generate_n(it_begin, vertex_number, [generator, i = 0u] () mutable
-                            {
-                                return generator(i++);
-                            });
-                        }
-
-                        else generate_vertex(generator, create_info, it_begin, vertex_number);
+                    if (is_primitive_indexed) {
+                        std::generate_n(it_begin, vertex_number, [generator, i = 0u]() mutable
+                        {
+                            return generator(i++);
+                        });
                     }
-                    break;
+
+                    else generate_vertex(generator, create_info, it_begin, vertex_number);
+                }
+                break;
 
                 default:
                     throw resource::exception("unsupported numeric format"s);
@@ -417,7 +355,7 @@ namespace primitives
         bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
 
         if (is_primitive_indexed) {
-            std::generate_n(it_begin, vertex_number, [generator, i = 0u] () mutable
+            std::generate_n(it_begin, vertex_number, [generator, i = 0u]() mutable
             {
                 return generator(i++);
             });
@@ -450,6 +388,71 @@ namespace primitives
                     return static_cast<T>(vertex_index);
                 }, create_info, it_begin, indices_number);
                 break;
+
+            default:
+                throw resource::exception("unsupported primitive topology"s);
+        }
+    }
+}
+
+namespace primitives
+{
+    std::uint32_t calculate_plane_vertices_number(primitives::plane_create_info const &create_info)
+    {
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+
+        if (hsegments * vsegments < 1)
+            throw resource::exception("invalid plane segments' values"s);
+
+        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+
+        if (is_primitive_indexed)
+            return (hsegments + 1) * (vsegments + 1);
+
+        switch (create_info.topology) {
+            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+                return (hsegments + 1) * (vsegments + 1);
+
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
+                return (hsegments - 1) * 2 + (vsegments - 1) * 2 + 4 * 2;
+
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+                return hsegments * vsegments * 2 * 3;
+
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+                return (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
+
+            default:
+                throw resource::exception("unsupported primitive topology"s);
+        }
+    }
+
+    std::uint32_t calculate_plane_indices_number(primitives::plane_create_info const &create_info)
+    {
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+
+        if (hsegments * vsegments < 1)
+            throw resource::exception("invalid plane segments' values"s);
+
+        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+
+        if (!is_primitive_indexed)
+            return 0;
+
+        switch (create_info.topology) {
+            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+                return (hsegments + 1) * (vsegments + 1);
+
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
+                return (hsegments - 1) * 2 + (vsegments - 1) * 2 + 4 * 2;
+
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+                return hsegments * vsegments * 2 * 3;
+
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+                return (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
 
             default:
                 throw resource::exception("unsupported primitive topology"s);
