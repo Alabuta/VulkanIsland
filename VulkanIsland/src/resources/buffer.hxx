@@ -17,8 +17,8 @@ namespace resource
 
         std::shared_ptr<resource::memory_block> memory() const noexcept { return memory_; }
 
-        std::size_t size_in_bytes() const noexcept { return size_in_bytes_; }
-        std::size_t capacity_in_bytes() const noexcept { return capacity_in_bytes_; }
+        std::size_t size_bytes() const noexcept { return size_bytes_; }
+        std::size_t capacity_bytes() const noexcept { return capacity_bytes_; }
 
         graphics::BUFFER_USAGE usage() const noexcept { return usage_; }
         graphics::RESOURCE_SHARING_MODE sharing_mode() const noexcept { return sharing_mode_; }
@@ -29,13 +29,13 @@ namespace resource
 
         std::shared_ptr<resource::memory_block> memory_;
 
-        std::size_t size_in_bytes_{0};
-        std::size_t capacity_in_bytes_{0};
+        std::size_t size_bytes_{0};
+        std::size_t capacity_bytes_{0};
 
         graphics::BUFFER_USAGE usage_;
         graphics::RESOURCE_SHARING_MODE sharing_mode_;
 
-        buffer(VkBuffer handle, std::shared_ptr<resource::memory_block> memory, std::size_t size_in_bytes, graphics::BUFFER_USAGE usage,
+        buffer(VkBuffer handle, std::shared_ptr<resource::memory_block> memory, std::size_t size_bytes, graphics::BUFFER_USAGE usage,
                graphics::RESOURCE_SHARING_MODE sharing_mode);
 
         buffer() = delete;

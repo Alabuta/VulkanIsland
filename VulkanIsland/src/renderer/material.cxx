@@ -64,11 +64,11 @@ namespace
 
         std::sort(std::begin(vertex_attributes), std::end(vertex_attributes));
 
-        vertex_layout.size_in_bytes = std::accumulate(std::begin(vertex_attributes), std::end(vertex_attributes), vertex_layout.size_in_bytes,
-                                                      [] (auto size_in_bytes, auto attribute)
+        vertex_layout.size_bytes = std::accumulate(std::begin(vertex_attributes), std::end(vertex_attributes), vertex_layout.size_bytes,
+                                                      [] (auto size_bytes, auto attribute)
         {
             if (auto format_instance = graphics::instantiate_format(attribute.format); format_instance) {
-                return size_in_bytes + std::visit([] (auto &&format)
+                return size_bytes + std::visit([] (auto &&format)
                 {
                     return sizeof(std::remove_cvref_t<decltype(format)>);
                 }, *format_instance);

@@ -137,7 +137,7 @@ namespace resource
         void deallocate_memory(resource::memory_block &&memory_block);
 
         decltype(memory_pool::memory_blocks)::iterator
-        allocate_memory_block(std::size_t size_in_bytes, std::uint32_t memory_type_index, graphics::MEMORY_PROPERTY_TYPE properties, bool linear);
+        allocate_memory_block(std::size_t size_bytes, std::uint32_t memory_type_index, graphics::MEMORY_PROPERTY_TYPE properties, bool linear);
     };
 
     memory_allocator::memory_allocator(vulkan::device const& device) : device{ device }
@@ -322,7 +322,7 @@ namespace resource
     }
 
     decltype(memory_pool::memory_blocks)::iterator
-    memory_allocator::allocate_memory_block(std::size_t size_in_bytes, std::uint32_t memory_type_index, graphics::MEMORY_PROPERTY_TYPE properties, bool linear)
+    memory_allocator::allocate_memory_block(std::size_t size_bytes, std::uint32_t memory_type_index, graphics::MEMORY_PROPERTY_TYPE properties, bool linear)
     {
         auto const key = hash_memory_block_properties(memory_type_index, properties, linear);
 
@@ -339,7 +339,7 @@ namespace resource
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wuseless-cast"
     #endif
-            static_cast<VkDeviceSize>(size_in_bytes),
+            static_cast<VkDeviceSize>(size_bytes),
     #ifndef _MSC_VER
         #pragma GCC diagnostic pop
     #endif
@@ -351,14 +351,14 @@ namespace resource
         if (auto result = vkAllocateMemory(device.handle(), &allocation_info, nullptr, &handle); result != VK_SUCCESS)
             throw memory::bad_allocation("failed to allocate memory block from memory pool."s);
 
-        total_allocated_size += size_in_bytes;
-        memory_pool.allocated_size += size_in_bytes;
+        total_allocated_size += size_bytes;
+        memory_pool.allocated_size += size_bytes;
 
-        auto it_memory_block = memory_blocks.try_emplace(handle, size_in_bytes).first;
+        auto it_memory_block = memory_blocks.try_emplace(handle, size_bytes).first;
 
         auto block_index = std::size(memory_blocks);
 
-        auto kilobytes = static_cast<float>(size_in_bytes) / 1024.f;
+        auto kilobytes = static_cast<float>(size_bytes) / 1024.f;
         auto megabytes = static_cast<float>(total_allocated_size) / std::pow(2.f, 20.f);
 
         fmt::print("Memory manager: type index #{} : {}th page allocation {}KB/{}MB.\n"s, memory_type_index, block_index, kilobytes, megabytes);

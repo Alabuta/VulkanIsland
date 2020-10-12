@@ -226,7 +226,7 @@ namespace primitives
         auto &&vertex_layout = create_info.vertex_layout;
 
         auto vertex_number = calculate_box_vertices_number(create_info);
-        auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_in_bytes);
+        auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_bytes);
 
         //auto indices_number = calculate_box_indices_number(create_info);
 

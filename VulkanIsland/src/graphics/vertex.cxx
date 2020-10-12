@@ -57,7 +57,7 @@ namespace graphics
     {
         std::size_t seed = 0;
 
-        boost::hash_combine(seed, layout.size_in_bytes);
+        boost::hash_combine(seed, layout.size_bytes);
 
         graphics::hash<graphics::vertex_attribute> constexpr attribute_hasher;
 

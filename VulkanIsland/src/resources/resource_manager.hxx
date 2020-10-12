@@ -45,7 +45,7 @@ namespace resource
         resource_manager(vulkan::device const &device, renderer::config const &config, resource::memory_manager &memory_manager);
 
         [[nodiscard]] std::shared_ptr<resource::buffer>
-        create_buffer(std::size_t size_in_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types);
+        create_buffer(std::size_t size_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types);
 
         [[nodiscard]] std::shared_ptr<resource::image>
         create_image(graphics::IMAGE_TYPE type, graphics::FORMAT format, renderer::extent extent, std::uint32_t mip_levels, std::uint32_t samples_count,
@@ -67,11 +67,11 @@ namespace resource
         bool is_vertex_buffer_exist(graphics::vertex_layout const &layout) const noexcept;
         bool is_index_buffer_exist(graphics::FORMAT format) const noexcept;
 
-        [[nodiscard]] std::shared_ptr<resource::vertex_buffer> create_vertex_buffer(graphics::vertex_layout const &layout);
-        [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(graphics::FORMAT format);
+        [[nodiscard]] std::shared_ptr<resource::vertex_buffer> get_vertex_buffer(graphics::vertex_layout const &layout);
+        // [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(graphics::FORMAT format);
 
-        [[nodiscard]] std::shared_ptr<resource::vertex_buffer> create_vertex_buffer(graphics::vertex_layout const &layout, std::size_t size_in_bytes);
-        [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(graphics::FORMAT format, std::size_t size_in_bytes);
+        [[nodiscard]] std::shared_ptr<resource::vertex_buffer> create_vertex_buffer(graphics::vertex_layout const &layout, std::size_t size_bytes);
+        [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(graphics::FORMAT format, std::size_t size_bytes);
 
         [[nodiscard]] auto &vertex_buffers() const noexcept { return vertex_buffers_; }
         [[nodiscard]] auto &index_buffers() const noexcept { return index_buffers_; }
@@ -84,8 +84,8 @@ namespace resource
 
     private:
 
-        static std::size_t constexpr kVERTEX_BUFFER_FIXED_SIZE{0x400'0000}; // 64 MB
-        static std::size_t constexpr kINDEX_BUFFER_FIXED_SIZE{0x200'0000}; // 32 MB
+        static std::size_t constexpr kVERTEX_BUFFER_FIXED_SIZE{0x800'0000}; // 128 MB
+        static std::size_t constexpr kINDEX_BUFFER_FIXED_SIZE{0x800'0000}; // 128 MB
 
         static std::size_t constexpr kVERTEX_BUFFER_INCREASE_VALUE{4};
         static std::size_t constexpr kINDEX_BUFFER_INCREASE_VALUE{4};

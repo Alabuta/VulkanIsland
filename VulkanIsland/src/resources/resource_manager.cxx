@@ -59,7 +59,7 @@ namespace resource
         : device_{device}, config_{config}, memory_manager_{memory_manager}, resource_deleter_{std::make_shared<resource::resource_deleter>(device)} { }
 
     std::shared_ptr<resource::buffer>
-    resource_manager::create_buffer(std::size_t size_in_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
+    resource_manager::create_buffer(std::size_t size_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
     {
         auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
 
@@ -71,7 +71,7 @@ namespace resource
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wuseless-cast"
     #endif
-            static_cast<VkDeviceSize>(size_in_bytes),
+            static_cast<VkDeviceSize>(size_bytes),
     #ifndef _MSC_VER
         #pragma GCC diagnostic pop
     #endif
@@ -86,7 +86,7 @@ namespace resource
             throw resource::instantiation_fail(fmt::format("failed to create a buffer: {0:#x}"s, result));
 
         auto memory = memory_manager_.allocate_memory(resource::buffer{
-            handle, nullptr, size_in_bytes, usage, sharing_mode
+            handle, nullptr, size_bytes, usage, sharing_mode
         }, memory_property_types);
 
         if (memory == nullptr)
@@ -98,7 +98,7 @@ namespace resource
         std::shared_ptr<resource::buffer> buffer;
 
         buffer.reset(new resource::buffer{
-            handle, memory, size_in_bytes, usage, sharing_mode
+            handle, memory, size_bytes, usage, sharing_mode
         }, *resource_deleter_);
 
         return buffer;
@@ -285,8 +285,7 @@ namespace resource
         return index_buffers_.contains(format);
     }
 
-#if 1
-    std::shared_ptr<resource::vertex_buffer> resource_manager::create_vertex_buffer(graphics::vertex_layout const &layout)
+    std::shared_ptr<resource::vertex_buffer> resource_manager::get_vertex_buffer(graphics::vertex_layout const &layout)
     {
         for (auto &&attribute : layout.attributes) {
             auto constexpr feature = graphics::FORMAT_FEATURE::VERTEX_BUFFER;
@@ -324,10 +323,11 @@ namespace resource
         auto vertex_buffer = std::make_shared<resource::vertex_buffer>(device_buffer, staging_buffer, layout);
 
         vertex_buffers_.emplace(layout, vertex_buffer);
-    }
-#endif
 
-    std::shared_ptr<resource::vertex_buffer> resource_manager::create_vertex_buffer(graphics::vertex_layout const &layout, std::size_t size_in_bytes)
+        return vertex_buffer;
+    }
+
+    std::shared_ptr<resource::vertex_buffer> resource_manager::create_vertex_buffer(graphics::vertex_layout const &layout, std::size_t size_bytes)
     {
         for (auto &&attribute : layout.attributes) {
             auto constexpr feature = graphics::FORMAT_FEATURE::VERTEX_BUFFER;
@@ -340,13 +340,13 @@ namespace resource
             std::shared_ptr<resource::buffer> staging_buffer;
             std::shared_ptr<resource::buffer> device_buffer;
 
-            auto const capacity_in_bytes = kVERTEX_BUFFER_INCREASE_VALUE * size_in_bytes;
+            auto const capacity_bytes = kVERTEX_BUFFER_INCREASE_VALUE * size_bytes;
 
             {
                 auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
                 auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
 
-                staging_buffer = create_buffer(capacity_in_bytes, usage_flags, property_flags);
+                staging_buffer = create_buffer(capacity_bytes, usage_flags, property_flags);
 
                 if (staging_buffer == nullptr)
                     throw resource::instantiation_fail("failed to create staging vertex buffer"s);
@@ -356,7 +356,7 @@ namespace resource
                 auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER;
                 auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
 
-                device_buffer = create_buffer(capacity_in_bytes, usage_flags, property_flags);
+                device_buffer = create_buffer(capacity_bytes, usage_flags, property_flags);
 
                 if (device_buffer == nullptr)
                     throw resource::instantiation_fail("failed to create device vertex buffer"s);
@@ -369,22 +369,22 @@ namespace resource
 
         auto &vertex_buffer = vertex_buffers_.at(layout);
 
-        if (vertex_buffer->available_staging_buffer_size() < size_in_bytes) {
+        if (vertex_buffer->available_staging_buffer_size() < size_bytes) {
             if (vertex_buffer->staging_buffer_offset_ > 0)
                 throw resource::exception("unsupported case"s);
 
             auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
             auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
 
-            vertex_buffer->staging_buffer_ = create_buffer(size_in_bytes, usage_flags, property_flags);
+            vertex_buffer->staging_buffer_ = create_buffer(size_bytes, usage_flags, property_flags);
 
             if (vertex_buffer->staging_buffer_ == nullptr)
                 throw resource::instantiation_fail("failed to extend device vertex buffer"s);
 
-            vertex_buffer->staging_buffer_size_ = size_in_bytes;
+            vertex_buffer->staging_buffer_size_ = size_bytes;
         }
 
-        if (vertex_buffer->available_device_buffer_size() < size_in_bytes) {
+        if (vertex_buffer->available_device_buffer_size() < size_bytes) {
             // TODO: sparse memory binding
         #if NOT_YET_IMPLEMENTED
             auto buffer_handle = vertex_buffer->device_buffer_->handle();
@@ -396,19 +396,19 @@ namespace resource
         return vertex_buffer;
     }
 
-    std::shared_ptr<resource::index_buffer> resource_manager::create_index_buffer(graphics::FORMAT format, std::size_t size_in_bytes)
+    std::shared_ptr<resource::index_buffer> resource_manager::create_index_buffer(graphics::FORMAT format, std::size_t size_bytes)
     {
         if (!is_index_buffer_exist(format)) {
             std::shared_ptr<resource::buffer> staging_buffer;
             std::shared_ptr<resource::buffer> device_buffer;
 
-            auto const capacity_in_bytes = kINDEX_BUFFER_INCREASE_VALUE * size_in_bytes;
+            auto const capacity_bytes = kINDEX_BUFFER_INCREASE_VALUE * size_bytes;
 
             {
                 auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
                 auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
 
-                staging_buffer = create_buffer(capacity_in_bytes, usage_flags, property_flags);
+                staging_buffer = create_buffer(capacity_bytes, usage_flags, property_flags);
 
                 if (staging_buffer == nullptr)
                     throw resource::instantiation_fail("failed to create staging index buffer"s);
@@ -418,7 +418,7 @@ namespace resource
                 auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::INDEX_BUFFER;
                 auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
 
-                device_buffer = create_buffer(capacity_in_bytes, usage_flags, property_flags);
+                device_buffer = create_buffer(capacity_bytes, usage_flags, property_flags);
 
                 if (device_buffer == nullptr)
                     throw resource::instantiation_fail("failed to create device index buffer"s);
@@ -431,22 +431,22 @@ namespace resource
 
         auto &index_buffer = index_buffers_.at(format);
 
-        if (index_buffer->available_staging_buffer_size() < size_in_bytes) {
+        if (index_buffer->available_staging_buffer_size() < size_bytes) {
             if (index_buffer->staging_buffer_offset_ > 0)
                 throw resource::exception("unsupported case"s);
 
             auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
             auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
 
-            index_buffer->staging_buffer_ = create_buffer(size_in_bytes, usage_flags, property_flags);
+            index_buffer->staging_buffer_ = create_buffer(size_bytes, usage_flags, property_flags);
 
             if (index_buffer->staging_buffer_ == nullptr)
                 throw resource::instantiation_fail("failed to extend device index buffer"s);
 
-            index_buffer->staging_buffer_size_ = size_in_bytes;
+            index_buffer->staging_buffer_size_ = size_bytes;
         }
 
-        if (index_buffer->available_device_buffer_size() < size_in_bytes) {
+        if (index_buffer->available_device_buffer_size() < size_bytes) {
             // TODO: sparse memory binding
         #if NOT_YET_IMPLEMENTED
             auto buffer_handle = index_buffer->device_buffer_->handle();

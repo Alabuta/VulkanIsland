@@ -45,14 +45,14 @@ namespace graphics
     };
 
     struct vertex_layout final {
-        std::size_t size_in_bytes{0};
+        std::size_t size_bytes{0};
 
         std::vector<graphics::vertex_attribute> attributes;
 
         template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_layout>
         auto constexpr operator== (T &&rhs) const
         {
-            return size_in_bytes == rhs.size_in_bytes && attributes == rhs.attributes;
+            return size_bytes == rhs.size_bytes && attributes == rhs.attributes;
         }
     };
 
@@ -98,9 +98,9 @@ namespace vertex
     template<class... Ts>
     std::size_t compile_vertex_attributes(graphics::vertex_layout &vertex_layout, vertex::SEMANTIC semantic, graphics::FORMAT format, Ts ...args)
     {
-        auto size_in_bytes = compile_vertex_attributes(vertex_layout, semantic, format);
+        auto size_bytes = compile_vertex_attributes(vertex_layout, semantic, format);
 
-        return size_in_bytes + compile_vertex_attributes(vertex_layout, args...);
+        return size_bytes + compile_vertex_attributes(vertex_layout, args...);
     }
 
     template<class... Ts>
@@ -108,7 +108,7 @@ namespace vertex
     {
         graphics::vertex_layout vertex_layout;
 
-        vertex_layout.size_in_bytes = compile_vertex_attributes(vertex_layout, args...);
+        vertex_layout.size_bytes = compile_vertex_attributes(vertex_layout, args...);
 
         std::sort(std::begin(vertex_layout.attributes), std::end(vertex_layout.attributes));
 

@@ -31,10 +31,10 @@ namespace convert_to
            std::vector<VkVertexInputBindingDescription> &binding_descriptions,
            std::vector<VkVertexInputAttributeDescription> &attribute_descriptions)
     {
-        auto [binding_index, size_in_bytes, input_rate] = vertex_input_state.binding_description;
+        auto [binding_index, size_bytes, input_rate] = vertex_input_state.binding_description;
 
         binding_descriptions.push_back(VkVertexInputBindingDescription{
-            binding_index, size_in_bytes, convert_to::vulkan(input_rate)
+            binding_index, size_bytes, convert_to::vulkan(input_rate)
         });
 
         std::transform(std::cbegin(vertex_input_state.attribute_descriptions), std::cend(vertex_input_state.attribute_descriptions),
@@ -359,10 +359,10 @@ namespace graphics
 
         auto const binding_index = static_cast<std::uint32_t>(std::size(vertex_input_states_));
 
-        auto &&[size_in_bytes, attributes] = vertex_layout;
+        auto &&[size_bytes, attributes] = vertex_layout;
 
         graphics::vertex_input_binding binding_description{
-            binding_index, static_cast<std::uint32_t>(size_in_bytes), graphics::VERTEX_INPUT_RATE::PER_VERTEX
+            binding_index, static_cast<std::uint32_t>(size_bytes), graphics::VERTEX_INPUT_RATE::PER_VERTEX
         };
 
         std::vector<graphics::vertex_input_attribute> attribute_descriptions;

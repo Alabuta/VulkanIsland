@@ -686,7 +686,7 @@ namespace temp
         };
 
         auto const vertex_count = primitives::calculate_plane_vertices_number(create_info);
-        auto const vertex_size = vertex_layout.size_in_bytes;
+        auto const vertex_size = vertex_layout.size_bytes;
 
         auto const vertex_buffer_allocation_size = vertex_count * vertex_size;
         std::cout << "vertex_buffer_allocation_size "s << vertex_buffer_allocation_size << std::endl;
@@ -758,7 +758,7 @@ namespace temp
 
             }, format_inst.value());
 
-            std::vector<std::byte> vbuffer(vc * vl.size_in_bytes);
+            std::vector<std::byte> vbuffer(vc * vl.size_bytes);
             std::vector<std::byte> ibuffer(ic *index_size_in_bytes);
 
             primitives::generate_plane_indexed(ci, std::begin(vbuffer), std::begin(ibuffer), color);
@@ -908,7 +908,7 @@ namespace temp
 
             {
                 auto const vertex_count = std::size(vertices);
-                auto const vertex_size = vertex_layout.size_in_bytes;
+                auto const vertex_size = vertex_layout.size_bytes;
 
                 auto const bytes_count = vertex_count * vertex_size;
                 auto const write_offset = static_cast<std::ptrdiff_t>(vertex_buffer.count * vertex_size);

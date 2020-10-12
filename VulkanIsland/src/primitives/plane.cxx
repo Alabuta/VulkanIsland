@@ -495,7 +495,7 @@ namespace primitives
         auto &&vertex_layout = create_info.vertex_layout;
 
         auto vertex_number = calculate_plane_vertices_number(create_info);
-        auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_in_bytes);
+        auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_bytes);
 
         auto &&attributes = vertex_layout.attributes;
 

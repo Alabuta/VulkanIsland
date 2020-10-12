@@ -14,21 +14,21 @@ namespace loader
 {
     struct vertex_buffer_description final {
         std::size_t offset;
-        std::size_t size_in_bytes;
+        std::size_t size_bytes;
 
         std::uint32_t vertex_layout_index;
     };
 
     struct index_buffer_description final {
         std::size_t offset;
-        std::size_t size_in_bytes;
+        std::size_t size_bytes;
 
         graphics::FORMAT format;
     };
 
     struct transforms_buffer final {
         std::size_t offset;
-        std::size_t size_in_bytes;
+        std::size_t size_bytes;
     };
 
     struct scene_description final {
