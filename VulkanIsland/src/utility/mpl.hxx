@@ -39,7 +39,7 @@ namespace mpl
 
     template<class T, class... Ts>
     struct are_same {
-        static auto constexpr value_type = std::conjunction_v<std::is_same<T, std::remove_cvref_t<Ts>>...>;
+        static auto constexpr value_type = std::conjunction_v<std::is_same<T, Ts>...>;
     };
 
     template<class T, class... Ts>

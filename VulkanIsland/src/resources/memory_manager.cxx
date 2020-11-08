@@ -66,21 +66,21 @@ namespace resource
 
             template<class L, class R>
             requires mpl::are_same_v<memory_chunk, L, R>
-            bool operator() (L &&lhs, R &&rhs) const noexcept
+            bool operator() (L lhs, R rhs) const noexcept
             {
                 return lhs.size < rhs.size;
             }
 
             template<class T, class S>
-            requires mpl::are_same_v<memory_chunk, std::remove_cvref_t<T>> && std::is_integral_v<S>
-            bool operator() (T &&chunk, S size) const noexcept
+            requires mpl::are_same_v<memory_chunk, T> && std::is_unsigned_v<S>
+            bool operator() (T chunk, S size) const noexcept
             {
                 return chunk.size < size;
             }
                 
             template<class S, class T>
-            requires mpl::are_same_v<memory_chunk, std::remove_cvref_t<T>> && std::is_integral_v<S>
-            bool operator() (S size, T &&chunk) const noexcept
+            requires mpl::are_same_v<memory_chunk, T> && std::is_unsigned_v<S>
+            bool operator() (S size, T chunk) const noexcept
             {
                 return chunk.size < size;
             }

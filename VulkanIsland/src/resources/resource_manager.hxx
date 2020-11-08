@@ -103,6 +103,38 @@ namespace resource
         // TODO:: unordered_miltimap
         std::unordered_map<graphics::vertex_layout, std::shared_ptr<resource::vertex_buffer>, graphics::hash<graphics::vertex_layout>> vertex_buffers_;
         std::unordered_map<graphics::FORMAT, std::shared_ptr<resource::index_buffer>> index_buffers_;
+
+        std::unordered_multimap< graphics::vertex_layout, std::shared_ptr<resource::vertex_buffer>, graphics::hash<graphics::vertex_layout>> vbs_;
+
+        struct vertex_buffer_block final {
+            std::size_t size_bytes{0};
+            std::size_t capacity_bytes{0};
+
+            struct comparator final {
+                using is_transparent = void;
+
+                template<class L, class R>
+                requires mpl::are_same_v<vertex_buffer_block, L, R>
+                    bool operator() (L lhs, R rhs) const noexcept
+                {
+                    return lhs.size_bytes < rhs.size_bytes;
+                }
+
+                template<class T, class S>
+                requires mpl::are_same_v<vertex_buffer_block, T> && std::is_unsigned_v<S>
+                    bool operator() (T block, S size_bytes) const noexcept
+                {
+                    return block.size_bytes < size_bytes;
+                }
+
+                template<class S, class T>
+                requires mpl::are_same_v<vertex_buffer_block, T> && std::is_unsigned_v<S>
+                    bool operator() (S size_bytes, T block) const noexcept
+                {
+                    return block.size_bytes < size_bytes;
+                }
+            };
+        };
     };
 
     template<class T> requires mpl::one_of<T, resource::vertex_buffer, resource::index_buffer>
