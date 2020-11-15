@@ -56,7 +56,16 @@ namespace resource
 namespace resource
 {
     resource_manager::resource_manager(vulkan::device const &device, renderer::config const &config, resource::memory_manager &memory_manager)
-        : device_{device}, config_{config}, memory_manager_{memory_manager}, resource_deleter_{std::make_shared<resource::resource_deleter>(device)} { }
+        : device_{device}, config_{config}, memory_manager_{memory_manager}, resource_deleter_{std::make_shared<resource::resource_deleter>(device)}
+    {
+        auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
+        auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
+
+        staging_buffer_ = create_buffer(kSTAGING_BUFFER_SIZE, usage_flags, property_flags);
+
+        if (staging_buffer_ == nullptr)
+            throw resource::instantiation_fail("failed to create staging vertex buffer"s);
+    }
 
     std::shared_ptr<resource::buffer>
     resource_manager::create_buffer(std::size_t size_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
@@ -287,6 +296,9 @@ namespace resource
 
     std::shared_ptr<resource::vertex_buffer> resource_manager::get_vertex_buffer(graphics::vertex_layout const &layout)
     {
+        if (is_vertex_buffer_exist(layout))
+            return vertex_buffers_.at(layout);
+
         for (auto &&attribute : layout.attributes) {
             auto constexpr feature = graphics::FORMAT_FEATURE::VERTEX_BUFFER;
 
@@ -294,21 +306,7 @@ namespace resource
                 throw resource::exception(fmt::format("unsupported vertex attribute format: {0:#x}"s, attribute.format));
         }
 
-        if (is_vertex_buffer_exist(layout))
-            return vertex_buffers_.at(layout);
-
-        std::shared_ptr<resource::buffer> staging_buffer;
         std::shared_ptr<resource::buffer> device_buffer;
-
-        {
-            auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
-            auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
-
-            staging_buffer = create_buffer(kVERTEX_BUFFER_FIXED_SIZE, usage_flags, property_flags);
-
-            if (staging_buffer == nullptr)
-                throw resource::instantiation_fail("failed to create staging vertex buffer"s);
-        }
 
         {
             auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER;
@@ -320,7 +318,7 @@ namespace resource
                 throw resource::instantiation_fail("failed to create device vertex buffer"s);
         }
 
-        auto vertex_buffer = std::make_shared<resource::vertex_buffer>(device_buffer, staging_buffer, layout);
+        auto vertex_buffer = std::make_shared<resource::vertex_buffer>(device_buffer, nullptr, layout);
 
         vertex_buffers_.emplace(layout, vertex_buffer);
 
@@ -501,6 +499,55 @@ namespace resource
             device_buffer_offset += staging_buffer_offset;
             staging_buffer_offset = 0;
         }
+    }
+
+    std::shared_ptr<resource::vertex_buffer>
+    resource::resource_manager::stage_vertex_data(graphics::vertex_layout const &layout, std::span<std::byte const> const container)
+    {
+        if (container.size_bytes() > kSTAGING_BUFFER_SIZE)
+            throw resource::instantiation_fail("staging data size is bigger than staging buffer size"s);
+
+        for (auto &&attribute : layout.attributes) {
+            auto constexpr feature = graphics::FORMAT_FEATURE::VERTEX_BUFFER;
+
+            if (!device_.is_format_supported_as_buffer_feature(attribute.format, feature))
+                throw resource::exception(fmt::format("unsupported vertex attribute format: {0:#x}"s, attribute.format));
+        }
+
+        if (!vbs_.contains(layout)) {
+            std::shared_ptr<resource::buffer> device_buffer;
+
+            if (auto it = vb_pages_.lower_bound(container.size_bytes()); it != std::end(vb_pages_)) {
+                if (auto node_handle = vb_pages_.extract(it); node_handle) {
+                    auto &&vertex_buffer_page = node_handle.value();
+
+                    vertex_buffer_page.available_size -= container.size_bytes();
+                    device_buffer = vertex_buffer_page.buffer;
+
+                    vb_pages_.insert(std::move(node_handle));
+                }
+
+                else throw resource::instantiation_fail("failed to extract vertex buffer page"s);
+            }
+
+            else {
+                auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER;
+                auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
+
+                device_buffer = create_buffer(kSTAGING_BUFFER_SIZE, usage_flags, property_flags);
+
+                if (device_buffer == nullptr)
+                    throw resource::instantiation_fail("failed to create device vertex buffer"s);
+
+                vb_pages_.emplace(device_buffer, kSTAGING_BUFFER_SIZE - container.size_bytes());
+            }
+
+            auto vertex_buffer = std::make_shared<resource::vertex_buffer>(device_buffer, nullptr, layout);
+
+            vertex_buffers_.emplace(layout, vertex_buffer);
+        }
+
+        return std::shared_ptr<resource::vertex_buffer>();
     }
 }
 
