@@ -104,6 +104,8 @@ namespace resource
 
         graphics::vertex_layout const &vertex_layout() const noexcept { return vertex_layout_; }
 
+        std::size_t available_size() const noexcept { return available_size_; }
+
     private:
 
         std::shared_ptr<resource::buffer> device_buffer_{nullptr};
@@ -116,6 +118,8 @@ namespace resource
         std::size_t staging_buffer_size_{0};
 
         graphics::vertex_layout vertex_layout_;
+
+        std::size_t available_size_{0};
 
         vertex_buffer() = delete;
         vertex_buffer(vertex_buffer const &) = delete;

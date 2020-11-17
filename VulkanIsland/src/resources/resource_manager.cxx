@@ -515,6 +515,17 @@ namespace resource
         }
 
         if (!vbs_.contains(layout)) {
+            auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER;
+            auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
+
+            auto device_buffer = create_buffer(kVERTEX_BUFFER_FIXED_SIZE, usage_flags, property_flags);
+
+            if (device_buffer == nullptr)
+                throw resource::instantiation_fail("failed to create device vertex buffer"s);
+
+            vbs_.emplace(layout, device_buffer);
+
+        #if 0
             std::shared_ptr<resource::buffer> device_buffer;
 
             if (auto it = vb_pages_.lower_bound(container.size_bytes()); it != std::end(vb_pages_)) {
@@ -545,7 +556,10 @@ namespace resource
             auto vertex_buffer = std::make_shared<resource::vertex_buffer>(device_buffer, nullptr, layout);
 
             vertex_buffers_.emplace(layout, vertex_buffer);
+        #endif
         }
+
+        //auto it = 
 
         return std::shared_ptr<resource::vertex_buffer>();
     }

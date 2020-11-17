@@ -113,7 +113,35 @@ namespace resource
 
         std::shared_ptr<resource::buffer> staging_buffer_;
 
-        std::unordered_multimap<graphics::vertex_layout, std::shared_ptr<resource::vertex_buffer>, graphics::hash<graphics::vertex_layout>> vbs_;
+        struct vertex_buffer_comparator final {
+            using is_transparent = void;
+
+            template<class L, class R>
+            requires mpl::are_same_v<resource::vertex_buffer, std::remove_cvref_t<L>, std::remove_cvref_t<R>>
+            bool operator() (L &&lhs, R &&rhs) const noexcept
+            {
+                if (lhs.vertex_layout() == rhs.vertex_layout())
+                    return lhs.available_size() < rhs.available_size();
+
+                return lhs.vertex_layout() < rhs.vertex_layout();
+            }
+
+            template<class T, class S>
+            requires std::is_same_v<resource::vertex_buffer, std::remove_cvref_t<T>> && std::is_unsigned_v<S>
+            bool operator() (T &&buffer, S size_bytes) const noexcept
+            {
+                return buffer.available_size() < size_bytes;
+            }
+
+            template<class S, class T>
+            requires std::is_same_v<resource::vertex_buffer, std::remove_cvref_t<T>> && std::is_unsigned_v<S>
+            bool operator() (S size_bytes, T &&buffer) const noexcept
+            {
+                return buffer.available_size() < size_bytes;
+            }
+        };
+
+        std::multiset<graphics::vertex_layout, std::shared_ptr<resource::vertex_buffer>> vbs_;
 
         struct vertex_buffer_page final {
             std::shared_ptr<resource::buffer> buffer;
