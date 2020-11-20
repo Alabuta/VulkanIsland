@@ -294,7 +294,7 @@ namespace resource
         return index_buffers_.contains(format);
     }
 
-    std::shared_ptr<resource::vertex_buffer> resource_manager::get_vertex_buffer(graphics::vertex_layout const &layout)
+    std::shared_ptr<resource::vertex_buffer2> resource_manager::get_vertex_buffer(graphics::vertex_layout const &layout)
     {
         if (is_vertex_buffer_exist(layout))
             return vertex_buffers_.at(layout);
@@ -318,14 +318,14 @@ namespace resource
                 throw resource::instantiation_fail("failed to create device vertex buffer"s);
         }
 
-        auto vertex_buffer = std::make_shared<resource::vertex_buffer>(device_buffer, nullptr, layout);
+        auto vertex_buffer = std::make_shared<resource::vertex_buffer2>(device_buffer, nullptr, layout);
 
         vertex_buffers_.emplace(layout, vertex_buffer);
 
         return vertex_buffer;
     }
 
-    std::shared_ptr<resource::vertex_buffer> resource_manager::create_vertex_buffer(graphics::vertex_layout const &layout, std::size_t size_bytes)
+    std::shared_ptr<resource::vertex_buffer2> resource_manager::create_vertex_buffer(graphics::vertex_layout const &layout, std::size_t size_bytes)
     {
         for (auto &&attribute : layout.attributes) {
             auto constexpr feature = graphics::FORMAT_FEATURE::VERTEX_BUFFER;
@@ -360,7 +360,7 @@ namespace resource
                     throw resource::instantiation_fail("failed to create device vertex buffer"s);
             }
 
-            auto vertex_buffer = std::make_shared<resource::vertex_buffer>(device_buffer, staging_buffer, layout);
+            auto vertex_buffer = std::make_shared<resource::vertex_buffer2>(device_buffer, staging_buffer, layout);
 
             vertex_buffers_.emplace(layout, vertex_buffer);
         }
@@ -507,12 +507,9 @@ namespace resource
         if (container.size_bytes() > kSTAGING_BUFFER_SIZE)
             throw resource::instantiation_fail("staging data size is bigger than staging buffer size"s);
 
-        for (auto &&attribute : layout.attributes) {
-            auto constexpr feature = graphics::FORMAT_FEATURE::VERTEX_BUFFER;
-
-            if (!device_.is_format_supported_as_buffer_feature(attribute.format, feature))
+        for (auto &&attribute : layout.attributes)
+            if (!device_.is_format_supported_as_buffer_feature(attribute.format, graphics::FORMAT_FEATURE::VERTEX_BUFFER))
                 throw resource::exception(fmt::format("unsupported vertex attribute format: {0:#x}"s, attribute.format));
-        }
 
         if (!vbs_.contains(layout)) {
             auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER;
@@ -523,7 +520,9 @@ namespace resource
             if (device_buffer == nullptr)
                 throw resource::instantiation_fail("failed to create device vertex buffer"s);
 
-            vbs_.emplace(layout, device_buffer);
+            auto vertex_buffer = std::make_shared<resource::vertex_buffer>(device_buffer, kVERTEX_BUFFER_FIXED_SIZE, layout);
+
+            vbs_.emplace(layout, resource::resource_manager::vertex_buffer_set{vertex_buffer});
 
         #if 0
             std::shared_ptr<resource::buffer> device_buffer;
@@ -553,15 +552,40 @@ namespace resource
                 vb_pages_.emplace(device_buffer, kSTAGING_BUFFER_SIZE - container.size_bytes());
             }
 
-            auto vertex_buffer = std::make_shared<resource::vertex_buffer>(device_buffer, nullptr, layout);
+            auto vertex_buffer = std::make_shared<resource::vertex_buffer2>(device_buffer, nullptr, layout);
 
             vertex_buffers_.emplace(layout, vertex_buffer);
         #endif
         }
 
-        //auto it = 
+        auto &&vertex_buffer_set = vbs_.at(layout);
 
-        return std::shared_ptr<resource::vertex_buffer>();
+        auto const required_allocation_size_bytes = container.size_bytes();
+
+        auto it = vertex_buffer_set.lower_bound(required_allocation_size_bytes);
+
+        if (it == std::end(vertex_buffer_set)) {
+            // Allocate another one buffer for this particular vertex layout.
+        }
+
+        if (auto node_handle = vertex_buffer_set.extract(it); node_handle) {
+            auto &&vertex_buffer = node_handle.value();
+
+            // Actual staging process goes here...
+
+            it = vertex_buffer_set.emplace(
+                std::move(vertex_buffer->device_buffer()), vertex_buffer->available_size() - required_allocation_size_bytes, std::move(layout)
+            );
+
+            if (it != std::end(vertex_buffer_set))
+                return *it;
+
+            else throw resource::instantiation_fail("failed to emplace new vertex buffer set node"s);
+        }
+
+        else throw resource::instantiation_fail("failed to extract vertex buffer set node"s);
+
+        return { };
     }
 }
 

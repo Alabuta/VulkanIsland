@@ -87,10 +87,10 @@ namespace resource
 
 namespace resource
 {
-    class vertex_buffer final {
+    class vertex_buffer2 final {
     public:
 
-        vertex_buffer(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer,
+        vertex_buffer2(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer,
                       graphics::vertex_layout const &vertex_layout);
 
         resource::buffer const &device_buffer() const { return *device_buffer_; }
@@ -120,6 +120,30 @@ namespace resource
         graphics::vertex_layout vertex_layout_;
 
         std::size_t available_size_{0};
+
+        vertex_buffer2() = delete;
+        vertex_buffer2(vertex_buffer2 const &) = delete;
+        vertex_buffer2(vertex_buffer2 &&) = delete;
+
+        friend resource::resource_manager;
+    };
+
+    class vertex_buffer final {
+    public:
+
+        vertex_buffer(std::shared_ptr<resource::buffer> device_buffer, std::size_t available_size, graphics::vertex_layout const &vertex_layout);
+
+        resource::buffer const &device_buffer() const { return *device_buffer_; }
+        std::size_t available_size() const noexcept { return available_size_; }
+
+        graphics::vertex_layout const &vertex_layout() const noexcept { return vertex_layout_; }
+
+    private:
+
+        std::shared_ptr<resource::buffer> device_buffer_{nullptr};
+        std::size_t available_size_{0};
+
+        graphics::vertex_layout vertex_layout_;
 
         vertex_buffer() = delete;
         vertex_buffer(vertex_buffer const &) = delete;

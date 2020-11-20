@@ -137,7 +137,7 @@ struct draw_command final {
     std::shared_ptr<graphics::material> material;
     std::shared_ptr<graphics::pipeline> pipeline;
 
-    std::shared_ptr<resource::vertex_buffer> vertex_buffer;
+    std::shared_ptr<resource::vertex_buffer2> vertex_buffer;
     std::shared_ptr<resource::index_buffer> index_buffer;
 
     std::uint32_t vertex_count{0};

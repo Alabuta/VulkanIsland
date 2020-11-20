@@ -15,13 +15,17 @@ namespace resource
         staging_buffer_size_ = staging_buffer_->memory()->size();
     }
 
-    vertex_buffer::vertex_buffer(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer,
+    vertex_buffer2::vertex_buffer2(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer,
                                  graphics::vertex_layout const &vertex_layout)
         : device_buffer_{device_buffer}, staging_buffer_{staging_buffer}, vertex_layout_{vertex_layout}
     {
         device_buffer_size_ = device_buffer_->memory()->size();
         staging_buffer_size_ = staging_buffer_->memory()->size();
     }
+
+    vertex_buffer::vertex_buffer(std::shared_ptr<resource::buffer> device_buffer, std::size_t available_size, graphics::vertex_layout const &vertex_layout)
+        : device_buffer_{device_buffer}, available_size_{available_size}, vertex_layout_{vertex_layout}
+    { }
 }
 
 #if NOT_YET_IMPLEMENTED

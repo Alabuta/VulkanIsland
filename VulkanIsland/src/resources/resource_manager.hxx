@@ -28,6 +28,8 @@ namespace resource
     class sampler;
 
     class vertex_buffer;
+
+    class vertex_buffer2;
     class index_buffer;
 
     class framebuffer;
@@ -68,16 +70,16 @@ namespace resource
         bool is_vertex_buffer_exist(graphics::vertex_layout const &layout) const noexcept;
         bool is_index_buffer_exist(graphics::FORMAT format) const noexcept;
 
-        [[nodiscard]] std::shared_ptr<resource::vertex_buffer> get_vertex_buffer(graphics::vertex_layout const &layout);
+        [[nodiscard]] std::shared_ptr<resource::vertex_buffer2> get_vertex_buffer(graphics::vertex_layout const &layout);
         // [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(graphics::FORMAT format);
 
-        [[nodiscard]] std::shared_ptr<resource::vertex_buffer> create_vertex_buffer(graphics::vertex_layout const &layout, std::size_t size_bytes);
+        [[nodiscard]] std::shared_ptr<resource::vertex_buffer2> create_vertex_buffer(graphics::vertex_layout const &layout, std::size_t size_bytes);
         [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(graphics::FORMAT format, std::size_t size_bytes);
 
         [[nodiscard]] auto &vertex_buffers() const noexcept { return vertex_buffers_; }
         [[nodiscard]] auto &index_buffers() const noexcept { return index_buffers_; }
 
-        template<class T> requires mpl::one_of<T, resource::vertex_buffer, resource::index_buffer>
+        template<class T> requires mpl::one_of<T, resource::vertex_buffer2, resource::index_buffer>
         void stage_buffer_data(std::shared_ptr<T> buffer, std::span<std::byte const> const container) const;
 
         void transfer_vertex_buffers_data(VkCommandPool command_pool, graphics::transfer_queue const &transfer_queue);
@@ -106,78 +108,41 @@ namespace resource
         /*std::unordered_map<std::size_t, std::shared_ptr<resource::buffer>> buffers_;
         std::unordered_map<std::size_t, std::shared_ptr<resource::image>> images_;*/
 
-        // TODO:: unordered_miltimap
-        std::unordered_map<graphics::vertex_layout, std::shared_ptr<resource::vertex_buffer>, graphics::hash<graphics::vertex_layout>> vertex_buffers_;
+        // TODO:: unordered_multimap
+        std::unordered_map<graphics::vertex_layout, std::shared_ptr<resource::vertex_buffer2>, graphics::hash<graphics::vertex_layout>> vertex_buffers_;
         std::unordered_map<graphics::FORMAT, std::shared_ptr<resource::index_buffer>> index_buffers_;
 
 
+        // :TODO: consider to do in-time allocation.
         std::shared_ptr<resource::buffer> staging_buffer_;
 
-        struct vertex_buffer_comparator final {
-            //using is_transparent = void;
+        struct vertex_buffer_set_comparator final {
+            using is_transparent = void;
 
-            template<class L, class R>
-            requires mpl::are_same_v<resource::vertex_buffer, L, R>
-            bool operator() (std::shared_ptr<L> lhs, std::shared_ptr<R> rhs) const noexcept
+            bool operator() (std::shared_ptr<resource::vertex_buffer> const &lhs, std::shared_ptr<resource::vertex_buffer> const &rhs) const
             {
-                if (lhs.vertex_layout() == rhs.vertex_layout())
-                    return lhs.available_size() < rhs.available_size();
-
-                return lhs.vertex_layout() < rhs.vertex_layout();
+                return lhs->available_size() < rhs->available_size();
             }
 
-            /*template<class T, class S>
-            requires std::is_same_v<resource::vertex_buffer, std::remove_cvref_t<T>> && std::is_unsigned_v<S>
-            bool operator() (T &&buffer, S size_bytes) const noexcept
+            template<class S> requires std::is_unsigned_v<S>
+            bool operator() (std::shared_ptr<resource::vertex_buffer> const &buffer, S size_bytes) const
             {
-                return buffer.available_size() < size_bytes;
+                return buffer->available_size() < size_bytes;
             }
 
-            template<class S, class T>
-            requires std::is_same_v<resource::vertex_buffer, std::remove_cvref_t<T>> && std::is_unsigned_v<S>
-            bool operator() (S size_bytes, T &&buffer) const noexcept
+            template<class S> requires std::is_unsigned_v<S>
+            bool operator() (S size_bytes, std::shared_ptr<resource::vertex_buffer> const &buffer) const
             {
-                return buffer.available_size() < size_bytes;
-            }*/
+                return buffer->available_size() < size_bytes;
+            }
         };
 
-        std::multiset<std::shared_ptr<resource::vertex_buffer>, resource::resource_manager::vertex_buffer_comparator> vbs_;
+        using vertex_buffer_set = std::multiset<std::shared_ptr<resource::vertex_buffer>, vertex_buffer_set_comparator>;
 
-        /*struct vertex_buffer_page final {
-            std::shared_ptr<resource::buffer> buffer;
-
-            std::size_t available_size{0};
-
-            struct comparator final {
-                using is_transparent = void;
-
-                template<class L, class R>
-                requires mpl::are_same_v<vertex_buffer_page, std::remove_cvref_t<L>, std::remove_cvref_t<R>>
-                bool operator() (L &&lhs, R &&rhs) const noexcept
-                {
-                    return lhs.available_size < rhs.available_size;
-                }
-
-                template<class T, class S>
-                requires std::is_same_v<vertex_buffer_page, std::remove_cvref_t<T>> && std::is_unsigned_v<S>
-                bool operator() (T &&page, S size_bytes) const noexcept
-                {
-                    return page.available_size < size_bytes;
-                }
-
-                template<class S, class T>
-                requires std::is_same_v<vertex_buffer_page, std::remove_cvref_t<T>> && std::is_unsigned_v<S>
-                bool operator() (S size_bytes, T &&page) const noexcept
-                {
-                    return page.available_size < size_bytes;
-                }
-            };
-        };
-
-        std::multiset<vertex_buffer_page, vertex_buffer_page::comparator> vb_pages_;*/
+        std::unordered_map<graphics::vertex_layout, vertex_buffer_set, graphics::hash<graphics::vertex_layout>> vbs_;
     };
 
-    template<class T> requires mpl::one_of<T, resource::vertex_buffer, resource::index_buffer>
+    template<class T> requires mpl::one_of<T, resource::vertex_buffer2, resource::index_buffer>
     void resource_manager::stage_buffer_data(std::shared_ptr<T> vertex_buffer, std::span<std::byte const> const container) const
     {
         if (vertex_buffer == nullptr)
