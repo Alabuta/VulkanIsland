@@ -119,22 +119,13 @@ namespace resource
         struct vertex_buffer_set_comparator final {
             using is_transparent = void;
 
-            bool operator() (std::shared_ptr<resource::vertex_buffer> const &lhs, std::shared_ptr<resource::vertex_buffer> const &rhs) const
-            {
-                return lhs->available_size() < rhs->available_size();
-            }
+            bool operator() (std::shared_ptr<resource::vertex_buffer> const &lhs, std::shared_ptr<resource::vertex_buffer> const &rhs) const;
 
             template<class S> requires std::is_unsigned_v<S>
-            bool operator() (std::shared_ptr<resource::vertex_buffer> const &buffer, S size_bytes) const
-            {
-                return buffer->available_size() < size_bytes;
-            }
+            bool operator() (std::shared_ptr<resource::vertex_buffer> const &buffer, S size_bytes) const;
 
             template<class S> requires std::is_unsigned_v<S>
-            bool operator() (S size_bytes, std::shared_ptr<resource::vertex_buffer> const &buffer) const
-            {
-                return buffer->available_size() < size_bytes;
-            }
+            bool operator() (S size_bytes, std::shared_ptr<resource::vertex_buffer> const &buffer) const;
         };
 
         using vertex_buffer_set = std::multiset<std::shared_ptr<resource::vertex_buffer>, vertex_buffer_set_comparator>;

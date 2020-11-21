@@ -133,7 +133,7 @@ namespace resource
 
         vertex_buffer(std::shared_ptr<resource::buffer> device_buffer, std::size_t available_size, graphics::vertex_layout const &vertex_layout);
 
-        resource::buffer const &device_buffer() const { return *device_buffer_; }
+        std::shared_ptr<resource::buffer> const &device_buffer() const { return device_buffer_; }
         std::size_t available_size() const noexcept { return available_size_; }
 
         graphics::vertex_layout const &vertex_layout() const noexcept { return vertex_layout_; }
