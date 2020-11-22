@@ -27,6 +27,8 @@ namespace resource
     class image_view;
     class sampler;
 
+    class staging_buffer;
+
     class vertex_buffer;
 
     class vertex_buffer2;
@@ -50,6 +52,9 @@ namespace resource
         [[nodiscard]] std::shared_ptr<resource::buffer>
         create_buffer(std::size_t size_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types);
 
+        [[nodiscard]] std::shared_ptr<resource::staging_buffer>
+        create_staging_buffer(std::size_t size_bytes);
+
         [[nodiscard]] std::shared_ptr<resource::image>
         create_image(graphics::IMAGE_TYPE type, graphics::FORMAT format, renderer::extent extent, std::uint32_t mip_levels, std::uint32_t samples_count,
                      graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usage_flags, graphics::MEMORY_PROPERTY_TYPE memory_property_types);
@@ -67,6 +72,10 @@ namespace resource
 
         [[nodiscard]] std::shared_ptr<resource::semaphore> create_semaphore();
 
+        [[nodiscard]] std::shared_ptr<resource::vertex_buffer>
+        stage_vertex_data(graphics::vertex_layout const &layout, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool);
+
+
         bool is_vertex_buffer_exist(graphics::vertex_layout const &layout) const noexcept;
         bool is_index_buffer_exist(graphics::FORMAT format) const noexcept;
 
@@ -76,7 +85,7 @@ namespace resource
         [[nodiscard]] std::shared_ptr<resource::vertex_buffer2> create_vertex_buffer(graphics::vertex_layout const &layout, std::size_t size_bytes);
         [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(graphics::FORMAT format, std::size_t size_bytes);
 
-        [[nodiscard]] auto &vertex_buffers() const noexcept { return vertex_buffers_; }
+        [[nodiscard]] auto &vertex_buffers() const noexcept { return vertex_buffers2_; }
         [[nodiscard]] auto &index_buffers() const noexcept { return index_buffers_; }
 
         template<class T> requires mpl::one_of<T, resource::vertex_buffer2, resource::index_buffer>
@@ -85,13 +94,9 @@ namespace resource
         void transfer_vertex_buffers_data(VkCommandPool command_pool, graphics::transfer_queue const &transfer_queue);
         void transfer_index_buffers_data(VkCommandPool command_pool, graphics::transfer_queue const &transfer_queue);
 
-        [[nodiscard]] std::shared_ptr<resource::vertex_buffer>
-        stage_vertex_data(graphics::vertex_layout const &layout, std::span<std::byte const> const container);
-
     private:
 
         // :TODO: consider the config file for following constants.
-        static std::size_t constexpr kSTAGING_BUFFER_SIZE{0x800'0000}; // 128 MB
         static std::size_t constexpr kVERTEX_BUFFER_FIXED_SIZE{0x800'0000}; // 128 MB
         static std::size_t constexpr kINDEX_BUFFER_FIXED_SIZE{0x800'0000}; // 128 MB
 
@@ -104,17 +109,6 @@ namespace resource
         resource::memory_manager &memory_manager_;
 
         std::shared_ptr<struct resource_deleter> resource_deleter_;
-
-        /*std::unordered_map<std::size_t, std::shared_ptr<resource::buffer>> buffers_;
-        std::unordered_map<std::size_t, std::shared_ptr<resource::image>> images_;*/
-
-        // TODO:: unordered_multimap
-        std::unordered_map<graphics::vertex_layout, std::shared_ptr<resource::vertex_buffer2>, graphics::hash<graphics::vertex_layout>> vertex_buffers_;
-        std::unordered_map<graphics::FORMAT, std::shared_ptr<resource::index_buffer>> index_buffers_;
-
-
-        // :TODO: consider to do in-time allocation.
-        std::shared_ptr<resource::buffer> staging_buffer_;
 
         struct vertex_buffer_set_comparator final {
             using is_transparent = void;
@@ -130,7 +124,12 @@ namespace resource
 
         using vertex_buffer_set = std::multiset<std::shared_ptr<resource::vertex_buffer>, vertex_buffer_set_comparator>;
 
-        std::unordered_map<graphics::vertex_layout, vertex_buffer_set, graphics::hash<graphics::vertex_layout>> vbs_;
+        std::unordered_map<graphics::vertex_layout, vertex_buffer_set, graphics::hash<graphics::vertex_layout>> vertex_buffers_;
+
+
+        // TODO:: unordered_multimap
+        std::unordered_map<graphics::vertex_layout, std::shared_ptr<resource::vertex_buffer2>, graphics::hash<graphics::vertex_layout>> vertex_buffers2_;
+        std::unordered_map<graphics::FORMAT, std::shared_ptr<resource::index_buffer>> index_buffers_;
     };
 
     template<class T> requires mpl::one_of<T, resource::vertex_buffer2, resource::index_buffer>
