@@ -222,7 +222,7 @@ namespace resource
         return sampler;
     }
 
-    [[nodiscard]] std::shared_ptr<resource::framebuffer>
+    std::shared_ptr<resource::framebuffer>
     resource_manager::create_framebuffer(std::shared_ptr<graphics::render_pass> render_pass, renderer::extent extent,
                                          std::vector<std::shared_ptr<resource::image_view>> const &attachments)
     {

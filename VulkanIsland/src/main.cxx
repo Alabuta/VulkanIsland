@@ -598,7 +598,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
             auto vertex_layout_name = graphics::to_string(vertex_layout);
 
-            fmt::print("{}.{}.{}\n"s, name, technique_index, vertex_layout_name);
+            //fmt::print("{}.{}.{}\n"s, name, technique_index, vertex_layout_name);
 
             auto material = material_factory.material(name, technique_index, vertex_layout);
 

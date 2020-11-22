@@ -361,7 +361,7 @@ namespace resource
         auto kilobytes = static_cast<float>(size_bytes) / 1024.f;
         auto megabytes = static_cast<float>(total_allocated_size) / std::pow(2.f, 20.f);
 
-        fmt::print("Memory manager: type index #{} : {}th page allocation {}KB/{}MB.\n"s, memory_type_index, block_index, kilobytes, megabytes);
+        fmt::print("Memory manager: type index #{} : {}th page allocation {} KB/{} MB.\n"s, memory_type_index, block_index, kilobytes, megabytes);
 
         return it_memory_block;
     }

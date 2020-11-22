@@ -35,8 +35,8 @@ namespace resource
         graphics::BUFFER_USAGE usage_;
         graphics::RESOURCE_SHARING_MODE sharing_mode_;
 
-        buffer(VkBuffer handle, std::shared_ptr<resource::memory_block> memory, std::size_t size_bytes, graphics::BUFFER_USAGE usage,
-               graphics::RESOURCE_SHARING_MODE sharing_mode);
+        buffer(VkBuffer handle, std::shared_ptr<resource::memory_block> memory, std::size_t size_bytes,
+               graphics::BUFFER_USAGE usage, graphics::RESOURCE_SHARING_MODE sharing_mode);
 
         buffer() = delete;
         buffer(buffer const &) = delete;
