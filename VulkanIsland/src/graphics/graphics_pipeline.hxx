@@ -89,10 +89,10 @@ namespace graphics
         auto constexpr operator== (T &&rhs) const
         {
             return material_ == rhs.material_ &&
-                    pipeline_states_ == rhs.pipeline_states_ &&
-                    layout_ == rhs.layout_ &&
-                    render_pass_ == rhs.render_pass_ &&
-                    subpass_index_ == rhs.subpass_index_;
+                   pipeline_states_ == rhs.pipeline_states_ &&
+                   layout_ == rhs.layout_ &&
+                   render_pass_ == rhs.render_pass_ &&
+                   subpass_index_ == rhs.subpass_index_;
         }
     };
 
