@@ -578,7 +578,7 @@ namespace resource
             if (buffer == nullptr)
                 throw resource::instantiation_fail("failed to create device vertex buffer"s);
 
-            auto vertex_buffer = std::make_shared<resource::vertex_buffer>(buffer, kVERTEX_BUFFER_FIXED_SIZE, layout);
+            auto vertex_buffer = std::make_shared<resource::vertex_buffer>(buffer, 0u, kVERTEX_BUFFER_FIXED_SIZE, layout);
 
             vertex_buffers_.emplace(layout, resource::resource_manager::vertex_buffer_set{vertex_buffer});
         }
@@ -597,14 +597,16 @@ namespace resource
             auto &&device_buffer = vertex_buffer->device_buffer();
 
             auto copy_regions = std::array{
-                VkBufferCopy{ 0u, kVERTEX_BUFFER_FIXED_SIZE - vertex_buffer->available_size(), staging_data_size_bytes }
+                VkBufferCopy{ 0u, vertex_buffer->offset_bytes(), staging_data_size_bytes }
             };
 
             copy_buffer_to_buffer(device_, device_.transfer_queue, staging_buffer->handle(), device_buffer->handle(), std::move(copy_regions), command_pool);
 
+            auto offset_bytes = vertex_buffer->offset_bytes() + staging_data_size_bytes;
+
             it = vertex_buffer_set.insert(
                 std::make_shared<resource::vertex_buffer>(
-                    vertex_buffer->device_buffer(), vertex_buffer->available_size() - staging_data_size_bytes, layout
+                    vertex_buffer->device_buffer(), offset_bytes, kVERTEX_BUFFER_FIXED_SIZE - offset_bytes, layout
                 )
             );
 

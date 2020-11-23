@@ -29,8 +29,9 @@ namespace resource
         staging_buffer_size_ = staging_buffer_->memory()->size();
     }
 
-    vertex_buffer::vertex_buffer(std::shared_ptr<resource::buffer> device_buffer, std::size_t available_size, graphics::vertex_layout const &vertex_layout)
-        : device_buffer_{device_buffer}, available_size_{available_size}, vertex_layout_{vertex_layout}
+    vertex_buffer::vertex_buffer(
+        std::shared_ptr<resource::buffer> device_buffer, std::size_t offset_bytes, std::size_t available_size, graphics::vertex_layout const &vertex_layout)
+        : device_buffer_{device_buffer}, offset_bytes_{offset_bytes}, available_size_{available_size}, vertex_layout_{vertex_layout}
     { }
 }
 

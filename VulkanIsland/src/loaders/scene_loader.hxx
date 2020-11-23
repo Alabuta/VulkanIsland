@@ -2,13 +2,20 @@
 
 #include <cstddef>
 #include <variant>
+#include <memory>
 #include <vector>
 #include <unordered_map>
 
 #include "math/math.hxx"
 #include "graphics/graphics.hxx"
 #include "graphics/vertex.hxx"
+#include "resources/buffer.hxx"
 
+
+namespace resource
+{
+    class vertex_buffer;
+}
 
 namespace loader
 {
@@ -122,6 +129,8 @@ struct xformat final {
 
     struct meshlet final {
         graphics::PRIMITIVE_TOPOLOGY topology;
+
+        std::shared_ptr<resource::vertex_buffer> vertex_buffer;
 
         std::int64_t vertex_buffer_index{-1};
         std::int64_t index_buffer_index{-1};

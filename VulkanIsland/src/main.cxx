@@ -137,7 +137,7 @@ struct draw_command final {
     std::shared_ptr<graphics::material> material;
     std::shared_ptr<graphics::pipeline> pipeline;
 
-    std::shared_ptr<resource::vertex_buffer2> vertex_buffer;
+    std::shared_ptr<resource::vertex_buffer> vertex_buffer;
     std::shared_ptr<resource::index_buffer> index_buffer;
 
     std::uint32_t vertex_count{0};
@@ -353,7 +353,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
                            std::data(write_descriptor_sets), 0, nullptr);
 }
 
-void create_graphics_command_buffers(app_t &app)
+void create_graphics_command_buffers(app_t &app, std::span<draw_command const> draw_commands)
 {
     app.command_buffers.resize(std::size(app.swapchain->image_views()));
 
@@ -365,7 +365,7 @@ void create_graphics_command_buffers(app_t &app)
         static_cast<std::uint32_t>(std::size(app.command_buffers))
     };
 
-    if (auto result = vkAllocateCommandBuffers(app.device->handle(), &allocate_info, std::data(app.command_buffers)); result != VK_SUCCESS)
+    if (auto result = vkAllocateCommandBuffers(app.device->handle(), &allocate_info, std::data(app.command_buffers)); result != VkResult::VK_SUCCESS)
         throw vulkan::exception{fmt::format("failed to create allocate command buffers: {0:#x}"s, result)};
 
     auto &&resource_manager = *app.resource_manager;
@@ -445,7 +445,7 @@ void create_graphics_command_buffers(app_t &app)
         auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
         auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
 
-        for (auto &&draw_command : app.draw_commands) {
+        for (auto &&draw_command : draw_commands) {
             auto [
                 material, pipeline, vertex_buffer, index_buffer,
                 vertex_count, first_vertex, index_count,
@@ -544,7 +544,7 @@ void recreate_swap_chain(app_t &app)
     CreateGraphicsPipelines(app);
 #endif
 
-    create_graphics_command_buffers(app);
+    create_graphics_command_buffers(app, app.draw_commands);
 }
 
 void build_render_pipelines(app_t &app, xformat const &model_)
@@ -574,7 +574,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
     auto &&pipeline_factory = *app.pipeline_factory;
 
-    auto &&resource_manager = *app.resource_manager;
+    //auto &&resource_manager = *app.resource_manager;
 
     for (auto &&scene_node : model_.scene_nodes) {
         auto [transform_index, mesh_index] = scene_node;
@@ -605,18 +605,20 @@ void build_render_pipelines(app_t &app, xformat const &model_)
             if (material == nullptr)
                 throw graphics::exception("failed to create material"s);
 
-            auto &&vertex_data_buffer = model_.vertex_buffers.at(vertex_layout_index);
+            auto vertex_buffer = meshlet.vertex_buffer;
+
+            /*auto &&vertex_data_buffer = model_.vertex_buffers.at(vertex_layout_index);
 
             auto vertex_buffer = resource_manager.create_vertex_buffer(vertex_layout, std::size(vertex_data_buffer.buffer));
 
             if (vertex_buffer)
                 resource_manager.stage_buffer_data(vertex_buffer, vertex_data_buffer.buffer);
 
-            else throw graphics::exception("failed to get vertex buffer"s);
+            else throw graphics::exception("failed to get vertex buffer"s);*/
 
             std::shared_ptr<resource::index_buffer> index_buffer;
             
-            if (auto index_buffer_index = meshlet.index_buffer_index; index_buffer_index > -1) {
+            /*if (auto index_buffer_index = meshlet.index_buffer_index; index_buffer_index > -1) {
                 auto &&index_data_buffer = model_.index_buffers.at(index_buffer_index);
 
                 index_buffer = resource_manager.create_index_buffer(index_data_buffer.format, std::size(vertex_data_buffer.buffer));
@@ -625,7 +627,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
                     resource_manager.stage_buffer_data(index_buffer, index_data_buffer.buffer);
 
                 else throw graphics::exception("failed to get index buffer"s);
-            }
+            }*/
 
             [[maybe_unused]] auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(vertex_layout);
 
@@ -657,7 +659,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
 namespace temp
 {
-    void add_plane(xformat &model_, std::size_t vertex_layout_index, std::size_t material_index)
+    void add_plane(app_t &app, xformat &model_, std::size_t vertex_layout_index, std::size_t material_index)
     {
         auto const &vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
 
@@ -682,7 +684,7 @@ namespace temp
 
         primitives::plane_create_info const create_info{
             vertex_layout, topology, graphics::FORMAT::UNDEFINED,
-            1.f, 1.f, 8u, 8u
+            1.f, 1.f, 1u, 1u
         };
 
         auto const vertex_count = primitives::calculate_plane_vertices_number(create_info);
@@ -691,7 +693,31 @@ namespace temp
         auto const vertex_buffer_allocation_size = vertex_count * vertex_size;
         std::cout << "vertex_buffer_allocation_size "s << vertex_buffer_allocation_size << std::endl;
 
-        auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
+        auto staging_buffer = app.resource_manager->create_staging_buffer(vertex_buffer_allocation_size);
+
+        primitives::generate_plane(create_info, staging_buffer->mapped_ptr(), color);
+
+        {
+            struct vertex final {
+                std::array<float, 3> p;
+                std::array<float, 3> n;
+                std::array<std::uint16_t, 2> t;
+                std::array<std::uint8_t, 4> c;
+            };
+
+            auto it_vertex = reinterpret_cast<vertex *>(std::data(staging_buffer->mapped_ptr()));
+
+            for (auto i = 0u; i < vertex_count; ++i, ++it_vertex) {
+                std::cout << "p " << it_vertex->p[0] << ' ' << it_vertex->p[1] << ' ' << it_vertex->p[2] << std::endl;
+                std::cout << "n " << it_vertex->n[0] << ' ' << it_vertex->n[1] << ' ' << it_vertex->n[2] << std::endl;
+                std::cout << "t " << it_vertex->t[0] << ' ' << it_vertex->t[1] << std::endl;
+                std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;
+            }
+        }
+
+        auto vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, staging_buffer, app.transfer_command_pool);
+
+        //auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
         //auto &&index_buffer = model_.index_buffers[indices_format];
 
         {
@@ -699,9 +725,12 @@ namespace temp
 
             meshlet.topology = topology;
 
+            auto first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size;
+
             meshlet.vertex_buffer_index = vertex_layout_index;
+            meshlet.vertex_buffer = vertex_buffer;
             meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
-            meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count);
+            meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
 
             meshlet.material_index = material_index;
             meshlet.instance_count = 1;
@@ -713,7 +742,7 @@ namespace temp
             model_.meshlets.push_back(std::move(meshlet));
         }
 
-        {
+        /*{
             auto write_offset = static_cast<std::ptrdiff_t>(vertex_buffer.count * vertex_size);
 
             vertex_buffer.buffer.resize(std::size(vertex_buffer.buffer) + vertex_buffer_allocation_size);
@@ -722,9 +751,10 @@ namespace temp
             auto it_vertex_buffer = std::next(std::begin(vertex_buffer.buffer), write_offset);
 
             primitives::generate_plane(create_info, it_vertex_buffer, color);
-        }
+        }*/
 
-        if (false) {
+    #if 0
+        {
             auto const vl = vertex::create_vertex_layout(
                 vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
                 vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
@@ -776,9 +806,10 @@ namespace temp
                 std::cout << "i " << *it_index << ' ' << *++it_index << ' ' << *++it_index << std::endl;
             }
         }
+    #endif
     }
 
-    xformat populate()
+    xformat populate(app_t &app)
     {
         xformat model_;
     
@@ -819,8 +850,8 @@ namespace temp
         ));
 
         model_.scene_nodes.push_back(xformat::scene_node{0u, std::size(model_.meshes)});
-        add_plane(model_, 0, 2);
-
+        add_plane(app, model_, 0, 2);
+    #if 0
         {
             auto const vertex_layout_index = 1u;
             auto &&vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
@@ -928,7 +959,7 @@ namespace temp
 
         model_.scene_nodes.push_back(xformat::scene_node{4u, std::size(model_.meshes)});
         add_plane(model_, 2, 2);
-
+    #endif
         return model_;
     }
 }
@@ -1037,7 +1068,7 @@ void init(platform::window &window, app_t &app)
     else app.texture.sampler = result;
 #endif
 
-    temp::model = temp::populate();
+    temp::model = temp::populate(app);
 
     auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
     auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
@@ -1075,10 +1106,10 @@ void init(platform::window &window, app_t &app)
 
     build_render_pipelines(app, temp::model);
 
-    app.resource_manager->transfer_vertex_buffers_data(app.transfer_command_pool, app.device->transfer_queue);
-    app.resource_manager->transfer_index_buffers_data(app.transfer_command_pool, app.device->transfer_queue);
+    //app.resource_manager->transfer_vertex_buffers_data(app.transfer_command_pool, app.device->transfer_queue);
+    //app.resource_manager->transfer_index_buffers_data(app.transfer_command_pool, app.device->transfer_queue);
 
-    create_graphics_command_buffers(app);
+    create_graphics_command_buffers(app, app.draw_commands);
 
     create_semaphores(app);
 
