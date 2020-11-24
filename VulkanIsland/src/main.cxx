@@ -54,6 +54,7 @@
     #include <execution>
 #endif
 #include <random>
+#include <ranges>
 
 #include <fmt/format.h>
 
@@ -256,6 +257,8 @@ struct app_t final {
         if (graphics_command_pool != VK_NULL_HANDLE)
             vkDestroyCommandPool(device->handle(), graphics_command_pool, nullptr);
 
+        temp::model.meshlets.clear();
+
         resource_manager.reset();
         memory_manager.reset();
 
@@ -353,7 +356,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
                            std::data(write_descriptor_sets), 0, nullptr);
 }
 
-void create_graphics_command_buffers(app_t &app, std::span<draw_command const> draw_commands)
+void create_graphics_command_buffers(app_t &app, std::span<draw_command> draw_commands)
 {
     app.command_buffers.resize(std::size(app.swapchain->image_views()));
 
@@ -368,8 +371,8 @@ void create_graphics_command_buffers(app_t &app, std::span<draw_command const> d
     if (auto result = vkAllocateCommandBuffers(app.device->handle(), &allocate_info, std::data(app.command_buffers)); result != VkResult::VK_SUCCESS)
         throw vulkan::exception{fmt::format("failed to create allocate command buffers: {0:#x}"s, result)};
 
-    auto &&resource_manager = *app.resource_manager;
-    auto &&vertex_buffers = resource_manager.vertex_buffers();
+    //auto &&resource_manager = *app.resource_manager;
+    //auto &&vertex_buffers = resource_manager.vertex_buffers();
 
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
 
@@ -377,13 +380,16 @@ void create_graphics_command_buffers(app_t &app, std::span<draw_command const> d
 
     std::set<std::pair<std::uint32_t, VkBuffer>> vertex_bindings_and_buffers;
 
-    for (auto &&[vertex_layout, vertex_buffer] : vertex_buffers) {
+    /*for (auto &&[vertex_layout, vertex_buffer] : vertex_buffers) {
         auto binding_index = vertex_input_state_manager.binding_index(vertex_layout);
 
         first_binding = std::min(binding_index, first_binding);
 
         vertex_bindings_and_buffers.emplace(binding_index, vertex_buffer->device_buffer().handle());
-    }
+    }*/
+    auto binding_index = vertex_input_state_manager.binding_index(draw_commands.front().vertex_buffer->vertex_layout());
+    first_binding = std::min(binding_index, first_binding);
+    vertex_bindings_and_buffers.emplace(binding_index, draw_commands.front().vertex_buffer->device_buffer()->handle());
 
     std::vector<VkBuffer> vertex_buffer_handles;
 
@@ -398,6 +404,44 @@ void create_graphics_command_buffers(app_t &app, std::span<draw_command const> d
         VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f } } },
         VkClearValue{ .depthStencil = { app.renderer_config.reversed_depth ? 0.f : 1.f, 0 } }
     };
+
+    std::sort(std::begin(draw_commands), std::end(draw_commands), [&vertex_input_state_manager] (auto &&lhs, auto &&rhs)
+    {
+        auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+        auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
+
+        if (lhs_binding_index == rhs_binding_index)
+            return lhs.vertex_buffer->device_buffer()->handle() < rhs.vertex_buffer->device_buffer()->handle();
+
+        return lhs_binding_index < rhs_binding_index;
+    });
+
+    auto it_last = std::unique(std::begin(draw_commands), std::end(draw_commands), [&vertex_input_state_manager] (auto &&lhs, auto &&rhs)
+    {
+        auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+        auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
+
+        if (lhs_binding_index == rhs_binding_index)
+            return lhs.vertex_buffer->device_buffer()->handle() == rhs.vertex_buffer->device_buffer()->handle();
+
+        return false;
+    });
+
+    auto unique_pairs = std::span{std::begin(draw_commands), it_last};
+
+    auto it = std::begin(draw_commands);
+
+    while (it != it_last) {
+        it = std::adjacent_find(it, it_last, [&vertex_input_state_manager] (auto &&lhs, auto &&rhs)
+        {
+            auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+            auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
+
+            return (rhs_binding_index - lhs_binding_index) != 1;
+        });
+    }
+
+    std::vector<std::span<draw_command>> subranges;
 
     for (std::size_t i = 0; auto &command_buffer : app.command_buffers) {
         VkCommandBufferBeginInfo const begin_info{
@@ -697,7 +741,7 @@ namespace temp
 
         primitives::generate_plane(create_info, staging_buffer->mapped_ptr(), color);
 
-        {
+        /*{
             struct vertex final {
                 std::array<float, 3> p;
                 std::array<float, 3> n;
@@ -713,7 +757,7 @@ namespace temp
                 std::cout << "t " << it_vertex->t[0] << ' ' << it_vertex->t[1] << std::endl;
                 std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;
             }
-        }
+        }*/
 
         auto vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, staging_buffer, app.transfer_command_pool);
 
