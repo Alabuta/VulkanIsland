@@ -356,6 +356,133 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
                            std::data(write_descriptor_sets), 0, nullptr);
 }
 
+void foo(app_t &app, std::span<draw_command> draw_commands)
+{
+    auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
+
+    std::stable_sort(std::begin(draw_commands), std::end(draw_commands), [&] (auto &&lhs, auto &&rhs)
+    {
+        auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+        auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
+
+        if (lhs_binding_index == rhs_binding_index)
+            return lhs.vertex_buffer->device_buffer()->handle() < rhs.vertex_buffer->device_buffer()->handle();
+
+        return lhs_binding_index < rhs_binding_index;
+    });
+
+    {
+        auto it_end = std::unique(std::begin(draw_commands), std::end(draw_commands), [&] (auto &&lhs, auto &&rhs)
+        {
+            auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+            auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
+
+            if (lhs_binding_index == rhs_binding_index)
+                return lhs.vertex_buffer->device_buffer()->handle() == rhs.vertex_buffer->device_buffer()->handle();
+
+            return false;
+        });
+
+        draw_commands = std::span<draw_command>{std::begin(draw_commands), it_end};
+    }
+
+    std::vector<draw_command> newdc(std::size(draw_commands));
+    std::vector<std::span<draw_command>> binds;
+
+    auto it_begin = std::begin(draw_commands);
+    auto it_newdc = std::begin(newdc);
+
+    while (it_begin != std::end(draw_commands)) {
+        auto it_temp = it_newdc;
+
+        it_newdc = std::unique_copy(it_begin, std::end(draw_commands), it_newdc, [&] (auto &&lhs, auto &&rhs)
+        {
+            auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+            auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
+
+            return lhs_binding_index == rhs_binding_index;
+        });
+
+        auto subrange = std::span{it_temp, it_newdc};
+        binds.push_back(subrange);
+
+        auto it_end = std::set_difference(
+            std::begin(draw_commands), std::end(draw_commands), std::begin(subrange), std::end(subrange),
+            std::begin(draw_commands), [&] (auto &&lhs, auto &&rhs)
+        {
+            auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+            auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
+
+            return lhs_binding_index < rhs_binding_index;
+        });
+
+        draw_commands = std::span{std::begin(draw_commands), it_end};
+
+        it_begin = std::begin(draw_commands);
+    }
+
+    std::vector<std::span<draw_command>> consecutive_binds;
+
+    for (auto subrange : binds) {
+        auto it_xbegin = std::begin(subrange);
+
+        while (it_xbegin != std::end(subrange)) {
+            auto it = std::adjacent_find(it_xbegin, std::end(subrange), [&] (auto &&lhs, auto &&rhs)
+            {
+                auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+                auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
+
+                return (rhs_binding_index - lhs_binding_index) > 1;
+            });
+
+            if (it != std::end(subrange))
+                it = std::next(it);
+
+            consecutive_binds.emplace_back(it_xbegin, it);
+
+            it_xbegin = it;
+        }
+    }
+
+    //std::vector<draw_command> reordered_commands;
+    //std::vector<std::span<draw_command>> binds;
+
+    //auto it_begin = std::begin(draw_commands);
+
+    //while (it_begin != it_end) {
+    //    auto it = std::unique_copy(it_begin, it_end, std::back_inserter(reordered_commands), [&] (auto &&lhs, auto &&rhs)
+    //    {
+    //        auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+    //        auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
+
+    //        return rhs_binding_index == lhs_binding_index;
+    //    });
+    //}
+
+    ////auto unique_pairs = std::span{std::begin(draw_commands), it_end};
+
+    //std::vector<std::span<draw_command>> consecutive_subranges;
+
+    //while (it_begin != it_end) {
+    //    auto it = std::adjacent_find(it_begin, it_end, [&] (auto &&lhs, auto &&rhs)
+    //    {
+    //        auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+    //        auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
+
+    //        return (rhs_binding_index - lhs_binding_index) > 1;
+    //    });
+
+    //    if (it == it_end)
+    //        break;
+
+    //    it = std::next(it);
+
+    //    consecutive_subranges.emplace_back(it_begin, it);
+
+    //    it_begin = it;
+    //}
+}
+
 void create_graphics_command_buffers(app_t &app, std::span<draw_command> draw_commands)
 {
     app.command_buffers.resize(std::size(app.swapchain->image_views()));
@@ -405,43 +532,7 @@ void create_graphics_command_buffers(app_t &app, std::span<draw_command> draw_co
         VkClearValue{ .depthStencil = { app.renderer_config.reversed_depth ? 0.f : 1.f, 0 } }
     };
 
-    std::sort(std::begin(draw_commands), std::end(draw_commands), [&vertex_input_state_manager] (auto &&lhs, auto &&rhs)
-    {
-        auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
-        auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
-
-        if (lhs_binding_index == rhs_binding_index)
-            return lhs.vertex_buffer->device_buffer()->handle() < rhs.vertex_buffer->device_buffer()->handle();
-
-        return lhs_binding_index < rhs_binding_index;
-    });
-
-    auto it_last = std::unique(std::begin(draw_commands), std::end(draw_commands), [&vertex_input_state_manager] (auto &&lhs, auto &&rhs)
-    {
-        auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
-        auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
-
-        if (lhs_binding_index == rhs_binding_index)
-            return lhs.vertex_buffer->device_buffer()->handle() == rhs.vertex_buffer->device_buffer()->handle();
-
-        return false;
-    });
-
-    auto unique_pairs = std::span{std::begin(draw_commands), it_last};
-
-    auto it = std::begin(draw_commands);
-
-    while (it != it_last) {
-        it = std::adjacent_find(it, it_last, [&vertex_input_state_manager] (auto &&lhs, auto &&rhs)
-        {
-            auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
-            auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
-
-            return (rhs_binding_index - lhs_binding_index) != 1;
-        });
-    }
-
-    std::vector<std::span<draw_command>> subranges;
+    foo(app, draw_commands);
 
     for (std::size_t i = 0; auto &command_buffer : app.command_buffers) {
         VkCommandBufferBeginInfo const begin_info{
