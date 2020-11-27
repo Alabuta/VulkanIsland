@@ -356,6 +356,17 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
                            std::data(write_descriptor_sets), 0, nullptr);
 }
 
+
+struct vertex_buffers_bind_ranges final {
+    std::uint32_t first_binding;
+    std::uint32_t binding_count;
+
+    std::vector<VkBuffer> vertex_buffer_handles;
+    // std::vector<int> vertex_buffer_offsets;
+
+    std::span<draw_command> draw_commands;
+};
+
 void foo(app_t &app, std::span<draw_command> draw_commands)
 {
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
@@ -373,17 +384,18 @@ void foo(app_t &app, std::span<draw_command> draw_commands)
 
     //vkCmdBindVertexBuffers(command_buffer, first_binding, binding_count, std::data(vertex_buffer_handles), std::data(vertex_buffer_offsets));
 
-    std::vector<vertex_buffers_bind_ranges> bind_ranges;
+    //std::vector<vertex_buffers_bind_ranges> bind_ranges;
 
-    std::vector<draw_command> reordered_commands(std::size(draw_commands));
+    std::vector<draw_command> rc(std::size(draw_commands));
+    std::span<draw_command> newrc{rc};
     std::vector<std::span<draw_command>> subranges;
 
-    auto it_newdc = std::begin(reordered_commands);
+    auto it_out = std::begin(rc);
 
-    for (auto it_begin = std::begin(draw_commands); it_begin != std::end(draw_commands); it_begin = std::begin(draw_commands)) {
-        auto it_temp = it_newdc;
+    for (auto it_begin = std::begin(newrc); it_begin != std::end(newrc); it_begin = std::begin(newrc)) {
+        auto it_temp = it_out;
 
-        it_newdc = std::unique_copy(it_begin, std::end(draw_commands), it_newdc, [&] (auto &&lhs, auto &&rhs)
+        it_out = std::unique_copy(it_begin, std::end(newrc), it_out, [&] (auto &&lhs, auto &&rhs)
         {
             auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
             auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
@@ -391,11 +403,11 @@ void foo(app_t &app, std::span<draw_command> draw_commands)
             return lhs_binding_index == rhs_binding_index;
         });
 
-        auto subrange = std::span{it_temp, it_newdc};
+        auto subrange = std::span{it_temp, it_out};
 
-        auto it_end = std::set_difference(std::begin(draw_commands), std::end(draw_commands),
+        auto it_end = std::set_difference(std::begin(newrc), std::end(newrc),
                                           std::begin(subrange), std::end(subrange),
-                                          std::begin(draw_commands), [&] (auto &&lhs, auto &&rhs)
+                                          std::begin(newrc), [&] (auto &&lhs, auto &&rhs)
         {
             auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
             auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
@@ -405,10 +417,10 @@ void foo(app_t &app, std::span<draw_command> draw_commands)
 
         subranges.push_back(subrange);
 
-        draw_commands = std::span{std::begin(draw_commands), it_end};
+        newrc = std::span{std::begin(newrc), it_end};
     }
 
-    std::vector<std::span<draw_command>> consecutive_subranges;
+    std::vector<vertex_buffers_bind_ranges> bind_ranges;
 
     for (auto subrange : subranges) {
         for (auto it_begin = std::begin(subrange); it_begin != std::end(subrange);) {
@@ -423,7 +435,26 @@ void foo(app_t &app, std::span<draw_command> draw_commands)
             if (it != std::end(subrange))
                 it = std::next(it);
 
-            consecutive_subranges.emplace_back(it_begin, it);
+            std::span<draw_command> consecutive_binds{it_begin, it};
+
+            auto handles = consecutive_binds | std::views::transform([] (auto &&lhs)
+            {
+                return lhs.vertex_buffer->device_buffer()->handle();
+            });
+
+            std::vector<VkBuffer> vertex_buffer_handles;
+
+            std::ranges::unique_copy(handles, std::back_inserter(vertex_buffer_handles), [] (auto lhs, auto rhs)
+            {
+                return lhs == rhs;
+            });
+
+            bind_ranges.push_back(vertex_buffers_bind_ranges{
+                consecutive_binds.front().index,
+                consecutive_binds.back().index - consecutive_binds.front().index + 1,
+                vertex_buffer_handles,
+                consecutive_binds
+            });
 
             it_begin = it;
         }
