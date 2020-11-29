@@ -362,12 +362,17 @@ struct vertex_buffers_bind_ranges final {
     std::uint32_t binding_count;
 
     std::vector<VkBuffer> vertex_buffer_handles;
-    // std::vector<int> vertex_buffer_offsets;
+     std::vector<VkDeviceSize> vertex_buffer_offsets;
 
     std::span<draw_command> draw_commands;
 };
 
-void foo(app_t &app, std::span<draw_command> draw_commands)
+std::ostream &operator<<(std::ostream &out, vertex_buffers_bind_ranges const &bind_range)
+{
+    return out << bind_range.first_binding << '/' << bind_range.binding_count << ':' << std::size(bind_range.draw_commands);
+}
+
+std::vector<vertex_buffers_bind_ranges> foo(app_t &app, std::span<draw_command> draw_commands)
 {
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
 
@@ -382,15 +387,11 @@ void foo(app_t &app, std::span<draw_command> draw_commands)
         return lhs_binding_index < rhs_binding_index;
     });
 
-    //vkCmdBindVertexBuffers(command_buffer, first_binding, binding_count, std::data(vertex_buffer_handles), std::data(vertex_buffer_offsets));
-
-    //std::vector<vertex_buffers_bind_ranges> bind_ranges;
-
-    std::vector<draw_command> rc(std::size(draw_commands));
+    std::vector<draw_command> rc(std::begin(draw_commands), std::end(draw_commands));
     std::span<draw_command> newrc{rc};
     std::vector<std::span<draw_command>> subranges;
 
-    auto it_out = std::begin(rc);
+    auto it_out = std::begin(draw_commands);
 
     for (auto it_begin = std::begin(newrc); it_begin != std::end(newrc); it_begin = std::begin(newrc)) {
         auto it_temp = it_out;
@@ -400,7 +401,10 @@ void foo(app_t &app, std::span<draw_command> draw_commands)
             auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
             auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
 
-            return lhs_binding_index == rhs_binding_index;
+            if (lhs_binding_index == rhs_binding_index)
+                return lhs.vertex_buffer->device_buffer()->handle() != rhs.vertex_buffer->device_buffer()->handle();
+
+            return false;
         });
 
         auto subrange = std::span{it_temp, it_out};
@@ -437,28 +441,37 @@ void foo(app_t &app, std::span<draw_command> draw_commands)
 
             std::span<draw_command> consecutive_binds{it_begin, it};
 
-            auto handles = consecutive_binds | std::views::transform([] (auto &&lhs)
+            auto handles = consecutive_binds | std::views::transform([] (auto &&lhs) -> VkBuffer
             {
                 return lhs.vertex_buffer->device_buffer()->handle();
             });
 
             std::vector<VkBuffer> vertex_buffer_handles;
 
-            std::ranges::unique_copy(handles, std::back_inserter(vertex_buffer_handles), [] (auto lhs, auto rhs)
+            std::unique_copy(std::begin(handles), std::end(handles), std::back_inserter(vertex_buffer_handles), [] (auto lhs, auto rhs)
             {
                 return lhs == rhs;
             });
 
+            auto first_binding_index = vertex_input_state_manager.binding_index(consecutive_binds.front().vertex_buffer->vertex_layout());
+            auto last_binding_index = vertex_input_state_manager.binding_index(consecutive_binds.back().vertex_buffer->vertex_layout());
+
             bind_ranges.push_back(vertex_buffers_bind_ranges{
-                consecutive_binds.front().index,
-                consecutive_binds.back().index - consecutive_binds.front().index + 1,
+                first_binding_index,
+                last_binding_index - first_binding_index + 1,
                 vertex_buffer_handles,
+                std::vector<VkDeviceSize>(std::size(vertex_buffer_handles), 0),
                 consecutive_binds
             });
 
             it_begin = it;
         }
     }
+
+    /*std::ranges::copy(bind_ranges, std::ostream_iterator<vertex_buffers_bind_ranges>(std::cout, "|"));
+    std::cout << std::endl << std::endl;*/
+
+    return bind_ranges;
 }
 
 void create_graphics_command_buffers(app_t &app, std::span<draw_command> draw_commands)
@@ -479,11 +492,11 @@ void create_graphics_command_buffers(app_t &app, std::span<draw_command> draw_co
     //auto &&resource_manager = *app.resource_manager;
     //auto &&vertex_buffers = resource_manager.vertex_buffers();
 
-    auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
+    /*auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
 
     std::uint32_t first_binding = std::numeric_limits<std::uint32_t>::max();
 
-    std::set<std::pair<std::uint32_t, VkBuffer>> vertex_bindings_and_buffers;
+    std::set<std::pair<std::uint32_t, VkBuffer>> vertex_bindings_and_buffers;*/
 
     /*for (auto &&[vertex_layout, vertex_buffer] : vertex_buffers) {
         auto binding_index = vertex_input_state_manager.binding_index(vertex_layout);
@@ -492,7 +505,7 @@ void create_graphics_command_buffers(app_t &app, std::span<draw_command> draw_co
 
         vertex_bindings_and_buffers.emplace(binding_index, vertex_buffer->device_buffer().handle());
     }*/
-    auto binding_index = vertex_input_state_manager.binding_index(draw_commands.front().vertex_buffer->vertex_layout());
+    /*auto binding_index = vertex_input_state_manager.binding_index(draw_commands.front().vertex_buffer->vertex_layout());
     first_binding = std::min(binding_index, first_binding);
     vertex_bindings_and_buffers.emplace(binding_index, draw_commands.front().vertex_buffer->device_buffer()->handle());
 
@@ -503,14 +516,14 @@ void create_graphics_command_buffers(app_t &app, std::span<draw_command> draw_co
 
     auto const binding_count = static_cast<std::uint32_t>(std::size(vertex_buffer_handles));
 
-    std::vector<VkDeviceSize> vertex_buffer_offsets(binding_count, 0);
+    std::vector<VkDeviceSize> vertex_buffer_offsets(binding_count, 0);*/
 
     auto const clear_colors = std::array{
         VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f } } },
         VkClearValue{ .depthStencil = { app.renderer_config.reversed_depth ? 0.f : 1.f, 0 } }
     };
 
-    foo(app, draw_commands);
+    auto bind_ranges = foo(app, draw_commands);
 
     for (std::size_t i = 0; auto &command_buffer : app.command_buffers) {
         VkCommandBufferBeginInfo const begin_info{
@@ -551,37 +564,39 @@ void create_graphics_command_buffers(app_t &app, std::span<draw_command> draw_co
         vkCmdSetScissor(command_buffer, 0, 1, &scissor);
     #endif
 
-        vkCmdBindVertexBuffers(command_buffer, first_binding, binding_count, std::data(vertex_buffer_handles), std::data(vertex_buffer_offsets));
-
         std::uint32_t dynamic_offset = 0;
 
-        auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
-        auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
+        for (auto &&range : bind_ranges) {
+            vkCmdBindVertexBuffers(command_buffer, range.first_binding, range.binding_count, std::data(range.vertex_buffer_handles), std::data(range.vertex_buffer_offsets));
 
-        for (auto &&draw_command : draw_commands) {
-            auto [
-                material, pipeline, vertex_buffer, index_buffer,
-                vertex_count, first_vertex, index_count,
-                pipeline_layout, render_pass, descriptor_set
-            ] = draw_command;
+            auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
+            auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
 
-            if (index_buffer && index_count) {
-                auto index_type = index_buffer->format() == graphics::FORMAT::R16_UINT ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+            for (auto &&draw_command : range.draw_commands) {
+                auto [
+                    material, pipeline, vertex_buffer, index_buffer,
+                    vertex_count, first_vertex, index_count,
+                    pipeline_layout, render_pass, descriptor_set
+                ] = draw_command;
 
-                vkCmdBindIndexBuffer(command_buffer, index_buffer->device_buffer().handle(), 0, index_type);
+                /*if (index_buffer && index_count) {
+                    auto index_type = index_buffer->format() == graphics::FORMAT::R16_UINT ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+
+                    vkCmdBindIndexBuffer(command_buffer, index_buffer->device_buffer().handle(), 0, index_type);
+                }*/
+
+                vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
+
+                vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
+                                        0, 1, &descriptor_set, 1, &dynamic_offset);
+
+                if (index_buffer && index_count)
+                    vkCmdDrawIndexed(command_buffer, index_count, 1, first_vertex, 0, 0);
+
+                else vkCmdDraw(command_buffer, vertex_count, 1, first_vertex, 0);
+
+                dynamic_offset += static_cast<std::uint32_t>(aligned_offset);
             }
-
-            vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
-
-            vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
-                                    0, 1, &descriptor_set, 1, &dynamic_offset);
-
-            if (index_buffer && index_count)
-                vkCmdDrawIndexed(command_buffer, index_count, 1, first_vertex, 0, 0);
-
-            else vkCmdDraw(command_buffer, vertex_count, 1, first_vertex, 0);
-
-            dynamic_offset += static_cast<std::uint32_t>(aligned_offset);
         }
 
         vkCmdEndRenderPass(command_buffer);
@@ -810,6 +825,8 @@ namespace temp
 
         primitives::generate_plane(create_info, staging_buffer->mapped_ptr(), color);
 
+        auto vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, staging_buffer, app.transfer_command_pool);
+
         /*{
             struct vertex final {
                 std::array<float, 3> p;
@@ -827,8 +844,6 @@ namespace temp
                 std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;
             }
         }*/
-
-        auto vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, staging_buffer, app.transfer_command_pool);
 
         //auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
         //auto &&index_buffer = model_.index_buffers[indices_format];
@@ -964,7 +979,7 @@ namespace temp
 
         model_.scene_nodes.push_back(xformat::scene_node{0u, std::size(model_.meshes)});
         add_plane(app, model_, 0, 2);
-    #if 0
+    
         {
             auto const vertex_layout_index = 1u;
             auto &&vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
@@ -1006,7 +1021,31 @@ namespace temp
                 {-1.f, 0.f, 0.f}, {0, max_16ui / 2}, {max_8ui, max_8ui, 0, max_8ui}
             });
 
-            auto &&vertex_buffer = model_.vertex_buffers[vertex_layout_index];
+            auto const vertex_count = std::size(vertices);
+            auto const vertex_size = vertex_layout.size_bytes;
+
+            auto staging_buffer = app.resource_manager->create_staging_buffer(vertex_count * vertex_size);
+
+            auto vertices_bytes_view = std::as_bytes(std::span{vertices});
+            std::copy_n(std::begin(vertices_bytes_view), vertices_bytes_view.size_bytes(), std::begin(staging_buffer->mapped_ptr()));
+
+            auto vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, staging_buffer, app.transfer_command_pool);
+
+            /*{
+                auto const vertex_count = std::size(vertices);
+                auto const vertex_size = vertex_layout.size_bytes;
+
+                auto const bytes_count = vertex_count * vertex_size;
+                auto const write_offset = static_cast<std::ptrdiff_t>(vertex_buffer.count * vertex_size);
+
+                vertex_buffer.buffer.resize(vertex_buffer.count * vertex_size + bytes_count);
+                vertex_buffer.count += vertex_count;
+
+                auto it_dst = std::next(std::begin(vertex_buffer.buffer), write_offset);
+
+                auto vertices_bytes_view = std::as_bytes(std::span{vertices});
+                std::copy_n(std::begin(vertices_bytes_view), vertices_bytes_view.size_bytes(), it_dst);
+            }*/
 
             {
                 model_.scene_nodes.push_back(xformat::scene_node{1u, std::size(model_.meshes)});
@@ -1018,9 +1057,16 @@ namespace temp
 
                 meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
+                //meshlet.vertex_buffer_index = vertex_layout_index;
+                //meshlet.vertex_count = static_cast<std::uint32_t>(3);
+                //meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count + 0u);
+
+                auto first_vertex = vertex_buffer->offset_bytes() / vertex_size - vertex_count;
+
                 meshlet.vertex_buffer_index = vertex_layout_index;
-                meshlet.vertex_count = static_cast<std::uint32_t>(3);
-                meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count + 0u);
+                meshlet.vertex_buffer = vertex_buffer;
+                meshlet.vertex_count = 3;
+                meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
 
                 meshlet.material_index = 0;
                 meshlet.instance_count = 1;
@@ -1039,9 +1085,12 @@ namespace temp
 
                 meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
+                auto first_vertex = vertex_buffer->offset_bytes() / vertex_size - vertex_count / 2;
+
                 meshlet.vertex_buffer_index = vertex_layout_index;
-                meshlet.vertex_count = static_cast<std::uint32_t>(3);
-                meshlet.first_vertex = static_cast<std::uint32_t>(vertex_buffer.count + 3u);
+                meshlet.vertex_buffer = vertex_buffer;
+                meshlet.vertex_count = 3;
+                meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
 
                 meshlet.material_index = 3;
                 meshlet.instance_count = 1;
@@ -1049,30 +1098,14 @@ namespace temp
 
                 model_.meshlets.push_back(std::move(meshlet));
             }
-
-            {
-                auto const vertex_count = std::size(vertices);
-                auto const vertex_size = vertex_layout.size_bytes;
-
-                auto const bytes_count = vertex_count * vertex_size;
-                auto const write_offset = static_cast<std::ptrdiff_t>(vertex_buffer.count * vertex_size);
-
-                vertex_buffer.buffer.resize(vertex_buffer.count * vertex_size + bytes_count);
-                vertex_buffer.count += vertex_count;
-
-                auto it_dst = std::next(std::begin(vertex_buffer.buffer), write_offset);
-
-                auto vertices_bytes_view = std::as_bytes(std::span{vertices});
-                std::copy_n(std::begin(vertices_bytes_view), vertices_bytes_view.size_bytes(), it_dst);
-            }
         }
-        
+
         model_.scene_nodes.push_back(xformat::scene_node{3u, std::size(model_.meshes)});
-        add_plane(model_, 1, 1);
+        add_plane(app, model_, 1, 1);
 
         model_.scene_nodes.push_back(xformat::scene_node{4u, std::size(model_.meshes)});
-        add_plane(model_, 2, 2);
-    #endif
+        add_plane(app, model_, 2, 2);
+ 
         return model_;
     }
 }
