@@ -254,6 +254,7 @@
   <ItemGroup>
     <ClCompile Include="include\volk\volk.c" />
     <ClCompile Include="src\graphics\graphics.cxx" />
+    <ClCompile Include="src\loaders\image_loader.cxx" />
     <ClCompile Include="src\primitives\box.cxx" />
     <ClCompile Include="src\primitives\plane.cxx" />
     <ClCompile Include="src\renderer\config.cxx" />
@@ -294,6 +295,7 @@
   <ItemGroup>
     <ClInclude Include="include\config.hxx" />
     <ClInclude Include="include\volk\volk.h" />
+    <ClInclude Include="src\loaders\image_loader.hxx" />
     <ClInclude Include="src\math\pack-unpack.hxx" />
     <ClInclude Include="src\primitives\primitives.hxx" />
     <ClInclude Include="src\renderer\command_buffer.hxx" />
