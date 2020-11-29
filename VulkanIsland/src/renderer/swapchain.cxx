@@ -200,3 +200,29 @@ namespace renderer
         images_.clear();
     }
 }
+
+
+std::unique_ptr<renderer::swapchain>
+create_swapchain(vulkan::device const &device, renderer::platform_surface const &platform_surface, renderer::extent extent)
+{
+    auto surface_formats = std::vector<renderer::surface_format>{
+        { graphics::FORMAT::BGRA8_SRGB, graphics::COLOR_SPACE::SRGB_NONLINEAR },
+        { graphics::FORMAT::RGBA8_SRGB, graphics::COLOR_SPACE::SRGB_NONLINEAR }
+    };
+
+    std::unique_ptr<renderer::swapchain> swapchain;
+
+    for (auto surface_format : surface_formats) {
+        try {
+            swapchain = std::make_unique<renderer::swapchain>(device, platform_surface, surface_format, extent);
+
+        } catch (vulkan::swapchain_exception const &ex) {
+            std::cout << ex.what() << std::endl;
+        }
+
+        if (swapchain)
+            break;
+    }
+
+    return swapchain;
+}

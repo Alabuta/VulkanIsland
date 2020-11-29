@@ -48,3 +48,6 @@ namespace renderer
         swapchain(swapchain &&) = delete;
     };
 }
+
+std::unique_ptr<renderer::swapchain>
+create_swapchain(vulkan::device const &device, renderer::platform_surface const &platform_surface, renderer::extent extent);

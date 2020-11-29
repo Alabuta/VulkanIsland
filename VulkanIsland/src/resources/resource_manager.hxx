@@ -15,6 +15,7 @@
 #include "renderer/config.hxx"
 
 #include "graphics/render_pass.hxx"
+#include "graphics/vertex.hxx"
 
 #include "memory_manager.hxx"
 
@@ -76,32 +77,14 @@ namespace resource
         stage_vertex_data(graphics::vertex_layout const &layout, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool);
 
 
-        bool is_vertex_buffer_exist(graphics::vertex_layout const &layout) const noexcept;
-        bool is_index_buffer_exist(graphics::FORMAT format) const noexcept;
-
-        [[nodiscard]] std::shared_ptr<resource::vertex_buffer2> get_vertex_buffer(graphics::vertex_layout const &layout);
         // [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(graphics::FORMAT format);
-
-        [[nodiscard]] std::shared_ptr<resource::vertex_buffer2> create_vertex_buffer(graphics::vertex_layout const &layout, std::size_t size_bytes);
         [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(graphics::FORMAT format, std::size_t size_bytes);
-
-        [[nodiscard]] auto &vertex_buffers() const noexcept { return vertex_buffers2_; }
-        [[nodiscard]] auto &index_buffers() const noexcept { return index_buffers_; }
-
-        template<class T> requires mpl::one_of<T, resource::vertex_buffer2, resource::index_buffer>
-        void stage_buffer_data(std::shared_ptr<T> buffer, std::span<std::byte const> const container) const;
-
-        void transfer_vertex_buffers_data(VkCommandPool command_pool, graphics::transfer_queue const &transfer_queue);
-        void transfer_index_buffers_data(VkCommandPool command_pool, graphics::transfer_queue const &transfer_queue);
 
     private:
 
         // :TODO: consider the config file for following constants.
         static std::size_t constexpr kVERTEX_BUFFER_FIXED_SIZE{0x800'0000}; // 128 MB
         static std::size_t constexpr kINDEX_BUFFER_FIXED_SIZE{0x800'0000}; // 128 MB
-
-        static std::size_t constexpr kVERTEX_BUFFER_INCREASE_VALUE{4};
-        static std::size_t constexpr kINDEX_BUFFER_INCREASE_VALUE{4};
 
         vulkan::device const &device_;
         renderer::config const &config_;
@@ -125,41 +108,7 @@ namespace resource
         using vertex_buffer_set = std::multiset<std::shared_ptr<resource::vertex_buffer>, vertex_buffer_set_comparator>;
 
         std::unordered_map<graphics::vertex_layout, vertex_buffer_set, graphics::hash<graphics::vertex_layout>> vertex_buffers_;
-
-
-        // TODO:: unordered_multimap
-        std::unordered_map<graphics::vertex_layout, std::shared_ptr<resource::vertex_buffer2>, graphics::hash<graphics::vertex_layout>> vertex_buffers2_;
-        std::unordered_map<graphics::FORMAT, std::shared_ptr<resource::index_buffer>> index_buffers_;
     };
-
-    template<class T> requires mpl::one_of<T, resource::vertex_buffer2, resource::index_buffer>
-    void resource_manager::stage_buffer_data(std::shared_ptr<T> vertex_buffer, std::span<std::byte const> const container) const
-    {
-        if (vertex_buffer == nullptr)
-            return;
-
-        if (vertex_buffer->available_staging_buffer_size() < container.size_bytes())
-            throw resource::not_enough_memory("not enough staging memory for buffer"s);
-
-        // TODO: sparse memory binding
-        if (vertex_buffer->available_device_buffer_size() < container.size_bytes())
-            throw resource::not_enough_memory("not enough device memory for buffer"s);
-
-        auto &&memory = vertex_buffer->staging_buffer().memory();
-
-        void *ptr;
-
-        if (auto result = vkMapMemory(device_.handle(), memory->handle(), vertex_buffer->staging_memory_offset(), container.size_bytes(), 0, &ptr); result != VK_SUCCESS)
-            throw resource::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
-
-        else {
-            std::copy(std::begin(container), std::end(container), reinterpret_cast<std::byte *>(ptr));
-
-            vkUnmapMemory(device_.handle(), memory->handle());
-
-            vertex_buffer->staging_buffer_offset_ += container.size_bytes();
-        }
-    }
 }
 
 

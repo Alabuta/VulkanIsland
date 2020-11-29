@@ -120,50 +120,6 @@ namespace resource
 
         friend resource::resource_manager;
     };
-}
-
-namespace resource
-{
-    class vertex_buffer2 final {
-    public:
-
-        vertex_buffer2(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer,
-                      graphics::vertex_layout const &vertex_layout);
-
-        resource::buffer const &device_buffer() const { return *device_buffer_; }
-        resource::buffer const &staging_buffer() const { return *staging_buffer_; }
-
-        std::size_t device_memory_offset() const { return device_buffer_->memory()->offset() + device_buffer_offset_; }
-        std::size_t staging_memory_offset() const { return staging_buffer_->memory()->offset() + staging_buffer_offset_; }
-
-        std::size_t available_device_buffer_size() const { return device_buffer_size_ - device_buffer_offset_; }
-        std::size_t available_staging_buffer_size() const { return staging_buffer_size_ - staging_buffer_offset_; }
-
-        graphics::vertex_layout const &vertex_layout() const noexcept { return vertex_layout_; }
-
-        std::size_t available_size() const noexcept { return available_size_; }
-
-    private:
-
-        std::shared_ptr<resource::buffer> device_buffer_{nullptr};
-        std::shared_ptr<resource::buffer> staging_buffer_{nullptr};
-
-        std::size_t device_buffer_offset_{0};
-        std::size_t device_buffer_size_{0};
-
-        std::size_t staging_buffer_offset_{0};
-        std::size_t staging_buffer_size_{0};
-
-        graphics::vertex_layout vertex_layout_;
-
-        std::size_t available_size_{0};
-
-        vertex_buffer2() = delete;
-        vertex_buffer2(vertex_buffer2 const &) = delete;
-        vertex_buffer2(vertex_buffer2 &&) = delete;
-
-        friend resource::resource_manager;
-    };
 
     class vertex_buffer final {
     public:
