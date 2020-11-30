@@ -163,7 +163,7 @@ namespace
 
     template<std::size_t N, class T>
     std::array<T, N>
-        generate_position(primitives::plane_create_info const &create_info, std::uint32_t vertex_index)
+    generate_position(primitives::plane_create_info const &create_info, std::uint32_t vertex_index)
     {
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
@@ -191,7 +191,7 @@ namespace
 
     template<std::size_t N, class T>
     std::array<T, N>
-        generate_texcoord(primitives::plane_create_info const &create_info, graphics::FORMAT format, std::uint32_t vertex_index)
+    generate_texcoord(primitives::plane_create_info const &create_info, graphics::FORMAT format, std::uint32_t vertex_index)
     {
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
@@ -226,7 +226,7 @@ namespace
 
     template<std::size_t N, class T>
     std::array<T, N>
-        generate_color(glm::vec4 const &color, graphics::FORMAT format)
+    generate_color(glm::vec4 const &color, graphics::FORMAT format)
     {
         if constexpr (N == 3 || N == 4) {
             switch (graphics::numeric_format(format)) {

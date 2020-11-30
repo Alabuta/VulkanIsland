@@ -789,61 +789,6 @@ namespace temp
 
             model_.meshlets.push_back(std::move(meshlet));
         }
-
-    #if 0
-        {
-            auto const vl = vertex::create_vertex_layout(
-                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
-                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
-                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
-            );
-
-            struct vertex final {
-                std::array<float, 3> p;
-                std::array<std::uint16_t, 2> n;
-                std::array<std::uint8_t, 4> c;
-            };
-
-            auto constexpr tpl = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
-
-            primitives::plane_create_info const ci{
-                vl, tpl, indices_format,
-                1.f, 1.f, 1u, 2u
-            };
-
-            auto const vc = primitives::calculate_plane_vertices_number(ci);
-            auto const ic = primitives::calculate_plane_indices_number(ci);
-
-            auto format_inst = graphics::instantiate_format(indices_format);
-
-            if (!format_inst.has_value())
-                throw resource::exception("failed to instantiate indices format"s);
-
-            auto index_size_in_bytes = std::visit([] (auto type)
-            {
-                return sizeof(decltype(type));
-
-            }, format_inst.value());
-
-            std::vector<std::byte> vbuffer(vc * vl.size_bytes);
-            std::vector<std::byte> ibuffer(ic *index_size_in_bytes);
-
-            primitives::generate_plane_indexed(ci, std::begin(vbuffer), std::begin(ibuffer), color);
-
-            auto it_vertex = reinterpret_cast<vertex *>(std::data(vbuffer));
-            auto it_index = reinterpret_cast<std::uint16_t *>(std::data(ibuffer));
-
-            for (auto i = 0u; i < vc; ++i, ++it_vertex) {
-                std::cout << "p " << it_vertex->p[0] << ' ' << it_vertex->p[1] << ' ' << it_vertex->p[2] << std::endl;
-                std::cout << "n " << it_vertex->n[0] << ' ' << it_vertex->n[1] << std::endl;
-                std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;
-            }
-
-            for (auto i = 0u; i < ic; i += 3, ++it_index) {
-                std::cout << "i " << *it_index << ' ' << *++it_index << ' ' << *++it_index << std::endl;
-            }
-        }
-    #endif
     }
 
     xformat populate(app_t &app)
