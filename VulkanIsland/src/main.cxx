@@ -134,6 +134,7 @@ struct draw_command final {
     std::uint32_t first_vertex{0};
 
     std::uint32_t index_count{0};
+    std::uint32_t first_index{0};
 
     VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
 
@@ -527,14 +528,14 @@ void create_graphics_command_buffers(app_t &app, std::span<draw_command> draw_co
             for (auto &&draw_command : range.draw_commands) {
                 auto [
                     material, pipeline, vertex_buffer, index_buffer,
-                    vertex_count, first_vertex, index_count,
+                    vertex_count, first_vertex, index_count, first_index,
                     pipeline_layout, render_pass, descriptor_set
                 ] = draw_command;
 
                 if (index_buffer && index_count) {
                     auto index_type = index_buffer->format() == graphics::FORMAT::R16_UINT ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
 
-                    vkCmdBindIndexBuffer(command_buffer, index_buffer->device_buffer().handle(), 0, index_type);
+                    vkCmdBindIndexBuffer(command_buffer, index_buffer->device_buffer()->handle(), 0, index_type);
                 }
 
                 vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
@@ -543,7 +544,7 @@ void create_graphics_command_buffers(app_t &app, std::span<draw_command> draw_co
                                         0, 1, &descriptor_set, 1, &dynamic_offset);
 
                 if (index_buffer && index_count)
-                    vkCmdDrawIndexed(command_buffer, index_count, 1, first_vertex, 0, 0);
+                    vkCmdDrawIndexed(command_buffer, index_count, 1, first_index, first_vertex, 0);
 
                 else vkCmdDraw(command_buffer, vertex_count, 1, first_vertex, 0);
 
@@ -668,7 +669,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
             auto material_index = meshlet.material_index;
             auto [technique_index, name] = model_.materials[material_index];
 
-            auto vertex_layout_index = meshlet.vertex_buffer_index;
+            auto vertex_layout_index = meshlet.vertex_layout_index;
             if (vertex_layout_index < 0)
                 throw graphics::exception("invalid vertex buffer index"s);
 
@@ -683,11 +684,12 @@ void build_render_pipelines(app_t &app, xformat const &model_)
             if (material == nullptr)
                 throw graphics::exception("failed to create material"s);
 
-            auto vertex_buffer = meshlet.vertex_buffer;
+            std::shared_ptr<resource::vertex_buffer> vertex_buffer = meshlet.vertex_buffer;
+            std::shared_ptr<resource::index_buffer> index_buffer = meshlet.index_buffer;
 
-            std::shared_ptr<resource::index_buffer> index_buffer;
+            /*std::shared_ptr<resource::index_buffer> index_buffer;
             
-            /*if (auto index_buffer_index = meshlet.index_buffer_index; index_buffer_index > -1) {
+            if (auto index_buffer_index = meshlet.index_buffer_index; index_buffer_index > -1) {
                 auto &&index_data_buffer = model_.index_buffers.at(index_buffer_index);
 
                 index_buffer = resource_manager.create_index_buffer(index_data_buffer.format, std::size(vertex_data_buffer.buffer));
@@ -717,7 +719,8 @@ void build_render_pipelines(app_t &app, xformat const &model_)
             app.draw_commands.push_back(
                 draw_command{
                     material, pipeline, vertex_buffer, index_buffer,
-                    meshlet.vertex_count, meshlet.first_vertex, 0u,
+                    meshlet.vertex_count, meshlet.first_vertex,
+                    meshlet.index_count, meshlet.first_index,
                     app.pipelineLayout, app.render_pass, app.descriptorSet
                 }
             );
@@ -752,21 +755,37 @@ namespace temp
         auto constexpr indices_format = graphics::FORMAT::R16_UINT;
 
         primitives::plane_create_info const create_info{
-            vertex_layout, topology, graphics::FORMAT::UNDEFINED,
-            1.f, 1.f, 1u, 1u
+            vertex_layout, topology, indices_format,
+            1.f, 1.f, 7u, 13u
         };
+
+        auto format_inst = graphics::instantiate_format(indices_format);
+
+        if (!format_inst.has_value())
+            throw resource::exception("failed to instantiate indices format"s);
+
+        auto const index_count = primitives::calculate_plane_indices_number(create_info);
+        auto const index_size = std::visit([] (auto type) { return sizeof(decltype(type)); }, format_inst.value());
 
         auto const vertex_count = primitives::calculate_plane_vertices_number(create_info);
         auto const vertex_size = vertex_layout.size_bytes;
 
+        auto const index_buffer_allocation_size = index_count * index_size;
         auto const vertex_buffer_allocation_size = vertex_count * vertex_size;
-        std::cout << "vertex_buffer_allocation_size "s << vertex_buffer_allocation_size << std::endl;
+        std::cout << "index buffer size "s << index_buffer_allocation_size << " vertex buffer size "s << vertex_buffer_allocation_size << std::endl;
 
-        auto staging_buffer = app.resource_manager->create_staging_buffer(vertex_buffer_allocation_size);
+        std::shared_ptr<resource::vertex_buffer> vertex_buffer;
+        std::shared_ptr<resource::index_buffer> index_buffer;
 
-        primitives::generate_plane(create_info, staging_buffer->mapped_ptr(), color);
+        {
+            auto vertex_staging_buffer = app.resource_manager->create_staging_buffer(vertex_buffer_allocation_size);
+            auto index_staging_buffer = app.resource_manager->create_staging_buffer(index_buffer_allocation_size);
 
-        auto vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, staging_buffer, app.transfer_command_pool);
+            primitives::generate_plane_indexed(create_info, vertex_staging_buffer->mapped_ptr(), index_staging_buffer->mapped_ptr(), color);
+
+            vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
+            index_buffer = app.resource_manager->stage_index_data(indices_format, index_staging_buffer, app.transfer_command_pool);
+        }
 
         {
             xformat::meshlet meshlet;
@@ -774,11 +793,17 @@ namespace temp
             meshlet.topology = topology;
 
             auto first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size;
+            auto first_index = (index_buffer->offset_bytes() - index_buffer_allocation_size) / index_size;
 
-            meshlet.vertex_buffer_index = vertex_layout_index;
+            meshlet.vertex_layout_index = vertex_layout_index;
+
             meshlet.vertex_buffer = vertex_buffer;
             meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
             meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
+
+            meshlet.index_buffer = index_buffer;
+            meshlet.index_count = static_cast<std::uint32_t>(index_count);
+            meshlet.first_index = static_cast<std::uint32_t>(first_index);
 
             meshlet.material_index = material_index;
             meshlet.instance_count = 1;
@@ -833,7 +858,8 @@ namespace temp
 
         model_.scene_nodes.push_back(xformat::scene_node{0u, std::size(model_.meshes)});
         add_plane(app, model_, 0, 2);
-    
+
+    #if 0
         {
             auto const vertex_layout_index = 1u;
             auto &&vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
@@ -897,7 +923,7 @@ namespace temp
 
                 auto first_vertex = vertex_buffer->offset_bytes() / vertex_size - vertex_count;
 
-                meshlet.vertex_buffer_index = vertex_layout_index;
+                meshlet.vertex_layout_index = vertex_layout_index;
                 meshlet.vertex_buffer = vertex_buffer;
                 meshlet.vertex_count = 3;
                 meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
@@ -921,7 +947,7 @@ namespace temp
 
                 auto first_vertex = vertex_buffer->offset_bytes() / vertex_size - vertex_count / 2;
 
-                meshlet.vertex_buffer_index = vertex_layout_index;
+                meshlet.vertex_layout_index = vertex_layout_index;
                 meshlet.vertex_buffer = vertex_buffer;
                 meshlet.vertex_count = 3;
                 meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
@@ -933,6 +959,7 @@ namespace temp
                 model_.meshlets.push_back(std::move(meshlet));
             }
         }
+    #endif
 
         model_.scene_nodes.push_back(xformat::scene_node{3u, std::size(model_.meshes)});
         add_plane(app, model_, 1, 1);

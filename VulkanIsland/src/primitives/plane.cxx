@@ -459,8 +459,8 @@ namespace primitives
         }
     }
 
-    void generate_plane_indexed(primitives::plane_create_info const &create_info, std::span<std::byte> container,
-                                std::vector<std::byte>::iterator it_index_buffer, glm::vec4 const &color)
+    void generate_plane_indexed(primitives::plane_create_info const &create_info, std::span<std::byte> vertex_buffer,
+                                std::span<std::byte> index_buffer, glm::vec4 const &color)
     {
         auto indices_number = calculate_plane_indices_number(create_info);
 
@@ -468,7 +468,7 @@ namespace primitives
             case graphics::FORMAT::R16_UINT:
                 {
                     using pointer_type = typename std::add_pointer_t<std::uint16_t>;
-                    auto it = reinterpret_cast<pointer_type>(std::to_address(it_index_buffer));
+                    auto it = reinterpret_cast<pointer_type>(std::to_address(std::data(index_buffer)));
 
                     generate_indices(create_info, it, indices_number);
                 }
@@ -477,7 +477,7 @@ namespace primitives
             case graphics::FORMAT::R32_UINT:
                 {
                     using pointer_type = typename std::add_pointer_t<std::uint32_t>;
-                    auto it = reinterpret_cast<pointer_type>(std::to_address(it_index_buffer));
+                    auto it = reinterpret_cast<pointer_type>(std::to_address(std::data(index_buffer)));
 
                     generate_indices(create_info, it, indices_number);
                 }
@@ -487,10 +487,10 @@ namespace primitives
                 throw resource::exception("unsupported index instance type"s);
         }
 
-        generate_plane(create_info, container, color);
+        generate_plane(create_info, vertex_buffer, color);
     }
 
-    void generate_plane(primitives::plane_create_info const &create_info, std::span<std::byte> container, glm::vec4 const &color)
+    void generate_plane(primitives::plane_create_info const &create_info, std::span<std::byte> vertex_buffer, glm::vec4 const &color)
     {
         auto &&vertex_layout = create_info.vertex_layout;
 
@@ -508,7 +508,7 @@ namespace primitives
                     using type = typename std::remove_cvref_t<decltype(format_inst)>;
                     using pointer_type = typename std::add_pointer_t<type>;
 
-                    auto data = reinterpret_cast<pointer_type>(std::to_address(std::begin(container)) + offset_in_bytes);
+                    auto data = reinterpret_cast<pointer_type>(std::to_address(std::data(vertex_buffer)) + offset_in_bytes);
 
                     offset_in_bytes += sizeof(type);
 

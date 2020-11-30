@@ -23,11 +23,11 @@ namespace primitives
 
     std::uint32_t calculate_plane_indices_number(primitives::plane_create_info const &create_info);
 
-    void generate_plane(primitives::plane_create_info const &plane_create_info, std::span<std::byte> container,
+    void generate_plane(primitives::plane_create_info const &plane_create_info, std::span<std::byte> vertex_buffer,
                         glm::vec4 const &color = glm::vec4{1});
 
-    void generate_plane_indexed(primitives::plane_create_info const &plane_create_info, std::span<std::byte> container,
-                                std::vector<std::byte>::iterator it_index_buffer, glm::vec4 const &color = glm::vec4{1});
+    void generate_plane_indexed(primitives::plane_create_info const &plane_create_info, std::span<std::byte> vertex_buffer,
+                                std::span<std::byte> index_buffer, glm::vec4 const &color = glm::vec4{1});
 
     struct box_create_info final {
         graphics::vertex_layout vertex_layout;
