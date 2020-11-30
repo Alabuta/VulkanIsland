@@ -13,13 +13,9 @@ namespace resource
         : handle_{handle}, memory_{memory}, mapped_ptr_{mapped_ptr}, usage_{usage}, sharing_mode_{sharing_mode}
     { }
 
-    index_buffer::index_buffer(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer,
-                               graphics::FORMAT format)
-        : device_buffer_{device_buffer}, staging_buffer_{staging_buffer}, format_{format}
-    {
-        device_buffer_size_ = device_buffer_->memory()->size();
-        staging_buffer_size_ = staging_buffer_->memory()->size();
-    }
+    index_buffer::index_buffer(std::shared_ptr<resource::buffer> device_buffer, std::size_t offset_bytes, std::size_t available_size, graphics::FORMAT format)
+        : device_buffer_{device_buffer}, offset_bytes_{offset_bytes}, available_size_{available_size}, format_{format}
+    { }
 
     vertex_buffer::vertex_buffer(
         std::shared_ptr<resource::buffer> device_buffer, std::size_t offset_bytes, std::size_t available_size, graphics::vertex_layout const &vertex_layout)

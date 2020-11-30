@@ -1,5 +1,6 @@
 #include <unordered_map>
 #include <vector>
+#include <ranges>
 
 #include <fmt/format.h>
 
@@ -341,7 +342,7 @@ namespace resource
     std::shared_ptr<resource::vertex_buffer>
     resource_manager::stage_vertex_data(graphics::vertex_layout const &layout, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool)
     {
-        auto container = staging_buffer->mapped_ptr();
+        auto const container = staging_buffer->mapped_ptr();
 
         auto const staging_data_size_bytes = container.size_bytes();
 
@@ -401,24 +402,89 @@ namespace resource
 
         else throw resource::instantiation_fail("failed to extract vertex buffer set node"s);
     }
+
+    std::shared_ptr<resource::index_buffer>
+    resource_manager::stage_index_data(graphics::FORMAT format, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool)
+    {
+        if (std::ranges::none_of(kSUPPORTED_INDEX_FORMATS, [format] (auto f) { return f == format; }))
+            throw resource::exception(fmt::format("unsupported index format: {0:#x}"s, format));
+
+        auto const container = staging_buffer->mapped_ptr();
+
+        auto const staging_data_size_bytes = container.size_bytes();
+
+        if (staging_data_size_bytes > kINDEX_BUFFER_FIXED_SIZE)
+            throw resource::not_enough_memory("staging data size is bigger than index buffer max size"s);
+
+        if (!index_buffers_.contains(format)) {
+            auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::INDEX_BUFFER;
+            auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
+
+            auto buffer = create_buffer(kINDEX_BUFFER_FIXED_SIZE, usage_flags, property_flags);
+
+            if (buffer == nullptr)
+                throw resource::instantiation_fail("failed to create device index buffer"s);
+
+            auto index_buffer = std::make_shared<resource::index_buffer>(buffer, 0u, kINDEX_BUFFER_FIXED_SIZE, format);
+
+            index_buffers_.emplace(format, resource::resource_manager::index_buffer_set{index_buffer});
+        }
+
+        auto &&index_buffer_set = index_buffers_.at(format);
+
+        auto it = index_buffer_set.lower_bound(staging_data_size_bytes);
+
+        if (it == std::end(index_buffer_set)) {
+            // Allocate next buffer for this particular index format.
+            throw resource::not_enough_memory("unsupported case"s);
+        }
+
+        if (auto node_handle = index_buffer_set.extract(it); node_handle) {
+            auto &&index_buffer = node_handle.value();
+            auto &&device_buffer = index_buffer->device_buffer();
+
+            auto copy_regions = std::array{
+                VkBufferCopy{ 0u, index_buffer->offset_bytes(), staging_data_size_bytes }
+            };
+
+            copy_buffer_to_buffer(device_, device_.transfer_queue, staging_buffer->handle(), device_buffer->handle(), std::move(copy_regions), command_pool);
+
+            auto offset_bytes = index_buffer->offset_bytes() + staging_data_size_bytes;
+
+            it = index_buffer_set.insert(
+                std::make_shared<resource::index_buffer>(
+                    index_buffer->device_buffer(), offset_bytes, kINDEX_BUFFER_FIXED_SIZE - offset_bytes, format
+                )
+            );
+
+            if (it == std::end(index_buffer_set))
+                throw resource::instantiation_fail("failed to emplace new vertex buffer set node"s);
+
+            else return *it;
+        }
+
+        else throw resource::instantiation_fail("failed to extract vertex buffer set node"s);
+    }
 }
 
 namespace resource
 {
-    bool resource_manager::vertex_buffer_set_comparator::operator() (
-        std::shared_ptr<resource::vertex_buffer> const &lhs, std::shared_ptr<resource::vertex_buffer> const &rhs) const
+    template<class T>
+    bool resource_manager::buffer_set_comparator<T>::operator() (std::shared_ptr<T> const &lhs, std::shared_ptr<T> const &rhs) const
     {
         return lhs->available_size() < rhs->available_size();
     }
 
+    template<class T>
     template<class S> requires std::is_unsigned_v<S>
-    bool resource_manager::vertex_buffer_set_comparator::operator() (std::shared_ptr<resource::vertex_buffer> const &buffer, S size_bytes) const
+    bool resource_manager::buffer_set_comparator<T>::operator() (std::shared_ptr<T> const &buffer, S size_bytes) const
     {
         return buffer->available_size() < size_bytes;
     }
 
+    template<class T>
     template<class S> requires std::is_unsigned_v<S>
-    bool resource_manager::vertex_buffer_set_comparator::operator() (S size_bytes, std::shared_ptr<resource::vertex_buffer> const &buffer) const
+    bool resource_manager::buffer_set_comparator<T>::operator() (S size_bytes, std::shared_ptr<T> const &buffer) const
     {
         return buffer->available_size() < size_bytes;
     }

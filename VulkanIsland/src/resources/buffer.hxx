@@ -88,29 +88,21 @@ namespace resource
     class index_buffer final {
     public:
 
-        index_buffer(std::shared_ptr<resource::buffer> device_buffer, std::shared_ptr<resource::buffer> staging_buffer, graphics::FORMAT format);
+        index_buffer(std::shared_ptr<resource::buffer> device_buffer, std::size_t offset_bytes, std::size_t available_size, graphics::FORMAT format);
 
-        resource::buffer const &device_buffer() const { return *device_buffer_; }
-        resource::buffer const &staging_buffer() const { return *staging_buffer_; }
+        std::shared_ptr<resource::buffer> const &device_buffer() const { return device_buffer_; }
 
-        std::size_t device_memory_offset() const { return device_buffer_->memory()->offset() + device_buffer_offset_; }
-        std::size_t staging_memory_offset() const { return staging_buffer_->memory()->offset() + staging_buffer_offset_; }
-
-        std::size_t available_device_buffer_size() const { return device_buffer_size_ - device_buffer_offset_; }
-        std::size_t available_staging_buffer_size() const { return staging_buffer_size_ - staging_buffer_offset_; }
+        std::size_t offset_bytes() const noexcept { return offset_bytes_; }
+        std::size_t available_size() const noexcept { return available_size_; }
 
         graphics::FORMAT format() const noexcept { return format_; }
 
     private:
 
         std::shared_ptr<resource::buffer> device_buffer_{nullptr};
-        std::shared_ptr<resource::buffer> staging_buffer_{nullptr};
 
-        std::size_t device_buffer_offset_{0};
-        std::size_t device_buffer_size_{0};
-
-        std::size_t staging_buffer_offset_{0};
-        std::size_t staging_buffer_size_{0};
+        std::size_t offset_bytes_{0};
+        std::size_t available_size_{0};
 
         graphics::FORMAT format_{graphics::FORMAT::UNDEFINED};
 

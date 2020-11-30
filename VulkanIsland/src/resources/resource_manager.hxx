@@ -79,6 +79,8 @@ namespace resource
 
     private:
 
+        static std::array<graphics::FORMAT, 2> constexpr kSUPPORTED_INDEX_FORMATS{graphics::FORMAT::R16_UINT, graphics::FORMAT::R32_UINT};
+
         // :TODO: consider the config file for following constants.
         static std::size_t constexpr kVERTEX_BUFFER_FIXED_SIZE{0x800'0000}; // 128 MB
         static std::size_t constexpr kINDEX_BUFFER_FIXED_SIZE{0x800'0000}; // 128 MB
@@ -90,21 +92,24 @@ namespace resource
 
         std::shared_ptr<struct resource_deleter> resource_deleter_;
 
-        struct vertex_buffer_set_comparator final {
+        template<class T>
+        struct buffer_set_comparator final {
             using is_transparent = void;
 
-            bool operator() (std::shared_ptr<resource::vertex_buffer> const &lhs, std::shared_ptr<resource::vertex_buffer> const &rhs) const;
+            bool operator() (std::shared_ptr<T> const &lhs, std::shared_ptr<T> const &rhs) const;
 
             template<class S> requires std::is_unsigned_v<S>
-            bool operator() (std::shared_ptr<resource::vertex_buffer> const &buffer, S size_bytes) const;
+            bool operator() (std::shared_ptr<T> const &buffer, S size_bytes) const;
 
             template<class S> requires std::is_unsigned_v<S>
-            bool operator() (S size_bytes, std::shared_ptr<resource::vertex_buffer> const &buffer) const;
+            bool operator() (S size_bytes, std::shared_ptr<T> const &buffer) const;
         };
 
-        using vertex_buffer_set = std::multiset<std::shared_ptr<resource::vertex_buffer>, vertex_buffer_set_comparator>;
+        using vertex_buffer_set = std::multiset<std::shared_ptr<resource::vertex_buffer>, buffer_set_comparator<resource::vertex_buffer>>;
+        using index_buffer_set = std::multiset<std::shared_ptr<resource::index_buffer>, buffer_set_comparator<resource::index_buffer>>;
 
         std::unordered_map<graphics::vertex_layout, vertex_buffer_set, graphics::hash<graphics::vertex_layout>> vertex_buffers_;
+        std::unordered_map<graphics::FORMAT, index_buffer_set> index_buffers_;
     };
 }
 
