@@ -31,8 +31,6 @@ namespace resource
     class staging_buffer;
 
     class vertex_buffer;
-
-    class vertex_buffer2;
     class index_buffer;
 
     class framebuffer;
@@ -76,9 +74,8 @@ namespace resource
         [[nodiscard]] std::shared_ptr<resource::vertex_buffer>
         stage_vertex_data(graphics::vertex_layout const &layout, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool);
 
-
-        // [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(graphics::FORMAT format);
-        [[nodiscard]] std::shared_ptr<resource::index_buffer> create_index_buffer(graphics::FORMAT format, std::size_t size_bytes);
+        [[nodiscard]] std::shared_ptr<resource::index_buffer>
+        stage_index_data(graphics::FORMAT format, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool);
 
     private:
 
