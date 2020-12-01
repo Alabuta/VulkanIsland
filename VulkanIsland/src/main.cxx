@@ -752,20 +752,21 @@ namespace temp
         }
 
         auto constexpr topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
-        auto constexpr indices_format = graphics::FORMAT::R16_UINT;
+        auto constexpr index_type = graphics::INDEX_TYPE::UINT_16;
 
         primitives::plane_create_info const create_info{
-            vertex_layout, topology, indices_format,
+            vertex_layout, topology, index_type,
             1.f, 1.f, 7u, 13u
         };
 
-        auto format_inst = graphics::instantiate_format(indices_format);
+        /*auto format_inst = graphics::instantiate_format(index_type);
 
         if (!format_inst.has_value())
-            throw resource::exception("failed to instantiate indices format"s);
+            throw resource::exception("failed to instantiate indices format"s);*/
 
         auto const index_count = primitives::calculate_plane_indices_number(create_info);
-        auto const index_size = std::visit([] (auto type) { return sizeof(decltype(type)); }, format_inst.value());
+        auto const index_size = index_type == graphics::INDEX_TYPE::UINT_16 ? sizeof(std::uint16_t) : sizeof(std::uint32_t);
+        //auto const index_size = std::visit([] (auto type) { return sizeof(decltype(type)); }, format_inst.value());
 
         auto const vertex_count = primitives::calculate_plane_vertices_number(create_info);
         auto const vertex_size = vertex_layout.size_bytes;
@@ -784,7 +785,7 @@ namespace temp
             primitives::generate_plane_indexed(create_info, vertex_staging_buffer->mapped_ptr(), index_staging_buffer->mapped_ptr(), color);
 
             vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
-            index_buffer = app.resource_manager->stage_index_data(indices_format, index_staging_buffer, app.transfer_command_pool);
+            index_buffer = app.resource_manager->stage_index_data(index_type, index_staging_buffer, app.transfer_command_pool);
         }
 
         {

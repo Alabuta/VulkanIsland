@@ -75,11 +75,11 @@ namespace resource
         stage_vertex_data(graphics::vertex_layout const &layout, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool);
 
         [[nodiscard]] std::shared_ptr<resource::index_buffer>
-        stage_index_data(graphics::FORMAT format, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool);
+        stage_index_data(graphics::INDEX_TYPE index_type, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool);
 
     private:
 
-        static std::array<graphics::FORMAT, 2> constexpr kSUPPORTED_INDEX_FORMATS{graphics::FORMAT::R16_UINT, graphics::FORMAT::R32_UINT};
+        static std::array<graphics::INDEX_TYPE, 2> constexpr kSUPPORTED_INDEX_FORMATS{graphics::INDEX_TYPE::UINT_16, graphics::INDEX_TYPE::UINT_32};
 
         // :TODO: consider the config file for following constants.
         static std::size_t constexpr kVERTEX_BUFFER_FIXED_SIZE{0x800'0000}; // 128 MB
@@ -109,7 +109,7 @@ namespace resource
         using index_buffer_set = std::multiset<std::shared_ptr<resource::index_buffer>, buffer_set_comparator<resource::index_buffer>>;
 
         std::unordered_map<graphics::vertex_layout, vertex_buffer_set, graphics::hash<graphics::vertex_layout>> vertex_buffers_;
-        std::unordered_map<graphics::FORMAT, index_buffer_set> index_buffers_;
+        std::unordered_map<graphics::INDEX_TYPE, index_buffer_set> index_buffers_;
     };
 }
 

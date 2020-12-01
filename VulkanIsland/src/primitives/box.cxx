@@ -145,7 +145,7 @@ namespace primitives
         auto const vsegments = create_info.vsegments;
         auto const dsegments = create_info.dsegments;
 
-        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+        bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
 
         if (is_primitive_indexed) {
             xface_vertices_number = (hsegments + 1) * (dsegments + 1) * 2;
@@ -183,7 +183,7 @@ namespace primitives
         if (create_info.hsegments * create_info.vsegments * create_info.dsegments < 1)
             throw resource::exception("invalid box segments' values"s);
 
-        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+        bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
 
         if (is_primitive_indexed)
             return 0;

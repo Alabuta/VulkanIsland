@@ -81,21 +81,18 @@ namespace resource
 
         friend resource::resource_manager;
     };
-}
 
-namespace resource
-{
     class index_buffer final {
     public:
 
-        index_buffer(std::shared_ptr<resource::buffer> device_buffer, std::size_t offset_bytes, std::size_t available_size, graphics::FORMAT format);
+        index_buffer(std::shared_ptr<resource::buffer> device_buffer, std::size_t offset_bytes, std::size_t available_size, graphics::INDEX_TYPE index_type);
 
         std::shared_ptr<resource::buffer> const &device_buffer() const { return device_buffer_; }
 
         std::size_t offset_bytes() const noexcept { return offset_bytes_; }
         std::size_t available_size() const noexcept { return available_size_; }
 
-        graphics::FORMAT format() const noexcept { return format_; }
+        graphics::INDEX_TYPE index_type() const noexcept { return index_type_; }
 
     private:
 
@@ -104,7 +101,7 @@ namespace resource
         std::size_t offset_bytes_{0};
         std::size_t available_size_{0};
 
-        graphics::FORMAT format_{graphics::FORMAT::UNDEFINED};
+        graphics::INDEX_TYPE index_type_{graphics::INDEX_TYPE::UNDEFINED};
 
         index_buffer() = delete;
         index_buffer(index_buffer const &) = delete;

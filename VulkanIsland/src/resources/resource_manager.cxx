@@ -404,10 +404,10 @@ namespace resource
     }
 
     std::shared_ptr<resource::index_buffer>
-    resource_manager::stage_index_data(graphics::FORMAT format, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool)
+    resource_manager::stage_index_data(graphics::INDEX_TYPE index_type, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool)
     {
-        if (std::ranges::none_of(kSUPPORTED_INDEX_FORMATS, [format] (auto f) { return f == format; }))
-            throw resource::exception(fmt::format("unsupported index format: {0:#x}"s, format));
+        if (std::ranges::none_of(kSUPPORTED_INDEX_FORMATS, [index_type] (auto type) { return type == index_type; }))
+            throw resource::exception(fmt::format("unsupported index type: {0:#x}"s, index_type));
 
         auto const container = staging_buffer->mapped_ptr();
 
@@ -416,7 +416,7 @@ namespace resource
         if (staging_data_size_bytes > kINDEX_BUFFER_FIXED_SIZE)
             throw resource::not_enough_memory("staging data size is bigger than index buffer max size"s);
 
-        if (!index_buffers_.contains(format)) {
+        if (!index_buffers_.contains(index_type)) {
             auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::INDEX_BUFFER;
             auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
 
@@ -425,17 +425,17 @@ namespace resource
             if (buffer == nullptr)
                 throw resource::instantiation_fail("failed to create device index buffer"s);
 
-            auto index_buffer = std::make_shared<resource::index_buffer>(buffer, 0u, kINDEX_BUFFER_FIXED_SIZE, format);
+            auto index_buffer = std::make_shared<resource::index_buffer>(buffer, 0u, kINDEX_BUFFER_FIXED_SIZE, index_type);
 
-            index_buffers_.emplace(format, resource::resource_manager::index_buffer_set{index_buffer});
+            index_buffers_.emplace(index_type, resource::resource_manager::index_buffer_set{index_buffer});
         }
 
-        auto &&index_buffer_set = index_buffers_.at(format);
+        auto &&index_buffer_set = index_buffers_.at(index_type);
 
         auto it = index_buffer_set.lower_bound(staging_data_size_bytes);
 
         if (it == std::end(index_buffer_set)) {
-            // Allocate next buffer for this particular index format.
+            // Allocate next buffer for this particular index type.
             throw resource::not_enough_memory("unsupported case"s);
         }
 
@@ -453,7 +453,7 @@ namespace resource
 
             it = index_buffer_set.insert(
                 std::make_shared<resource::index_buffer>(
-                    index_buffer->device_buffer(), offset_bytes, kINDEX_BUFFER_FIXED_SIZE - offset_bytes, format
+                    index_buffer->device_buffer(), offset_bytes, kINDEX_BUFFER_FIXED_SIZE - offset_bytes, index_type
                 )
             );
 

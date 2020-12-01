@@ -283,7 +283,7 @@ namespace
                 {
                     auto generator = std::bind(generate_position<N, T>, create_info, std::placeholders::_1);
 
-                    bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+                    bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
 
                     if (is_primitive_indexed) {
                         std::generate_n(it_begin, vertex_number, [generator, i = 0u]() mutable
@@ -352,7 +352,7 @@ namespace
     {
         auto generator = std::bind(generate_texcoord<N, T>, create_info, format, std::placeholders::_1);
 
-        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+        bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
 
         if (is_primitive_indexed) {
             std::generate_n(it_begin, vertex_number, [generator, i = 0u]() mutable
@@ -405,7 +405,7 @@ namespace primitives
         if (hsegments * vsegments < 1)
             throw resource::exception("invalid plane segments' values"s);
 
-        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+        bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
 
         if (is_primitive_indexed)
             return (hsegments + 1) * (vsegments + 1);
@@ -436,7 +436,7 @@ namespace primitives
         if (hsegments * vsegments < 1)
             throw resource::exception("invalid plane segments' values"s);
 
-        bool is_primitive_indexed = create_info.index_buffer_format != graphics::FORMAT::UNDEFINED;
+        bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
 
         if (!is_primitive_indexed)
             return 0;
@@ -464,8 +464,8 @@ namespace primitives
     {
         auto indices_number = calculate_plane_indices_number(create_info);
 
-        switch (create_info.index_buffer_format) {
-            case graphics::FORMAT::R16_UINT:
+        switch (create_info.index_buffer_type) {
+            case graphics::INDEX_TYPE::UINT_16:
                 {
                     using pointer_type = typename std::add_pointer_t<std::uint16_t>;
                     auto it = reinterpret_cast<pointer_type>(std::to_address(std::data(index_buffer)));
@@ -474,7 +474,7 @@ namespace primitives
                 }
                 break;
 
-            case graphics::FORMAT::R32_UINT:
+            case graphics::INDEX_TYPE::UINT_32:
                 {
                     using pointer_type = typename std::add_pointer_t<std::uint32_t>;
                     auto it = reinterpret_cast<pointer_type>(std::to_address(std::data(index_buffer)));

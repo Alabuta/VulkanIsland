@@ -13,7 +13,7 @@ namespace primitives
 
         graphics::PRIMITIVE_TOPOLOGY topology;
 
-        graphics::FORMAT index_buffer_format;
+        graphics::INDEX_TYPE index_buffer_type;
 
         float width, height;
         unsigned hsegments, vsegments;
@@ -34,7 +34,7 @@ namespace primitives
 
         graphics::PRIMITIVE_TOPOLOGY topology;
 
-        graphics::FORMAT index_buffer_format;
+        graphics::INDEX_TYPE index_buffer_type;
 
         float width, height, depth;
         unsigned hsegments, vsegments, dsegments;

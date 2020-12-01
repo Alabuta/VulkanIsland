@@ -13,8 +13,8 @@ namespace resource
         : handle_{handle}, memory_{memory}, mapped_ptr_{mapped_ptr}, usage_{usage}, sharing_mode_{sharing_mode}
     { }
 
-    index_buffer::index_buffer(std::shared_ptr<resource::buffer> device_buffer, std::size_t offset_bytes, std::size_t available_size, graphics::FORMAT format)
-        : device_buffer_{device_buffer}, offset_bytes_{offset_bytes}, available_size_{available_size}, format_{format}
+    index_buffer::index_buffer(std::shared_ptr<resource::buffer> device_buffer, std::size_t offset_bytes, std::size_t available_size, graphics::INDEX_TYPE index_type)
+        : device_buffer_{device_buffer}, offset_bytes_{offset_bytes}, available_size_{available_size}, index_type_{index_type}
     { }
 
     vertex_buffer::vertex_buffer(
