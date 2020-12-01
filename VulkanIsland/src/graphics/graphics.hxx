@@ -427,6 +427,12 @@ namespace graphics
         RGBA12X4_UNORM_4PACK16
     };
 
+    enum struct INDEX_TYPE {
+        UNDEFINED = 0,
+        UINT_16,
+        UINT_32
+    };
+
     enum struct NUMERIC_FORMAT {
         UNDEFINED = 0,
         NORMALIZED = 0x01,

@@ -54,6 +54,8 @@ namespace convert_to
 
     VkFormat vulkan(graphics::FORMAT format) noexcept;
 
+    VkIndexType vulkan(graphics::INDEX_TYPE index_type) noexcept;
+
     VkFormatFeatureFlags vulkan(graphics::FORMAT_FEATURE format_feature) noexcept;
 
     VkAttachmentLoadOp vulkan(graphics::ATTACHMENT_LOAD_TREATMENT load_treatment) noexcept;

@@ -857,6 +857,23 @@ namespace convert_to
         }
     }
 
+    VkIndexType vulkan(graphics::INDEX_TYPE index_type) noexcept
+    {
+        switch (index_type) {
+            case graphics::INDEX_TYPE::UNDEFINED:
+                return VkIndexType::VK_INDEX_TYPE_MAX_ENUM;
+
+            case graphics::INDEX_TYPE::UINT_16:
+                return VkIndexType::VK_INDEX_TYPE_UINT16;
+
+            case graphics::INDEX_TYPE::UINT_32:
+                return VkIndexType::VK_INDEX_TYPE_UINT32;
+
+            default:
+                return VkIndexType::VK_INDEX_TYPE_MAX_ENUM;
+        }
+    }
+
     VkFormatFeatureFlags vulkan(graphics::FORMAT_FEATURE format_feature) noexcept
     {
         VkFormatFeatureFlags result = 0;
