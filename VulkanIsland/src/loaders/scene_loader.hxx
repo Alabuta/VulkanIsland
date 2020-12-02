@@ -133,8 +133,6 @@ struct xformat final {
         std::shared_ptr<resource::vertex_buffer> vertex_buffer;
         std::shared_ptr<resource::index_buffer> index_buffer;
 
-        std::int64_t vertex_layout_index{-1};
-
         std::size_t material_index;
 
         std::uint32_t vertex_count{0};

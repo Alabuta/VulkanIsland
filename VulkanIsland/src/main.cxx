@@ -47,6 +47,7 @@
 
 #include <chrono>
 #include <cmath>
+#include <ranges>
 #include <span>
 #include <unordered_map>
 
@@ -98,6 +99,7 @@
 #include "graphics/vertex.hxx"
 #include "graphics/render_pass.hxx"
 #include "renderer/render_flow.hxx"
+
 #include "graphics/compatibility.hxx"
 
 #include "platform/input/input_manager.hxx"
@@ -136,10 +138,10 @@ struct draw_command final {
     std::uint32_t index_count{0};
     std::uint32_t first_index{0};
 
-    VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
+    VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
 
     std::shared_ptr<graphics::render_pass> render_pass;
-    VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
+    VkDescriptorSet descriptor_set{VK_NULL_HANDLE};
 };
 
 struct app_t final {
@@ -179,13 +181,13 @@ struct app_t final {
 
     std::vector<per_object_t> objects;
 
-    VkPipelineLayout pipelineLayout{VK_NULL_HANDLE};
+    VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
 
     VkCommandPool graphics_command_pool{VK_NULL_HANDLE}, transfer_command_pool{VK_NULL_HANDLE};
 
     VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
     VkDescriptorPool descriptorPool{VK_NULL_HANDLE};
-    VkDescriptorSet descriptorSet{VK_NULL_HANDLE};
+    VkDescriptorSet descriptor_set{VK_NULL_HANDLE};
 
     std::vector<VkCommandBuffer> command_buffers;
 
@@ -222,8 +224,8 @@ struct app_t final {
 
         shader_manager.reset();
 
-        if (pipelineLayout != VK_NULL_HANDLE)
-            vkDestroyPipelineLayout(device->handle(), pipelineLayout, nullptr);
+        if (pipeline_layout != VK_NULL_HANDLE)
+            vkDestroyPipelineLayout(device->handle(), pipeline_layout, nullptr);
 
         vkDestroyDescriptorSetLayout(device->handle(), descriptorSetLayout, nullptr);
         vkDestroyDescriptorPool(device->handle(), descriptorPool, nullptr);
@@ -284,7 +286,7 @@ struct window_events_handler final : public platform::window::event_handler_inte
 };
 
 
-void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescriptorSet &descriptorSet)
+void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescriptorSet &descriptor_set)
 {
     // TODO: descriptor info typed by VkDescriptorType.
     auto const per_camera = std::array{
@@ -307,7 +309,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,
-            descriptorSet,
+            descriptor_set,
             0,
             0, static_cast<std::uint32_t>(std::size(per_camera)),
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
@@ -318,7 +320,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,
-            descriptorSet,
+            descriptor_set,
             1,
             0, static_cast<std::uint32_t>(std::size(per_object)),
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
@@ -330,7 +332,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,
-            descriptorSet,
+            descriptor_set,
             2,
             0, static_cast<std::uint32_t>(std::size(per_image)),
             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
@@ -352,7 +354,7 @@ struct vertex_buffers_bind_ranges final {
     std::uint32_t binding_count;
 
     std::vector<VkBuffer> vertex_buffer_handles;
-     std::vector<VkDeviceSize> vertex_buffer_offsets;
+    std::vector<VkDeviceSize> vertex_buffer_offsets;
 
     std::span<draw_command> draw_commands;
 };
@@ -669,12 +671,10 @@ void build_render_pipelines(app_t &app, xformat const &model_)
             auto material_index = meshlet.material_index;
             auto [technique_index, name] = model_.materials[material_index];
 
-            auto vertex_layout_index = meshlet.vertex_layout_index;
-            if (vertex_layout_index < 0)
-                throw graphics::exception("invalid vertex buffer index"s);
+            std::shared_ptr<resource::vertex_buffer> vertex_buffer = meshlet.vertex_buffer;
+            std::shared_ptr<resource::index_buffer> index_buffer = meshlet.index_buffer;
 
-            auto &&vertex_layout = model_.vertex_layouts[vertex_layout_index];
-
+            auto &&vertex_layout = vertex_buffer->vertex_layout();
             auto vertex_layout_name = graphics::to_string(vertex_layout);
 
             fmt::print("{}.{}.{}\n"s, name, technique_index, vertex_layout_name);
@@ -683,22 +683,6 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
             if (material == nullptr)
                 throw graphics::exception("failed to create material"s);
-
-            std::shared_ptr<resource::vertex_buffer> vertex_buffer = meshlet.vertex_buffer;
-            std::shared_ptr<resource::index_buffer> index_buffer = meshlet.index_buffer;
-
-            /*std::shared_ptr<resource::index_buffer> index_buffer;
-            
-            if (auto index_buffer_index = meshlet.index_buffer_index; index_buffer_index > -1) {
-                auto &&index_data_buffer = model_.index_buffers.at(index_buffer_index);
-
-                index_buffer = resource_manager.create_index_buffer(index_data_buffer.format, std::size(vertex_data_buffer.buffer));
-
-                if (index_buffer)
-                    resource_manager.stage_buffer_data(index_buffer, index_data_buffer.buffer);
-
-                else throw graphics::exception("failed to get index buffer"s);
-            }*/
 
             [[maybe_unused]] auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(vertex_layout);
 
@@ -714,14 +698,14 @@ void build_render_pipelines(app_t &app, xformat const &model_)
                 color_blend_state
             };
 
-            auto pipeline = pipeline_factory.create_pipeline(material, pipeline_states, app.pipelineLayout, app.render_pass, 0u);
+            auto pipeline = pipeline_factory.create_pipeline(material, pipeline_states, app.pipeline_layout, app.render_pass, 0u);
 
             app.draw_commands.push_back(
                 draw_command{
                     material, pipeline, vertex_buffer, index_buffer,
                     meshlet.vertex_count, meshlet.first_vertex,
                     meshlet.index_count, meshlet.first_index,
-                    app.pipelineLayout, app.render_pass, app.descriptorSet
+                    app.pipeline_layout, app.render_pass, app.descriptor_set
                 }
             );
         }
@@ -795,8 +779,6 @@ namespace temp
 
             auto first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size;
             auto first_index = (index_buffer->offset_bytes() - index_buffer_allocation_size) / index_size;
-
-            meshlet.vertex_layout_index = vertex_layout_index;
 
             meshlet.vertex_buffer = vertex_buffer;
             meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
@@ -1032,10 +1014,10 @@ void init(platform::window &window, app_t &app)
         throw resource::exception("failed to load a mesh"s);
 #endif
 
-    if (auto pipelineLayout = create_pipeline_layout(*app.device, std::array{app.descriptorSetLayout}); !pipelineLayout)
+    if (auto pipeline_layout = create_pipeline_layout(*app.device, std::array{app.descriptorSetLayout}); !pipeline_layout)
         throw graphics::exception("failed to create the pipeline layout"s);
 
-    else app.pipelineLayout = std::move(pipelineLayout.value());
+    else app.pipeline_layout = std::move(pipeline_layout.value());
 
 #if TEMPORARILY_DISABLED
     // "chalet/textures/chalet.tga"sv
@@ -1080,12 +1062,12 @@ void init(platform::window &window, app_t &app)
 
     else app.descriptorPool = std::move(descriptorPool.value());
 
-    if (auto descriptorSet = create_descriptor_sets(*app.device, app.descriptorPool, std::array{app.descriptorSetLayout}); !descriptorSet)
+    if (auto descriptor_set = create_descriptor_sets(*app.device, app.descriptorPool, std::array{app.descriptorSetLayout}); !descriptor_set)
         throw graphics::exception("failed to create the descriptor pool"s);
 
-    else app.descriptorSet = std::move(descriptorSet.value());
+    else app.descriptor_set = std::move(descriptor_set.value());
 
-    update_descriptor_set(app, *app.device, app.descriptorSet);
+    update_descriptor_set(app, *app.device, app.descriptor_set);
 
     build_render_pipelines(app, temp::model);
 
