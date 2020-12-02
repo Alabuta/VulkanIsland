@@ -74,6 +74,7 @@
 #include "vulkan/device.hxx"
 
 #include "renderer/config.hxx"
+#include "renderer/renderer.hxx"
 #include "renderer/swapchain.hxx"
 #include "renderer/command_buffer.hxx"
 
@@ -359,7 +360,26 @@ struct vertex_buffers_bind_ranges final {
     std::span<draw_command> draw_commands;
 };
 
-std::vector<vertex_buffers_bind_ranges> foo(app_t &app, std::span<draw_command> draw_commands)
+struct indexed_primitives_draw final {
+    graphics::INDEX_TYPE index_type;
+
+    VkBuffer index_buffer_handle;
+    VkDeviceSize index_buffer_offset;
+
+    std::vector<vertex_buffers_bind_ranges> subranges;
+};
+
+std::pair<std::span<draw_command>, std::span<draw_command>> separate_indexed_and_nonindexed(std::span<draw_command> draw_commands)
+{
+    auto it = std::stable_partition(std::begin(draw_commands), std::end(draw_commands), [] (auto &&draw_command)
+    {
+        return draw_command.index_buffer != nullptr;
+    });
+
+    return std::pair{std::span{std::begin(draw_commands), it}, std::span{it, std::end(draw_commands)}};
+}
+
+std::vector<vertex_buffers_bind_ranges> separate_nonindexed_by_binds(app_t &app, std::span<draw_command> draw_commands)
 {
     auto &&vertex_input_state_manager = *app.vertex_input_state_manager;
 
@@ -428,17 +448,33 @@ std::vector<vertex_buffers_bind_ranges> foo(app_t &app, std::span<draw_command> 
 
             std::span<draw_command> consecutive_binds{it_begin, it};
 
-            auto handles = consecutive_binds | std::views::transform([] (auto &&lhs) -> VkBuffer
+            std::vector<std::pair<std::uint32_t, VkBuffer>> layout_index_and_buffer_pairs;
+
+            std::transform(it_begin, it, std::back_inserter(layout_index_and_buffer_pairs), [&] (auto &&lhs)
             {
-                return lhs.vertex_buffer->device_buffer()->handle();
+                auto binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+
+                return std::pair{binding_index, lhs.vertex_buffer->device_buffer()->handle()};
             });
 
-            std::vector<VkBuffer> vertex_buffer_handles;
-
-            std::unique_copy(std::begin(handles), std::end(handles), std::back_inserter(vertex_buffer_handles), [] (auto lhs, auto rhs)
+            auto itx = std::unique(std::begin(layout_index_and_buffer_pairs), std::end(layout_index_and_buffer_pairs), [] (auto lhs, auto rhs)
             {
                 return lhs == rhs;
             });
+
+            /*auto handles = consecutive_binds | std::views::transform([] (auto &&lhs)
+            {
+                return lhs.vertex_buffer->device_buffer()->handle();
+            });*/
+
+            std::vector<VkBuffer> vertex_buffer_handles;
+
+            std::transform(std::begin(layout_index_and_buffer_pairs), itx, std::back_inserter(vertex_buffer_handles), [] (auto &&lhs)
+            {
+                return lhs.second;
+            });
+
+            //std::unique_copy(std::begin(handles), std::end(handles), std::back_inserter(vertex_buffer_handles));
 
             auto first_binding_index = vertex_input_state_manager.binding_index(consecutive_binds.front().vertex_buffer->vertex_layout());
             auto last_binding_index = vertex_input_state_manager.binding_index(consecutive_binds.back().vertex_buffer->vertex_layout());
@@ -456,6 +492,112 @@ std::vector<vertex_buffers_bind_ranges> foo(app_t &app, std::span<draw_command> 
     }
 
     return bind_ranges;
+}
+
+std::vector<indexed_primitives_draw> separate_indexed_by_binds(app_t &app, std::span<draw_command> draw_commands)
+{
+    std::stable_sort(std::begin(draw_commands), std::end(draw_commands), [] (auto &&lhs, auto &&rhs)
+    {
+        if (lhs.index_buffer->index_type() == rhs.index_buffer->index_type())
+            return lhs.index_buffer->device_buffer()->handle() < rhs.index_buffer->device_buffer()->handle();
+
+        return lhs.index_buffer->index_type() < rhs.index_buffer->index_type();
+    });
+
+#if 0
+
+    std::vector<draw_command> draw_commands_copy(std::begin(draw_commands), std::end(draw_commands));
+    std::span<draw_command> copy_range{draw_commands_copy};
+
+    std::vector<std::span<draw_command>> unique_subranges;
+
+    auto it_out = std::begin(draw_commands);
+
+    for (auto it_begin = std::begin(copy_range); it_begin != std::end(copy_range); it_begin = std::begin(copy_range)) {
+        auto it = it_out;
+
+        it_out = std::unique_copy(it_begin, std::begin(copy_range), it_out, [] (auto &&lhs, auto &&rhs)
+        {
+            if (lhs.index_buffer->index_type() == rhs.index_buffer->index_type())
+                return lhs.index_buffer->device_buffer()->handle() != rhs.index_buffer->device_buffer()->handle();
+
+            return false;
+        });
+
+        auto subrange = std::span{it, it_out};
+
+        auto it_end = std::set_difference(std::begin(copy_range), std::end(copy_range),
+                                          std::begin(subrange), std::end(subrange),
+                                          std::begin(copy_range), [] (auto &&lhs, auto &&rhs)
+        {
+            return lhs.index_buffer->index_type() < rhs.index_buffer->index_type();
+        });
+
+        subranges.push_back(subrange);
+
+        copy_range = std::span{std::begin(copy_range), it_end};
+    }
+
+    std::vector<indexed_primitives_draw> bind_ranges;
+
+    for (auto subrange : subranges) {
+        for (auto it_begin = std::begin(subrange); it_begin != std::end(subrange);) {
+            auto it = std::adjacent_find(it_begin, std::end(subrange), [&] (auto &&lhs, auto &&rhs)
+            {
+                return (rhs.index_buffer->index_type() - lhs.index_buffer->index_type()) > 1;
+            });
+
+            if (it != std::end(subrange))
+                it = std::next(it);
+
+            std::span<draw_command> consecutive_binds{it_begin, it};
+
+            auto handles = consecutive_binds | std::views::transform([] (auto &&lhs)
+            {
+                return lhs.index_buffer->device_buffer()->handle();
+            });
+
+            std::vector<VkBuffer> index_buffer_handles;
+
+            std::unique_copy(std::begin(handles), std::end(handles), std::back_inserter(index_buffer_handles), [] (auto lhs, auto rhs)
+            {
+                return lhs == rhs;
+            });
+
+            bind_ranges.push_back(indexed_primitives_draw{
+                first_binding_index,
+                last_binding_index - first_binding_index + 1,
+                vertex_buffer_handles,
+                std::vector<VkDeviceSize>(std::size(vertex_buffer_handles), 0),
+                consecutive_binds
+            });
+
+            /*auto first_binding_index = vertex_input_state_manager.binding_index(consecutive_binds.front().vertex_buffer->vertex_layout());
+            auto last_binding_index = vertex_input_state_manager.binding_index(consecutive_binds.back().vertex_buffer->vertex_layout());
+
+            bind_ranges.push_back(indexed_primitives_draw{
+                first_binding_index,
+                last_binding_index - first_binding_index + 1,
+                vertex_buffer_handles,
+                std::vector<VkDeviceSize>(std::size(vertex_buffer_handles), 0),
+                consecutive_binds
+            });*/
+
+            it_begin = it;
+        }
+    }
+#endif
+
+
+    /*auto it = std::adjacent_find(std::begin(draw_commands), std::end(draw_commands), [] (auto &&lhs, auto &&rhs)
+    {
+        return lhs.index_buffer->index_type() != rhs.index_buffer->index_type();
+    });
+
+    if (it != std::end(subrange))
+        it = std::next(it);*/
+
+    return {};
 }
 
 void create_graphics_command_buffers(app_t &app, std::span<draw_command> draw_commands)
@@ -478,7 +620,10 @@ void create_graphics_command_buffers(app_t &app, std::span<draw_command> draw_co
         VkClearValue{ .depthStencil = { app.renderer_config.reversed_depth ? 0.f : 1.f, 0 } }
     };
 
-    auto bind_ranges = foo(app, draw_commands);
+    auto [indexed, nonindexed] = separate_indexed_and_nonindexed(draw_commands);
+
+    auto indexed_bind_ranges = separate_indexed_by_binds(app, indexed);
+    auto nonindexed_bind_ranges = separate_nonindexed_by_binds(app, nonindexed);
 
     for (std::size_t i = 0; auto &command_buffer : app.command_buffers) {
         VkCommandBufferBeginInfo const begin_info{
@@ -521,34 +666,41 @@ void create_graphics_command_buffers(app_t &app, std::span<draw_command> draw_co
 
         std::uint32_t dynamic_offset = 0;
 
-        for (auto &&range : bind_ranges) {
+        for (auto &&range : indexed_bind_ranges) {
+            vkCmdBindIndexBuffer(command_buffer, range.index_buffer_handle, range.index_buffer_offset, convert_to::vulkan(range.index_type));
+
+            for (auto &&subrange : range.subranges) {
+                vkCmdBindVertexBuffers(command_buffer, subrange.first_binding, subrange.binding_count, std::data(subrange.vertex_buffer_handles), std::data(subrange.vertex_buffer_offsets));
+
+                auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
+                auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
+
+                for (auto &&draw_command : subrange.draw_commands) {
+                    vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, draw_command.pipeline->handle());
+
+                    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, draw_command.pipeline_layout,
+                                            0, 1, &draw_command.descriptor_set, 1, &dynamic_offset);
+
+                    vkCmdDrawIndexed(command_buffer, draw_command.index_count, 1, draw_command.first_index, draw_command.first_vertex, 0);
+
+                    dynamic_offset += static_cast<std::uint32_t>(aligned_offset);
+                }
+            }
+        }
+
+        for (auto &&range : nonindexed_bind_ranges) {
             vkCmdBindVertexBuffers(command_buffer, range.first_binding, range.binding_count, std::data(range.vertex_buffer_handles), std::data(range.vertex_buffer_offsets));
 
             auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
             auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
 
             for (auto &&draw_command : range.draw_commands) {
-                auto [
-                    material, pipeline, vertex_buffer, index_buffer,
-                    vertex_count, first_vertex, index_count, first_index,
-                    pipeline_layout, render_pass, descriptor_set
-                ] = draw_command;
+                vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, draw_command.pipeline->handle());
 
-                if (index_buffer && index_count) {
-                    auto index_type = index_buffer->format() == graphics::FORMAT::R16_UINT ? VK_INDEX_TYPE_UINT16 : VK_INDEX_TYPE_UINT32;
+                vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, draw_command.pipeline_layout,
+                                        0, 1, &draw_command.descriptor_set, 1, &dynamic_offset);
 
-                    vkCmdBindIndexBuffer(command_buffer, index_buffer->device_buffer()->handle(), 0, index_type);
-                }
-
-                vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline->handle());
-
-                vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline_layout,
-                                        0, 1, &descriptor_set, 1, &dynamic_offset);
-
-                if (index_buffer && index_count)
-                    vkCmdDrawIndexed(command_buffer, index_count, 1, first_index, first_vertex, 0);
-
-                else vkCmdDraw(command_buffer, vertex_count, 1, first_vertex, 0);
+                vkCmdDraw(command_buffer, draw_command.vertex_count, 1, draw_command.first_vertex, 0);
 
                 dynamic_offset += static_cast<std::uint32_t>(aligned_offset);
             }

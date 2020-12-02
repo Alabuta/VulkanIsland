@@ -300,6 +300,7 @@
     <ClInclude Include="src\primitives\primitives.hxx" />
     <ClInclude Include="src\renderer\command_buffer.hxx" />
     <ClInclude Include="src\renderer\config.hxx" />
+    <ClInclude Include="src\renderer\renderer.hxx" />
     <ClInclude Include="src\resources\memory_manager.hxx" />
     <ClInclude Include="src\resources\resource_manager.hxx" />
     <ClInclude Include="src\utility\exceptions.hxx" />
