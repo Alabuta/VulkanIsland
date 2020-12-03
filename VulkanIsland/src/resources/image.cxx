@@ -1,5 +1,7 @@
 #define _SCL_SECURE_NO_WARNINGS
 
+#include <ranges>
+
 #include "renderer/command_buffer.hxx"
 #include "graphics/graphics_api.hxx"
 #include "image.hxx"
@@ -9,7 +11,7 @@
 find_supported_image_format(vulkan::device const &device, std::vector<graphics::FORMAT> const &candidates,
                             graphics::IMAGE_TILING tiling, graphics::FORMAT_FEATURE features)
 {
-    auto it_format = std::find_if(std::cbegin(candidates), std::cend(candidates), [&device, tiling, features] (auto candidate)
+    auto it_format = std::ranges::find_if(candidates, [&device, tiling, features] (auto candidate)
     {
         VkFormatProperties properties;
         vkGetPhysicalDeviceFormatProperties(device.physical_handle(), convert_to::vulkan(candidate), &properties);

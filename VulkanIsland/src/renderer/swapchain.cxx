@@ -1,5 +1,6 @@
 #include <cmath>
 #include <vector>
+#include <ranges>
 #include <optional>
 #include <iostream>
 #include <algorithm>
@@ -39,7 +40,7 @@ namespace
             return { graphics::FORMAT::BGRA8_UNORM, graphics::COLOR_SPACE::SRGB_NONLINEAR };
 
         for (auto [format, color_space] : required_surface_formats) {
-            auto supported = std::any_of(std::cbegin(surface), std::cend(surface), [format, color_space] (auto &&surface_format)
+            auto supported = std::ranges::any_of(surface, [format, color_space] (auto &&surface_format)
             {
                 return surface_format.format == format && surface_format.color_space == color_space;
             });
@@ -57,7 +58,7 @@ namespace
     {
         auto &&supported_modes = support_details.presentation_modes;
 
-        auto it = std::find_first_of(std::cbegin(required_modes), std::cend(required_modes), std::cbegin(supported_modes), std::cend(supported_modes));
+        auto it = std::ranges::find_first_of(required_modes, supported_modes);
 
         return it != std::cend(required_modes) ? *it : graphics::PRESENTATION_MODE::FIFO;
     }

@@ -1,5 +1,6 @@
 #include <exception>
 #include <cstddef>
+#include <ranges>
 #include <cmath>
 #include <tuple>
 #include <string>
@@ -37,8 +38,7 @@ namespace convert_to
             binding_index, size_bytes, convert_to::vulkan(input_rate)
         });
 
-        std::transform(std::cbegin(vertex_input_state.attribute_descriptions), std::cend(vertex_input_state.attribute_descriptions),
-                       std::back_inserter(attribute_descriptions), [] (auto &&attribute_description)
+        std::ranges::transform(vertex_input_state.attribute_descriptions, std::back_inserter(attribute_descriptions), [] (auto &&attribute_description)
         {
             auto [
                 location_index, binding_index, offset_in_bytes, format
@@ -138,8 +138,7 @@ namespace convert_to
             { }
         };
 
-        std::copy(std::cbegin(color_blend_state.blend_constants), std::cend(color_blend_state.blend_constants),
-                  std::begin(create_info.blendConstants));
+        std::ranges::copy(color_blend_state.blend_constants, create_info.blendConstants);
 
         return create_info;
     }
@@ -367,8 +366,7 @@ namespace graphics
 
         std::vector<graphics::vertex_input_attribute> attribute_descriptions;
 
-        std::transform(std::cbegin(attributes), std::cend(attributes),
-                       std::back_inserter(attribute_descriptions), [binding_index, offset_in_bytes = 0u] (auto &&attribute) mutable
+        std::ranges::transform(attributes, std::back_inserter(attribute_descriptions), [binding_index, offset_in_bytes = 0u] (auto &&attribute) mutable
         {
             auto location_index = graphics::get_vertex_attribute_semantic_index(attribute);
 
@@ -413,8 +411,7 @@ namespace graphics
         adjusted_vertex_input_state.binding_description = vertex_input_state.binding_description;
 
         for (auto &&required_attribute : required_vertex_layout.attributes) {
-            auto it = std::find_if(std::cbegin(vertex_input_state.attribute_descriptions), std::cend(vertex_input_state.attribute_descriptions),
-                                   [&required_attribute] (auto &&attribute_description)
+            auto it = std::ranges::find_if(vertex_input_state.attribute_descriptions, [&required_attribute] (auto &&attribute_description)
             {
                 auto location_index = graphics::get_vertex_attribute_semantic_index(required_attribute);
 

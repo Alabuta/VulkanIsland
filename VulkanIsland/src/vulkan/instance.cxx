@@ -1,6 +1,7 @@
 #include <exception>
 #include <algorithm>
 #include <iostream>
+#include <ranges>
 #include <vector>
 #include <span>
 
@@ -20,8 +21,7 @@ namespace
     {
         std::vector<VkExtensionProperties> required_extensions;
 
-        std::transform(std::cbegin(required_extensions_), std::cend(required_extensions_), 
-                       std::back_inserter(required_extensions), [] (auto &&name)
+        std::ranges::transform(required_extensions_, std::back_inserter(required_extensions), [] (auto &&name)
         {
             VkExtensionProperties prop{};
             std::copy_n(name, std::strlen(name), prop.extensionName);
@@ -34,7 +34,7 @@ namespace
             return std::string_view{lhs.extensionName} < std::string_view{rhs.extensionName};
         };
 
-        std::sort(std::begin(required_extensions), std::end(required_extensions), extensions_compare);
+        std::ranges::sort(required_extensions, extensions_compare);
 
         std::uint32_t extensions_count = 0;
 
@@ -46,12 +46,11 @@ namespace
         if (auto result = vkEnumerateInstanceExtensionProperties(nullptr, &extensions_count, std::data(supported_extensions)); result != VK_SUCCESS)
             throw vulkan::instance_exception(fmt::format("failed to retrieve extensions: {0:#x}"s, result));
 
-        std::sort(std::begin(supported_extensions), std::end(supported_extensions), extensions_compare);
+        std::ranges::sort(supported_extensions, extensions_compare);
 
         std::vector<VkExtensionProperties> unsupported_extensions;
 
-        std::set_difference(std::begin(required_extensions), std::end(required_extensions), std::begin(supported_extensions),
-                            std::end(supported_extensions), std::back_inserter(unsupported_extensions), extensions_compare);
+        std::ranges::set_difference(required_extensions, supported_extensions, std::back_inserter(unsupported_extensions), extensions_compare);
 
         if (unsupported_extensions.empty())
             return true;
@@ -68,7 +67,7 @@ namespace
     {
         std::vector<VkLayerProperties> required_layers;
 
-        std::transform(std::cbegin(required_layers_), std::cend(required_layers_), std::back_inserter(required_layers), [] (auto &&name)
+        std::ranges::transform(required_layers_, std::back_inserter(required_layers), [] (auto &&name)
         {
             VkLayerProperties prop{};
             std::copy_n(name, std::strlen(name), prop.layerName);
@@ -78,11 +77,10 @@ namespace
 
         auto layers_compare = [] (auto &&lhs, auto &&rhs)
         {
-            return std::lexicographical_compare(std::cbegin(lhs.layerName), std::cend(lhs.layerName),
-                                                std::cbegin(rhs.layerName), std::cend(rhs.layerName));
+            return std::ranges::lexicographical_compare(lhs.layerName, rhs.layerName);
         };
 
-        std::sort(std::begin(required_layers), std::end(required_layers), layers_compare);
+        std::ranges::sort(required_layers, layers_compare);
 
         std::uint32_t layers_count = 0;
 
@@ -94,12 +92,11 @@ namespace
         if (auto result = vkEnumerateInstanceLayerProperties(&layers_count, std::data(supported_layers)); result != VK_SUCCESS)
             throw vulkan::instance_exception(fmt::format("failed to retrieve layers: {0:#x}"s, result));
 
-        std::sort(std::begin(supported_layers), std::end(supported_layers), layers_compare);
+        std::ranges::sort(supported_layers, layers_compare);
 
         std::vector<VkLayerProperties> unsupported_layers;
 
-        std::set_difference(std::begin(required_layers), std::end(required_layers), std::begin(supported_layers),
-                            std::end(supported_layers), std::back_inserter(unsupported_layers), layers_compare);
+        std::ranges::set_difference(required_layers, supported_layers, std::back_inserter(unsupported_layers), layers_compare);
 
         if (unsupported_layers.empty())
             return true;
@@ -130,7 +127,7 @@ namespace vulkan
             auto extensions_ = vulkan_config::extensions;
 
             if constexpr (use_layers) {
-                auto present = std::any_of(std::cbegin(extensions_), std::cend(extensions_), [] (auto extension)
+                auto present = std::ranges::any_of(extensions_, [] (auto extension)
                 {
                 #if USE_DEBUG_UTILS
                     return std::strcmp(extension, VK_EXT_DEBUG_UTILS_EXTENSION_NAME) == 0;
@@ -147,13 +144,13 @@ namespace vulkan
                 #endif
             }
 
-            std::copy(std::cbegin(extensions_), std::cend(extensions_), std::back_inserter(extensions));
+            std::ranges::copy(extensions_, std::back_inserter(extensions));
         }
 
         if constexpr (use_layers) {
             auto layers_ = vulkan_config::layers;
 
-            std::copy(std::cbegin(layers_), std::cend(layers_), std::back_inserter(layers));
+            std::ranges::copy(layers_, std::back_inserter(layers));
         }
 
         std::uint32_t api_version = 0;

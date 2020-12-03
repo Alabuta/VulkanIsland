@@ -1,3 +1,5 @@
+#include <ranges>
+
 #include "resources/buffer.hxx"
 #include "resources/image.hxx"
 #include "resources/resource_manager.hxx"
@@ -29,7 +31,7 @@ namespace
                 throw vulkan::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
 
             else {
-                std::copy(std::begin(container), std::end(container), reinterpret_cast<T *>(data));
+                std::ranges::copy(container, reinterpret_cast<T *>(data));
 
                 vkUnmapMemory(device.handle(), buffer->memory()->handle());
             }

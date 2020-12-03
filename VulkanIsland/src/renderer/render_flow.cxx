@@ -1,3 +1,4 @@
+#include <ranges>
 #include <array>
 
 #include "utility/exceptions.hxx"
@@ -47,7 +48,7 @@ create_attachments(resource::resource_manager &resource_manager,
         auto format = attachment_description.format;
         auto samples_count = attachment_description.samples_count;
 
-        auto is_color_attachment = std::none_of(std::cbegin(kDEPTH_STENCIL_FORMATS), std::cend(kDEPTH_STENCIL_FORMATS), [format] (auto dsf)
+        auto is_color_attachment = std::ranges::none_of(kDEPTH_STENCIL_FORMATS, [format] (auto dsf)
         {
             return format == dsf;
         });

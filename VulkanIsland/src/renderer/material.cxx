@@ -1,6 +1,6 @@
 #include <optional>
 #include <algorithm>
-//#include <ranges>
+#include <ranges>
 
 #include <string>
 using namespace std::string_literals;
@@ -116,8 +116,7 @@ namespace graphics
         if (auto vertex_layout = compatible_vertex_layout(vertex_attributes, technique, renderable_vertex_layout); vertex_layout) {
             std::vector<graphics::shader_stage> shader_stages;
 
-            std::transform(std::cbegin(shaders_bundle), std::cend(shaders_bundle),
-                           std::back_inserter(shader_stages), [&shader_modules, &vertex_layout] (auto shader_bundle)
+            std::ranges::transform(shaders_bundle, std::back_inserter(shader_stages), [&shader_modules, &vertex_layout] (auto shader_bundle)
             {
                 std::set<graphics::specialization_constant> constants;
 

@@ -3,6 +3,7 @@
 #endif
 
 #include <algorithm>
+#include <ranges>
 
 #include "camera/camera.hxx"
 
@@ -12,7 +13,7 @@ void camera_system::update()
 #ifdef _MSC_VER
     std::for_each(std::execution::par_unseq, std::begin(cameras_), std::end(cameras_), [] (auto &&camera)
 #else
-    std::for_each(std::begin(cameras_), std::end(cameras_), [] (auto &&camera)
+    std::ranges::for_each(cameras_, [] (auto &&camera)
 #endif
     {
         camera->data.projection = math::reversed_perspective(camera->vertical_fov, camera->aspect, camera->znear, camera->zfar);

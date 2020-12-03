@@ -283,7 +283,7 @@ namespace resource
     {
         std::vector<VkImageView> views;
 
-        std::transform(std::cbegin(attachments), std::cend(attachments), std::back_inserter(views), [] (auto &&attachment)
+        std::ranges::transform(attachments, std::back_inserter(views), [] (auto &&attachment)
         {
             return attachment->handle();
         });

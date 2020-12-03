@@ -1,5 +1,6 @@
 #include <array>
 #include <tuple>
+#include <ranges>
 #include <variant>
 #include <functional>
 

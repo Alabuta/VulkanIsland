@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <iostream>
 #include <variant>
+#include <ranges>
 #include <vector>
 #include <array>
 
@@ -73,11 +74,10 @@ namespace
 
         auto extensions_compare = [] (auto &&lhs, auto &&rhs)
         {
-            return std::lexicographical_compare(std::cbegin(lhs.extensionName), std::cend(lhs.extensionName),
-                                                std::cbegin(rhs.extensionName), std::cend(rhs.extensionName));
+            return std::ranges::lexicographical_compare(lhs.extensionName, rhs.extensionName);
         };
 
-        std::transform(std::cbegin(extensions), std::cend(extensions), std::back_inserter(required_extensions), [] (auto &&name)
+        std::ranges::transform(extensions, std::back_inserter(required_extensions), [] (auto &&name)
         {
             VkExtensionProperties prop{};
             std::copy_n(std::begin(name), std::size(name), prop.extensionName);
@@ -85,13 +85,12 @@ namespace
             return prop;
         });
 
-        std::sort(std::begin(required_extensions), std::end(required_extensions), extensions_compare);
+        std::ranges::sort(required_extensions, extensions_compare);
 
         if constexpr (check_on_duplicates) {
-            auto it = std::unique(std::begin(required_extensions), std::end(required_extensions), [] (auto &&lhs, auto &&rhs)
+            auto it = std::ranges::unique(required_extensions, [] (auto &&lhs, auto &&rhs)
             {
-                return std::equal(std::cbegin(lhs.extensionName), std::cend(lhs.extensionName),
-                                  std::cbegin(rhs.extensionName), std::cend(rhs.extensionName));
+                return std::ranges::equal(lhs.extensionName, rhs.extensionName);
             });
 
             required_extensions.erase(it, std::end(required_extensions));
@@ -107,12 +106,11 @@ namespace
         if (auto result = vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extensions_count, std::data(supported_extensions)); result != VK_SUCCESS)
             throw vulkan::device_exception(fmt::format("failed to retrieve device extensions: {0:#x}"s, result));
 
-        std::sort(std::begin(supported_extensions), std::end(supported_extensions), extensions_compare);
+        std::ranges::sort(supported_extensions, extensions_compare);
 
         std::vector<VkExtensionProperties> unsupported_extensions;
 
-        std::set_difference(std::begin(required_extensions), std::end(required_extensions), std::begin(supported_extensions),
-                            std::end(supported_extensions), std::back_inserter(unsupported_extensions), extensions_compare);
+        std::ranges::set_difference(required_extensions, supported_extensions, std::back_inserter(unsupported_extensions), extensions_compare);
 
         if (unsupported_extensions.empty())
             return true;
@@ -245,8 +243,7 @@ namespace
             }, lhs);
         };
 
-        return std::equal(std::cbegin(required_extended_features), std::cend(required_extended_features),
-                          std::cbegin(supported_extended_features), compare);
+        return std::ranges::equal(required_extended_features, supported_extended_features, compare);
     }
 
     renderer::swapchain_support_details query_swapchain_support_details(VkPhysicalDevice device, VkSurfaceKHR surface)
@@ -271,9 +268,9 @@ namespace
 
         std::vector<renderer::surface_format> surface_formats;
 
-        std::transform(std::cbegin(supported_formats), std::cend(supported_formats), std::back_inserter(surface_formats), [] (auto supported)
+        std::ranges::transform(supported_formats, std::back_inserter(surface_formats), [] (auto supported)
         {
-            auto it_color_space = std::find_if(std::cbegin(possible_surface_color_spaces), std::cend(possible_surface_color_spaces), [supported] (auto color_space)
+            auto it_color_space = std::ranges::find_if(possible_surface_color_spaces, [supported] (auto color_space)
             {
                 return convert_to::vulkan(color_space) == supported.colorSpace;
             });
@@ -281,7 +278,7 @@ namespace
             if (it_color_space == std::cend(possible_surface_color_spaces))
                 throw vulkan::device_exception("failed to find matching device surface color space"s);
 
-            auto it_format = std::find_if(std::cbegin(possible_surface_formats), std::cend(possible_surface_formats), [supported] (auto format)
+            auto it_format = std::ranges::find_if(possible_surface_formats, [supported] (auto format)
             {
                 return convert_to::vulkan(format) == supported.format;
             });
@@ -314,7 +311,7 @@ namespace
 
         auto it_end = std::remove_if(std::begin(presentation_modes), std::end(presentation_modes), [&supported_modes] (auto mode)
         {
-            return std::none_of(std::begin(supported_modes), std::end(supported_modes), [mode] (auto supported_mode)
+            return std::ranges::none_of(supported_modes, [mode] (auto supported_mode)
             {
                 return supported_mode == convert_to::vulkan(mode);
             });
@@ -679,7 +676,7 @@ namespace vulkan
         if constexpr (use_extensions) {
             auto constexpr extensions_ = vulkan::device_extensions;
 
-            std::copy(std::begin(extensions_), std::end(extensions_), std::back_inserter(extensions));
+            std::ranges::copy(extensions_, std::back_inserter(extensions));
 
             std::vector<std::string_view> extensions_view{std::begin(extensions), std::end(extensions)};
 

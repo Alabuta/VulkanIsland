@@ -1,6 +1,7 @@
 #pragma once
 
 #include <set>
+#include <ranges>
 #include <algorithm>
 
 #include "graphics.hxx"
@@ -51,7 +52,7 @@ namespace graphics
                 FORMAT::R8_SRGB
             };
 
-            if (std::includes(std::cbegin(bit8), std::cend(bit8), std::cbegin(check), std::cend(check)))
+            if (std::ranges::includes(bit8, check))
                 return true;
 
             auto /*constexpr*/ bit16 = std::set{
@@ -80,7 +81,7 @@ namespace graphics
                 FORMAT::R12X4_UNORM_PACK16
             };
 
-            if (std::includes(std::cbegin(bit16), std::cend(bit16), std::cbegin(check), std::cend(check)))
+            if (std::ranges::includes(bit16, check))
                 return true;
 
             auto /*constexpr*/ bit24 = std::set{
@@ -100,7 +101,7 @@ namespace graphics
                 FORMAT::BGR8_SRGB
             };
 
-            if (std::includes(std::cbegin(bit24), std::cend(bit24), std::cbegin(check), std::cend(check)))
+            if (std::ranges::includes(bit24, check))
                 return true;
 
             auto /*constexpr*/ bit32 = std::set{
@@ -153,7 +154,7 @@ namespace graphics
                 // FORMAT::R12X4G12X4_UNORM_2PACK16
             };
 
-            if (std::includes(std::cbegin(bit32), std::cend(bit32), std::cbegin(check), std::cend(check)))
+            if (std::ranges::includes(bit32, check))
                 return true;
 
             auto /*constexpr*/ bit48 = std::set{
@@ -166,7 +167,7 @@ namespace graphics
                 FORMAT::RGB16_SFLOAT
             };
 
-            if (std::includes(std::cbegin(bit48), std::cend(bit48), std::cbegin(check), std::cend(check)))
+            if (std::ranges::includes(bit48, check))
                 return true;
 
             auto /*constexpr*/ bit64 = std::set{
@@ -185,7 +186,7 @@ namespace graphics
                 FORMAT::RG32_SINT
             };
 
-            if (std::includes(std::cbegin(bit64), std::cend(bit64), std::cbegin(check), std::cend(check)))
+            if (std::ranges::includes(bit64, check))
                 return true;
 
             auto /*constexpr*/ bit96 = std::set{
@@ -194,7 +195,7 @@ namespace graphics
                 FORMAT::RGB32_SFLOAT
             };
 
-            if (std::includes(std::cbegin(bit96), std::cend(bit96), std::cbegin(check), std::cend(check)))
+            if (std::ranges::includes(bit96, check))
                 return true;
 
             auto /*constexpr*/ bit128 = std::set{
@@ -206,7 +207,7 @@ namespace graphics
                 FORMAT::RG64_SFLOAT
             };
 
-            if (std::includes(std::cbegin(bit128), std::cend(bit128), std::cbegin(check), std::cend(check)))
+            if (std::ranges::includes(bit128, check))
                 return true;
 
             auto /*constexpr*/ bit192 = std::set{
@@ -215,7 +216,7 @@ namespace graphics
                 FORMAT::RGB64_SFLOAT
             };
 
-            if (std::includes(std::cbegin(bit192), std::cend(bit192), std::cbegin(check), std::cend(check)))
+            if (std::ranges::includes(bit192, check))
                 return true;
 
             auto /*constexpr*/ bit256 = std::set{
@@ -224,7 +225,7 @@ namespace graphics
                 FORMAT::RGBA64_SFLOAT
             };
 
-            if (std::includes(std::cbegin(bit256), std::cend(bit256), std::cbegin(check), std::cend(check)))
+            if (std::ranges::includes(bit256, check))
                 return true;
 
             return false;

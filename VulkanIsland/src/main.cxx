@@ -1258,8 +1258,7 @@ void update(app_t &app)
         vkUnmapMemory(device.handle(), buffer.memory()->handle());
     }
 
-    std::transform(std::cbegin(temp::model.scene_nodes), std::cend(temp::model.scene_nodes),
-                   std::begin(app.objects), [] (auto &&scene_node)
+    std::ranges::transform(temp::model.scene_nodes, std::begin(app.objects), [] (auto &&scene_node)
     {
         auto &&transform = temp::model.transforms.at(scene_node.transform_index);
 
@@ -1276,7 +1275,7 @@ void update(app_t &app)
 #ifdef _MSC_VER
     std::copy(std::execution::par, std::cbegin(app.objects), std::cend(app.objects), strided_bidirectional_iterator{it_begin, stride});
 #else
-    std::copy(std::cbegin(app.objects), std::cend(app.objects), strided_bidirectional_iterator<objects_type>{it_begin, stride});
+    std::ranges::copy(app.objects, strided_bidirectional_iterator<objects_type>{it_begin, stride});
 #endif
 
     auto const mappedRanges = std::array{

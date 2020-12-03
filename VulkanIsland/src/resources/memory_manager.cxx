@@ -1,5 +1,6 @@
 #include <unordered_map>
 #include <iostream>
+#include <ranges>
 #include <vector>
 #include <set>
 
@@ -40,7 +41,7 @@ namespace
 
         auto const memory_types = mpl::to_array(memory_properties.memoryTypes);
 
-        auto it_type = std::find_if(std::cbegin(memory_types), std::cend(memory_types), [filter, memory_property_types, i = 0u] (auto type) mutable
+        auto it_type = std::ranges::find_if(memory_types, [filter, memory_property_types, i = 0u] (auto type) mutable
         {
             auto const property_flags = convert_to::vulkan(memory_property_types);
 
@@ -191,7 +192,7 @@ namespace resource
         typename decltype(resource::memory_pool::memory_blocks)::iterator it_block;
         typename decltype(resource::memory_page::available_chunks)::iterator it_chunk;
 
-        it_block = std::find_if(std::begin(memory_blocks), std::end(memory_blocks), [&it_chunk, required_size, required_alignment] (auto &&pair)
+        it_block = std::ranges::find_if(memory_blocks, [&it_chunk, required_size, required_alignment] (auto &&pair)
         {
             auto &&[memory_handle, memory_page] = pair;
 
