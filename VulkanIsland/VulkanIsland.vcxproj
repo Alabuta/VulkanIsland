@@ -258,6 +258,7 @@
     <ClCompile Include="src\primitives\box.cxx" />
     <ClCompile Include="src\primitives\plane.cxx" />
     <ClCompile Include="src\renderer\config.cxx" />
+    <ClCompile Include="src\renderer\renderer.cxx" />
     <ClCompile Include="src\resources\framebuffer.cxx" />
     <ClCompile Include="src\renderer\command_buffer.cxx" />
     <ClCompile Include="src\resources\memory_manager.cxx" />
