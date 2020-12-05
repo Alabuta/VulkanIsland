@@ -1,12 +1,12 @@
 #pragma once
 
-#include <algorithm>
 #include <cstdint>
 #include <memory>
-#include <ranges>
 #include <vector>
-#include <tuple>
 #include <span>
+#include <set>
+
+#include "utility/mpl.hxx"
 
 #include "vulkan/device.hxx"
 #include "graphics/graphics.hxx"
@@ -14,10 +14,6 @@
 
 #include "renderer/config.hxx"
 
-
-namespace graphics{
-    class vertex_input_state_manager;
-}
 
 namespace renderer
 {
@@ -43,7 +39,7 @@ namespace renderer
         std::uint32_t index_count{0};
     };
 
-    struct nonindexed_draw_buffers_bind_range final {
+    struct nonindexed_primitives_buffers_bind_range final {
         std::uint32_t first_binding;
         std::uint32_t binding_count;
 
@@ -53,7 +49,7 @@ namespace renderer
         std::span<renderer::nonindexed_draw_command> draw_commands;
     };
 
-    struct indexed_draw_buffers_bind_range final {
+    struct indexed_primitives_buffers_bind_range final {
         graphics::INDEX_TYPE index_type;
 
         VkBuffer index_buffer_handle;
@@ -65,15 +61,22 @@ namespace renderer
     class draw_commands_holder final {
     public:
 
-        draw_commands_holder();
-
         void add_draw_command(renderer::nonindexed_draw_command const &draw_command);
         void add_draw_command(renderer::indexed_draw_command const &draw_command);
 
+        std::vector<renderer::nonindexed_primitives_buffers_bind_range> get_nonindexed_primitives_buffers_bind_range() const;
+
     private:
 
-        std::vector<renderer::nonindexed_draw_command> nonindexed_draw_commands_;
-        std::vector<renderer::indexed_draw_command> indexed_draw_commands_;
+        template<class T>
+        struct comparator final {
+            template<class L, class R>
+            requires mpl::are_same_v<T, std::remove_cvref_t<L>, std::remove_cvref_t<R>>
+            constexpr bool operator() (L &&lhs, R &&rhs) const;
+        };
+
+        std::set<renderer::nonindexed_draw_command, comparator<renderer::nonindexed_draw_command>> nonindexed_draw_commands_;
+        std::set<renderer::indexed_draw_command, comparator<renderer::indexed_draw_command>> indexed_draw_commands_;
     };
 
     //std::pair<renderer::nonindexed_draw_buffers_bind_range, renderer::indexed_draw_buffers_bind_range>
