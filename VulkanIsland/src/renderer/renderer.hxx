@@ -64,7 +64,8 @@ namespace renderer
         void add_draw_command(renderer::nonindexed_draw_command const &draw_command);
         void add_draw_command(renderer::indexed_draw_command const &draw_command);
 
-        std::vector<renderer::nonindexed_primitives_buffers_bind_range> get_nonindexed_primitives_buffers_bind_range() const;
+        [[nodiscard]]
+        std::vector<renderer::nonindexed_primitives_buffers_bind_range> get_nonindexed_primitives_buffers_bind_range();
 
     private:
 
@@ -75,8 +76,8 @@ namespace renderer
             constexpr bool operator() (L &&lhs, R &&rhs) const;
         };
 
-        std::set<renderer::nonindexed_draw_command, comparator<renderer::nonindexed_draw_command>> nonindexed_draw_commands_;
-        std::set<renderer::indexed_draw_command, comparator<renderer::indexed_draw_command>> indexed_draw_commands_;
+        std::vector<renderer::nonindexed_draw_command> nonindexed_draw_commands_;
+        std::vector<renderer::indexed_draw_command> indexed_draw_commands_;
     };
 
     //std::pair<renderer::nonindexed_draw_buffers_bind_range, renderer::indexed_draw_buffers_bind_range>
