@@ -134,6 +134,30 @@ std::vector<renderer::nonindexed_primitives_buffers_bind_range> get_nonindexed_p
     std::ranges::copy(nonindexed_draw_commands_, std::ostream_iterator<renderer::nonindexed_draw_command>(std::cout, "|"));
     std::cout << std::endl;
 
+    auto it_begin = std::begin(nonindexed_draw_commands_);
+
+    while (it_begin != std::end(nonindexed_draw_commands_)) {
+        auto &&a = *it_begin;
+
+        auto p = [a] (auto &&b)
+        {
+            if (a.vertex_input_binding_index == b.vertex_input_binding_index)
+                return a.vertex_buffer->handle == b.vertex_buffer->handle;
+
+            else
+                return b.vertex_input_binding_index - a.vertex_input_binding_index > 1;
+
+            return false;
+        };
+
+        auto it_end = std::partition_point(it_begin, std::end(nonindexed_draw_commands_), p);
+
+        std::copy(it_begin, it_end, std::ostream_iterator<renderer::nonindexed_draw_command>(std::cout, "|"));
+        std::cout << std::endl;
+
+        it_begin = it_end;
+    }
+
     std::vector<renderer::nonindexed_primitives_buffers_bind_range> buffers_bind_range;
 
     ;
