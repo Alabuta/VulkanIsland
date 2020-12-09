@@ -98,10 +98,14 @@ namespace renderer {
                 if (lhs.vertex_input_binding_index != rhs.vertex_input_binding_index)
                     return lhs.vertex_input_binding_index < rhs.vertex_input_binding_index;
 
+                return lhs.vertex_buffer->handle < rhs.vertex_buffer->handle;
+
+#if 0
                 if (lhs.vertex_buffer->handle != rhs.vertex_buffer->handle)
                     return lhs.vertex_buffer->handle < rhs.vertex_buffer->handle;
 
                 return lhs.first_vertex < rhs.first_vertex;
+#endif
             }
 
             else return false;
@@ -109,15 +113,16 @@ namespace renderer {
     };
 }
 
-namespace renderer {
+namespace renderer
+{
     std::ostream &operator<<(std::ostream &out, renderer::nonindexed_draw_command const &c)
     {
-        return out << "h" << c.vertex_buffer->handle << " i" << c.vertex_input_binding_index;// << " fv " << c.first_vertex;
+        return out << "h" << c.vertex_buffer->handle << " i" << c.vertex_input_binding_index;// << " v" << c.first_vertex;
     }
 
     std::ostream &operator<<(std::ostream &out, renderer::nonindexed_primitives_buffers_bind_range const &r)
     {
-        std::ranges::copy(r.buffer_handles,  std::ostream_iterator<int>(out << "fbnd " << r.first_binding << " [", " "));
+        std::ranges::copy(r.buffer_handles, std::ostream_iterator<int>(out << "fbnd " << r.first_binding << " [", " "));
         return out << "]";
     }
 }
@@ -129,8 +134,6 @@ std::vector<renderer::nonindexed_primitives_buffers_bind_range> get_nonindexed_p
     std::ranges::copy(nonindexed_draw_commands_, std::ostream_iterator<renderer::nonindexed_draw_command>(std::cout, "|"));
     std::cout << std::endl;
 
-    std::vector<renderer::nonindexed_draw_command> draw_commands_copy{std::begin(nonindexed_draw_commands_), std::end(nonindexed_draw_commands_)};
-
     std::vector<renderer::nonindexed_primitives_buffers_bind_range> buffers_bind_range;
 
     ;
@@ -141,26 +144,29 @@ std::vector<renderer::nonindexed_primitives_buffers_bind_range> get_nonindexed_p
 
 int main()
 {
-        // DC{0, 0}, DC{0, 0}, DC{1, 2}, DC{0, 4}, DC{1, 1}, DC{1, 2}, DC{1, 0},
-        // DC{3, 5}, DC{4, 6}, DC{6, 8}, DC{1, 7}
-    renderer::nonindexed_draw_command c{std::make_shared<resource::vertex_buffer>(0), 0};
-
+    
+    h0 i0|h0 i0|h0 i1|
+    h4 i0|h1 i1|h2 i1|h2 i1|
+    h7 i1|
+    h5 i3|h6 i4|
+    h8 i6|
+    
     std::vector<renderer::nonindexed_draw_command> commands{
         {std::make_shared<resource::vertex_buffer>(0), 0},
         {std::make_shared<resource::vertex_buffer>(0), 0},
-        {std::make_shared<resource::vertex_buffer>(1), 2},
-        {std::make_shared<resource::vertex_buffer>(0), 4},
+        {std::make_shared<resource::vertex_buffer>(2), 1},
+        {std::make_shared<resource::vertex_buffer>(4), 0},
         {std::make_shared<resource::vertex_buffer>(1), 1},
-        {std::make_shared<resource::vertex_buffer>(1), 2},
-        {std::make_shared<resource::vertex_buffer>(1), 0},
-        {std::make_shared<resource::vertex_buffer>(3), 5},
-        {std::make_shared<resource::vertex_buffer>(4), 6},
-        {std::make_shared<resource::vertex_buffer>(6), 8},
-        {std::make_shared<resource::vertex_buffer>(1), 7}
+        {std::make_shared<resource::vertex_buffer>(2), 1},
+        {std::make_shared<resource::vertex_buffer>(0), 1},
+        {std::make_shared<resource::vertex_buffer>(5), 3},
+        {std::make_shared<resource::vertex_buffer>(6), 4},
+        {std::make_shared<resource::vertex_buffer>(8), 6},
+        {std::make_shared<resource::vertex_buffer>(7), 1}
     };
 
     std::ranges::copy(commands, std::ostream_iterator<renderer::nonindexed_draw_command>(std::cout, "|"));
     std::cout << std::endl;
 
-    get_nonindexed_primitives_buffers_bind_range(commands);
+    auto buffers_bind_range = get_nonindexed_primitives_buffers_bind_range(commands);
 }*/
