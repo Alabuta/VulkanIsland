@@ -137,20 +137,22 @@ std::vector<renderer::nonindexed_primitives_buffers_bind_range> get_nonindexed_p
     auto it_begin = std::begin(nonindexed_draw_commands_);
 
     while (it_begin != std::end(nonindexed_draw_commands_)) {
-        auto &&a = *it_begin;
-
-        auto p = [a] (auto &&b)
+        auto h = it_begin->vertex_buffer->handle;
+        auto i = it_begin->vertex_input_binding_index;
+        
+        auto it_end = std::stable_partition(it_begin, std::end(nonindexed_draw_commands_), [h, i] (auto &&b) mutable
         {
-            if (a.vertex_input_binding_index == b.vertex_input_binding_index)
-                return a.vertex_buffer->handle == b.vertex_buffer->handle;
+            if (i == b.vertex_input_binding_index)
+                return h == b.vertex_buffer->handle;
 
-            else
-                return b.vertex_input_binding_index - a.vertex_input_binding_index > 1;
+            else if (b.vertex_input_binding_index - i == 1) {
+                h = b.vertex_buffer->handle;
+                i = b.vertex_input_binding_index;
+                return true;
+            }
 
             return false;
-        };
-
-        auto it_end = std::partition_point(it_begin, std::end(nonindexed_draw_commands_), p);
+        });
 
         std::copy(it_begin, it_end, std::ostream_iterator<renderer::nonindexed_draw_command>(std::cout, "|"));
         std::cout << std::endl;
@@ -168,12 +170,11 @@ std::vector<renderer::nonindexed_primitives_buffers_bind_range> get_nonindexed_p
 
 int main()
 {
-    
-    h0 i0|h0 i0|h0 i1|
-    h4 i0|h1 i1|h2 i1|h2 i1|
-    h7 i1|
-    h5 i3|h6 i4|
-    h8 i6|
+    // h0 i0|h0 i0|h0 i1|
+    // h4 i0|h1 i1|h2 i1|h2 i1|
+    // h7 i1|
+    // h5 i3|h6 i4|
+    // h8 i6|
     
     std::vector<renderer::nonindexed_draw_command> commands{
         {std::make_shared<resource::vertex_buffer>(0), 0},
@@ -181,11 +182,13 @@ int main()
         {std::make_shared<resource::vertex_buffer>(2), 1},
         {std::make_shared<resource::vertex_buffer>(4), 0},
         {std::make_shared<resource::vertex_buffer>(1), 1},
+        // {std::make_shared<resource::vertex_buffer>(1), 2},
         {std::make_shared<resource::vertex_buffer>(2), 1},
         {std::make_shared<resource::vertex_buffer>(0), 1},
         {std::make_shared<resource::vertex_buffer>(5), 3},
         {std::make_shared<resource::vertex_buffer>(6), 4},
         {std::make_shared<resource::vertex_buffer>(8), 6},
+        {std::make_shared<resource::vertex_buffer>(0), 1},
         {std::make_shared<resource::vertex_buffer>(7), 1}
     };
 
