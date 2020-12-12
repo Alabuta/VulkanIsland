@@ -41,7 +41,6 @@ namespace renderer
 
     struct nonindexed_primitives_buffers_bind_range final {
         std::uint32_t first_binding;
-        std::uint32_t binding_count;
 
         std::vector<VkBuffer> buffer_handles;
         std::vector<VkDeviceSize> buffer_offsets;
