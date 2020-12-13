@@ -200,6 +200,7 @@ struct app_t final {
     std::shared_ptr<resource::texture> texture;
 
     std::vector<draw_command> draw_commands;
+    renderer::draw_commands_holder draw_commands_holder;
 
     std::function<void()> resize_callback{nullptr};
 
@@ -494,7 +495,7 @@ std::vector<vertex_buffers_bind_ranges> separate_nonindexed_by_binds(app_t &app,
     return bind_ranges;
 }
 
-std::vector<indexed_primitives_draw> separate_indexed_by_binds(app_t &app, std::span<draw_command> draw_commands)
+std::vector<indexed_primitives_draw> separate_indexed_by_binds(app_t &, std::span<draw_command> draw_commands)
 {
     std::stable_sort(std::begin(draw_commands), std::end(draw_commands), [] (auto &&lhs, auto &&rhs)
     {
@@ -851,6 +852,14 @@ void build_render_pipelines(app_t &app, xformat const &model_)
             };
 
             auto pipeline = pipeline_factory.create_pipeline(material, pipeline_states, app.pipeline_layout, app.render_pass, 0u);
+
+            auto vertex_input_binding_index = app.vertex_input_state_manager->binding_index(vertex_buffer->vertex_layout());
+
+            app.draw_commands_holder.add_draw_command(
+                renderer::nonindexed_draw_command{
+                    vertex_buffer, vertex_input_binding_index, meshlet.first_vertex, meshlet.vertex_count
+                }
+            );
 
             app.draw_commands.push_back(
                 draw_command{
