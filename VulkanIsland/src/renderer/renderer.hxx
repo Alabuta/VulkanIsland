@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <variant>
 #include <memory>
 #include <vector>
 #include <span>
@@ -39,13 +40,16 @@ namespace renderer
         std::uint32_t index_count{0};
     };
 
-    struct nonindexed_primitives_buffers_bind_range final {
+    struct vertex_buffers_bind_range final {
         std::uint32_t first_binding;
 
         std::vector<VkBuffer> buffer_handles;
         std::vector<VkDeviceSize> buffer_offsets;
 
-        std::span<renderer::nonindexed_draw_command> draw_commands;
+        std::variant<
+            std::span<renderer::nonindexed_draw_command>,
+            std::span<renderer::indexed_draw_command>
+        > draw_commands;
     };
 
     struct indexed_primitives_buffers_bind_range final {
@@ -54,7 +58,7 @@ namespace renderer
         VkBuffer index_buffer_handle;
         VkDeviceSize index_buffer_offset;
 
-        std::span<renderer::indexed_draw_command> draw_commands;
+        std::vector<renderer::vertex_buffers_bind_range> vertex_buffers_bind_ranges;
     };
 
     class draw_commands_holder final {
@@ -64,7 +68,10 @@ namespace renderer
         void add_draw_command(renderer::indexed_draw_command const &draw_command);
 
         [[nodiscard]]
-        std::vector<renderer::nonindexed_primitives_buffers_bind_range> get_nonindexed_primitives_buffers_bind_range();
+        std::vector<renderer::vertex_buffers_bind_range> get_primitives_buffers_bind_ranges();
+
+        [[nodiscard]]
+        std::vector<renderer::indexed_primitives_buffers_bind_range> get_indexed_primitives_buffers_bind_range();
 
     private:
 
@@ -77,6 +84,9 @@ namespace renderer
 
         std::vector<renderer::nonindexed_draw_command> nonindexed_draw_commands_;
         std::vector<renderer::indexed_draw_command> indexed_draw_commands_;
+
+        template<class T>
+        void partion_vertex_buffers_binds(std::span<T> draw_commands, std::function<void(std::vector<VkBuffer> &&, std::span<T>)> callback);
     };
 
     //std::pair<renderer::nonindexed_draw_buffers_bind_range, renderer::indexed_draw_buffers_bind_range>
