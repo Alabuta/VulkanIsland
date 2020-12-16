@@ -94,10 +94,10 @@ namespace renderer
                     range
                 });
             });
-
+;
             indexed_buffers_bind_range.push_back({
-                graphics::INDEX_TYPE::UNDEFINED,
                 it_begin->index_buffer->index_type(),
+                it_begin->index_buffer->device_buffer()->handle(),
                 0u,
                 vertex_buffers_bind_ranges
             });

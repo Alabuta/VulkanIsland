@@ -19,6 +19,14 @@
 namespace renderer
 {
     struct nonindexed_draw_command final {
+        std::shared_ptr<graphics::material> material;
+        std::shared_ptr<graphics::pipeline> pipeline;
+
+        std::shared_ptr<graphics::render_pass> render_pass;
+
+        VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
+        VkDescriptorSet descriptor_set{VK_NULL_HANDLE};
+
         std::shared_ptr<resource::vertex_buffer> vertex_buffer;
 
         std::uint32_t vertex_input_binding_index{0};
@@ -28,6 +36,14 @@ namespace renderer
     };
 
     struct indexed_draw_command final {
+        std::shared_ptr<graphics::material> material;
+        std::shared_ptr<graphics::pipeline> pipeline;
+
+        std::shared_ptr<graphics::render_pass> render_pass;
+
+        VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
+        VkDescriptorSet descriptor_set{VK_NULL_HANDLE};
+
         std::shared_ptr<resource::vertex_buffer> vertex_buffer;
         std::shared_ptr<resource::index_buffer> index_buffer;
 
