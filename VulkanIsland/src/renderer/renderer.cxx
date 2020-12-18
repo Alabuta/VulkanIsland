@@ -139,6 +139,12 @@ namespace renderer
             it_begin = it_end;
         }
     }
+
+    void draw_commands_holder::clear()
+    {
+        nonindexed_draw_commands_.clear();
+        indexed_draw_commands_.clear();
+    }
 }
 
 #if 0

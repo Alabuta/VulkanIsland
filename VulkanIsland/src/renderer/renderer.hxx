@@ -16,16 +16,23 @@
 #include "renderer/config.hxx"
 
 
+namespace graphics
+{
+    class pipeline;
+    struct material;
+    class render_pass;
+}
+
 namespace renderer
 {
     struct nonindexed_draw_command final {
-        std::shared_ptr<graphics::material> material;
         std::shared_ptr<graphics::pipeline> pipeline;
-
-        std::shared_ptr<graphics::render_pass> render_pass;
+        std::shared_ptr<graphics::material> material;
 
         VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
         VkDescriptorSet descriptor_set{VK_NULL_HANDLE};
+
+        std::shared_ptr<graphics::render_pass> render_pass;
 
         std::shared_ptr<resource::vertex_buffer> vertex_buffer;
 
@@ -36,13 +43,13 @@ namespace renderer
     };
 
     struct indexed_draw_command final {
-        std::shared_ptr<graphics::material> material;
         std::shared_ptr<graphics::pipeline> pipeline;
-
-        std::shared_ptr<graphics::render_pass> render_pass;
+        std::shared_ptr<graphics::material> material;
 
         VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
         VkDescriptorSet descriptor_set{VK_NULL_HANDLE};
+
+        std::shared_ptr<graphics::render_pass> render_pass;
 
         std::shared_ptr<resource::vertex_buffer> vertex_buffer;
         std::shared_ptr<resource::index_buffer> index_buffer;
@@ -88,6 +95,8 @@ namespace renderer
 
         [[nodiscard]]
         std::vector<renderer::indexed_primitives_buffers_bind_range> get_indexed_primitives_buffers_bind_range();
+
+        void clear();
 
     private:
 
