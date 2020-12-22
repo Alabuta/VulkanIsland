@@ -126,25 +126,6 @@ void create_semaphores(app_t &app);
 void recreate_swap_chain(app_t &app);
 
 
-struct draw_command final {
-    std::shared_ptr<graphics::material> material;
-    std::shared_ptr<graphics::pipeline> pipeline;
-
-    std::shared_ptr<resource::vertex_buffer> vertex_buffer;
-    std::shared_ptr<resource::index_buffer> index_buffer;
-
-    std::uint32_t vertex_count{0};
-    std::uint32_t first_vertex{0};
-
-    std::uint32_t index_count{0};
-    std::uint32_t first_index{0};
-
-    VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
-
-    std::shared_ptr<graphics::render_pass> render_pass;
-    VkDescriptorSet descriptor_set{VK_NULL_HANDLE};
-};
-
 struct app_t final {
     std::uint32_t width{800u};
     std::uint32_t height{600u};
@@ -350,8 +331,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
                            std::data(write_descriptor_sets), 0, nullptr);
 }
 
-
-void create_graphics_command_buffers(app_t &app)
+void create_graphics_command_buffers(app_t &app/*, std::span<draw_command> draw_commands*/)
 {
     app.command_buffers.resize(std::size(app.swapchain->image_views()));
 
@@ -370,9 +350,11 @@ void create_graphics_command_buffers(app_t &app)
         VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f } } },
         VkClearValue{ .depthStencil = { app.renderer_config.reversed_depth ? 0.f : 1.f, 0 } }
     };
+#if 0
+    //auto [indexed, nonindexed] = separate_indexed_and_nonindexed(draw_commands);
 
-    auto nonindexed = app.draw_commands_holder.get_primitives_buffers_bind_ranges();
-    auto indexed = app.draw_commands_holder.get_indexed_primitives_buffers_bind_range();
+    //auto indexed_bind_ranges = separate_indexed_by_binds(app, indexed);
+    //auto nonindexed_bind_ranges = separate_nonindexed_by_binds(app, nonindexed);
 
     for (std::size_t i = 0; auto &command_buffer : app.command_buffers) {
         VkCommandBufferBeginInfo const begin_info{
@@ -441,17 +423,17 @@ void create_graphics_command_buffers(app_t &app)
             vkCmdBindVertexBuffers(command_buffer, range.first_binding, range.binding_count, std::data(range.vertex_buffer_handles), std::data(range.vertex_buffer_offsets));
         for (auto &&range : nonindexed) {
             vkCmdBindVertexBuffers(command_buffer, range.first_binding, static_cast<std::uint32_t>(std::size(range.buffer_handles)),
-                                   std::data(range.buffer_handles), std::data(range.buffer_offsets));
 
-            auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
+            if constexpr (index_type != graphics::INDEX_TYPE::UNDEFINED) {
+                auto index_staging_buffer = app.resource_manager->create_staging_buffer(index_buffer_allocation_size);
             auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
-
+                primitives::generate_plane_indexed(create_info, vertex_staging_buffer->mapped_ptr(), index_staging_buffer->mapped_ptr(), color);
             std::visit([command_buffer, aligned_offset, &dynamic_offset] (auto &&draw_commands)
-            {
-                for (auto &&dc : draw_commands) {
-                    vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
+                index_buffer = app.resource_manager->stage_index_data(index_type, index_staging_buffer, app.transfer_command_pool);
+            }
 
-                    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
+            else primitives::generate_plane(create_info, vertex_staging_buffer->mapped_ptr(), color);
+
                                             0, 1, &dc.descriptor_set, 1, &dynamic_offset);
 
                     vkCmdDraw(command_buffer, dc.vertex_count, 1, dc.first_vertex, 0);
@@ -467,6 +449,7 @@ void create_graphics_command_buffers(app_t &app)
         if (auto result = vkEndCommandBuffer(command_buffer); result != VK_SUCCESS)
             throw vulkan::exception(fmt::format("failed to end command buffer: {0:#x}"s, result));
     }
+#endif
 }
 
 void create_frame_data(app_t &app)
@@ -644,7 +627,7 @@ namespace temp
         }
 
         auto constexpr topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
-        auto constexpr index_type = graphics::INDEX_TYPE::UINT_16;
+        auto constexpr index_type = graphics::INDEX_TYPE::UNDEFINED;// graphics::INDEX_TYPE::UINT_16;
 
         primitives::plane_create_info const create_info{
             vertex_layout, topology, index_type,
@@ -657,7 +640,7 @@ namespace temp
             throw resource::exception("failed to instantiate indices format"s);*/
 
         auto const index_count = primitives::calculate_plane_indices_number(create_info);
-        auto const index_size = index_type == graphics::INDEX_TYPE::UINT_16 ? sizeof(std::uint16_t) : sizeof(std::uint32_t);
+        auto const index_size = (index_type == graphics::INDEX_TYPE::UINT_16 ? sizeof(std::uint16_t) : sizeof(std::uint32_t)) * int(index_type != graphics::INDEX_TYPE::UNDEFINED);
         //auto const index_size = std::visit([] (auto type) { return sizeof(decltype(type)); }, format_inst.value());
 
         auto const vertex_count = primitives::calculate_plane_vertices_number(create_info);
@@ -672,12 +655,18 @@ namespace temp
 
         {
             auto vertex_staging_buffer = app.resource_manager->create_staging_buffer(vertex_buffer_allocation_size);
-            auto index_staging_buffer = app.resource_manager->create_staging_buffer(index_buffer_allocation_size);
 
-            primitives::generate_plane_indexed(create_info, vertex_staging_buffer->mapped_ptr(), index_staging_buffer->mapped_ptr(), color);
+            if constexpr (index_type != graphics::INDEX_TYPE::UNDEFINED) {
+                auto index_staging_buffer = app.resource_manager->create_staging_buffer(index_buffer_allocation_size);
+
+                primitives::generate_plane_indexed(create_info, vertex_staging_buffer->mapped_ptr(), index_staging_buffer->mapped_ptr(), color);
+
+                index_buffer = app.resource_manager->stage_index_data(index_type, index_staging_buffer, app.transfer_command_pool);
+            }
+
+            else primitives::generate_plane(create_info, vertex_staging_buffer->mapped_ptr(), color);
 
             vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
-            index_buffer = app.resource_manager->stage_index_data(index_type, index_staging_buffer, app.transfer_command_pool);
         }
 
         {
@@ -686,15 +675,18 @@ namespace temp
             meshlet.topology = topology;
 
             auto first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size;
-            auto first_index = (index_buffer->offset_bytes() - index_buffer_allocation_size) / index_size;
 
             meshlet.vertex_buffer = vertex_buffer;
             meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
             meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
 
-            meshlet.index_buffer = index_buffer;
-            meshlet.index_count = static_cast<std::uint32_t>(index_count);
-            meshlet.first_index = static_cast<std::uint32_t>(first_index);
+            if constexpr (index_type != graphics::INDEX_TYPE::UNDEFINED) {
+                auto first_index = (index_buffer->offset_bytes() - index_buffer_allocation_size) / index_size;
+
+                meshlet.index_buffer = index_buffer;
+                meshlet.index_count = static_cast<std::uint32_t>(index_count);
+                meshlet.first_index = static_cast<std::uint32_t>(first_index);
+            }
 
             meshlet.material_index = material_index;
             meshlet.instance_count = 1;

@@ -449,3 +449,233 @@ int main()
     // std::cout << std::endl;
 }
 #endif
+
+std::pair<std::span<draw_command>, std::span<draw_command>> separate_indexed_and_nonindexed(std::span<draw_command> draw_commands)
+{
+    auto it = std::stable_partition(std::begin(draw_commands), std::end(draw_commands), [] (auto &&draw_command)
+    {
+        return draw_command.index_buffer != nullptr;
+    });
+
+    return std::pair{std::span{std::begin(draw_commands), it}, std::span{it, std::end(draw_commands)}};
+}
+
+std::vector<vertex_buffers_bind_ranges>
+separate_nonindexed_by_binds(graphics::vertex_input_state_manager &vertex_input_state_manager, std::span<draw_command> draw_commands)
+{
+    std::stable_sort(std::begin(draw_commands), std::end(draw_commands), [&] (auto &&lhs, auto &&rhs)
+    {
+        auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+        auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
+
+        if (lhs_binding_index == rhs_binding_index)
+            return lhs.vertex_buffer->device_buffer()->handle() < rhs.vertex_buffer->device_buffer()->handle();
+
+        return lhs_binding_index < rhs_binding_index;
+    });
+
+    std::vector<draw_command> rc(std::begin(draw_commands), std::end(draw_commands));
+    std::span<draw_command> newrc{rc};
+    std::vector<std::span<draw_command>> subranges;
+
+    auto it_out = std::begin(draw_commands);
+
+    for (auto it_begin = std::begin(newrc); it_begin != std::end(newrc); it_begin = std::begin(newrc)) {
+        auto it_temp = it_out;
+
+        it_out = std::unique_copy(it_begin, std::end(newrc), it_out, [&] (auto &&lhs, auto &&rhs)
+        {
+            auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+            auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
+
+            if (lhs_binding_index == rhs_binding_index)
+                return lhs.vertex_buffer->device_buffer()->handle() != rhs.vertex_buffer->device_buffer()->handle();
+
+            return false;
+        });
+
+        auto subrange = std::span{it_temp, it_out};
+
+        auto it_end = std::set_difference(std::begin(newrc), std::end(newrc),
+                                          std::begin(subrange), std::end(subrange),
+                                          std::begin(newrc), [&] (auto &&lhs, auto &&rhs)
+        {
+            auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+            auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
+
+            return lhs_binding_index < rhs_binding_index;
+        });
+
+        subranges.push_back(subrange);
+
+        newrc = std::span{std::begin(newrc), it_end};
+    }
+
+    std::vector<vertex_buffers_bind_ranges> bind_ranges;
+
+    for (auto subrange : subranges) {
+        for (auto it_begin = std::begin(subrange); it_begin != std::end(subrange);) {
+            auto it = std::adjacent_find(it_begin, std::end(subrange), [&] (auto &&lhs, auto &&rhs)
+            {
+                auto lhs_binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+                auto rhs_binding_index = vertex_input_state_manager.binding_index(rhs.vertex_buffer->vertex_layout());
+
+                return (rhs_binding_index - lhs_binding_index) > 1;
+            });
+
+            if (it != std::end(subrange))
+                it = std::next(it);
+
+            std::span<draw_command> consecutive_binds{it_begin, it};
+
+            std::vector<std::pair<std::uint32_t, VkBuffer>> layout_index_and_buffer_pairs;
+
+            std::transform(it_begin, it, std::back_inserter(layout_index_and_buffer_pairs), [&] (auto &&lhs)
+            {
+                auto binding_index = vertex_input_state_manager.binding_index(lhs.vertex_buffer->vertex_layout());
+
+                return std::pair{binding_index, lhs.vertex_buffer->device_buffer()->handle()};
+            });
+
+            auto itx = std::unique(std::begin(layout_index_and_buffer_pairs), std::end(layout_index_and_buffer_pairs), [] (auto lhs, auto rhs)
+            {
+                return lhs == rhs;
+            });
+
+            /*auto handles = consecutive_binds | std::views::transform([] (auto &&lhs)
+            {
+                return lhs.vertex_buffer->device_buffer()->handle();
+            });*/
+
+            std::vector<VkBuffer> vertex_buffer_handles;
+
+            std::transform(std::begin(layout_index_and_buffer_pairs), itx, std::back_inserter(vertex_buffer_handles), [] (auto &&lhs)
+            {
+                return lhs.second;
+            });
+
+            //std::unique_copy(std::begin(handles), std::end(handles), std::back_inserter(vertex_buffer_handles));
+
+            auto first_binding_index = vertex_input_state_manager.binding_index(consecutive_binds.front().vertex_buffer->vertex_layout());
+            auto last_binding_index = vertex_input_state_manager.binding_index(consecutive_binds.back().vertex_buffer->vertex_layout());
+
+            bind_ranges.push_back(vertex_buffers_bind_ranges{
+                first_binding_index,
+                last_binding_index - first_binding_index + 1,
+                vertex_buffer_handles,
+                std::vector<VkDeviceSize>(std::size(vertex_buffer_handles), 0),
+                consecutive_binds
+            });
+
+            it_begin = it;
+        }
+    }
+
+    return bind_ranges;
+}
+
+std::vector<indexed_primitives_draw> separate_indexed_by_binds(std::span<draw_command> draw_commands)
+{
+    std::stable_sort(std::begin(draw_commands), std::end(draw_commands), [] (auto &&lhs, auto &&rhs)
+    {
+        if (lhs.index_buffer->index_type() == rhs.index_buffer->index_type())
+            return lhs.index_buffer->device_buffer()->handle() < rhs.index_buffer->device_buffer()->handle();
+
+        return lhs.index_buffer->index_type() < rhs.index_buffer->index_type();
+    });
+
+#if 0
+
+    std::vector<draw_command> draw_commands_copy(std::begin(draw_commands), std::end(draw_commands));
+    std::span<draw_command> copy_range{draw_commands_copy};
+
+    std::vector<std::span<draw_command>> unique_subranges;
+
+    auto it_out = std::begin(draw_commands);
+
+    for (auto it_begin = std::begin(copy_range); it_begin != std::end(copy_range); it_begin = std::begin(copy_range)) {
+        auto it = it_out;
+
+        it_out = std::unique_copy(it_begin, std::begin(copy_range), it_out, [] (auto &&lhs, auto &&rhs)
+        {
+            if (lhs.index_buffer->index_type() == rhs.index_buffer->index_type())
+                return lhs.index_buffer->device_buffer()->handle() != rhs.index_buffer->device_buffer()->handle();
+
+            return false;
+        });
+
+        auto subrange = std::span{it, it_out};
+
+        auto it_end = std::set_difference(std::begin(copy_range), std::end(copy_range),
+                                          std::begin(subrange), std::end(subrange),
+                                          std::begin(copy_range), [] (auto &&lhs, auto &&rhs)
+        {
+            return lhs.index_buffer->index_type() < rhs.index_buffer->index_type();
+        });
+
+        subranges.push_back(subrange);
+
+        copy_range = std::span{std::begin(copy_range), it_end};
+    }
+
+    std::vector<indexed_primitives_draw> bind_ranges;
+
+    for (auto subrange : subranges) {
+        for (auto it_begin = std::begin(subrange); it_begin != std::end(subrange);) {
+            auto it = std::adjacent_find(it_begin, std::end(subrange), [&] (auto &&lhs, auto &&rhs)
+            {
+                return (rhs.index_buffer->index_type() - lhs.index_buffer->index_type()) > 1;
+            });
+
+            if (it != std::end(subrange))
+                it = std::next(it);
+
+            std::span<draw_command> consecutive_binds{it_begin, it};
+
+            auto handles = consecutive_binds | std::views::transform([] (auto &&lhs)
+            {
+                return lhs.index_buffer->device_buffer()->handle();
+            });
+
+            std::vector<VkBuffer> index_buffer_handles;
+
+            std::unique_copy(std::begin(handles), std::end(handles), std::back_inserter(index_buffer_handles), [] (auto lhs, auto rhs)
+            {
+                return lhs == rhs;
+            });
+
+            bind_ranges.push_back(indexed_primitives_draw{
+                first_binding_index,
+                last_binding_index - first_binding_index + 1,
+                vertex_buffer_handles,
+                std::vector<VkDeviceSize>(std::size(vertex_buffer_handles), 0),
+                consecutive_binds
+            });
+
+            /*auto first_binding_index = vertex_input_state_manager.binding_index(consecutive_binds.front().vertex_buffer->vertex_layout());
+            auto last_binding_index = vertex_input_state_manager.binding_index(consecutive_binds.back().vertex_buffer->vertex_layout());
+
+            bind_ranges.push_back(indexed_primitives_draw{
+                first_binding_index,
+                last_binding_index - first_binding_index + 1,
+                vertex_buffer_handles,
+                std::vector<VkDeviceSize>(std::size(vertex_buffer_handles), 0),
+                consecutive_binds
+            });*/
+
+            it_begin = it;
+        }
+    }
+#endif
+
+
+    /*auto it = std::adjacent_find(std::begin(draw_commands), std::end(draw_commands), [] (auto &&lhs, auto &&rhs)
+    {
+        return lhs.index_buffer->index_type() != rhs.index_buffer->index_type();
+    });
+
+    if (it != std::end(subrange))
+        it = std::next(it);*/
+
+    return {};
+}

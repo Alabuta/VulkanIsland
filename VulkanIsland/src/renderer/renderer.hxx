@@ -21,6 +21,7 @@ namespace graphics
     class pipeline;
     struct material;
     class render_pass;
+    class vertex_input_state_manager;
 }
 
 namespace renderer
@@ -116,3 +117,50 @@ namespace renderer
 
     //std::pair<renderer::nonindexed_draw_buffers_bind_range, renderer::indexed_draw_buffers_bind_range>
 }
+
+struct draw_command final {
+    std::shared_ptr<graphics::material> material;
+    std::shared_ptr<graphics::pipeline> pipeline;
+
+    std::shared_ptr<resource::vertex_buffer> vertex_buffer;
+    std::shared_ptr<resource::index_buffer> index_buffer;
+
+    std::uint32_t vertex_count{0};
+    std::uint32_t first_vertex{0};
+
+    std::uint32_t index_count{0};
+    std::uint32_t first_index{0};
+
+    VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
+
+    std::shared_ptr<graphics::render_pass> render_pass;
+    VkDescriptorSet descriptor_set{VK_NULL_HANDLE};
+};
+
+struct vertex_buffers_bind_ranges final {
+    std::uint32_t first_binding;
+    std::uint32_t binding_count;
+
+    std::vector<VkBuffer> vertex_buffer_handles;
+    std::vector<VkDeviceSize> vertex_buffer_offsets;
+
+    std::span<draw_command> draw_commands;
+};
+
+struct indexed_primitives_draw final {
+    graphics::INDEX_TYPE index_type;
+
+    VkBuffer index_buffer_handle;
+    VkDeviceSize index_buffer_offset;
+
+    std::vector<vertex_buffers_bind_ranges> subranges;
+};
+
+std::pair<std::span<draw_command>, std::span<draw_command>>
+separate_indexed_and_nonindexed(std::span<draw_command> draw_commands);
+
+std::vector<vertex_buffers_bind_ranges>
+separate_nonindexed_by_binds(graphics::vertex_input_state_manager &vertex_input_state_manager, std::span<draw_command> draw_commands);
+
+std::vector<indexed_primitives_draw>
+separate_indexed_by_binds(std::span<draw_command> draw_commands);
