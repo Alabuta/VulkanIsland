@@ -180,7 +180,6 @@ struct app_t final {
 
     std::shared_ptr<resource::texture> texture;
 
-    std::vector<draw_command> draw_commands;
     renderer::draw_commands_holder draw_commands_holder;
 
     std::function<void()> resize_callback{nullptr};
@@ -331,7 +330,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
                            std::data(write_descriptor_sets), 0, nullptr);
 }
 
-void create_graphics_command_buffers(app_t &app/*, std::span<draw_command> draw_commands*/)
+void create_graphics_command_buffers(app_t &app)
 {
     app.command_buffers.resize(std::size(app.swapchain->image_views()));
 
@@ -350,11 +349,13 @@ void create_graphics_command_buffers(app_t &app/*, std::span<draw_command> draw_
         VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f } } },
         VkClearValue{ .depthStencil = { app.renderer_config.reversed_depth ? 0.f : 1.f, 0 } }
     };
-#if 0
+
     //auto [indexed, nonindexed] = separate_indexed_and_nonindexed(draw_commands);
 
     //auto indexed_bind_ranges = separate_indexed_by_binds(app, indexed);
     //auto nonindexed_bind_ranges = separate_nonindexed_by_binds(app, nonindexed);
+
+    auto nonindexed = app.draw_commands_holder.get_primitives_buffers_bind_ranges();
 
     for (std::size_t i = 0; auto &command_buffer : app.command_buffers) {
         VkCommandBufferBeginInfo const begin_info{
@@ -394,8 +395,30 @@ void create_graphics_command_buffers(app_t &app/*, std::span<draw_command> draw_
         vkCmdSetViewport(command_buffer, 0, 1, &viewport);
         vkCmdSetScissor(command_buffer, 0, 1, &scissor);
     #endif
-
         std::uint32_t dynamic_offset = 0;
+
+        for (auto &&range : nonindexed) {
+            vkCmdBindVertexBuffers(command_buffer, range.first_binding, static_cast<std::uint32_t>(std::size(range.buffer_handles)),
+                                   std::data(range.buffer_handles), std::data(range.buffer_offsets));
+
+            auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
+            auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
+
+            std::visit([&] (auto span) {
+                for (auto &&dc : span) {
+                    vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
+
+                    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
+                                            0, 1, &dc.descriptor_set, 1, &dynamic_offset);
+
+                    vkCmdDraw(command_buffer, dc.vertex_count, 1, dc.first_vertex, 0);
+
+                    //dynamic_offset += static_cast<std::uint32_t>(aligned_offset);
+                }
+            }, range.draw_commands);
+        }
+
+    #if 0
 
         for (auto &&range : indexed_bind_ranges) {
             vkCmdBindIndexBuffer(command_buffer, range.index_buffer_handle, range.index_buffer_offset, convert_to::vulkan(range.index_type));
@@ -443,13 +466,13 @@ void create_graphics_command_buffers(app_t &app/*, std::span<draw_command> draw_
                 }
             }, range.draw_commands);
         }
+#endif
 
         vkCmdEndRenderPass(command_buffer);
 
         if (auto result = vkEndCommandBuffer(command_buffer); result != VK_SUCCESS)
             throw vulkan::exception(fmt::format("failed to end command buffer: {0:#x}"s, result));
     }
-#endif
 }
 
 void create_frame_data(app_t &app)
