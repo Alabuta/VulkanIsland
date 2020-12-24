@@ -115,7 +115,7 @@ namespace renderer
             auto h = it_begin->vertex_buffer->device_buffer()->handle();
             auto i = it_begin->vertex_input_binding_index;
 
-            std::vector<VkBuffer> buffer_handles;
+            std::vector<VkBuffer> buffer_handles(1, h);
 
             auto it_end = std::stable_partition(it_begin, std::end(draw_commands), [&h, &i, &buffer_handles] (auto &&b)
             {
