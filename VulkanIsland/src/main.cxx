@@ -395,20 +395,6 @@ void create_graphics_command_buffers(app_t &app)
 
         std::uint32_t dynamic_offset = 0;
 
-        auto l = [&] (std::span<renderer::nonindexed_draw_command> span)
-        {
-            for (auto &&dc : span) {
-                vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
-
-                vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
-                                        0, 1, &dc.descriptor_set, 1, &dynamic_offset);
-
-                vkCmdDraw(command_buffer, dc.vertex_count, 1, dc.first_vertex, 0);
-
-                dynamic_offset += static_cast<std::uint32_t>(aligned_offset);
-            }
-        };
-
         for (auto &&range : indexed) {
             vkCmdBindIndexBuffer(command_buffer, range.index_buffer_handle, range.index_buffer_offset, convert_to::vulkan(range.index_type));
 
@@ -421,28 +407,19 @@ void create_graphics_command_buffers(app_t &app)
 
                 std::visit([&] (auto span)
                 {
-                    for (auto &&dc : span) {
-                        vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
+                    if constexpr (std::is_same_v<decltype(span)::value_type, renderer::indexed_draw_command>) {
+                        for (auto &&dc : span) {
+                            vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
 
-                        vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
-                                                0, 1, &dc.descriptor_set, 1, &dynamic_offset);
+                            vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
+                                                    0, 1, &dc.descriptor_set, 1, &dynamic_offset);
 
-                        vkCmdDrawIndexed(command_buffer, dc.index_count, 1, dc.first_index, 0, 0);
+                            vkCmdDrawIndexed(command_buffer, dc.index_count, 1, dc.first_index, 0, 0);
 
-                        dynamic_offset += static_cast<std::uint32_t>(aligned_offset);
+                            dynamic_offset += static_cast<std::uint32_t>(aligned_offset);
+                        }
                     }
                 }, subrange.draw_commands);
-
-                for (auto &&draw_command : subrange.draw_commands) {
-                    vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, draw_command.pipeline->handle());
-
-                    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, draw_command.pipeline_layout,
-                                            0, 1, &draw_command.descriptor_set, 1, &dynamic_offset);
-
-                    vkCmdDrawIndexed(command_buffer, draw_command.index_count, 1, draw_command.first_index, draw_command.first_vertex, 0);
-
-                    dynamic_offset += static_cast<std::uint32_t>(aligned_offset);
-                }
             }
         }
 
@@ -467,56 +444,6 @@ void create_graphics_command_buffers(app_t &app)
                 }
             }, range.draw_commands);
         }
-
-    #if 0
-
-        for (auto &&range : indexed_bind_ranges) {
-            vkCmdBindIndexBuffer(command_buffer, range.index_buffer_handle, range.index_buffer_offset, convert_to::vulkan(range.index_type));
-
-            for (auto &&subrange : range.subranges) {
-                vkCmdBindVertexBuffers(command_buffer, subrange.first_binding, subrange.binding_count, std::data(subrange.vertex_buffer_handles), std::data(subrange.vertex_buffer_offsets));
-
-                auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
-                auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
-
-                for (auto &&draw_command : subrange.draw_commands) {
-                    vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, draw_command.pipeline->handle());
-
-                    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, draw_command.pipeline_layout,
-                                            0, 1, &draw_command.descriptor_set, 1, &dynamic_offset);
-
-                    vkCmdDrawIndexed(command_buffer, draw_command.index_count, 1, draw_command.first_index, draw_command.first_vertex, 0);
-
-                    dynamic_offset += static_cast<std::uint32_t>(aligned_offset);
-                }
-            }
-        }
-
-        for (auto &&range : nonindexed_bind_ranges) {
-            vkCmdBindVertexBuffers(command_buffer, range.first_binding, range.binding_count, std::data(range.vertex_buffer_handles), std::data(range.vertex_buffer_offsets));
-        for (auto &&range : nonindexed) {
-            vkCmdBindVertexBuffers(command_buffer, range.first_binding, static_cast<std::uint32_t>(std::size(range.buffer_handles)),
-
-            if constexpr (index_type != graphics::INDEX_TYPE::UNDEFINED) {
-                auto index_staging_buffer = app.resource_manager->create_staging_buffer(index_buffer_allocation_size);
-            auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
-                primitives::generate_plane_indexed(create_info, vertex_staging_buffer->mapped_ptr(), index_staging_buffer->mapped_ptr(), color);
-            std::visit([command_buffer, aligned_offset, &dynamic_offset] (auto &&draw_commands)
-                index_buffer = app.resource_manager->stage_index_data(index_type, index_staging_buffer, app.transfer_command_pool);
-            }
-
-            else primitives::generate_plane(create_info, vertex_staging_buffer->mapped_ptr(), color);
-
-                                            0, 1, &dc.descriptor_set, 1, &dynamic_offset);
-
-                    vkCmdDraw(command_buffer, dc.vertex_count, 1, dc.first_vertex, 0);
-
-                    dynamic_offset += static_cast<std::uint32_t>(aligned_offset);
-
-                }
-            }, range.draw_commands);
-        }
-#endif
 
         vkCmdEndRenderPass(command_buffer);
 
@@ -700,11 +627,12 @@ namespace temp
         }
 
         auto constexpr topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
-        auto constexpr index_type = graphics::INDEX_TYPE::UNDEFINED;// graphics::INDEX_TYPE::UINT_16;
+        //auto constexpr index_type = graphics::INDEX_TYPE::UINT_16;
+        auto constexpr index_type = graphics::INDEX_TYPE::UNDEFINED;
 
         primitives::plane_create_info const create_info{
             vertex_layout, topology, index_type,
-            1.f, 1.f, 1u, 1u
+            1.f, 1.f, 3u, 7u
         };
 
         auto const index_count = primitives::calculate_plane_indices_number(create_info);

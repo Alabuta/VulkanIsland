@@ -287,7 +287,7 @@ namespace
                     bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
 
                     if (is_primitive_indexed) {
-                        std::generate_n(it_begin, vertex_number, [generator, i = 0u]() mutable
+                        std::generate_n(it_begin, vertex_number, [generator, i = 0u] () mutable
                         {
                             return generator(i++);
                         });
