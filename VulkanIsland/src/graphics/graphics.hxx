@@ -651,7 +651,15 @@ namespace graphics
         std::array<boost::float64_t, 4>
     >;
 
+    using index_type_instance = std::variant<
+        std::uint16_t,
+        std::uint32_t
+    >;
+
     graphics::NUMERIC_FORMAT numeric_format(graphics::FORMAT format);
 
     std::optional<graphics::format_instance> instantiate_format(graphics::FORMAT format);
+
+    std::size_t size_bytes(graphics::FORMAT format);
+    std::size_t size_bytes(graphics::INDEX_TYPE index_type);
 }

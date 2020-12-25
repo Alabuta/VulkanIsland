@@ -14,15 +14,10 @@ namespace vertex
     {
         vertex_layout.attributes.push_back(graphics::vertex_attribute{semantic, format});
 
-        if (auto format_inst = graphics::instantiate_format(format); format_inst) {
-            return std::visit([] (auto &&format_inst)
-            {
-                return sizeof(std::remove_cvref_t<decltype(format_inst)>);
+        if (auto size_bytes = graphics::size_bytes(format); size_bytes != 0)
+            return size_bytes;
 
-            }, *format_inst);
-        }
-
-        else throw graphics::exception("unsupported format");
+        else throw graphics::exception("unsupported format"s);
     }
 }
 

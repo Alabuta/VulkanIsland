@@ -499,4 +499,31 @@ namespace graphics
                 return { };
         }
     }
+
+    std::size_t size_bytes(graphics::FORMAT format)
+    {
+        if (auto format_inst = graphics::instantiate_format(format); format_inst) {
+            return std::visit([] (auto &&format_inst)
+            {
+                return sizeof(std::remove_cvref_t<decltype(format_inst)>);
+
+            }, *format_inst);
+        }
+
+        return 0;
+    }
+
+    std::size_t size_bytes(graphics::INDEX_TYPE index_type)
+    {
+        switch (index_type) {
+            case graphics::INDEX_TYPE::UINT_16:
+                return sizeof(std::uint16_t);
+
+            case graphics::INDEX_TYPE::UINT_32:
+                return sizeof(std::uint32_t);
+
+            default:
+                return 0;
+        }
+    }
 }

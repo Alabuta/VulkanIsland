@@ -330,6 +330,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
                            std::data(write_descriptor_sets), 0, nullptr);
 }
 
+
 void create_graphics_command_buffers(app_t &app)
 {
     app.command_buffers.resize(std::size(app.swapchain->image_views()));
@@ -706,14 +707,8 @@ namespace temp
             1.f, 1.f, 1u, 1u
         };
 
-        /*auto format_inst = graphics::instantiate_format(index_type);
-
-        if (!format_inst.has_value())
-            throw resource::exception("failed to instantiate indices format"s);*/
-
         auto const index_count = primitives::calculate_plane_indices_number(create_info);
-        auto const index_size = (index_type == graphics::INDEX_TYPE::UINT_16 ? sizeof(std::uint16_t) : sizeof(std::uint32_t)) * int(index_type != graphics::INDEX_TYPE::UNDEFINED);
-        //auto const index_size = std::visit([] (auto type) { return sizeof(decltype(type)); }, format_inst.value());
+        auto const index_size = graphics::size_bytes(index_type);
 
         auto const vertex_count = primitives::calculate_plane_vertices_number(create_info);
         auto const vertex_size = vertex_layout.size_bytes;

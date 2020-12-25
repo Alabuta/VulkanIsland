@@ -379,15 +379,10 @@ namespace graphics
             #pragma GCC diagnostic pop
         #endif
 
-            if (auto format_inst = graphics::instantiate_format(attribute.format); format_inst) {
-                offset_in_bytes += static_cast<std::uint32_t>(std::visit([] (auto &&format_inst)
-                {
-                    return sizeof(std::remove_cvref_t<decltype(format_inst)>);
+            if (auto size_bytes = graphics::size_bytes(attribute.format); size_bytes != 0)
+                offset_in_bytes += static_cast<std::uint32_t>(size_bytes);
 
-                }, *format_inst));
-            }
-
-            else throw graphics::exception("unsupported format");
+            else throw graphics::exception("unsupported format"s);
 
             return graphics::vertex_input_attribute{
                 location_index, binding_index, offset_in_bytes_, attribute.format

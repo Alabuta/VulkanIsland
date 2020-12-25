@@ -65,16 +65,14 @@ namespace
         std::sort(std::begin(vertex_attributes), std::end(vertex_attributes));
 
         vertex_layout.size_bytes = std::accumulate(std::begin(vertex_attributes), std::end(vertex_attributes), vertex_layout.size_bytes,
-                                                      [] (auto size_bytes, auto attribute)
+                                                      [] (auto total_size_bytes, auto attribute)
         {
-            if (auto format_instance = graphics::instantiate_format(attribute.format); format_instance) {
-                return size_bytes + std::visit([] (auto &&format)
-                {
-                    return sizeof(std::remove_cvref_t<decltype(format)>);
-                }, *format_instance);
-            }
+            auto size_bytes = graphics::size_bytes(attribute.format);
 
-            else throw graphics::exception("unsupported format"s);
+            if (size_bytes == 0)
+                throw graphics::exception("unsupported format"s);
+
+            return total_size_bytes + size_bytes;
         });
 
         return vertex_layout;
