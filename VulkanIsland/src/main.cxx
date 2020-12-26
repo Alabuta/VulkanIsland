@@ -593,12 +593,24 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
             auto vertex_input_binding_index = app.vertex_input_state_manager->binding_index(vertex_buffer->vertex_layout());
 
-            app.draw_commands_holder.add_draw_command(
-                renderer::nonindexed_draw_command{
-                    pipeline, material, app.pipeline_layout, app.descriptor_set, app.render_pass,
-                    vertex_buffer, vertex_input_binding_index, meshlet.first_vertex, meshlet.vertex_count
-                }
-            );
+            if (index_buffer) {
+                app.draw_commands_holder.add_draw_command(
+                    renderer::indexed_draw_command{
+                        pipeline, material, app.pipeline_layout, app.descriptor_set, app.render_pass,
+                        vertex_buffer, index_buffer, vertex_input_binding_index,
+                        meshlet.first_vertex, meshlet.vertex_count, meshlet.first_index, meshlet.index_count
+                    }
+                );
+            }
+
+            else {
+                app.draw_commands_holder.add_draw_command(
+                    renderer::nonindexed_draw_command{
+                        pipeline, material, app.pipeline_layout, app.descriptor_set, app.render_pass,
+                        vertex_buffer, vertex_input_binding_index, meshlet.first_vertex, meshlet.vertex_count
+                    }
+                );
+            }
         }
     }
 }
@@ -627,8 +639,8 @@ namespace temp
         }
 
         auto constexpr topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP;
-        //auto constexpr index_type = graphics::INDEX_TYPE::UINT_16;
-        auto constexpr index_type = graphics::INDEX_TYPE::UNDEFINED;
+        auto constexpr index_type = graphics::INDEX_TYPE::UINT_16;
+        //auto constexpr index_type = graphics::INDEX_TYPE::UNDEFINED;
 
         primitives::plane_create_info const create_info{
             vertex_layout, topology, index_type,
