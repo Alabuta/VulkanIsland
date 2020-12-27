@@ -393,15 +393,15 @@ void create_graphics_command_buffers(app_t &app)
         vkCmdSetScissor(command_buffer, 0, 1, &scissor);
     #endif
 
+        auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
+        auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
+
         for (auto &&range : indexed) {
             vkCmdBindIndexBuffer(command_buffer, range.index_buffer_handle, range.index_buffer_offset, convert_to::vulkan(range.index_type));
 
             for (auto &&subrange : range.vertex_buffers_bind_ranges) {
                 vkCmdBindVertexBuffers(command_buffer, subrange.first_binding, static_cast<std::uint32_t>(std::size(subrange.buffer_handles)),
                                        std::data(subrange.buffer_handles), std::data(subrange.buffer_offsets));
-
-                auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
-                auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
 
                 std::visit([&] (auto span)
                 {
@@ -425,15 +425,13 @@ void create_graphics_command_buffers(app_t &app)
             vkCmdBindVertexBuffers(command_buffer, range.first_binding, static_cast<std::uint32_t>(std::size(range.buffer_handles)),
                                    std::data(range.buffer_handles), std::data(range.buffer_offsets));
 
-            auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
-            auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
-
             std::visit([&] (auto span)
             {
                 for (auto &&dc : span) {
                     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
 
                     std::uint32_t dynamic_offset = dc.transform_index * static_cast<std::uint32_t>(aligned_offset);
+                    std::cout << "dynamic_offset " << dynamic_offset << std::endl;
 
                     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
                                             0, 1, &dc.descriptor_set, 1, &dynamic_offset);
@@ -716,13 +714,13 @@ namespace temp
         model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-.5, 0, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 1, -1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
-        model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, -1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
-        model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+.5, 0, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(0.f), glm::vec3{1, 0, 0}));
+        model_.transforms.push_back(
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 1, -1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
+        model_.transforms.push_back(
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, -1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
 
         model_.vertex_layouts.push_back(vertex::create_vertex_layout(
             vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
@@ -746,6 +744,12 @@ namespace temp
 
         model_.scene_nodes.push_back(xformat::scene_node{0u, std::size(model_.meshes)});
         add_plane(app, model_, 0, graphics::INDEX_TYPE::UINT_16, 2);
+
+        model_.scene_nodes.push_back(xformat::scene_node{1u, std::size(model_.meshes)});
+        add_plane(app, model_, 1, graphics::INDEX_TYPE::UINT_16, 1);
+
+        model_.scene_nodes.push_back(xformat::scene_node{2u, std::size(model_.meshes)});
+        add_plane(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 2);
 
     #if 1
         {
@@ -801,7 +805,7 @@ namespace temp
 
             if (true) {
                 // Third triangle
-                model_.scene_nodes.push_back(xformat::scene_node{1u, std::size(model_.meshes)});
+                model_.scene_nodes.push_back(xformat::scene_node{3u, std::size(model_.meshes)});
 
                 xformat::meshlet meshlet;
 
@@ -825,7 +829,7 @@ namespace temp
 
             if (true) {
                 // Third triangle
-                model_.scene_nodes.push_back(xformat::scene_node{2u, std::size(model_.meshes)});
+                model_.scene_nodes.push_back(xformat::scene_node{4u, std::size(model_.meshes)});
 
                 xformat::meshlet meshlet;
 
@@ -846,67 +850,8 @@ namespace temp
 
                 model_.meshlets.push_back(std::move(meshlet));
             }
-
-        #if 0
-            {
-                model_.scene_nodes.push_back(xformat::scene_node{2u, std::size(model_.meshes)});
-
-                std::vector<std::size_t> meshlets{std::size(model_.meshlets)};
-                model_.meshes.push_back(xformat::mesh{meshlets});
-
-                // Second triangle
-                xformat::meshlet meshlet;
-
-                meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
-
-                auto first_vertex = vertex_buffer->offset_bytes() / vertex_size - vertex_count;
-
-                meshlet.vertex_layout_index = vertex_layout_index;
-                meshlet.vertex_buffer = vertex_buffer;
-                meshlet.vertex_count = 3;
-                meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
-
-                meshlet.material_index = 0;
-                meshlet.instance_count = 1;
-                meshlet.first_instance = 0;
-
-                model_.meshlets.push_back(std::move(meshlet));
-            }
-        #endif
-
-        #if 0
-            {
-                model_.scene_nodes.push_back(xformat::scene_node{2u, std::size(model_.meshes)});
-                std::vector<std::size_t> meshlets{std::size(model_.meshlets)};
-                model_.meshes.push_back(xformat::mesh{meshlets});
-
-                // Third triangle
-                xformat::meshlet meshlet;
-
-                meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
-
-                auto first_vertex = vertex_buffer->offset_bytes() / vertex_size - vertex_count / 2;
-
-                meshlet.vertex_layout_index = vertex_layout_index;
-                meshlet.vertex_buffer = vertex_buffer;
-                meshlet.vertex_count = 3;
-                meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
-
-                meshlet.material_index = 3;
-                meshlet.instance_count = 1;
-                meshlet.first_instance = 0;
-
-                model_.meshlets.push_back(std::move(meshlet));
-            }
-        #endif
         }
     #endif
-
-        /*model_.scene_nodes.push_back(xformat::scene_node{3u, std::size(model_.meshes)});
-        add_plane(app, model_, 1, graphics::INDEX_TYPE::UINT_16, 1);
-
-        model_.scene_nodes.push_back(xformat::scene_node{4u, std::size(model_.meshes)});
-        add_plane(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 2);*/
  
         return model_;
     }
