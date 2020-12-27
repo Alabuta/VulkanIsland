@@ -41,6 +41,8 @@ namespace renderer
 
         std::uint32_t first_vertex{0};
         std::uint32_t vertex_count{0};
+
+        std::uint32_t transform_index{0};
     };
 
     struct indexed_draw_command final {
@@ -62,6 +64,8 @@ namespace renderer
 
         std::uint32_t first_index{0};
         std::uint32_t index_count{0};
+
+        std::uint32_t transform_index{0};
     };
 
     struct vertex_buffers_bind_range final {
