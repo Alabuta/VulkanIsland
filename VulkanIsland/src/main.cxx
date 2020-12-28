@@ -398,10 +398,14 @@ void create_graphics_command_buffers(app_t &app)
 
         for (auto &&range : indexed) {
             vkCmdBindIndexBuffer(command_buffer, range.index_buffer_handle, range.index_buffer_offset, convert_to::vulkan(range.index_type));
+            std::cout << '#' << i << " index_buffer_handle " << range.index_buffer_handle << " index_buffer_offset " << range.index_buffer_offset << std::endl;
 
             for (auto &&subrange : range.vertex_buffers_bind_ranges) {
                 vkCmdBindVertexBuffers(command_buffer, subrange.first_binding, static_cast<std::uint32_t>(std::size(subrange.buffer_handles)),
                                        std::data(subrange.buffer_handles), std::data(subrange.buffer_offsets));
+                std::cout << '#' << i << " first_binding " << subrange.first_binding << " first_binding " << subrange.first_binding << " binding_count " << std::size(subrange.buffer_handles) << std::endl;
+                for (std::size_t j = 0; auto h : subrange.buffer_handles)
+                    std::cout << " handle " << h << " offset " << subrange.buffer_offsets.at(j) << std::endl;
 
                 std::visit([&] (auto span)
                 {
@@ -413,6 +417,7 @@ void create_graphics_command_buffers(app_t &app)
 
                             vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
                                                     0, 1, &dc.descriptor_set, 1, &dynamic_offset);
+                            std::cout << "transform_index " << dc.transform_index << " vertex_count " << dc.vertex_count << " first_vertex " << dc.first_vertex << " index_count " << dc.index_count << " first_index " << dc.first_index << std::endl;
 
                             vkCmdDrawIndexed(command_buffer, dc.index_count, 1, dc.first_index, 0, 0);
                         }
@@ -424,6 +429,9 @@ void create_graphics_command_buffers(app_t &app)
         for (auto &&range : nonindexed) {
             vkCmdBindVertexBuffers(command_buffer, range.first_binding, static_cast<std::uint32_t>(std::size(range.buffer_handles)),
                                    std::data(range.buffer_handles), std::data(range.buffer_offsets));
+            std::cout << '#' << i << " first_binding " << range.first_binding << " first_binding " << range.first_binding << " binding_count " << std::size(range.buffer_handles) << std::endl;
+            for (std::size_t j = 0; auto h : range.buffer_handles)
+                std::cout << " handle " << h << " offset " << range.buffer_offsets .at(j) << std::endl;
 
             std::visit([&] (auto span)
             {
@@ -431,7 +439,7 @@ void create_graphics_command_buffers(app_t &app)
                     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
 
                     std::uint32_t dynamic_offset = dc.transform_index * static_cast<std::uint32_t>(aligned_offset);
-                    std::cout << "dynamic_offset " << dynamic_offset << std::endl;
+                    std::cout << "transform_index " << dc.transform_index << " vertex_count " << dc.vertex_count << " first_vertex " << dc.first_vertex << std::endl;
 
                     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
                                             0, 1, &dc.descriptor_set, 1, &dynamic_offset);
@@ -682,6 +690,7 @@ namespace temp
             meshlet.vertex_buffer = vertex_buffer;
             meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
             meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
+            std::cout << "# vertex_layout_index " << vertex_layout_index << " vertex_count " << meshlet.vertex_count << " first_vertex " << first_vertex << " offset " << vertex_buffer->offset_bytes() << std::endl;
 
             if (index_type != graphics::INDEX_TYPE::UNDEFINED) {
                 auto first_index = (index_buffer->offset_bytes() - index_buffer_allocation_size) / index_size;
@@ -711,16 +720,16 @@ namespace temp
         model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
         model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
 
-        model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-.5, 0, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
-        model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+.5, 0, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
-        model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(0.f), glm::vec3{1, 0, 0}));
-        model_.transforms.push_back(
+        /*model_.transforms.push_back(
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-.5, 0, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));*/
+        /*model_.transforms.push_back(
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(0.f), glm::vec3{1, 0, 0}));*/
+        /*model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 1, -1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, -1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, -1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));*/
+        model_.transforms.push_back(
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+.5, 0, +.5}), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
 
         model_.vertex_layouts.push_back(vertex::create_vertex_layout(
             vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
@@ -742,14 +751,11 @@ namespace temp
             vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
         ));
 
+        /*model_.scene_nodes.push_back(xformat::scene_node{0u, std::size(model_.meshes)});
+        add_plane(app, model_, 0, graphics::INDEX_TYPE::UINT_16, 2);*/
+
         model_.scene_nodes.push_back(xformat::scene_node{0u, std::size(model_.meshes)});
-        add_plane(app, model_, 0, graphics::INDEX_TYPE::UINT_16, 2);
-
-        model_.scene_nodes.push_back(xformat::scene_node{1u, std::size(model_.meshes)});
         add_plane(app, model_, 1, graphics::INDEX_TYPE::UINT_16, 1);
-
-        model_.scene_nodes.push_back(xformat::scene_node{2u, std::size(model_.meshes)});
-        add_plane(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 2);
 
     #if 1
         {
@@ -805,7 +811,7 @@ namespace temp
 
             if (true) {
                 // Third triangle
-                model_.scene_nodes.push_back(xformat::scene_node{3u, std::size(model_.meshes)});
+                model_.scene_nodes.push_back(xformat::scene_node{0u, std::size(model_.meshes)});
 
                 xformat::meshlet meshlet;
 
@@ -816,6 +822,7 @@ namespace temp
                 meshlet.vertex_buffer = vertex_buffer;
                 meshlet.vertex_count = 3;
                 meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
+                std::cout << "^0 vertex_layout_index " << vertex_layout_index << " vertex_count " << meshlet.vertex_count << " first_vertex " << meshlet.first_vertex << " offset " << vertex_buffer->offset_bytes() << std::endl;
 
                 meshlet.material_index = 0;
                 meshlet.instance_count = 1;
@@ -829,7 +836,7 @@ namespace temp
 
             if (true) {
                 // Third triangle
-                model_.scene_nodes.push_back(xformat::scene_node{4u, std::size(model_.meshes)});
+                model_.scene_nodes.push_back(xformat::scene_node{0u, std::size(model_.meshes)});
 
                 xformat::meshlet meshlet;
 
@@ -840,6 +847,7 @@ namespace temp
                 meshlet.vertex_buffer = vertex_buffer;
                 meshlet.vertex_count = 3;
                 meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
+                std::cout << "^1 vertex_layout_index " << vertex_layout_index << " vertex_count " << meshlet.vertex_count << " first_vertex " << meshlet.first_vertex << " offset " << vertex_buffer->offset_bytes() << std::endl;
 
                 meshlet.material_index = 3;
                 meshlet.instance_count = 1;
@@ -852,6 +860,9 @@ namespace temp
             }
         }
     #endif
+
+        /*model_.scene_nodes.push_back(xformat::scene_node{2u, std::size(model_.meshes)});
+        add_plane(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 2);*/
  
         return model_;
     }
