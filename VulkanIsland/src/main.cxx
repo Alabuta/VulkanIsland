@@ -167,8 +167,8 @@ struct app_t final {
 
     VkCommandPool graphics_command_pool{VK_NULL_HANDLE}, transfer_command_pool{VK_NULL_HANDLE};
 
-    VkDescriptorSetLayout descriptorSetLayout{VK_NULL_HANDLE};
-    VkDescriptorPool descriptorPool{VK_NULL_HANDLE};
+    VkDescriptorSetLayout descriptor_set_layout{VK_NULL_HANDLE};
+    VkDescriptorPool descriptor_pool{VK_NULL_HANDLE};
     VkDescriptorSet descriptor_set{VK_NULL_HANDLE};
 
     std::vector<VkCommandBuffer> command_buffers;
@@ -209,8 +209,8 @@ struct app_t final {
         if (pipeline_layout != VK_NULL_HANDLE)
             vkDestroyPipelineLayout(device->handle(), pipeline_layout, nullptr);
 
-        vkDestroyDescriptorSetLayout(device->handle(), descriptorSetLayout, nullptr);
-        vkDestroyDescriptorPool(device->handle(), descriptorPool, nullptr);
+        vkDestroyDescriptorSetLayout(device->handle(), descriptor_set_layout, nullptr);
+        vkDestroyDescriptorPool(device->handle(), descriptor_pool, nullptr);
 
         descriptor_registry.reset();
 
@@ -398,14 +398,10 @@ void create_graphics_command_buffers(app_t &app)
 
         for (auto &&range : indexed) {
             vkCmdBindIndexBuffer(command_buffer, range.index_buffer_handle, range.index_buffer_offset, convert_to::vulkan(range.index_type));
-            std::cout << '#' << i << " index_buffer_handle " << range.index_buffer_handle << " index_buffer_offset " << range.index_buffer_offset << std::endl;
 
             for (auto &&subrange : range.vertex_buffers_bind_ranges) {
                 vkCmdBindVertexBuffers(command_buffer, subrange.first_binding, static_cast<std::uint32_t>(std::size(subrange.buffer_handles)),
                                        std::data(subrange.buffer_handles), std::data(subrange.buffer_offsets));
-                std::cout << '#' << i << " first_binding " << subrange.first_binding << " binding_count " << std::size(subrange.buffer_handles) << std::endl;
-                for (std::size_t j = 0; auto h : subrange.buffer_handles)
-                    std::cout << " handle " << h << " offset " << subrange.buffer_offsets.at(j) << std::endl;
 
                 std::visit([&] (auto span)
                 {
@@ -417,7 +413,6 @@ void create_graphics_command_buffers(app_t &app)
 
                             vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
                                                     0, 1, &dc.descriptor_set, 1, &dynamic_offset);
-                            std::cout << "transform_index " << dc.transform_index << " vertex_count " << dc.vertex_count << " first_vertex " << dc.first_vertex << " index_count " << dc.index_count << " first_index " << dc.first_index << std::endl;
 
                             vkCmdDrawIndexed(command_buffer, dc.index_count, 1, dc.first_index, dc.first_vertex, 0);
                         }
@@ -429,9 +424,6 @@ void create_graphics_command_buffers(app_t &app)
         for (auto &&range : nonindexed) {
             vkCmdBindVertexBuffers(command_buffer, range.first_binding, static_cast<std::uint32_t>(std::size(range.buffer_handles)),
                                    std::data(range.buffer_handles), std::data(range.buffer_offsets));
-            std::cout << '#' << i << " first_binding " << range.first_binding <<  " binding_count " << std::size(range.buffer_handles) << std::endl;
-            for (std::size_t j = 0; auto h : range.buffer_handles)
-                std::cout << " handle " << h << " offset " << range.buffer_offsets .at(j) << std::endl;
 
             std::visit([&] (auto span)
             {
@@ -439,7 +431,6 @@ void create_graphics_command_buffers(app_t &app)
                     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
 
                     std::uint32_t dynamic_offset = dc.transform_index * static_cast<std::uint32_t>(aligned_offset);
-                    std::cout << "transform_index " << dc.transform_index << " vertex_count " << dc.vertex_count << " first_vertex " << dc.first_vertex << std::endl;
 
                     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
                                             0, 1, &dc.descriptor_set, 1, &dynamic_offset);
@@ -914,17 +905,17 @@ void init(platform::window &window, app_t &app)
 
     create_frame_data(app);
 
-    if (auto descriptorSetLayout = CreateDescriptorSetLayout(*app.device); !descriptorSetLayout)
+    if (auto descriptor_set_layout = create_descriptor_set_layout(*app.device); !descriptor_set_layout)
         throw graphics::exception("failed to create the descriptor set layout"s);
 
-    else app.descriptorSetLayout = std::move(descriptorSetLayout.value());
+    else app.descriptor_set_layout = std::move(descriptor_set_layout.value());
 
 #if TEMPORARILY_DISABLED
     if (auto result = glTF::load(sceneName, app.scene, app.nodeSystem); !result)
         throw resource::exception("failed to load a mesh"s);
 #endif
 
-    if (auto pipeline_layout = create_pipeline_layout(*app.device, std::array{app.descriptorSetLayout}); !pipeline_layout)
+    if (auto pipeline_layout = create_pipeline_layout(*app.device, std::array{app.descriptor_set_layout}); !pipeline_layout)
         throw graphics::exception("failed to create the pipeline layout"s);
 
     else app.pipeline_layout = std::move(pipeline_layout.value());
@@ -970,9 +961,9 @@ void init(platform::window &window, app_t &app)
     if (auto descriptorPool = create_descriptor_pool(*app.device); !descriptorPool)
         throw graphics::exception("failed to create the descriptor pool"s);
 
-    else app.descriptorPool = std::move(descriptorPool.value());
+    else app.descriptor_pool = std::move(descriptorPool.value());
 
-    if (auto descriptor_set = create_descriptor_sets(*app.device, app.descriptorPool, std::array{app.descriptorSetLayout}); !descriptor_set)
+    if (auto descriptor_set = create_descriptor_sets(*app.device, app.descriptor_pool, std::array{app.descriptor_set_layout}); !descriptor_set)
         throw graphics::exception("failed to create the descriptor pool"s);
 
     else app.descriptor_set = std::move(descriptor_set.value());

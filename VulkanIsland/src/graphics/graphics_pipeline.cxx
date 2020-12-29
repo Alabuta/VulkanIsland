@@ -486,18 +486,18 @@ namespace graphics
 }
 
 std::optional<VkPipelineLayout>
-create_pipeline_layout(vulkan::device const &device, std::span<VkDescriptorSetLayout const> const descriptorSetLayouts)
+create_pipeline_layout(vulkan::device const &device, std::span<VkDescriptorSetLayout const> const descriptor_set_layouts)
 {
-    VkPipelineLayoutCreateInfo const layoutCreateInfo{
+    VkPipelineLayoutCreateInfo const create_info{
         VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
         nullptr, 0,
-        static_cast<std::uint32_t>(std::size(descriptorSetLayouts)), std::data(descriptorSetLayouts),
+        static_cast<std::uint32_t>(std::size(descriptor_set_layouts)), std::data(descriptor_set_layouts),
         0, nullptr
     };
 
     VkPipelineLayout handle;
 
-    if (auto result = vkCreatePipelineLayout(device.handle(), &layoutCreateInfo, nullptr, &handle); result != VK_SUCCESS)
+    if (auto result = vkCreatePipelineLayout(device.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
         throw vulkan::exception(fmt::format("failed to create pipeline layout: {0:#x}"s, result));
 
     return handle;
