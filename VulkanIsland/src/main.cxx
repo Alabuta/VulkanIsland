@@ -681,7 +681,6 @@ namespace temp
             meshlet.vertex_buffer = vertex_buffer;
             meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
             meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
-            std::cout << "# vertex_layout_index " << vertex_layout_index << " vertex_count " << meshlet.vertex_count << " first_vertex " << first_vertex << " offset " << vertex_buffer->offset_bytes() << std::endl;
 
             if (index_type != graphics::INDEX_TYPE::UNDEFINED) {
                 auto first_index = (index_buffer->offset_bytes() - index_buffer_allocation_size) / index_size;
