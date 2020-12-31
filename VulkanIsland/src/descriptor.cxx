@@ -1,3 +1,4 @@
+#include <span>
 #include <string>
 #include <string_view>
 
@@ -58,6 +59,7 @@ std::optional<VkDescriptorPool> create_descriptor_pool(vulkan::device const &dev
     else throw vulkan::exception(fmt::format("failed to create descriptor pool: {0:#x}"s, result));
 }
 
+#if OBSOLETE
 std::optional<VkDescriptorSetLayout> create_descriptor_set_layout(vulkan::device const &device)
 {
     std::array<VkDescriptorSetLayoutBinding, 2> constexpr layout_bindings{{
@@ -93,21 +95,64 @@ std::optional<VkDescriptorSetLayout> create_descriptor_set_layout(vulkan::device
 
     else throw vulkan::exception(fmt::format("failed to create descriptor set layout: {0:#x}"s, result));
 }
+#endif
 
-std::optional<VkDescriptorSet>
-create_descriptor_sets(vulkan::device const &device, VkDescriptorPool descriptorPool, std::span<VkDescriptorSetLayout const> const descriptor_set_layouts)
+std::vector<VkDescriptorSet>
+create_descriptor_sets(vulkan::device const &device, VkDescriptorPool descriptor_pool, std::span<VkDescriptorSetLayout const> const descriptor_set_layouts)
 {
-    VkDescriptorSetAllocateInfo const allocateInfo{
+    VkDescriptorSetAllocateInfo const allocate_info{
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
         nullptr,
-        descriptorPool,
+        descriptor_pool,
         static_cast<std::uint32_t>(std::size(descriptor_set_layouts)), std::data(descriptor_set_layouts)
     };
 
-    VkDescriptorSet handle;
+    std::vector<VkDescriptorSet> handles(std::size(descriptor_set_layouts));
 
-    if (auto result = vkAllocateDescriptorSets(device.handle(), &allocateInfo, &handle); result == VK_SUCCESS)
-        return handle;
+    if (auto result = vkAllocateDescriptorSets(device.handle(), &allocate_info, std::data(handles)); result == VK_SUCCESS)
+        return handles;
 
     else throw vulkan::exception(fmt::format("failed to allocate descriptor set(s): {0:#x}"s, result));
+}
+
+std::optional<VkDescriptorSetLayout> create_descriptor_set_layout2(vulkan::device const &device, std::span<const VkDescriptorSetLayoutBinding> const layout_bindings)
+{
+    VkDescriptorSetLayoutCreateInfo const create_info{
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
+        nullptr, 0,
+        static_cast<std::uint32_t>(std::size(layout_bindings)), std::data(layout_bindings)
+    };
+
+    VkDescriptorSetLayout handle;
+
+    if (auto result = vkCreateDescriptorSetLayout(device.handle(), &create_info, nullptr, &handle); result == VK_SUCCESS)
+        return handle;
+
+    else throw vulkan::exception(fmt::format("failed to create descriptor set layout: {0:#x}"s, result));
+}
+
+std::optional<VkDescriptorSetLayout> create_view_resources_descriptor_set_layout(vulkan::device const &device)
+{
+    std::array<VkDescriptorSetLayoutBinding, 1> constexpr layout_bindings{
+        {
+            0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            nullptr
+        }
+    };
+
+    return create_descriptor_set_layout2(device, layout_bindings);
+}
+
+std::optional<VkDescriptorSetLayout> create_object_resources_descriptor_set_layout(vulkan::device const &device)
+{
+    std::array<VkDescriptorSetLayoutBinding, 1> constexpr layout_bindings{
+        {
+            0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
+            1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            nullptr
+        }
+    };
+
+    return create_descriptor_set_layout2(device, layout_bindings);
 }

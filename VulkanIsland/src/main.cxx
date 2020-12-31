@@ -167,9 +167,12 @@ struct app_t final {
 
     VkCommandPool graphics_command_pool{VK_NULL_HANDLE}, transfer_command_pool{VK_NULL_HANDLE};
 
-    VkDescriptorSetLayout descriptor_set_layout{VK_NULL_HANDLE};
     VkDescriptorPool descriptor_pool{VK_NULL_HANDLE};
-    VkDescriptorSet descriptor_set{VK_NULL_HANDLE};
+
+    VkDescriptorSetLayout view_resources_descriptor_set_layout{VK_NULL_HANDLE};
+    VkDescriptorSetLayout object_resources_descriptor_set_layout{VK_NULL_HANDLE};
+    VkDescriptorSet view_resources_descriptor_set{VK_NULL_HANDLE};
+    VkDescriptorSet object_resources_descriptor_set{VK_NULL_HANDLE};
 
     std::vector<VkCommandBuffer> command_buffers;
 
@@ -209,7 +212,8 @@ struct app_t final {
         if (pipeline_layout != VK_NULL_HANDLE)
             vkDestroyPipelineLayout(device->handle(), pipeline_layout, nullptr);
 
-        vkDestroyDescriptorSetLayout(device->handle(), descriptor_set_layout, nullptr);
+        vkDestroyDescriptorSetLayout(device->handle(), view_resources_descriptor_set_layout, nullptr);
+        vkDestroyDescriptorSetLayout(device->handle(), object_resources_descriptor_set_layout, nullptr);
         vkDestroyDescriptorPool(device->handle(), descriptor_pool, nullptr);
 
         descriptor_registry.reset();
@@ -268,7 +272,7 @@ struct window_events_handler final : public platform::window::event_handler_inte
 };
 
 
-void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescriptorSet &descriptor_set)
+void update_descriptor_set(app_t &app, vulkan::device const &device)
 {
     // TODO: descriptor info typed by VkDescriptorType.
     auto const per_camera = std::array{
@@ -291,7 +295,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,
-            descriptor_set,
+            app.view_resources_descriptor_set,
             0,
             0, static_cast<std::uint32_t>(std::size(per_camera)),
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
@@ -302,8 +306,8 @@ void update_descriptor_set(app_t &app, vulkan::device const &device, VkDescripto
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,
-            descriptor_set,
-            1,
+            app.object_resources_descriptor_set,
+            0, // it is 1 when there was only one descriptor set
             0, static_cast<std::uint32_t>(std::size(per_object)),
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
             nullptr,
@@ -409,6 +413,9 @@ void create_graphics_command_buffers(app_t &app)
                         for (auto &&dc : span) {
                             vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
 
+                            vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
+                                                    0, 1, &app.view_resources_descriptor_set, 0, nullptr);
+
                             std::uint32_t dynamic_offset = dc.transform_index * static_cast<std::uint32_t>(aligned_offset);
 
                             vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
@@ -429,6 +436,9 @@ void create_graphics_command_buffers(app_t &app)
             {
                 for (auto &&dc : span) {
                     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
+
+                    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
+                                            0, 1, &app.view_resources_descriptor_set, 0, nullptr);
 
                     std::uint32_t dynamic_offset = dc.transform_index * static_cast<std::uint32_t>(aligned_offset);
 
@@ -591,7 +601,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
             if (index_buffer) {
                 app.draw_commands_holder.add_draw_command(
                     renderer::indexed_draw_command{
-                        pipeline, material, app.pipeline_layout, app.descriptor_set, app.render_pass,
+                        pipeline, material, app.pipeline_layout, app.object_resources_descriptor_set, app.render_pass,
                         vertex_buffer, index_buffer, vertex_input_binding_index,
                         meshlet.first_vertex, meshlet.vertex_count, meshlet.first_index, meshlet.index_count,
                         static_cast<std::uint32_t>(transform_index)
@@ -602,7 +612,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
             else {
                 app.draw_commands_holder.add_draw_command(
                     renderer::nonindexed_draw_command{
-                        pipeline, material, app.pipeline_layout, app.descriptor_set, app.render_pass,
+                        pipeline, material, app.pipeline_layout, app.object_resources_descriptor_set, app.render_pass,
                         vertex_buffer, vertex_input_binding_index, meshlet.first_vertex, meshlet.vertex_count,
                         static_cast<std::uint32_t>(transform_index)
                     }
@@ -904,17 +914,24 @@ void init(platform::window &window, app_t &app)
 
     create_frame_data(app);
 
-    if (auto descriptor_set_layout = create_descriptor_set_layout(*app.device); !descriptor_set_layout)
-        throw graphics::exception("failed to create the descriptor set layout"s);
+    if (auto descriptor_set_layout = create_view_resources_descriptor_set_layout(*app.device); !descriptor_set_layout)
+        throw graphics::exception("failed to create the view resources descriptor set layout"s);
 
-    else app.descriptor_set_layout = std::move(descriptor_set_layout.value());
+    else app.view_resources_descriptor_set_layout = std::move(descriptor_set_layout.value());
+
+    if (auto descriptor_set_layout = create_object_resources_descriptor_set_layout(*app.device); !descriptor_set_layout)
+        throw graphics::exception("failed to create the object resources descriptor set layout"s);
+
+    else app.object_resources_descriptor_set_layout = std::move(descriptor_set_layout.value());
 
 #if TEMPORARILY_DISABLED
     if (auto result = glTF::load(sceneName, app.scene, app.nodeSystem); !result)
         throw resource::exception("failed to load a mesh"s);
 #endif
 
-    if (auto pipeline_layout = create_pipeline_layout(*app.device, std::array{app.descriptor_set_layout}); !pipeline_layout)
+    auto descriptor_sets_layouts = std::array{app.view_resources_descriptor_set_layout, app.object_resources_descriptor_set_layout};
+
+    if (auto pipeline_layout = create_pipeline_layout(*app.device, descriptor_sets_layouts); !pipeline_layout)
         throw graphics::exception("failed to create the pipeline layout"s);
 
     else app.pipeline_layout = std::move(pipeline_layout.value());
@@ -962,12 +979,15 @@ void init(platform::window &window, app_t &app)
 
     else app.descriptor_pool = std::move(descriptorPool.value());
 
-    if (auto descriptor_set = create_descriptor_sets(*app.device, app.descriptor_pool, std::array{app.descriptor_set_layout}); !descriptor_set)
+    if (auto descriptor_sets = create_descriptor_sets(*app.device, app.descriptor_pool, descriptor_sets_layouts); descriptor_sets.empty())
         throw graphics::exception("failed to create the descriptor pool"s);
 
-    else app.descriptor_set = std::move(descriptor_set.value());
+    else {
+        app.view_resources_descriptor_set = std::move(descriptor_sets.at(0));
+        app.object_resources_descriptor_set = std::move(descriptor_sets.at(1));
+    }
 
-    update_descriptor_set(app, *app.device, app.descriptor_set);
+    update_descriptor_set(app, *app.device);
 
     build_render_pipelines(app, temp::model);
 
