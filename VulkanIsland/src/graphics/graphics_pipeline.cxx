@@ -432,13 +432,12 @@ namespace graphics
 namespace graphics
 {
     std::shared_ptr<graphics::pipeline_layout>
-    pipeline_factory::create_pipeline_layout(std::vector<graphics::descriptor_set_layout> const &descriptor_set_layouts)
+    pipeline_factory::create_pipeline_layout(std::span<const graphics::descriptor_set_layout> const descriptor_set_layouts)
     {
         std::vector<VkDescriptorSetLayout> layouts_handles;
 
-        for (auto &&descriptor_set_layout : descriptor_set_layouts) {
+        for (auto &&descriptor_set_layout : descriptor_set_layouts)
             layouts_handles.push_back(descriptor_set_layout.handle());
-        }
 
         VkPipelineLayoutCreateInfo const create_info{
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,

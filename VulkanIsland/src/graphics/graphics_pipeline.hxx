@@ -115,7 +115,7 @@ namespace graphics
                         VkPipelineLayout layout, std::shared_ptr<graphics::render_pass> render_pass, std::uint32_t subpass_index);
 
         [[nodiscard]] std::shared_ptr<graphics::pipeline_layout>
-        create_pipeline_layout(std::vector<graphics::descriptor_set_layout> const &descriptor_set_layouts);
+        create_pipeline_layout(std::span<const graphics::descriptor_set_layout> const descriptor_set_layouts);
 
     private:
 

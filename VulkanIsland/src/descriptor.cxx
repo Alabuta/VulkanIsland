@@ -47,7 +47,7 @@ std::optional<VkDescriptorPool> create_descriptor_pool(vulkan::device const &dev
     VkDescriptorPoolCreateInfo const create_info{
         VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         nullptr, 0,
-        1,
+        3,
         static_cast<std::uint32_t>(std::size(pool_sizes)), std::data(pool_sizes)
     };
 
