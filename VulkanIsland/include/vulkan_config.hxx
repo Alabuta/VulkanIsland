@@ -34,8 +34,8 @@ namespace vulkan_config
     };
 
     auto constexpr layers = std::array{
-        // "VK_LAYER_KHRONOS_validation",
-        "VK_LAYER_LUNARG_standard_validation"
+         "VK_LAYER_KHRONOS_validation"
+         //"VK_LAYER_LUNARG_standard_validation"
     };
 
     VkApplicationInfo constexpr application_info{

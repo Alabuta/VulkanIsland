@@ -362,7 +362,7 @@ void create_graphics_command_buffers(app_t &app)
         VkCommandBufferBeginInfo const begin_info{
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             nullptr,
-            VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT,
+            0, //VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, // :TODO: remove?
             nullptr
         };
 

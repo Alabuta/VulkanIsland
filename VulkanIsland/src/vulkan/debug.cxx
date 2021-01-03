@@ -20,10 +20,10 @@ namespace vulkan
         using namespace std::string_literals;
 
         if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-            std::cerr << fmt::format("{} - {} : {}"s, data->messageIdNumber, data->pMessageIdName, data->pMessage) << std::endl;
+            fmt::print(stderr, "{} - {} : {}\n\n"s, data->messageIdNumber, data->pMessageIdName, data->pMessage);
 
         else if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-            std::cerr << fmt::format("{} - {} : {}"s, data->messageIdNumber, data->pMessageIdName, data->pMessage) << std::endl;
+            fmt::print(stderr, "{} - {} : {}\n\n"s, data->messageIdNumber, data->pMessageIdName, data->pMessage);
 
         return VK_FALSE;
     }
@@ -33,7 +33,7 @@ namespace vulkan
                    [[maybe_unused]] std::uint64_t object, [[maybe_unused]] std::size_t location, [[maybe_unused]] std::int32_t message_code,
                    [[maybe_unused]] const char *layer_prefix, const char *message, [[maybe_unused]] void *user_data)
     {
-        std::cerr << message << std::endl;
+        fmt::print(stderr, "{}\n\n"s, message);
 
         return VK_FALSE;
     }
