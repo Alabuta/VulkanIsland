@@ -211,7 +211,7 @@ namespace resource
                 /*if (is_linear)
                     aligned_offset = boost::alignment::align_up(aligned_offset, image_granularity);*/
 
-                return aligned_offset + required_size <= chunk.offset + chunk.size;;
+                return aligned_offset + required_size <= chunk.offset + chunk.size;
             });
 
             return it_chunk != it_chunk_end;
