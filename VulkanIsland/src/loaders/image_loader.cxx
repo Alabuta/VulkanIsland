@@ -20,7 +20,7 @@ namespace
         auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
         auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
 
-        auto buffer = resource_manager.create_buffer(container.size_bytes(), usage_flags, property_flags);
+        auto buffer = resource_manager.create_buffer(container.size_bytes(), usage_flags, property_flags, graphics::RESOURCE_SHARING_MODE::EXCLUSIVE);
 
         if (buffer) {
             void *data;

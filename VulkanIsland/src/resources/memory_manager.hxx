@@ -34,7 +34,7 @@ namespace resource
         std::uint32_t type_index() const noexcept { return type_index_; }
         graphics::MEMORY_PROPERTY_TYPE properties() const noexcept { return properties_; }
 
-        bool linear() const noexcept { return linear_; }
+        bool is_linear() const noexcept { return is_linear_; }
 
     private:
 
@@ -45,10 +45,10 @@ namespace resource
         std::uint32_t type_index_;
         graphics::MEMORY_PROPERTY_TYPE properties_;
 
-        bool linear_;
+        bool is_linear_;
 
         memory_block(VkDeviceMemory handle, std::size_t size, std::size_t offset, std::uint32_t type_index,
-                      graphics::MEMORY_PROPERTY_TYPE properties, bool linear) noexcept;
+                      graphics::MEMORY_PROPERTY_TYPE properties, bool is_linear) noexcept;
 
         friend resource::memory_allocator;
     };

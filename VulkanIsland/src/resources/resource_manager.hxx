@@ -49,7 +49,7 @@ namespace resource
         resource_manager(vulkan::device const &device, renderer::config const &config, resource::memory_manager &memory_manager);
 
         [[nodiscard]] std::shared_ptr<resource::buffer>
-        create_buffer(std::size_t size_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types);
+        create_buffer(std::size_t size_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types, graphics::RESOURCE_SHARING_MODE sharing_mode);
 
         [[nodiscard]] std::shared_ptr<resource::staging_buffer>
         create_staging_buffer(std::size_t size_bytes);

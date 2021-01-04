@@ -22,13 +22,13 @@
 
 namespace
 {
-    std::size_t hash_memory_block_properties(std::uint32_t type_index, graphics::MEMORY_PROPERTY_TYPE properties, bool linear)
+    std::size_t hash_memory_block_properties(std::uint32_t type_index, graphics::MEMORY_PROPERTY_TYPE properties, bool is_linear)
     {
         std::size_t seed = 0;
 
         boost::hash_combine(seed, type_index);
         boost::hash_combine(seed, properties);
-        boost::hash_combine(seed, linear);
+        boost::hash_combine(seed, is_linear);
 
         return seed;
     }
@@ -97,15 +97,15 @@ namespace resource
     };
 
     struct memory_pool final {
-        memory_pool(graphics::MEMORY_PROPERTY_TYPE properties, std::uint32_t memory_type_index, bool linear)
-            : properties{properties}, type_index{memory_type_index}, linear{linear} { }
+        memory_pool(graphics::MEMORY_PROPERTY_TYPE properties, std::uint32_t memory_type_index, bool is_linear)
+            : properties{properties}, type_index{memory_type_index}, is_linear{is_linear} { }
 
         graphics::MEMORY_PROPERTY_TYPE properties;
 
         std::uint32_t type_index{0};
         std::size_t allocated_size{0};
 
-        bool linear;
+        bool is_linear;
 
         //std::unordered_map<resource::memory_block, resource::memory_page> memory_blocks;
         std::unordered_map<VkDeviceMemory, resource::memory_page> memory_blocks;
@@ -114,7 +114,7 @@ namespace resource
         requires mpl::are_same_v<std::remove_cvref_t<T>, memory_pool>
         bool constexpr operator== (T &&rhs) const noexcept
         {
-            return properties == rhs.properties && type_index == rhs.type_index && linear == rhs.linear;
+            return properties == rhs.properties && type_index == rhs.type_index && is_linear == rhs.is_linear;
         }
     };
 
@@ -133,12 +133,12 @@ namespace resource
         ~memory_allocator();
 
         std::shared_ptr<resource::memory_block>
-        allocate_memory(VkMemoryRequirements &&memory_requirements, graphics::MEMORY_PROPERTY_TYPE, bool linear);
+        allocate_memory(VkMemoryRequirements &&memory_requirements, graphics::MEMORY_PROPERTY_TYPE, bool is_linear);
 
         void deallocate_memory(resource::memory_block &&memory_block);
 
         decltype(memory_pool::memory_blocks)::iterator
-        allocate_memory_block(std::size_t size_bytes, std::uint32_t memory_type_index, graphics::MEMORY_PROPERTY_TYPE properties, bool linear);
+        allocate_memory_block(std::size_t size_bytes, std::uint32_t memory_type_index, graphics::MEMORY_PROPERTY_TYPE properties, bool is_linear);
     };
 
     memory_allocator::memory_allocator(vulkan::device const& device) : device{ device }
@@ -159,7 +159,7 @@ namespace resource
     }
 
     std::shared_ptr<resource::memory_block>
-    memory_allocator::allocate_memory(VkMemoryRequirements &&memory_requirements, graphics::MEMORY_PROPERTY_TYPE properties, bool linear)
+    memory_allocator::allocate_memory(VkMemoryRequirements &&memory_requirements, graphics::MEMORY_PROPERTY_TYPE properties, bool is_linear)
     {
     #ifndef  _MSC_VER
         #pragma GCC diagnostic push
@@ -181,10 +181,10 @@ namespace resource
 
         else throw memory::bad_allocation("failed to find suitable memory type."s);
 
-        auto const key = hash_memory_block_properties(memory_type_index, properties, linear);
+        auto const key = hash_memory_block_properties(memory_type_index, properties, is_linear);
 
         if (!memory_pools.contains(key))
-            memory_pools.try_emplace(key, properties, memory_type_index, linear);
+            memory_pools.try_emplace(key, properties, memory_type_index, is_linear);
 
         auto &&memory_pool = memory_pools.at(key);
         auto &&memory_blocks = memory_pool.memory_blocks;
@@ -208,7 +208,7 @@ namespace resource
             {
                 auto aligned_offset = boost::alignment::align_up(chunk.offset, required_alignment);
 
-                /*if (linear)
+                /*if (is_linear)
                     aligned_offset = boost::alignment::align_up(aligned_offset, image_granularity);*/
 
                 return aligned_offset + required_size <= chunk.offset + chunk.size;;
@@ -218,7 +218,7 @@ namespace resource
         });
 
         if (it_block == std::end(memory_blocks)) {
-            it_block = allocate_memory_block(kPAGE_ALLOCATION_SIZE, memory_type_index, properties, linear);
+            it_block = allocate_memory_block(kPAGE_ALLOCATION_SIZE, memory_type_index, properties, is_linear);
 
             auto &&available_chunks = it_block->second.available_chunks;
 
@@ -236,7 +236,7 @@ namespace resource
 
             auto aligned_offset = boost::alignment::align_up(offset, required_alignment);
 
-            /*if (linear)
+            /*if (is_linear)
                 aligned_offset = boost::alignment::align_up(aligned_offset, image_granularity);*/
 
             if (aligned_offset > offset)
@@ -256,7 +256,7 @@ namespace resource
             fmt::print("Memory manager: type index #{} : sub-allocation {} KB.\n"s, memory_type_index, kilobytes);
 
             return std::shared_ptr<resource::memory_block>{
-                new resource::memory_block{it_block->first, required_size, aligned_offset, memory_type_index, properties, linear},
+                new resource::memory_block{it_block->first, required_size, aligned_offset, memory_type_index, properties, is_linear},
                                             [this] (resource::memory_block *const ptr_memory)
                 {
                     deallocate_memory(std::move(*ptr_memory));
@@ -271,7 +271,7 @@ namespace resource
 
     void memory_allocator::deallocate_memory(resource::memory_block &&memory_block)
     {
-        auto const key = hash_memory_block_properties(memory_block.type_index(), memory_block.properties(), memory_block.linear());
+        auto const key = hash_memory_block_properties(memory_block.type_index(), memory_block.properties(), memory_block.is_linear());
 
         if (!memory_pools.contains(key)) {
             std::cerr << "Memory manager: dead memory chunk encountered."s << std::endl;
@@ -323,9 +323,9 @@ namespace resource
     }
 
     decltype(memory_pool::memory_blocks)::iterator
-    memory_allocator::allocate_memory_block(std::size_t size_bytes, std::uint32_t memory_type_index, graphics::MEMORY_PROPERTY_TYPE properties, bool linear)
+    memory_allocator::allocate_memory_block(std::size_t size_bytes, std::uint32_t memory_type_index, graphics::MEMORY_PROPERTY_TYPE properties, bool is_linear)
     {
-        auto const key = hash_memory_block_properties(memory_type_index, properties, linear);
+        auto const key = hash_memory_block_properties(memory_type_index, properties, is_linear);
 
         if (!memory_pools.contains(key))
             throw memory::exception(fmt::format("failed to find instantiated memory pool for type index #{}"s, memory_type_index));
@@ -396,6 +396,6 @@ namespace resource
     }
 
     memory_block::memory_block(VkDeviceMemory handle, std::size_t size, std::size_t offset, std::uint32_t type_index,
-                                 graphics::MEMORY_PROPERTY_TYPE properties, bool linear) noexcept
-        : handle_{handle}, size_{size}, offset_{offset}, type_index_{type_index}, properties_{properties}, linear_{linear} { }
+                                 graphics::MEMORY_PROPERTY_TYPE properties, bool is_linear) noexcept
+        : handle_{handle}, size_{size}, offset_{offset}, type_index_{type_index}, properties_{properties}, is_linear_{is_linear} { }
 }

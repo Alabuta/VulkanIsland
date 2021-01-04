@@ -69,10 +69,9 @@ namespace resource
     { }
 
     std::shared_ptr<resource::buffer>
-    resource_manager::create_buffer(std::size_t size_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
+    resource_manager::create_buffer(std::size_t size_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types,
+                                    graphics::RESOURCE_SHARING_MODE sharing_mode)
     {
-        auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
-
         VkBufferCreateInfo const create_info{
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             nullptr,
@@ -356,8 +355,9 @@ namespace resource
         if (!vertex_buffers_.contains(layout)) {
             auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER;
             auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
+            auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
 
-            auto buffer = create_buffer(kVERTEX_BUFFER_FIXED_SIZE, usage_flags, property_flags);
+            auto buffer = create_buffer(kVERTEX_BUFFER_FIXED_SIZE, usage_flags, property_flags, sharing_mode);
 
             if (buffer == nullptr)
                 throw resource::instantiation_fail("failed to create device vertex buffer"s);
@@ -419,8 +419,9 @@ namespace resource
         if (!index_buffers_.contains(index_type)) {
             auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::INDEX_BUFFER;
             auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
+            auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
 
-            auto buffer = create_buffer(kINDEX_BUFFER_FIXED_SIZE, usage_flags, property_flags);
+            auto buffer = create_buffer(kINDEX_BUFFER_FIXED_SIZE, usage_flags, property_flags, sharing_mode);
 
             if (buffer == nullptr)
                 throw resource::instantiation_fail("failed to create device index buffer"s);
@@ -495,8 +496,9 @@ CreateUniformBuffer(resource::resource_manager &resource_manager, std::size_t si
 {
     auto constexpr usageFlags = graphics::BUFFER_USAGE::UNIFORM_BUFFER;
     auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
+    auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
 
-    return resource_manager.create_buffer(size, usageFlags, propertyFlags);
+    return resource_manager.create_buffer(size, usageFlags, propertyFlags, sharing_mode);
 }
 
 std::shared_ptr<resource::buffer>
@@ -504,8 +506,9 @@ create_coherent_storage_buffer(resource::resource_manager &resource_manager, std
 {
     auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
     auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
+    auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
 
-    return resource_manager.create_buffer(size, usageFlags, propertyFlags);
+    return resource_manager.create_buffer(size, usageFlags, propertyFlags, sharing_mode);
 }
 
 std::shared_ptr<resource::buffer>
@@ -513,6 +516,7 @@ CreateStorageBuffer(resource::resource_manager &resource_manager, std::size_t si
 {
     auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
     auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE;
+    auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
 
-    return resource_manager.create_buffer(size, usageFlags, propertyFlags);
+    return resource_manager.create_buffer(size, usageFlags, propertyFlags, sharing_mode);
 }
