@@ -64,8 +64,66 @@ namespace resource
 
 namespace resource
 {
+    class staging_buffer_pool final {
+    public:
+
+        staging_buffer_pool(vulkan::device const &device, resource::resource_manager &resource_manager);
+        ~staging_buffer_pool();
+
+        std::shared_ptr<resource::buffer> const &buffer() const { return buffer_; }
+
+        std::span<std::byte> allocate_buffer_chunk(std::size_t size_bytes);
+
+    private:
+
+        vulkan::device const &device_;
+        resource::resource_manager &resource_manager_;
+
+        std::shared_ptr<resource::buffer> buffer_;
+        std::span<std::byte> mapped_ptr_;
+    };
+
+    staging_buffer_pool::staging_buffer_pool(vulkan::device const &device, resource::resource_manager &resource_manager)
+        : device_{device}, resource_manager_{resource_manager}
+    {
+        auto constexpr buffer_usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
+        auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
+        auto constexpr memory_property_types = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
+
+        auto constexpr size_bytes = resource::memory_manager::kPAGE_ALLOCATION_SIZE;
+
+        buffer_ = resource_manager_.create_buffer(size_bytes, buffer_usage_flags, memory_property_types, sharing_mode);
+
+        if (buffer_ == nullptr)
+            throw resource::instantiation_fail(fmt::format("failed to create the staging pool buffer"s));
+
+        auto &&memory = buffer_->memory();
+
+        void *mapped_ptr{nullptr};
+
+        if (auto result = vkMapMemory(device_.handle(), memory->handle(), memory->offset(), size_bytes, 0, &mapped_ptr); result != VK_SUCCESS)
+            throw resource::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
+
+        mapped_ptr_ = std::span<std::byte>{reinterpret_cast<std::byte *>(mapped_ptr), size_bytes};
+    }
+
+    resource::staging_buffer_pool::~staging_buffer_pool()
+    {
+        vkUnmapMemory(device_.handle(), buffer_->memory()->handle());
+    }
+
+    std::span<std::byte> staging_buffer_pool::allocate_buffer_chunk(std::size_t size_bytes)
+    {
+        return std::span<std::byte>();
+    }
+}
+
+namespace resource
+{
     resource_manager::resource_manager(vulkan::device const &device, renderer::config const &config, resource::memory_manager &memory_manager)
-        : device_{device}, config_{config}, memory_manager_{memory_manager}, resource_deleter_{std::make_shared<resource::resource_deleter>(device)}
+        : device_{device}, config_{config}, memory_manager_{memory_manager},
+          resource_deleter_{std::make_shared<resource::resource_deleter>(device)},
+          staging_buffer_pool_{std::make_shared<resource::staging_buffer_pool>(device_, *this)}
     { }
 
     std::shared_ptr<resource::buffer>
@@ -116,6 +174,9 @@ namespace resource
     std::shared_ptr<resource::staging_buffer>
     resource_manager::create_staging_buffer(std::size_t size_bytes)
     {
+        // auto [buffer, mapped_ptr] = staging_buffer_pool_->allocate_buffer_chunk(size_bytes);
+        return { };
+    #if 0
         auto constexpr buffer_usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
         auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
         auto constexpr memory_property_types = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
@@ -165,6 +226,7 @@ namespace resource
         else throw resource::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
 
         return buffer;
+    #endif
     }
 
     std::shared_ptr<resource::image>

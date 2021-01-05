@@ -92,6 +92,8 @@ namespace resource
 
         std::shared_ptr<struct resource_deleter> resource_deleter_;
 
+        std::shared_ptr<class staging_buffer_pool> staging_buffer_pool_;
+
         template<class T>
         struct buffer_set_comparator final {
             using is_transparent = void;

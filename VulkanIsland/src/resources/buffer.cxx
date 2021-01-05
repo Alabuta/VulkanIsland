@@ -8,9 +8,8 @@ namespace resource
         : handle_{handle}, memory_{memory}, size_bytes_{size_bytes}, usage_{usage}, sharing_mode_{sharing_mode}
     { }
 
-    staging_buffer::staging_buffer(VkBuffer handle, std::shared_ptr<resource::memory_block> memory, std::span<std::byte> mapped_ptr,
-                                   graphics::BUFFER_USAGE usage, graphics::RESOURCE_SHARING_MODE sharing_mode)
-        : handle_{handle}, memory_{memory}, mapped_ptr_{mapped_ptr}, usage_{usage}, sharing_mode_{sharing_mode}
+    staging_buffer::staging_buffer(std::shared_ptr<resource::buffer> buffer, std::span<std::byte> mapped_ptr)
+        : buffer_{buffer}, mapped_ptr_{mapped_ptr}
     { }
 
     index_buffer::index_buffer(std::shared_ptr<resource::buffer> device_buffer, std::size_t offset_bytes, std::size_t available_size, graphics::INDEX_TYPE index_type)
