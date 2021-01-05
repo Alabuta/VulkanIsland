@@ -119,8 +119,6 @@ namespace resource
     };
 
     struct memory_allocator final {
-        static std::size_t constexpr kPAGE_ALLOCATION_SIZE{0x1000'0000}; // 256 MB
-
         vulkan::device const &device;
 
         std::size_t buffer_image_granularity{0};
@@ -145,7 +143,7 @@ namespace resource
     {
         buffer_image_granularity = device.device_limits().buffer_image_granularity;
 
-        if (kPAGE_ALLOCATION_SIZE < buffer_image_granularity)
+        if (resource::memory_manager::kPAGE_ALLOCATION_SIZE < buffer_image_granularity)
             throw memory::bad_allocation("default memory page size is less than buffer image granularity size."s);
     }
 
@@ -171,7 +169,7 @@ namespace resource
         #pragma GCC diagnostic pop
     #endif
 
-        if (required_size > kPAGE_ALLOCATION_SIZE)
+        if (required_size > resource::memory_manager::kPAGE_ALLOCATION_SIZE)
             throw memory::bad_allocation("requested allocation size is bigger than memory page size."s);
 
         std::uint32_t memory_type_index = 0;
@@ -218,11 +216,11 @@ namespace resource
         });
 
         if (it_block == std::end(memory_blocks)) {
-            it_block = allocate_memory_block(kPAGE_ALLOCATION_SIZE, memory_type_index, properties, is_linear);
+            it_block = allocate_memory_block(resource::memory_manager::kPAGE_ALLOCATION_SIZE, memory_type_index, properties, is_linear);
 
             auto &&available_chunks = it_block->second.available_chunks;
 
-            it_chunk = available_chunks.lower_bound(kPAGE_ALLOCATION_SIZE);
+            it_chunk = available_chunks.lower_bound(resource::memory_manager::kPAGE_ALLOCATION_SIZE);
 
             if (it_chunk == std::end(available_chunks))
                 throw memory::exception("failed to find available memory chunk."s);
