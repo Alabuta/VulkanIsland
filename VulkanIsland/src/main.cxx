@@ -671,12 +671,12 @@ namespace temp
             if (index_type != graphics::INDEX_TYPE::UNDEFINED) {
                 auto index_staging_buffer = app.resource_manager->create_staging_buffer(index_buffer_allocation_size);
 
-                primitives::generate_plane_indexed(create_info, vertex_staging_buffer->mapped_ptr(), index_staging_buffer->mapped_ptr(), color);
+                primitives::generate_plane_indexed(create_info, vertex_staging_buffer->mapped_range(), index_staging_buffer->mapped_range(), color);
 
                 index_buffer = app.resource_manager->stage_index_data(index_type, index_staging_buffer, app.transfer_command_pool);
             }
 
-            else primitives::generate_plane(create_info, vertex_staging_buffer->mapped_ptr(), color);
+            else primitives::generate_plane(create_info, vertex_staging_buffer->mapped_range(), color);
 
             vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
         }
@@ -778,7 +778,7 @@ namespace temp
 
             auto vertex_staging_buffer = app.resource_manager->create_staging_buffer(vertex_buffer_allocation_size);
 
-            auto it_data = reinterpret_cast<vertex_struct *>(std::to_address(std::data(vertex_staging_buffer->mapped_ptr())));
+            auto it_data = reinterpret_cast<vertex_struct *>(std::to_address(std::data(vertex_staging_buffer->mapped_range())));
 
             auto constexpr max_8ui = std::numeric_limits<std::uint8_t>::max();
             auto constexpr max_16ui = std::numeric_limits<std::uint16_t>::max();
@@ -959,7 +959,7 @@ void init(platform::window &window, app_t &app)
 
     app.aligned_buffer_size = aligned_offset * std::size(app.objects);
 
-    if (app.perObjectBuffer = CreateStorageBuffer(*app.resource_manager, app.aligned_buffer_size); app.perObjectBuffer) {
+    if (app.perObjectBuffer = create_storage_buffer(*app.resource_manager, app.aligned_buffer_size); app.perObjectBuffer) {
         auto &&buffer = *app.perObjectBuffer;
 
         auto offset = buffer.memory()->offset();

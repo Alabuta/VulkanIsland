@@ -19,7 +19,6 @@ namespace resource
         std::shared_ptr<resource::memory_block> memory() const noexcept { return memory_; }
 
         std::size_t size_bytes() const noexcept { return size_bytes_; }
-        std::size_t capacity_bytes() const noexcept { return capacity_bytes_; }
 
         graphics::BUFFER_USAGE usage() const noexcept { return usage_; }
         graphics::RESOURCE_SHARING_MODE sharing_mode() const noexcept { return sharing_mode_; }
@@ -54,7 +53,7 @@ namespace resource
 
         VkBuffer handle() const { return buffer_ ? buffer_->handle() : VK_NULL_HANDLE; }
 
-        std::span<std::byte> mapped_ptr() const noexcept { return mapped_ptr_; }
+        std::span<std::byte> mapped_range() const noexcept { return mapped_ptr_; }
 
     private:
 

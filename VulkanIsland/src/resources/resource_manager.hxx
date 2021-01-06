@@ -116,6 +116,6 @@ namespace resource
 }
 
 
-[[nodiscard]] std::shared_ptr<resource::buffer> CreateUniformBuffer(resource::resource_manager &resource_manager, std::size_t size);
+[[nodiscard]] std::shared_ptr<resource::buffer> create_uniform_buffer(resource::resource_manager &resource_manager, std::size_t size);
 [[nodiscard]] std::shared_ptr<resource::buffer> create_coherent_storage_buffer(resource::resource_manager &resource_manager, std::size_t size);
-[[nodiscard]] std::shared_ptr<resource::buffer> CreateStorageBuffer(resource::resource_manager &resource_manager, std::size_t size);
+[[nodiscard]] std::shared_ptr<resource::buffer> create_storage_buffer(resource::resource_manager &resource_manager, std::size_t size);
