@@ -17,10 +17,146 @@
 
 namespace resource
 {
-    struct resource_deleter final {
-        vulkan::device const &device;
+    struct buffer_chunk final {
+        buffer_chunk(std::size_t offset, std::size_t size) noexcept : offset{offset}, size{size} { }
 
-        resource_deleter(vulkan::device const &device) noexcept : device{device} { }
+        std::size_t offset{0}, size{0};
+
+        struct comparator final {
+            using is_transparent = void;
+
+            template<class L, class R>
+            requires mpl::are_same_v<buffer_chunk, L, R>
+            bool operator() (L lhs, R rhs) const noexcept
+            {
+                return lhs.size < rhs.size;
+            }
+
+            template<class T, class S>
+            requires mpl::are_same_v<buffer_chunk, T> && std::is_unsigned_v<S>
+            bool operator() (T chunk, S size) const noexcept
+            {
+                return chunk.size < size;
+            }
+                
+            template<class S, class T>
+            requires mpl::are_same_v<buffer_chunk, T> && std::is_unsigned_v<S>
+            bool operator() (S size, T chunk) const noexcept
+            {
+                return chunk.size < size;
+            }
+        };
+    };
+
+    class resource_manager::staging_buffer_pool final {
+    public:
+
+        staging_buffer_pool(vulkan::device const &device, resource::resource_manager &resource_manager);
+        ~staging_buffer_pool();
+
+        std::shared_ptr<resource::buffer> buffer() const { return buffer_; }
+        std::span<std::byte> total_mapped_range() const noexcept { return total_mapped_range_; }
+
+        std::pair<std::size_t, std::span<std::byte>> allocate_mapped_range(std::size_t size_bytes);
+        void unmap_range(std::size_t offset_bytes, std::span<std::byte> mapped_range);
+
+        void operator() (resource::staging_buffer *resource_ptr);
+
+    private:
+
+        static auto constexpr kBUFFER_USAGE_FLAGS{graphics::BUFFER_USAGE::TRANSFER_SOURCE};
+        static auto constexpr kSHARING_MODE{graphics::RESOURCE_SHARING_MODE::EXCLUSIVE};
+        static auto constexpr kMEMORY_PROPERTY_TYPES{graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT};
+
+        static auto constexpr kPOOL_SIZE_BYTES{resource::memory_manager::kPAGE_ALLOCATION_SIZE};
+
+        vulkan::device const &device_;
+        resource::resource_manager &resource_manager_;
+
+        std::shared_ptr<resource::buffer> buffer_;
+        std::span<std::byte> total_mapped_range_;
+
+        std::multiset<resource::buffer_chunk, resource::buffer_chunk::comparator> available_chunks_;
+    };
+
+    resource_manager::staging_buffer_pool::staging_buffer_pool(vulkan::device const &device, resource::resource_manager &resource_manager)
+        : device_{device}, resource_manager_{resource_manager}
+    {
+        buffer_ = resource_manager_.create_buffer(kPOOL_SIZE_BYTES, kBUFFER_USAGE_FLAGS, kMEMORY_PROPERTY_TYPES, kSHARING_MODE);
+
+        if (buffer_ == nullptr)
+            throw resource::instantiation_fail(fmt::format("failed to create the staging pool buffer"s));
+
+        auto &&memory = buffer_->memory();
+
+        void *mapped_ptr{nullptr};
+
+        if (auto result = vkMapMemory(device_.handle(), memory->handle(), memory->offset(), kPOOL_SIZE_BYTES, 0, &mapped_ptr); result != VK_SUCCESS)
+            throw resource::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
+
+        total_mapped_range_ = std::span<std::byte>{reinterpret_cast<std::byte *>(mapped_ptr), kPOOL_SIZE_BYTES};
+
+        available_chunks_.emplace(0, kPOOL_SIZE_BYTES);
+    }
+
+    resource_manager::staging_buffer_pool::~staging_buffer_pool()
+    {
+        vkUnmapMemory(device_.handle(), buffer_->memory()->handle());
+
+        vkDestroyBuffer(device_.handle(), buffer_->handle(), nullptr);
+
+        buffer_->memory().reset();
+    }
+
+    std::pair<std::size_t, std::span<std::byte>> resource_manager::staging_buffer_pool::allocate_mapped_range(std::size_t size_bytes)
+    {
+        if (size_bytes > kPOOL_SIZE_BYTES)
+            throw resource::not_enough_memory("requested staging buffer allocation size is bigger than staging buffer pool size."s);
+
+        auto it_chunk = available_chunks_.lower_bound(size_bytes);
+
+        if (it_chunk == std::end(available_chunks_))
+            throw resource::not_enough_memory("failed to find available staging buffer pool memory chunk."s);
+
+        if (auto node_handle = available_chunks_.extract(it_chunk); node_handle) {
+            auto [offset, size] = node_handle.value();
+
+            available_chunks_.emplace(offset + size_bytes, size - size_bytes);
+            available_chunks_.erase(resource::buffer_chunk{0, 0});
+
+            return {offset, std::span{std::data(total_mapped_range_) + offset, size_bytes}};
+        }
+
+        else throw resource::exception("failed to find staging buffer pool memory chunk for extraction"s);
+    }
+
+    void resource_manager::staging_buffer_pool::unmap_range(std::size_t offset_bytes, std::span<std::byte> mapped_range)
+    {
+        auto size_bytes = std::size(mapped_range);
+
+        auto it_chunk_begin = available_chunks_.lower_bound(size_bytes);
+        auto it_chunk_end = available_chunks_.upper_bound(size_bytes);
+
+        auto it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [offset_bytes, size_bytes] (auto chunk)
+        {
+            return offset_bytes == chunk.offset && size_bytes == chunk.size;
+        });
+
+        if (it_chunk == std::end(available_chunks_))
+            throw resource::exception("dead staging buffer pool memory chunk encountered."s);
+
+        available_chunks_.erase(it_chunk);
+    }
+}
+
+namespace resource
+{
+    struct resource_manager::resource_deleter final {
+        vulkan::device const &device;
+        resource::resource_manager &resource_manager;
+
+        resource_deleter(vulkan::device const &device, resource::resource_manager &resource_manager) noexcept
+            : device{device}, resource_manager{resource_manager} { }
 
         template<class T>
         void operator() (T *resource_ptr) const
@@ -31,13 +167,8 @@ namespace resource
                 resource_ptr->memory().reset();
             }
 
-            else if constexpr (std::is_same_v<T, resource::staging_buffer>) {
-                vkUnmapMemory(device.handle(), resource_ptr->memory()->handle());
-
-                vkDestroyBuffer(device.handle(), resource_ptr->handle(), nullptr);
-
-                resource_ptr->memory().reset();
-            }
+            else if constexpr (std::is_same_v<T, resource::staging_buffer>)
+                resource_manager.staging_buffer_pool_->unmap_range(resource_ptr->offset_bytes(), resource_ptr->mapped_range());
 
             else if constexpr (std::is_same_v<T, resource::image>) {
                 vkDestroyImage(device.handle(), resource_ptr->handle(), nullptr);
@@ -64,67 +195,13 @@ namespace resource
 
 namespace resource
 {
-    class staging_buffer_pool final {
-    public:
-
-        staging_buffer_pool(vulkan::device const &device, resource::resource_manager &resource_manager);
-        ~staging_buffer_pool();
-
-        std::shared_ptr<resource::buffer> const &buffer() const { return buffer_; }
-
-        std::span<std::byte> allocate_buffer_chunk(std::size_t size_bytes);
-
-    private:
-
-        vulkan::device const &device_;
-        resource::resource_manager &resource_manager_;
-
-        std::shared_ptr<resource::buffer> buffer_;
-        std::span<std::byte> mapped_ptr_;
-    };
-
-    staging_buffer_pool::staging_buffer_pool(vulkan::device const &device, resource::resource_manager &resource_manager)
-        : device_{device}, resource_manager_{resource_manager}
-    {
-        auto constexpr buffer_usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
-        auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
-        auto constexpr memory_property_types = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
-
-        auto constexpr size_bytes = resource::memory_manager::kPAGE_ALLOCATION_SIZE;
-
-        buffer_ = resource_manager_.create_buffer(size_bytes, buffer_usage_flags, memory_property_types, sharing_mode);
-
-        if (buffer_ == nullptr)
-            throw resource::instantiation_fail(fmt::format("failed to create the staging pool buffer"s));
-
-        auto &&memory = buffer_->memory();
-
-        void *mapped_ptr{nullptr};
-
-        if (auto result = vkMapMemory(device_.handle(), memory->handle(), memory->offset(), size_bytes, 0, &mapped_ptr); result != VK_SUCCESS)
-            throw resource::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
-
-        mapped_ptr_ = std::span<std::byte>{reinterpret_cast<std::byte *>(mapped_ptr), size_bytes};
-    }
-
-    resource::staging_buffer_pool::~staging_buffer_pool()
-    {
-        vkUnmapMemory(device_.handle(), buffer_->memory()->handle());
-    }
-
-    std::span<std::byte> staging_buffer_pool::allocate_buffer_chunk(std::size_t size_bytes)
-    {
-        return std::span<std::byte>();
-    }
-}
-
-namespace resource
-{
     resource_manager::resource_manager(vulkan::device const &device, renderer::config const &config, resource::memory_manager &memory_manager)
         : device_{device}, config_{config}, memory_manager_{memory_manager},
-          resource_deleter_{std::make_shared<resource::resource_deleter>(device)},
-          staging_buffer_pool_{std::make_shared<resource::staging_buffer_pool>(device_, *this)}
-    { }
+          resource_deleter_{std::make_shared<resource::resource_manager::resource_deleter>(device, *this)},
+          staging_buffer_pool_{std::make_shared<resource::resource_manager::staging_buffer_pool>(device_, *this)}
+    {
+        ;
+    }
 
     std::shared_ptr<resource::buffer>
     resource_manager::create_buffer(std::size_t size_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types,
@@ -174,8 +251,16 @@ namespace resource
     std::shared_ptr<resource::staging_buffer>
     resource_manager::create_staging_buffer(std::size_t size_bytes)
     {
-        // auto [buffer, mapped_ptr] = staging_buffer_pool_->allocate_buffer_chunk(size_bytes);
-        return { };
+        auto [offset_bytes, mapped_range] = staging_buffer_pool_->allocate_mapped_range(size_bytes);
+
+        std::shared_ptr<resource::staging_buffer> buffer;
+
+        buffer.reset(new resource::staging_buffer{
+            staging_buffer_pool_->buffer(), mapped_range, offset_bytes
+        }, *resource_deleter_);
+
+        return buffer;
+
     #if 0
         auto constexpr buffer_usage_flags = graphics::BUFFER_USAGE::TRANSFER_SOURCE;
         auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
@@ -406,6 +491,7 @@ namespace resource
         auto const container = staging_buffer->mapped_range();
 
         auto const staging_data_size_bytes = container.size_bytes();
+        auto const staging_data_offset_bytes = staging_buffer->offset_bytes();
 
         if (staging_data_size_bytes > kVERTEX_BUFFER_FIXED_SIZE)
             throw resource::not_enough_memory("staging data size is bigger than vertex buffer max size"s);
@@ -443,7 +529,7 @@ namespace resource
             auto &&device_buffer = vertex_buffer->device_buffer();
 
             auto copy_regions = std::array{
-                VkBufferCopy{ 0u, vertex_buffer->offset_bytes(), staging_data_size_bytes }
+                VkBufferCopy{ staging_data_offset_bytes, vertex_buffer->offset_bytes(), staging_data_size_bytes }
             };
 
             copy_buffer_to_buffer(device_, device_.transfer_queue, staging_buffer->handle(), device_buffer->handle(), std::move(copy_regions), command_pool);
@@ -474,6 +560,7 @@ namespace resource
         auto const container = staging_buffer->mapped_range();
 
         auto const staging_data_size_bytes = container.size_bytes();
+        auto const staging_data_offset_bytes = staging_buffer->offset_bytes();
 
         if (staging_data_size_bytes > kINDEX_BUFFER_FIXED_SIZE)
             throw resource::not_enough_memory("staging data size is bigger than index buffer max size"s);
@@ -507,7 +594,7 @@ namespace resource
             auto &&device_buffer = index_buffer->device_buffer();
 
             auto copy_regions = std::array{
-                VkBufferCopy{ 0u, index_buffer->offset_bytes(), staging_data_size_bytes }
+                VkBufferCopy{ staging_data_offset_bytes, index_buffer->offset_bytes(), staging_data_size_bytes }
             };
 
             copy_buffer_to_buffer(device_, device_.transfer_queue, staging_buffer->handle(), device_buffer->handle(), std::move(copy_regions), command_pool);

@@ -55,12 +55,16 @@ namespace resource
 
         std::span<std::byte> mapped_range() const noexcept { return mapped_ptr_; }
 
+        std::size_t offset_bytes() const noexcept { return offset_bytes_; }
+
     private:
 
         std::shared_ptr<resource::buffer> buffer_;
         std::span<std::byte> mapped_ptr_;
 
-        staging_buffer(std::shared_ptr<resource::buffer> buffer, std::span<std::byte> mapped_ptr);
+        std::size_t offset_bytes_{0};
+
+        staging_buffer(std::shared_ptr<resource::buffer> buffer, std::span<std::byte> mapped_range, std::size_t offset_bytes);
 
         staging_buffer() = delete;
         staging_buffer(staging_buffer const &) = delete;

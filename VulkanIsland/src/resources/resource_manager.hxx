@@ -90,9 +90,11 @@ namespace resource
 
         resource::memory_manager &memory_manager_;
 
-        std::shared_ptr<struct resource_deleter> resource_deleter_;
+        struct resource_deleter;
+        std::shared_ptr<resource_deleter> resource_deleter_;
 
-        std::shared_ptr<class staging_buffer_pool> staging_buffer_pool_;
+        class staging_buffer_pool;
+        std::shared_ptr<staging_buffer_pool> staging_buffer_pool_;
 
         template<class T>
         struct buffer_set_comparator final {

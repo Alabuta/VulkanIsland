@@ -8,8 +8,8 @@ namespace resource
         : handle_{handle}, memory_{memory}, size_bytes_{size_bytes}, usage_{usage}, sharing_mode_{sharing_mode}
     { }
 
-    staging_buffer::staging_buffer(std::shared_ptr<resource::buffer> buffer, std::span<std::byte> mapped_ptr)
-        : buffer_{buffer}, mapped_ptr_{mapped_ptr}
+    staging_buffer::staging_buffer(std::shared_ptr<resource::buffer> buffer, std::span<std::byte> mapped_range, std::size_t offset_bytes)
+        : buffer_{buffer}, mapped_ptr_{mapped_range}, offset_bytes_{offset_bytes}
     { }
 
     index_buffer::index_buffer(std::shared_ptr<resource::buffer> device_buffer, std::size_t offset_bytes, std::size_t available_size, graphics::INDEX_TYPE index_type)
