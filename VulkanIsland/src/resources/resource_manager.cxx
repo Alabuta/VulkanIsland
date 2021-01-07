@@ -134,18 +134,28 @@ namespace resource
     {
         auto size_bytes = std::size(mapped_range);
 
-        auto it_chunk_begin = available_chunks_.lower_bound(size_bytes);
-        auto it_chunk_end = available_chunks_.upper_bound(size_bytes);
-
-        auto it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [offset_bytes, size_bytes] (auto chunk)
+        auto find_adjacent_chunk = [] (auto begin, auto end, auto it_chunk)
         {
-            return offset_bytes == chunk.offset && size_bytes == chunk.size;
-        });
+            return std::find_if(begin, end, [it_chunk] (auto &&chunk)
+            {
+                return chunk.offset + chunk.size == it_chunk->offset || it_chunk->offset + it_chunk->size == chunk.offset;
+            });
+        };
 
-        if (it_chunk == std::end(available_chunks_))
-            throw resource::exception("dead staging buffer pool memory chunk encountered."s);
+        auto it_current_chunk = available_chunks_.emplace(offset_bytes, size_bytes);
+        auto it_adjacent_chunk = find_adjacent_chunk(std::begin(available_chunks_), std::end(available_chunks_), it_current_chunk);
 
-        available_chunks_.erase(it_chunk);
+        while (it_adjacent_chunk != std::end(available_chunks_)) {
+            auto [offset_a, size_a] = *it_current_chunk;
+            auto [offset_b, size_b] = *it_adjacent_chunk;
+
+            available_chunks_.erase(it_current_chunk);
+            available_chunks_.erase(it_adjacent_chunk);
+
+            it_current_chunk = available_chunks_.emplace(std::min(offset_a, offset_b), size_a + size_b);
+
+            it_adjacent_chunk = find_adjacent_chunk(std::begin(available_chunks_), std::end(available_chunks_), it_current_chunk);
+        }
     }
 }
 
