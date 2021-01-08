@@ -102,10 +102,6 @@ namespace resource
     resource_manager::staging_buffer_pool::~staging_buffer_pool()
     {
         vkUnmapMemory(device_.handle(), buffer_->memory()->handle());
-
-        vkDestroyBuffer(device_.handle(), buffer_->handle(), nullptr);
-
-        buffer_->memory().reset();
     }
 
     std::pair<std::size_t, std::span<std::byte>> resource_manager::staging_buffer_pool::allocate_mapped_range(std::size_t size_bytes)

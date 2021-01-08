@@ -413,13 +413,18 @@ void create_graphics_command_buffers(app_t &app)
                         for (auto &&dc : span) {
                             vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
 
-                            vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
-                                                    0, 1, &app.view_resources_descriptor_set, 0, nullptr);
+                            std::array<VkDescriptorSet, 2> descriptor_sets{
+                                app.view_resources_descriptor_set, dc.descriptor_set
+                            };
 
-                            std::uint32_t dynamic_offset = dc.transform_index * static_cast<std::uint32_t>(aligned_offset);
+                            std::array<std::uint32_t, 1> dynamic_offsets{
+                                dc.transform_index * static_cast<std::uint32_t>(aligned_offset)
+                            };
 
                             vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
-                                                    0, 1, &dc.descriptor_set, 1, &dynamic_offset);
+                                                    0,
+                                                    static_cast<std::uint32_t>(std::size(descriptor_sets)), std::data(descriptor_sets),
+                                                    static_cast<std::uint32_t>(std::size(dynamic_offsets)), std::data(dynamic_offsets));
 
                             vkCmdDrawIndexed(command_buffer, dc.index_count, 1, dc.first_index, dc.first_vertex, 0);
                         }
@@ -437,13 +442,18 @@ void create_graphics_command_buffers(app_t &app)
                 for (auto &&dc : span) {
                     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
 
-                    vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
-                                            0, 1, &app.view_resources_descriptor_set, 0, nullptr);
+                    std::array<VkDescriptorSet, 2> descriptor_sets{
+                        app.view_resources_descriptor_set, dc.descriptor_set
+                    };
 
-                    std::uint32_t dynamic_offset = dc.transform_index * static_cast<std::uint32_t>(aligned_offset);
+                    std::array<std::uint32_t, 1> dynamic_offsets{
+                        dc.transform_index *static_cast<std::uint32_t>(aligned_offset)
+                    };
 
                     vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
-                                            0, 1, &dc.descriptor_set, 1, &dynamic_offset);
+                                            0,
+                                            static_cast<std::uint32_t>(std::size(descriptor_sets)), std::data(descriptor_sets),
+                                            static_cast<std::uint32_t>(std::size(dynamic_offsets)), std::data(dynamic_offsets));
 
                     vkCmdDraw(command_buffer, dc.vertex_count, 1, dc.first_vertex, 0);
                 }
