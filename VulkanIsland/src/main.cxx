@@ -298,7 +298,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device)
             app.view_resources_descriptor_set,
             0,
             0, static_cast<std::uint32_t>(std::size(per_camera)),
-            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             nullptr,
             std::data(per_camera),
             nullptr
@@ -981,7 +981,7 @@ void init(platform::window &window, app_t &app)
 
     else throw graphics::exception("failed to init per object uniform buffer"s);
 
-    if (app.perCameraBuffer = create_coherent_storage_buffer(*app.resource_manager, sizeof(camera::data_t)); !app.perCameraBuffer)
+    if (app.perCameraBuffer = create_uniform_buffer(*app.resource_manager, sizeof(camera::data_t)); !app.perCameraBuffer)
         throw graphics::exception("failed to init per camera uniform buffer"s);
 
     if (auto descriptorPool = create_descriptor_pool(*app.device); !descriptorPool)

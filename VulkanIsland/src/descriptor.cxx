@@ -37,7 +37,7 @@ std::optional<VulkanDescriptorPool> DescriptorsManager::create_descriptor_pool()
 std::optional<VkDescriptorPool> create_descriptor_pool(vulkan::device const &device)
 {
     std::array<VkDescriptorPoolSize, 2> constexpr pool_sizes{{
-        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1 },
+        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
         { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1 }
 #if TEMPORARILY_DISABLED
         { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
@@ -135,7 +135,7 @@ std::optional<VkDescriptorSetLayout> create_view_resources_descriptor_set_layout
 {
     std::array<VkDescriptorSetLayoutBinding, 1> constexpr layout_bindings{
         {
-            0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
             1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             nullptr
         }

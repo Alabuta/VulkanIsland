@@ -1,5 +1,5 @@
 
-layout (set = 0, binding = 0, scalar) readonly buffer PER_CAMERA
+layout (set = 0, binding = 0, scalar) uniform PER_CAMERA
 {
     mat4 view;
     mat4 projection;
