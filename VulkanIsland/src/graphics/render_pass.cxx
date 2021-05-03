@@ -35,6 +35,7 @@ namespace graphics
 
         std::vector<VkAttachmentDescription> attachments;
 
+        attachments.reserve(attachment_descriptions.size());
         for (auto &&description : attachment_descriptions) {
             attachments.push_back(VkAttachmentDescription{
                 0, //VK_ATTACHMENT_DESCRIPTION_MAY_ALIAS_BIT,
@@ -50,11 +51,12 @@ namespace graphics
         }
 
         std::vector<VkSubpassDependency> dependencies;
+        dependencies.reserve(subpass_dependencies.size());
 
         for (auto &&dependency : subpass_dependencies) {
             dependencies.push_back(VkSubpassDependency{
-                dependency.source_index ? *dependency.source_index : 0,
-                dependency.destination_index ? *dependency.destination_index : 0,
+                dependency.source_index ? *dependency.source_index : VK_SUBPASS_EXTERNAL,
+                dependency.destination_index ? *dependency.destination_index : VK_SUBPASS_EXTERNAL,
                 convert_to::vulkan(dependency.source_stage),
                 convert_to::vulkan(dependency.destination_stage),
                 dependency.source_access ? convert_to::vulkan(*dependency.source_access) : 0,
@@ -65,9 +67,7 @@ namespace graphics
 
         std::vector<VkSubpassDescription> subpasses;
 
-        std::size_t subpass_index = 0;
-
-        for (auto &&description : subpass_descriptions) {
+        for (std::size_t subpass_index = 0; auto &&description : subpass_descriptions) {
             auto &&input_attachments = subpass_invariants.at(subpass_index).input_attachments;
 
             for (auto &&attachment : description.input_attachments) {

@@ -1,9 +1,13 @@
+// ReSharper disable once IdentifierTypo
+// ReSharper disable once CppInconsistentNaming
 #define _SCL_SECURE_NO_WARNINGS
 
 
 #if defined(_DEBUG) || defined(DEBUG)
     #if defined(_MSC_VER)
-        #define _CRTDBG_MAP_ALLOC
+// ReSharper disable once IdentifierTypo
+// ReSharper disable once CppInconsistentNaming
+#define _CRTDBG_MAP_ALLOC
         #include <crtdbg.h>
     #else
         #include <thread>
@@ -112,12 +116,12 @@
 
 namespace temp
 {
-    xformat model;
+    xformat xmodel;
 }
 
 struct per_object_t final {
     glm::mat4 world{1};
-    glm::mat4 normal{1};  // Transposed and inversed upper left 3x3 sub-matrix of the model(world)-view matrix.
+    glm::mat4 normal{1};  // Transposed and inversed upper left 3x3 sub-matrix of the xmodel(world)-view matrix.
 };
 
 
@@ -176,7 +180,7 @@ struct app_t final {
 
     std::vector<VkCommandBuffer> command_buffers;
 
-    std::shared_ptr<resource::buffer> perObjectBuffer, perCameraBuffer;
+    std::shared_ptr<resource::buffer> per_object_buffer, per_camera_buffer;
     void *ssbo_mapped_ptr{nullptr};
 
     std::size_t aligned_buffer_size{0u};
@@ -224,10 +228,10 @@ struct app_t final {
         texture.reset();
 
         if (ssbo_mapped_ptr)
-            vkUnmapMemory(device->handle(), perObjectBuffer->memory()->handle());
+            vkUnmapMemory(device->handle(), per_object_buffer->memory()->handle());
 
-        perCameraBuffer.reset();
-        perObjectBuffer.reset();
+        per_camera_buffer.reset();
+        per_object_buffer.reset();
 
         if (transfer_command_pool != VK_NULL_HANDLE)
             vkDestroyCommandPool(device->handle(), transfer_command_pool, nullptr);
@@ -235,7 +239,7 @@ struct app_t final {
         if (graphics_command_pool != VK_NULL_HANDLE)
             vkDestroyCommandPool(device->handle(), graphics_command_pool, nullptr);
 
-        temp::model.meshlets.clear();
+        temp::xmodel.meshlets.clear();
 
         resource_manager.reset();
         memory_manager.reset();
@@ -247,11 +251,11 @@ struct app_t final {
 
 struct window_events_handler final : public platform::window::event_handler_interface {
 
-    window_events_handler(app_t &app) : app{app} { }
+    explicit window_events_handler(app_t &app) : app{app} { }
 
     app_t &app;
 
-    void on_resize(std::int32_t width, std::int32_t height) override
+    void on_resize(std::int32_t const width, std::int32_t const height) override
     {
         if (app.width == static_cast<std::uint32_t>(width) && app.height == static_cast<std::uint32_t>(height))
             return;
@@ -276,12 +280,12 @@ void update_descriptor_set(app_t &app, vulkan::device const &device)
 {
     // TODO: descriptor info typed by VkDescriptorType.
     auto const per_camera = std::array{
-        VkDescriptorBufferInfo{app.perCameraBuffer->handle(), 0, sizeof(camera::data_t)}
+        VkDescriptorBufferInfo{app.per_camera_buffer->handle(), 0, sizeof(camera::data_t)}
     };
 
     // TODO: descriptor info typed by VkDescriptorType.
     auto const per_object = std::array{
-        VkDescriptorBufferInfo{app.perObjectBuffer->handle(), 0, sizeof(per_object_t)}
+        VkDescriptorBufferInfo{app.per_object_buffer->handle(), 0, sizeof(per_object_t)}
     };
 
 #if TEMPORARILY_DISABLED
@@ -355,14 +359,14 @@ void create_graphics_command_buffers(app_t &app)
         VkClearValue{ .depthStencil = { app.renderer_config.reversed_depth ? 0.f : 1.f, 0 } }
     };
 
-    auto nonindexed = app.draw_commands_holder.get_primitives_buffers_bind_ranges();
+    auto non_indexed = app.draw_commands_holder.get_primitives_buffers_bind_ranges();
     auto indexed = app.draw_commands_holder.get_indexed_primitives_buffers_bind_range();
 
     for (std::size_t i = 0; auto &command_buffer : app.command_buffers) {
         VkCommandBufferBeginInfo const begin_info{
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             nullptr,
-            0, //VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, // :TODO: remove?
+            VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, // :TODO: remove?
             nullptr
         };
 
@@ -397,7 +401,7 @@ void create_graphics_command_buffers(app_t &app)
         vkCmdSetScissor(command_buffer, 0, 1, &scissor);
     #endif
 
-        auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
+        const auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
         auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
 
         for (auto &&range : indexed) {
@@ -409,7 +413,7 @@ void create_graphics_command_buffers(app_t &app)
 
                 std::visit([&] (auto span)
                 {
-                    if constexpr (std::is_same_v<decltype(span)::value_type, renderer::indexed_draw_command>) {
+                    if constexpr (std::is_same_v<typename decltype(span)::value_type, renderer::indexed_draw_command>) {
                         for (auto &&dc : span) {
                             vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
 
@@ -433,7 +437,7 @@ void create_graphics_command_buffers(app_t &app)
             }
         }
 
-        for (auto &&range : nonindexed) {
+        for (auto &&range : non_indexed) {
             vkCmdBindVertexBuffers(command_buffer, range.first_binding, static_cast<std::uint32_t>(std::size(range.buffer_handles)),
                                    std::data(range.buffer_handles), std::data(range.buffer_offsets));
 
@@ -478,7 +482,7 @@ void create_frame_data(app_t &app)
     if (swapchain == nullptr)
         throw graphics::exception("failed to create the swapchain"s);
 
-    auto attachment_descriptions = create_attachment_descriptions(device, app.renderer_config, *swapchain);
+    const auto attachment_descriptions = create_attachment_descriptions(device, app.renderer_config, *swapchain);
 
     if (attachment_descriptions.empty())
         throw graphics::exception("failed to create the attachment descriptions"s);
@@ -773,7 +777,7 @@ namespace temp
         {
             struct vertex_struct final {
                 std::array<boost::float32_t, 3> position;
-                std::array<std::uint16_t, 2> texCoord;
+                std::array<std::uint16_t, 2> tex_coord;
                 std::array<std::uint8_t, 4> color;
             };
 
@@ -786,7 +790,7 @@ namespace temp
             auto const vertex_layout_index = 1u;
             auto const &vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
 
-            auto vertex_staging_buffer = app.resource_manager->create_staging_buffer(vertex_buffer_allocation_size);
+            auto const vertex_staging_buffer = app.resource_manager->create_staging_buffer(vertex_buffer_allocation_size);
 
             auto it_data = reinterpret_cast<vertex_struct *>(std::to_address(std::data(vertex_staging_buffer->mapped_range())));
 
@@ -819,7 +823,7 @@ namespace temp
                 {-1.f, 0.f, 0.f}, {0, max_16ui / 2}, {max_8ui, max_8ui, 0, max_8ui}
             };
 
-            auto vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
+            auto const vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
 
             {
                 // Second triangle
@@ -829,7 +833,7 @@ namespace temp
 
                 meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
-                auto first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size;
+                auto const first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size;
 
                 meshlet.vertex_buffer = vertex_buffer;
                 meshlet.vertex_count = 3;
@@ -839,7 +843,7 @@ namespace temp
                 meshlet.instance_count = 1;
                 meshlet.first_instance = 0;
 
-                std::vector<std::size_t> meshlets{std::size(model_.meshlets)};
+                std::vector const meshlets{std::size(model_.meshlets)};
                 model_.meshes.push_back(xformat::mesh{meshlets});
 
                 model_.meshlets.push_back(std::move(meshlet));
@@ -853,7 +857,7 @@ namespace temp
 
                 meshlet.topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
-                auto first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size + 3u;
+                auto const first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size + 3u;
 
                 meshlet.vertex_buffer = vertex_buffer;
                 meshlet.vertex_count = 3;
@@ -863,7 +867,7 @@ namespace temp
                 meshlet.instance_count = 1;
                 meshlet.first_instance = 0;
 
-                std::vector<std::size_t> meshlets{std::size(model_.meshlets)};
+                std::vector const meshlets{std::size(model_.meshlets)};
                 model_.meshes.push_back(xformat::mesh{meshlets});
 
                 model_.meshlets.push_back(std::move(meshlet));
@@ -879,12 +883,12 @@ void create_semaphores(app_t &app)
 {
     auto &&resource_manager = *app.resource_manager;
 
-    if (auto semaphore = resource_manager.create_semaphore(); !semaphore)
+    if (auto const semaphore = resource_manager.create_semaphore(); !semaphore)
         throw resource::exception("failed to create image semaphore"s);
 
     else app.image_available_semaphore = semaphore;
 
-    if (auto semaphore = resource_manager.create_semaphore(); !semaphore)
+    if (auto const semaphore = resource_manager.create_semaphore(); !semaphore)
         throw resource::exception("failed to create render semaphore"s);
 
     else app.render_finished_semaphore = semaphore;
@@ -927,12 +931,12 @@ void init(platform::window &window, app_t &app)
     if (auto descriptor_set_layout = create_view_resources_descriptor_set_layout(*app.device); !descriptor_set_layout)
         throw graphics::exception("failed to create the view resources descriptor set layout"s);
 
-    else app.view_resources_descriptor_set_layout = std::move(descriptor_set_layout.value());
+    else app.view_resources_descriptor_set_layout = descriptor_set_layout.value();
 
     if (auto descriptor_set_layout = create_object_resources_descriptor_set_layout(*app.device); !descriptor_set_layout)
         throw graphics::exception("failed to create the object resources descriptor set layout"s);
 
-    else app.object_resources_descriptor_set_layout = std::move(descriptor_set_layout.value());
+    else app.object_resources_descriptor_set_layout = descriptor_set_layout.value();
 
 #if TEMPORARILY_DISABLED
     if (auto result = glTF::load(sceneName, app.scene, app.nodeSystem); !result)
@@ -944,7 +948,7 @@ void init(platform::window &window, app_t &app)
     if (auto pipeline_layout = create_pipeline_layout(*app.device, descriptor_sets_layouts); !pipeline_layout)
         throw graphics::exception("failed to create the pipeline layout"s);
 
-    else app.pipeline_layout = std::move(pipeline_layout.value());
+    else app.pipeline_layout = pipeline_layout.value();
 
 #if TEMPORARILY_DISABLED
     // "chalet/textures/chalet.tga"sv
@@ -960,20 +964,20 @@ void init(platform::window &window, app_t &app)
     else app.texture.sampler = result;
 #endif
 
-    temp::model = temp::populate(app);
+    temp::xmodel = temp::populate(app);
 
-    auto min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
-    auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
+    auto const min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
+    auto const aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
 
-    app.objects.resize(std::size(temp::model.scene_nodes));
+    app.objects.resize(std::size(temp::xmodel.scene_nodes));
 
     app.aligned_buffer_size = aligned_offset * std::size(app.objects);
 
-    if (app.perObjectBuffer = create_storage_buffer(*app.resource_manager, app.aligned_buffer_size); app.perObjectBuffer) {
-        auto &&buffer = *app.perObjectBuffer;
+    if (app.per_object_buffer = create_storage_buffer(*app.resource_manager, app.aligned_buffer_size); app.per_object_buffer) {
+        auto &&buffer = *app.per_object_buffer;
 
-        auto offset = buffer.memory()->offset();
-        auto size = buffer.memory()->size();
+        auto const offset = buffer.memory()->offset();
+        auto const size = buffer.memory()->size();
 
         if (auto result = vkMapMemory(app.device->handle(), buffer.memory()->handle(), offset, size, 0, &app.ssbo_mapped_ptr); result != VK_SUCCESS)
             throw vulkan::exception(fmt::format("failed to map per object uniform buffer memory: {0:#x}"s, result));
@@ -981,25 +985,25 @@ void init(platform::window &window, app_t &app)
 
     else throw graphics::exception("failed to init per object uniform buffer"s);
 
-    if (app.perCameraBuffer = create_uniform_buffer(*app.resource_manager, sizeof(camera::data_t)); !app.perCameraBuffer)
+    if (app.per_camera_buffer = create_uniform_buffer(*app.resource_manager, sizeof(camera::data_t)); !app.per_camera_buffer)
         throw graphics::exception("failed to init per camera uniform buffer"s);
 
     if (auto descriptorPool = create_descriptor_pool(*app.device); !descriptorPool)
         throw graphics::exception("failed to create the descriptor pool"s);
 
-    else app.descriptor_pool = std::move(descriptorPool.value());
+    else app.descriptor_pool = descriptorPool.value();
 
     if (auto descriptor_sets = create_descriptor_sets(*app.device, app.descriptor_pool, descriptor_sets_layouts); descriptor_sets.empty())
         throw graphics::exception("failed to create the descriptor pool"s);
 
     else {
-        app.view_resources_descriptor_set = std::move(descriptor_sets.at(0));
-        app.object_resources_descriptor_set = std::move(descriptor_sets.at(1));
+        app.view_resources_descriptor_set = descriptor_sets.at(0);
+        app.object_resources_descriptor_set = descriptor_sets.at(1);
     }
 
     update_descriptor_set(app, *app.device);
 
-    build_render_pipelines(app, temp::model);
+    build_render_pipelines(app, temp::xmodel);
 
     create_graphics_command_buffers(app);
 
@@ -1018,27 +1022,26 @@ void update(app_t &app)
     app.camera_controller->update();
     app.cameraSystem.update();
 
-    auto &&device = *app.device;
-
     {
-        auto &&buffer = *app.perCameraBuffer;
+        auto &&device = *app.device;
+        auto &&buffer = *app.per_camera_buffer;
 
-        auto offset = buffer.memory()->offset();
-        auto size = buffer.memory()->size();
+        auto const offset = buffer.memory()->offset();
+        auto const size = buffer.memory()->size();
 
-        void *data;
+        void *data = nullptr;
 
         if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
             throw vulkan::exception(fmt::format("failed to map per camera uniform buffer memory: {0:#x}"s, result));
 
-        std::copy_n(&app.camera_->data, 1, reinterpret_cast<camera::data_t *>(data));
+        std::copy_n(&app.camera_->data, 1, static_cast<camera::data_t *>(data));
 
         vkUnmapMemory(device.handle(), buffer.memory()->handle());
     }
 
-    std::ranges::transform(temp::model.scene_nodes, std::begin(app.objects), [] (auto &&scene_node)
+    std::ranges::transform(temp::xmodel.scene_nodes, std::begin(app.objects), [] (auto &&scene_node)
     {
-        auto &&transform = temp::model.transforms.at(scene_node.transform_index);
+        auto &&transform = temp::xmodel.transforms.at(scene_node.transform_index);
 
         auto normal = glm::inverseTranspose(transform);
 
@@ -1046,7 +1049,7 @@ void update(app_t &app)
     });
 
     using objects_type = typename decltype(app.objects)::value_type;
-    auto it_begin = reinterpret_cast<objects_type *>(app.ssbo_mapped_ptr);
+    auto it_begin = static_cast<objects_type *>(app.ssbo_mapped_ptr);
 
     std::size_t const stride = app.aligned_buffer_size / std::size(app.objects);
 
@@ -1056,17 +1059,17 @@ void update(app_t &app)
     std::ranges::copy(app.objects, strided_bidirectional_iterator<objects_type>{it_begin, stride});
 #endif
 
-    auto const mappedRanges = std::array{
+    auto const mapped_ranges = std::array{
         VkMappedMemoryRange{
             VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE,
             nullptr,
-            app.perObjectBuffer->memory()->handle(),
-            app.perObjectBuffer->memory()->offset(),
+            app.per_object_buffer->memory()->handle(),
+            app.per_object_buffer->memory()->offset(),
             app.aligned_buffer_size
         }
     };
 
-    vkFlushMappedMemoryRanges(app.device->handle(), static_cast<std::uint32_t>(std::size(mappedRanges)), std::data(mappedRanges));
+    vkFlushMappedMemoryRanges(app.device->handle(), static_cast<std::uint32_t>(std::size(mapped_ranges)), std::data(mapped_ranges));
 }
 
 void render_frame(app_t &app)
@@ -1170,10 +1173,10 @@ int main()
 
     platform::window window{"VulkanIsland"sv, static_cast<std::int32_t>(app.width), static_cast<std::int32_t>(app.height)};
 
-    auto app_window_events_handler = std::make_shared<window_events_handler>(app);
+    const auto app_window_events_handler = std::make_shared<window_events_handler>(app);
     window.connect_event_handler(app_window_events_handler);
 
-    auto input_manager = std::make_shared<platform::input_manager>();
+    const auto input_manager = std::make_shared<platform::input_manager>();
     window.connect_input_handler(input_manager);
 
     app.camera_ = app.cameraSystem.create_camera();
