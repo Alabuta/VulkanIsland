@@ -82,10 +82,10 @@ namespace
     [[nodiscard]] std::string
     compile_name(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &renderable_vertex_layout)
     {
-        auto vertexl_layout_name = graphics::to_string(renderable_vertex_layout);
-        auto full_name = fmt::format("{}.{}.{}"s, name, technique_index, vertexl_layout_name);
+        auto vertex_layout_name = graphics::to_string(renderable_vertex_layout);
+        const auto full_name = fmt::format("{}.{}.{}"s, name, technique_index, vertex_layout_name);
 
-        boost::uuids::name_generator_sha1 gen(boost::uuids::ns::dns());
+        const boost::uuids::name_generator_sha1 gen(boost::uuids::ns::dns());
 
         return boost::uuids::to_string(gen(full_name));
     }
@@ -118,9 +118,7 @@ namespace graphics
             {
                 std::set<graphics::specialization_constant> constants;
 
-                std::uint32_t id = 0;
-
-                for (auto &&value : shader_bundle.specialization_constants) {
+                for (std::uint32_t id = 0; auto &&value : shader_bundle.specialization_constants) {
                     std::visit([&id, &constants] (auto value)
                     {
                         constants.emplace(id++, value);

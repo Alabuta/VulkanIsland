@@ -160,11 +160,11 @@ namespace vulkan
 
         auto const application_info = vulkan_config::application_info;
 
-        auto supported_api_major = VK_VERSION_MAJOR(api_version);
-        auto supported_api_minor = VK_VERSION_MINOR(api_version);
+        auto const supported_api_major = VK_VERSION_MAJOR(api_version);
+        auto const supported_api_minor = VK_VERSION_MINOR(api_version);
 
-        auto required_api_major = VK_VERSION_MAJOR(application_info.apiVersion);
-        auto required_api_minor = VK_VERSION_MINOR(application_info.apiVersion);
+        auto const required_api_major = VK_VERSION_MAJOR(application_info.apiVersion);
+        auto const required_api_minor = VK_VERSION_MINOR(application_info.apiVersion);
 
         if (supported_api_major != required_api_major || supported_api_minor != required_api_minor)
             throw vulkan::instance_exception("unsupported Vulkan API version"s);
@@ -244,7 +244,7 @@ namespace vulkan
         if (handle_ == VK_NULL_HANDLE)
             return;
 
-        for (auto [window_handle, platform_surface] : platform_surfaces_)
+        for (auto &&[window_handle, platform_surface] : platform_surfaces_)
             vkDestroySurfaceKHR(handle_, platform_surface.handle(), nullptr);
 
         if (debug_messenger_ != VK_NULL_HANDLE)

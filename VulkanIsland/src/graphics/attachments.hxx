@@ -21,10 +21,10 @@ namespace graphics
 
         std::uint32_t samples_count;
 
-        graphics::ATTACHMENT_LOAD_TREATMENT load_op;      // At the begining of the subpass where it first used.
+        graphics::ATTACHMENT_LOAD_TREATMENT load_op;      // At the beginning of the subpass where it first used.
         graphics::ATTACHMENT_STORE_TREATMENT store_op;    // At the end of the subpass where it last used.
 
-        graphics::IMAGE_LAYOUT initial_layout;      // At the begining of the render pass.
+        graphics::IMAGE_LAYOUT initial_layout;      // At the beginning of the render pass.
         graphics::IMAGE_LAYOUT final_layout;        // At the end of the render pass.
 
         template<class T> requires std::same_as<std::remove_cvref_t<T>, attachment_description>

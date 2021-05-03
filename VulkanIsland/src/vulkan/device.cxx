@@ -67,7 +67,7 @@ namespace
         graphics::COLOR_SPACE::PASS_THROUGH
     };
 
-    template<bool check_on_duplicates = false>
+    template<bool CheckOnDuplicates = false>
     bool check_required_device_extensions(VkPhysicalDevice physical_device, std::vector<std::string_view> &&extensions)
     {
         std::vector<VkExtensionProperties> required_extensions;
@@ -87,7 +87,7 @@ namespace
 
         std::ranges::sort(required_extensions, extensions_compare);
 
-        if constexpr (check_on_duplicates) {
+        if constexpr (CheckOnDuplicates) {
             auto it = std::ranges::unique(required_extensions, [] (auto &&lhs, auto &&rhs)
             {
                 return std::ranges::equal(lhs.extensionName, rhs.extensionName);
@@ -123,71 +123,69 @@ namespace
         return false;
     }
 
-    bool compare_device_features(VkPhysicalDeviceFeatures &&lhs, VkPhysicalDeviceFeatures &&rhs)
+    bool compare_device_features(VkPhysicalDeviceFeatures &lhs, VkPhysicalDeviceFeatures &rhs)
     {
-        auto total = VkBool32(VK_TRUE);
+        auto total = static_cast<VkBool32>(VK_TRUE);
 
-    #define COMPARE_FIELDS_BY_LHS(field)                (lhs.field == (lhs.field * rhs.field))
+        auto compare_fields_by_lhs = [&lhs, &rhs] (auto getter) { return getter(lhs) == (getter(lhs) * getter(rhs)); };
 
-        total *= COMPARE_FIELDS_BY_LHS(robustBufferAccess);
-        total *= COMPARE_FIELDS_BY_LHS(fullDrawIndexUint32);
-        total *= COMPARE_FIELDS_BY_LHS(imageCubeArray);
-        total *= COMPARE_FIELDS_BY_LHS(independentBlend);
-        total *= COMPARE_FIELDS_BY_LHS(geometryShader);
-        total *= COMPARE_FIELDS_BY_LHS(tessellationShader);
-        total *= COMPARE_FIELDS_BY_LHS(sampleRateShading);
-        total *= COMPARE_FIELDS_BY_LHS(dualSrcBlend);
-        total *= COMPARE_FIELDS_BY_LHS(logicOp);
-        total *= COMPARE_FIELDS_BY_LHS(multiDrawIndirect);
-        total *= COMPARE_FIELDS_BY_LHS(drawIndirectFirstInstance);
-        total *= COMPARE_FIELDS_BY_LHS(depthClamp);
-        total *= COMPARE_FIELDS_BY_LHS(depthBiasClamp);
-        total *= COMPARE_FIELDS_BY_LHS(fillModeNonSolid);
-        total *= COMPARE_FIELDS_BY_LHS(depthBounds);
-        total *= COMPARE_FIELDS_BY_LHS(wideLines);
-        total *= COMPARE_FIELDS_BY_LHS(largePoints);
-        total *= COMPARE_FIELDS_BY_LHS(alphaToOne);
-        total *= COMPARE_FIELDS_BY_LHS(multiViewport);
-        total *= COMPARE_FIELDS_BY_LHS(samplerAnisotropy);
-        total *= COMPARE_FIELDS_BY_LHS(textureCompressionETC2);
-        total *= COMPARE_FIELDS_BY_LHS(textureCompressionASTC_LDR);
-        total *= COMPARE_FIELDS_BY_LHS(textureCompressionBC);
-        total *= COMPARE_FIELDS_BY_LHS(occlusionQueryPrecise);
-        total *= COMPARE_FIELDS_BY_LHS(pipelineStatisticsQuery);
-        total *= COMPARE_FIELDS_BY_LHS(vertexPipelineStoresAndAtomics);
-        total *= COMPARE_FIELDS_BY_LHS(fragmentStoresAndAtomics);
-        total *= COMPARE_FIELDS_BY_LHS(shaderTessellationAndGeometryPointSize);
-        total *= COMPARE_FIELDS_BY_LHS(shaderImageGatherExtended);
-        total *= COMPARE_FIELDS_BY_LHS(shaderStorageImageExtendedFormats);
-        total *= COMPARE_FIELDS_BY_LHS(shaderStorageImageMultisample);
-        total *= COMPARE_FIELDS_BY_LHS(shaderStorageImageReadWithoutFormat);
-        total *= COMPARE_FIELDS_BY_LHS(shaderStorageImageWriteWithoutFormat);
-        total *= COMPARE_FIELDS_BY_LHS(shaderUniformBufferArrayDynamicIndexing);
-        total *= COMPARE_FIELDS_BY_LHS(shaderSampledImageArrayDynamicIndexing);
-        total *= COMPARE_FIELDS_BY_LHS(shaderStorageBufferArrayDynamicIndexing);
-        total *= COMPARE_FIELDS_BY_LHS(shaderStorageImageArrayDynamicIndexing);
-        total *= COMPARE_FIELDS_BY_LHS(shaderClipDistance);
-        total *= COMPARE_FIELDS_BY_LHS(shaderCullDistance);
-        total *= COMPARE_FIELDS_BY_LHS(shaderFloat64);
-        total *= COMPARE_FIELDS_BY_LHS(shaderInt64);
-        total *= COMPARE_FIELDS_BY_LHS(shaderInt16);
-        total *= COMPARE_FIELDS_BY_LHS(shaderResourceResidency);
-        total *= COMPARE_FIELDS_BY_LHS(shaderResourceMinLod);
-        total *= COMPARE_FIELDS_BY_LHS(sparseBinding);
-        total *= COMPARE_FIELDS_BY_LHS(sparseResidencyBuffer);
-        total *= COMPARE_FIELDS_BY_LHS(sparseResidencyImage2D);
-        total *= COMPARE_FIELDS_BY_LHS(sparseResidencyImage3D);
-        total *= COMPARE_FIELDS_BY_LHS(sparseResidency2Samples);
-        total *= COMPARE_FIELDS_BY_LHS(sparseResidency4Samples);
-        total *= COMPARE_FIELDS_BY_LHS(sparseResidency8Samples);
-        total *= COMPARE_FIELDS_BY_LHS(sparseResidency16Samples);
-        total *= COMPARE_FIELDS_BY_LHS(sparseResidencyAliased);
-        total *= COMPARE_FIELDS_BY_LHS(variableMultisampleRate);
-        total *= COMPARE_FIELDS_BY_LHS(inheritedQueries);
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.robustBufferAccess; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.fullDrawIndexUint32; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.imageCubeArray; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.independentBlend; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.geometryShader; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.tessellationShader; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.sampleRateShading; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.dualSrcBlend; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.logicOp; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.multiDrawIndirect; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.drawIndirectFirstInstance; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.depthClamp; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.depthBiasClamp; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.fillModeNonSolid; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.depthBounds; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.wideLines; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.largePoints; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.alphaToOne; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.multiViewport; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.samplerAnisotropy; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.textureCompressionETC2; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.textureCompressionASTC_LDR; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.textureCompressionBC; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.occlusionQueryPrecise; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.pipelineStatisticsQuery; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.vertexPipelineStoresAndAtomics; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.fragmentStoresAndAtomics; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderTessellationAndGeometryPointSize; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderImageGatherExtended; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderStorageImageExtendedFormats; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderStorageImageMultisample; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderStorageImageReadWithoutFormat; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderStorageImageWriteWithoutFormat; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderUniformBufferArrayDynamicIndexing; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderSampledImageArrayDynamicIndexing; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderStorageBufferArrayDynamicIndexing; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderStorageImageArrayDynamicIndexing; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderClipDistance; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderCullDistance; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderFloat64; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderInt64; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderInt16; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderResourceResidency; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.shaderResourceMinLod; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.sparseBinding; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.sparseResidencyBuffer; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.sparseResidencyImage2D; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.sparseResidencyImage3D; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.sparseResidency2Samples; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.sparseResidency4Samples; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.sparseResidency8Samples; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.sparseResidency16Samples; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.sparseResidencyAliased; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.variableMultisampleRate; });
+        total *= compare_fields_by_lhs([] (auto &&feature) { return feature.inheritedQueries; });
 
-    #undef COMPARE_BY_FIELDS
-
-        return total != VkBool32(VK_FALSE);
+        return total != static_cast<VkBool32>(VK_FALSE);
     }
 
     bool compare_device_extended_features(std::vector<device_extended_feature_t> const &required_extended_features,
@@ -309,15 +307,15 @@ namespace
             graphics::PRESENTATION_MODE::FIFO_RELAXED
         };
 
-        auto it_end = std::remove_if(std::begin(presentation_modes), std::end(presentation_modes), [&supported_modes] (auto mode)
+        auto subrange = std::ranges::remove_if(presentation_modes, [&supported_modes] (auto mode)
         {
             return std::ranges::none_of(supported_modes, [mode] (auto supported_mode)
             {
                 return supported_mode == convert_to::vulkan(mode);
             });
         });
-
-        presentation_modes.erase(it_end, std::end(presentation_modes));
+        
+        presentation_modes.erase(std::begin(subrange), std::end(subrange));
         presentation_modes.shrink_to_fit();
 
         return { surface_capabilities, surface_formats, presentation_modes };
@@ -340,8 +338,7 @@ namespace
         std::vector<VkQueueFamilyProperties> queue_families(queue_families_count);
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_families_count, std::data(queue_families));
 
-        auto it_family = std::find_if(std::cbegin(queue_families), std::cend(queue_families),
-                                      [device, surface, family_index = 0u] (auto &&queue_family) mutable
+        auto it_family = std::ranges::find_if(queue_families, [device, surface, family_index = 0u] (auto &&queue_family) mutable
         {
             if constexpr (std::is_same_v<T, graphics::graphics_queue>) {
                 VkBool32 surface_supported = VK_FALSE;
@@ -376,7 +373,7 @@ namespace
         });
 
         if (it_family != std::cend(queue_families))
-            return queue_family{ static_cast<std::uint32_t>(std::distance(std::cbegin(queue_families), it_family)), *it_family };
+            return queue_family{ static_cast<std::uint32_t>(std::ranges::distance(std::cbegin(queue_families), it_family)), *it_family };
 
         return { };
     }
@@ -399,8 +396,7 @@ namespace
         }, vulkan::device_extended_features);
 
         // Matching by supported properties, features and extensions.
-        auto it_end = std::remove_if(std::begin(devices), std::end(devices),
-                                     [&extensions, &required_extended_features] (auto &&device)
+        auto subrange = std::ranges::remove_if(devices, [&extensions, &required_extended_features] (auto &&device)
         {
             VkPhysicalDeviceProperties properties;
             vkGetPhysicalDeviceProperties(device, &properties);
@@ -416,15 +412,13 @@ namespace
                 return std::vector<device_extended_feature_t>{args...};
             }, vulkan::device_extended_features);
 
-            void *ptr_next = nullptr;
-
-            for (auto &&feature : supported_extended_features) {
+            for (void *ptr_next = nullptr; auto && supported_feature : supported_extended_features) {
                 std::visit([&ptr_next] (auto &&feature)
                 {
                     feature.pNext = ptr_next;
 
                     ptr_next = &feature;
-                }, feature);
+                }, supported_feature);
             }
 
             VkPhysicalDeviceFeatures2 supported_features{
@@ -438,7 +432,7 @@ namespace
 
             auto required_features = vulkan::device_features;
 
-            if (!compare_device_features(std::move(required_features), std::move(supported_features.features)))
+            if (!compare_device_features(required_features, supported_features.features))
                 return true;
 
             if (!compare_device_extended_features(required_extended_features, std::move(supported_extended_features)))
@@ -447,10 +441,10 @@ namespace
             return false;
         });
 
-        devices.erase(it_end, std::end(devices));
+        devices.erase(std::begin(subrange), std::end(subrange));
 
         // Removing unsuitable devices. Matching by required compute, graphics, transfer and presentation queues.
-        it_end = std::remove_if(std::begin(devices), std::end(devices), [&] (auto &&device)
+        subrange = std::ranges::remove_if(std::begin(devices), std::end(devices), [&] (auto &&device)
         {
             if (!get_queue_family<queue_strict_matching, graphics::graphics_queue>(device, surface))
                 return true;
@@ -464,17 +458,17 @@ namespace
             return false;
         });
 
-        devices.erase(it_end, std::end(devices));
+        devices.erase(std::begin(subrange), std::end(subrange));
 
         // Matching by the swap chain properties support.
-        it_end = std::remove_if(std::begin(devices), std::end(devices), [surface] (auto &&device)
+        subrange = std::ranges::remove_if(std::begin(devices), std::end(devices), [surface] (auto &&device)
         {
             auto details = query_swapchain_support_details(device, surface);
 
             return details.surface_formats.empty() || details.presentation_modes.empty();
         });
 
-        devices.erase(it_end, std::end(devices));
+        devices.erase(std::begin(subrange), std::end(subrange));
 
         if (devices.empty())
             throw vulkan::device_exception("failed to pick physical device"s);
@@ -486,7 +480,7 @@ namespace
 
         // Sorting by device type.
         for (auto device_type : device_types_priority) {
-            auto id_next_type = std::stable_partition(std::begin(devices), std::end(devices), [device_type] (auto &&device)
+            auto next_type_group = std::ranges::stable_partition(devices, [device_type] (auto &&device)
             {
                 VkPhysicalDeviceProperties properties;
                 vkGetPhysicalDeviceProperties(device, &properties);
@@ -494,7 +488,7 @@ namespace
                 return properties.deviceType == device_type;
             });
 
-            if (id_next_type != std::end(devices))
+            if (std::begin(next_type_group) != std::end(next_type_group))
                 break;
         }
 
@@ -667,7 +661,7 @@ namespace vulkan
 
 namespace vulkan
 {
-    device::device(vulkan::instance &instance, renderer::platform_surface platform_surface) : instance_{instance}
+    device::device(vulkan::instance &instance, renderer::platform_surface platform_surface)
     {
         auto constexpr use_extensions = !vulkan::device_extensions.empty();
 
