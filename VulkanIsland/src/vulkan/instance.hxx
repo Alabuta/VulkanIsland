@@ -21,7 +21,7 @@ namespace renderer
     class platform_surface final {
     public:
 
-        VkSurfaceKHR handle() const noexcept { return handle_; }
+        [[nodiscard]] VkSurfaceKHR handle() const noexcept { return handle_; }
 
     private:
 
@@ -39,7 +39,13 @@ namespace vulkan
         explicit instance();
         ~instance();
 
-        VkInstance handle() const noexcept { return handle_; }
+        instance(instance const &) = delete;
+        instance(instance &&) = delete;
+
+        instance const &operator=(instance const &) = delete;
+        instance const &operator=(instance &&) = delete;
+
+        [[nodiscard]] VkInstance handle() const noexcept { return handle_; }
 
         renderer::platform_surface get_platform_surface(platform::window &window);
 
@@ -51,11 +57,5 @@ namespace vulkan
         VkDebugUtilsMessengerEXT debug_messenger_{VK_NULL_HANDLE};
 
         std::map<GLFWwindow *const, renderer::platform_surface> platform_surfaces_;
-
-        instance(instance const &) = delete;
-        instance(instance &&) = delete;
-
-        instance const &operator=(instance const &) = delete;
-        instance const &operator=(instance &&) = delete;
     };
 }

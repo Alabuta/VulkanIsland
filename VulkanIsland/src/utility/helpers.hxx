@@ -25,7 +25,7 @@ struct measure {
     template<class F, class... Args>
     static auto execution(F func, Args &&... args)
     {
-        auto start = std::chrono::system_clock::now();
+        auto const start = std::chrono::system_clock::now();
 
         func(std::forward<Args>(args)...);
 
@@ -54,15 +54,11 @@ public:
     using reference = T &;
     using iterator_category = std::forward_iterator_tag;
 
-    strided_forward_iterator() noexcept = default;
-    ~strided_forward_iterator() = default;
-
-    strided_forward_iterator(pointer data, std::size_t stride) noexcept : stride{stride}, position{reinterpret_cast<std::byte *>(data)} { };
-    strided_forward_iterator(strided_forward_iterator<T> const &) noexcept = default;
+    strided_forward_iterator(pointer data, std::size_t stride) noexcept : stride_{stride}, position_{reinterpret_cast<std::byte *>(data)} { }
 
     strided_forward_iterator<T> &operator++ () noexcept
     {
-        position += stride;
+        position_ += stride_;
 
         return *this;
     }
@@ -71,17 +67,17 @@ public:
     {
         auto copy = *this;
 
-        position += stride;
+        position_ += stride_;
         
         return copy;
     }
 
-    reference operator* () noexcept { return *reinterpret_cast<pointer>(position); }
-    pointer operator-> () noexcept { return reinterpret_cast<pointer>(position); }
+    reference operator* () noexcept { return *reinterpret_cast<pointer>(position_); }
+    pointer operator-> () noexcept { return reinterpret_cast<pointer>(position_); }
 
     bool operator== (strided_forward_iterator<T> const &rhs) const noexcept
     {
-        return stride == rhs.stride && position == rhs.position;
+        return stride_ == rhs.stride_ && position_ == rhs.position_;
     }
 
     bool operator!= (strided_forward_iterator<T> const &rhs) const noexcept
@@ -91,13 +87,13 @@ public:
 
     bool operator< (strided_forward_iterator<T> const &rhs) const
     {
-        return position < rhs.position;
+        return position_ < rhs.position_;
     }
 
 protected:
 
-    std::size_t stride{sizeof(T)};
-    std::byte *position{nullptr};
+    std::size_t stride_{sizeof(T)};
+    std::byte *position_{nullptr};
 };
 
 template<class T>
@@ -110,7 +106,7 @@ public:
 
     strided_bidirectional_iterator<T> &operator-- () noexcept
     {
-        strided_forward_iterator<T>::position -= strided_forward_iterator<T>::stride;
+        strided_forward_iterator<T>::position_ -= strided_forward_iterator<T>::stride_;
 
         return *this;
     }
@@ -119,7 +115,7 @@ public:
     {
         auto copy = *this;
 
-        strided_forward_iterator<T>::position -= strided_forward_iterator<T>::stride;
+        strided_forward_iterator<T>::position_ -= strided_forward_iterator<T>::stride_;
 
         return copy;
     }

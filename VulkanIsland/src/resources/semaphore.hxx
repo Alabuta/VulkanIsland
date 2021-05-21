@@ -11,7 +11,7 @@ namespace resource
     class semaphore final {
     public:
 
-        semaphore(VkSemaphore handle) : handle_{ handle } { }
+        explicit semaphore(VkSemaphore handle) : handle_{ handle } { }
 
         VkSemaphore handle() const noexcept { return handle_; }
 

@@ -36,14 +36,14 @@ namespace resource
 
 namespace graphics
 {
-    struct exception : public std::runtime_error {
+    struct exception final : public std::runtime_error {
         explicit exception(std::string const &what_arg) : std::runtime_error(what_arg.c_str()) { }
     };
 }
 
 namespace loader
 {
-    struct exception : public std::runtime_error {
+    struct exception final : public std::runtime_error {
         explicit exception(std::string const &what_arg) : std::runtime_error(what_arg.c_str()) { }
     };
 }
@@ -73,7 +73,7 @@ namespace vulkan
 
 namespace app
 {
-    struct exception : public std::runtime_error {
+    struct exception final : public std::runtime_error {
         explicit exception(std::string const &what_arg) : std::runtime_error(what_arg.c_str()) { }
     };
 }

@@ -53,13 +53,13 @@ namespace mpl
     template<class T, class... Ts>
     auto constexpr is_one_of_v = is_one_of<T, Ts...>::value;
 
-    template<std::size_t i = 0, class T, class V>
+    template<std::size_t I = 0, class T, class V>
     constexpr void set_tuple(T &&tuple, V value)
     {
-        std::get<i>(tuple) = value;
+        std::get<I>(tuple) = value;
 
-        if constexpr (i + 1 < std::tuple_size_v<std::remove_cvref_t<T>>)
-            set_tuple<i + 1>(std::forward<T>(tuple), value);
+        if constexpr (I + 1 < std::tuple_size_v<std::remove_cvref_t<T>>)
+            set_tuple<I + 1>(std::forward<T>(tuple), value);
     }
 
     namespace detail

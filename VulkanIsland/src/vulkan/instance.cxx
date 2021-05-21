@@ -244,7 +244,7 @@ namespace vulkan
         if (handle_ == VK_NULL_HANDLE)
             return;
 
-        for (auto &&[window_handle, platform_surface] : platform_surfaces_)
+        for (auto &platform_surface : platform_surfaces_ | std::views::values)
             vkDestroySurfaceKHR(handle_, platform_surface.handle(), nullptr);
 
         if (debug_messenger_ != VK_NULL_HANDLE)
