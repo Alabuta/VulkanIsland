@@ -49,14 +49,14 @@ namespace resource
         resource_manager(vulkan::device const &device, renderer::config const &config, resource::memory_manager &memory_manager);
 
         [[nodiscard]] std::shared_ptr<resource::buffer>
-        create_buffer(std::size_t size_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types, graphics::RESOURCE_SHARING_MODE sharing_mode);
+        create_buffer(std::size_t size_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types, graphics::RESOURCE_SHARING_MODE sharing_mode) const;
 
         [[nodiscard]] std::shared_ptr<resource::staging_buffer>
-        create_staging_buffer(std::size_t size_bytes);
+        create_staging_buffer(std::size_t size_bytes) const;
 
         [[nodiscard]] std::shared_ptr<resource::image>
         create_image(graphics::IMAGE_TYPE type, graphics::FORMAT format, renderer::extent extent, std::uint32_t mip_levels, std::uint32_t samples_count,
-                     graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usage_flags, graphics::MEMORY_PROPERTY_TYPE memory_property_types);
+                     graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usage_flags, graphics::MEMORY_PROPERTY_TYPE memory_property_types) const;
 
         [[nodiscard]] std::shared_ptr<resource::image_view>
         create_image_view(std::shared_ptr<resource::image> image, graphics::IMAGE_VIEW_TYPE view_type, graphics::IMAGE_ASPECT image_aspect);

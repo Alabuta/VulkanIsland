@@ -58,7 +58,7 @@ namespace resource
 
         static std::size_t constexpr kPAGE_ALLOCATION_SIZE{0x1000'0000}; // 256 MB
 
-        memory_manager(vulkan::device const &device);
+        explicit memory_manager(vulkan::device const &device);
 
         template<class T>
         requires mpl::is_one_of_v<std::remove_cvref_t<T>, resource::buffer, resource::image>

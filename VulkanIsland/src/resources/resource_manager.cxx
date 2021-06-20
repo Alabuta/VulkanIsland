@@ -94,7 +94,7 @@ namespace resource
         if (auto result = vkMapMemory(device_.handle(), memory->handle(), memory->offset(), kPOOL_SIZE_BYTES, 0, &mapped_ptr); result != VK_SUCCESS)
             throw resource::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
 
-        total_mapped_range_ = std::span<std::byte>{reinterpret_cast<std::byte *>(mapped_ptr), kPOOL_SIZE_BYTES};
+        total_mapped_range_ = std::span{static_cast<std::byte *>(mapped_ptr), kPOOL_SIZE_BYTES};
 
         available_chunks_.emplace(0, kPOOL_SIZE_BYTES);
     }
@@ -211,7 +211,7 @@ namespace resource
 
     std::shared_ptr<resource::buffer>
     resource_manager::create_buffer(std::size_t size_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types,
-                                    graphics::RESOURCE_SHARING_MODE sharing_mode)
+                                    graphics::RESOURCE_SHARING_MODE sharing_mode) const
     {
         VkBufferCreateInfo const create_info{
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
@@ -221,7 +221,7 @@ namespace resource
         #pragma GCC diagnostic push
         #pragma GCC diagnostic ignored "-Wuseless-cast"
     #endif
-            static_cast<VkDeviceSize>(size_bytes),
+            size_bytes,
     #ifndef _MSC_VER
         #pragma GCC diagnostic pop
     #endif
@@ -235,7 +235,7 @@ namespace resource
         if (auto result = vkCreateBuffer(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
             throw resource::instantiation_fail(fmt::format("failed to create a buffer: {0:#x}"s, result));
 
-        auto memory = memory_manager_.allocate_memory(resource::buffer{
+        auto const memory = memory_manager_.allocate_memory(resource::buffer{
             handle, nullptr, size_bytes, usage, sharing_mode
         }, memory_property_types);
 
@@ -255,7 +255,7 @@ namespace resource
     }
 
     std::shared_ptr<resource::staging_buffer>
-    resource_manager::create_staging_buffer(std::size_t size_bytes)
+    resource_manager::create_staging_buffer(std::size_t size_bytes) const
     {
         auto [offset_bytes, mapped_range] = staging_buffer_pool_->allocate_mapped_range(size_bytes);
 
@@ -322,7 +322,7 @@ namespace resource
 
     std::shared_ptr<resource::image>
     resource_manager::create_image(graphics::IMAGE_TYPE type, graphics::FORMAT format, renderer::extent extent, std::uint32_t mip_levels, std::uint32_t samples_count,
-                                   graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usage_flags, graphics::MEMORY_PROPERTY_TYPE memory_property_types)
+                                   graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usage_flags, graphics::MEMORY_PROPERTY_TYPE memory_property_types) const
     {
         VkImageCreateInfo const create_info{
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -346,7 +346,7 @@ namespace resource
         if (auto result = vkCreateImage(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
             throw resource::instantiation_fail(fmt::format("failed to create an image: {0:#x}"s, result));
 
-        auto memory = memory_manager_.allocate_memory(resource::image{nullptr, handle, format, tiling, mip_levels, extent}, memory_property_types);
+        auto const memory = memory_manager_.allocate_memory(resource::image{nullptr, handle, format, tiling, mip_levels, extent}, memory_property_types);
 
         if (memory == nullptr)
             throw memory::exception("failed to allocate image memory"s);
@@ -450,12 +450,12 @@ namespace resource
 
         std::shared_ptr<resource::framebuffer> framebuffer;
 
-        VkFramebuffer handle;
+        VkFramebuffer handle = VK_NULL_HANDLE;
 
         if (auto result = vkCreateFramebuffer(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
             throw resource::instantiation_fail(fmt::format("failed to create a framebuffer: {0:#x}"s, result));
 
-        else framebuffer.reset(new resource::framebuffer{handle}, [this] (resource::framebuffer *ptr_framebuffer)
+        framebuffer.reset(new resource::framebuffer{handle}, [this] (resource::framebuffer *ptr_framebuffer)
         {
             vkDestroyFramebuffer(device_.handle(), ptr_framebuffer->handle(), nullptr);
 
@@ -551,10 +551,10 @@ namespace resource
             if (it == std::end(vertex_buffer_set))
                 throw resource::instantiation_fail("failed to emplace new vertex buffer set node"s);
 
-            else return *it;
+            return *it;
         }
 
-        else throw resource::instantiation_fail("failed to extract vertex buffer set node"s);
+        throw resource::instantiation_fail("failed to extract vertex buffer set node"s);
     }
 
     std::shared_ptr<resource::index_buffer>
@@ -649,11 +649,11 @@ namespace resource
 std::shared_ptr<resource::buffer>
 create_uniform_buffer(resource::resource_manager &resource_manager, std::size_t size)
 {
-    auto constexpr usageFlags = graphics::BUFFER_USAGE::UNIFORM_BUFFER;
-    auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
+    auto constexpr usage_flags = graphics::BUFFER_USAGE::UNIFORM_BUFFER;
+    auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE | graphics::MEMORY_PROPERTY_TYPE::HOST_COHERENT;
     auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
 
-    return resource_manager.create_buffer(size, usageFlags, propertyFlags, sharing_mode);
+    return resource_manager.create_buffer(size, usage_flags, property_flags, sharing_mode);
 }
 
 std::shared_ptr<resource::buffer>
@@ -669,9 +669,9 @@ create_coherent_storage_buffer(resource::resource_manager &resource_manager, std
 std::shared_ptr<resource::buffer>
 create_storage_buffer(resource::resource_manager &resource_manager, std::size_t size)
 {
-    auto constexpr usageFlags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
-    auto constexpr propertyFlags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE;
+    auto constexpr usage_flags = graphics::BUFFER_USAGE::STORAGE_BUFFER;
+    auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::HOST_VISIBLE;
     auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
 
-    return resource_manager.create_buffer(size, usageFlags, propertyFlags, sharing_mode);
+    return resource_manager.create_buffer(size, usage_flags, property_flags, sharing_mode);
 }
