@@ -51,6 +51,6 @@ namespace resource
 
     template<>
     struct hash<resource::framebuffer_invariant> {
-        std::size_t operator() (resource::framebuffer_invariant const &framebuffer_invariant) const;
+        std::size_t operator() (resource::framebuffer_invariant const &invariant) const;
     };
 }

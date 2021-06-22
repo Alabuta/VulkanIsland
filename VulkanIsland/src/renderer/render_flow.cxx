@@ -69,9 +69,10 @@ create_attachments(resource::resource_manager &resource_manager,
             throw graphics::exception("failed to create image view for an attachment"s);
 
         if (is_color_attachment)
-            attachments.push_back(graphics::color_attachment{format, tiling, mip_levels, samples_count, image, image_view});
+            attachments.emplace_back(graphics::color_attachment{format, tiling, mip_levels, samples_count, image, image_view});
 
-        else attachments.push_back(graphics::depth_stencil_attachment{format, tiling, mip_levels, samples_count, image, image_view});
+        else
+            attachments.emplace_back(graphics::depth_stencil_attachment{format, tiling, mip_levels, samples_count, image, image_view});
     }
 
     return attachments;
@@ -80,9 +81,8 @@ create_attachments(resource::resource_manager &resource_manager,
 std::vector<graphics::attachment_description>
 create_attachment_descriptions(vulkan::device const &device, renderer::config const &renderer_config, renderer::swapchain const &swapchain)
 {
-    auto samples_count = renderer_config.framebuffer_sample_counts;
-
-    auto color_attachment_format = swapchain.surface_format().format;
+    const auto samples_count = renderer_config.framebuffer_sample_counts;
+    const auto color_attachment_format = swapchain.surface_format().format;
 
     auto depth_attachment_format = find_supported_image_format(
         device,

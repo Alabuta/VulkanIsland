@@ -74,22 +74,22 @@ namespace resource
 
             template<class T, class S>
             requires mpl::are_same_v<memory_chunk, T> && std::is_unsigned_v<S>
-            bool operator() (T chunk, S size) const noexcept
+            bool operator() (T chunk, S chunk_size) const noexcept
             {
-                return chunk.size < size;
+                return chunk.size < chunk_size;
             }
                 
             template<class S, class T>
             requires mpl::are_same_v<memory_chunk, T> && std::is_unsigned_v<S>
-            bool operator() (S size, T chunk) const noexcept
+            bool operator() (S chunk_size, T chunk) const noexcept
             {
-                return chunk.size < size;
+                return chunk.size < chunk_size;
             }
         };
     };
 
     struct memory_page final {
-        memory_page(std::size_t available_size) : available_size{available_size}, available_chunks{{0, available_size}} { }
+        explicit memory_page(std::size_t available_size) : available_size{available_size}, available_chunks{{0, available_size}} { }
 
         std::size_t available_size{0};
 
@@ -126,9 +126,14 @@ namespace resource
 
         std::unordered_map<std::size_t, resource::memory_pool> memory_pools;
 
-        memory_allocator(vulkan::device const& device);
-
+        explicit memory_allocator(vulkan::device const& device);
         ~memory_allocator();
+
+        memory_allocator(memory_allocator const &) = default;
+        memory_allocator(memory_allocator &&) = default;
+
+        memory_allocator &operator= (memory_allocator const &) = delete;
+        memory_allocator &operator= (memory_allocator &&) = delete;
 
         std::shared_ptr<resource::memory_block>
         allocate_memory(VkMemoryRequirements &&memory_requirements, graphics::MEMORY_PROPERTY_TYPE, bool is_linear);
@@ -149,8 +154,8 @@ namespace resource
 
     memory_allocator::~memory_allocator()
     {
-        for (auto&& [type, memory_pool] : memory_pools)
-            for (auto&& [memory_handle, memory_page] : memory_pool.memory_blocks)
+        for (auto& memory_pool : memory_pools | std::views::values)
+            for (const auto& memory_handle : memory_pool.memory_blocks | std::views::keys)
                 vkFreeMemory(device.handle(), memory_handle, nullptr);
 
         memory_pools.clear();
@@ -187,27 +192,27 @@ namespace resource
         auto &&memory_pool = memory_pools.at(key);
         auto &&memory_blocks = memory_pool.memory_blocks;
 
-        typename decltype(resource::memory_pool::memory_blocks)::iterator it_block;
         typename decltype(resource::memory_page::available_chunks)::iterator it_chunk;
 
-        it_block = std::ranges::find_if(memory_blocks, [&it_chunk, required_size, required_alignment] (auto &&pair)
+        auto it_block = std::ranges::find_if(
+        memory_blocks, [&it_chunk, required_size, required_alignment](auto&& pair)
         {
-            auto &&[memory_handle, memory_page] = pair;
+            auto&& [memory_handle, memory_page] = pair;
 
             if (memory_page.available_size < required_size)
                 return false;
 
-            auto &&available_chunks = memory_page.available_chunks;
+            auto&& available_chunks = memory_page.available_chunks;
 
             auto it_chunk_begin = available_chunks.lower_bound(required_size);
             auto it_chunk_end = available_chunks.upper_bound(required_size);
 
-            it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [required_size, required_alignment] (auto &&chunk)
+            it_chunk = std::find_if(it_chunk_begin, it_chunk_end, [required_size, required_alignment](auto&& chunk)
             {
                 auto aligned_offset = boost::alignment::align_up(chunk.offset, required_alignment);
 
                 /*if (is_linear)
-                    aligned_offset = boost::alignment::align_up(aligned_offset, image_granularity);*/
+                aligned_offset = boost::alignment::align_up(aligned_offset, image_granularity);*/
 
                 return aligned_offset + required_size <= chunk.offset + chunk.size;
             });
@@ -257,14 +262,14 @@ namespace resource
                 new resource::memory_block{it_block->first, required_size, aligned_offset, memory_type_index, properties, is_linear},
                                             [this] (resource::memory_block *const ptr_memory)
                 {
-                    deallocate_memory(std::move(*ptr_memory));
+                    deallocate_memory(std::forward<resource::memory_block>(*ptr_memory));
 
                     delete ptr_memory;
                 }
             };
         }
 
-        else throw memory::exception("failed to find memory chunk for extraction"s);
+        throw memory::exception("failed to find memory chunk for extraction"s);
     }
 
     void memory_allocator::deallocate_memory(resource::memory_block &&memory_block)
