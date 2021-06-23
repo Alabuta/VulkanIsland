@@ -32,7 +32,7 @@ namespace platform
         window(std::string_view name, std::int32_t width, std::int32_t height);
         ~window();
 
-        void update(std::function<void()> &&callback);
+        void update(std::function<void()> &&callback) const;
 
         GLFWwindow *handle() noexcept { return handle_; }
 

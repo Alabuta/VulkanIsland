@@ -31,7 +31,7 @@ namespace
                 throw vulkan::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
 
             else {
-                std::ranges::copy(container, reinterpret_cast<T *>(data));
+                std::ranges::copy(container, static_cast<T *>(data));
 
                 vkUnmapMemory(device.handle(), buffer->memory()->handle());
             }
@@ -48,15 +48,15 @@ load_texture(vulkan::device &device, resource::resource_manager &resource_manage
 
     auto constexpr generateMipMaps = true;
 
-    if (auto rawImage = LoadTARGA(name); rawImage) {
+    if (auto raw_image = LoadTARGA(name); raw_image) {
         auto staging_buffer = std::visit([&device, &resource_manager] (auto &&data)
         {
             return stage_data(device, resource_manager, std::span{data});
-        }, std::move(rawImage->data));
+        }, std::move(raw_image->data));
 
         if (staging_buffer) {
-            auto const width = static_cast<std::uint16_t>(rawImage->width);
-            auto const height = static_cast<std::uint16_t>(rawImage->height);
+            auto const width = static_cast<std::uint16_t>(raw_image->width);
+            auto const height = static_cast<std::uint16_t>(raw_image->height);
 
             auto constexpr usage_flags = graphics::IMAGE_USAGE::TRANSFER_SOURCE | graphics::IMAGE_USAGE::TRANSFER_DESTINATION | graphics::IMAGE_USAGE::SAMPLED;
             auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
@@ -64,16 +64,16 @@ load_texture(vulkan::device &device, resource::resource_manager &resource_manage
             auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
 
             auto type = graphics::IMAGE_TYPE::TYPE_2D;
-            auto format = rawImage->format;
-            auto view_type = rawImage->view_type;
-            auto mip_levels = rawImage->mip_levels;
-            auto aspectFlags = graphics::IMAGE_ASPECT::COLOR_BIT;
+            auto format = raw_image->format;
+            auto view_type = raw_image->view_type;
+            auto mip_levels = raw_image->mip_levels;
+            auto aspect_flags = graphics::IMAGE_ASPECT::COLOR_BIT;
             auto samples_count = 1u;
 
             auto extent = renderer::extent{width, height};
 
             if (auto image = resource_manager.create_image(type, format, extent, mip_levels, samples_count, tiling, usage_flags, property_flags); image) {
-                if (auto view = resource_manager.create_image_view(image, view_type, aspectFlags); view)
+                if (auto view = resource_manager.create_image_view(image, view_type, aspect_flags); view)
             #if NOT_YET_IMPLEMENTED
                     if (auto sampler = resource_manager.create_image_sampler(mip_levels()); sampler)
                         texture.emplace(image, *view, sampler);

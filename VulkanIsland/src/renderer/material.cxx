@@ -44,28 +44,29 @@ namespace
 
         auto filter_vertex_layouts = [&] (auto &&indices)
         {
-            auto vertex_attributes = indices | ranges::views::transform(transform_indices);
+            auto vertex_attributes = indices | std::views::transform(transform_indices);
             auto intersection = ranges::views::set_intersection(required_vertex_attributes, vertex_attributes, compare_attributes);
 
-            return ranges::distance(intersection) == ranges::distance(indices);
+            return std::ranges::distance(intersection) == std::ranges::distance(indices);
         };
 
-        auto vertex_layouts = technique.vertex_layouts | ranges::views::filter(filter_vertex_layouts);
+        auto filtered_vertex_layouts = technique.vertex_layouts | std::views::filter(filter_vertex_layouts);
 
-        if (ranges::distance(vertex_layouts) == 0)
+        if (std::ranges::distance(filtered_vertex_layouts) == 0)
             return { };
 
-        graphics::vertex_layout vertex_layout;
+        auto filtered_vertex_attributes = filtered_vertex_layouts.front() | std::views::transform(transform_indices);
 
+        graphics::vertex_layout vertex_layout;
         auto &&vertex_attributes = vertex_layout.attributes;
 
-        for (auto [semantic, format] : ranges::front(vertex_layouts) | ranges::views::transform(transform_indices))
+        for (auto [semantic, format] : filtered_vertex_attributes)
             vertex_attributes.push_back({semantic, format});
 
         std::sort(std::begin(vertex_attributes), std::end(vertex_attributes));
 
         vertex_layout.size_bytes = std::accumulate(std::begin(vertex_attributes), std::end(vertex_attributes), vertex_layout.size_bytes,
-                                                      [] (auto total_size_bytes, auto attribute)
+                                                   [] (auto total_size_bytes, auto attribute)
         {
             auto size_bytes = graphics::size_bytes(attribute.format);
 
@@ -118,11 +119,11 @@ namespace graphics
             {
                 std::set<graphics::specialization_constant> constants;
 
-                for (std::uint32_t id = 0; auto &&value : shader_bundle.specialization_constants) {
+                for (std::uint32_t id = 0; auto &&constant : shader_bundle.specialization_constants) {
                     std::visit([&id, &constants] (auto value)
                     {
                         constants.emplace(id++, value);
-                    }, value);
+                    }, constant);
                 }
 
                 auto [shader_semantic, shader_name] = shader_modules.at(shader_bundle.module_index);

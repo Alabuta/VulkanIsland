@@ -49,7 +49,7 @@ namespace graphics
     class pipeline_layout final {
     public:
 
-        pipeline_layout(VkPipelineLayout handle) noexcept : handle_{handle} { }
+        explicit pipeline_layout(VkPipelineLayout handle) noexcept : handle_{handle} { }
 
         VkPipelineLayout handle() const noexcept { return handle_; }
 

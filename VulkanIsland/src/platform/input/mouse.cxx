@@ -52,9 +52,9 @@ namespace platform
             [this] (platform::mouse_data::buttons &buttons)
             {
                 if (buttons.value.any()) {
-                    auto const buttonsBitCount = kPRESSED_MASK.count();
+                    auto const buttons_bit_count = kPRESSED_MASK.count();
 
-                    for (std::size_t i = 0; i < buttonsBitCount; ++i) {
+                    for (std::size_t i = 0; i < buttons_bit_count; ++i) {
                         auto const pressed = buttons.value[i];
                         auto const depressed = buttons.value[++i];
 

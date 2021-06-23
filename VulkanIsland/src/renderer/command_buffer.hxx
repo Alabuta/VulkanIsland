@@ -79,14 +79,14 @@ void generate_mip_maps(vulkan::device const &device, Q &queue, resource::image c
 
         vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-        VkImageBlit const imageBlit{
+        VkImageBlit const image_blit{
             { VK_IMAGE_ASPECT_COLOR_BIT, i - 1, 0, 1 },
             {{ 0, 0, 0 }, { static_cast<std::int32_t>(width), static_cast<std::int32_t>(height), 1 }},
             { VK_IMAGE_ASPECT_COLOR_BIT, i, 0, 1 },
             {{ 0, 0, 0 }, { static_cast<std::int32_t>(width / 2), static_cast<std::int32_t>(height / 2), 1 }}
         };
 
-        vkCmdBlitImage(command_buffer, image.handle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image.handle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &imageBlit, VK_FILTER_LINEAR);
+        vkCmdBlitImage(command_buffer, image.handle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image.handle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_blit, VK_FILTER_LINEAR);
 
         barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;

@@ -123,7 +123,7 @@ namespace graphics
     std::string to_string(graphics::FORMAT format)
     {
         switch (format) {
-            // Signed and usigned byte integer formats.
+            // Signed and unsigned byte integer formats.
             case graphics::FORMAT::R8_SNORM:			return "r8i_norm"s;
             case graphics::FORMAT::RG8_SNORM:			return "rg8i_norm"s;
             case graphics::FORMAT::RGB8_SNORM:			return "rgb8i_norm"s;

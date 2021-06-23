@@ -48,7 +48,7 @@ namespace platform
         ).track_foreign(handler));
     }
 
-    void window::update(std::function<void()> &&callback)
+    void window::update(std::function<void()> &&callback) const
     {
         while (glfwWindowShouldClose(handle_) == GLFW_FALSE && glfwGetKey(handle_, GLFW_KEY_ESCAPE) != GLFW_PRESS) {
             callback();
@@ -59,9 +59,7 @@ namespace platform
     {
         glfwSetWindowSizeCallback(handle_, [] (auto handle, auto width, auto height)
         {
-            auto instance = reinterpret_cast<window *>(glfwGetWindowUserPointer(handle));
-
-            if (instance) {
+            if (auto instance = static_cast<window *>(glfwGetWindowUserPointer(handle)); instance) {
                 instance->width_ = width;
                 instance->height_ = height;
 
@@ -71,9 +69,7 @@ namespace platform
 
         glfwSetCursorPosCallback(handle_, [] (auto handle, auto x, auto y)
         {
-            auto instance = reinterpret_cast<window *>(glfwGetWindowUserPointer(handle));
-
-            if (instance) {
+            if (auto instance = static_cast<window *>(glfwGetWindowUserPointer(handle)); instance) {
                 auto coords = platform::mouse_data::relative_coords{
                     static_cast<decltype(platform::mouse_data::relative_coords::x)>(x),
                     static_cast<decltype(platform::mouse_data::relative_coords::y)>(y)
@@ -87,9 +83,7 @@ namespace platform
 
         glfwSetMouseButtonCallback(handle_, [] (auto handle, auto button, auto action, auto)
         {
-            auto instance = reinterpret_cast<window *>(glfwGetWindowUserPointer(handle));
-
-            if (instance) {
+            if (auto instance = static_cast<window *>(glfwGetWindowUserPointer(handle)); instance) {
                 auto buttons = platform::mouse_data::buttons{};
 
                 std::size_t offset = action == GLFW_PRESS ? 0 : 1;
@@ -105,9 +99,7 @@ namespace platform
         // TODO: replace to 'glfwSetMouseWheelCallback'
         glfwSetScrollCallback(handle_, [] (auto handle, auto xoffset, auto yoffset)
         {
-            auto instance = reinterpret_cast<window *>(glfwGetWindowUserPointer(handle));
-
-            if (instance) {
+            if (auto instance = static_cast<window *>(glfwGetWindowUserPointer(handle)); instance) {
                 auto wheel = platform::mouse_data::wheel{
                     static_cast<decltype(platform::mouse_data::wheel::xoffset)>(xoffset),
                     static_cast<decltype(platform::mouse_data::wheel::yoffset)>(yoffset)

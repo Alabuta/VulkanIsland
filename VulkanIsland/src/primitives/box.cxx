@@ -232,13 +232,11 @@ namespace primitives
 
         auto &&attributes = vertex_layout.attributes;
 
-        std::size_t offset_in_bytes = 0;
-
-        for (auto &&attribute : attributes) {
+        for (std::size_t offset_in_bytes = 0; auto &&attribute : attributes) {
             if (auto format_inst = graphics::instantiate_format(attribute.format); format_inst) {
-                std::visit([&] (auto &&format_inst)
+                std::visit([&] <typename T> (T &&)
                 {
-                    using type = typename std::remove_cvref_t<decltype(format_inst)>;
+                    using type = typename std::remove_cvref_t<T>;
                     using pointer_type = typename std::add_pointer_t<type>;
 
                     auto data = reinterpret_cast<pointer_type>(std::to_address(it_vertex_buffer) + offset_in_bytes);
