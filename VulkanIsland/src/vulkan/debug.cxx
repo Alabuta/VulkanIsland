@@ -45,7 +45,7 @@ namespace vulkan
         VkDebugReportCallbackCreateInfoEXT constexpr create_info{
             VK_STRUCTURE_TYPE_DEBUG_REPORT_CALLBACK_CREATE_INFO_EXT,
             nullptr,
-            VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_DEBUG_BIT_EXT,
+            VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT | VK_DEBUG_REPORT_ERROR_BIT_EXT/* | VK_DEBUG_REPORT_DEBUG_BIT_EXT*/,
             debug_report_callback,
             nullptr
         };

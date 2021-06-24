@@ -9,7 +9,7 @@
 
 namespace vulkan_config
 {
-    #define USE_DEBUG_UTILS 1
+    #define USE_DEBUG_UTILS 0
 
     auto constexpr extensions = std::array{
     #if USE_DEBUG_UTILS
