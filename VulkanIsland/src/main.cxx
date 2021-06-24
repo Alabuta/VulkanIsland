@@ -86,7 +86,7 @@
 #include "resources/image.hxx"
 #include "resources/resource_manager.hxx"
 #include "resources/memory_manager.hxx"
-#include "resources/semaphore.hxx"
+#include "resources/sync_objects.hxx"
 #include "resources/framebuffer.hxx"
 
 #include "descriptor.hxx"

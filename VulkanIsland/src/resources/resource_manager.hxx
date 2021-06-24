@@ -36,6 +36,7 @@ namespace resource
     class framebuffer;
 
     class semaphore;
+    class fence;
 
     template<class T>
     struct hash;
@@ -70,6 +71,7 @@ namespace resource
                            std::vector<std::shared_ptr<resource::image_view>> const &attachments);
 
         [[nodiscard]] std::shared_ptr<resource::semaphore> create_semaphore();
+        [[nodiscard]] std::shared_ptr<resource::fence> create_fence(bool create_signaled);
 
         [[nodiscard]] std::shared_ptr<resource::vertex_buffer>
         stage_vertex_data(graphics::vertex_layout const &layout, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool);

@@ -8,7 +8,7 @@
 #include "graphics/graphics_api.hxx"
 #include "buffer.hxx"
 #include "image.hxx"
-#include "semaphore.hxx"
+#include "sync_objects.hxx"
 #include "framebuffer.hxx"
 #include "renderer/command_buffer.hxx"
 
@@ -193,6 +193,9 @@ namespace resource
 
             else if constexpr (std::is_same_v<T, resource::semaphore>)
                 vkDestroySemaphore(device.handle(), resource_ptr->handle(), nullptr);
+
+            else if constexpr (std::is_same_v<T, resource::fence>)
+                vkDestroyFence(device.handle(), resource_ptr->handle(), nullptr);
 
             delete resource_ptr;
         }
@@ -482,13 +485,38 @@ namespace resource
                 vkDestroySemaphore(device_.handle(), ptr_semaphore->handle(), nullptr);
 
                 delete ptr_semaphore;
-            }
-            );
+            });
         }
 
         else throw resource::instantiation_fail(fmt::format("failed to create a semaphore: {0:#x}"s, result));
 
         return semaphore;
+    }
+
+    std::shared_ptr<resource::fence> resource_manager::create_fence(bool create_signaled)
+    {
+        VkFenceCreateInfo const create_info{
+            VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
+            nullptr,
+            create_signaled ? VK_FENCE_CREATE_SIGNALED_BIT : static_cast<VkFenceCreateFlags>(0)
+        };
+
+        std::shared_ptr<resource::fence> fence;
+
+        VkFence handle;
+
+        if (auto result = vkCreateFence(device_.handle(), &create_info, nullptr, &handle); result == VK_SUCCESS) {
+            fence.reset(new resource::fence{handle}, [this] (resource::fence *ptr_fence)
+            {
+                vkDestroyFence(device_.handle(), ptr_fence->handle(), nullptr);
+
+                delete ptr_fence;
+            });
+        }
+
+        else throw resource::instantiation_fail(fmt::format("failed to create a fence: {0:#x}"s, result));
+
+        return fence;
     }
 
     std::shared_ptr<resource::vertex_buffer>
