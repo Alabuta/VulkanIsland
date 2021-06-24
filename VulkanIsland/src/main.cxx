@@ -126,13 +126,15 @@ struct per_object_t final {
 
 
 void cleanup_frame_data(struct app_t &app);
-void create_semaphores(app_t &app);
+void create_sync_objects(app_t &app);
 void recreate_swap_chain(app_t &app);
 
 
 struct app_t final {
     std::uint32_t width{800u};
     std::uint32_t height{600u};
+
+    std::size_t current_frame_index = 0;
 
     renderer::config renderer_config;
 
@@ -158,7 +160,11 @@ struct app_t final {
     std::vector<graphics::attachment> attachments;
     std::vector<std::shared_ptr<resource::framebuffer>> framebuffers;
 
-    std::shared_ptr<resource::semaphore> image_available_semaphore, render_finished_semaphore;
+    std::array<std::shared_ptr<resource::semaphore>, renderer::kCONCURRENTLY_PROCESSED_FRAMES> image_available_semaphores;
+    std::array<std::shared_ptr<resource::semaphore>, renderer::kCONCURRENTLY_PROCESSED_FRAMES> render_finished_semaphores;
+
+    std::array<std::shared_ptr<resource::fence>, renderer::kCONCURRENTLY_PROCESSED_FRAMES> concurrent_frames_fences;
+    std::vector<std::shared_ptr<resource::fence>> busy_frames_fences;
 
     camera_system cameraSystem;
     std::shared_ptr<camera> camera_;
@@ -202,8 +208,21 @@ struct app_t final {
 
         cleanup_frame_data(*this);
 
-        render_finished_semaphore.reset();
-        image_available_semaphore.reset();
+        for (auto &&semaphore : image_available_semaphores)
+            if (semaphore)
+                semaphore.reset();
+
+        for (auto &&semaphore : render_finished_semaphores)
+            if (semaphore)
+                semaphore.reset();
+
+        for (auto &&fence : concurrent_frames_fences)
+            if (fence)
+                fence.reset();
+
+        for (auto &&fence : busy_frames_fences)
+            if (fence)
+                fence.reset();
 
         pipeline_factory.reset();
 
@@ -366,7 +385,7 @@ void create_graphics_command_buffers(app_t &app)
         VkCommandBufferBeginInfo const begin_info{
             VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
             nullptr,
-            VK_COMMAND_BUFFER_USAGE_SIMULTANEOUS_USE_BIT, // :TODO: remove?
+            0,
             nullptr
         };
 
@@ -879,19 +898,35 @@ namespace temp
 }
 
 
-void create_semaphores(app_t &app)
+void create_sync_objects(app_t &app)
 {
     auto &&resource_manager = *app.resource_manager;
 
-    if (auto const semaphore = resource_manager.create_semaphore(); !semaphore)
+    std::ranges::generate(app.image_available_semaphores, [&resource_manager] ()
+    {
+        if (auto semaphore = resource_manager.create_semaphore(); semaphore)
+            return semaphore;
+
         throw resource::exception("failed to create image semaphore"s);
+    });
 
-    else app.image_available_semaphore = semaphore;
+    std::ranges::generate(app.render_finished_semaphores, [&resource_manager] ()
+    {
+        if (auto semaphore = resource_manager.create_semaphore(); semaphore)
+            return semaphore;
 
-    if (auto const semaphore = resource_manager.create_semaphore(); !semaphore)
         throw resource::exception("failed to create render semaphore"s);
+    });
 
-    else app.render_finished_semaphore = semaphore;
+    std::ranges::generate(app.concurrent_frames_fences, [&resource_manager] ()
+    {
+        if (auto fence = resource_manager.create_fence(true); fence)
+            return fence;
+
+        throw resource::exception("failed to create frame fence"s);
+    });
+
+    app.busy_frames_fences.resize(std::size(app.swapchain->image_views()), nullptr);
 }
 
 void init(platform::window &window, app_t &app)
@@ -1007,7 +1042,7 @@ void init(platform::window &window, app_t &app)
 
     create_graphics_command_buffers(app);
 
-    create_semaphores(app);
+    create_sync_objects(app);
 
     app.instance = std::move(instance);
 }
@@ -1080,7 +1115,19 @@ void render_frame(app_t &app)
     auto &&device = *app.device;
     auto &&swapchain = *app.swapchain;
 
+    auto &&image_available_semaphore = app.image_available_semaphores[app.current_frame_index];
+    auto &&render_finished_semaphore = app.render_finished_semaphores[app.current_frame_index];
+
+#define USE_FENCES 1
+
+#if USE_FENCES
+    auto &&frame_fence = app.concurrent_frames_fences[app.current_frame_index];
+
+    if (auto result = vkWaitForFences(device.handle(), 1, frame_fence->handle_ptr(), VK_TRUE, std::numeric_limits<std::uint64_t>::max()); result != VK_SUCCESS)
+        throw vulkan::exception(fmt::format("failed to wait current frame fence: {0:#x}"s, result));
+#else
     vkQueueWaitIdle(device.presentation_queue.handle());
+#endif
 
     /*VkAcquireNextImageInfoKHR next_image_info{
         VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR,
@@ -1094,7 +1141,7 @@ void render_frame(app_t &app)
     std::uint32_t image_index;
 
     switch (auto result = vkAcquireNextImageKHR(device.handle(), swapchain.handle(), std::numeric_limits<std::uint64_t>::max(),
-            app.image_available_semaphore->handle(), VK_NULL_HANDLE, &image_index); result) {
+            image_available_semaphore->handle(), VK_NULL_HANDLE, &image_index); result) {
         case VK_ERROR_OUT_OF_DATE_KHR:
             recreate_swap_chain(app);
             return;
@@ -1107,8 +1154,16 @@ void render_frame(app_t &app)
             throw vulkan::exception(fmt::format("failed to acquire next image index: {0:#x}"s, result));
     }
 
-    auto const wait_semaphores = std::array{ app.image_available_semaphore->handle() };
-    auto const signal_semaphores = std::array{ app.render_finished_semaphore->handle() };
+#if USE_FENCES
+    if (auto &&fence = app.busy_frames_fences.at(image_index); fence && fence->handle() != VK_NULL_HANDLE)
+        if (auto result = vkWaitForFences(device.handle(), 1, fence->handle_ptr(), VK_TRUE, std::numeric_limits<std::uint64_t>::max()); result != VK_SUCCESS)
+            throw vulkan::exception(fmt::format("failed to wait busy frame fence: {0:#x}"s, result));
+
+    app.busy_frames_fences.at(image_index) = frame_fence;
+#endif
+
+    auto const wait_semaphores = std::array{ image_available_semaphore->handle() };
+    auto const signal_semaphores = std::array{ render_finished_semaphore->handle() };
 
     auto const wait_stages = std::array{
         VkPipelineStageFlags{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
@@ -1123,8 +1178,17 @@ void render_frame(app_t &app)
         static_cast<std::uint32_t>(std::size(signal_semaphores)), std::data(signal_semaphores),
     };
 
+#if USE_FENCES
+    if (auto result = vkResetFences(device.handle(), 1, frame_fence->handle_ptr()); result != VK_SUCCESS)
+        throw vulkan::exception(fmt::format("failed to reset previous frame fence: {0:#x}"s, result));
+
+    if (auto result = vkQueueSubmit(device.graphics_queue.handle(), 1, &submit_info, frame_fence->handle()); result != VK_SUCCESS)
+        throw vulkan::exception(fmt::format("failed to submit draw command buffer: {0:#x}"s, result));
+#else
+
     if (auto result = vkQueueSubmit(device.graphics_queue.handle(), 1, &submit_info, VK_NULL_HANDLE); result != VK_SUCCESS)
         throw vulkan::exception(fmt::format("failed to submit draw command buffer: {0:#x}"s, result));
+#endif
 
     auto swapchain_handle = swapchain.handle();
 
@@ -1148,6 +1212,10 @@ void render_frame(app_t &app)
         default:
             throw vulkan::exception(fmt::format("failed to submit request to present framebuffer: {0:#x}"s, result));
     }
+
+#if USE_FENCES
+    app.current_frame_index = (app.current_frame_index + 1) % renderer::kCONCURRENTLY_PROCESSED_FRAMES;
+#endif
 }
 
 int main()

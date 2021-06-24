@@ -7,6 +7,8 @@
 
 namespace renderer
 {
+    static std::uint32_t constexpr kCONCURRENTLY_PROCESSED_FRAMES{2};
+
 #pragma warning(push)
 #pragma warning(disable : 4820)
     struct config final {
