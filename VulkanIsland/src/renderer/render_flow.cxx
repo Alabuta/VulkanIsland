@@ -153,10 +153,10 @@ create_render_pass(graphics::render_pass_manager &render_pass_manager, renderer:
         std::vector{
             graphics::subpass_dependency{
                 std::nullopt, 0,
-                graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT,
-                graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT,
+                graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT | graphics::PIPELINE_STAGE::EARLY_FRAGMENT_TESTS,
+                graphics::PIPELINE_STAGE::COLOR_ATTACHMENT_OUTPUT | graphics::PIPELINE_STAGE::EARLY_FRAGMENT_TESTS,
                 std::nullopt,
-                graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_READ | graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_WRITE
+                graphics::MEMORY_ACCESS_TYPE::COLOR_ATTACHMENT_WRITE | graphics::MEMORY_ACCESS_TYPE::DEPTH_STENCIL_ATTACHMENT_WRITE
             }
         }
     );
@@ -180,12 +180,14 @@ create_framebuffers(resource::resource_manager &resource_manager, renderer::swap
         }, std::move(attachment));
     }
 
+    std::vector<std::shared_ptr<resource::image_view>> image_views_copy;
+
     for (auto &&swapchain_view : swapchain_views) {
-        auto image_views_copy = image_views;
+        image_views_copy.clear();
+        std::ranges::copy(image_views, std::back_inserter(image_views_copy));
         image_views_copy.push_back(swapchain_view);
 
         auto framebuffer = resource_manager.create_framebuffer(render_pass, swapchain.extent(), image_views_copy);
-
         framebuffers.push_back(std::move(framebuffer));
     }
 
