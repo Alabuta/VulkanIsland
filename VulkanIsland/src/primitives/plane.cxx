@@ -163,8 +163,7 @@ namespace
     }
 
     template<std::size_t N, class T>
-    std::array<T, N>
-    generate_position(primitives::plane_create_info const &create_info, std::uint32_t vertex_index)
+    std::array<T, N> generate_position(primitives::plane_create_info const &create_info, std::uint32_t vertex_index)
     {
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
@@ -281,21 +280,21 @@ namespace
         if constexpr (N == 2 || N == 3) {
             switch (graphics::numeric_format(format)) {
                 case graphics::NUMERIC_FORMAT::FLOAT:
-                {
-                    auto generator = std::bind(generate_position<N, T>, create_info, std::placeholders::_1);
+                    {
+                        auto generator = std::bind(generate_position<N, T>, create_info, std::placeholders::_1);
 
-                    bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
+                        bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
 
-                    if (is_primitive_indexed) {
-                        std::generate_n(it_begin, vertex_number, [generator, i = 0u] () mutable
-                        {
-                            return generator(i++);
-                        });
+                        if (is_primitive_indexed) {
+                            std::generate_n(it_begin, vertex_number, [generator, i = 0u] () mutable
+                            {
+                                return generator(i++);
+                            });
+                        }
+
+                        else generate_vertex(generator, create_info, it_begin, vertex_number);
                     }
-
-                    else generate_vertex(generator, create_info, it_begin, vertex_number);
-                }
-                break;
+                    break;
 
                 default:
                     throw resource::exception("unsupported numeric format"s);

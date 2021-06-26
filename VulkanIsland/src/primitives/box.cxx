@@ -20,9 +20,10 @@ using namespace std::string_literals;
 
 namespace
 {
+#if 0
     template<std::size_t N, class T, class F>
-    void generate_vertex(F generator, primitives::box_create_info const &create_info,
-                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t total_vertex_count)
+    void generate_vertex_as_triangles(F generator, primitives::box_create_info const &create_info,
+                         strided_bidirectional_iterator<T> it_begin, std::size_t total_vertex_count)
     {
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
@@ -78,33 +79,75 @@ namespace
             }
         }
     }
+#endif
 
-    template<std::size_t N, class T>
-    std::array<T, N>
-        generate_position(primitives::box_create_info const &create_info, std::size_t vertex_index)
+    template<class T, class F>
+    void generate_vertex_as_triangles(F generator, primitives::box_create_info const &create_info,
+                                      strided_bidirectional_iterator<T> it_begin, std::uint32_t)
     {
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
         auto const dsegments = create_info.dsegments;
 
-        auto const width = create_info.width;
-        auto const height = create_info.height;
-        auto const depth = create_info.depth;
+        auto const pattern = std::array{0u, hsegments + 1, 1u, 1u, hsegments + 1, hsegments + 2};
 
-        auto [x0, y0] = std::pair{-width / 2.f, height / 2.f};
-        auto [step_x, step_y] = std::pair{width / static_cast<float>(hsegments), -height / static_cast<float>(vsegments)};
+        auto const vertices_per_quad = 2 * 3;
+        auto const horizontal_vertices_number = hsegments * vertices_per_quad;
 
-        auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * step_x);
-        auto y = static_cast<T>(y0 + static_cast<float>(vertex_index / (hsegments + 1u)) * step_y);
+        for (auto vsegment_index = 0u; vsegment_index < vsegments; ++vsegment_index) {
+            for (auto hsegment_index = 0u; hsegment_index < hsegments; ++hsegment_index) {
+                auto const offset = horizontal_vertices_number * vsegment_index + hsegment_index * vertices_per_quad;
+                auto it = std::next(it_begin, static_cast<std::ptrdiff_t>(offset));
+
+                std::transform(std::cbegin(pattern), std::cend(pattern), it, [&] (auto column)
+                {
+                    auto vertex_index = vsegment_index * (hsegments + 1) + column + hsegment_index;
+
+                    return generator(vertex_index);
+                });
+            }
+        }
+    }
+
+    template<class T, class F>
+    void generate_vertex(F generator, primitives::box_create_info const &create_info,
+                         strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_number)
+    {
+        switch (create_info.topology) {
+            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+                // generate_vertex_as_points(generator, create_info, it_begin, vertex_number);
+                break;
+
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
+                // generate_vertex_as_lines(generator, create_info, it_begin, vertex_number);
+                break;
+
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+                generate_vertex_as_triangles(generator, create_info, it_begin, vertex_number);
+                break;
+
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+                // generate_vertex_as_triangle_strip(generator, create_info, it_begin, vertex_number);
+                break;
+
+            default:
+                throw resource::exception("unsupported primitive topology"s);
+        }
+    }
+
+    template<std::size_t N, class T>
+    std::array<T, N> generate_position(std::uint32_t hsegments, std::uint32_t vsegments, float width, float height, std::size_t vertex_index, glm::mat4 transfrom)
+    {
+        auto step = glm::vec2{width / static_cast<float>(hsegments), -height / static_cast<float>(vsegments)};
+        auto xy = glm::vec2{-width / 2.f, height / 2.f} + glm::vec2{vertex_index % (hsegments + 1u), vertex_index / (hsegments + 1u)} * step;
+
+        auto pos = transfrom * glm::vec4{xy, 0, 1};
 
         if constexpr (N == 4)
-            return std::array<T, N>{x, y, 0, 1};
+            return std::array<T, N>{pos.x, pos.y, pos.z, 1};
 
         else if constexpr (N == 3)
-            return std::array<T, N>{x, y, 0};
-
-        else if constexpr (N == 2)
-            return std::array<T, N>{x, y};
+            return std::array<T, N>{pos.x, pos.y, pos.z};
 
         else throw resource::exception("unsupported components number"s);
     }
@@ -113,13 +156,46 @@ namespace
     void generate_positions(primitives::box_create_info const &create_info, graphics::FORMAT attribute_format,
                             strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
     {
-        if constexpr (N == 2 || N == 3) {
+        if constexpr (N == 3) {
             switch (graphics::numeric_format(attribute_format)) {
                 case graphics::NUMERIC_FORMAT::FLOAT:
-                    generate_vertex<N, T>(
-                        std::bind(generate_position<N, T>, create_info, std::placeholders::_1),
-                        create_info, it_begin, vertex_count
-                        );
+                    {
+                        /*auto generator = std::bind(generate_position<N, T>, std::placeholders::_1, std::placeholders::_1, std::placeholders::_1, std::placeholders::_1, std::placeholders::_1, std::placeholders::_1);*/
+
+                        auto const dimensions = std::array{
+                            std::tuple{}
+                        };
+
+                        bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
+
+                        if (is_primitive_indexed) {
+                            auto const transforms = std::array{
+                                glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth}),
+                                glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth}),
+                                glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.depth}),
+                                glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.depth}),
+                                glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(0.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth}),
+                                glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(180.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth})
+                            };
+
+                            auto generator = [] ()
+                            {
+                                return generate_position<N, T>();
+                            };
+
+                            for (auto face_index = 0; auto &&transform : transforms)
+                            {
+                                std::generate_n(it_begin, vertex_count, [generator, i = 0u]() mutable
+                                {
+                                    return generator(i++, transform);
+                                });
+
+                                ++face_index;
+                            }
+                        }
+
+                        else generate_vertex(generator, create_info, it_begin, vertex_count);
+                    }
                     break;
 
                 default:
@@ -129,6 +205,27 @@ namespace
         }
 
         else throw resource::exception("unsupported components number"s);
+    }
+
+    template<class T>
+    void generate_indices(primitives::box_create_info const &create_info, T *buffer_begin, std::uint32_t indices_number)
+    {
+        auto it_begin = strided_bidirectional_iterator<T>{buffer_begin, sizeof(T)};
+
+        switch (create_info.topology) {
+            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+                generate_vertex([] (auto vertex_index)
+                {
+                    return static_cast<T>(vertex_index);
+                }, create_info, it_begin, indices_number);
+                break;
+
+            default:
+                throw resource::exception("unsupported primitive topology"s);
+        }
     }
 }
 
@@ -185,7 +282,7 @@ namespace primitives
 
         bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
 
-        if (is_primitive_indexed)
+        if (!is_primitive_indexed)
             return 0;
 
         auto const hsegments = create_info.hsegments;
@@ -214,32 +311,57 @@ namespace primitives
                 throw resource::exception("unsupported primitive topology"s);
         }
 
-        return xface_indices_number + yface_indices_number + zface_indices_number;
+        return (xface_indices_number + yface_indices_number + zface_indices_number) * 2;
     }
 
-    void generate_box_indexed(primitives::box_create_info const &create_info, std::vector<std::byte>::iterator it_vertex_buffer,
-                              std::vector<std::byte>::iterator it_index_buffer, glm::vec4 const &)
+    void generate_box_indexed(primitives::box_create_info const &create_info, std::span<std::byte> vertex_buffer,
+                              std::span<std::byte> index_buffer, glm::vec4 const &color)
     {
-        if (create_info.topology != graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP)
-            throw resource::exception("unsupported primitive topology"s);
+        auto indices_number = calculate_box_indices_number(create_info);
 
+        switch (create_info.index_buffer_type) {
+            case graphics::INDEX_TYPE::UINT_16:
+            {
+                using pointer_type = typename std::add_pointer_t<std::uint16_t>;
+                auto it = reinterpret_cast<pointer_type>(std::to_address(std::data(index_buffer)));
+
+                generate_indices(create_info, it, indices_number);
+            }
+            break;
+
+            case graphics::INDEX_TYPE::UINT_32:
+            {
+                using pointer_type = typename std::add_pointer_t<std::uint32_t>;
+                auto it = reinterpret_cast<pointer_type>(std::to_address(std::data(index_buffer)));
+
+                generate_indices(create_info, it, indices_number);
+            }
+            break;
+
+            default:
+                throw resource::exception("unsupported index instance type"s);
+        }
+
+        generate_box(create_info, vertex_buffer, color);
+    }
+
+    void generate_box(primitives::box_create_info const &create_info, std::span<std::byte> vertex_buffer, glm::vec4 const &color)
+    {
         auto &&vertex_layout = create_info.vertex_layout;
 
         auto vertex_number = calculate_box_vertices_number(create_info);
         auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_bytes);
 
-        //auto indices_number = calculate_box_indices_number(create_info);
-
         auto &&attributes = vertex_layout.attributes;
 
-        for (std::size_t offset_in_bytes = 0; auto &&attribute : attributes) {
+        for (std::size_t offset_in_bytes = 0; auto && attribute : attributes) {
             if (auto format_inst = graphics::instantiate_format(attribute.format); format_inst) {
                 std::visit([&] <typename T> (T &&)
                 {
                     using type = typename std::remove_cvref_t<T>;
                     using pointer_type = typename std::add_pointer_t<type>;
 
-                    auto data = reinterpret_cast<pointer_type>(std::to_address(it_vertex_buffer) + offset_in_bytes);
+                    auto data = reinterpret_cast<pointer_type>(std::to_address(std::data(vertex_buffer)) + offset_in_bytes);
 
                     offset_in_bytes += sizeof(type);
 
@@ -255,11 +377,11 @@ namespace primitives
                             break;
 
                         case vertex::SEMANTIC::TEXCOORD_0:
-                            //generate_texcoords(attribute.format, it, hsegments, vsegments, vertex_number);
+                            //generate_texcoords(create_info, attribute.format, it, vertex_number);
                             break;
 
                         case vertex::SEMANTIC::COLOR_0:
-                            //generate_colors(color, attribute.format, it, hsegments, vsegments, vertex_number);
+                            //generate_colors(color, attribute.format, it, vertex_number);
                             break;
 
                         default:
