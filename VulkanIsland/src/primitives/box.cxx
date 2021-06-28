@@ -20,6 +20,53 @@ using namespace std::string_literals;
 
 namespace
 {
+    std::array<std::uint32_t, 3> calculate_box_faces_vertices_count(primitives::box_create_info const &create_info)
+    {
+        if (create_info.hsegments * create_info.vsegments * create_info.dsegments < 1)
+            throw resource::exception("invalid box segments' values"s);
+
+        std::uint32_t xface_vertices_number, yface_vertices_number, zface_vertices_number;
+
+        auto const hsegments = create_info.hsegments;
+        auto const vsegments = create_info.vsegments;
+        auto const dsegments = create_info.dsegments;
+
+        bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
+
+        if (is_primitive_indexed) {
+            xface_vertices_number = (vsegments + 1) * (dsegments + 1);
+            yface_vertices_number = (hsegments + 1) * (dsegments + 1);
+            zface_vertices_number = (hsegments + 1) * (vsegments + 1);
+        }
+
+        else {
+            switch (create_info.topology) {
+                case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+                case graphics::PRIMITIVE_TOPOLOGY::LINES:
+                case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+                    xface_vertices_number = vsegments * dsegments * 3;
+                    yface_vertices_number = hsegments * dsegments * 3;
+                    zface_vertices_number = hsegments * vsegments * 3;
+                    break;
+
+                case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
+                case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+                    xface_vertices_number = (dsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
+                    yface_vertices_number = (hsegments + 1) * 2 * dsegments + (dsegments - 1) * 2;
+                    zface_vertices_number = (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
+                    /*xface_vertices_number = ((dsegments + 1) * 2 * vsegments + (vsegments - 1) * 2 + 2) * 2;
+                    yface_vertices_number = ((hsegments + 1) * 2 * dsegments + (dsegments - 1) * 2 + 2) * 2;
+                    zface_vertices_number = ((hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2) * 2 + 2;*/
+                    break;
+
+                default:
+                    throw resource::exception("unsupported primitive topology"s);
+            }
+        }
+
+        return {xface_vertices_number, yface_vertices_number, zface_vertices_number};
+    }
+
 #if 0
     template<std::size_t N, class T, class F>
     void generate_vertex_as_triangles(F generator, primitives::box_create_info const &create_info,
@@ -136,12 +183,12 @@ namespace
     }
 
     template<std::size_t N, class T>
-    std::array<T, N> generate_position(std::uint32_t hsegments, std::uint32_t vsegments, float width, float height, std::size_t vertex_index, glm::mat4 transfrom)
+    std::array<T, N> generate_position(std::uint32_t hsegments, std::uint32_t vsegments, float width, float height, glm::mat4 transform, std::size_t vertex_index)
     {
         auto step = glm::vec2{width / static_cast<float>(hsegments), -height / static_cast<float>(vsegments)};
         auto xy = glm::vec2{-width / 2.f, height / 2.f} + glm::vec2{vertex_index % (hsegments + 1u), vertex_index / (hsegments + 1u)} * step;
 
-        auto pos = transfrom * glm::vec4{xy, 0, 1};
+        auto pos = glm::vec<4, T>{transform * glm::vec4{xy, 0, 1}};
 
         if constexpr (N == 4)
             return std::array<T, N>{pos.x, pos.y, pos.z, 1};
@@ -160,41 +207,41 @@ namespace
             switch (graphics::numeric_format(attribute_format)) {
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     {
-                        /*auto generator = std::bind(generate_position<N, T>, std::placeholders::_1, std::placeholders::_1, std::placeholders::_1, std::placeholders::_1, std::placeholders::_1, std::placeholders::_1);*/
+                        auto vertices_number = calculate_box_faces_vertices_count(create_info);
 
-                        auto const dimensions = std::array{
-                            std::tuple{}
+                        auto const dimensions_data = std::array{
+                            std::tuple{create_info.dsegments, create_info.vsegments, create_info.depth, create_info.height},
+                            std::tuple{create_info.hsegments, create_info.dsegments, create_info.width, create_info.depth},
+                            std::tuple{create_info.hsegments, create_info.vsegments, create_info.width, create_info.height}
+                        };
+
+                        auto const transforms = std::array{
+                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width}),
+                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width}),
+                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height}),
+                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height}),
+                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(0.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth}),
+                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(180.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth})
                         };
 
                         bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
 
-                        if (is_primitive_indexed) {
-                            auto const transforms = std::array{
-                                glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth}),
-                                glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth}),
-                                glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.depth}),
-                                glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.depth}),
-                                glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(0.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth}),
-                                glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(180.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth})
-                            };
+                        for (std::size_t face_index = 0; auto &&transform : transforms) {
+                            auto [hsegments, vsegments, width, height] = dimensions_data.at(face_index / 2);
+                            auto generator = std::bind(generate_position<N, T>, hsegments, vsegments, width, height, glm::mat4{1.f}, std::placeholders::_1);
 
-                            auto generator = [] ()
-                            {
-                                return generate_position<N, T>();
-                            };
-
-                            for (auto face_index = 0; auto &&transform : transforms)
-                            {
-                                std::generate_n(it_begin, vertex_count, [generator, i = 0u]() mutable
+                            if (is_primitive_indexed) {
+                                std::generate_n(it_begin, vertices_number.at(face_index / 2), [generator, i = 0u] () mutable
                                 {
-                                    return generator(i++, transform);
+                                    return generator(i++);
                                 });
-
-                                ++face_index;
                             }
-                        }
 
-                        else generate_vertex(generator, create_info, it_begin, vertex_count);
+                            // else generate_vertex(generator, create_info, it_begin, vertex_count);
+                            else throw resource::exception("not yet implemented"s);
+
+                            ++face_index;
+                        }
                     }
                     break;
 
@@ -233,46 +280,8 @@ namespace primitives
 {
     std::uint32_t calculate_box_vertices_number(primitives::box_create_info const &create_info)
     {
-        if (create_info.hsegments * create_info.vsegments * create_info.dsegments < 1)
-            throw resource::exception("invalid box segments' values"s);
-
-        std::uint32_t xface_vertices_number, yface_vertices_number, zface_vertices_number;
-
-        auto const hsegments = create_info.hsegments;
-        auto const vsegments = create_info.vsegments;
-        auto const dsegments = create_info.dsegments;
-
-        bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
-
-        if (is_primitive_indexed) {
-            xface_vertices_number = (hsegments + 1) * (dsegments + 1) * 2;
-            yface_vertices_number = (vsegments + 1) * (dsegments + 1) * 2;
-            zface_vertices_number = (hsegments + 1) * (vsegments + 1) * 2;
-        }
-
-        else {
-            switch (create_info.topology) {
-                case graphics::PRIMITIVE_TOPOLOGY::POINTS:
-                case graphics::PRIMITIVE_TOPOLOGY::LINES:
-                case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                    xface_vertices_number = hsegments * dsegments * 2 * 3;
-                    yface_vertices_number = vsegments * dsegments * 2 * 3;
-                    zface_vertices_number = hsegments * vsegments * 2 * 3;
-                    break;
-
-                case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
-                case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-                    xface_vertices_number = ((dsegments + 1) * 2 * vsegments + (vsegments - 1) * 2 + 2) * 2;
-                    yface_vertices_number = ((hsegments + 1) * 2 * dsegments + (dsegments - 1) * 2 + 2) * 2;
-                    zface_vertices_number = ((hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2) * 2 + 2;
-                    break;
-
-                default:
-                    throw resource::exception("unsupported primitive topology"s);
-            }
-        }
-
-        return xface_vertices_number + yface_vertices_number + zface_vertices_number;
+        auto vertices_number = calculate_box_faces_vertices_count(create_info);
+        return (vertices_number.at(0) + vertices_number.at(1) + vertices_number.at(2)) * 2;
     }
 
     std::uint32_t calculate_box_indices_number(primitives::box_create_info const &create_info)
@@ -345,7 +354,7 @@ namespace primitives
         generate_box(create_info, vertex_buffer, color);
     }
 
-    void generate_box(primitives::box_create_info const &create_info, std::span<std::byte> vertex_buffer, glm::vec4 const &color)
+    void generate_box(primitives::box_create_info const &create_info, std::span<std::byte> vertex_buffer, glm::vec4 const &)
     {
         auto &&vertex_layout = create_info.vertex_layout;
 

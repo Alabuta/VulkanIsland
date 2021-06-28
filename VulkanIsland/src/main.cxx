@@ -712,6 +712,25 @@ namespace temp
 
             else primitives::generate_box(create_info, vertex_staging_buffer->mapped_range(), color);
 
+            {
+                struct vertex final {
+                    std::array<float, 3> p;
+                    std::array<float, 3> n;
+                    std::array<std::uint16_t, 2> t;
+                    std::array<std::uint8_t, 4> c;
+                };
+                auto it_vertex = reinterpret_cast<vertex *>(std::data(vertex_staging_buffer->mapped_range()));
+                for (auto i = 0u; i < vertex_count; ++i, ++it_vertex) {
+                    if (auto face_index = i % 4; face_index == 0)
+                        std::cout << "face index: " << face_index << std::endl;
+
+                    std::cout << "p " << it_vertex->p[0] << ' ' << it_vertex->p[1] << ' ' << it_vertex->p[2] << std::endl;
+                    std::cout << "n " << it_vertex->n[0] << ' ' << it_vertex->n[1] << ' ' << it_vertex->n[2] << std::endl;
+                    std::cout << "t " << it_vertex->t[0] << ' ' << it_vertex->t[1] << std::endl;
+                    std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;
+                }
+            }
+
             vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
         }
     }
