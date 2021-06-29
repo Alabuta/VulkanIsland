@@ -201,7 +201,7 @@ namespace
 
     template<std::size_t N, class T>
     void generate_positions(primitives::box_create_info const &create_info, graphics::FORMAT attribute_format,
-                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::size_t vertex_count)
+                            strided_bidirectional_iterator<std::array<T, N>> it_begin, [[maybe_unused]] std::size_t vertex_count)
     {
         if constexpr (N == 3) {
             switch (graphics::numeric_format(attribute_format)) {
@@ -216,22 +216,22 @@ namespace
                         };
 
                         auto const transforms = std::array{
-                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width}),
-                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width}),
-                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height}),
-                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height}),
-                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(0.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth}),
-                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(180.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth})
+                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(+90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width / 2.f}),
+                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width / 2.f}),
+                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height / 2.f}),
+                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(+90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height / 2.f}),
+                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(360.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth / 2.f}),
+                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(180.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth / 2.f})
                         };
 
                         bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
 
-                        for (std::size_t face_index = 0; auto &&transform : transforms) {
+                        for (std::size_t face_index = 0, offset = 0; auto &&transform : transforms) {
                             auto [hsegments, vsegments, width, height] = dimensions_data.at(face_index / 2);
-                            auto generator = std::bind(generate_position<N, T>, hsegments, vsegments, width, height, glm::mat4{1.f}, std::placeholders::_1);
+                            auto generator = std::bind(generate_position<N, T>, hsegments, vsegments, width, height, transform, std::placeholders::_1);
 
                             if (is_primitive_indexed) {
-                                std::generate_n(it_begin, vertices_number.at(face_index / 2), [generator, i = 0u] () mutable
+                                std::generate_n(std::next(it_begin, offset), vertices_number.at(face_index / 2), [generator, i = 0u] () mutable
                                 {
                                     return generator(i++);
                                 });
@@ -240,6 +240,7 @@ namespace
                             // else generate_vertex(generator, create_info, it_begin, vertex_count);
                             else throw resource::exception("not yet implemented"s);
 
+                            offset += vertices_number.at(face_index / 2);
                             ++face_index;
                         }
                     }

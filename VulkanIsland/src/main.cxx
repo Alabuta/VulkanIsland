@@ -683,7 +683,7 @@ namespace temp
 
         primitives::box_create_info const create_info{
             vertex_layout, topology, index_type,
-            1.f, 1.f, 1.f, 1u, 1u, 1u
+            2.f, 4.f, 8.f, 1u, 1u, 1u
         };
 
         auto const index_count = primitives::calculate_box_indices_number(create_info);
@@ -721,13 +721,13 @@ namespace temp
                 };
                 auto it_vertex = reinterpret_cast<vertex *>(std::data(vertex_staging_buffer->mapped_range()));
                 for (auto i = 0u; i < vertex_count; ++i, ++it_vertex) {
-                    if (auto face_index = i % 4; face_index == 0)
-                        std::cout << "face index: " << face_index << std::endl;
+                    if (i % 4 == 0)
+                        std::cout << "face index: " << i / 4 << std::endl;
 
                     std::cout << "p " << it_vertex->p[0] << ' ' << it_vertex->p[1] << ' ' << it_vertex->p[2] << std::endl;
-                    std::cout << "n " << it_vertex->n[0] << ' ' << it_vertex->n[1] << ' ' << it_vertex->n[2] << std::endl;
+                    /*std::cout << "n " << it_vertex->n[0] << ' ' << it_vertex->n[1] << ' ' << it_vertex->n[2] << std::endl;
                     std::cout << "t " << it_vertex->t[0] << ' ' << it_vertex->t[1] << std::endl;
-                    std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;
+                    std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;*/
                 }
             }
 
