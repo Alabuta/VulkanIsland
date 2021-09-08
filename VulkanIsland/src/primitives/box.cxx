@@ -1,5 +1,6 @@
 #include <array>
 #include <tuple>
+#include <ranges>
 #include <variant>
 #include <functional>
 
@@ -132,27 +133,41 @@ namespace
     void generate_vertex_as_triangles(F generator, primitives::box_create_info const &create_info,
                                       strided_bidirectional_iterator<T> it_begin, std::uint32_t)
     {
-        auto const hsegments = create_info.hsegments;
-        auto const vsegments = create_info.vsegments;
-        auto const dsegments = create_info.dsegments;
-
-        auto const pattern = std::array{0u, hsegments + 1, 1u, 1u, hsegments + 1, hsegments + 2};
-
         auto const vertices_per_quad = 2 * 3;
-        auto const horizontal_vertices_number = hsegments * vertices_per_quad;
 
-        for (auto vsegment_index = 0u; vsegment_index < vsegments; ++vsegment_index) {
-            for (auto hsegment_index = 0u; hsegment_index < hsegments; ++hsegment_index) {
-                auto const offset = horizontal_vertices_number * vsegment_index + hsegment_index * vertices_per_quad;
-                auto it = std::next(it_begin, static_cast<std::ptrdiff_t>(offset));
+        auto const segments = std::array{
+            std::pair{create_info.hsegments, create_info.dsegments},
+            std::pair{create_info.hsegments, create_info.dsegments},
+            std::pair{create_info.vsegments, create_info.dsegments},
+            std::pair{create_info.vsegments, create_info.dsegments},
+            std::pair{create_info.hsegments, create_info.vsegments},
+            std::pair{create_info.hsegments, create_info.vsegments}
+        };
 
-                std::transform(std::cbegin(pattern), std::cend(pattern), it, [&] (auto column)
-                {
-                    auto vertex_index = vsegment_index * (hsegments + 1) + column + hsegment_index;
+        std::size_t total_offset = 0u;
 
-                    return generator(vertex_index);
-                });
+        for (std::size_t vertex_offset = 0u; auto [hsegments, vsegments] : segments) {
+            auto const pattern = std::array{ 0u, hsegments + 1, 1u, 1u, hsegments + 1, hsegments + 2 };
+
+            auto const horizontal_vertices_number = static_cast<std::size_t>(hsegments * vertices_per_quad);
+
+            for (auto vsegment_index = 0u; vsegment_index < vsegments; ++vsegment_index) {
+                for (auto hsegment_index = 0u; hsegment_index < hsegments; ++hsegment_index) {
+                    auto const offset = total_offset + horizontal_vertices_number * vsegment_index + static_cast<std::size_t>(hsegment_index) * vertices_per_quad;
+                    auto it = std::next(it_begin, static_cast<std::ptrdiff_t>(offset));
+
+                    std::transform(std::cbegin(pattern), std::cend(pattern), it, [&] (auto column)
+                    {
+                        auto vertex_index = vsegment_index * (hsegments + 1) + column + hsegment_index;
+
+                        return generator(vertex_offset + vertex_index);
+                    });
+                }
             }
+
+            total_offset += vsegments * hsegments * vertices_per_quad;
+
+            vertex_offset += (vsegments + 1) * (hsegments + 1);
         }
     }
 
@@ -186,7 +201,7 @@ namespace
     std::array<T, N> generate_position(std::uint32_t hsegments, std::uint32_t vsegments, float width, float height, glm::mat4 transform, std::size_t vertex_index)
     {
         auto step = glm::vec2{width / static_cast<float>(hsegments), -height / static_cast<float>(vsegments)};
-        auto xy = glm::vec2{-width / 2.f, height / 2.f} + glm::vec2{vertex_index % (hsegments + 1u), vertex_index / (hsegments + 1u)} * step;
+        auto xy = glm::vec2{-width, height} / 2.f + glm::vec2{vertex_index % (hsegments + 1u), vertex_index / (hsegments + 1u)} * step;
 
         auto pos = glm::vec<4, T>{transform * glm::vec4{xy, 0, 1}};
 
@@ -253,6 +268,66 @@ namespace
         }
 
         else throw resource::exception("unsupported components number"s);
+    }
+
+    template<std::size_t N, class T>
+    void generate_normals(primitives::box_create_info const &create_info, graphics::FORMAT attribute_format,
+                          strided_bidirectional_iterator<std::array<T, N>> it_begin, [[maybe_unused]] std::size_t vertex_count)
+    {
+        auto vertices_number = calculate_box_faces_vertices_count(create_info);
+
+        auto const transforms = std::array{
+            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(+90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width / 2.f}),
+            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width / 2.f}),
+            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height / 2.f}),
+            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(+90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height / 2.f}),
+            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(360.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth / 2.f}),
+            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(180.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth / 2.f})
+        };
+
+        for (std::size_t face_index = 0, offset = 0; auto &&transform : transforms) {
+            auto normal = glm::vec<4, T>{ transform * glm::vec4{0, 0, 1, 0} };
+
+            if constexpr (N == 2) {
+                switch (graphics::numeric_format(attribute_format)) {
+                    case graphics::NUMERIC_FORMAT::NORMALIZED:
+                    {
+                        if constexpr (mpl::is_one_of_v<T, std::int8_t, std::int16_t>) {
+                            std::array<T, 2> oct;
+
+                            math::encode_unit_vector_to_oct_fast(std::span{oct}, glm::vec3{normal});
+
+                            std::fill_n(std::next(it_begin, offset), vertices_number.at(face_index / 2), oct);
+                        }
+
+                        else throw resource::exception("unsupported format type"s);
+
+                        break;
+                    }
+
+                    default:
+                        throw resource::exception("unsupported numeric format"s);
+                }
+            }
+
+            else if constexpr (N == 3) {
+                switch (graphics::numeric_format(attribute_format)) {
+                    case graphics::NUMERIC_FORMAT::SCALED:
+                    case graphics::NUMERIC_FORMAT::INT:
+                    case graphics::NUMERIC_FORMAT::FLOAT:
+                        std::fill_n(std::next(it_begin, offset), vertices_number.at(face_index / 2), std::array<T, 3>{normal.x, normal.y, normal.z});
+                        break;
+
+                    default:
+                        throw resource::exception("unsupported numeric format"s);
+                }
+            }
+
+            else throw resource::exception("unsupported components number"s);
+
+            offset += vertices_number.at(face_index / 2);
+            ++face_index;
+        }
     }
 
     template<class T>
@@ -383,7 +458,7 @@ namespace primitives
                             break;
 
                         case vertex::SEMANTIC::NORMAL:
-                            //generate_normals(attribute.format, it, vertex_number);
+                            generate_normals(create_info, attribute.format, it, vertex_number);
                             break;
 
                         case vertex::SEMANTIC::TEXCOORD_0:
