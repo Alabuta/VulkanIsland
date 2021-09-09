@@ -213,9 +213,58 @@ namespace
 
         else throw resource::exception("unsupported components number"s);
     }
+    
+    template<std::size_t N, class T>
+    std::array<T, N>
+    generate_color(glm::vec4 const &color, graphics::FORMAT format)
+    {
+        if constexpr (N == 3 || N == 4) {
+            switch (graphics::numeric_format(format)) {
+                case graphics::NUMERIC_FORMAT::NORMALIZED:
+                    if constexpr (std::is_same_v<T, std::uint8_t>) {
+                        auto constexpr type_max = static_cast<float>(std::numeric_limits<T>::max());
+
+                        if constexpr (N == 4) {
+                            return std::array<T, N>{
+                                static_cast<T>(color.r * type_max),
+                                    static_cast<T>(color.g * type_max),
+                                    static_cast<T>(color.b * type_max),
+                                    static_cast<T>(color.a * type_max)
+                            };
+                        }
+
+                        else if constexpr (N == 3) {
+                            return std::array<T, N>{
+                                static_cast<T>(color.r * type_max),
+                                    static_cast<T>(color.g * type_max),
+                                    static_cast<T>(color.b * type_max)
+                            };
+                        }
+                    }
+
+                    else throw resource::exception("unsupported format type"s);
+
+                case graphics::NUMERIC_FORMAT::FLOAT:
+                    if constexpr (std::is_floating_point_v<T>) {
+                        if constexpr (N == 4)
+                            return std::array<T, N>{color.r, color.g, color.b, 1};
+
+                        else if constexpr (N == 3)
+                            return std::array<T, N>{color.r, color.g, color.b};
+                    }
+
+                    else throw resource::exception("unsupported format type"s);
+
+                default:
+                    throw resource::exception("unsupported numeric format"s);
+            }
+        }
+
+        else throw resource::exception("unsupported components number"s);
+    }
 
     template<std::size_t N, class T>
-    void generate_positions(primitives::box_create_info const &create_info, graphics::FORMAT attribute_format,
+    void generate_positions(primitives::box_create_info const &create_info, graphics::FORMAT attribute_format, std::span<glm::mat4 const, 6> transforms,
                             strided_bidirectional_iterator<std::array<T, N>> it_begin, [[maybe_unused]] std::size_t vertex_count)
     {
         if constexpr (N == 3) {
@@ -228,15 +277,6 @@ namespace
                             std::tuple{create_info.dsegments, create_info.vsegments, create_info.depth, create_info.height},
                             std::tuple{create_info.hsegments, create_info.dsegments, create_info.width, create_info.depth},
                             std::tuple{create_info.hsegments, create_info.vsegments, create_info.width, create_info.height}
-                        };
-
-                        auto const transforms = std::array{
-                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(+90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width / 2.f}),
-                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width / 2.f}),
-                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height / 2.f}),
-                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(+90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height / 2.f}),
-                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(360.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth / 2.f}),
-                            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(180.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth / 2.f})
                         };
 
                         bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
@@ -271,22 +311,13 @@ namespace
     }
 
     template<std::size_t N, class T>
-    void generate_normals(primitives::box_create_info const &create_info, graphics::FORMAT attribute_format,
+    void generate_normals(primitives::box_create_info const &create_info, graphics::FORMAT attribute_format, std::span<glm::mat4 const, 6> transforms,
                           strided_bidirectional_iterator<std::array<T, N>> it_begin, [[maybe_unused]] std::size_t vertex_count)
     {
         auto vertices_number = calculate_box_faces_vertices_count(create_info);
 
-        auto const transforms = std::array{
-            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(+90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width / 2.f}),
-            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width / 2.f}),
-            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height / 2.f}),
-            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(+90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height / 2.f}),
-            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(360.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth / 2.f}),
-            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(180.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth / 2.f})
-        };
-
         for (std::size_t face_index = 0, offset = 0; auto &&transform : transforms) {
-            auto normal = glm::vec<4, T>{ transform * glm::vec4{0, 0, 1, 0} };
+            auto normal = glm::vec<4, T>{transform * glm::vec4{0, 0, 1, 0}};
 
             if constexpr (N == 2) {
                 switch (graphics::numeric_format(attribute_format)) {
@@ -324,6 +355,23 @@ namespace
             }
 
             else throw resource::exception("unsupported components number"s);
+
+            offset += vertices_number.at(face_index / 2);
+            ++face_index;
+        }
+    }
+
+
+    template<std::size_t N, class T>
+    void generate_colors(primitives::box_create_info const& create_info, graphics::FORMAT format,
+                         strided_bidirectional_iterator<std::array<T, N>> it_begin, [[maybe_unused]] std::uint32_t vertex_number)
+    {
+        auto vertices_number = calculate_box_faces_vertices_count(create_info);
+
+        for (std::size_t face_index = 0, offset = 0; auto &&color : create_info.colors) {
+            auto generator = std::bind(generate_color<N, T>, color, format);
+
+            std::generate_n(std::next(it_begin, offset), vertices_number.at(face_index / 2), generator);
 
             offset += vertices_number.at(face_index / 2);
             ++face_index;
@@ -400,7 +448,7 @@ namespace primitives
     }
 
     void generate_box_indexed(primitives::box_create_info const &create_info, std::span<std::byte> vertex_buffer,
-                              std::span<std::byte> index_buffer, glm::vec4 const &color)
+                              std::span<std::byte> index_buffer)
     {
         auto indices_number = calculate_box_indices_number(create_info);
 
@@ -427,10 +475,10 @@ namespace primitives
                 throw resource::exception("unsupported index instance type"s);
         }
 
-        generate_box(create_info, vertex_buffer, color);
+        generate_box(create_info, vertex_buffer);
     }
 
-    void generate_box(primitives::box_create_info const &create_info, std::span<std::byte> vertex_buffer, glm::vec4 const &)
+    void generate_box(primitives::box_create_info const &create_info, std::span<std::byte> vertex_buffer)
     {
         auto &&vertex_layout = create_info.vertex_layout;
 
@@ -438,6 +486,15 @@ namespace primitives
         auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_bytes);
 
         auto &&attributes = vertex_layout.attributes;
+
+        auto const transforms = std::array{
+            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(+90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width / 2.f}),
+            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width / 2.f}),
+            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height / 2.f}),
+            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(+90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height / 2.f}),
+            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(360.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth / 2.f}),
+            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(180.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth / 2.f})
+        };
 
         for (std::size_t offset_in_bytes = 0; auto && attribute : attributes) {
             if (auto format_inst = graphics::instantiate_format(attribute.format); format_inst) {
@@ -454,11 +511,11 @@ namespace primitives
 
                     switch (attribute.semantic) {
                         case vertex::SEMANTIC::POSITION:
-                            generate_positions(create_info, attribute.format, it, vertex_number);
+                            generate_positions(create_info, attribute.format, std::span{transforms}, it, vertex_number);
                             break;
 
                         case vertex::SEMANTIC::NORMAL:
-                            generate_normals(create_info, attribute.format, it, vertex_number);
+                            generate_normals(create_info, attribute.format, std::span{transforms}, it, vertex_number);
                             break;
 
                         case vertex::SEMANTIC::TEXCOORD_0:
@@ -466,7 +523,7 @@ namespace primitives
                             break;
 
                         case vertex::SEMANTIC::COLOR_0:
-                            //generate_colors(color, attribute.format, it, vertex_number);
+                            generate_colors(create_info, attribute.format, it, vertex_number);
                             break;
 
                         default:

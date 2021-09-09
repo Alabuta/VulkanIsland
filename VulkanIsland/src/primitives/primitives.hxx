@@ -38,16 +38,17 @@ namespace primitives
 
         float width, height, depth;
         unsigned hsegments, vsegments, dsegments;
+
+        std::array<glm::vec4, 6> colors;
     };
 
     std::uint32_t calculate_box_vertices_number(primitives::box_create_info const &create_info);
 
     std::uint32_t calculate_box_indices_number(primitives::box_create_info const &create_info);
 
-    void generate_box(primitives::box_create_info const &create_info, std::span<std::byte> vertex_buffer,
-                      glm::vec4 const &color = glm::vec4{1});
+    void generate_box(primitives::box_create_info const &create_info, std::span<std::byte> vertex_buffer);
 
     void generate_box_indexed(primitives::box_create_info const &create_info, std::span<std::byte> vertex_buffer,
-                              std::span<std::byte> index_buffer, glm::vec4 const &color = glm::vec4{1});
+                              std::span<std::byte> index_buffer);
 }
 

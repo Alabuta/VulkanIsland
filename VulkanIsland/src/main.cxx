@@ -677,13 +677,15 @@ namespace temp
     {
         auto const &vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
 
-        auto const color = generate_color();
+        std::array<glm::vec4, 6> colors;
+        std::generate_n(std::begin(colors), std::size(colors), generate_color);
 
         auto constexpr topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
 
         primitives::box_create_info const create_info{
             vertex_layout, topology, index_type,
-            2.f, 4.f, 8.f, 1u, 1u, 1u
+            2.f, 4.f, 8.f, 1u, 1u, 1u,
+            colors
         };
 
         auto const index_count = primitives::calculate_box_indices_number(create_info);
@@ -705,7 +707,7 @@ namespace temp
             if (index_type != graphics::INDEX_TYPE::UNDEFINED) {
                 auto index_staging_buffer = app.resource_manager->create_staging_buffer(index_buffer_allocation_size);
 
-                primitives::generate_box_indexed(create_info, vertex_staging_buffer->mapped_range(), index_staging_buffer->mapped_range(), color);
+                primitives::generate_box_indexed(create_info, vertex_staging_buffer->mapped_range(), index_staging_buffer->mapped_range());
 
                 auto it_indices = reinterpret_cast<std::array<std::uint16_t, 6> *>(std::data(index_staging_buffer->mapped_range()));
 
@@ -720,7 +722,7 @@ namespace temp
                 index_buffer = app.resource_manager->stage_index_data(index_type, index_staging_buffer, app.transfer_command_pool);
             }
 
-            else primitives::generate_box(create_info, vertex_staging_buffer->mapped_range(), color);
+            else primitives::generate_box(create_info, vertex_staging_buffer->mapped_range());
 
             if constexpr (false) {
                 struct vertex final {
