@@ -16,7 +16,7 @@ namespace primitives
         graphics::INDEX_TYPE index_buffer_type;
 
         float width, height;
-        unsigned hsegments, vsegments;
+        std::uint32_t hsegments, vsegments;
     };
 
     std::uint32_t calculate_plane_vertices_number(primitives::plane_create_info const &create_info);
@@ -37,7 +37,7 @@ namespace primitives
         graphics::INDEX_TYPE index_buffer_type;
 
         float width, height, depth;
-        unsigned hsegments, vsegments, dsegments;
+        std::uint32_t hsegments, vsegments, dsegments;
 
         std::array<glm::vec4, 6> colors;
     };

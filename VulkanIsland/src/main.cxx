@@ -131,8 +131,8 @@ void recreate_swap_chain(app_t &app);
 
 
 struct app_t final {
-    std::uint32_t width{800u};
-    std::uint32_t height{600u};
+    std::uint32_t width{1920u};
+    std::uint32_t height{1080u};
 
     std::size_t current_frame_index = 0;
 
@@ -895,7 +895,7 @@ namespace temp
 
         if constexpr (true) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 2);
+            add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 3);
         }
 
         else {

@@ -129,6 +129,13 @@ namespace
     }
 #endif
 
+    /*template<class T, class F>
+    void generate_vertex_as_lines(F generator, primitives::box_create_info const& create_info,
+                                  strided_bidirectional_iterator<T> it_begin, std::uint32_t)
+    {
+
+    }*/
+
     template<class T, class F>
     void generate_vertex_as_triangles(F generator, primitives::box_create_info const &create_info,
                                       strided_bidirectional_iterator<T> it_begin, std::uint32_t)
@@ -210,6 +217,40 @@ namespace
 
         else if constexpr (N == 3)
             return std::array<T, N>{pos.x, pos.y, pos.z};
+
+        else throw resource::exception("unsupported components number"s);
+    }
+    
+    template<std::size_t N, class T>
+    std::array<T, N>
+    generate_texcoord(std::pair<std::uint32_t, std::uint32_t> segments, graphics::FORMAT format, std::uint32_t vertex_index)
+    {
+        auto const [hsegments, vsegments] = segments;
+
+        if constexpr (N == 2) {
+            auto x = static_cast<float>(vertex_index % (hsegments + 1u)) / static_cast<float>(hsegments);
+            auto y = 1.f - static_cast<float>(vertex_index / (hsegments + 1u)) / static_cast<float>(vsegments);
+
+            switch (graphics::numeric_format(format)) {
+                case graphics::NUMERIC_FORMAT::NORMALIZED:
+                    if constexpr (std::is_same_v<T, std::uint16_t>) {
+                        auto constexpr type_max = static_cast<float>(std::numeric_limits<T>::max());
+
+                        return std::array<T, N>{static_cast<T>(x *type_max), static_cast<T>(y *type_max)};
+                    }
+
+                    else throw resource::exception("unsupported format type"s);
+
+                case graphics::NUMERIC_FORMAT::FLOAT:
+                    if constexpr (std::is_floating_point_v<T>)
+                        return std::array<T, N>{static_cast<T>(x), static_cast<T>(y)};
+
+                    else throw resource::exception("unsupported format type"s);
+
+                default:
+                    throw resource::exception("unsupported numeric format"s);
+            }
+        }
 
         else throw resource::exception("unsupported components number"s);
     }
@@ -361,6 +402,40 @@ namespace
         }
     }
 
+    template<std::size_t N, class T>
+    void generate_texcoords(primitives::box_create_info const &create_info, graphics::FORMAT format,
+                            strided_bidirectional_iterator<std::array<T, N>> it_begin, [[maybe_unused]] std::uint32_t vertex_count)
+    {
+        auto const segments = std::array{
+            std::pair{create_info.hsegments, create_info.dsegments},
+            std::pair{create_info.hsegments, create_info.dsegments},
+            std::pair{create_info.vsegments, create_info.dsegments},
+            std::pair{create_info.vsegments, create_info.dsegments},
+            std::pair{create_info.hsegments, create_info.vsegments},
+            std::pair{create_info.hsegments, create_info.vsegments}
+        };
+
+        auto vertices_number = calculate_box_faces_vertices_count(create_info);
+
+        for (std::size_t face_index = 0, offset = 0; auto s : segments) {
+            auto generator = std::bind(generate_texcoord<N, T>, s, format, std::placeholders::_1);
+
+            bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
+
+            if (is_primitive_indexed) {
+                std::generate_n(std::next(it_begin, offset), vertices_number.at(face_index / 2), [generator, i = 0u] () mutable
+                {
+                    return generator(i++);
+                });
+            }
+
+            //else generate_vertex(generator, create_info, it_begin, vertex_count);
+            else throw resource::exception("not yet implemented"s);
+
+            offset += vertices_number.at(face_index / 2);
+            ++face_index;
+        }
+    }
 
     template<std::size_t N, class T>
     void generate_colors(primitives::box_create_info const& create_info, graphics::FORMAT format,
@@ -519,7 +594,7 @@ namespace primitives
                             break;
 
                         case vertex::SEMANTIC::TEXCOORD_0:
-                            //generate_texcoords(create_info, attribute.format, it, vertex_number);
+                            generate_texcoords(create_info, attribute.format, it, vertex_number);
                             break;
 
                         case vertex::SEMANTIC::COLOR_0:
