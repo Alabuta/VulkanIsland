@@ -684,7 +684,7 @@ namespace temp
 
         primitives::box_create_info const create_info{
             vertex_layout, topology, index_type,
-            2.f, 4.f, 8.f, 1u, 1u, 1u,
+            1.f, 2.f, 4.f, 8u, 4u, 2u,
             colors
         };
 
@@ -738,8 +738,8 @@ namespace temp
                     if (i % 4 == 0)
                         std::cout << "face index: " << i / 4 << std::endl;
 
-                    //std::cout << "p " << it_vertex->p[0] << ' ' << it_vertex->p[1] << ' ' << it_vertex->p[2] << std::endl;
-                    std::cout << "n " << it_vertex->n[0] << ' ' << it_vertex->n[1] << ' ' << it_vertex->n[2] << std::endl;
+                    std::cout << "p " << it_vertex->p[0] << ' ' << it_vertex->p[1] << ' ' << it_vertex->p[2] << std::endl;
+                    //std::cout << "n " << it_vertex->n[0] << ' ' << it_vertex->n[1] << ' ' << it_vertex->n[2] << std::endl;
                     /*std::cout << "t " << it_vertex->t[0] << ' ' << it_vertex->t[1] << std::endl;
                     std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;*/
                 }
@@ -816,6 +816,27 @@ namespace temp
             }
 
             else primitives::generate_plane(create_info, vertex_staging_buffer->mapped_range(), color);
+
+            if constexpr (false) {
+                struct vertex final {
+                    std::array<float, 3> p;
+                    std::array<float, 3> n;
+                    std::array<std::uint16_t, 2> t;
+                    std::array<std::uint8_t, 4> c;
+                };
+
+                auto it_vertex = reinterpret_cast<vertex*>(std::data(vertex_staging_buffer->mapped_range()));
+
+                for (auto i = 0u; i < vertex_count; ++i, ++it_vertex) {
+                    if (i % 4 == 0)
+                        std::cout << "face index: " << i / 4 << std::endl;
+
+                    std::cout << "p " << it_vertex->p[0] << ' ' << it_vertex->p[1] << ' ' << it_vertex->p[2] << std::endl;
+                    //std::cout << "n " << it_vertex->n[0] << ' ' << it_vertex->n[1] << ' ' << it_vertex->n[2] << std::endl;
+                    /*std::cout << "t " << it_vertex->t[0] << ' ' << it_vertex->t[1] << std::endl;
+                    std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;*/
+                }
+            }
 
             vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
         }
@@ -895,7 +916,7 @@ namespace temp
 
         if constexpr (true) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 3);
+            add_box(app, model_, 0, graphics::INDEX_TYPE::UINT_16, 3);
         }
 
         else {

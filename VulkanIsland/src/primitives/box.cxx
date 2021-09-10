@@ -143,10 +143,10 @@ namespace
         auto const vertices_per_quad = 2 * 3;
 
         auto const segments = std::array{
+            std::pair{create_info.dsegments, create_info.vsegments},
+            std::pair{create_info.dsegments, create_info.vsegments},
             std::pair{create_info.hsegments, create_info.dsegments},
             std::pair{create_info.hsegments, create_info.dsegments},
-            std::pair{create_info.vsegments, create_info.dsegments},
-            std::pair{create_info.vsegments, create_info.dsegments},
             std::pair{create_info.hsegments, create_info.vsegments},
             std::pair{create_info.hsegments, create_info.vsegments}
         };
@@ -407,10 +407,10 @@ namespace
                             strided_bidirectional_iterator<std::array<T, N>> it_begin, [[maybe_unused]] std::uint32_t vertex_count)
     {
         auto const segments = std::array{
+            std::pair{create_info.dsegments, create_info.vsegments},
+            std::pair{create_info.dsegments, create_info.vsegments},
             std::pair{create_info.hsegments, create_info.dsegments},
             std::pair{create_info.hsegments, create_info.dsegments},
-            std::pair{create_info.vsegments, create_info.dsegments},
-            std::pair{create_info.vsegments, create_info.dsegments},
             std::pair{create_info.hsegments, create_info.vsegments},
             std::pair{create_info.hsegments, create_info.vsegments}
         };
