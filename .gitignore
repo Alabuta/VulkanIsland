@@ -22,4 +22,5 @@ x86/
 Win32/
 [Tt]emp/
 external/
-[Dd]ebug/
+/[Dd]ebug/
+/VulkanIsland/[Dd]ebug/

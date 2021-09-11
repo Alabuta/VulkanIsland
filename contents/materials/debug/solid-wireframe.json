@@ -1,0 +1,49 @@
+{
+    "name": "solid-wireframe-material",
+    "shaderModules": [
+        {
+            "name": "debug/solid-wireframe-vertex",
+            "stage": "vertex"
+        },
+        {
+            "name": "debug/solid-wireframe-geomerty",
+            "stage": "geomerty"
+        },
+        {
+            "name": "common/out-color",
+            "stage": "fragment"
+        }
+    ],
+    "techniques": [
+        {
+            "shadersBundle": [
+                {
+                    "index": 0,
+                    "technique": 0
+                },
+                {
+                    "index": 1,
+                    "technique": 0
+                }
+            ],
+            "vertexLayouts": [
+                [ 0, 1 ],
+                [ 0, 2 ]
+            ]
+        }
+    ],
+    "vertexAttributes": [
+        {
+            "semantic": "POSITION",
+            "type": "rgb32f"
+        },
+        {
+            "semantic": "TEXCOORD_0",
+            "type": "rg32f"
+        },
+        {
+            "semantic": "TEXCOORD_0",
+            "type": "rg16ui_norm"
+        }
+    ]
+}
