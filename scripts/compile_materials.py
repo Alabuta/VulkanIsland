@@ -8,6 +8,7 @@ import traceback
 import subprocess
 
 from operator import itemgetter, attrgetter
+from functools import reduce
 from typing import NamedTuple
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pymodules'))
@@ -17,13 +18,10 @@ import utils
 
 
 class GLSLSettings(NamedTuple):
-    version: int
     extensions: dict
 
 class Shaders(NamedTuple):
     compiler_path: str
-    source_path: str
-    include_path: str
     file_extensions: tuple
     glsl_settings: GLSLSettings
     vertex_attributes_locations: dict
@@ -32,17 +30,13 @@ class Shaders(NamedTuple):
     processed_shaders: dict
 
 class Materials(NamedTuple):
-    source_path: str
     file_extensions: tuple
 
 
 shaders=Shaders(
     compiler_path='glslangValidator',
-    source_path='./shaders',
-    include_path='./shaders/include',
     file_extensions=('.vert.glsl', '.tesc.glsl', '.tese.glsl', '.geom.glsl', '.frag.glsl', '.comp.glsl'),
     glsl_settings=GLSLSettings(
-        version=460,
         extensions={
             'GL_ARB_separate_shader_objects': 'enable',
             'GL_EXT_shader_16bit_storage': 'enable',
@@ -156,43 +150,54 @@ shaders=Shaders(
 )
 
 materials=Materials(
-    source_path='./materials',
     file_extensions=('.json')
 )
 
 def parse_program_options():
 	argparser = argparse.ArgumentParser(description='Material compiler')
 
-	argparser.add_argument('materials', help='list of material names to compile (e. g. \'debug\')', nargs='+')
+	argparser.add_argument('materials', help='list of materials\' names or directories to compile (e. g. \'debug\' or \'color-debug.json\')', nargs='+')
 	argparser.add_argument('-s', '--shaders-src-folder', dest='shaders_src_folder', default='../contents/shaders',
 							help='shaders source files folder (default is \'../contents/shaders\')', metavar='<shaders-source-folder>')
+	argparser.add_argument('-i', '--shaders-include-folder', dest='shaders_include_folder', default='../contents/shaders/include',
+							help='shaders include source files folder (default is \'../contents/shaders/include\')', metavar='<shaders-include-folder>')
 	argparser.add_argument('-S', '--materials-src-folder', dest='materials_src_folder', default='../contents/materials',
 							help='materials source files folder (default is \'../contents/materials\')', metavar='<materials-source-folder>')
 	argparser.add_argument('-o', '--output-path', dest='outpath', default='../contents/shaders/bin',
 							help='path to directory where to save compiled shaders (default is \'../contents/shaders/bin\')', metavar='<output-path>')
 	argparser.add_argument('--verbose', dest='verbose',
 							help='verbose console output (default is false)', action='store_true')
+	argparser.add_argument('--glsl-version', dest='glsl_version', default=460,
+							help='GLSL shader language version (default is 460)', metavar='<glsl-version>')
 
 	return vars(argparser.parse_args())
 
 
-def shader_directives():
-    version_line=f'#version {shaders.glsl_settings.version}\n'
+def shader_directives(program_options):
+    """
+    A function used to get general shader directives
 
-    extensions_lines=''
+    Parameters
+    ----------
+    program_options : dict
+        Program options
+    """
 
-    for extension, behavior in shaders.glsl_settings.extensions.items():
-        extensions_lines +=  f'#extension {extension} : {behavior}\n'
+    version_line=f'#version {program_options["glsl_version"]}\n'
+    extensions_lines=reduce(lambda s, e: s+f'#extension {e[0]} : {e[1]}\n', shaders.glsl_settings.extensions.items(), '')
 
     return (version_line, extensions_lines)
 
 
 def shader_header_files():
+    """
+    A function used to get common shader header files
+    """
     return '#include "vertex/vertex-attributes-unpack.glsl"\n'
 
 
-def shader_header(stage, shader_inputs):
-    version_line, extensions_lines=shader_directives()
+def shader_header(program_options, stage, shader_inputs):
+    version_line, extensions_lines=shader_directives(program_options)
 
     header_files=shader_header_files()
 
@@ -329,13 +334,13 @@ def sub_attributes_unpacks(source_code, vertex_layout ,vertex_attributes):
     return source_code
 
 
-def get_shader_source_code(name):
+def get_shader_source_code(program_options, name):
     path=f'{name}.glsl'
 
     if path in shaders.processed_shaders:
         return shaders.processed_shaders[path]
 
-    with open(os.path.join(shaders.source_path, path), 'rb') as file:
+    with open(os.path.join(program_options['shaders_src_folder'], path), 'rb') as file:
         source_code=file.read().decode('UTF-8')
 
         source_code=remove_comments(source_code)
@@ -359,7 +364,7 @@ def get_specialization_constants(specialization_constants):
     return constants
 
 
-def compile_material(material_data):
+def compile_material(program_options, material_data):
     techniques, shader_modules=itemgetter('techniques', 'shaderModules')(material_data)
     
     for technique in techniques:
@@ -377,9 +382,9 @@ def compile_material(material_data):
 
                 name, stage=itemgetter('name', 'stage')(shader_module)
 
-                header=shader_header(stage, inputs)
+                header=shader_header(program_options, stage, inputs)
 
-                source_code=get_shader_source_code(name)
+                source_code=get_shader_source_code(program_options, name)
 
                 if not source_code:
                     print(f'can\'t get shader source code {name}')
@@ -396,7 +401,7 @@ def compile_material(material_data):
                 source_code=f'{header}\n{source_code}'
 
                 hashed_name=str(uuid.uuid5(uuid.NAMESPACE_DNS, f'{name}.{technique_index}.{vertex_layout_name}'))
-                output_path=os.path.join(shaders.source_path, f'{hashed_name}.spv')
+                output_path=os.path.join(program_options['shaders_src_folder'], f'{hashed_name}.spv')
 
                 print(f'{name}.{technique_index}.{vertex_layout_name} -> {output_path}')
 
@@ -407,7 +412,7 @@ def compile_material(material_data):
                     '-V',
                     # '-H',
                     '--target-env', 'vulkan1.1',
-                    f'-I{shaders.include_path}',
+                    f'-I{program_options["shaders_include_folder"]}',
                     '-o', output_path,
                     '--stdin',
                     '-S', shaders.stage2extension[stage]
@@ -417,35 +422,40 @@ def compile_material(material_data):
 
                 output=output.decode('UTF-8')[len('stdin'):]
                 if len(output) > 2:
-                    print(output)
+                    raise exs.GLSLangValidatorError(name, output)
 
                 if compiler.returncode!=0:
-                    print(errors.decode('UTF-8'), file=sys.stderr)
+                    raise exs.GLSLangValidatorError(name, errors.decode('UTF-8'))
 
 
 def main():
     program_options=parse_program_options()
 
     try:
-        # utils.print_fmt('=========', program_options['materials'])
-        print('=========', program_options['materials'])
+        for material in program_options['materials']:
+            if not os.path.isdir(material) and not os.path.isfile(material):
+                material=os.path.join(program_options['materials_src_folder'], material)
+
+            path=os.path.abspath(material)
+
+            if os.path.isdir(path):
+                for dirpath, _, filenames in os.walk(path):
+                    filenames=filter(lambda n: n.endswith(materials.file_extensions), filenames)
+                    filenames=map(lambda n: os.path.abspath(os.path.join(dirpath, n)), filenames)
+
+                    for filename in filenames:
+                        with open(filename, 'r') as json_file:
+                            compile_material(program_options, json.load(json_file))
+            
+            elif os.path.isfile(path) and path.endswith(materials.file_extensions):
+                with open(path, 'r') as json_file:
+                    compile_material(program_options, json.load(json_file))
+            
 
     except exs.GLSLangValidatorError as ex:
         shader_name, msg=attrgetter('shader_name', 'msg')(ex)
-        utils.err_print_fmt(f'==== TexturePacker error, shader \'{shader_name}\':', msg)
+        utils.err_print_fmt(f'==== Shader compilation error, shader \'{shader_name}\':', msg)
         traceback.print_exc()
-
-
-
-    # for root, dirs, material_relative_paths in os.walk(materials.source_path):
-    #     for material_relative_path in material_relative_paths:
-    #         if not material_relative_path.endswith(materials.file_extensions):
-    #             continue
-
-    #         material_absolute_path=os.path.join(root, material_relative_path)
-
-    #         with open(material_absolute_path, 'r') as json_file:
-    #             compile_material(json.load(json_file))
 
 
 if __name__=='__main__': main()
