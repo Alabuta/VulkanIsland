@@ -1,3 +1,4 @@
+#include "common.glsl"
 
 layout (set = 0, binding = 0, scalar) uniform PER_CAMERA
 {
@@ -16,9 +17,7 @@ layout (set = 1, binding = 0, scalar) readonly buffer PER_OBJECT
     mat4 normal;
 } object;
 
-layout (location = 0) out vec4 outColor;
-
-/*layout (location = 0)*/ out VS_DATA
+layout (location = 0) out VS_DATA
 {
     vec2 position;
     vec2 texcoord;

@@ -2,15 +2,15 @@
     "name": "solid-wireframe-material",
     "shaderModules": [
         {
-            "name": "debug/solid-wireframe-vertex",
+            "name": "debug/solid-wireframe.vert",
             "stage": "vertex"
         },
         {
-            "name": "debug/solid-wireframe-geomerty",
-            "stage": "geomerty"
+            "name": "debug/solid-wireframe.geom",
+            "stage": "geometry"
         },
         {
-            "name": "common/out-color",
+            "name": "debug/solid-wireframe.frag",
             "stage": "fragment"
         }
     ],
@@ -24,6 +24,22 @@
                 {
                     "index": 1,
                     "technique": 0
+                },
+                {
+                    "index": 2,
+                    "technique": 0,
+                    "specializationConstants": [
+                        {
+                            "name": "WIRE_WIDTH",
+                            "value": 1.6,
+                            "type": "float"
+                        },
+                        {
+                            "name": "FADE_DISTANCE",
+                            "value": 0.02,
+                            "type": "float"
+                        }
+                    ]
                 }
             ],
             "vertexLayouts": [
