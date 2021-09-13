@@ -29,9 +29,6 @@ class Shaders(NamedTuple):
     stage2extension: dict
     processed_shaders: dict
 
-class Materials(NamedTuple):
-    file_extensions: tuple
-
 
 shaders=Shaders(
     compiler_path='glslangValidator',
@@ -149,10 +146,6 @@ shaders=Shaders(
     processed_shaders={ }
 )
 
-materials=Materials(
-    file_extensions=('.json')
-)
-
 def parse_program_options():
 	argparser = argparse.ArgumentParser(description='Material compiler')
 
@@ -169,6 +162,8 @@ def parse_program_options():
 							help='verbose console output (default is false)', action='store_true')
 	argparser.add_argument('--glsl-version', dest='glsl_version', default=460,
 							help='GLSL shader language version (default is 460)', metavar='<glsl-version>')
+	argparser.add_argument('--material-file-ext', dest='mat_file_ext', default='.json',
+							help='material file extension (default is json)', metavar='<material-file-ext>')
 
 	return vars(argparser.parse_args())
 
@@ -440,14 +435,14 @@ def main():
 
             if os.path.isdir(path):
                 for dirpath, _, filenames in os.walk(path):
-                    filenames=filter(lambda n: n.endswith(materials.file_extensions), filenames)
+                    filenames=filter(lambda n: n.endswith(program_options['mat_file_ext']), filenames)
                     filenames=map(lambda n: os.path.abspath(os.path.join(dirpath, n)), filenames)
 
                     for filename in filenames:
                         with open(filename, 'r') as json_file:
                             compile_material(program_options, json.load(json_file))
             
-            elif os.path.isfile(path) and path.endswith(materials.file_extensions):
+            elif os.path.isfile(path) and path.endswith(program_options['mat_file_ext']):
                 with open(path, 'r') as json_file:
                     compile_material(program_options, json.load(json_file))
             
