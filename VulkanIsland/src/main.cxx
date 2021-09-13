@@ -124,10 +124,16 @@ struct per_object_t final {
     glm::mat4 normal{1};  // Transposed and inversed upper left 3x3 sub-matrix of the xmodel(world)-view matrix.
 };
 
+struct per_viewport_t final {
+    glm::ivec4 rect{0, 0, 1920, 1080};
+    //glm::vec2 depth{0, 1};
+};
+
 
 void cleanup_frame_data(struct app_t &app);
 void create_sync_objects(app_t &app);
 void recreate_swap_chain(app_t &app);
+void update_viewport_descriptor_buffer(app_t const &app);
 
 
 struct app_t final {
@@ -173,6 +179,8 @@ struct app_t final {
 
     std::vector<per_object_t> objects;
 
+    per_viewport_t per_viewport_data;
+
     VkPipelineLayout pipeline_layout{VK_NULL_HANDLE};
 
     VkCommandPool graphics_command_pool{VK_NULL_HANDLE}, transfer_command_pool{VK_NULL_HANDLE};
@@ -186,7 +194,7 @@ struct app_t final {
 
     std::vector<VkCommandBuffer> command_buffers;
 
-    std::shared_ptr<resource::buffer> per_object_buffer, per_camera_buffer;
+    std::shared_ptr<resource::buffer> per_object_buffer, per_camera_buffer, per_viewport_buffer;
     void *ssbo_mapped_ptr{nullptr};
 
     std::size_t aligned_buffer_size{0u};
@@ -235,8 +243,12 @@ struct app_t final {
         if (pipeline_layout != VK_NULL_HANDLE)
             vkDestroyPipelineLayout(device->handle(), pipeline_layout, nullptr);
 
-        vkDestroyDescriptorSetLayout(device->handle(), view_resources_descriptor_set_layout, nullptr);
-        vkDestroyDescriptorSetLayout(device->handle(), object_resources_descriptor_set_layout, nullptr);
+        if (view_resources_descriptor_set_layout != VK_NULL_HANDLE)
+            vkDestroyDescriptorSetLayout(device->handle(), view_resources_descriptor_set_layout, nullptr);
+
+        if (object_resources_descriptor_set_layout != VK_NULL_HANDLE)
+            vkDestroyDescriptorSetLayout(device->handle(), object_resources_descriptor_set_layout, nullptr);
+
         vkDestroyDescriptorPool(device->handle(), descriptor_pool, nullptr);
 
         descriptor_registry.reset();
@@ -251,6 +263,7 @@ struct app_t final {
 
         per_camera_buffer.reset();
         per_object_buffer.reset();
+        per_viewport_buffer.reset();
 
         if (transfer_command_pool != VK_NULL_HANDLE)
             vkDestroyCommandPool(device->handle(), transfer_command_pool, nullptr);
@@ -282,12 +295,16 @@ struct window_events_handler final : public platform::window::event_handler_inte
         app.width = static_cast<std::uint32_t>(width);
         app.height = static_cast<std::uint32_t>(height);
 
+        app.per_viewport_data.rect = glm::ivec4{0, 0, width, height};
+
         if (width < 1 || height < 1)
             return;
 
         app.resize_callback = [this]
         {
             recreate_swap_chain(app);
+
+            update_viewport_descriptor_buffer(app);
 
             app.camera_->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
         };
@@ -307,6 +324,11 @@ void update_descriptor_set(app_t &app, vulkan::device const &device)
         VkDescriptorBufferInfo{app.per_object_buffer->handle(), 0, sizeof(per_object_t)}
     };
 
+    // TODO: descriptor info typed by VkDescriptorType.
+    auto const per_viewport = std::array{
+        VkDescriptorBufferInfo{app.per_viewport_buffer->handle(), 0, sizeof(per_viewport_t)}
+    };
+
 #if TEMPORARILY_DISABLED
     // TODO: descriptor info typed by VkDescriptorType.
     auto const per_image = std::array{
@@ -314,7 +336,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device)
     };
 #endif
 
-    std::array<VkWriteDescriptorSet, 2> const write_descriptor_sets{{
+    std::array<VkWriteDescriptorSet, 3> const write_descriptor_sets{{
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,
@@ -335,6 +357,17 @@ void update_descriptor_set(app_t &app, vulkan::device const &device)
             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
             nullptr,
             std::data(per_object),
+            nullptr
+        },
+        {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            nullptr,
+            app.view_resources_descriptor_set,
+            1,
+            0, static_cast<std::uint32_t>(std::size(per_viewport)),
+            VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+            nullptr,
+            std::data(per_viewport),
             nullptr
         }
 #if TEMPORARILY_DISABLED
@@ -465,7 +498,7 @@ void create_graphics_command_buffers(app_t &app)
                 for (auto &&dc : span) {
                     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
 
-                    std::array<VkDescriptorSet, 2> descriptor_sets{
+                    std::array<VkDescriptorSet, 3> descriptor_sets{
                         app.view_resources_descriptor_set, dc.descriptor_set
                     };
 
@@ -684,7 +717,7 @@ namespace temp
 
         primitives::box_create_info const create_info{
             vertex_layout, topology, index_type,
-            1.f, 2.f, 4.f, 8u, 4u, 2u,
+            1.f, 2.f, 2.f, 3u, 7u, 5u,
             colors
         };
 
@@ -709,14 +742,16 @@ namespace temp
 
                 primitives::generate_box_indexed(create_info, vertex_staging_buffer->mapped_range(), index_staging_buffer->mapped_range());
 
-                auto it_indices = reinterpret_cast<std::array<std::uint16_t, 6> *>(std::data(index_staging_buffer->mapped_range()));
+                if constexpr (false) {
+                    auto it_indices = reinterpret_cast<std::array<std::uint16_t, 6> *>(std::data(index_staging_buffer->mapped_range()));
 
-                for (auto i = 0u; i < index_count; i += 6, ++it_indices) {
-                    if (i % 6 == 0)
-                        std::cout << "face index: " << i / 6 << std::endl;
+                    for (auto i = 0u; i < index_count; i += 6, ++it_indices) {
+                        if (i % 6 == 0)
+                            std::cout << "face index: " << i / 6 << std::endl;
 
-                    std::cout << "i " << it_indices->at(0) << ' ' << it_indices->at(1) << ' ' << it_indices->at(2) << std::endl;
-                    std::cout << "i " << it_indices->at(3) << ' ' << it_indices->at(4) << ' ' << it_indices->at(5) << std::endl;
+                        std::cout << "i " << it_indices->at(0) << ' ' << it_indices->at(1) << ' ' << it_indices->at(2) << std::endl;
+                        std::cout << "i " << it_indices->at(3) << ' ' << it_indices->at(4) << ' ' << it_indices->at(5) << std::endl;
+                    }
                 }
 
                 index_buffer = app.resource_manager->stage_index_data(index_type, index_staging_buffer, app.transfer_command_pool);
@@ -879,6 +914,7 @@ namespace temp
         model_.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
         model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
         model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
+        model_.materials.push_back(xformat::material{0, "debug/solid-wireframe"s});
 
         model_.transforms.push_back(glm::mat4{1.f});
         model_.transforms.push_back(
@@ -916,7 +952,7 @@ namespace temp
 
         if constexpr (true) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_box(app, model_, 0, graphics::INDEX_TYPE::UINT_16, 3);
+            add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 4);
         }
 
         else {
@@ -1160,6 +1196,9 @@ void init(platform::window &window, app_t &app)
     if (app.per_camera_buffer = create_uniform_buffer(*app.resource_manager, sizeof(camera::data_t)); !app.per_camera_buffer)
         throw graphics::exception("failed to init per camera uniform buffer"s);
 
+    if (app.per_viewport_buffer = create_uniform_buffer(*app.resource_manager, sizeof(per_viewport_t)); !app.per_viewport_buffer)
+        throw graphics::exception("failed to init per viewport uniform buffer"s);
+
     if (auto descriptorPool = create_descriptor_pool(*app.device); !descriptorPool)
         throw graphics::exception("failed to create the descriptor pool"s);
 
@@ -1173,6 +1212,9 @@ void init(platform::window &window, app_t &app)
         app.object_resources_descriptor_set = descriptor_sets.at(1);
     }
 
+    app.per_viewport_data.rect = glm::ivec4{0, 0, app.width, app.height};
+    update_viewport_descriptor_buffer(app);
+
     update_descriptor_set(app, *app.device);
 
     build_render_pipelines(app, temp::xmodel);
@@ -1182,6 +1224,24 @@ void init(platform::window &window, app_t &app)
     create_sync_objects(app);
 
     app.instance = std::move(instance);
+}
+
+void update_viewport_descriptor_buffer(app_t const &app)
+{
+    auto &&device = *app.device;
+    auto &&buffer = *app.per_viewport_buffer;
+
+    auto const offset = buffer.memory()->offset();
+    auto const size = buffer.memory()->size();
+
+    void *data = nullptr;
+
+    if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
+        throw vulkan::exception(fmt::format("failed to map per viewpor uniform buffer memory: {0:#x}"s, result));
+
+    std::copy_n(&app.per_viewport_data, 1, static_cast<per_viewport_t *>(data));
+
+    vkUnmapMemory(device.handle(), buffer.memory()->handle());
 }
 
 void update(app_t &app)
@@ -1388,7 +1448,7 @@ int main()
     app.camera_->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
 
     app.camera_controller = std::make_unique<orbit_controller>(app.camera_, *input_manager);
-    app.camera_controller->look_at(glm::vec3{0, 2, 1}, {0, 0, 0});
+    app.camera_controller->look_at(glm::vec3{2, 2, 2}, {0, 0, 0});
 
     std::cout << measure<>::execution(init, window, std::ref(app)) << " ms\n"s;
 

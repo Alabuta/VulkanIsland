@@ -1,6 +1,11 @@
 layout (triangles) in;
 layout (triangle_strip, max_vertices = 3) out;
 
+layout (set = 2, binding = 0, scalar) uniform PER_VIEWPORT
+{
+    ivec4 rect;
+} viewport;
+
 layout (location = 0) in VS_DATA
 {
     vec2 position;
@@ -16,6 +21,10 @@ layout (location = 1) out GS_DATA {
 
     flat uint mask;
 } gs_data;
+
+in gl_PerVertex {
+    vec4 gl_Position;
+} gl_in[];
 
 const uint infoA[] = {0, 0, 0, 0, 1, 1, 2};
 const uint infoB[] = {1, 1, 2, 0, 2, 1, 2};

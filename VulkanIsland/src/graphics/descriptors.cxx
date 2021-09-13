@@ -41,7 +41,7 @@ namespace graphics
     descriptor_registry::descriptor_registry(vulkan::device &device) : device_{device}
     {
         std::array<VkDescriptorPoolSize, 3> constexpr descriptor_pool{{
-            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2 },
             { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1 },
             { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
         }};

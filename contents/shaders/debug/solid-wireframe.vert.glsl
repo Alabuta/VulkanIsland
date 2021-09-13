@@ -11,6 +11,11 @@ layout (set = 0, binding = 0, scalar) uniform PER_CAMERA
     mat4 invertedProjection;
 } camera;
 
+layout (set = 0, binding = 1, scalar) uniform PER_VIEWPORT
+{
+    ivec4 rect;
+} viewport;
+
 layout (set = 1, binding = 0, scalar) readonly buffer PER_OBJECT
 {
     mat4 world;
@@ -34,7 +39,7 @@ void process(in vec3 position, in vec2 texcoord)
     gl_Position = camera.projection * gl_Position;
 
     // Transform each vertex from clip space into viewport space.
-    vs_data.position = normalizedToViewport(vec4(0, 0, 1920, 1080), gl_Position.xy / gl_Position.w);
+    vs_data.position = normalizedToViewport(viewport.rect, gl_Position.xy / gl_Position.w);
 
     vs_data.texcoord = texcoord;
 }
