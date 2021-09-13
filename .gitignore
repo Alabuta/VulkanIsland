@@ -12,6 +12,7 @@
 *.spv
 *.vcxproj.filters
 *.vscode
+*.pyc
 
 .vs/
 build/
