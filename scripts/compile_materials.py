@@ -8,7 +8,7 @@ import traceback
 import subprocess
 
 from operator import itemgetter, attrgetter
-from functools import reduce
+from functools import reduce, partial
 from typing import NamedTuple
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pymodules'))
@@ -26,6 +26,7 @@ class Shaders(NamedTuple):
     glsl_settings: GLSLSettings
     vertex_attributes_locations: dict
     vertex_attributes_types: dict
+    primitive_input_layouts: dict
     stage2extension: dict
     processed_shaders: dict
 
@@ -133,6 +134,13 @@ shaders=Shaders(
         'rg64f': 'dvec2',
         'rgb64f': 'dvec3',
         'rgba64f': 'dvec4'
+    },
+    primitive_input_layouts={
+        'points': 'points',
+        'lines': 'line_strip',
+        'lines_adjacency': 'line_strip',
+        'triangles': 'triangle_strip',
+        'triangles_adjacency': 'triangle_strip'
     }
     ,
     stage2extension={
@@ -224,9 +232,19 @@ def shader_vertex_attribute_layout(vertex_attributes, vertex_layout):
     return vertex_attributes_lines
 
 
+def shader_primitive_input(primitive_topologies, primitive_input):
+    input_layout, out_vertices_count=itemgetter('layout', 'outVerticesCount')(primitive_topologies[primitive_input])
+    output_layout=shaders.primitive_input_layouts[input_layout]
+
+    return f'layout ({input_layout}) in;\nlayout ({output_layout}, max_vertices = {out_vertices_count}) out;\n'
+
+
 def compile_vertex_layout_name(vertex_attributes, vertex_layout):
     getter=itemgetter('semantic','type')
     return '|'.join(map(lambda a: ':'.join(getter(a)).lower(), [vertex_attributes[i] for i in vertex_layout]))
+
+def compile_primitives_input_name(primitive_topology):
+    return f'{primitive_topology["type"]}'
 
 
 # TODO:: add another shader input structures
@@ -235,8 +253,10 @@ def shader_inputs(material, vertex_layout):
 
     vertex_attributes_lines=shader_vertex_attribute_layout(vertex_attributes, vertex_layout)
 
+    primitive_topologies_lines=''#shader_geometry_primitive_input(primitive_topology)
+
     vertex_stage_inputs=f'{vertex_attributes_lines}\n'
-    tesc_stage_inputs=f'\n'
+    tesc_stage_inputs=f'{primitive_topologies_lines}\n'
     tese_stage_inputs=f'\n'
     geometry_stage_inputs=f'\n'
     fragment_stage_inputs=f'\n'
@@ -252,6 +272,21 @@ def shader_inputs(material, vertex_layout):
     }
 
     return inputs
+
+def vertex_shader_inputs(material, vertex_layout):
+    vertex_attributes=material['vertexAttributes']
+    vertex_attributes_lines=shader_vertex_attribute_layout(vertex_attributes, vertex_layout)
+
+    return {'vertex': f'{vertex_attributes_lines}\n'}
+
+def geometry_shader_inputs(material, primitive_input):
+    primitive_topologies=material['primitiveTopologies']
+    primitive_topologies_lines=shader_primitive_input(primitive_topologies, primitive_input)
+
+    return {'geometry': f'{primitive_topologies_lines}\n'}
+
+def fragment_shader_inputs(material):
+    return {'fragment': '\n'}
 
 
 def remove_comments(source_code):
@@ -316,7 +351,7 @@ def remove_inactive_techniques(technique_index, source_code):
     return source_code
 
 
-def sub_attributes_unpacks(source_code, vertex_layout ,vertex_attributes):
+def sub_attributes_unpacks(source_code, vertex_layout, vertex_attributes):
     for vertex_attribute_index in vertex_layout:
         vertex_attribute=vertex_attributes[vertex_attribute_index]
         semantic, type=itemgetter('semantic', 'type')(vertex_attribute)
@@ -358,17 +393,66 @@ def get_specialization_constants(specialization_constants):
 
     return constants
 
+def compile(program_options, name, stage, inputs):
+    header=shader_header(program_options, stage, inputs)
+
+    source_code=get_shader_source_code(program_options, name)
+
+    if not source_code:
+        print(f'can\'t get shader source code {name}')
+        continue
+
+    source_code=remove_inactive_techniques(technique_index, source_code)
+
+    if stage=='vertex':
+        source_code=sub_attributes_unpacks(source_code, vertex_layout, vertex_attributes)
+
+    if 'specializationConstants' in shader_bundle:
+        constants=get_specialization_constants(shader_bundle['specializationConstants'])
+        source_code=f'{constants}\n{source_code}'
+
+    source_code=f'{header}\n{source_code}'
+
+    shader_name=f'{name}.{technique_index}.{vertex_layout_name}'
+    hashed_name=str(uuid.uuid5(uuid.NAMESPACE_DNS, shader_name))
+    output_path=os.path.join(program_options['shaders_src_folder'], f'{hashed_name}.spv')
+
+    print(f'{name}.{technique_index}.{vertex_layout_name} -> {output_path}')
 
 def compile_material(program_options, material_data):
     techniques, shader_modules=itemgetter('techniques', 'shaderModules')(material_data)
+    vertex_attributes, primitive_topologies=itemgetter('vertexAttributes', 'primitiveTopologies')(material_data)
     
     for technique in techniques:
-        for vertex_layout in technique['vertexLayouts']:
-            inputs=shader_inputs(material_data, vertex_layout)
+        # vertex_layouts=map(lambda l: [vertex_attributes[i] for i in l], technique['vertexLayouts'])
+        # primitive_inputs=[primitive_topologies[i] for i in technique['primitiveInputs']]
 
-            vertex_attributes=material_data['vertexAttributes']
+        for shader_bundle in technique['shadersBundle']:
+            shader_module_index, technique_index=itemgetter('index', 'technique')(shader_bundle)
+
+            shader_module=shader_modules[shader_module_index]
+
+            name, stage=itemgetter('name', 'stage')(shader_module)
+
+            inputs=''
+
+            if stage=='vertex':
+                for vertex_layout in technique['vertexLayouts']:
+                    inputs=vertex_shader_inputs(material_data, vertex_layout)
+
+            elif stage=='geometry':
+                for primitive_input in technique['primitiveInputs']:
+                    inputs=geometry_shader_inputs(material_data, primitive_input)
+
+            elif stage=='fragment':
+                inputs=fragment_shader_inputs(material_data);
+
+        return
+
+        for vertex_layout in technique['vertexLayouts']:
 
             vertex_layout_name=compile_vertex_layout_name(vertex_attributes, vertex_layout)
+            # primitives_topology_name=compile_primitives_input_name()
 
             for shader_bundle in technique['shadersBundle']:
                 shader_module_index, technique_index=itemgetter('index', 'technique')(shader_bundle)
