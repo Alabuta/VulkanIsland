@@ -243,8 +243,9 @@ def compile_vertex_layout_name(vertex_attributes, vertex_layout):
     getter=itemgetter('semantic','type')
     return '|'.join(map(lambda a: ':'.join(getter(a)).lower(), [vertex_attributes[i] for i in vertex_layout]))
 
-def compile_primitives_input_name(primitive_topology):
-    return f'{primitive_topology["type"]}'
+def compile_primitive_input_name(primitive_topologies, primitive_input):
+    input_layout, out_vertices_count=itemgetter('layout', 'outVerticesCount')(primitive_topologies[primitive_input])
+    return f'{input_layout}'
 
 
 # TODO:: add another shader input structures
@@ -393,15 +394,18 @@ def get_specialization_constants(specialization_constants):
 
     return constants
 
-def compile(program_options, name, stage, inputs):
+def get_shader_compile_data(program_options, material_data, shader_bundle, inputs, vertex_layout = None, primitive_input = None):
+    shader_modules, vertex_attributes, primitive_topologies=itemgetter('shaderModules', 'vertexAttributes', 'primitiveTopologies')(material_data)
+
+    shader_module_index, technique_index=itemgetter('index', 'technique')(shader_bundle)
+    shader_module=shader_modules[shader_module_index]
+
+    name, stage=itemgetter('name', 'stage')(shader_module)
+
     header=shader_header(program_options, stage, inputs)
 
     source_code=get_shader_source_code(program_options, name)
-
-    if not source_code:
-        print(f'can\'t get shader source code {name}')
-        continue
-
+    assert source_code, f'can\'t get shader source code {name}'
     source_code=remove_inactive_techniques(technique_index, source_code)
 
     if stage=='vertex':
@@ -413,11 +417,24 @@ def compile(program_options, name, stage, inputs):
 
     source_code=f'{header}\n{source_code}'
 
-    shader_name=f'{name}.{technique_index}.{vertex_layout_name}'
+    shader_name=f'{name}.{technique_index}'
+
+    if stage=='vertex':
+        vertex_layout_name=compile_vertex_layout_name(vertex_attributes, vertex_layout)
+        shader_name+=f'.{vertex_layout_name}'
+
+    elif stage=='geometry':
+        primitive_input_name=compile_primitive_input_name(primitive_topologies, primitive_input)
+        shader_name+=f'.{primitive_input_name}'
+
     hashed_name=str(uuid.uuid5(uuid.NAMESPACE_DNS, shader_name))
     output_path=os.path.join(program_options['shaders_src_folder'], f'{hashed_name}.spv')
 
-    print(f'{name}.{technique_index}.{vertex_layout_name} -> {output_path}')
+    return (
+        shader_name, f'technique{technique_index}', output_path, source_code
+    )
+
+
 
 def compile_material(program_options, material_data):
     techniques, shader_modules=itemgetter('techniques', 'shaderModules')(material_data)
@@ -429,20 +446,31 @@ def compile_material(program_options, material_data):
 
         for shader_bundle in technique['shadersBundle']:
             shader_module_index, technique_index=itemgetter('index', 'technique')(shader_bundle)
-
             shader_module=shader_modules[shader_module_index]
 
             name, stage=itemgetter('name', 'stage')(shader_module)
 
-            inputs=''
-
             if stage=='vertex':
                 for vertex_layout in technique['vertexLayouts']:
                     inputs=vertex_shader_inputs(material_data, vertex_layout)
+                    (shader_name, entry_point, output_path, source_code)=get_shader_compile_data(
+                        program_options,
+                        material_data,
+                        shader_bundle,
+                        inputs,
+                        vertex_layout=vertex_layout)
+                    print(f'{shader_name}, {entry_point}, {output_path}')
 
             elif stage=='geometry':
                 for primitive_input in technique['primitiveInputs']:
                     inputs=geometry_shader_inputs(material_data, primitive_input)
+                    (shader_name, entry_point, output_path, source_code)=get_shader_compile_data(
+                        program_options,
+                        material_data,
+                        shader_bundle,
+                        inputs,
+                        primitive_input=primitive_input)
+                    print(f'{shader_name}, {entry_point}, {output_path}')
 
             elif stage=='fragment':
                 inputs=fragment_shader_inputs(material_data);
