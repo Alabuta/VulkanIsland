@@ -43,8 +43,10 @@
                 }
             ],
             "vertexLayouts": [
-                [ 0, 1 ],
-                [ 0, 2 ]
+                [ 0 ]
+            ],
+            "primitiveInputs": [
+                0
             ]
         }
     ],
@@ -52,14 +54,12 @@
         {
             "semantic": "POSITION",
             "type": "rgb32f"
-        },
+        }
+    ],
+    "primitiveTopologies": [
         {
-            "semantic": "TEXCOORD_0",
-            "type": "rg32f"
-        },
-        {
-            "semantic": "TEXCOORD_0",
-            "type": "rg16ui_norm"
+            "layout": "triangles",
+            "outVerticesCount": 3
         }
     ]
 }

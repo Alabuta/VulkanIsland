@@ -1,5 +1,3 @@
-layout (triangles) in;
-layout (triangle_strip, max_vertices = 3) out;
 
 layout (set = 2, binding = 0, scalar) uniform PER_VIEWPORT
 {
@@ -9,12 +7,10 @@ layout (set = 2, binding = 0, scalar) uniform PER_VIEWPORT
 layout (location = 0) in VS_DATA
 {
     vec2 position;
-    vec2 texcoord;
 } vs_data[];
 
-layout (location = 1) out GS_DATA {
+layout (location = 0) out GS_DATA {
     noperspective vec2 position;
-    vec2 texcoord;
 
     noperspective vec4 edgeA;
     noperspective vec4 edgeB;
@@ -48,22 +44,14 @@ void simpleCase()
     const float hc = area / length(ab);
 
     gs_data.edgeA = vec4(ha, 0.0, 0.0, 0.0);
-    gs_data.texcoord = vs_data[0].texcoord;
-
     gl_Position = gl_in[0].gl_Position;
     EmitVertex();
 
-
     gs_data.edgeA = vec4(0.0, hb, 0.0, 0.0);
-    gs_data.texcoord = vs_data[1].texcoord;
-
     gl_Position = gl_in[1].gl_Position;
     EmitVertex();
 
-
     gs_data.edgeA = vec4(0.0, 0.0, hc, 0.0);
-    gs_data.texcoord = vs_data[2].texcoord;
-
     gl_Position = gl_in[2].gl_Position;
     EmitVertex();
 }
@@ -90,8 +78,6 @@ void process()
 
         for (int i = 0; i < 3; ++i) {
             gs_data.position = vs_data[i].position;
-            gs_data.texcoord = vs_data[i].texcoord;
-
             gl_Position = gl_in[i].gl_Position;
 
             EmitVertex();

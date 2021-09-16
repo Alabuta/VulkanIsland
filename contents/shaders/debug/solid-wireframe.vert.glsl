@@ -25,7 +25,6 @@ layout (set = 1, binding = 0, scalar) readonly buffer PER_OBJECT
 layout (location = 0) out VS_DATA
 {
     vec2 position;
-    vec2 texcoord;
 } vs_data;
 
 out gl_PerVertex {
@@ -33,20 +32,16 @@ out gl_PerVertex {
 };
 
 
-void process(in vec3 position, in vec2 texcoord)
+void process(in vec3 position)
 {
     gl_Position = camera.view * object.world * vec4(position, 1.0);
     gl_Position = camera.projection * gl_Position;
 
     // Transform each vertex from clip space into viewport space.
     vs_data.position = normalizedToViewport(viewport.rect, gl_Position.xy / gl_Position.w);
-
-    vs_data.texcoord = texcoord;
 }
 
 #pragma technique(0)
 {
-    vec2 texcoord_0 = unpackAttribute(TEXCOORD_0);
-
-    process(POSITION, texcoord_0);
+    process(POSITION);
 }

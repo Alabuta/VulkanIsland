@@ -245,34 +245,7 @@ def compile_vertex_layout_name(vertex_attributes, vertex_layout):
 
 def compile_primitive_input_name(primitive_topologies, primitive_input):
     input_layout, out_vertices_count=itemgetter('layout', 'outVerticesCount')(primitive_topologies[primitive_input])
-    return f'{input_layout}'
-
-
-# TODO:: add another shader input structures
-def shader_inputs(material, vertex_layout):
-    vertex_attributes=material['vertexAttributes']
-
-    vertex_attributes_lines=shader_vertex_attribute_layout(vertex_attributes, vertex_layout)
-
-    primitive_topologies_lines=''#shader_geometry_primitive_input(primitive_topology)
-
-    vertex_stage_inputs=f'{vertex_attributes_lines}\n'
-    tesc_stage_inputs=f'{primitive_topologies_lines}\n'
-    tese_stage_inputs=f'\n'
-    geometry_stage_inputs=f'\n'
-    fragment_stage_inputs=f'\n'
-    compute_stage_inputs=f'\n'
-
-    inputs={
-        'vertex': vertex_stage_inputs,
-        'tesselation_control': tesc_stage_inputs,
-        'tesselation_evaluation': tese_stage_inputs,
-        'geometry': geometry_stage_inputs,
-        'fragment': fragment_stage_inputs,
-        'compute': compute_stage_inputs
-    }
-
-    return inputs
+    return f'{input_layout}:{out_vertices_count}'
 
 def vertex_shader_inputs(material, vertex_layout):
     vertex_attributes=material['vertexAttributes']
@@ -431,10 +404,31 @@ def get_shader_compile_data(program_options, material_data, shader_bundle, input
     output_path=os.path.join(program_options['shaders_src_folder'], f'{hashed_name}.spv')
 
     return (
-        shader_name, f'technique{technique_index}', output_path, source_code
+        shader_name, f'technique{technique_index}', output_path, source_code, shaders.stage2extension[stage]
     )
 
+def compile_shader(program_options, shader_name, entry_point, output_path, source_code, stage):
+    compiler=subprocess.Popen([
+        shaders.compiler_path,
+        '--entry-point', entry_point,
+        '--source-entrypoint', 'main',
+        '-V',
+        # '-H',
+        '--target-env', 'vulkan1.1',
+        f'-I{program_options["shaders_include_folder"]}',
+        '-o', output_path,
+        '--stdin',
+        '-S', stage
+    ], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
+    output, errors=compiler.communicate(source_code.encode('UTF-8'))
+
+    output=output.decode('UTF-8')[len('stdin'):]
+    if len(output) > 2:
+        raise exs.GLSLangValidatorError(shader_name, output)
+
+    if compiler.returncode!=0:
+        raise exs.GLSLangValidatorError(shader_name, errors.decode('UTF-8'))
 
 def compile_material(program_options, material_data):
     techniques, shader_modules=itemgetter('techniques', 'shaderModules')(material_data)
@@ -453,86 +447,42 @@ def compile_material(program_options, material_data):
             if stage=='vertex':
                 for vertex_layout in technique['vertexLayouts']:
                     inputs=vertex_shader_inputs(material_data, vertex_layout)
-                    (shader_name, entry_point, output_path, source_code)=get_shader_compile_data(
+                    (shader_name, entry_point, output_path, source_code, stage)=get_shader_compile_data(
                         program_options,
                         material_data,
                         shader_bundle,
                         inputs,
                         vertex_layout=vertex_layout)
-                    print(f'{shader_name}, {entry_point}, {output_path}')
+
+                    vertex_layout_name=compile_vertex_layout_name(vertex_attributes, vertex_layout)
+                    print(f'{name}.{technique_index}.{vertex_layout_name} -> {output_path}')
+                    compile_shader(program_options, shader_name, entry_point, output_path, source_code, stage)
 
             elif stage=='geometry':
                 for primitive_input in technique['primitiveInputs']:
                     inputs=geometry_shader_inputs(material_data, primitive_input)
-                    (shader_name, entry_point, output_path, source_code)=get_shader_compile_data(
+                    (shader_name, entry_point, output_path, source_code, stage)=get_shader_compile_data(
                         program_options,
                         material_data,
                         shader_bundle,
                         inputs,
                         primitive_input=primitive_input)
-                    print(f'{shader_name}, {entry_point}, {output_path}')
+
+                    primitive_input_name=compile_primitive_input_name(primitive_topologies, primitive_input)
+                    print(f'{name}.{technique_index}.{primitive_input_name} -> {output_path}')
+                    compile_shader(program_options, shader_name, entry_point, output_path, source_code, stage)
 
             elif stage=='fragment':
                 inputs=fragment_shader_inputs(material_data);
+                (shader_name, entry_point, output_path, source_code, stage)=get_shader_compile_data(
+                    program_options,
+                    material_data,
+                    shader_bundle,
+                    inputs,
+                    primitive_input=primitive_input)
 
-        return
-
-        for vertex_layout in technique['vertexLayouts']:
-
-            vertex_layout_name=compile_vertex_layout_name(vertex_attributes, vertex_layout)
-            # primitives_topology_name=compile_primitives_input_name()
-
-            for shader_bundle in technique['shadersBundle']:
-                shader_module_index, technique_index=itemgetter('index', 'technique')(shader_bundle)
-
-                shader_module=shader_modules[shader_module_index]
-
-                name, stage=itemgetter('name', 'stage')(shader_module)
-
-                header=shader_header(program_options, stage, inputs)
-
-                source_code=get_shader_source_code(program_options, name)
-
-                if not source_code:
-                    print(f'can\'t get shader source code {name}')
-                    continue
-
-                source_code=remove_inactive_techniques(technique_index, source_code)
-
-                source_code=sub_attributes_unpacks(source_code, vertex_layout, vertex_attributes)
-
-                if 'specializationConstants' in shader_bundle:
-                    constants=get_specialization_constants(shader_bundle['specializationConstants'])
-                    source_code=f'{constants}\n{source_code}'
-
-                source_code=f'{header}\n{source_code}'
-
-                hashed_name=str(uuid.uuid5(uuid.NAMESPACE_DNS, f'{name}.{technique_index}.{vertex_layout_name}'))
-                output_path=os.path.join(program_options['shaders_src_folder'], f'{hashed_name}.spv')
-
-                print(f'{name}.{technique_index}.{vertex_layout_name} -> {output_path}')
-
-                compiler=subprocess.Popen([
-                    shaders.compiler_path,
-                    '--entry-point', f'technique{technique_index}',
-                    '--source-entrypoint', 'main',
-                    '-V',
-                    # '-H',
-                    '--target-env', 'vulkan1.1',
-                    f'-I{program_options["shaders_include_folder"]}',
-                    '-o', output_path,
-                    '--stdin',
-                    '-S', shaders.stage2extension[stage]
-                ], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-
-                output, errors=compiler.communicate(source_code.encode('UTF-8'))
-
-                output=output.decode('UTF-8')[len('stdin'):]
-                if len(output) > 2:
-                    raise exs.GLSLangValidatorError(name, output)
-
-                if compiler.returncode!=0:
-                    raise exs.GLSLangValidatorError(name, errors.decode('UTF-8'))
+                print(f'{name}.{technique_index} -> {output_path}')
+                compile_shader(program_options, shader_name, entry_point, output_path, source_code, stage)
 
 
 def main():

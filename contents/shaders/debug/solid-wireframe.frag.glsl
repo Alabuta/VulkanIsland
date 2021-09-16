@@ -2,9 +2,8 @@
 
 layout (early_fragment_tests) in;
 
-layout (location = 1) in GS_DATA {
+layout (location = 0) in GS_DATA {
     noperspective vec2 position;
-    vec2 texcoord;
 
     noperspective vec4 edgeA;
     noperspective vec4 edgeB;
