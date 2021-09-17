@@ -217,4 +217,32 @@ namespace graphics
 
         return str;
     }
+
+    std::string to_string(graphics::PRIMITIVE_TOPOLOGY topology)
+    {
+        std::string topology_name;
+
+        switch (topology)
+        {
+            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+                topology_name = "points"s;
+                break;
+
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
+            case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
+                topology_name = "line_strip"s;
+                break;
+
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_FAN:
+                topology_name = "triangles"s;
+                break;
+
+            default:
+                break;
+        }
+
+        return topology_name;
+    }
 }

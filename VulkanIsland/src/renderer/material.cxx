@@ -81,13 +81,50 @@ namespace
 
     // TODO:: replace 'renderable_vertex_layout' method argument by reference to renderable instance.
     [[nodiscard]] std::string
-    compile_name(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &renderable_vertex_layout)
+    compile_name(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &renderable_vertex_layout, graphics::PRIMITIVE_TOPOLOGY primitive_topology)
     {
         auto vertex_layout_name = graphics::to_string(renderable_vertex_layout);
-        const auto full_name = fmt::format("{}.{}.{}"s, name, technique_index, vertex_layout_name);
+        auto primitive_input_name = graphics::to_string(primitive_topology);
+
+        auto full_name = fmt::format("{}.{}.{}.{}"s, name, technique_index, vertex_layout_name, primitive_input_name);
 
         const boost::uuids::name_generator_sha1 gen(boost::uuids::ns::dns());
 
+        return boost::uuids::to_string(gen(full_name));
+    }
+
+    [[nodiscard]]
+    std::string compile_name(std::string_view name, graphics::SHADER_STAGE stage, std::uint32_t technique_index, graphics::vertex_layout const &renderable_vertex_layout, graphics::PRIMITIVE_TOPOLOGY primitive_topology)
+    {
+        auto vertex_layout_name = graphics::to_string(renderable_vertex_layout);
+        auto primitive_input_name = graphics::to_string(primitive_topology);
+
+        std::string full_name;
+
+        switch (stage)
+        {
+            case graphics::SHADER_STAGE::VERTEX:
+                full_name = fmt::format("{}.{}.{}"s, name, technique_index, vertex_layout_name);
+                break;
+
+            case graphics::SHADER_STAGE::GEOMETRY:
+                full_name = fmt::format("{}.{}.{}"s, name, technique_index, primitive_input_name);
+                break;
+
+            case graphics::SHADER_STAGE::FRAGMENT:
+            case graphics::SHADER_STAGE::TESS_CONTROL:
+            case graphics::SHADER_STAGE::TESS_EVAL:
+            case graphics::SHADER_STAGE::COMPUTE:
+            case graphics::SHADER_STAGE::ALL_GRAPHICS_SHADER_STAGES:
+            case graphics::SHADER_STAGE::ALL_SHADER_STAGES:
+                full_name = fmt::format("{}.{}"s, name, technique_index);
+                break;
+
+            default:
+                break;
+        }
+
+        const boost::uuids::name_generator_sha1 gen(boost::uuids::ns::dns());
         return boost::uuids::to_string(gen(full_name));
     }
 }
@@ -95,9 +132,9 @@ namespace
 namespace graphics
 {
     std::shared_ptr<graphics::material>
-    material_factory::material(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &renderable_vertex_layout)
+    material_factory::material(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &renderable_vertex_layout, graphics::PRIMITIVE_TOPOLOGY primitive_topology)
     {
-        auto hashed_name = compile_name(name, technique_index, renderable_vertex_layout);
+        auto hashed_name = compile_name(name, technique_index, renderable_vertex_layout, primitive_topology);
 
         if (materials_.contains(hashed_name))
             return materials_.at(hashed_name);
@@ -115,7 +152,7 @@ namespace graphics
         if (auto vertex_layout = compatible_vertex_layout(vertex_attributes, technique, renderable_vertex_layout); vertex_layout) {
             std::vector<graphics::shader_stage> shader_stages;
 
-            std::ranges::transform(shaders_bundle, std::back_inserter(shader_stages), [&shader_modules, &vertex_layout] (auto shader_bundle)
+            std::ranges::transform(shaders_bundle, std::back_inserter(shader_stages), [&shader_modules, &vertex_layout, primitive_topology] (auto shader_bundle)
             {
                 std::set<graphics::specialization_constant> constants;
 
@@ -130,14 +167,14 @@ namespace graphics
 
                 auto const shader_technique_index = static_cast<std::uint32_t>(shader_bundle.technique_index);
 
-                shader_name = compile_name(shader_name, shader_technique_index, *vertex_layout);
+                shader_name = compile_name(shader_name, shader_semantic, shader_technique_index, *vertex_layout, primitive_topology);
 
                 return graphics::shader_stage{
                     shader_name, shader_technique_index, shader_semantic, constants
                 };
             });
 
-            auto material = std::make_shared<graphics::material>(std::move(shader_stages), *vertex_layout);
+            auto material = std::make_shared<graphics::material>(std::move(shader_stages), *vertex_layout, primitive_topology);
 
             materials_.emplace(hashed_name, material);
 

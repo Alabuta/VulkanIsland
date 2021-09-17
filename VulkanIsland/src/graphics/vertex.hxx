@@ -139,8 +139,7 @@ namespace graphics
     };
 
     std::string to_string(vertex::SEMANTIC semantic);
-
     std::string to_string(graphics::FORMAT format);
-
     std::string to_string(graphics::vertex_layout const &layout);
+    std::string to_string(graphics::PRIMITIVE_TOPOLOGY topology);
 }

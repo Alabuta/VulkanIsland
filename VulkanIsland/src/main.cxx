@@ -630,6 +630,8 @@ void build_render_pipelines(app_t &app, xformat const &model_)
         for (auto meshlet_index : meshlets) {
             auto &&meshlet = model_.meshlets.at(meshlet_index);
 
+            auto primitive_topology = meshlet.topology;
+
             auto material_index = meshlet.material_index;
             auto [technique_index, name] = model_.materials[material_index];
 
@@ -641,7 +643,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
             fmt::print("{}.{}.{}\n"s, name, technique_index, vertex_layout_name);
 
-            auto material = material_factory.material(name, technique_index, vertex_layout);
+            auto material = material_factory.material(name, technique_index, vertex_layout, primitive_topology);
 
             if (material == nullptr)
                 throw graphics::exception("failed to create material"s);
@@ -649,8 +651,6 @@ void build_render_pipelines(app_t &app, xformat const &model_)
             [[maybe_unused]] auto &&vertex_input_state = vertex_input_state_manager.vertex_input_state(vertex_layout);
 
             auto adjusted_vertex_input_state = vertex_input_state_manager.get_adjusted_vertex_input_state(vertex_layout, material->vertex_layout);
-
-            auto primitive_topology = meshlet.topology;
 
             graphics::pipeline_states pipeline_states{
                 primitive_topology,
@@ -921,6 +921,7 @@ namespace temp
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-.5, 0, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+.5, 0, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
+        model_.transforms.push_back(glm::translate(glm::mat4{1.f}, glm::vec3{2, 0, 0}));
         model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(0.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
@@ -951,11 +952,6 @@ namespace temp
         std::uint32_t node_index = 0;
 
         if constexpr (true) {
-            model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 4);
-        }
-
-        else {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
             add_plane(app, model_, 0, graphics::INDEX_TYPE::UINT_16, 2);
 
@@ -1064,6 +1060,11 @@ namespace temp
                     model_.meshlets.push_back(std::move(meshlet));
                 }
             }
+        }
+
+        {
+            model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
+            add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 4);
         }
  
         return model_;
