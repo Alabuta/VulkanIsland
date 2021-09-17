@@ -132,14 +132,9 @@ namespace
 namespace graphics
 {
     std::shared_ptr<graphics::material>
-    material_factory::material(std::string_view name, std::uint32_t technique_index, graphics::vertex_layout const &renderable_vertex_layout, graphics::PRIMITIVE_TOPOLOGY primitive_topology)
+    material_factory::material(std::string_view material_name, std::uint32_t technique_index, graphics::vertex_layout const &renderable_vertex_layout, graphics::PRIMITIVE_TOPOLOGY primitive_topology)
     {
-        auto hashed_name = compile_name(name, technique_index, renderable_vertex_layout, primitive_topology);
-
-        if (materials_.contains(hashed_name))
-            return materials_.at(hashed_name);
-
-        auto &&description = material_description(name);
+        auto &&description = material_description(material_name);
 
         auto &&techniques = description.techniques;
         auto &&technique = techniques.at(technique_index);
@@ -149,39 +144,44 @@ namespace graphics
 
         auto &&vertex_attributes = description.vertex_attributes;
 
-        if (auto vertex_layout = compatible_vertex_layout(vertex_attributes, technique, renderable_vertex_layout); vertex_layout) {
-            std::vector<graphics::shader_stage> shader_stages;
+        auto vertex_layout = compatible_vertex_layout(vertex_attributes, technique, renderable_vertex_layout);
+        if (!vertex_layout)
+            throw graphics::exception("failed to create compatible vertex layout"s);
 
-            std::ranges::transform(shaders_bundle, std::back_inserter(shader_stages), [&shader_modules, &vertex_layout, primitive_topology] (auto shader_bundle)
-            {
-                std::set<graphics::specialization_constant> constants;
+        auto hashed_name = compile_name(material_name, technique_index, *vertex_layout, primitive_topology);
 
-                for (std::uint32_t id = 0; auto &&constant : shader_bundle.specialization_constants) {
-                    std::visit([&id, &constants] (auto value)
-                    {
-                        constants.emplace(id++, value);
-                    }, constant);
-                }
+        if (materials_.contains(hashed_name))
+            return materials_.at(hashed_name);
 
-                auto [shader_semantic, shader_name] = shader_modules.at(shader_bundle.module_index);
+        std::vector<graphics::shader_stage> shader_stages;
 
-                auto const shader_technique_index = static_cast<std::uint32_t>(shader_bundle.technique_index);
+        std::ranges::transform(shaders_bundle, std::back_inserter(shader_stages), [&shader_modules, &vertex_layout, primitive_topology] (auto shader_bundle)
+        {
+            std::set<graphics::specialization_constant> constants;
 
-                shader_name = compile_name(shader_name, shader_semantic, shader_technique_index, *vertex_layout, primitive_topology);
+            for (std::uint32_t id = 0; auto &&constant : shader_bundle.specialization_constants) {
+                std::visit([&id, &constants] (auto value)
+                {
+                    constants.emplace(id++, value);
+                }, constant);
+            }
 
-                return graphics::shader_stage{
-                    shader_name, shader_technique_index, shader_semantic, constants
-                };
-            });
+            auto [shader_semantic, shader_name] = shader_modules.at(shader_bundle.module_index);
 
-            auto material = std::make_shared<graphics::material>(std::move(shader_stages), *vertex_layout, primitive_topology);
+            auto const shader_technique_index = static_cast<std::uint32_t>(shader_bundle.technique_index);
 
-            materials_.emplace(hashed_name, material);
+            shader_name = compile_name(shader_name, shader_semantic, shader_technique_index, *vertex_layout, primitive_topology);
 
-            return material;
-        }
+            return graphics::shader_stage{
+                shader_name, shader_technique_index, shader_semantic, constants
+            };
+        });
 
-        else return { };
+        auto material = std::make_shared<graphics::material>(std::move(shader_stages), *vertex_layout, primitive_topology);
+
+        materials_.emplace(hashed_name, material);
+
+        return material;
     }
 
     loader::material_description const &material_factory::material_description(std::string_view name)
