@@ -245,7 +245,7 @@ def compile_vertex_layout_name(vertex_attributes, vertex_layout):
 
 def compile_primitive_input_name(primitive_topologies, primitive_input):
     input_layout, out_vertices_count=itemgetter('layout', 'outVerticesCount')(primitive_topologies[primitive_input])
-    return f'{input_layout}:{out_vertices_count}'
+    return f'{input_layout}'
 
 def vertex_shader_inputs(material, vertex_layout):
     vertex_attributes=material['vertexAttributes']
@@ -368,7 +368,8 @@ def get_specialization_constants(specialization_constants):
     return constants
 
 def get_shader_compile_data(program_options, material_data, shader_bundle, inputs, vertex_layout = None, primitive_input = None):
-    shader_modules, vertex_attributes, primitive_topologies=itemgetter('shaderModules', 'vertexAttributes', 'primitiveTopologies')(material_data)
+    shader_modules, vertex_attributes=itemgetter('shaderModules', 'vertexAttributes')(material_data)
+    primitive_topologies=material_data.get('primitiveTopologies', [])
 
     shader_module_index, technique_index=itemgetter('index', 'technique')(shader_bundle)
     shader_module=shader_modules[shader_module_index]
@@ -431,8 +432,9 @@ def compile_shader(program_options, shader_name, entry_point, output_path, sourc
         raise exs.GLSLangValidatorError(shader_name, errors.decode('UTF-8'))
 
 def compile_material(program_options, material_data):
-    techniques, shader_modules=itemgetter('techniques', 'shaderModules')(material_data)
-    vertex_attributes, primitive_topologies=itemgetter('vertexAttributes', 'primitiveTopologies')(material_data)
+    techniques, shader_modules, vertex_attributes=itemgetter('techniques', 'shaderModules', 'vertexAttributes')(material_data)
+    primitive_topologies=material_data.get('primitiveTopologies', [])
+    # vertex_attributes, primitive_topologies=itemgetter('vertexAttributes', 'primitiveTopologies')(material_data)
     
     for technique in techniques:
         # vertex_layouts=map(lambda l: [vertex_attributes[i] for i in l], technique['vertexLayouts'])
@@ -478,8 +480,7 @@ def compile_material(program_options, material_data):
                     program_options,
                     material_data,
                     shader_bundle,
-                    inputs,
-                    primitive_input=primitive_input)
+                    inputs)
 
                 print(f'{name}.{technique_index} -> {output_path}')
                 compile_shader(program_options, shader_name, entry_point, output_path, source_code, stage)
