@@ -1437,7 +1437,7 @@ int main()
 
     app_t app;
 
-    platform::window window{"VulkanIsland"sv, static_cast<std::int32_t>(app.width), static_cast<std::int32_t>(app.height)};
+    platform::window window{"engine"sv, static_cast<std::int32_t>(app.width), static_cast<std::int32_t>(app.height)};
 
     const auto app_window_events_handler = std::make_shared<window_events_handler>(app);
     window.connect_event_handler(app_window_events_handler);

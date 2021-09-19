@@ -41,8 +41,8 @@ namespace vulkan_config
     VkApplicationInfo constexpr application_info{
         VK_STRUCTURE_TYPE_APPLICATION_INFO,
         nullptr,
-        "VulkanIsland", VK_MAKE_VERSION(PROJECT_VERSION_MAJOR, PROJECT_VERSION_MINOR, 0),
-        "VulkanIsland", VK_MAKE_VERSION(PROJECT_VERSION_MAJOR, PROJECT_VERSION_MINOR, 0),
+        "engine", VK_MAKE_VERSION(PROJECT_VERSION_MAJOR, PROJECT_VERSION_MINOR, 0),
+        "engine", VK_MAKE_VERSION(PROJECT_VERSION_MAJOR, PROJECT_VERSION_MINOR, 0),
         VK_API_VERSION_1_2
     };
 }
