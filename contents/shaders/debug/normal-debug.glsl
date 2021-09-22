@@ -28,9 +28,7 @@ void process(in vec3 position, in vec3 normal)
     gl_Position = camera.view * object.world * vec4(position, 1.0);
     gl_Position = camera.projection * gl_Position;
 
-    vec4 worldSpaceNormal = object.normal * vec4(normal, 0.0);
-    vec4 viewSpaceNormal = camera.view * worldSpaceNormal;
-
+    vec4 viewSpaceNormal = object.normal * vec4(normal, 0.0);
     outColor = vec4(normalize(vec3(viewSpaceNormal)), 1.0);
 }
 

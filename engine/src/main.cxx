@@ -915,6 +915,7 @@ namespace temp
         model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
         model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
         model_.materials.push_back(xformat::material{0, "debug/solid-wireframe"s});
+        model_.materials.push_back(xformat::material{0, "debug/normal-vectors-debug-material"s});
 
         model_.transforms.push_back(glm::mat4{1.f});
         model_.transforms.push_back(
@@ -1064,7 +1065,7 @@ namespace temp
 
         {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 4);
+            add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 5);
         }
  
         return model_;
@@ -1272,11 +1273,11 @@ void update(app_t &app)
         vkUnmapMemory(device.handle(), buffer.memory()->handle());
     }
 
-    std::ranges::transform(temp::xmodel.scene_nodes, std::begin(app.objects), [] (auto &&scene_node)
+    std::ranges::transform(temp::xmodel.scene_nodes, std::begin(app.objects), [&camera = app.camera_] (auto &&scene_node)
     {
         auto &&transform = temp::xmodel.transforms.at(scene_node.transform_index);
 
-        auto normal = glm::inverseTranspose(transform);
+        auto normal = glm::inverseTranspose(camera->data.view * transform);
 
         return per_object_t{transform, normal};
     });
