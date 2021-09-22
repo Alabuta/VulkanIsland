@@ -16,6 +16,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "debug", "debug", "{B87DB4EC
 	ProjectSection(SolutionItems) = preProject
 		contents\materials\debug\color-debug-material.json = contents\materials\debug\color-debug-material.json
 		contents\materials\debug\normal-debug.json = contents\materials\debug\normal-debug.json
+		contents\materials\debug\normal-vectors-debug.json = contents\materials\debug\normal-vectors-debug.json
 		contents\materials\debug\solid-wireframe.json = contents\materials\debug\solid-wireframe.json
 		contents\materials\debug\texture-coordinate-debug.json = contents\materials\debug\texture-coordinate-debug.json
 	EndProjectSection
@@ -31,6 +32,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "debug", "debug", "{DB0DEA69
 	ProjectSection(SolutionItems) = preProject
 		contents\shaders\debug\color-debug.glsl = contents\shaders\debug\color-debug.glsl
 		contents\shaders\debug\normal-debug.glsl = contents\shaders\debug\normal-debug.glsl
+		contents\shaders\debug\normal-vectors-debug-geometry.glsl = contents\shaders\debug\normal-vectors-debug-geometry.glsl
+		contents\shaders\debug\normal-vectors-debug-vertex.glsl = contents\shaders\debug\normal-vectors-debug-vertex.glsl
 		contents\shaders\debug\solid-wireframe-geometry.glsl = contents\shaders\debug\solid-wireframe-geometry.glsl
 		contents\shaders\debug\solid-wireframe-vertex.glsl = contents\shaders\debug\solid-wireframe-vertex.glsl
 		contents\shaders\debug\texture-coordinate-debug.glsl = contents\shaders\debug\texture-coordinate-debug.glsl

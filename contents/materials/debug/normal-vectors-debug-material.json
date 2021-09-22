@@ -1,16 +1,16 @@
 {
-    "name": "solid-wireframe-material",
+    "name": "normal-vectors-debug-material",
     "shaderModules": [
         {
-            "name": "debug/solid-wireframe.vert",
+            "name": "debug/normal-vectors-debug-vertex",
             "stage": "vertex"
         },
         {
-            "name": "debug/solid-wireframe.geom",
+            "name": "debug/normal-vectors-debug-geometry",
             "stage": "geometry"
         },
         {
-            "name": "debug/solid-wireframe.frag",
+            "name": "common/out-color",
             "stage": "fragment"
         }
     ],
@@ -23,27 +23,24 @@
                 },
                 {
                     "index": 1,
-                    "technique": 0
-                },
-                {
-                    "index": 2,
                     "technique": 0,
                     "specializationConstants": [
                         {
-                            "name": "WIRE_WIDTH",
-                            "value": 1.6,
-                            "type": "float"
-                        },
-                        {
-                            "name": "FADE_DISTANCE",
-                            "value": 0.02,
+                            "name": "MAGNITUDE",
+                            "value": 0.4,
                             "type": "float"
                         }
                     ]
+                },
+                {
+                    "index": 2,
+                    "technique": 0
                 }
             ],
             "vertexLayouts": [
-                [ 0 ]
+                [ 0, 1 ],
+                [ 0, 2 ],
+                [ 0, 3 ]
             ],
             "primitiveInputs": [
                 0
@@ -54,13 +51,25 @@
         {
             "semantic": "POSITION",
             "type": "rgb32f"
+        },
+        {
+            "semantic": "NORMAL",
+            "type": "rgb32f"
+        },
+        {
+            "semantic": "NORMAL",
+            "type": "rg8i_norm"
+        },
+        {
+            "semantic": "NORMAL",
+            "type": "rg16i_norm"
         }
     ],
     "primitiveTopologies": [
         {
             "inputLayout": "triangles",
-            "outputLayout": "triangle_strip",
-            "outVerticesCount": 3
+            "outputLayout": "line_strip",
+            "outVerticesCount": 6
         }
     ]
 }

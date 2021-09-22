@@ -26,7 +26,6 @@ class Shaders(NamedTuple):
     glsl_settings: GLSLSettings
     vertex_attributes_locations: dict
     vertex_attributes_types: dict
-    primitive_input_layouts: dict
     stage2extension: dict
     processed_shaders: dict
 
@@ -135,14 +134,6 @@ shaders=Shaders(
         'rgb64f': 'dvec3',
         'rgba64f': 'dvec4'
     },
-    primitive_input_layouts={
-        'points': 'points',
-        'lines': 'line_strip',
-        'lines_adjacency': 'line_strip',
-        'triangles': 'triangle_strip',
-        'triangles_adjacency': 'triangle_strip'
-    }
-    ,
     stage2extension={
         'vertex': 'vert',
         'tesselation_control': 'tesc',
@@ -233,8 +224,7 @@ def shader_vertex_attribute_layout(vertex_attributes, vertex_layout):
 
 
 def shader_primitive_input(primitive_topologies, primitive_input):
-    input_layout, out_vertices_count=itemgetter('layout', 'outVerticesCount')(primitive_topologies[primitive_input])
-    output_layout=shaders.primitive_input_layouts[input_layout]
+    input_layout, output_layout, out_vertices_count=itemgetter('inputLayout', 'outputLayout', 'outVerticesCount')(primitive_topologies[primitive_input])
 
     return f'layout ({input_layout}) in;\nlayout ({output_layout}, max_vertices = {out_vertices_count}) out;\n'
 
@@ -244,7 +234,7 @@ def compile_vertex_layout_name(vertex_attributes, vertex_layout):
     return '|'.join(map(lambda a: ':'.join(getter(a)).lower(), [vertex_attributes[i] for i in vertex_layout]))
 
 def compile_primitive_input_name(primitive_topologies, primitive_input):
-    input_layout, out_vertices_count=itemgetter('layout', 'outVerticesCount')(primitive_topologies[primitive_input])
+    input_layout=itemgetter('inputLayout')(primitive_topologies[primitive_input])
     return f'{input_layout}'
 
 def vertex_shader_inputs(material, vertex_layout):

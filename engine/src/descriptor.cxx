@@ -136,7 +136,7 @@ std::optional<VkDescriptorSetLayout> create_view_resources_descriptor_set_layout
     std::array<VkDescriptorSetLayoutBinding, 2> constexpr layout_bindings{{
         {
             0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
-            1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
+            1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_GEOMETRY_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             nullptr
         },
         {
