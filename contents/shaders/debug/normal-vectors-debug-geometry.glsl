@@ -36,8 +36,12 @@ layout (location = 0) out vec4 outColor;
 
 void process(int index)
 {
+    outColor = vec4(1.0, 1.0, 0.0, 1.0);
+
     gl_Position = camera.projection * gl_in[index].gl_Position;
     EmitVertex();
+
+    outColor = vec4(1.0, 1.0, 0.0, 1.0);
 
     gl_Position = camera.projection * (gl_in[index].gl_Position + vec4(vs_data[index].normal, 0.0) * MAGNITUDE);
     EmitVertex();
@@ -50,6 +54,4 @@ void process(int index)
     process(0);
     process(1);
     process(2);
-
-    outColor = vec4(1.0, 0.0, 0.0, 1.0);
 }
