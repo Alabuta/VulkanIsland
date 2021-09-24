@@ -328,8 +328,8 @@ def sub_attributes_unpacks(source_code, vertex_layout, vertex_attributes):
     return source_code
 
 
-def get_shader_source_code(program_options, name):
-    path=f'{name}.glsl'
+def get_shader_source_code(program_options, path):
+    # path=f'{name}.glsl'
 
     if path in shaders.processed_shaders:
         return shaders.processed_shaders[path]
@@ -399,13 +399,17 @@ def get_shader_compile_data(program_options, material_data, shader_bundle, input
     )
 
 def compile_shader(program_options, shader_name, entry_point, output_path, source_code, stage):
+    # api_specific_flags=(
+    #     'glsl' : ['-V'],
+    #     'hlsl' : ['-D', '--hlsl-enable-16bit-types']
+    # )
     compiler=subprocess.Popen([
         shaders.compiler_path,
         '--entry-point', entry_point,
         '--source-entrypoint', 'main',
         '-V',
         # '-H',
-        '--target-env', 'vulkan1.1',
+        '--target-env', 'spirv1.3',
         f'-I{program_options["shaders_include_folder"]}',
         '-o', output_path,
         '--stdin',

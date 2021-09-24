@@ -33,15 +33,17 @@ in gl_PerVertex {
 
 layout (location = 0) out vec4 outColor;
 
+const vec4 normalsColor = vec4(1.0, 1.0, 0.0, 1.0);
+
 
 void process(int index)
 {
-    outColor = vec4(1.0, 1.0, 0.0, 1.0);
+    outColor = normalsColor;
 
     gl_Position = camera.projection * gl_in[index].gl_Position;
     EmitVertex();
 
-    outColor = vec4(1.0, 1.0, 0.0, 1.0);
+    outColor = normalsColor;
 
     gl_Position = camera.projection * (gl_in[index].gl_Position + vec4(vs_data[index].normal, 0.0) * MAGNITUDE);
     EmitVertex();

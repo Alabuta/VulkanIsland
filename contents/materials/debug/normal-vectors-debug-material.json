@@ -2,15 +2,15 @@
     "name": "normal-vectors-debug-material",
     "shaderModules": [
         {
-            "name": "debug/normal-vectors-debug-vertex",
+            "name": "debug/normal-vectors-debug-vertex.glsl",
             "stage": "vertex"
         },
         {
-            "name": "debug/normal-vectors-debug-geometry",
+            "name": "debug/normal-vectors-debug-geometry.glsl",
             "stage": "geometry"
         },
         {
-            "name": "common/out-color",
+            "name": "common/out-color.glsl",
             "stage": "fragment"
         }
     ],

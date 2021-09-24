@@ -2,11 +2,11 @@
     "name": "texture-coordinate-debug-material",
     "shaderModules": [
         {
-            "name": "debug/texture-coordinate-debug",
+            "name": "debug/texture-coordinate-debug.glsl",
             "stage": "vertex"
         },
         {
-            "name": "common/out-color",
+            "name": "common/out-color.glsl",
             "stage": "fragment"
         }
     ],

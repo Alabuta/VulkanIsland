@@ -2,11 +2,11 @@
     "name": "color-debug-material",
     "shaderModules": [
         {
-            "name": "debug/color-debug",
+            "name": "debug/color-debug.glsl",
             "stage": "vertex"
         },
         {
-            "name": "common/out-color",
+            "name": "common/out-color.glsl",
             "stage": "fragment"
         }
     ],

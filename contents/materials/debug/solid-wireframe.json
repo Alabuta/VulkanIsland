@@ -2,15 +2,15 @@
     "name": "solid-wireframe-material",
     "shaderModules": [
         {
-            "name": "debug/solid-wireframe.vert",
+            "name": "debug/solid-wireframe.vert.glsl",
             "stage": "vertex"
         },
         {
-            "name": "debug/solid-wireframe.geom",
+            "name": "debug/solid-wireframe.geom.glsl",
             "stage": "geometry"
         },
         {
-            "name": "debug/solid-wireframe.frag",
+            "name": "debug/solid-wireframe.frag.glsl",
             "stage": "fragment"
         }
     ],
