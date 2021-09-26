@@ -16,7 +16,7 @@
     ],
     "techniques": [
         {
-            "shadersBundle": [
+            "shaderBundle": [
                 {
                     "index": 0,
                     "technique": 0
@@ -24,7 +24,7 @@
                 {
                     "index": 1,
                     "technique": 0,
-                    "specializationConstants": [
+                    "constants": [
                         {
                             "name": "MAGNITUDE",
                             "value": 0.4,

@@ -16,7 +16,7 @@
     ],
     "techniques": [
         {
-            "shadersBundle": [
+            "shaderBundle": [
                 {
                     "index": 0,
                     "technique": 0
@@ -28,7 +28,7 @@
                 {
                     "index": 2,
                     "technique": 0,
-                    "specializationConstants": [
+                    "constants": [
                         {
                             "name": "WIRE_WIDTH",
                             "value": 1.6,

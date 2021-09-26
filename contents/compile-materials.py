@@ -347,7 +347,7 @@ def compile_material(material_data):
 
             vertex_layout_name=compile_vertex_layout_name(vertex_attributes, vertex_layout)
 
-            for shader_bundle in technique['shadersBundle']:
+            for shader_bundle in technique['shaderBundle']:
                 shader_module_index, technique_index=itemgetter('index', 'technique')(shader_bundle)
 
                 shader_module=shader_modules[shader_module_index]
@@ -366,8 +366,8 @@ def compile_material(material_data):
 
                 source_code=sub_attributes_unpacks(source_code, vertex_layout, vertex_attributes)
 
-                if 'specializationConstants' in shader_bundle:
-                    constants=get_specialization_constants(shader_bundle['specializationConstants'])
+                if 'constants' in shader_bundle:
+                    constants=get_specialization_constants(shader_bundle['constants'])
                     source_code=f'{constants}\n{source_code}'
 
                 source_code=f'{header}\n{source_code}'

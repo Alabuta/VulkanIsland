@@ -11,6 +11,10 @@ from operator import itemgetter, attrgetter
 from functools import reduce, partial
 from typing import NamedTuple
 
+from shader_constants import ShaderStage
+from material_technique import MaterialTechnique
+
+
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pymodules'))
 
 import custom_exceptions as exs
@@ -375,8 +379,8 @@ def get_shader_compile_data(program_options, material_data, shader_bundle, input
     if stage=='vertex':
         source_code=sub_attributes_unpacks(source_code, vertex_layout, vertex_attributes)
 
-    if 'specializationConstants' in shader_bundle:
-        constants=get_specialization_constants(shader_bundle['specializationConstants'])
+    if 'constants' in shader_bundle:
+        constants=get_specialization_constants(shader_bundle['constants'])
         source_code=f'{constants}\n{source_code}'
 
     source_code=f'{header}\n{source_code}'
@@ -430,11 +434,27 @@ def compile_material(program_options, material_data):
     primitive_topologies=material_data.get('primitiveTopologies', [])
     # vertex_attributes, primitive_topologies=itemgetter('vertexAttributes', 'primitiveTopologies')(material_data)
     
-    for technique in techniques:
+    for i, technique in enumerate(techniques):
+        material_tech=MaterialTechnique(material_data, i)
+        continue
+        # material_tech.build()
         # vertex_layouts=map(lambda l: [vertex_attributes[i] for i in l], technique['vertexLayouts'])
-        # primitive_inputs=[primitive_topologies[i] for i in technique['primitiveInputs']]
+        # shb=map(lambda sm: shader_modules[sm['index']], technique['shaderBundle'])
+        # shb=list(map(lambda sm: (sm['name'], ShaderStage.from_str(sm['stage'])), shb))
+        shb=material_tech.shader_bundle
+        for (name, stage) in shb:
+            print(f'{name}\t{stage}')
+        # vls=map(lambda vl: [vertex_attributes[i] for i in vl], technique['vertexLayouts'])
+        vls=material_tech.vertex_layouts
+        for vl in vls:
+            print(vl)
+        # pis=[primitive_topologies[i] for i in technique['primitiveInputs']]
+        pis=material_tech.primitive_inputs
+        for pi in pis:
+            print(pi)
+        continue
 
-        for shader_bundle in technique['shadersBundle']:
+        for shader_bundle in technique['shaderBundle']:
             shader_module_index, technique_index=itemgetter('index', 'technique')(shader_bundle)
             shader_module=shader_modules[shader_module_index]
 

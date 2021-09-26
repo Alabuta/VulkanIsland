@@ -12,7 +12,7 @@
     ],
     "techniques": [
         {
-            "shadersBundle": [
+            "shaderBundle": [
                 {
                     "index": 0,
                     "technique": 0

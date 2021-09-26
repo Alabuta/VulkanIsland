@@ -353,13 +353,13 @@ namespace nlohmann
 
         using specialization_constants = std::vector<loader::material_description::specialization_constant>;
 
-        if (j.count("specializationConstants"s))
-            shader_bundle.specialization_constants = j.at("specializationConstants"s).get<specialization_constants>();
+        if (j.count("constants"s))
+            shader_bundle.specialization_constants = j.at("constants"s).get<specialization_constants>();
     }
 
     void from_json(nlohmann::json const &j, loader::material_description::technique &technique)
     {
-        technique.shaders_bundle = j.at("shadersBundle"s).get<std::vector<loader::material_description::shader_bundle>>();
+        technique.shaders_bundle = j.at("shaderBundle"s).get<std::vector<loader::material_description::shader_bundle>>();
 
         technique.vertex_layouts = j.at("vertexLayouts"s).get<std::vector<loader::material_description::vertex_layout>>();
     }
