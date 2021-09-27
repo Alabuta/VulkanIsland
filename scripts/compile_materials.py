@@ -13,6 +13,7 @@ from typing import NamedTuple
 
 from shader_constants import ShaderStage
 from material_technique import MaterialTechnique
+from glsl_preprocessor import GLSLShaderPreprocessor
 
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pymodules'))
@@ -433,25 +434,26 @@ def compile_material(program_options, material_data):
     techniques, shader_modules, vertex_attributes=itemgetter('techniques', 'shaderModules', 'vertexAttributes')(material_data)
     primitive_topologies=material_data.get('primitiveTopologies', [])
     # vertex_attributes, primitive_topologies=itemgetter('vertexAttributes', 'primitiveTopologies')(material_data)
+
+    glsl_preprocessor=GLSLShaderPreprocessor(program_options["glsl_version"], shaders.glsl_settings.extensions.keys())
     
     for i, technique in enumerate(techniques):
         material_tech=MaterialTechnique(material_data, i)
-        continue
-        # material_tech.build()
-        # vertex_layouts=map(lambda l: [vertex_attributes[i] for i in l], technique['vertexLayouts'])
-        # shb=map(lambda sm: shader_modules[sm['index']], technique['shaderBundle'])
-        # shb=list(map(lambda sm: (sm['name'], ShaderStage.from_str(sm['stage'])), shb))
-        shb=material_tech.shader_bundle
-        for (name, stage) in shb:
-            print(f'{name}\t{stage}')
-        # vls=map(lambda vl: [vertex_attributes[i] for i in vl], technique['vertexLayouts'])
-        vls=material_tech.vertex_layouts
-        for vl in vls:
-            print(vl)
-        # pis=[primitive_topologies[i] for i in technique['primitiveInputs']]
-        pis=material_tech.primitive_inputs
-        for pi in pis:
-            print(pi)
+        # for sh in material_tech.shader_bundle:
+        #     print(sh)
+        for shader_module in material_tech.vertex_stage_shader_modules:
+            print(shader_module)
+            for vertex_layout in material_tech.vertex_layouts:
+                print(vertex_layout)
+
+        for shader_module in material_tech.geometry_stage_shader_modules:
+            print(shader_module)
+            for primitive_input in material_tech.primitive_inputs:
+                print(primitive_input)
+
+        for shader_module in material_tech.fragment_stage_shader_modules:
+            print(shader_module)
+
         continue
 
         for shader_bundle in technique['shaderBundle']:
