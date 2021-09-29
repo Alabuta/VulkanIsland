@@ -23,23 +23,42 @@ class ShaderModuleInfo:
             any data that specific to the stage
     """
     def __init__(self, name, stage, technique, constants, data=None) -> None:
-        self.name=name
-        self.stage=stage
-        self.technique=technique
-        self.constants=constants
+        self.__name=name
+        self.__stage=stage
+        self.__technique=technique
+        self.__constants=constants
         self.__data=data
 
-    def __compile_vertex_layout_name(self):
-        getter=itemgetter('semantic','type')
-        return '|'.join(map(lambda a: ':'.join(getter(a)).lower(), self.__data))
+    @property
+    def name(self):
+        return self.__name
+
+    @property
+    def stage(self):
+        return self.__stage
+
+    @property
+    def technique(self):
+        return self.__technique
+
+    @property
+    def constants(self):
+        return self.__constants
+
+    @property
+    def data(self):
+        return self.__data
 
     def __str__(self):
-        return {
-            ShaderStage.VERTEX : f'{self.name}.{self.technique}.{self.__compile_vertex_layout_name()}',
-            ShaderStage.TESS_CONTROL : f'{self.name}.{self.technique}',
-            ShaderStage.TESS_EVALUATION : f'{self.name}.{self.technique}',
-            ShaderStage.GEOMETRY : f'{self.name}.{self.technique}.{self.__data}',
-            ShaderStage.FRAGMENT : f'{self.name}.{self.technique}',
-            ShaderStage.COMPUTE : f'{self.name}.{self.technique}'
-        }[self.stage];
-        # return f'{self.name} {self.stage} {self.technique} {self.constants}'
+        s=f'{self.__name}.{self.__technique}'
+
+        if self.__stage==ShaderStage.VERTEX:
+            getter=itemgetter('semantic','type')
+            vertex_layout='|'.join(map(lambda a: ':'.join(getter(a)).lower(), self.__data))
+            s+=f'.{vertex_layout}'
+
+        elif self.__stage==ShaderStage.GEOMETRY:
+            primitive_input=self.__data['inputLayout']
+            s+=f'.{primitive_input}'
+
+        return s

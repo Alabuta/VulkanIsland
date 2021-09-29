@@ -439,8 +439,10 @@ def compile_material(program_options, material_data):
     
     for i, technique in enumerate(techniques):
         material_tech=MaterialTechnique(material_data, i)
-        for sh in material_tech.shader_bundle:
-            print(sh)
+        for shader_module in material_tech.shader_bundle:
+            print(shader_module)
+            glsl_preprocessor.process(shader_module)
+        continue
         for shader_module in material_tech.vertex_stage_shader_modules:
             print(shader_module)
             for vertex_layout in material_tech.vertex_layouts:

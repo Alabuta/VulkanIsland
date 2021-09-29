@@ -29,16 +29,25 @@ class MaterialTechnique:
 
         self.__primitive_inputs=[primitive_topologies[i] for i in primitive_inputs]
 
-        shader_bundle=map(lambda s: (shader_modules[s['index']], s), shader_bundle)
+        # shader_bundle=map(lambda s: (shader_modules[s['index']], s), shader_bundle)
         self.__shader_bundle=[]
         for shader_module in shader_bundle:
-            shader_index, technique_index, constants=itemgetter('index', 'technique', 'constants')(shader_module)
+            shader_index, technique_index=itemgetter('index', 'technique', )(shader_module)
+            constants=shader_module.get('constants', [])
             name, stage=itemgetter('name', 'stage')(shader_modules[shader_index])
             stage=ShaderStage.from_str(stage)
 
             if stage==ShaderStage.VERTEX:
                 for vertex_layout in self.__vertex_layouts:
-                    self.__shader_bundle.append(ShaderModuleInfo(name, stage, technique_index, constants or [], vertex_layout))
+                    self.__shader_bundle.append(ShaderModuleInfo(name, stage, technique_index, constants, vertex_layout))
+
+            elif stage==ShaderStage.GEOMETRY:
+                for primitive_input in self.__primitive_inputs:
+                    self.__shader_bundle.append(ShaderModuleInfo(name, stage, technique_index, constants, primitive_input))
+
+            else:
+                self.__shader_bundle.append(ShaderModuleInfo(name, stage, technique_index, constants))
+
 
         # self.__shader_bundle=list(map(lambda s: ShaderModuleInfo(s[0]['name'], ShaderStage.from_str(s[0]['stage']), s[1]['technique'], s[1].get('constants', [])), shader_bundle))
 
