@@ -25,9 +25,9 @@ class GLSLShaderPreprocessor:
         self.__extensions_lines=reduce(lambda s, e: s+f'#extension {e} : true\n', language_extensions, '')
 
     def process(self, shader_module):
-        None
+        header=self.get_shader_stage_header(shader_module)
 
-    def get_shader_stage_header(self, stage):
+    def get_shader_stage_header(self, shader_module):
         """
         A function is used to get particular shade stage header lines.
 
@@ -36,10 +36,10 @@ class GLSLShaderPreprocessor:
         stage : ShaderStage
             Specific shader stage
         """
-        version_line, extensions_lines=self.__shader_directives
+        version_line, extensions_lines=self.shader_directives
         include_directives='#include "vertex/vertex-attributes-unpack.glsl"\n';
 
-        stage_inputs=shader_inputs[stage]
+        stage_inputs=self.__shader_inputs(shader_module)
 
         return f'{version_line}\n{extensions_lines}\n{include_directives}\n{stage_inputs}\n#line 0'
 
@@ -50,7 +50,16 @@ class GLSLShaderPreprocessor:
         """
         return (self.__version_line, self.__extensions_lines)
 
-    @property
-    def shader_inputs(self):
-        return 0
+    def __shader_inputs(self, shader_module):
+        if shader_module.stage==ShaderStage.VERTEX:
+            getter=itemgetter('semantic','type')
+            vertex_layout='\n'.join(map(lambda a: ':'.join(getter(a)).lower(), self.__data))
+            s+=f'.{vertex_layout}'
+
+        elif shader_module.stage==ShaderStage.GEOMETRY:
+            input_layout, output_layout, out_vertices_count=itemgetter('inputLayout', 'outputLayout', 'outVerticesCount')(shader_module.data)
+            return f'layout ({input_layout}) in;\nlayout ({output_layout}, max_vertices = {out_vertices_count}) out;\n'
+
+        else:
+            return ''
     
