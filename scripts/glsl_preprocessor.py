@@ -17,15 +17,108 @@ class GLSLShaderPreprocessor:
         language_extensions : list
             list of language extensions that have to be enabled.
     """
+    VERTEX_ATTRIBUTES_LOCATIONS={
+        'POSITION': 0,
+        'NORMAL': 1,
+        'TEXCOORD_0': 2,
+        'TEXCOORD_1': 3,
+        'TANGENT': 4,
+        'COLOR_0': 5,
+        'JOINTS_0': 6,
+        'WEIGHTS_0': 7
+    }
+
+    VERTEX_ATTRIBUTES_TYPES={
+        'r8i_norm': 'float',
+        'rg8i_norm': 'vec2',
+        'rgb8i_norm': 'vec3',
+        'rgba8i_norm': 'vec4',
+
+        'r8ui_norm': 'float',
+        'rg8ui_norm': 'vec2',
+        'rgb8ui_norm': 'vec3',
+        'rgba8ui_norm': 'vec4',
+
+        'r16i_norm': 'float',
+        'rg16i_norm': 'vec2',
+        'rgb16i_norm': 'vec3',
+        'rgba16i_norm': 'vec4',
+
+        'r16ui_norm': 'float',
+        'rg16ui_norm': 'vec2',
+        'rgb16ui_norm': 'vec3',
+        'rgba16ui_norm': 'vec4',
+
+        'r8i_scaled': 'float',
+        'rg8i_scaled': 'vec2',
+        'rgb8i_scaled': 'vec3',
+        'rgba8i_scaled': 'vec4',
+
+        'r8ui_scaled': 'float',
+        'rg8ui_scaled': 'vec2',
+        'rgb8ui_scaled': 'vec3',
+        'rgba8ui_scaled': 'vec4',
+
+        'r16i_scaled': 'float',
+        'rg16i_scaled': 'vec2',
+        'rgb16i_scaled': 'vec3',
+        'rgba16i_scaled': 'vec4',
+
+        'r16ui_scaled': 'float',
+        'rg16ui_scaled': 'vec2',
+        'rgb16ui_scaled': 'vec3',
+        'rgba16ui_scaled': 'vec4',
+
+        'r8i': 'int',
+        'rg8i': 'ivec2',
+        'rgb8i': 'ivec3',
+        'rgba8i': 'ivec4',
+
+        'r8ui': 'uint',
+        'rg8ui': 'uvec2',
+        'rgb8ui': 'uvec3',
+        'rgba8ui': 'uvec4',
+
+        'r16i': 'int',
+        'rg16i': 'ivec2',
+        'rgb16i': 'ivec3',
+        'rgba16i': 'ivec4',
+
+        'r16ui': 'uint',
+        'rg16ui': 'uvec2',
+        'rgb16ui': 'uvec3',
+        'rgba16ui': 'uvec4',
+
+        'r32i': 'int',
+        'rg32i': 'ivec2',
+        'rgb32i': 'ivec3',
+        'rgba32i': 'ivec4',
+
+        'r32ui': 'uint',
+        'rg32ui': 'uvec2',
+        'rgb32ui': 'uvec3',
+        'rgba32ui': 'uvec4',
+
+        'r32f': 'float',
+        'rg32f': 'vec2',
+        'rgb32f': 'vec3',
+        'rgba32f': 'vec4',
+
+        'r64f': 'double',
+        'rg64f': 'dvec2',
+        'rgb64f': 'dvec3',
+        'rgba64f': 'dvec4'
+    }
 
     def __init__(self, language_version, language_extensions) -> None:
+
         self.__language_version=language_version
 
         self.__version_line=f'#version {self.__language_version}\n'
         self.__extensions_lines=reduce(lambda s, e: s+f'#extension {e} : true\n', language_extensions, '')
 
     def process(self, shader_module):
-        header=self.get_shader_stage_header(shader_module)
+        self.header=self.get_shader_stage_header(shader_module)
 
     def get_shader_stage_header(self, shader_module):
         """
@@ -33,13 +126,13 @@ class GLSLShaderPreprocessor:
 
         Parameters
         ----------
-        stage : ShaderStage
-            Specific shader stage
+        shader_module : ShaderModuleInfo
+            Shader module info instance
         """
+        stage_inputs=self.__shader_inputs(shader_module)
+
         version_line, extensions_lines=self.shader_directives
         include_directives='#include "vertex/vertex-attributes-unpack.glsl"\n';
-
-        stage_inputs=self.__shader_inputs(shader_module)
 
         return f'{version_line}\n{extensions_lines}\n{include_directives}\n{stage_inputs}\n#line 0'
 
@@ -52,9 +145,7 @@ class GLSLShaderPreprocessor:
 
     def __shader_inputs(self, shader_module):
         if shader_module.stage==ShaderStage.VERTEX:
-            getter=itemgetter('semantic','type')
-            vertex_layout='\n'.join(map(lambda a: ':'.join(getter(a)).lower(), self.__data))
-            s+=f'.{vertex_layout}'
+            return '\n'.join(map(lambda vl: f'layout (location = {self.VERTEX_ATTRIBUTES_LOCATIONS[vl["semantic"]]}) in {self.VERTEX_ATTRIBUTES_TYPES[vl["type"]]} {vl["semantic"]};', shader_module.data))
 
         elif shader_module.stage==ShaderStage.GEOMETRY:
             input_layout, output_layout, out_vertices_count=itemgetter('inputLayout', 'outputLayout', 'outVerticesCount')(shader_module.data)
