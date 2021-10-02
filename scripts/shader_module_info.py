@@ -30,7 +30,7 @@ class ShaderModuleInfo:
         self.__data=data
 
     @property
-    def name(self):
+    def source_name(self):
         return self.__name
 
     @property
@@ -49,7 +49,12 @@ class ShaderModuleInfo:
     def data(self):
         return self.__data
 
-    def __str__(self):
+    @property
+    def entry_point(self):
+        return f'technique{self.__technique}';
+
+    @property
+    def target_name(self):
         s=f'{self.__name}.{self.__technique}'
 
         if self.__stage==ShaderStage.VERTEX:

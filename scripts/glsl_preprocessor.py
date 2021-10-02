@@ -1,5 +1,14 @@
 __all__ = ['GLSLShaderPreprocessor']
 
+import os
+import re
+import sys
+import json
+import uuid
+import argparse
+import traceback
+import subprocess
+
 from operator import itemgetter, attrgetter
 from functools import reduce, partial
 
@@ -110,17 +119,15 @@ class GLSLShaderPreprocessor:
         'rgba64f': 'dvec4'
     }
 
-    def __init__(self, language_version, language_extensions) -> None:
+    def __init__(self, program_options, language_version, language_extensions) -> None:
+        self.__program_options=program_options
 
         self.__language_version=language_version
 
         self.__version_line=f'#version {self.__language_version}\n'
         self.__extensions_lines=reduce(lambda s, e: s+f'#extension {e} : true\n', language_extensions, '')
 
-    def process(self, shader_module):
-        self.header=self.get_shader_stage_header(shader_module)
-
-    def get_shader_stage_header(self, shader_module):
+    def __get_shader_stage_header(self, shader_module):
         """
         A function is used to get particular shade stage header lines.
 
@@ -131,17 +138,9 @@ class GLSLShaderPreprocessor:
         """
         stage_inputs=self.__shader_inputs(shader_module)
 
-        version_line, extensions_lines=self.shader_directives
         include_directives='#include "vertex/vertex-attributes-unpack.glsl"\n';
 
-        return f'{version_line}\n{extensions_lines}\n{include_directives}\n{stage_inputs}\n#line 0'
-
-    @property
-    def shader_directives(self):
-        """
-        A function is used to get tuple of general shader directives.
-        """
-        return (self.__version_line, self.__extensions_lines)
+        return f'{self.__version_line}\n{self.__extensions_lines}\n{include_directives}\n{stage_inputs}\n#line 0'
 
     def __shader_inputs(self, shader_module):
         if shader_module.stage==ShaderStage.VERTEX:
@@ -153,4 +152,42 @@ class GLSLShaderPreprocessor:
 
         else:
             return ''
+
+    @property
+    def shader_stage_header(self):
+        return self.__shader_stage_header
+
+    def process(self, shader_module):
+        self.__shader_stage_header=self.__get_shader_stage_header(shader_module)
+
+        source_code=self.__get_shader_source_code(shader_module.name)
+        assert source_code, f'can\'t get shader source code {shader_module.name}'
+        source_code=remove_inactive_techniques(technique_index, source_code)
+
+        if stage=='vertex':
+            source_code=sub_attributes_unpacks(source_code, vertex_layout, vertex_attributes)
+
+        if 'constants' in shader_bundle:
+            constants=get_specialization_constants(shader_bundle['constants'])
+            source_code=f'{constants}\n{source_code}'
+
+        source_code=f'{header}\n{source_code}'
+
+    def __get_shader_source_code(self, path):
+        # path=f'{name}.glsl'
+
+        # if path in shaders.processed_shaders:
+        #     return shaders.processed_shaders[path]
+
+        with open(os.path.join(self.__program_options['shaders_src_folder'], path), 'rb') as file:
+            source_code=file.read().decode('UTF-8')
+
+            source_code=remove_comments(source_code)
+            source_code=sub_techniques(source_code)
+
+            shaders.processed_shaders[path]=source_code
+
+            return source_code
+
+        return None
     

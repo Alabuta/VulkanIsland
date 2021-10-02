@@ -430,6 +430,36 @@ def compile_shader(program_options, shader_name, entry_point, output_path, sourc
     if compiler.returncode!=0:
         raise exs.GLSLangValidatorError(shader_name, errors.decode('UTF-8'))
 
+
+def compile_shader(program_options, shader_module, output_path, source_code):
+    # api_specific_flags=(
+    #     'glsl' : ['-V'],
+    #     'hlsl' : ['-D', '--hlsl-enable-16bit-types']
+    # )
+    compiler=subprocess.Popen([
+        shaders.compiler_path,
+        '--entry-point', shader_module.entry_point,
+        '--source-entrypoint', 'main',
+        '-V',
+        # '-H',
+        '--target-env', 'spirv1.3',
+        f'-I{program_options["shaders_include_folder"]}',
+        '-o', output_path,
+        '--stdin',
+        '-S', shader_module.stage
+    ], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+    output, errors=compiler.communicate(source_code.encode('UTF-8'))
+
+    output=output.decode('UTF-8')[len('stdin'):]
+    if len(output) > 2:
+        raise exs.GLSLangValidatorError(shader_module.target_name, output)
+
+    if compiler.returncode!=0:
+        raise exs.GLSLangValidatorError(shader_module.target_name, errors.decode('UTF-8'))
+
+
+
 def compile_material(program_options, material_data):
     techniques, shader_modules, vertex_attributes=itemgetter('techniques', 'shaderModules', 'vertexAttributes')(material_data)
     primitive_topologies=material_data.get('primitiveTopologies', [])
@@ -440,21 +470,15 @@ def compile_material(program_options, material_data):
     for i, technique in enumerate(techniques):
         material_tech=MaterialTechnique(material_data, i)
         for shader_module in material_tech.shader_bundle:
-            print(shader_module)
             glsl_preprocessor.process(shader_module)
-        continue
-        for shader_module in material_tech.vertex_stage_shader_modules:
-            print(shader_module)
-            for vertex_layout in material_tech.vertex_layouts:
-                print(vertex_layout)
+            # print(glsl_preprocessor.shader_stage_header)
 
-        for shader_module in material_tech.geometry_stage_shader_modules:
-            print(shader_module)
-            for primitive_input in material_tech.primitive_inputs:
-                print(primitive_input)
+            hashed_name=str(uuid.uuid5(uuid.NAMESPACE_DNS, shader_module.target_name))
+            output_path=os.path.join(program_options['shaders_src_folder'], f'{hashed_name}.spv')
 
-        for shader_module in material_tech.fragment_stage_shader_modules:
-            print(shader_module)
+            source_code=0
+            print(f'{shader_module.target_name} -> {output_path}')
+            # compile_shader(program_options, shader_module, output_path, source_code)
 
         continue
 
