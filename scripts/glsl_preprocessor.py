@@ -140,7 +140,7 @@ class GLSLShaderPreprocessor:
 
         include_directives='#include "vertex/vertex-attributes-unpack.glsl"\n';
 
-        return f'{self.__version_line}\n{self.__extensions_lines}\n{include_directives}\n{stage_inputs}\n#line 0'
+        return f'{self.__version_line}\n{self.__extensions_lines}\n{include_directives}\n{stage_inputs}'
 
     def __shader_inputs(self, shader_module):
         if shader_module.stage==ShaderStage.VERTEX:
@@ -157,21 +157,111 @@ class GLSLShaderPreprocessor:
     def shader_stage_header(self):
         return self.__shader_stage_header
 
+    @property
+    def source_code(self):
+        return self.__source_code
+
     def process(self, shader_module):
         self.__shader_stage_header=self.__get_shader_stage_header(shader_module)
 
-        source_code=self.__get_shader_source_code(shader_module.name)
-        assert source_code, f'can\'t get shader source code {shader_module.name}'
-        source_code=remove_inactive_techniques(technique_index, source_code)
+        source_code_path=os.path.join(self.__program_options['shaders_src_folder'], shader_module.source_name)
+        source_code=self.__get_shader_source_code(source_code_path)
+        assert source_code, f'can\'t get shader source code {source_code_path}'
+        source_code=GLSLShaderPreprocessor.__remove_inactive_techniques(shader_module.technique, source_code)
 
-        if stage=='vertex':
-            source_code=sub_attributes_unpacks(source_code, vertex_layout, vertex_attributes)
+        if shader_module.stage==ShaderStage.VERTEX:
+            source_code=GLSLShaderPreprocessor.__sub_attributes_unpacks(source_code, shader_module.data)
 
-        if 'constants' in shader_bundle:
-            constants=get_specialization_constants(shader_bundle['constants'])
+        if shader_module.constants:
+            constants=GLSLShaderPreprocessor.__get_specialization_constants(shader_module.constants)
             source_code=f'{constants}\n{source_code}'
 
-        source_code=f'{header}\n{source_code}'
+        self.__source_code=f'{self.__shader_stage_header}\n#line 0\n{source_code}'
+
+    @staticmethod
+    def __sub_techniques(source_code):
+        pattern=r'([^\n]*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\([ |\t]*?(\d+)[ |\t]*?\)([^\n]*)'
+
+        return re.sub(pattern, r'\1void technique\2()\3', source_code, 0, re.DOTALL)
+
+    @staticmethod
+    def __sub_attributes_unpacks(source_code, vertex_layout):
+        for vertex_attribute in vertex_layout:
+            semantic, type=itemgetter('semantic', 'type')(vertex_attribute)
+
+            pattern=rf'unpackAttribute[ |\t]*\([ |\t]*?{semantic}[ |\t]*?\)'
+            general_name=semantic.split('_')[0].lower()
+
+            source_code=re.sub(pattern, f'unpackAttribute_{general_name}_{type}({semantic})', source_code, 0, re.DOTALL)
+
+        return source_code
+
+    @staticmethod
+    def __remove_comments(source_code):
+        pattern=r'(?://[^\n]*|/\*(?:(?!\*/).)*\*/)'
+
+        substrs=re.findall(pattern, source_code, re.DOTALL)
+        
+        for substr in substrs:
+            source_code=source_code.replace(substr, '\n' * substr.count('\n'))
+
+        return source_code
+    
+    @staticmethod
+    def __remove_inactive_techniques(technique_index, source_code):
+        pattern=r'void technique[^I]\(\).*?{(.*?)}'
+        pattern=pattern.replace('I', str(technique_index))
+
+        while True:
+            match=re.search(pattern, source_code, re.DOTALL)
+
+            if not match:
+                break
+        
+            substr=match.group(0)
+
+            opening_brackets=substr.count('{')
+            closing_brackets=substr.count('}')
+
+            if opening_brackets == closing_brackets:
+                source_code=source_code.replace(substr, '\n' * substr.count('\n'))
+
+            else:
+                assert opening_brackets > closing_brackets, 'opening brackets count less than closing ones'
+
+                start, end=match.span()
+
+                while True:
+                    substr=source_code[end:]
+
+                    match=re.search(r'.*?}', substr, re.DOTALL)
+
+                    if not match:
+                        break
+
+                    end += match.span()[1]
+
+                    opening_brackets += match.group(0).count('{')
+                    closing_brackets += match.group(0).count('}')
+
+                    if opening_brackets == closing_brackets:
+                        substr=source_code[start:end]
+                        source_code=source_code.replace(substr, '\n' * substr.count('\n'))
+
+                        break
+
+        return source_code
+
+    @staticmethod
+    def __get_specialization_constants(specialization_constants):
+        constants=''
+
+        for index, specialization_constant in enumerate(specialization_constants):
+            name, value, type=itemgetter('name', 'value', 'type')(specialization_constant)
+
+            constants += f'layout(constant_id = {index}) const {type} {name} = {type}({value});\n'
+
+        return constants
 
     def __get_shader_source_code(self, path):
         # path=f'{name}.glsl'
@@ -179,13 +269,13 @@ class GLSLShaderPreprocessor:
         # if path in shaders.processed_shaders:
         #     return shaders.processed_shaders[path]
 
-        with open(os.path.join(self.__program_options['shaders_src_folder'], path), 'rb') as file:
+        with open(path, 'rb') as file:
             source_code=file.read().decode('UTF-8')
 
-            source_code=remove_comments(source_code)
-            source_code=sub_techniques(source_code)
+            source_code=GLSLShaderPreprocessor.__remove_comments(source_code)
+            source_code=GLSLShaderPreprocessor.__sub_techniques(source_code)
 
-            shaders.processed_shaders[path]=source_code
+            # shaders.processed_shaders[path]=source_code
 
             return source_code
 

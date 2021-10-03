@@ -21,3 +21,14 @@ class ShaderStage(Enum):
             'fragment' : ShaderStage.FRAGMENT,
             'compute' : ShaderStage.COMPUTE
         }[label];
+
+    @staticmethod
+    def to_str(stage):
+        return {
+            ShaderStage.VERTEX : 'vert',
+            ShaderStage.TESS_CONTROL : 'tesc',
+            ShaderStage.TESS_EVALUATION : 'tese',
+            ShaderStage.GEOMETRY : 'geom',
+            ShaderStage.FRAGMENT : 'frag',
+            ShaderStage.COMPUTE : 'comp'
+        }[stage];

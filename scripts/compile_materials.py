@@ -436,6 +436,9 @@ def compile_shader(program_options, shader_module, output_path, source_code):
     #     'glsl' : ['-V'],
     #     'hlsl' : ['-D', '--hlsl-enable-16bit-types']
     # )
+    print(source_code)
+    print(shader_module.entry_point)
+    print(ShaderStage.to_str(shader_module.stage))
     compiler=subprocess.Popen([
         shaders.compiler_path,
         '--entry-point', shader_module.entry_point,
@@ -446,7 +449,7 @@ def compile_shader(program_options, shader_module, output_path, source_code):
         f'-I{program_options["shaders_include_folder"]}',
         '-o', output_path,
         '--stdin',
-        '-S', shader_module.stage
+        '-S', ShaderStage.to_str(shader_module.stage)
     ], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
 
     output, errors=compiler.communicate(source_code.encode('UTF-8'))
@@ -465,20 +468,20 @@ def compile_material(program_options, material_data):
     primitive_topologies=material_data.get('primitiveTopologies', [])
     # vertex_attributes, primitive_topologies=itemgetter('vertexAttributes', 'primitiveTopologies')(material_data)
 
-    glsl_preprocessor=GLSLShaderPreprocessor(program_options["glsl_version"], shaders.glsl_settings.extensions.keys())
+    glsl_preprocessor=GLSLShaderPreprocessor(program_options, program_options["glsl_version"], shaders.glsl_settings.extensions.keys())
     
     for i, technique in enumerate(techniques):
         material_tech=MaterialTechnique(material_data, i)
         for shader_module in material_tech.shader_bundle:
             glsl_preprocessor.process(shader_module)
             # print(glsl_preprocessor.shader_stage_header)
+            # print(glsl_preprocessor.source_code)
 
             hashed_name=str(uuid.uuid5(uuid.NAMESPACE_DNS, shader_module.target_name))
             output_path=os.path.join(program_options['shaders_src_folder'], f'{hashed_name}.spv')
 
-            source_code=0
             print(f'{shader_module.target_name} -> {output_path}')
-            # compile_shader(program_options, shader_module, output_path, source_code)
+            compile_shader(program_options, shader_module, output_path, glsl_preprocessor.source_code)
 
         continue
 
