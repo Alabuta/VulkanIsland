@@ -23,7 +23,8 @@ class MaterialTechnique:
         techniques, shader_modules, vertex_attributes=itemgetter('techniques', 'shaderModules', 'vertexAttributes')(self.__material_description)
         primitive_topologies=self.__material_description.get('primitiveTopologies', [])
 
-        shader_bundle, vertex_layouts, primitive_inputs=itemgetter('shaderBundle', 'vertexLayouts', 'primitiveInputs')(techniques[self.__technique_index])
+        shader_bundle, vertex_layouts=itemgetter('shaderBundle', 'vertexLayouts')(techniques[self.__technique_index])
+        primitive_inputs=techniques[self.__technique_index].get('primitiveInputs', [])
 
         self.__vertex_layouts=list(map(lambda vl: [vertex_attributes[i] for i in vl], vertex_layouts))
 
@@ -47,7 +48,6 @@ class MaterialTechnique:
 
             else:
                 self.__shader_bundle.append(ShaderModuleInfo(name, stage, technique_index, constants))
-
 
         # self.__shader_bundle=list(map(lambda s: ShaderModuleInfo(s[0]['name'], ShaderStage.from_str(s[0]['stage']), s[1]['technique'], s[1].get('constants', [])), shader_bundle))
 

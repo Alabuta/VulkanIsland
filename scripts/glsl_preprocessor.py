@@ -125,7 +125,7 @@ class GLSLShaderPreprocessor:
         self.__language_version=language_version
 
         self.__version_line=f'#version {self.__language_version}\n'
-        self.__extensions_lines=reduce(lambda s, e: s+f'#extension {e} : true\n', language_extensions, '')
+        self.__extensions_lines=reduce(lambda s, e: s+f'#extension {e[0]} : {e[1]}\n', language_extensions, '')
 
     def __get_shader_stage_header(self, shader_module):
         """

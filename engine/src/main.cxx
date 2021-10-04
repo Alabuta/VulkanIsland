@@ -1065,7 +1065,7 @@ namespace temp
 
         {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 5);
+            add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 4);
         }
  
         return model_;
