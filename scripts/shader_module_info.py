@@ -1,7 +1,6 @@
 __all__ = ['ShaderModuleInfo']
 
-from operator import itemgetter, attrgetter
-from functools import reduce, partial
+from operator import itemgetter
 
 from shader_constants import ShaderStage
 

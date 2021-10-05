@@ -1,7 +1,6 @@
 __all__ = ['MaterialTechnique']
 
-from operator import itemgetter, attrgetter
-from functools import reduce, partial
+from operator import itemgetter
 
 from shader_constants import ShaderStage
 from shader_module_info import ShaderModuleInfo
@@ -14,12 +13,13 @@ class MaterialTechnique:
     ----------
         material_description : object
             json-like object populated by material techiques, shader modules, vertex layouts, primitive inputs and so forth.
+        technique_index : int
+            technique index in material description json-like object
     """
     def __init__(self, material_description, technique_index) -> None:
         self.__material_description=material_description
         self.__technique_index=technique_index
 
-    # def build(self):
         techniques, shader_modules, vertex_attributes=itemgetter('techniques', 'shaderModules', 'vertexAttributes')(self.__material_description)
         primitive_topologies=self.__material_description.get('primitiveTopologies', [])
 
@@ -30,7 +30,6 @@ class MaterialTechnique:
 
         self.__primitive_inputs=[primitive_topologies[i] for i in primitive_inputs]
 
-        # shader_bundle=map(lambda s: (shader_modules[s['index']], s), shader_bundle)
         self.__shader_bundle=[]
         for shader_module in shader_bundle:
             shader_index, technique_index=itemgetter('index', 'technique', )(shader_module)
@@ -48,8 +47,6 @@ class MaterialTechnique:
 
             else:
                 self.__shader_bundle.append(ShaderModuleInfo(name, stage, technique_index, constants))
-
-        # self.__shader_bundle=list(map(lambda s: ShaderModuleInfo(s[0]['name'], ShaderStage.from_str(s[0]['stage']), s[1]['technique'], s[1].get('constants', [])), shader_bundle))
 
     @property
     def shader_bundle(self):
@@ -74,11 +71,3 @@ class MaterialTechnique:
     @property
     def fragment_stage_shader_modules(self):
         return filter(lambda sm: sm.stage == ShaderStage.FRAGMENT, self.__shader_bundle)
-
-
-        # self.vertex_layouts=[vertex_attributes[i] for i in vertex_layout]
-        # self.shader_modules=(
-        #     ShaderStage.VERTEX : 
-        # )
-        # vertex_attribute=vertex_attributes[vertex_attribute_index]
-        # semantic, type=itemgetter('semantic', 'type')(vertex_attribute)

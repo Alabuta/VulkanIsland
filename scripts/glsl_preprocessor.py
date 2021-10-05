@@ -2,18 +2,11 @@ __all__ = ['GLSLShaderPreprocessor']
 
 import os
 import re
-import sys
-import json
-import uuid
-import argparse
-import traceback
-import subprocess
 
-from operator import itemgetter, attrgetter
-from functools import reduce, partial
+from operator import itemgetter
+from functools import reduce
 
 from shader_constants import ShaderStage
-from shader_module_info import ShaderModuleInfo
 
 
 class GLSLShaderPreprocessor:
@@ -21,10 +14,10 @@ class GLSLShaderPreprocessor:
 
     Attributes:
     ----------
+        shaders_src_folder : str
+            path to shaders' source files folder
         language_version : int
             specifies a version of GLSL that should be used to compile/link a shader.
-        language_extensions : list
-            list of language extensions that have to be enabled.
     """
     VERTEX_ATTRIBUTES_LOCATIONS={
         'POSITION': 0,
@@ -118,14 +111,23 @@ class GLSLShaderPreprocessor:
         'rgb64f': 'dvec3',
         'rgba64f': 'dvec4'
     }
+    
+    LANGUAGE_EXTENSIONS={
+        'GL_ARB_separate_shader_objects': 'enable',
+        'GL_EXT_shader_16bit_storage': 'enable',
+        'GL_EXT_shader_8bit_storage': 'enable',
+        # 'VK_KHR_shader_float16_int8 ': 'enable',
+        'GL_EXT_scalar_block_layout': 'enable',
+        'GL_GOOGLE_include_directive': 'enable'
+    }
 
-    def __init__(self, program_options, language_version, language_extensions) -> None:
-        self.__program_options=program_options
-
-        self.__language_version=language_version
-
-        self.__version_line=f'#version {self.__language_version}\n'
-        self.__extensions_lines=reduce(lambda s, e: s+f'#extension {e[0]} : {e[1]}\n', language_extensions, '')
+    def __init__(self, shaders_src_folder, language_version) -> None:
+        self.__processed_shaders={}
+    
+        print(shaders_src_folder)
+        self.__shaders_src_folder=shaders_src_folder
+        self.__version_line=f'#version {language_version}\n'
+        self.__extensions_lines=reduce(lambda s, e: s+f'#extension {e[0]} : {e[1]}\n', self.LANGUAGE_EXTENSIONS.items(), '')
 
     def __get_shader_stage_header(self, shader_module):
         """
@@ -164,7 +166,7 @@ class GLSLShaderPreprocessor:
     def process(self, shader_module):
         self.__shader_stage_header=self.__get_shader_stage_header(shader_module)
 
-        source_code_path=os.path.join(self.__program_options['shaders_src_folder'], shader_module.source_name)
+        source_code_path=os.path.join(self.__shaders_src_folder, shader_module.source_name)
         source_code=self.__get_shader_source_code(source_code_path)
         assert source_code, f'can\'t get shader source code {source_code_path}'
         source_code=GLSLShaderPreprocessor.__remove_inactive_techniques(shader_module.technique, source_code)
@@ -264,10 +266,8 @@ class GLSLShaderPreprocessor:
         return constants
 
     def __get_shader_source_code(self, path):
-        # path=f'{name}.glsl'
-
-        # if path in shaders.processed_shaders:
-        #     return shaders.processed_shaders[path]
+        if path in self.__processed_shaders:
+            return self.__processed_shaders[path]
 
         with open(path, 'rb') as file:
             source_code=file.read().decode('UTF-8')
@@ -275,7 +275,7 @@ class GLSLShaderPreprocessor:
             source_code=GLSLShaderPreprocessor.__remove_comments(source_code)
             source_code=GLSLShaderPreprocessor.__sub_techniques(source_code)
 
-            # shaders.processed_shaders[path]=source_code
+            self.__processed_shaders[path]=source_code
 
             return source_code
 
