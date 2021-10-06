@@ -7,6 +7,7 @@ from operator import itemgetter
 from functools import reduce
 
 from shader_constants import ShaderStage
+from shader_module_info import ShaderModuleInfo
 
 
 class GLSLShaderPreprocessor:
@@ -121,7 +122,7 @@ class GLSLShaderPreprocessor:
         'GL_GOOGLE_include_directive': 'enable'
     }
 
-    def __init__(self, shaders_src_folder, language_version) -> None:
+    def __init__(self, shaders_src_folder : str, language_version : str) -> None:
         self.__processed_shaders={}
     
         print(shaders_src_folder)
@@ -129,7 +130,7 @@ class GLSLShaderPreprocessor:
         self.__version_line=f'#version {language_version}\n'
         self.__extensions_lines=reduce(lambda s, e: s+f'#extension {e[0]} : {e[1]}\n', self.LANGUAGE_EXTENSIONS.items(), '')
 
-    def __get_shader_stage_header(self, shader_module):
+    def __get_shader_stage_header(self, shader_module : ShaderModuleInfo) -> str:
         """
         A function is used to get particular shade stage header lines.
 
@@ -144,7 +145,7 @@ class GLSLShaderPreprocessor:
 
         return f'{self.__version_line}\n{self.__extensions_lines}\n{include_directives}\n{stage_inputs}'
 
-    def __shader_inputs(self, shader_module):
+    def __shader_inputs(self, shader_module : ShaderModuleInfo) -> str:
         if shader_module.stage==ShaderStage.VERTEX:
             return '\n'.join(map(lambda vl: f'layout (location = {self.VERTEX_ATTRIBUTES_LOCATIONS[vl["semantic"]]}) in {self.VERTEX_ATTRIBUTES_TYPES[vl["type"]]} {vl["semantic"]};', shader_module.data))
 
@@ -156,14 +157,10 @@ class GLSLShaderPreprocessor:
             return ''
 
     @property
-    def shader_stage_header(self):
-        return self.__shader_stage_header
-
-    @property
-    def source_code(self):
+    def source_code(self) -> str:
         return self.__source_code
 
-    def process(self, shader_module):
+    def process(self, shader_module : ShaderModuleInfo) -> None:
         self.__shader_stage_header=self.__get_shader_stage_header(shader_module)
 
         source_code_path=os.path.join(self.__shaders_src_folder, shader_module.source_name)
@@ -181,13 +178,13 @@ class GLSLShaderPreprocessor:
         self.__source_code=f'{self.__shader_stage_header}\n#line 0\n{source_code}'
 
     @staticmethod
-    def __sub_techniques(source_code):
+    def __sub_techniques(source_code : str) -> str:
         pattern=r'([^\n]*)[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\([ |\t]*?(\d+)[ |\t]*?\)([^\n]*)'
 
         return re.sub(pattern, r'\1void technique\2()\3', source_code, 0, re.DOTALL)
 
     @staticmethod
-    def __sub_attributes_unpacks(source_code, vertex_layout):
+    def __sub_attributes_unpacks(source_code, vertex_layout) -> str:
         for vertex_attribute in vertex_layout:
             semantic, type=itemgetter('semantic', 'type')(vertex_attribute)
 
@@ -199,7 +196,7 @@ class GLSLShaderPreprocessor:
         return source_code
 
     @staticmethod
-    def __remove_comments(source_code):
+    def __remove_comments(source_code : str) -> str:
         pattern=r'(?://[^\n]*|/\*(?:(?!\*/).)*\*/)'
 
         substrs=re.findall(pattern, source_code, re.DOTALL)
@@ -210,7 +207,7 @@ class GLSLShaderPreprocessor:
         return source_code
     
     @staticmethod
-    def __remove_inactive_techniques(technique_index, source_code):
+    def __remove_inactive_techniques(technique_index : int, source_code : str) -> str:
         pattern=r'void technique[^I]\(\).*?{(.*?)}'
         pattern=pattern.replace('I', str(technique_index))
 
@@ -255,17 +252,17 @@ class GLSLShaderPreprocessor:
         return source_code
 
     @staticmethod
-    def __get_specialization_constants(specialization_constants):
+    def __get_specialization_constants(specialization_constants : list) -> str:
         constants=''
 
         for index, specialization_constant in enumerate(specialization_constants):
             name, value, type=itemgetter('name', 'value', 'type')(specialization_constant)
 
-            constants += f'layout(constant_id = {index}) const {type} {name} = {type}({value});\n'
+            constants+=f'layout(constant_id = {index}) const {type} {name} = {type}({value});\n'
 
         return constants
 
-    def __get_shader_source_code(self, path):
+    def __get_shader_source_code(self, path : str) -> str:
         if path in self.__processed_shaders:
             return self.__processed_shaders[path]
 
@@ -278,6 +275,4 @@ class GLSLShaderPreprocessor:
             self.__processed_shaders[path]=source_code
 
             return source_code
-
-        return None
     
