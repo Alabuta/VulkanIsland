@@ -16,7 +16,7 @@ class MaterialTechnique:
         technique_index : int
             technique index in material description json-like object
     """
-    def __init__(self, material_description, technique_index) -> None:
+    def __init__(self, material_description : object, technique_index : int) -> None:
         self.__material_description=material_description
         self.__technique_index=technique_index
 
@@ -49,25 +49,5 @@ class MaterialTechnique:
                 self.__shader_bundle.append(ShaderModuleInfo(name, stage, technique_index, constants))
 
     @property
-    def shader_bundle(self):
+    def shader_bundle(self) -> list:
         return self.__shader_bundle
-
-    @property
-    def vertex_layouts(self):
-        return self.__vertex_layouts
-
-    @property
-    def primitive_inputs(self):
-        return self.__primitive_inputs
-
-    @property
-    def vertex_stage_shader_modules(self):
-        return filter(lambda sm: sm.stage == ShaderStage.VERTEX, self.__shader_bundle)
-
-    @property
-    def geometry_stage_shader_modules(self):
-        return filter(lambda sm: sm.stage == ShaderStage.GEOMETRY, self.__shader_bundle)
-
-    @property
-    def fragment_stage_shader_modules(self):
-        return filter(lambda sm: sm.stage == ShaderStage.FRAGMENT, self.__shader_bundle)

@@ -14,47 +14,47 @@ class ShaderModuleInfo:
             shader source file name
         stage : ShaderStage
             shader stage type
-        technique : int
+        technique_index : int
             technique index
         constants : list
             array of json-like objects
         data : object
             any data that specific to the stage
     """
-    def __init__(self, name, stage, technique, constants, data=None) -> None:
+    def __init__(self, name : str, stage : ShaderStage, technique_index : int, constants : list, data=None) -> None:
         self.__name=name
         self.__stage=stage
-        self.__technique=technique
+        self.__technique_index=technique_index
         self.__constants=constants
         self.__data=data
 
     @property
-    def source_name(self):
+    def source_name(self) -> str:
         return self.__name
 
     @property
-    def stage(self):
+    def stage(self) -> ShaderStage:
         return self.__stage
 
     @property
-    def technique(self):
-        return self.__technique
+    def technique(self) -> int:
+        return self.__technique_index
 
     @property
-    def constants(self):
+    def constants(self) -> list:
         return self.__constants
 
     @property
-    def data(self):
+    def data(self) -> object:
         return self.__data
 
     @property
-    def entry_point(self):
-        return f'technique{self.__technique}';
+    def entry_point(self) -> str:
+        return f'technique{self.__technique_index}';
 
     @property
-    def target_name(self):
-        s=f'{self.__name}.{self.__technique}'
+    def target_name(self) -> str:
+        s=f'{self.__name}.{self.__technique_index}'
 
         if self.__stage==ShaderStage.VERTEX:
             getter=itemgetter('semantic','type')

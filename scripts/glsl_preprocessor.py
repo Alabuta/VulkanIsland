@@ -125,7 +125,6 @@ class GLSLShaderPreprocessor:
     def __init__(self, shaders_src_folder : str, language_version : str) -> None:
         self.__processed_shaders={}
     
-        print(shaders_src_folder)
         self.__shaders_src_folder=shaders_src_folder
         self.__version_line=f'#version {language_version}\n'
         self.__extensions_lines=reduce(lambda s, e: s+f'#extension {e[0]} : {e[1]}\n', self.LANGUAGE_EXTENSIONS.items(), '')

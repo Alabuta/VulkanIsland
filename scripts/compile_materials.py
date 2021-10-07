@@ -7,6 +7,7 @@ import traceback
 import subprocess
 
 from operator import attrgetter, itemgetter
+from shader_module_info import ShaderModuleInfo
 
 from shader_constants import ShaderStage
 from material_technique import MaterialTechnique
@@ -43,7 +44,7 @@ def parse_program_options():
 	return vars(argparser.parse_args())
 
 
-def compile_shader(program_options, shader_module, output_path, source_code):
+def compile_shader(program_options : object, shader_module : ShaderModuleInfo, output_path : str, source_code : str):
     # api_specific_flags=(
     #     'glsl' : ['-V'],
     #     'hlsl' : ['-D', '--hlsl-enable-16bit-types']
@@ -71,7 +72,7 @@ def compile_shader(program_options, shader_module, output_path, source_code):
         raise exs.GLSLangValidatorError(shader_module.target_name, errors.decode('UTF-8'))
 
 
-def compile_material(program_options, material_data):
+def compile_material(program_options : object, material_data : object):
     shaders_src_folder, glsl_version=itemgetter('shaders_src_folder', 'glsl_version')(program_options)
     glsl_preprocessor=GLSLShaderPreprocessor(shaders_src_folder, glsl_version)
 
