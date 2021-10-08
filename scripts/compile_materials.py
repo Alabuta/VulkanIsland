@@ -11,7 +11,10 @@ from shader_module_info import ShaderModuleInfo
 
 from shader_constants import ShaderStage
 from material_technique import MaterialTechnique
+
 from glsl_preprocessor import GLSLShaderPreprocessor
+from hlsl_preprocessor import HLSLShaderPreprocessor
+from abstract_shader_preprocessor import AbstractShaderPreprocessor
 
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pymodules'))
@@ -75,6 +78,7 @@ def compile_shader(program_options : object, shader_module : ShaderModuleInfo, o
 def compile_material(program_options : object, material_data : object):
     shaders_src_folder, glsl_version=itemgetter('shaders_src_folder', 'glsl_version')(program_options)
     glsl_preprocessor=GLSLShaderPreprocessor(shaders_src_folder, glsl_version)
+    hlsl_preprocessor=HLSLShaderPreprocessor(shaders_src_folder)
 
     for i, _ in enumerate(material_data['techniques']):
         material_tech=MaterialTechnique(material_data, i)

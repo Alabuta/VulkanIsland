@@ -8,9 +8,10 @@ from functools import reduce
 
 from shader_constants import ShaderStage
 from shader_module_info import ShaderModuleInfo
+from abstract_shader_preprocessor import AbstractShaderPreprocessor
 
 
-class GLSLShaderPreprocessor:
+class GLSLShaderPreprocessor(AbstractShaderPreprocessor):
     """Class for preprocessing GLSL shaders.
 
     Attributes:
