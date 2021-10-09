@@ -7,7 +7,7 @@ import traceback
 import subprocess
 
 from operator import attrgetter, itemgetter
-from shader_module_info import ShaderModuleInfo
+from shader_module_info import ShaderLanguage, ShaderModuleInfo
 
 from shader_constants import ShaderStage
 from material_technique import MaterialTechnique
@@ -47,16 +47,22 @@ def parse_program_options():
 	return vars(argparser.parse_args())
 
 
+def get_shader_compialtion_flags(shader_module : ShaderModuleInfo) -> list:
+    if shader_module.shader_language==ShaderLanguage.GLSL:
+        return ['-V']
+
+    elif shader_module.shader_language==ShaderLanguage.HLSL:
+        return ['-D', '--hlsl-enable-16bit-types']
+
+
 def compile_shader(program_options : object, shader_module : ShaderModuleInfo, output_path : str, source_code : str):
-    # api_specific_flags=(
-    #     'glsl' : ['-V'],
-    #     'hlsl' : ['-D', '--hlsl-enable-16bit-types']
-    # )
+    compialtion_flags=get_shader_compialtion_flags(shader_module)
+
     compiler=subprocess.Popen([
         program_options['shader_compiler_path'],
         '--entry-point', shader_module.entry_point,
         '--source-entrypoint', 'main',
-        '-V',
+        *compialtion_flags,
         # '-H',
         '--target-env', 'spirv1.3',
         f'-I{program_options["shaders_include_folder"]}',
@@ -75,21 +81,31 @@ def compile_shader(program_options : object, shader_module : ShaderModuleInfo, o
         raise exs.GLSLangValidatorError(shader_module.target_name, errors.decode('UTF-8'))
 
 
+def get_shader_preprocessor(glsl_preprocessor : GLSLShaderPreprocessor, hlsl_preprocessor : HLSLShaderPreprocessor, shader_module : ShaderModuleInfo) -> AbstractShaderPreprocessor:
+    if shader_module.shader_language==ShaderLanguage.GLSL:
+        return glsl_preprocessor
+
+    elif shader_module.shader_language==ShaderLanguage.HLSL:
+        return hlsl_preprocessor
+
+
 def compile_material(program_options : object, material_data : object):
     shaders_src_folder, glsl_version=itemgetter('shaders_src_folder', 'glsl_version')(program_options)
+
     glsl_preprocessor=GLSLShaderPreprocessor(shaders_src_folder, glsl_version)
     hlsl_preprocessor=HLSLShaderPreprocessor(shaders_src_folder)
 
     for i, _ in enumerate(material_data['techniques']):
         material_tech=MaterialTechnique(material_data, i)
         for shader_module in material_tech.shader_bundle:
-            glsl_preprocessor.process(shader_module)
+            shader_preprocessor=get_shader_preprocessor(glsl_preprocessor, hlsl_preprocessor, shader_module)
+            shader_preprocessor.process(shader_module)
 
             hashed_name=str(uuid.uuid5(uuid.NAMESPACE_DNS, shader_module.target_name))
             output_path=os.path.join(program_options['shaders_src_folder'], f'{hashed_name}.spv')
 
-            print(f'{shader_module.target_name} -> {output_path}')
-            compile_shader(program_options, shader_module, output_path, glsl_preprocessor.source_code)
+            print(f'{shader_module.shader_language} {shader_module.target_name} -> {output_path}')
+            compile_shader(program_options, shader_module, output_path, shader_preprocessor.source_code)
 
 
 def main():

@@ -1,9 +1,10 @@
 __all__ = ['MaterialTechnique']
 
+import os
 from operator import itemgetter
 
 from shader_constants import ShaderStage
-from shader_module_info import ShaderModuleInfo
+from shader_module_info import ShaderLanguage, ShaderModuleInfo
 
 
 class MaterialTechnique:
@@ -35,18 +36,19 @@ class MaterialTechnique:
             shader_index, technique_index=itemgetter('index', 'technique', )(shader_module)
             constants=shader_module.get('constants', [])
             name, stage=itemgetter('name', 'stage')(shader_modules[shader_index])
+            shader_language=ShaderLanguage.from_str(os.path.splitext(name)[1])
             stage=ShaderStage.from_str(stage)
 
             if stage==ShaderStage.VERTEX:
                 for vertex_layout in self.__vertex_layouts:
-                    self.__shader_bundle.append(ShaderModuleInfo(name, stage, technique_index, constants, vertex_layout))
+                    self.__shader_bundle.append(ShaderModuleInfo(shader_language, name, stage, technique_index, constants, vertex_layout))
 
             elif stage==ShaderStage.GEOMETRY:
                 for primitive_input in self.__primitive_inputs:
-                    self.__shader_bundle.append(ShaderModuleInfo(name, stage, technique_index, constants, primitive_input))
+                    self.__shader_bundle.append(ShaderModuleInfo(shader_language, name, stage, technique_index, constants, primitive_input))
 
             else:
-                self.__shader_bundle.append(ShaderModuleInfo(name, stage, technique_index, constants))
+                self.__shader_bundle.append(ShaderModuleInfo(shader_language, name, stage, technique_index, constants))
 
     @property
     def shader_bundle(self) -> list:

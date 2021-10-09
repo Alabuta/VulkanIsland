@@ -1,8 +1,21 @@
-__all__ = ['ShaderModuleInfo']
+__all__ = ['ShaderLanguage', 'ShaderModuleInfo']
 
+from enum import Enum
 from operator import itemgetter
 
 from shader_constants import ShaderStage
+
+
+class ShaderLanguage(Enum):
+    GLSL = 0,
+    HLSL = 1
+
+    @staticmethod
+    def from_str(label):
+        return {
+            '.glsl' : ShaderLanguage.GLSL,
+            '.hlsl' : ShaderLanguage.HLSL
+        }[label];
 
 
 class ShaderModuleInfo:
@@ -10,6 +23,8 @@ class ShaderModuleInfo:
 
     Attributes:
     ----------
+        language : ShaderLanguage
+            shader language
         name : str
             shader source file name
         stage : ShaderStage
@@ -21,12 +36,17 @@ class ShaderModuleInfo:
         data : object
             any data that specific to the stage
     """
-    def __init__(self, name : str, stage : ShaderStage, technique_index : int, constants : list, data=None) -> None:
+    def __init__(self, shader_language : ShaderLanguage, name : str, stage : ShaderStage, technique_index : int, constants : list, data=None) -> None:
+        self.__shader_language=shader_language
         self.__name=name
         self.__stage=stage
         self.__technique_index=technique_index
         self.__constants=constants
         self.__data=data
+
+    @property
+    def shader_language(self) -> ShaderLanguage:
+        return self.__shader_language
 
     @property
     def source_name(self) -> str:
