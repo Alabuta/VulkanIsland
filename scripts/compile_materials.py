@@ -52,7 +52,7 @@ def get_shader_compialtion_flags(shader_module : ShaderModuleInfo) -> list:
         return ['-V']
 
     elif shader_module.shader_language==ShaderLanguage.HLSL:
-        return ['-D', '--hlsl-enable-16bit-types']
+        return ['-V', '-D', '--hlsl-enable-16bit-types']
 
 
 def compile_shader(program_options : object, shader_module : ShaderModuleInfo, output_path : str, source_code : str):

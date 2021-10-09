@@ -13,28 +13,38 @@ from abstract_shader_preprocessor import AbstractShaderPreprocessor
 
 
 class HLSLShaderPreprocessor(AbstractShaderPreprocessor):
+    """Class for preprocessing HLSL shaders.
+
+    Attributes:
+    ----------
+        shaders_src_folder : str
+            path to shaders' source files folder
+    """
     def __init__(self, shaders_src_folder : str) -> None:
-        self.__source_code=''
+        self.__processed_shaders={}
+        self.__shaders_src_folder=shaders_src_folder
 
     @property
     def source_code(self) -> str:
         return self.__source_code
 
-    @classmethod
     def process(self, shader_module : ShaderModuleInfo) -> None:
-        # self.__shader_stage_header=self.__get_shader_stage_header(shader_module)
+        source_code_path=os.path.join(self.__shaders_src_folder, shader_module.source_name)
+        source_code=self.__get_shader_source_code(source_code_path)
+        assert source_code, f'can\'t get shader source code {source_code_path}'
 
-        # source_code_path=os.path.join(self.__shaders_src_folder, shader_module.source_name)
-        # source_code=self.__get_shader_source_code(source_code_path)
-        # assert source_code, f'can\'t get shader source code {source_code_path}'
-        # source_code=GLSLShaderPreprocessor.__remove_inactive_techniques(shader_module.technique, source_code)
+        self.__source_code=f'{source_code}'
 
-        # if shader_module.stage==ShaderStage.VERTEX:
-        #     source_code=GLSLShaderPreprocessor.__sub_attributes_unpacks(source_code, shader_module.data)
+    def __get_shader_source_code(self, path : str) -> str:
+        if path in self.__processed_shaders:
+            return self.__processed_shaders[path]
 
-        # if shader_module.constants:
-        #     constants=GLSLShaderPreprocessor.__get_specialization_constants(shader_module.constants)
-        #     source_code=f'{constants}\n{source_code}'
+        with open(path, 'rb') as file:
+            source_code=file.read().decode('UTF-8')
 
-        # self.__source_code=f'{self.__shader_stage_header}\n#line 0\n{source_code}'
-        self.__source_code='processed'
+            # source_code=GLSLShaderPreprocessor.__remove_comments(source_code)
+            # source_code=GLSLShaderPreprocessor.__sub_techniques(source_code)
+
+            self.__processed_shaders[path]=source_code
+
+            return source_code

@@ -10,7 +10,7 @@
             "stage": "geometry"
         },
         {
-            "name": "common/out-color.glsl",
+            "name": "common/out-color.hlsl",
             "stage": "fragment"
         }
     ],
