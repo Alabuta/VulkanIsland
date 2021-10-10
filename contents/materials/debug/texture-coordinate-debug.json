@@ -2,7 +2,7 @@
     "name": "texture-coordinate-debug-material",
     "shaderModules": [
         {
-            "name": "debug/texture-coordinate-debug.glsl",
+            "name": "debug/texture-coordinate-debug.hlsl",
             "stage": "vertex"
         },
         {
