@@ -4,6 +4,7 @@ struct PS_INPUT
 };
 
 
+#pragma technique(0)
 [earlydepthstencil]
 float4 main(PS_INPUT input) : SV_TARGET
 {

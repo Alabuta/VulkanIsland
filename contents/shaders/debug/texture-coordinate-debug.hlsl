@@ -36,7 +36,8 @@ VS_OUTPUT process(in float3 position, in float2 texcoord_0)
 {
     VS_OUTPUT output = (VS_OUTPUT)0;
 
-    output.position = mul(camera.view, mul(object[0].world, float4(position, 1.)));
+    output.position = mul(object[0].world, float4(position, 1.));
+    output.position = mul(camera.view, output.position);
     output.position = mul(camera.projection, output.position);
 
     output.color = float4(texcoord_0, 0., 1.);
@@ -44,6 +45,7 @@ VS_OUTPUT process(in float3 position, in float2 texcoord_0)
     return output;
 }
 
+#pragma technique(0)
 VS_OUTPUT main(VS_INPUT input)
 {
     float2 texcoord_0 = input.TEXCOORD_0;//unpackAttribute(TEXCOORD_0);

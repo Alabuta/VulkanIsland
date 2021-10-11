@@ -194,17 +194,6 @@ class GLSLShaderPreprocessor(AbstractShaderPreprocessor):
             source_code=re.sub(pattern, f'unpackAttribute_{general_name}_{type}({semantic})', source_code, 0, re.DOTALL)
 
         return source_code
-
-    @staticmethod
-    def __remove_comments(source_code : str) -> str:
-        pattern=r'(?://[^\n]*|/\*(?:(?!\*/).)*\*/)'
-
-        substrs=re.findall(pattern, source_code, re.DOTALL)
-        
-        for substr in substrs:
-            source_code=source_code.replace(substr, '\n' * substr.count('\n'))
-
-        return source_code
     
     @staticmethod
     def __remove_inactive_techniques(technique_index : int, source_code : str) -> str:
@@ -269,7 +258,7 @@ class GLSLShaderPreprocessor(AbstractShaderPreprocessor):
         with open(path, 'rb') as file:
             source_code=file.read().decode('UTF-8')
 
-            source_code=GLSLShaderPreprocessor.__remove_comments(source_code)
+            source_code=AbstractShaderPreprocessor.remove_comments(source_code)
             source_code=GLSLShaderPreprocessor.__sub_techniques(source_code)
 
             self.__processed_shaders[path]=source_code

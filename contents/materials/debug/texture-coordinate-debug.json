@@ -15,11 +15,13 @@
             "shaderBundle": [
                 {
                     "index": 0,
-                    "technique": 0
+                    "technique": 0,
+                    "entryPoint": "main"
                 },
                 {
                     "index": 1,
-                    "technique": 0
+                    "technique": 0,
+                    "entryPoint": "main"
                 }
             ],
             "vertexLayouts": [

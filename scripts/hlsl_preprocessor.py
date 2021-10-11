@@ -32,6 +32,8 @@ class HLSLShaderPreprocessor(AbstractShaderPreprocessor):
         source_code_path=os.path.join(self.__shaders_src_folder, shader_module.source_name)
         source_code=self.__get_shader_source_code(source_code_path)
         assert source_code, f'can\'t get shader source code {source_code_path}'
+        
+        # source_code=GLSLShaderPreprocessor.__remove_inactive_techniques(shader_module.technique, source_code)
 
         self.__source_code=f'{source_code}'
 
@@ -42,8 +44,7 @@ class HLSLShaderPreprocessor(AbstractShaderPreprocessor):
         with open(path, 'rb') as file:
             source_code=file.read().decode('UTF-8')
 
-            # source_code=GLSLShaderPreprocessor.__remove_comments(source_code)
-            # source_code=GLSLShaderPreprocessor.__sub_techniques(source_code)
+            source_code=AbstractShaderPreprocessor.remove_comments(source_code)
 
             self.__processed_shaders[path]=source_code
 
