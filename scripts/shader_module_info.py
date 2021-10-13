@@ -57,7 +57,7 @@ class ShaderModuleInfo:
         return self.__stage
 
     @property
-    def technique(self) -> int:
+    def technique_index(self) -> int:
         return self.__technique_index
 
     @property

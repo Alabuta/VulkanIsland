@@ -166,7 +166,7 @@ class GLSLShaderPreprocessor(AbstractShaderPreprocessor):
         source_code_path=os.path.join(self.__shaders_src_folder, shader_module.source_name)
         source_code=self.__get_shader_source_code(source_code_path)
         assert source_code, f'can\'t get shader source code {source_code_path}'
-        source_code=GLSLShaderPreprocessor.__remove_inactive_techniques(shader_module.technique, source_code)
+        source_code=GLSLShaderPreprocessor.__remove_inactive_techniques(shader_module.technique_index, source_code)
 
         if shader_module.stage==ShaderStage.VERTEX:
             source_code=GLSLShaderPreprocessor.__sub_attributes_unpacks(source_code, shader_module.data)
