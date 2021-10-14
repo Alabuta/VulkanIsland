@@ -41,8 +41,8 @@ class HLSLShaderPreprocessor(AbstractShaderPreprocessor):
     @staticmethod
     def __remove_inactive_techniques(technique_index : int, source_code : str) -> str:
         # pattern=r'void technique[^I]\(\).*?{(.*?)}'
-        pattern=r'[^\n]*[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\([ |\t]*?[^I][ |\t]*?\)\n+(?:.*?]\n)*[\w\d]+?[ |\t]+?[\w\d]+?[ |\t]*?\(.*?\).*?\s*?{(.*?)}'
-        pattern=pattern.replace('I', str(technique_index))
+        pattern=r'[^\n]*[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\([ |\t]*?\d+?[ |\t]*?\)\n+(?:.*?]\n)*[\w\d]+?[ |\t]+?[\w\d]+?[ |\t]*?\(.*?\).*?\s*?'
+        # pattern=pattern.replace('I', str(technique_index))
         print(pattern)
 
 
@@ -53,6 +53,8 @@ class HLSLShaderPreprocessor(AbstractShaderPreprocessor):
                 break
         
             substr=match.group(0)
+            print(1111111111111)
+            continue
 
             opening_brackets=substr.count('{')
             closing_brackets=substr.count('}')
