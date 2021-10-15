@@ -104,7 +104,8 @@ def compile_material(program_options : object, material_data : object):
             hashed_name=str(uuid.uuid5(uuid.NAMESPACE_DNS, shader_module.target_name))
             output_path=os.path.join(program_options['shaders_src_folder'], f'{hashed_name}.spv')
 
-            print(f'{shader_module.shader_language} {shader_module.target_name} -> {output_path}')
+            print(f'{shader_module.target_name} -> {output_path}')
+            break
             compile_shader(program_options, shader_module, output_path, shader_preprocessor.source_code)
 
 
