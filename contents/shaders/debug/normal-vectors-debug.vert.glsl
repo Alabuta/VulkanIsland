@@ -11,11 +11,6 @@ layout (set = 0, binding = 0, scalar) uniform PER_CAMERA
     mat4 invertedProjection;
 } camera;
 
-layout (set = 0, binding = 1, scalar) uniform PER_VIEWPORT
-{
-    ivec4 rect;
-} viewport;
-
 layout (set = 1, binding = 0, scalar) readonly buffer PER_OBJECT
 {
     mat4 world;

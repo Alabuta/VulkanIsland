@@ -1,8 +1,8 @@
 {
-    "name": "normal-debug-material",
+    "name": "normals-debug-material",
     "shaderModules": [
         {
-            "name": "debug/normal-debug.vert.glsl",
+            "name": "debug/normals-debug.vert.hlsl",
             "stage": "vertex"
         },
         {

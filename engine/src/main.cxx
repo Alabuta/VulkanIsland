@@ -912,7 +912,7 @@ namespace temp
     
         model_.materials.push_back(xformat::material{0, "debug/color-debug-material"s});
         model_.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
-        model_.materials.push_back(xformat::material{0, "debug/normal-debug"s});
+        model_.materials.push_back(xformat::material{0, "debug/normals-debug"s});
         model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
         model_.materials.push_back(xformat::material{0, "debug/solid-wireframe"s});
         model_.materials.push_back(xformat::material{0, "debug/normal-vectors-debug-material"s});
