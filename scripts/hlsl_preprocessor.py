@@ -128,7 +128,7 @@ class HLSLShaderPreprocessor(AbstractShaderPreprocessor):
             source_code=f'{constants}\n{source_code}'
 
         self.__source_code=f'{self.__shader_stage_header}\n#line 0\n{source_code}'
-        # print(self.__source_code)
+        # print(f'{shader_module.technique_index} ----------------------\n{self.__source_code}')
 
     def __get_shader_stage_header(self, shader_module : ShaderModuleInfo) -> str:
         """
@@ -221,10 +221,10 @@ class HLSLShaderPreprocessor(AbstractShaderPreprocessor):
     def __get_specialization_constants(specialization_constants : list) -> str:
         constants=''
 
-        # for index, specialization_constant in enumerate(specialization_constants):
-        #     name, value, type=itemgetter('name', 'value', 'type')(specialization_constant)
+        for index, specialization_constant in enumerate(specialization_constants):
+            name, value, type=itemgetter('name', 'value', 'type')(specialization_constant)
 
-        #     constants+=f'layout(constant_id = {index}) const {type} {name} = {type}({value});\n'
+            constants+=f'[[vk::constant_id({index})]] const {type} {name} = {type}({value});\n'
 
         return constants
     

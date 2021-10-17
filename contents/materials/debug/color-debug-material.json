@@ -2,7 +2,7 @@
     "name": "color-debug-material",
     "shaderModules": [
         {
-            "name": "debug/color-debug.vert.glsl",
+            "name": "debug/color-debug.vert.hlsl",
             "stage": "vertex"
         },
         {
