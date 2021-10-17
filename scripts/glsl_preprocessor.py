@@ -21,16 +21,6 @@ class GLSLShaderPreprocessor(AbstractShaderPreprocessor):
         language_version : int
             specifies a version of GLSL that should be used to compile/link a shader.
     """
-    VERTEX_ATTRIBUTES_LOCATIONS={
-        'POSITION': 0,
-        'NORMAL': 1,
-        'TEXCOORD_0': 2,
-        'TEXCOORD_1': 3,
-        'TANGENT': 4,
-        'COLOR_0': 5,
-        'JOINTS_0': 6,
-        'WEIGHTS_0': 7
-    }
 
     VERTEX_ATTRIBUTES_TYPES={
         'r8i_norm': 'float',

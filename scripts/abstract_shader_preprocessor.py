@@ -8,6 +8,17 @@ from shader_module_info import ShaderModuleInfo
 
 
 class AbstractShaderPreprocessor(ABC):
+    VERTEX_ATTRIBUTES_LOCATIONS={
+        'POSITION': 0,
+        'NORMAL': 1,
+        'TEXCOORD_0': 2,
+        'TEXCOORD_1': 3,
+        'TANGENT': 4,
+        'COLOR_0': 5,
+        'JOINTS_0': 6,
+        'WEIGHTS_0': 7
+    }
+
     @property
     @abstractmethod
     def source_code(cls):

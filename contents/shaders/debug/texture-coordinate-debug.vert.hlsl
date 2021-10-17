@@ -19,12 +19,6 @@ struct PER_OBJECT
 
 layout (set = 1, binding = 0) StructuredBuffer<PER_OBJECT> object : register(t0, space0);
 
-struct VS_INPUT
-{
-    [[vk::location(0)]] float3 POSITION : POSITION0;
-    [[vk::location(2)]] float2 TEXCOORD_0 : TEXCOORD0;
-};
-
 struct VS_OUTPUT
 {
 	float4 position : SV_POSITION;
@@ -48,7 +42,7 @@ VS_OUTPUT process(in float3 position, in float2 texcoord_0)
 #pragma technique(0)
 VS_OUTPUT main(VS_INPUT input)
 {
-    float2 texcoord_0 = input.TEXCOORD_0;//unpackAttribute(TEXCOORD_0);
+    float2 texcoord_0 = unpackAttribute(input.TEXCOORD_0);
 
     return process(input.POSITION, texcoord_0);
 }
@@ -58,7 +52,7 @@ VS_OUTPUT main(VS_INPUT input)
 VS_OUTPUT main(VS_INPUT input)
 {
     asdasdas
-    float2 texcoord_0 = input.TEXCOORD_0;//unpackAttribute(TEXCOORD_0);asdasdasdasd
+    float2 texcoord_0 = unpackAttribute(input.TEXCOORD_0);
     //{}
     //}
 
@@ -71,7 +65,7 @@ VS_OUTPUT main(VS_INPUT input)
 VS_OUTPUT main(VS_INPUT input)
 {
     asdasdas
-    float2 texcoord_0 = input.TEXCOORD_0;//unpackAttribute(TEXCOORD_0);asdasdasdasd
+    float2 texcoord_0 = unpackAttribute(input.TEXCOORD_0);//;asdasdasdasd
     //{}
     //}
 

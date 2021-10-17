@@ -105,7 +105,7 @@ def compile_material(program_options : object, material_data : object):
             output_path=os.path.join(program_options['shaders_src_folder'], f'{hashed_name}.spv')
 
             print(f'{shader_module.target_name} -> {output_path}')
-            break
+            # break
             compile_shader(program_options, shader_module, output_path, shader_preprocessor.source_code)
 
 
