@@ -40,30 +40,24 @@ class HLSLShaderPreprocessor(AbstractShaderPreprocessor):
     
     @staticmethod
     def __remove_inactive_techniques(technique_index : int, source_code : str) -> str:
-        # pattern=r'void technique[^I]\(\).*?{(.*?)}'
-        p0=r'[^\n]*[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\([ |\t]*?[^I][ |\t]*?\)'.replace('I', str(technique_index))
-        pattern=p0+r'\s*?.*?[\w\d]+?[ |\t]*?\(.*?\).*?\s*?{(\s*[\s\S]*?\n*?)}'
-        print(pattern)
-
+        p0=r'([^\[]\[[^}]+?\][^\]]\n*?)*?'
+        p1=r'[^\n]*[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\([ |\t]*?[^I][ |\t]*?\)'.replace('I', str(technique_index))
+        p2=r'\s*?.*?[\w\d]+?[ |\t]*?\(.*?\).*?\s*?{\s*[\s\S]*?\n*?}'
+        pattern=f'({p0}{p1}{p2})'
 
         while True:
             match=re.search(pattern, source_code, re.DOTALL)
 
-            print(match)
             if not match:
                 break
         
             substr=match.group(0)
-            print(substr)
-            # break
 
             opening_brackets=substr.count('{')
             closing_brackets=substr.count('}')
 
             if opening_brackets == closing_brackets:
-                p=p0+r'\s*?.*?([\w\d]+?[ |\t]*?\(.*?\).*?\s*?){\s*[\s\S]*?\n*?}'
-                source_code=re.sub(pattern, r'\1{x}', source_code, 0, re.DOTALL)
-                # source_code=source_code.replace(substr, '\n' * substr.count('\n'))
+                source_code=source_code.replace(substr, '\n' * substr.count('\n'))
 
             else:
                 assert opening_brackets > closing_brackets, 'opening brackets count less than closing ones'
@@ -89,8 +83,7 @@ class HLSLShaderPreprocessor(AbstractShaderPreprocessor):
 
                         break
 
-        print(f'=================\n{source_code}')
-        return ''#source_code
+        return source_code
 
     def __get_shader_source_code(self, path : str) -> str:
         if path in self.__processed_shaders:

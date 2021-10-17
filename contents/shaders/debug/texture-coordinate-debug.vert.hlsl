@@ -45,10 +45,7 @@ VS_OUTPUT process(in float3 position, in float2 texcoord_0)
     return output;
 }
 
-[earlydepthstencil]
 #pragma technique(0)
-[earlydepthstencil2 x(0)]
-[earlydepthstencil ( 2)]
 VS_OUTPUT main(VS_INPUT input)
 {
     float2 texcoord_0 = input.TEXCOORD_0;//unpackAttribute(TEXCOORD_0);
@@ -56,14 +53,27 @@ VS_OUTPUT main(VS_INPUT input)
     return process(input.POSITION, texcoord_0);
 }
 
-[earlydepthstencil]
 #pragma technique(1)
-[earlydepthstencil2 x(0)]
-[earlydepthstencil ( 2)]
+[earlydepthstencil]
 VS_OUTPUT main(VS_INPUT input)
 {
     asdasdas
     float2 texcoord_0 = input.TEXCOORD_0;//unpackAttribute(TEXCOORD_0);asdasdasdasd
+    //{}
+    //}
+
+    return process(input.POSITION, texcoord_0);
+}
+
+[earlydepthstencil2 x(0)]
+#pragma technique(2)
+[earlydepthstencil]
+VS_OUTPUT main(VS_INPUT input)
+{
+    asdasdas
+    float2 texcoord_0 = input.TEXCOORD_0;//unpackAttribute(TEXCOORD_0);asdasdasdasd
+    //{}
+    //}
 
     return process(input.POSITION, texcoord_0);
 }
