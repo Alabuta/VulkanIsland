@@ -11,14 +11,6 @@ struct PER_CAMERA
 
 layout (set = 0, binding = 0) ConstantBuffer<PER_CAMERA> camera : register(b0, space0);
 
-struct PER_OBJECT
-{
-    float4x4 world;
-    float4x4 normal;
-};
-
-layout (set = 1, binding = 0) StructuredBuffer<PER_OBJECT> object : register(t0, space0);
-
 struct VS_INPUT
 {
 	[[vk::location(0)]] float4 position : POSITION;

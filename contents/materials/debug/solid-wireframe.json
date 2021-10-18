@@ -2,11 +2,11 @@
     "name": "solid-wireframe-material",
     "shaderModules": [
         {
-            "name": "debug/solid-wireframe.vert.glsl",
+            "name": "debug/solid-wireframe.vert.hlsl",
             "stage": "vertex"
         },
         {
-            "name": "debug/solid-wireframe.geom.glsl",
+            "name": "debug/solid-wireframe.geom.hlsl",
             "stage": "geometry"
         },
         {
