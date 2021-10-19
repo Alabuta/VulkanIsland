@@ -15,7 +15,7 @@ struct GS_OUTPUT
     [[vk::location(1)]] noperspective float4 edgeA;
     [[vk::location(2)]] noperspective float4 edgeB;
 
-    [[vk::location(3)]] linear uint mask;
+    [[vk::location(3)]]  uint mask;
 };
 
 const uint infoA[] = {0, 0, 0, 0, 1, 1, 2};
@@ -32,7 +32,7 @@ void simpleCase(triangle VS_DATA input[3], inout GS_OUTPUT output, inout Triangl
     const float2 bc = input[2].vs_position - input[1].vs_position;
     const float2 ca = input[0].vs_position - input[2].vs_position;
 
-    const float area = abs(fma(ab.x, ca.y, -ab.y * ca.x));
+    const float area = abs(mad(ab.x, ca.y, -ab.y * ca.x));
 
     // Vertices' heights.
     const float ha = area / length(bc);

@@ -10,7 +10,7 @@
             "stage": "geometry"
         },
         {
-            "name": "debug/solid-wireframe.frag.glsl",
+            "name": "debug/solid-wireframe.frag.hlsl",
             "stage": "fragment"
         }
     ],

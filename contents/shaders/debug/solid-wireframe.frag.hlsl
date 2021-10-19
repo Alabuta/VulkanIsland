@@ -10,9 +10,8 @@ struct GS_DATA
     [[vk::location(3)]] linear uint mask;
 };
 
-/*uniform*/ float4 mainColor = float4(0.8, 0.8, 0.8, 1.0);
-
-/*uniform*/ float4 wireColor = float4(0, 0.64, 0, 1.0);
+const float4 mainColor = float4(0.8, 0.8, 0.8, 1.0);
+const float4 wireColor = float4(0.0, 0.64, 0.0, 1.0);
 
 
 float getDistanceToEdges(in GS_DATA gs_data)
@@ -54,9 +53,9 @@ float4 main(GS_DATA gs_data) : SV_TARGET
     // Find the smallest distance
     const float dist = getDistanceToEdges(gs_data);
 
-    // const float fading = clamp(FADE_DISTANCE / gl_FragCoord.w, 0, 1);
+    const float fading = saturate(FADE_DISTANCE / gs_data.sv_position.w);
 
-    const float mix_val = saturate(smoothstep(WIRE_WIDTH - 1.0, WIRE_WIDTH + 1.0, dist));
+    const float mix_val = saturate(smoothstep(WIRE_WIDTH - 1.0, WIRE_WIDTH + 1.0, dist) + fading);
 
     return lerp(wireColor, mainColor, mix_val);
 }

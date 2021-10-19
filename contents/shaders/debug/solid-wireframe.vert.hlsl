@@ -39,7 +39,7 @@ VS_OUTPUT process(in float3 position)
 {
     VS_OUTPUT output = (VS_OUTPUT)0;
 
-    output.sv_position = mul(object[0].world, float4(position, 1.));
+    output.sv_position = mul(object[0].world, float4(position, 1.0f));
     output.sv_position = mul(camera.projectionView, output.sv_position);
 
     // Transform each vertex from clip space into viewport space.

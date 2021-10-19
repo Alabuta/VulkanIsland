@@ -954,7 +954,7 @@ namespace temp
 
         if constexpr (true) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_plane(app, model_, 0, graphics::INDEX_TYPE::UINT_16, 2);
+            add_plane(app, model_, 0, graphics::INDEX_TYPE::UINT_16, 3);
 
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
             add_plane(app, model_, 1, graphics::INDEX_TYPE::UINT_16, 1);
