@@ -50,5 +50,23 @@ namespace primitives
 
     void generate_box_indexed(primitives::box_create_info const &create_info, std::span<std::byte> vertex_buffer,
                               std::span<std::byte> index_buffer);
+
+    struct teapot_create_info final {
+        graphics::vertex_layout vertex_layout;
+
+        graphics::PRIMITIVE_TOPOLOGY topology;
+
+        graphics::INDEX_TYPE index_buffer_type;
+
+        std::uint32_t size;
+        std::uint32_t segments;
+    };
+
+    std::uint32_t calculate_teapot_vertices_number(primitives::teapot_create_info const &create_info);
+
+    std::uint32_t calculate_teapot_indices_number(primitives::teapot_create_info const &create_info);
+
+    void generate_teapot_indexed(primitives::teapot_create_info const &create_info, std::span<std::byte> vertex_buffer,
+                              std::span<std::byte> index_buffer);
 }
 
