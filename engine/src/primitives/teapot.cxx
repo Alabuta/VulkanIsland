@@ -18,6 +18,39 @@ using namespace std::string_literals;
 
 #include "primitives/primitives.hxx"
 
+/*
+ * @author Eric Haines / http://erichaines.com/
+ *
+ * Tessellates the famous Utah teapot database by Martin Newell into triangles.
+ *
+ * Defaults: size = 50, segments = 10
+ *
+ * size is a relative scale: I've scaled the teapot to fit vertically between -1 and 1.
+ * Think of it as a "radius".
+ * segments - number of line segments to subdivide each patch edge;
+ *   1 is possible but gives degenerates, so two is the real minimum.
+ *
+ * Segments 'n' determines the number of triangles output.
+ *   Total triangles = 32*2*n*n - 8*n    [degenerates at the top and bottom cusps are deleted]
+ *
+ *   size_factor   # triangles
+ *       1          56
+ *       2         240
+ *       3         552
+ *       4         992
+ *
+ *      10        6320
+ *      20       25440
+ *      30       57360
+ *
+ * Code converted from my ancient SPD software, http://tog.acm.org/resources/SPD/
+ * Created for the Udacity course "Interactive Rendering", http://bit.ly/ericity
+ * Lesson: https://www.udacity.com/course/viewer#!/c-cs291/l-68866048/m-106482448
+ * YouTube video on teapot history: https://www.youtube.com/watch?v=DxMfblPzFNc
+ *
+ * See https://en.wikipedia.org/wiki/Utah_teapot for the history of the teapot
+ */
+
 
 namespace {
     auto constexpr teapot_patches = std::array{
@@ -62,351 +95,402 @@ namespace {
     };
 
     auto constexpr teapot_vertices = std::array{
-        1.4, 0, 2.4,
-        1.4, -0.784, 2.4,
-        0.784, -1.4, 2.4,
-        0, -1.4, 2.4,
-        1.3375, 0, 2.53125,
-        1.3375, -0.749, 2.53125,
-        0.749, -1.3375, 2.53125,
-        0, -1.3375, 2.53125,
-        1.4375, 0, 2.53125,
-        1.4375, -0.805, 2.53125,
-        0.805, -1.4375, 2.53125,
-        0, -1.4375, 2.53125,
-        1.5, 0, 2.4,
-        1.5, -0.84, 2.4,
-        0.84, -1.5, 2.4,
-        0, -1.5, 2.4,
-        -0.784, -1.4, 2.4,
-        -1.4, -0.784, 2.4,
-        -1.4, 0, 2.4,
-        -0.749, -1.3375, 2.53125,
-        -1.3375, -0.749, 2.53125,
-        -1.3375, 0, 2.53125,
-        -0.805, -1.4375, 2.53125,
-        -1.4375, -0.805, 2.53125,
-        -1.4375, 0, 2.53125,
-        -0.84, -1.5, 2.4,
-        -1.5, -0.84, 2.4,
-        -1.5, 0, 2.4,
-        -1.4, 0.784, 2.4,
-        -0.784, 1.4, 2.4,
-        0, 1.4, 2.4,
-        -1.3375, 0.749, 2.53125,
-        -0.749, 1.3375, 2.53125,
-        0, 1.3375, 2.53125,
-        -1.4375, 0.805, 2.53125,
-        -0.805, 1.4375, 2.53125,
-        0, 1.4375, 2.53125,
-        -1.5, 0.84, 2.4,
-        -0.84, 1.5, 2.4,
-        0, 1.5, 2.4,
-        0.784, 1.4, 2.4,
-        1.4, 0.784, 2.4,
-        0.749, 1.3375, 2.53125,
-        1.3375, 0.749, 2.53125,
-        0.805, 1.4375, 2.53125,
-        1.4375, 0.805, 2.53125,
-        0.84, 1.5, 2.4,
-        1.5, 0.84, 2.4,
-        1.75, 0, 1.875,
-        1.75, -0.98, 1.875,
-        0.98, -1.75, 1.875,
-        0, -1.75, 1.875,
-        2, 0, 1.35,
-        2, -1.12, 1.35,
-        1.12, -2, 1.35,
-        0, -2, 1.35,
-        2, 0, 0.9,
-        2, -1.12, 0.9,
-        1.12, -2, 0.9,
-        0, -2, 0.9,
-        -0.98, -1.75, 1.875,
-        -1.75, -0.98, 1.875,
-        -1.75, 0, 1.875,
-        -1.12, -2, 1.35,
-        -2, -1.12, 1.35,
-        -2, 0, 1.35,
-        -1.12, -2, 0.9,
-        -2, -1.12, 0.9,
-        -2, 0, 0.9,
-        -1.75, 0.98, 1.875,
-        -0.98, 1.75, 1.875,
-        0, 1.75, 1.875,
-        -2, 1.12, 1.35,
-        -1.12, 2, 1.35,
-        0, 2, 1.35,
-        -2, 1.12, 0.9,
-        -1.12, 2, 0.9,
-        0, 2, 0.9,
-        0.98, 1.75, 1.875,
-        1.75, 0.98, 1.875,
-        1.12, 2, 1.35,
-        2, 1.12, 1.35,
-        1.12, 2, 0.9,
-        2, 1.12, 0.9,
-        2, 0, 0.45,
-        2, -1.12, 0.45,
-        1.12, -2, 0.45,
-        0, -2, 0.45,
-        1.5, 0, 0.225,
-        1.5, -0.84, 0.225,
-        0.84, -1.5, 0.225,
-        0, -1.5, 0.225,
-        1.5, 0, 0.15,
-        1.5, -0.84, 0.15,
-        0.84, -1.5, 0.15,
-        0, -1.5, 0.15,
-        -1.12, -2, 0.45,
-        -2, -1.12, 0.45,
-        -2, 0, 0.45,
-        -0.84, -1.5, 0.225,
-        -1.5, -0.84, 0.225,
-        -1.5, 0, 0.225,
-        -0.84, -1.5, 0.15,
-        -1.5, -0.84, 0.15,
-        -1.5, 0, 0.15,
-        -2, 1.12, 0.45,
-        -1.12, 2, 0.45,
-        0, 2, 0.45,
-        -1.5, 0.84, 0.225,
-        -0.84, 1.5, 0.225,
-        0, 1.5, 0.225,
-        -1.5, 0.84, 0.15,
-        -0.84, 1.5, 0.15,
-        0, 1.5, 0.15,
-        1.12, 2, 0.45,
-        2, 1.12, 0.45,
-        0.84, 1.5, 0.225,
-        1.5, 0.84, 0.225,
-        0.84, 1.5, 0.15,
-        1.5, 0.84, 0.15,
-        -1.6, 0, 2.025,
-        -1.6, -0.3, 2.025,
-        -1.5, -0.3, 2.25,
-        -1.5, 0, 2.25,
-        -2.3, 0, 2.025,
-        -2.3, -0.3, 2.025,
-        -2.5, -0.3, 2.25,
-        -2.5, 0, 2.25,
-        -2.7, 0, 2.025,
-        -2.7, -0.3, 2.025,
-        -3, -0.3, 2.25,
-        -3, 0, 2.25,
-        -2.7, 0, 1.8,
-        -2.7, -0.3, 1.8,
-        -3, -0.3, 1.8,
-        -3, 0, 1.8,
-        -1.5, 0.3, 2.25,
-        -1.6, 0.3, 2.025,
-        -2.5, 0.3, 2.25,
-        -2.3, 0.3, 2.025,
-        -3, 0.3, 2.25,
-        -2.7, 0.3, 2.025,
-        -3, 0.3, 1.8,
-        -2.7, 0.3, 1.8,
-        -2.7, 0, 1.575,
-        -2.7, -0.3, 1.575,
-        -3, -0.3, 1.35,
-        -3, 0, 1.35,
-        -2.5, 0, 1.125,
-        -2.5, -0.3, 1.125,
-        -2.65, -0.3, 0.9375,
-        -2.65, 0, 0.9375,
-        -2, -0.3, 0.9,
-        -1.9, -0.3, 0.6,
-        -1.9, 0, 0.6,
-        -3, 0.3, 1.35,
-        -2.7, 0.3, 1.575,
-        -2.65, 0.3, 0.9375,
-        -2.5, 0.3, 1.125,
-        -1.9, 0.3, 0.6,
-        -2, 0.3, 0.9,
-        1.7, 0, 1.425,
-        1.7, -0.66, 1.425,
-        1.7, -0.66, 0.6,
-        1.7, 0, 0.6,
-        2.6, 0, 1.425,
-        2.6, -0.66, 1.425,
-        3.1, -0.66, 0.825,
-        3.1, 0, 0.825,
-        2.3, 0, 2.1,
-        2.3, -0.25, 2.1,
-        2.4, -0.25, 2.025,
-        2.4, 0, 2.025,
-        2.7, 0, 2.4,
-        2.7, -0.25, 2.4,
-        3.3, -0.25, 2.4,
-        3.3, 0, 2.4,
-        1.7, 0.66, 0.6,
-        1.7, 0.66, 1.425,
-        3.1, 0.66, 0.825,
-        2.6, 0.66, 1.425,
-        2.4, 0.25, 2.025,
-        2.3, 0.25, 2.1,
-        3.3, 0.25, 2.4,
-        2.7, 0.25, 2.4,
-        2.8, 0, 2.475,
-        2.8, -0.25, 2.475,
-        3.525, -0.25, 2.49375,
-        3.525, 0, 2.49375,
-        2.9, 0, 2.475,
-        2.9, -0.15, 2.475,
-        3.45, -0.15, 2.5125,
-        3.45, 0, 2.5125,
-        2.8, 0, 2.4,
-        2.8, -0.15, 2.4,
-        3.2, -0.15, 2.4,
-        3.2, 0, 2.4,
-        3.525, 0.25, 2.49375,
-        2.8, 0.25, 2.475,
-        3.45, 0.15, 2.5125,
-        2.9, 0.15, 2.475,
-        3.2, 0.15, 2.4,
-        2.8, 0.15, 2.4,
-        0, 0, 3.15,
-        0.8, 0, 3.15,
-        0.8, -0.45, 3.15,
-        0.45, -0.8, 3.15,
-        0, -0.8, 3.15,
-        0, 0, 2.85,
-        0.2, 0, 2.7,
-        0.2, -0.112, 2.7,
-        0.112, -0.2, 2.7,
-        0, -0.2, 2.7,
-        -0.45, -0.8, 3.15,
-        -0.8, -0.45, 3.15,
-        -0.8, 0, 3.15,
-        -0.112, -0.2, 2.7,
-        -0.2, -0.112, 2.7,
-        -0.2, 0, 2.7,
-        -0.8, 0.45, 3.15,
-        -0.45, 0.8, 3.15,
-        0, 0.8, 3.15,
-        -0.2, 0.112, 2.7,
-        -0.112, 0.2, 2.7,
-        0, 0.2, 2.7,
-        0.45, 0.8, 3.15,
-        0.8, 0.45, 3.15,
-        0.112, 0.2, 2.7,
-        0.2, 0.112, 2.7,
-        0.4, 0, 2.55,
-        0.4, -0.224, 2.55,
-        0.224, -0.4, 2.55,
-        0, -0.4, 2.55,
-        1.3, 0, 2.55,
-        1.3, -0.728, 2.55,
-        0.728, -1.3, 2.55,
-        0, -1.3, 2.55,
-        1.3, 0, 2.4,
-        1.3, -0.728, 2.4,
-        0.728, -1.3, 2.4,
-        0, -1.3, 2.4,
-        -0.224, -0.4, 2.55,
-        -0.4, -0.224, 2.55,
-        -0.4, 0, 2.55,
-        -0.728, -1.3, 2.55,
-        -1.3, -0.728, 2.55,
-        -1.3, 0, 2.55,
-        -0.728, -1.3, 2.4,
-        -1.3, -0.728, 2.4,
-        -1.3, 0, 2.4,
-        -0.4, 0.224, 2.55,
-        -0.224, 0.4, 2.55,
-        0, 0.4, 2.55,
-        -1.3, 0.728, 2.55,
-        -0.728, 1.3, 2.55,
-        0, 1.3, 2.55,
-        -1.3, 0.728, 2.4,
-        -0.728, 1.3, 2.4,
-        0, 1.3, 2.4,
-        0.224, 0.4, 2.55,
-        0.4, 0.224, 2.55,
-        0.728, 1.3, 2.55,
-        1.3, 0.728, 2.55,
-        0.728, 1.3, 2.4,
-        1.3, 0.728, 2.4,
-        0, 0, 0,
-        1.425, 0, 0,
-        1.425, 0.798, 0,
-        0.798, 1.425, 0,
-        0, 1.425, 0,
-        1.5, 0, 0.075,
-        1.5, 0.84, 0.075,
-        0.84, 1.5, 0.075,
-        0, 1.5, 0.075,
-        -0.798, 1.425, 0,
-        -1.425, 0.798, 0,
-        -1.425, 0, 0,
-        -0.84, 1.5, 0.075,
-        -1.5, 0.84, 0.075,
-        -1.5, 0, 0.075,
-        -1.425, -0.798, 0,
-        -0.798, -1.425, 0,
-        0, -1.425, 0,
-        -1.5, -0.84, 0.075,
-        -0.84, -1.5, 0.075,
-        0, -1.5, 0.075,
-        0.798, -1.425, 0,
-        1.425, -0.798, 0,
-        0.84, -1.5, 0.075,
-        1.5, -0.84, 0.075
+        1.4f, 0.f, 2.4f,
+        1.4f, -0.784f, 2.4f,
+        0.784f, -1.4f, 2.4f,
+        0.f, -1.4f, 2.4f,
+        1.3375f, 0.f, 2.53125f,
+        1.3375f, -0.749f, 2.53125f,
+        0.749f, -1.3375f, 2.53125f,
+        0.f, -1.3375f, 2.53125f,
+        1.4375f, 0.f, 2.53125f,
+        1.4375f, -0.805f, 2.53125f,
+        0.805f, -1.4375f, 2.53125f,
+        0.f, -1.4375f, 2.53125f,
+        1.5f, 0.f, 2.4f,
+        1.5f, -0.84f, 2.4f,
+        0.84f, -1.5f, 2.4f,
+        0.f, -1.5f, 2.4f,
+        -0.784f, -1.4f, 2.4f,
+        -1.4f, -0.784f, 2.4f,
+        -1.4f, 0.f, 2.4f,
+        -0.749f, -1.3375f, 2.53125f,
+        -1.3375f, -0.749f, 2.53125f,
+        -1.3375f, 0.f, 2.53125f,
+        -0.805f, -1.4375f, 2.53125f,
+        -1.4375f, -0.805f, 2.53125f,
+        -1.4375f, 0.f, 2.53125f,
+        -0.84f, -1.5f, 2.4f,
+        -1.5f, -0.84f, 2.4f,
+        -1.5f, 0.f, 2.4f,
+        -1.4f, 0.784f, 2.4f,
+        -0.784f, 1.4f, 2.4f,
+        0.f, 1.4f, 2.4f,
+        -1.3375f, 0.749f, 2.53125f,
+        -0.749f, 1.3375f, 2.53125f,
+        0.f, 1.3375f, 2.53125f,
+        -1.4375f, 0.805f, 2.53125f,
+        -0.805f, 1.4375f, 2.53125f,
+        0.f, 1.4375f, 2.53125f,
+        -1.5f, 0.84f, 2.4f,
+        -0.84f, 1.5f, 2.4f,
+        0.f, 1.5f, 2.4f,
+        0.784f, 1.4f, 2.4f,
+        1.4f, 0.784f, 2.4f,
+        0.749f, 1.3375f, 2.53125f,
+        1.3375f, 0.749f, 2.53125f,
+        0.805f, 1.4375f, 2.53125f,
+        1.4375f, 0.805f, 2.53125f,
+        0.84f, 1.5f, 2.4f,
+        1.5f, 0.84f, 2.4f,
+        1.75f, 0.f, 1.875f,
+        1.75f, -0.98f, 1.875f,
+        0.98f, -1.75f, 1.875f,
+        0.f, -1.75f, 1.875f,
+        2.f, 0.f, 1.35f,
+        2.f, -1.12f, 1.35f,
+        1.12f, -2.f, 1.35f,
+        0.f, -2.f, 1.35f,
+        2.f, 0.f, 0.9f,
+        2.f, -1.12f, 0.9f,
+        1.12f, -2.f, 0.9f,
+        0.f, -2.f, 0.9f,
+        -0.98f, -1.75f, 1.875f,
+        -1.75f, -0.98f, 1.875f,
+        -1.75f, 0.f, 1.875f,
+        -1.12f, -2.f, 1.35f,
+        -2.f, -1.12f, 1.35f,
+        -2.f, 0.f, 1.35f,
+        -1.12f, -2.f, 0.9f,
+        -2.f, -1.12f, 0.9f,
+        -2.f, 0.f, 0.9f,
+        -1.75f, 0.98f, 1.875f,
+        -0.98f, 1.75f, 1.875f,
+        0.f, 1.75f, 1.875f,
+        -2.f, 1.12f, 1.35f,
+        -1.12f, 2.f, 1.35f,
+        0.f, 2.f, 1.35f,
+        -2.f, 1.12f, 0.9f,
+        -1.12f, 2.f, 0.9f,
+        0.f, 2.f, 0.9f,
+        0.98f, 1.75f, 1.875f,
+        1.75f, 0.98f, 1.875f,
+        1.12f, 2.f, 1.35f,
+        2.f, 1.12f, 1.35f,
+        1.12f, 2.f, 0.9f,
+        2.f, 1.12f, 0.9f,
+        2.f, 0.f, 0.45f,
+        2.f, -1.12f, 0.45f,
+        1.12f, -2.f, 0.45f,
+        0.f, -2.f, 0.45f,
+        1.5f, 0.f, 0.225f,
+        1.5f, -0.84f, 0.225f,
+        0.84f, -1.5f, 0.225f,
+        0.f, -1.5f, 0.225f,
+        1.5f, 0.f, 0.15f,
+        1.5f, -0.84f, 0.15f,
+        0.84f, -1.5f, 0.15f,
+        0.f, -1.5f, 0.15f,
+        -1.12f, -2.f, 0.45f,
+        -2.f, -1.12f, 0.45f,
+        -2.f, 0.f, 0.45f,
+        -0.84f, -1.5f, 0.225f,
+        -1.5f, -0.84f, 0.225f,
+        -1.5f, 0.f, 0.225f,
+        -0.84f, -1.5f, 0.15f,
+        -1.5f, -0.84f, 0.15f,
+        -1.5f, 0.f, 0.15f,
+        -2.f, 1.12f, 0.45f,
+        -1.12f, 2.f, 0.45f,
+        0.f, 2.f, 0.45f,
+        -1.5f, 0.84f, 0.225f,
+        -0.84f, 1.5f, 0.225f,
+        0.f, 1.5f, 0.225f,
+        -1.5f, 0.84f, 0.15f,
+        -0.84f, 1.5f, 0.15f,
+        0.f, 1.5f, 0.15f,
+        1.12f, 2.f, 0.45f,
+        2.f, 1.12f, 0.45f,
+        0.84f, 1.5f, 0.225f,
+        1.5f, 0.84f, 0.225f,
+        0.84f, 1.5f, 0.15f,
+        1.5f, 0.84f, 0.15f,
+        -1.6f, 0.f, 2.025f,
+        -1.6f, -0.3f, 2.025f,
+        -1.5f, -0.3f, 2.25f,
+        -1.5f, 0.f, 2.25f,
+        -2.3f, 0.f, 2.025f,
+        -2.3f, -0.3f, 2.025f,
+        -2.5f, -0.3f, 2.25f,
+        -2.5f, 0.f, 2.25f,
+        -2.7f, 0.f, 2.025f,
+        -2.7f, -0.3f, 2.025f,
+        -3.f, -0.3f, 2.25f,
+        -3.f, 0.f, 2.25f,
+        -2.7f, 0.f, 1.8f,
+        -2.7f, -0.3f, 1.8f,
+        -3.f, -0.3f, 1.8f,
+        -3.f, 0.f, 1.8f,
+        -1.5f, 0.3f, 2.25f,
+        -1.6f, 0.3f, 2.025f,
+        -2.5f, 0.3f, 2.25f,
+        -2.3f, 0.3f, 2.025f,
+        -3.f, 0.3f, 2.25f,
+        -2.7f, 0.3f, 2.025f,
+        -3.f, 0.3f, 1.8f,
+        -2.7f, 0.3f, 1.8f,
+        -2.7f, 0.f, 1.575f,
+        -2.7f, -0.3f, 1.575f,
+        -3.f, -0.3f, 1.35f,
+        -3.f, 0.f, 1.35f,
+        -2.5f, 0.f, 1.125f,
+        -2.5f, -0.3f, 1.125f,
+        -2.65f, -0.3f, 0.9375f,
+        -2.65f, 0.f, 0.9375f,
+        -2.f, -0.3f, 0.9f,
+        -1.9f, -0.3f, 0.6f,
+        -1.9f, 0.f, 0.6f,
+        -3.f, 0.3f, 1.35f,
+        -2.7f, 0.3f, 1.575f,
+        -2.65f, 0.3f, 0.9375f,
+        -2.5f, 0.3f, 1.125f,
+        -1.9f, 0.3f, 0.6f,
+        -2.f, 0.3f, 0.9f,
+        1.7f, 0.f, 1.425f,
+        1.7f, -0.66f, 1.425f,
+        1.7f, -0.66f, 0.6f,
+        1.7f, 0.f, 0.6f,
+        2.6f, 0.f, 1.425f,
+        2.6f, -0.66f, 1.425f,
+        3.1f, -0.66f, 0.825f,
+        3.1f, 0.f, 0.825f,
+        2.3f, 0.f, 2.1f,
+        2.3f, -0.25f, 2.1f,
+        2.4f, -0.25f, 2.025f,
+        2.4f, 0.f, 2.025f,
+        2.7f, 0.f, 2.4f,
+        2.7f, -0.25f, 2.4f,
+        3.3f, -0.25f, 2.4f,
+        3.3f, 0.f, 2.4f,
+        1.7f, 0.66f, 0.6f,
+        1.7f, 0.66f, 1.425f,
+        3.1f, 0.66f, 0.825f,
+        2.6f, 0.66f, 1.425f,
+        2.4f, 0.25f, 2.025f,
+        2.3f, 0.25f, 2.1f,
+        3.3f, 0.25f, 2.4f,
+        2.7f, 0.25f, 2.4f,
+        2.8f, 0.f, 2.475f,
+        2.8f, -0.25f, 2.475f,
+        3.525f, -0.25f, 2.49375f,
+        3.525f, 0.f, 2.49375f,
+        2.9f, 0.f, 2.475f,
+        2.9f, -0.15f, 2.475f,
+        3.45f, -0.15f, 2.5125f,
+        3.45f, 0.f, 2.5125f,
+        2.8f, 0.f, 2.4f,
+        2.8f, -0.15f, 2.4f,
+        3.2f, -0.15f, 2.4f,
+        3.2f, 0.f, 2.4f,
+        3.525f, 0.25f, 2.49375f,
+        2.8f, 0.25f, 2.475f,
+        3.45f, 0.15f, 2.5125f,
+        2.9f, 0.15f, 2.475f,
+        3.2f, 0.15f, 2.4f,
+        2.8f, 0.15f, 2.4f,
+        0.f, 0.f, 3.15f,
+        0.8f, 0.f, 3.15f,
+        0.8f, -0.45f, 3.15f,
+        0.45f, -0.8f, 3.15f,
+        0.f, -0.8f, 3.15f,
+        0.f, 0.f, 2.85f,
+        0.2f, 0.f, 2.7f,
+        0.2f, -0.112f, 2.7f,
+        0.112f, -0.2f, 2.7f,
+        0.f, -0.2f, 2.7f,
+        -0.45f, -0.8f, 3.15f,
+        -0.8f, -0.45f, 3.15f,
+        -0.8f, 0.f, 3.15f,
+        -0.112f, -0.2f, 2.7f,
+        -0.2f, -0.112f, 2.7f,
+        -0.2f, 0.f, 2.7f,
+        -0.8f, 0.45f, 3.15f,
+        -0.45f, 0.8f, 3.15f,
+        0.f, 0.8f, 3.15f,
+        -0.2f, 0.112f, 2.7f,
+        -0.112f, 0.2f, 2.7f,
+        0.f, 0.2f, 2.7f,
+        0.45f, 0.8f, 3.15f,
+        0.8f, 0.45f, 3.15f,
+        0.112f, 0.2f, 2.7f,
+        0.2f, 0.112f, 2.7f,
+        0.4f, 0.f, 2.55f,
+        0.4f, -0.224f, 2.55f,
+        0.224f, -0.4f, 2.55f,
+        0.f, -0.4f, 2.55f,
+        1.3f, 0.f, 2.55f,
+        1.3f, -0.728f, 2.55f,
+        0.728f, -1.3f, 2.55f,
+        0.f, -1.3f, 2.55f,
+        1.3f, 0.f, 2.4f,
+        1.3f, -0.728f, 2.4f,
+        0.728f, -1.3f, 2.4f,
+        0.f, -1.3f, 2.4f,
+        -0.224f, -0.4f, 2.55f,
+        -0.4f, -0.224f, 2.55f,
+        -0.4f, 0.f, 2.55f,
+        -0.728f, -1.3f, 2.55f,
+        -1.3f, -0.728f, 2.55f,
+        -1.3f, 0.f, 2.55f,
+        -0.728f, -1.3f, 2.4f,
+        -1.3f, -0.728f, 2.4f,
+        -1.3f, 0.f, 2.4f,
+        -0.4f, 0.224f, 2.55f,
+        -0.224f, 0.4f, 2.55f,
+        0.f, 0.4f, 2.55f,
+        -1.3f, 0.728f, 2.55f,
+        -0.728f, 1.3f, 2.55f,
+        0.f, 1.3f, 2.55f,
+        -1.3f, 0.728f, 2.4f,
+        -0.728f, 1.3f, 2.4f,
+        0.f, 1.3f, 2.4f,
+        0.224f, 0.4f, 2.55f,
+        0.4f, 0.224f, 2.55f,
+        0.728f, 1.3f, 2.55f,
+        1.3f, 0.728f, 2.55f,
+        0.728f, 1.3f, 2.4f,
+        1.3f, 0.728f, 2.4f,
+        0.f, 0.f, 0.f,
+        1.425f, 0.f, 0.f,
+        1.425f, 0.798f, 0.f,
+        0.798f, 1.425f, 0.f,
+        0.f, 1.425f, 0.f,
+        1.5f, 0.f, 0.075f,
+        1.5f, 0.84f, 0.075f,
+        0.84f, 1.5f, 0.075f,
+        0.f, 1.5f, 0.075f,
+        -0.798f, 1.425f, 0.f,
+        -1.425f, 0.798f, 0.f,
+        -1.425f, 0.f, 0.f,
+        -0.84f, 1.5f, 0.075f,
+        -1.5f, 0.84f, 0.075f,
+        -1.5f, 0.f, 0.075f,
+        -1.425f, -0.798f, 0.f,
+        -0.798f, -1.425f, 0.f,
+        0.f, -1.425f, 0.f,
+        -1.5f, -0.84f, 0.075f,
+        -0.84f, -1.5f, 0.075f,
+        0.f, -1.5f, 0.075f,
+        0.798f, -1.425f, 0.f,
+        1.425f, -0.798f, 0.f,
+        0.84f, -1.5f, 0.075f,
+        1.5f, -0.84f, 0.075f
     };
 }
 
 
 namespace primitives
 {
-    std::uint32_t calculate_teapot_vertices_number(primitives::teapot_create_info const &create_info)
+    std::uint32_t calculate_teapot_triangles_count(primitives::teapot_create_info const &create_info)
     {
-        auto vertices_number = calculate_teapot_faces_vertices_count(create_info);
-        return (vertices_number.at(0) + vertices_number.at(1) + vertices_number.at(2)) * 2;
+        auto segments = std::max(2u, create_info.segments);
+
+        auto triangles_count = static_cast<std::uint32_t>(create_info.bottom) * (8 * segments - 4) * segments;
+        triangles_count += static_cast<std::uint32_t>(create_info.lid) * (16 * segments - 4) * segments;
+        triangles_count += static_cast<std::uint32_t>(create_info.body) * 40 * segments * segments;
+
+        return triangles_count;
     }
 
-    std::uint32_t calculate_teapot_indices_number(primitives::teapot_create_info const &create_info)
+    std::uint32_t calculate_teapot_vertices_count(primitives::teapot_create_info const &create_info)
     {
-        if (create_info.hsegments * create_info.vsegments * create_info.dsegments < 1)
-            throw resource::exception("invalid teapot segments' values"s);
+        auto segments = std::max(2u, create_info.segments);
 
-        bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
+        auto vertices_count = static_cast<std::uint32_t>(create_info.bottom) * 4;
+        vertices_count += static_cast<std::uint32_t>(create_info.lid) * 8;
+        vertices_count += static_cast<std::uint32_t>(create_info.body) * 20;
+        vertices_count *= (segments + 1) * (segments + 1);
 
-        if (!is_primitive_indexed)
-            return 0;
+        return vertices_count;
+    }
 
-        auto const hsegments = create_info.hsegments;
-        auto const vsegments = create_info.vsegments;
-        auto const dsegments = create_info.dsegments;
+    std::uint32_t calculate_teapot_indices_count(primitives::teapot_create_info const &create_info)
+    {
+        return calculate_teapot_triangles_count(create_info) * 3;
+    }
 
-        std::uint32_t xface_indices_number, yface_indices_number, zface_indices_number;
+    void g(primitives::teapot_create_info const &create_info)
+    {
+        auto constexpr blinn_scale = 1.3f;
 
-        switch (create_info.topology) {
-            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
-            case graphics::PRIMITIVE_TOPOLOGY::LINES:
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                xface_indices_number = hsegments * dsegments * 2 * 3;
-                yface_indices_number = vsegments * dsegments * 2 * 3;
-                zface_indices_number = hsegments * vsegments * 2 * 3;
-                break;
+        // scale the size to be the real scaling factor
+        auto max_height = 3.15f * (blinn ? 1.f : blinn_scale);
 
-            case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP:
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-                xface_indices_number = ((dsegments + 1) * 2 * vsegments + (vsegments - 1) * 2 + 2) * 2;
-                yface_indices_number = ((hsegments + 1) * 2 * dsegments + (dsegments - 1) * 2 + 2) * 2;
-                zface_indices_number = ((hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2) * 2 + 2;
-                break;
+        auto max_height2 = max_height / 2;
+        auto true_size = create_info.size / max_height2;
 
-            default:
-                throw resource::exception("unsupported primitive topology"s);
+        auto segments = std::max(2u, create_info.segments);
+
+        auto ms = glm::mat4{
+            -1,  3, -3,  1,
+             3, -6,  3,  0,
+            -3,  3,  0,  0,
+             1,  0,  0,  0
+        };
+
+        auto mgm = std::array{
+            glm::mat4{1},
+            glm::mat4{1},
+            glm::mat4{1}
+        };
+
+        auto const [min_patches, max_patches] = std::pair(body ? 0 : 20, create_info.bottom ? 32 : 28);
+
+        auto const vertices_per_row = segments + 1;
+        auto constexpr eps = 0.00001f;
+
+        for (auto surf = min_patches; surf < max_patches; ++surf) {
+            // lid is in the middle of the data, patches 20-27,
+            // so ignore it for this part of the loop if the lid is not desired
+            if (create_info.lid || (surf < 20 || surf >= 28)) {
+                // get M * G * M matrix for x,y,z
+                for (i = 0; i < 3; i++) {
+                    // get control patches
+                    for (r = 0; r < 4; r++) {
+                        for (c = 0; c < 4; c++) {
+                            // transposed
+                            g[c * 4 + r] = teapot_vertices[teapot_patches[surf * 16 + r * 4 + c] * 3 + i];
+
+                            // is the lid to be made larger, and is this a point on the lid
+                            // that is X or Y?
+                            if (fitLid && (surf >= 20 && surf < 28) && (i != = 2)) {
+                                // increase XY size by 7.7%, found empirically. I don't
+                                // increase Z so that the teapot will continue to fit in the
+                                // space -1 to 1 for Y (Y is up for the final model).
+                                g[c * 4 + r] *= 1.077;
+                            }
+
+                            // Blinn "fixed" the teapot by dividing Z by blinnScale, and that's the
+                            // data we now use. The original teapot is taller. Fix it:
+                            if (!blinn && (i == 2))
+                                g[c * 4 + r] *= blinnScale;
+                        }
+
+                    }
+
+                    gmx.set(g[0], g[1], g[2], g[3], g[4], g[5], g[6], g[7], g[8], g[9], g[10], g[11], g[12], g[13], g[14], g[15]);
+
+                    tmtx.multiplyMatrices(gmx, ms);
+                    mgm[i].multiplyMatrices(mst, tmtx);
+                }
+            }
         }
-
-        return (xface_indices_number + yface_indices_number + zface_indices_number) * 2;
     }
 
     void generate_teapot_indexed(primitives::teapot_create_info const &create_info, std::span<std::byte> vertex_buffer,
-                              std::span<std::byte> index_buffer)
+                                 std::span<std::byte> index_buffer)
     {
-        auto indices_number = calculate_teapot_indices_number(create_info);
+        auto indices_number = calculate_teapot_indices_count(create_info);
 
         switch (create_info.index_buffer_type) {
             case graphics::INDEX_TYPE::UINT_16:
@@ -414,7 +498,7 @@ namespace primitives
                 using pointer_type = typename std::add_pointer_t<std::uint16_t>;
                 auto it = reinterpret_cast<pointer_type>(std::to_address(std::data(index_buffer)));
 
-                generate_indices(create_info, it, indices_number);
+                //generate_indices(create_info, it, indices_number);
             }
             break;
 
@@ -423,7 +507,7 @@ namespace primitives
                 using pointer_type = typename std::add_pointer_t<std::uint32_t>;
                 auto it = reinterpret_cast<pointer_type>(std::to_address(std::data(index_buffer)));
 
-                generate_indices(create_info, it, indices_number);
+                //generate_indices(create_info, it, indices_number);
             }
             break;
 
@@ -431,26 +515,17 @@ namespace primitives
                 throw resource::exception("unsupported index instance type"s);
         }
 
-        generate_teapot(create_info, vertex_buffer);
+        //generate_teapot(create_info, vertex_buffer);
     }
 
     void generate_teapot(primitives::teapot_create_info const &create_info, std::span<std::byte> vertex_buffer)
     {
         auto &&vertex_layout = create_info.vertex_layout;
 
-        auto vertex_number = calculate_teapot_vertices_number(create_info);
+        auto vertex_number = calculate_teapot_vertices_count(create_info);
         auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_bytes);
 
         auto &&attributes = vertex_layout.attributes;
-
-        auto const transforms = std::array{
-            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(+90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width / 2.f}),
-            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.width / 2.f}),
-            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(-90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height / 2.f}),
-            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(+90.f), glm::vec3{1, 0, 0}), glm::vec3{0, 0, create_info.height / 2.f}),
-            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(360.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth / 2.f}),
-            glm::translate(glm::rotate(glm::mat4{1.f}, glm::radians(180.f), glm::vec3{0, 1, 0}), glm::vec3{0, 0, create_info.depth / 2.f})
-        };
 
         for (std::size_t offset_in_bytes = 0; auto && attribute : attributes) {
             if (auto format_inst = graphics::instantiate_format(attribute.format); format_inst) {
@@ -467,19 +542,19 @@ namespace primitives
 
                     switch (attribute.semantic) {
                         case vertex::SEMANTIC::POSITION:
-                            generate_positions(create_info, attribute.format, std::span{transforms}, it, vertex_number);
+                            //generate_positions(create_info, attribute.format, std::span{transforms}, it, vertex_number);
                             break;
 
                         case vertex::SEMANTIC::NORMAL:
-                            generate_normals(create_info, attribute.format, std::span{transforms}, it, vertex_number);
+                            //generate_normals(create_info, attribute.format, std::span{transforms}, it, vertex_number);
                             break;
 
                         case vertex::SEMANTIC::TEXCOORD_0:
-                            generate_texcoords(create_info, attribute.format, it, vertex_number);
+                            //generate_texcoords(create_info, attribute.format, it, vertex_number);
                             break;
 
                         case vertex::SEMANTIC::COLOR_0:
-                            generate_colors(create_info, attribute.format, it, vertex_number);
+                            //generate_colors(create_info, attribute.format, it, vertex_number);
                             break;
 
                         default:

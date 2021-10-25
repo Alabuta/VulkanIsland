@@ -60,6 +60,10 @@ namespace primitives
 
         std::uint32_t size;
         std::uint32_t segments;
+
+        bool bottom = true;
+        bool lid = true;
+        bool body = true;
     };
 
     std::uint32_t calculate_teapot_vertices_number(primitives::teapot_create_info const &create_info);
