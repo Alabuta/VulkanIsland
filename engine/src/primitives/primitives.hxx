@@ -61,16 +61,20 @@ namespace primitives
         std::uint32_t size;
         std::uint32_t segments;
 
+        glm::vec4 color = glm::vec4{1};
+
         bool bottom = true;
         bool lid = true;
         bool body = true;
     };
 
-    std::uint32_t calculate_teapot_vertices_number(primitives::teapot_create_info const &create_info);
+    std::uint32_t calculate_teapot_vertices_count(primitives::teapot_create_info const &create_info);
 
-    std::uint32_t calculate_teapot_indices_number(primitives::teapot_create_info const &create_info);
+    std::uint32_t calculate_teapot_indices_count(primitives::teapot_create_info const &create_info);
+
+    void generate_teapot(primitives::teapot_create_info const &create_info, std::span<std::byte> vertex_buffer);
 
     void generate_teapot_indexed(primitives::teapot_create_info const &create_info, std::span<std::byte> vertex_buffer,
-                              std::span<std::byte> index_buffer);
+                                 std::span<std::byte> index_buffer);
 }
 
