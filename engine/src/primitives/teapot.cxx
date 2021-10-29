@@ -500,37 +500,30 @@ namespace primitives
 
                 // step along, get points, and output
                 for (sstep = 0; sstep <= segments; sstep++) {
-
                     s = sstep / segments;
 
                     for (tstep = 0; tstep <= segments; tstep++) {
-
                         t = tstep / segments;
 
                         // point from basis
                         // get power vectors and their derivatives
                         for (p = 4, sval = tval = 1.0; p--; ) {
-
                             sp[p] = sval;
                             tp[p] = tval;
                             sval *= s;
                             tval *= t;
 
                             if (p == = 3) {
-
                                 dsp[p] = dtp[p] = 0.0;
                                 dsval = dtval = 1.0;
-
                             }
-                            else {
 
+                            else {
                                 dsp[p] = dsval * (3 - p);
                                 dtp[p] = dtval * (3 - p);
                                 dsval *= s;
                                 dtval *= t;
-
                             }
-
                         }
 
                         vsp.fromArray(sp);
@@ -540,7 +533,6 @@ namespace primitives
 
                         // do for x,y,z
                         for (i = 0; i < 3; i++) {
-
                             // multiply power vectors times matrix to get value
                             tcoord = vsp.clone();
                             tcoord.applyMatrix4(mgm[i]);
@@ -554,7 +546,6 @@ namespace primitives
                             tcoord = vsp.clone();
                             tcoord.applyMatrix4(mgm[i]);
                             tdir[i] = tcoord.dot(vdtp);
-
                         }
 
                         // find normal
@@ -565,19 +556,12 @@ namespace primitives
 
                         // if X and Z length is 0, at the cusp, so point the normal up or down, depending on patch number
                         if (vert[0] == = 0 && vert[1] == = 0)
-                        {
-
                             // if above the middle of the teapot, normal points up, else down
                             normOut.set(0, vert[2] > maxHeight2 ? 1 : -1, 0);
 
-                        }
                         else
-                        {
-
                             // standard output: rotate on X axis
                             normOut.set(norm.x, norm.z, -norm.y);
-
-                        }
 
                         // store it all
                         vertices[vertCount++] = trueSize * vert[0];
@@ -590,10 +574,36 @@ namespace primitives
 
                         uvs[uvCount++] = 1 - t;
                         uvs[uvCount++] = 1 - s;
-
                     }
-
                 }
+
+                // save the faces
+                for (sstep = 0; sstep < segments; sstep++) {
+                    for (tstep = 0; tstep < segments; tstep++) {
+                        v1 = surfCount * vertPerRow * vertPerRow + sstep * vertPerRow + tstep;
+                        v2 = v1 + 1;
+                        v3 = v2 + vertPerRow;
+                        v4 = v1 + vertPerRow;
+
+                        // Normals and UVs cannot be shared. Without clone(), you can see the consequences
+                        // of sharing if you call geometry.applyMatrix( matrix ).
+                        if (notDegenerate(v1, v2, v3)) {
+                            indices[indexCount++] = v1;
+                            indices[indexCount++] = v2;
+                            indices[indexCount++] = v3;
+
+                        }
+
+                        if (notDegenerate(v1, v3, v4)) {
+                            indices[indexCount++] = v1;
+                            indices[indexCount++] = v3;
+                            indices[indexCount++] = v4;
+                        }
+                    }
+                }
+
+                // increment only if a surface was used
+                surfCount++;
             }
         }
 #endif
