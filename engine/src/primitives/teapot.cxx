@@ -434,7 +434,7 @@ namespace primitives
 
     void g(primitives::teapot_create_info const &create_info)
     {
-#if 0
+#if 1
         auto constexpr blinn_scale = 1.3f;
 
         // scale the size to be the real scaling factor
@@ -463,10 +463,36 @@ namespace primitives
         auto const vertices_per_row = segments + 1;
         auto constexpr eps = 0.00001f;
 
-        for (auto surf = min_patches; surf < max_patches; ++surf) {
+        auto surfCount = 0;
+
+        auto vertCount = 0;
+        auto normCount = 0;
+        auto uvCount = 0;
+
+        auto indexCount = 0;
+
+        // internal function: test if triangle has any matching vertices;
+        // if so, don't save triangle, since it won't display anything.
+        auto notDegenerate = [] (auto vtx1, auto vtx2, auto vtx3)
+        {
+            // if any vertex matches, return false
+            return !(((vertices[vtx1 * 3] == = vertices[vtx2 * 3]) &&
+                (vertices[vtx1 * 3 + 1] == = vertices[vtx2 * 3 + 1]) &&
+                (vertices[vtx1 * 3 + 2] == = vertices[vtx2 * 3 + 2])) ||
+
+                ((vertices[vtx1 * 3] == = vertices[vtx3 * 3]) &&
+                (vertices[vtx1 * 3 + 1] == = vertices[vtx3 * 3 + 1]) &&
+                (vertices[vtx1 * 3 + 2] == = vertices[vtx3 * 3 + 2])) ||
+
+                ((vertices[vtx2 * 3] == = vertices[vtx3 * 3]) &&
+                (vertices[vtx2 * 3 + 1] == = vertices[vtx3 * 3 + 1]) &&
+                (vertices[vtx2 * 3 + 2] == = vertices[vtx3 * 3 + 2])));
+        };
+
+        for (auto surf = minPatches; surf < maxPatches; ++surf) {
             // lid is in the middle of the data, patches 20-27,
             // so ignore it for this part of the loop if the lid is not desired
-            if (create_info.lid || (surf < 20 || surf >= 28)) {
+            if (lid || (surf < 20 || surf >= 28)) {
                 // get M * G * M matrix for x,y,z
                 for (i = 0; i < 3; i++) {
                     // get control patches
@@ -486,10 +512,9 @@ namespace primitives
 
                             // Blinn "fixed" the teapot by dividing Z by blinnScale, and that's the
                             // data we now use. The original teapot is taller. Fix it:
-                            if (!blinn && (i == 2))
+                            if (!blinn && (i == = 2))
                                 g[c * 4 + r] *= blinnScale;
                         }
-
                     }
 
                     gmx.set(g[0], g[1], g[2], g[3], g[4], g[5], g[6], g[7], g[8], g[9], g[10], g[11], g[12], g[13], g[14], g[15]);
@@ -501,13 +526,12 @@ namespace primitives
                 // step along, get points, and output
                 for (sstep = 0; sstep <= segments; sstep++) {
                     s = sstep / segments;
-
                     for (tstep = 0; tstep <= segments; tstep++) {
                         t = tstep / segments;
 
                         // point from basis
                         // get power vectors and their derivatives
-                        for (p = 4, sval = tval = 1.0; p--; ) {
+                        for (p = 4, sval = tval = 1.0; p--;) {
                             sp[p] = sval;
                             tp[p] = tval;
                             sval *= s;
@@ -558,7 +582,6 @@ namespace primitives
                         if (vert[0] == = 0 && vert[1] == = 0)
                             // if above the middle of the teapot, normal points up, else down
                             normOut.set(0, vert[2] > maxHeight2 ? 1 : -1, 0);
-
                         else
                             // standard output: rotate on X axis
                             normOut.set(norm.x, norm.z, -norm.y);
@@ -591,7 +614,6 @@ namespace primitives
                             indices[indexCount++] = v1;
                             indices[indexCount++] = v2;
                             indices[indexCount++] = v3;
-
                         }
 
                         if (notDegenerate(v1, v3, v4)) {
