@@ -76,5 +76,19 @@ namespace primitives
 
     void generate_teapot_indexed(primitives::teapot_create_info const &create_info, std::span<std::byte> vertex_buffer,
                                  std::span<std::byte> index_buffer);
+
+    struct icosahedron_create_info final {
+        graphics::vertex_layout vertex_layout;
+        graphics::PRIMITIVE_TOPOLOGY topology;
+
+        glm::vec4 color = glm::vec4{1};
+
+        float radius = 1.f;
+        std::uint32_t detail = 4;
+    };
+
+    std::uint32_t calculate_icosahedron_vertices_count(primitives::icosahedron_create_info const &create_info);
+
+    void generate_icosahedron(primitives::icosahedron_create_info const &create_info, std::span<std::byte> vertex_buffer);
 }
 

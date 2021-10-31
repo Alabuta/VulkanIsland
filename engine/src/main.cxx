@@ -706,6 +706,7 @@ namespace temp
         };
     }
 
+#if 0
     void add_teapot(app_t &app, xformat &model_, std::size_t vertex_layout_index, graphics::INDEX_TYPE index_type, std::size_t material_index)
     {
         auto const &vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
@@ -778,6 +779,7 @@ namespace temp
             model_.meshlets.push_back(std::move(meshlet));
         }
     }
+#endif
 
     void add_box(app_t &app, xformat &model_, std::size_t vertex_layout_index, graphics::INDEX_TYPE index_type, std::size_t material_index)
     {
@@ -967,6 +969,56 @@ namespace temp
                 meshlet.index_count = static_cast<std::uint32_t>(index_count);
                 meshlet.first_index = static_cast<std::uint32_t>(first_index);
             }
+
+            meshlet.material_index = material_index;
+            meshlet.instance_count = 1;
+            meshlet.first_instance = 0;
+
+            std::vector<std::size_t> meshlets{std::size(model_.meshlets)};
+            model_.meshes.push_back(xformat::mesh{meshlets});
+
+            model_.meshlets.push_back(std::move(meshlet));
+        }
+    }
+    
+    void add_icosahedron(app_t &app, xformat &model_, std::size_t vertex_layout_index, std::size_t material_index)
+    {
+        auto const &vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
+
+        auto constexpr topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
+
+        primitives::icosahedron_create_info const create_info{
+            vertex_layout, topology,
+            generate_color(),
+            1.f, 1u
+        };
+
+        auto const vertex_count = primitives::calculate_icosahedron_vertices_count(create_info);
+        auto const vertex_size = vertex_layout.size_bytes;
+
+        auto const vertex_buffer_allocation_size = vertex_count * vertex_size;
+        std::cout << "vertex buffer size "s << vertex_buffer_allocation_size << std::endl;
+
+        std::shared_ptr<resource::vertex_buffer> vertex_buffer;
+
+        {
+            auto vertex_staging_buffer = app.resource_manager->create_staging_buffer(vertex_buffer_allocation_size);
+
+            primitives::generate_icosahedron(create_info, vertex_staging_buffer->mapped_range());
+
+            vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
+        }
+
+        {
+            xformat::meshlet meshlet;
+
+            meshlet.topology = topology;
+
+            auto first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size;
+
+            meshlet.vertex_buffer = vertex_buffer;
+            meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
+            meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
 
             meshlet.material_index = material_index;
             meshlet.instance_count = 1;
