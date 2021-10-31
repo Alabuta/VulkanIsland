@@ -434,7 +434,7 @@ namespace primitives
 
     void g(primitives::teapot_create_info const &create_info)
     {
-#if 1
+#if 0
         auto constexpr blinn_scale = 1.3f;
 
         // scale the size to be the real scaling factor
@@ -512,7 +512,7 @@ namespace primitives
 
                             // Blinn "fixed" the teapot by dividing Z by blinnScale, and that's the
                             // data we now use. The original teapot is taller. Fix it:
-                            if (!blinn && (i == = 2))
+                            if (!blinn && (i == 2))
                                 g[c * 4 + r] *= blinnScale;
                         }
                     }

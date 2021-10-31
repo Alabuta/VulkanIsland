@@ -23,9 +23,9 @@ namespace
 {
     template<class T, class F>
     void generate_vertex_as_points(F generator, primitives::plane_create_info const &,
-                                   strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_number)
+                                   strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_count)
     {
-        std::generate_n(it_begin, vertex_number, [generator, i = 0u]() mutable
+        std::generate_n(it_begin, vertex_count, [generator, i = 0u] () mutable
         {
             return generator(i++);
         });
@@ -40,7 +40,7 @@ namespace
 
         auto const offset = (hsegments + 1) * 2;
 
-        std::generate_n(it_begin, offset, [&, i = 0u]() mutable
+        std::generate_n(it_begin, offset, [&, i = 0u] () mutable
         {
             auto vertex_index = i / 2 + (i % 2) * vsegments * (hsegments + 1);
 
@@ -51,7 +51,7 @@ namespace
 
         it_begin = std::next(it_begin, static_cast<std::ptrdiff_t>(offset));
 
-        std::generate_n(it_begin, (vsegments + 1) * 2, [&, i = 0u]() mutable
+        std::generate_n(it_begin, (vsegments + 1) * 2, [&, i = 0u] () mutable
         {
             auto vertex_index = (i % 2) * hsegments + i / 2 * (hsegments + 1);
 
@@ -90,12 +90,12 @@ namespace
 
     template<class T, class F>
     void generate_vertex_as_triangle_strip(F generator, primitives::plane_create_info const &create_info,
-                                           strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_number)
+                                           strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_count)
     {
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
 
-        auto it_end = std::next(it_begin, static_cast<std::ptrdiff_t>(vertex_number));
+        auto it_end = std::next(it_begin, static_cast<std::ptrdiff_t>(vertex_count));
 
         auto const vertices_per_strip = (hsegments + 1) * 2;
         auto const extra_vertices_per_strip = static_cast<std::uint32_t>(vsegments > 1) * 2;
@@ -103,14 +103,14 @@ namespace
         for (auto strip_index = 0u; strip_index < vsegments; ++strip_index) {
             auto it = std::next(it_begin, strip_index * (vertices_per_strip + extra_vertices_per_strip));
 
-            std::generate_n(it, 2, [&, offset = 0u]() mutable
+            std::generate_n(it, 2, [&, offset = 0u] () mutable
             {
                 auto vertex_index = (strip_index + offset++) * (hsegments + 1);
 
                 return generator(vertex_index);
             });
 
-            std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2]() mutable
+            std::generate_n(std::next(it, 2), vertices_per_strip - 2, [&, triangle_index = strip_index * hsegments * 2] () mutable
             {
                 auto quad_index = triangle_index / 2;
 
@@ -127,7 +127,7 @@ namespace
             it = std::next(it, vertices_per_strip);
 
             if (it < it_end) {
-                std::generate_n(it, 2, [&, i = 0u]() mutable {
+                std::generate_n(it, 2, [&, i = 0u] () mutable {
                     auto vertex_index = (strip_index + 1) * (hsegments + 1) + hsegments * (1 - i++);
 
                     return generator(vertex_index);
@@ -138,23 +138,23 @@ namespace
 
     template<class T, class F>
     void generate_vertex(F generator, primitives::plane_create_info const &create_info,
-                         strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_number)
+                         strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_count)
     {
         switch (create_info.topology) {
             case graphics::PRIMITIVE_TOPOLOGY::POINTS:
-                generate_vertex_as_points(generator, create_info, it_begin, vertex_number);
+                generate_vertex_as_points(generator, create_info, it_begin, vertex_count);
                 break;
 
             case graphics::PRIMITIVE_TOPOLOGY::LINES:
-                generate_vertex_as_lines(generator, create_info, it_begin, vertex_number);
+                generate_vertex_as_lines(generator, create_info, it_begin, vertex_count);
                 break;
 
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                generate_vertex_as_triangles(generator, create_info, it_begin, vertex_number);
+                generate_vertex_as_triangles(generator, create_info, it_begin, vertex_count);
                 break;
 
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-                generate_vertex_as_triangle_strip(generator, create_info, it_begin, vertex_number);
+                generate_vertex_as_triangle_strip(generator, create_info, it_begin, vertex_count);
                 break;
 
             default:
@@ -275,7 +275,7 @@ namespace
 
     template<std::size_t N, class T>
     void generate_positions(primitives::plane_create_info const &create_info, graphics::FORMAT format,
-                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::uint32_t vertex_number)
+                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::uint32_t vertex_count)
     {
         if constexpr (N == 2 || N == 3) {
             switch (graphics::numeric_format(format)) {
@@ -286,13 +286,13 @@ namespace
                         bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
 
                         if (is_primitive_indexed) {
-                            std::generate_n(it_begin, vertex_number, [generator, i = 0u] () mutable
+                            std::generate_n(it_begin, vertex_count, [generator, i = 0u] () mutable
                             {
                                 return generator(i++);
                             });
                         }
 
-                        else generate_vertex(generator, create_info, it_begin, vertex_number);
+                        else generate_vertex(generator, create_info, it_begin, vertex_count);
                     }
                     break;
 
@@ -306,7 +306,7 @@ namespace
     }
 
     template<std::size_t N, class T>
-    void generate_normals(graphics::FORMAT format, strided_bidirectional_iterator<std::array<T, N>> it, std::uint32_t vertex_number)
+    void generate_normals(graphics::FORMAT format, strided_bidirectional_iterator<std::array<T, N>> it, std::uint32_t vertex_count)
     {
         if constexpr (N == 2) {
             switch (graphics::numeric_format(format)) {
@@ -317,7 +317,7 @@ namespace
 
                         math::encode_unit_vector_to_oct_fast(std::span{oct}, glm::vec3{0, 0, 1});
 
-                        std::fill_n(it, vertex_number, oct);
+                        std::fill_n(it, vertex_count, oct);
                     }
 
                     else throw resource::exception("unsupported format type"s);
@@ -335,7 +335,7 @@ namespace
                 case graphics::NUMERIC_FORMAT::SCALED:
                 case graphics::NUMERIC_FORMAT::INT:
                 case graphics::NUMERIC_FORMAT::FLOAT:
-                    std::fill_n(it, vertex_number, std::array<T, 3>{0, 0, 1});
+                    std::fill_n(it, vertex_count, std::array<T, 3>{0, 0, 1});
                     break;
 
                 default:
@@ -348,29 +348,29 @@ namespace
 
     template<std::size_t N, class T>
     void generate_texcoords(primitives::plane_create_info const &create_info, graphics::FORMAT format,
-                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::uint32_t vertex_number)
+                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::uint32_t vertex_count)
     {
         auto generator = std::bind(generate_texcoord<N, T>, create_info, format, std::placeholders::_1);
 
         bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
 
         if (is_primitive_indexed) {
-            std::generate_n(it_begin, vertex_number, [generator, i = 0u]() mutable
+            std::generate_n(it_begin, vertex_count, [generator, i = 0u] () mutable
             {
                 return generator(i++);
             });
         }
 
-        else generate_vertex(generator, create_info, it_begin, vertex_number);
+        else generate_vertex(generator, create_info, it_begin, vertex_count);
     }
 
     template<std::size_t N, class T>
     void generate_colors(glm::vec4 const &color, graphics::FORMAT format,
-                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::uint32_t vertex_number)
+                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::uint32_t vertex_count)
     {
         auto generator = std::bind(generate_color<N, T>, color, format);
 
-        std::generate_n(it_begin, vertex_number, generator);
+        std::generate_n(it_begin, vertex_count, generator);
     }
 
     template<class T>
@@ -494,7 +494,7 @@ namespace primitives
     {
         auto &&vertex_layout = create_info.vertex_layout;
 
-        auto vertex_number = calculate_plane_vertices_number(create_info);
+        auto vertex_count = calculate_plane_vertices_number(create_info);
         auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_bytes);
 
         auto &&attributes = vertex_layout.attributes;
@@ -514,19 +514,19 @@ namespace primitives
 
                     switch (attribute.semantic) {
                         case vertex::SEMANTIC::POSITION:
-                            generate_positions(create_info, attribute.format, it, vertex_number);
+                            generate_positions(create_info, attribute.format, it, vertex_count);
                             break;
 
                         case vertex::SEMANTIC::NORMAL:
-                            generate_normals(attribute.format, it, vertex_number);
+                            generate_normals(attribute.format, it, vertex_count);
                             break;
 
                         case vertex::SEMANTIC::TEXCOORD_0:
-                            generate_texcoords(create_info, attribute.format, it, vertex_number);
+                            generate_texcoords(create_info, attribute.format, it, vertex_count);
                             break;
 
                         case vertex::SEMANTIC::COLOR_0:
-                            generate_colors(color, attribute.format, it, vertex_number);
+                            generate_colors(color, attribute.format, it, vertex_count);
                             break;
 
                         default:
