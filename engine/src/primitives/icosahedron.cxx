@@ -22,22 +22,55 @@ using namespace std::string_literals;
 namespace {
 	static auto const t = (1.f + std::sqrt(5.f)) / 2.f;
 
-	static auto const vertices = std::array{
+	static auto const input_vertices = std::array{
 		glm::vec3{-1, t, 0},		glm::vec3{1, t, 0},		glm::vec3{-1, -t, 0},		glm::vec3{1, -t, 0},
 		glm::vec3{0, -1, t},		glm::vec3{0, 1, t},		glm::vec3{0, -1, -t},		glm::vec3{0, 1, -t},
 		glm::vec3{t, 0, -1},		glm::vec3{t, 0, 1},		glm::vec3{-t, 0, -1},		glm::vec3{-t, 0, 1}
 	};
 
-	static auto constexpr indices = std::array{
+	static auto constexpr input_indices = std::array{
 		std::array{0u, 11u, 5u}, 	    std::array{0u, 5u, 1u}, 	std::array{0u, 1u, 7u}, 		std::array{0u, 7u, 10u}, 	std::array{0u, 10u, 11u},
 		std::array{1u, 5u, 9u}, 		std::array{5u, 11u, 4u},	std::array{11u, 10u, 2u},	    std::array{10u, 7u, 6u},	std::array{7u, 1u, 8u},
 		std::array{3u, 9u, 4u}, 		std::array{3u, 4u, 2u},	    std::array{3u, 2u, 6u},		    std::array{3u, 6u, 8u},		std::array{3u, 8u, 9u},
 		std::array{4u, 9u, 5u}, 		std::array{2u, 4u, 11u},	std::array{6u, 2u, 10u},		std::array{8u, 6u, 7u},		std::array{9u, 8u, 1u}
 	};
 
-    void subdive_face(std::uint32_t detail_level, glm::vec3 const &a, glm::vec3 const &b, glm::vec3 const &c)
+    template<std::size_t N, class T>
+    std::array<T, N> generate_position(primitives::icosahedron_create_info const &create_info, std::uint32_t face_index, std::uint32_t i, std::uint32_t j)
     {
-        auto const columns = detail_level + 1;
+        auto &&a = input_vertices[input_indices[face_index][0]];
+        auto &&b = input_vertices[input_indices[face_index][1]];
+        auto &&c = input_vertices[input_indices[face_index][2]];
+
+        auto const columns = create_info.detail + 1;
+
+        auto pos = glm::mix(a, c, static_cast<float>(i) / columns);
+
+        if (i != 0 || j != columns)
+        {
+            auto bj = glm::mix(b, c, static_cast<float>(i) / columns);
+            pos = glm::mix(pos, bj, static_cast<float>(j) / (columns - i));
+        }
+
+        pos = glm::normalize(pos) * create_info.radius;
+
+        if constexpr (N == 4)
+            return std::array<T, N>{pos.x, pos.y, pos.z, 1};
+
+        else if constexpr (N == 3)
+            return std::array<T, N>{pos.x, pos.y, pos.z};
+
+        else throw resource::exception("unsupported components number"s);
+    }
+
+    template<class T>
+    void subdive_face(primitives::icosahedron_create_info const &create_info, strided_bidirectional_iterator<T> it_begin, std::span<std::uint32_t const, 3> indices)
+    {
+        auto &&a = input_vertices[indices[0]];
+        auto &&b = input_vertices[indices[1]];
+        auto &&c = input_vertices[indices[2]];
+
+        auto const columns = create_info.detail + 1;
 
         glm::vec3 aj{0}, bj{0};
 
@@ -70,23 +103,40 @@ namespace {
         }
     }
 
-    void subdive(std::uint32_t detail_level)
+    template<class T>
+    void subdive(primitives::icosahedron_create_info const &create_info, strided_bidirectional_iterator<T> it_begin)
     {
-        glm::vec3 a, b, c;
-
-        for (auto &&i : indices) {
-            a = vertices[i[0]];
-            b = vertices[i[1]];
-            c = vertices[i[2]];
-
-            subdive_face(detail_level, a, b, c);
+        for (auto &&i : input_indices) {
+            subdive_face(create_info.detail, std::span{i});
         }
     }
 
     template<class T, class F>
     void generate_vertex_as_triangles(F generator, primitives::icosahedron_create_info const &,
-                                      strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_number)
+                                      strided_bidirectional_iterator<T> it, std::uint32_t vertex_count)
     {
+        auto const columns = create_info.detail + 1;
+
+        for (auto &&face_index : input_indices) {
+            for (auto i = 0u; i < columns; ++i) {
+                for (auto j = 0u; j < 2 * (columns - i) - 1; ++j) {
+                    auto const k = j / 2;
+
+                    if (j % 2 == 0) {
+                        generate_position(create_info, face_index, i, k + 1);
+                        generate_position(create_info, face_index, i + 1, k);
+                        generate_position(create_info, face_index, i, k);
+                    }
+
+                    else {
+                        generate_position(create_info, face_index, i, k + 1);
+                        generate_position(create_info, face_index, i + 1, k + 1);
+                        generate_position(create_info, face_index, i + 1, k);
+                    }
+                }
+            }
+        }
+
         /*auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
 
@@ -112,11 +162,11 @@ namespace {
 
     template<class T, class F>
     void generate_vertex(F generator, primitives::icosahedron_create_info const &create_info,
-                         strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_number)
+                         strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_count)
     {
         switch (create_info.topology) {
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                generate_vertex_as_triangles(generator, create_info, it_begin, vertex_number);
+                generate_vertex_as_triangles(generator, create_info, it_begin, vertex_count);
                 break;
 
             case graphics::PRIMITIVE_TOPOLOGY::POINTS:
@@ -128,43 +178,18 @@ namespace {
     }
 
     template<std::size_t N, class T>
-    std::array<T, N> generate_position(primitives::icosahedron_create_info const &create_info, std::uint32_t vertex_index)
-    {
-       /* auto const hsegments = create_info.hsegments;
-        auto const vsegments = create_info.vsegments;
-
-        auto const width = create_info.width;
-        auto const height = create_info.height;
-
-        auto [x0, y0] = std::pair{-width / 2.f, height / 2.f};
-        auto [step_x, step_y] = std::pair{width / static_cast<float>(hsegments), -height / static_cast<float>(vsegments)};
-
-        auto x = static_cast<T>(x0 + static_cast<float>(vertex_index % (hsegments + 1u)) * step_x);
-        auto y = static_cast<T>(y0 + static_cast<float>(vertex_index / (hsegments + 1u)) * step_y);
-
-        if constexpr (N == 4)
-            return std::array<T, N>{x, y, 0, 1};
-
-        else if constexpr (N == 3)
-            return std::array<T, N>{x, y, 0};
-
-        else if constexpr (N == 2)
-            return std::array<T, N>{x, y};
-
-        else */throw resource::exception("unsupported components number"s);
-    }
-
-    template<std::size_t N, class T>
     void generate_positions(primitives::icosahedron_create_info const &create_info, graphics::FORMAT format,
-                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::uint32_t vertex_number)
+                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::uint32_t vertex_count)
     {
+        auto const columns = create_info.detail + 1;
+
         if constexpr (N == 2 || N == 3) {
             switch (graphics::numeric_format(format)) {
                 case graphics::NUMERIC_FORMAT::FLOAT:
-                    {
+                    /*{
                         auto generator = std::bind(generate_position<N, T>, create_info, std::placeholders::_1);
-                        generate_vertex(generator, create_info, it_begin, vertex_number);
-                    }
+                        generate_vertex(generator, create_info, it_begin, vertex_count);
+                    }*/
                     break;
 
                 default:
@@ -181,6 +206,10 @@ namespace primitives {
 
 	std::uint32_t calculate_icosahedron_vertices_count(primitives::icosahedron_create_info const &create_info)
 	{
+        auto const columns = create_info.detail + 1;
+
+        auto x = std::size(input_indices) * columns * (2 * (columns - i) - 1);
+
 		return 0;
 	}
 
@@ -189,7 +218,7 @@ namespace primitives {
 		
         auto &&vertex_layout = create_info.vertex_layout;
 
-        auto vertex_number = calculate_icosahedron_vertices_count(create_info);
+        auto vertex_count = calculate_icosahedron_vertices_count(create_info);
         auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_bytes);
 
         auto &&attributes = vertex_layout.attributes;
@@ -209,19 +238,19 @@ namespace primitives {
 
                     switch (attribute.semantic) {
                         case vertex::SEMANTIC::POSITION:
-                            generate_positions(create_info, attribute.format, it, vertex_number);
+                            generate_positions(create_info, attribute.format, it, vertex_count);
                             break;
 
                         case vertex::SEMANTIC::NORMAL:
-                            //generate_normals(attribute.format, it, vertex_number);
+                            //generate_normals(attribute.format, it, vertex_count);
                             break;
 
                         case vertex::SEMANTIC::TEXCOORD_0:
-                            //generate_texcoords(create_info, attribute.format, it, vertex_number);
+                            //generate_texcoords(create_info, attribute.format, it, vertex_count);
                             break;
 
                         case vertex::SEMANTIC::COLOR_0:
-                            //generate_colors(color, attribute.format, it, vertex_number);
+                            //generate_colors(color, attribute.format, it, vertex_count);
                             break;
 
                         default:
