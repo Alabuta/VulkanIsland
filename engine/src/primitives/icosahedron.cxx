@@ -55,10 +55,10 @@ namespace {
         pos = glm::normalize(pos) * create_info.radius;
 
         if constexpr (N == 4)
-            return std::array<T, N>{pos.x, pos.y, pos.z, 1};
+            return std::array<T, N>{static_cast<T>(pos.x), static_cast<T>(pos.y), static_cast<T>(pos.z), 1};
 
         else if constexpr (N == 3)
-            return std::array<T, N>{pos.x, pos.y, pos.z};
+            return std::array<T, N>{static_cast<T>(pos.x), static_cast<T>(pos.y), static_cast<T>(pos.z)};
 
         else throw resource::exception("unsupported components number"s);
     }
@@ -112,29 +112,31 @@ namespace {
     }
 
     template<class T, class F>
-    void generate_vertex_as_triangles(F generator, primitives::icosahedron_create_info const &,
-                                      strided_bidirectional_iterator<T> it, std::uint32_t vertex_count)
+    void generate_vertex_as_triangles(F generator, primitives::icosahedron_create_info const &create_info,
+                                      strided_bidirectional_iterator<T> it)
     {
         auto const columns = create_info.detail + 1;
 
-        for (auto &&face_index : input_indices) {
+        for (auto face_index = 0u; [[maybe_unused]] auto &&face : input_indices) {
             for (auto i = 0u; i < columns; ++i) {
                 for (auto j = 0u; j < 2 * (columns - i) - 1; ++j) {
                     auto const k = j / 2;
 
                     if (j % 2 == 0) {
-                        generate_position(create_info, face_index, i, k + 1);
-                        generate_position(create_info, face_index, i + 1, k);
-                        generate_position(create_info, face_index, i, k);
+                        *it = generator(face_index, i, k + 1);
+                        *++it = generator(face_index, i + 1, k);
+                        *++it = generator(face_index, i, k);
                     }
 
                     else {
-                        generate_position(create_info, face_index, i, k + 1);
-                        generate_position(create_info, face_index, i + 1, k + 1);
-                        generate_position(create_info, face_index, i + 1, k);
+                        *it = generator(face_index, i, k + 1);
+                        *++it = generator(face_index, i + 1, k + 1);
+                        *++it = generator(face_index, i + 1, k);
                     }
                 }
             }
+
+            ++face_index;
         }
 
         /*auto const hsegments = create_info.hsegments;
@@ -162,11 +164,11 @@ namespace {
 
     template<class T, class F>
     void generate_vertex(F generator, primitives::icosahedron_create_info const &create_info,
-                         strided_bidirectional_iterator<T> it_begin, std::uint32_t vertex_count)
+                         strided_bidirectional_iterator<T> it_begin)
     {
         switch (create_info.topology) {
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                generate_vertex_as_triangles(generator, create_info, it_begin, vertex_count);
+                generate_vertex_as_triangles(generator, create_info, it_begin);
                 break;
 
             case graphics::PRIMITIVE_TOPOLOGY::POINTS:
@@ -179,17 +181,17 @@ namespace {
 
     template<std::size_t N, class T>
     void generate_positions(primitives::icosahedron_create_info const &create_info, graphics::FORMAT format,
-                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::uint32_t vertex_count)
+                            strided_bidirectional_iterator<std::array<T, N>> it_begin)
     {
         auto const columns = create_info.detail + 1;
 
-        if constexpr (N == 2 || N == 3) {
+        if constexpr (N == 3 || N == 4) {
             switch (graphics::numeric_format(format)) {
                 case graphics::NUMERIC_FORMAT::FLOAT:
-                    /*{
-                        auto generator = std::bind(generate_position<N, T>, create_info, std::placeholders::_1);
-                        generate_vertex(generator, create_info, it_begin, vertex_count);
-                    }*/
+                    {
+                        auto generator = std::bind(generate_position<N, T>, create_info, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+                        generate_vertex(generator, create_info, it_begin);
+                    }
                     break;
 
                 default:
@@ -208,9 +210,13 @@ namespace primitives {
 	{
         auto const columns = create_info.detail + 1;
 
-        auto x = std::size(input_indices) * columns * (2 * (columns - i) - 1);
+        std::uint32_t vertices_count = 0;
 
-		return 0;
+        for (auto i = 0u; i < columns; ++i)
+            for (auto j = 0u; j < 2 * (columns - i) - 1; ++j)
+                vertices_count += 3;
+
+        return static_cast<std::uint32_t>(std::size(input_indices)) * vertices_count;
 	}
 
 	void generate_icosahedron(primitives::icosahedron_create_info const &create_info, std::span<std::byte> vertex_buffer)
@@ -218,7 +224,7 @@ namespace primitives {
 		
         auto &&vertex_layout = create_info.vertex_layout;
 
-        auto vertex_count = calculate_icosahedron_vertices_count(create_info);
+        //auto vertex_count = calculate_icosahedron_vertices_count(create_info);
         auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_bytes);
 
         auto &&attributes = vertex_layout.attributes;
@@ -238,7 +244,7 @@ namespace primitives {
 
                     switch (attribute.semantic) {
                         case vertex::SEMANTIC::POSITION:
-                            generate_positions(create_info, attribute.format, it, vertex_count);
+                            generate_positions(create_info, attribute.format, it);
                             break;
 
                         case vertex::SEMANTIC::NORMAL:
