@@ -799,7 +799,7 @@ namespace temp
         auto const index_count = primitives::calculate_box_indices_number(create_info);
         auto const index_size = graphics::size_bytes(index_type);
 
-        auto const vertex_count = primitives::calculate_box_vertices_number(create_info);
+        auto const vertex_count = primitives::calculate_box_vertices_count(create_info);
         auto const vertex_size = vertex_layout.size_bytes;
 
         auto const index_buffer_allocation_size = index_count * index_size;
@@ -901,10 +901,10 @@ namespace temp
             1.f, 1.f, 1u, 1u
         };
 
-        auto const index_count = primitives::calculate_plane_indices_number(create_info);
+        auto const index_count = primitives::calculate_plane_indices_count(create_info);
         auto const index_size = graphics::size_bytes(index_type);
 
-        auto const vertex_count = primitives::calculate_plane_vertices_number(create_info);
+        auto const vertex_count = primitives::calculate_plane_vertices_count(create_info);
         auto const vertex_size = vertex_layout.size_bytes;
 
         auto const index_buffer_allocation_size = index_count * index_size;
@@ -1008,7 +1008,7 @@ namespace temp
 
             vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
 
-            if constexpr (false) {
+            if constexpr (true) {
                 struct vertex final {
                     std::array<float, 3> p;
                     std::array<float, 3> n;
@@ -1019,8 +1019,8 @@ namespace temp
                 auto it_vertex = reinterpret_cast<vertex *>(std::data(vertex_staging_buffer->mapped_range()));
 
                 for (auto i = 0u; i < vertex_count; ++i, ++it_vertex) {
-                    if (i % 4 == 0)
-                        std::cout << "face index: " << i / 4 << std::endl;
+                    /*if (i % 4 == 0)
+                        std::cout << "face index: " << i / 4 << std::endl;*/
 
                     std::cout << "p " << it_vertex->p[0] << ' ' << it_vertex->p[1] << ' ' << it_vertex->p[2] << std::endl;
                     //std::cout << "n " << it_vertex->n[0] << ' ' << it_vertex->n[1] << ' ' << it_vertex->n[2] << std::endl;
@@ -1214,10 +1214,10 @@ namespace temp
             add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 4);
         }
 
-        {
+        /*{
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
             add_icosahedron(app, model_, 0, 4);
-        }
+        }*/
  
         return model_;
     }

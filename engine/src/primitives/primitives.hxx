@@ -19,9 +19,9 @@ namespace primitives
         std::uint32_t hsegments, vsegments;
     };
 
-    std::uint32_t calculate_plane_vertices_number(primitives::plane_create_info const &create_info);
+    std::uint32_t calculate_plane_vertices_count(primitives::plane_create_info const &create_info);
 
-    std::uint32_t calculate_plane_indices_number(primitives::plane_create_info const &create_info);
+    std::uint32_t calculate_plane_indices_count(primitives::plane_create_info const &create_info);
 
     void generate_plane(primitives::plane_create_info const &create_info, std::span<std::byte> vertex_buffer,
                         glm::vec4 const &color = glm::vec4{1});
@@ -42,7 +42,7 @@ namespace primitives
         std::array<glm::vec4, 6> colors;
     };
 
-    std::uint32_t calculate_box_vertices_number(primitives::box_create_info const &create_info);
+    std::uint32_t calculate_box_vertices_count(primitives::box_create_info const &create_info);
 
     std::uint32_t calculate_box_indices_number(primitives::box_create_info const &create_info);
 

@@ -477,7 +477,7 @@ namespace
 
 namespace primitives
 {
-    std::uint32_t calculate_box_vertices_number(primitives::box_create_info const &create_info)
+    std::uint32_t calculate_box_vertices_count(primitives::box_create_info const &create_info)
     {
         auto vertices_number = calculate_box_faces_vertices_count(create_info);
         return (vertices_number.at(0) + vertices_number.at(1) + vertices_number.at(2)) * 2;
@@ -557,7 +557,7 @@ namespace primitives
     {
         auto &&vertex_layout = create_info.vertex_layout;
 
-        auto vertex_number = calculate_box_vertices_number(create_info);
+        auto vertex_number = calculate_box_vertices_count(create_info);
         auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_bytes);
 
         auto &&attributes = vertex_layout.attributes;
