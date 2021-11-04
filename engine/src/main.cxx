@@ -990,7 +990,7 @@ namespace temp
         primitives::icosahedron_create_info const create_info{
             vertex_layout, topology,
             generate_color(),
-            1.f, 1u
+            .4f, 10u
         };
 
         auto const vertex_count = primitives::calculate_icosahedron_vertices_count(create_info);
@@ -1008,7 +1008,7 @@ namespace temp
 
             vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
 
-            if constexpr (true) {
+            if constexpr (false) {
                 struct vertex final {
                     std::array<float, 3> p;
                     std::array<float, 3> n;
@@ -1062,13 +1062,14 @@ namespace temp
         model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
         model_.materials.push_back(xformat::material{0, "debug/solid-wireframe"s});
         model_.materials.push_back(xformat::material{0, "debug/normal-vectors-debug-material"s});
-
-        model_.transforms.push_back(glm::mat4{1.f});
+        
+        model_.transforms.push_back(glm::translate(glm::mat4{1.f}, glm::vec3{0, -1, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-.5, 0, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-.5, -1, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+.5, 0, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+.5, -1, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(glm::translate(glm::mat4{1.f}, glm::vec3{0, 0, -2}));
+        model_.transforms.push_back(glm::translate(glm::mat4{1.f}, glm::vec3{0, 0, 0}));
         model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(0.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
@@ -1216,7 +1217,7 @@ namespace temp
 
         {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_icosahedron(app, model_, 0, 4);
+            add_icosahedron(app, model_, 2, 2);
         }
  
         return model_;

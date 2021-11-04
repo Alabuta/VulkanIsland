@@ -28,37 +28,69 @@ namespace {
 		glm::vec3{t, 0, -1},		glm::vec3{t, 0, 1},		glm::vec3{-t, 0, -1},		glm::vec3{-t, 0, 1}
 	};
 
-	static auto constexpr input_indices = std::array{
+	static auto constexpr faces = std::array{
 		std::array{0u, 11u, 5u}, 	    std::array{0u, 5u, 1u}, 	std::array{0u, 1u, 7u}, 		std::array{0u, 7u, 10u}, 	std::array{0u, 10u, 11u},
 		std::array{1u, 5u, 9u}, 		std::array{5u, 11u, 4u},	std::array{11u, 10u, 2u},	    std::array{10u, 7u, 6u},	std::array{7u, 1u, 8u},
 		std::array{3u, 9u, 4u}, 		std::array{3u, 4u, 2u},	    std::array{3u, 2u, 6u},		    std::array{3u, 6u, 8u},		std::array{3u, 8u, 9u},
 		std::array{4u, 9u, 5u}, 		std::array{2u, 4u, 11u},	std::array{6u, 2u, 10u},		std::array{8u, 6u, 7u},		std::array{9u, 8u, 1u}
 	};
 
-    template<std::size_t N, class T>
-    std::array<T, N> generate_position(primitives::icosahedron_create_info const &create_info, std::uint32_t face_index, std::uint32_t i, std::uint32_t j)
+    static auto constexpr offsets_pattern = std::array{
+        std::array{
+            std::pair{0, 1}, std::pair{1, 0}, std::pair{0, 0}
+        },
+        std::array{
+            std::pair{0, 1}, std::pair{1, 1}, std::pair{1, 0}
+        }
+    };
+
+    glm::vec3 generate_point(primitives::icosahedron_create_info const &create_info, std::span<std::uint32_t const, 3> face, std::uint32_t i, std::uint32_t j)
     {
-        auto &&a = input_vertices[input_indices[face_index][0]];
-        auto &&b = input_vertices[input_indices[face_index][1]];
-        auto &&c = input_vertices[input_indices[face_index][2]];
+        auto &&a = input_vertices[face[0]];
+        auto &&b = input_vertices[face[1]];
+        auto &&c = input_vertices[face[2]];
 
         auto const columns = create_info.detail + 1;
 
-        auto pos = glm::mix(a, c, static_cast<float>(i) / columns);
+        auto point = glm::mix(a, c, static_cast<float>(i) / columns);
 
-        if (i != 0 || j != columns)
+        if (i != columns || j != 0)
         {
             auto bj = glm::mix(b, c, static_cast<float>(i) / columns);
-            pos = glm::mix(pos, bj, static_cast<float>(j) / (columns - i));
+            point = glm::mix(point, bj, static_cast<float>(j) / (columns - i));
         }
 
-        pos = glm::normalize(pos) * create_info.radius;
+        return glm::normalize(point);
+    }
+
+    template<std::size_t N, class T>
+    std::array<T, N> generate_position(primitives::icosahedron_create_info const &create_info, std::span<std::uint32_t const, 3> face, std::uint32_t i, std::uint32_t j)
+    {
+        auto point = generate_point(create_info, face, i, j) * create_info.radius;
 
         if constexpr (N == 4)
-            return std::array<T, N>{static_cast<T>(pos.x), static_cast<T>(pos.y), static_cast<T>(pos.z), 1};
+            return std::array<T, N>{static_cast<T>(point.x), static_cast<T>(point.y), static_cast<T>(point.z), 1};
 
         else if constexpr (N == 3)
-            return std::array<T, N>{static_cast<T>(pos.x), static_cast<T>(pos.y), static_cast<T>(pos.z)};
+            return std::array<T, N>{static_cast<T>(point.x), static_cast<T>(point.y), static_cast<T>(point.z)};
+
+        else throw resource::exception("unsupported components number"s);
+    }
+
+    template<std::size_t N, class T>
+    std::array<T, N> generate_normal(primitives::icosahedron_create_info const &create_info, std::span<std::uint32_t const, 3> face, std::uint32_t i, std::uint32_t j)
+    {
+        auto point = generate_point(create_info, face, i, j);
+
+        if constexpr (N == 2) {
+            std::array<T, 2> oct;
+            math::encode_unit_vector_to_oct_fast(std::span{oct}, glm::vec3{point});
+
+            return oct;
+        }
+
+        else if constexpr (N == 3)
+            return std::array<T, N>{static_cast<T>(point.x), static_cast<T>(point.y), static_cast<T>(point.z)};
 
         else throw resource::exception("unsupported components number"s);
     }
@@ -106,60 +138,32 @@ namespace {
     template<class T>
     void subdive(primitives::icosahedron_create_info const &create_info, strided_bidirectional_iterator<T> it_begin)
     {
-        for (auto &&i : input_indices) {
+        for (auto &&i : faces) {
             subdive_face(create_info.detail, std::span{i});
         }
     }
 
-    template<class T, class F>
+    template<std::size_t N, class T, class F>
     void generate_vertex_as_triangles(F generator, primitives::icosahedron_create_info const &create_info,
-                                      strided_bidirectional_iterator<T> it)
+                                      strided_bidirectional_iterator<std::array<T, N>> it)
     {
         auto const columns = create_info.detail + 1;
 
-        for (auto face_index = 0u; [[maybe_unused]] auto &&face : input_indices) {
+        for (auto &&face : faces) {
             for (auto i = 0u; i < columns; ++i) {
                 for (auto j = 0u; j < 2 * (columns - i) - 1; ++j) {
                     auto const k = j / 2;
+                    auto const pattern_index = j % 2;
 
-                    if (j % 2 == 0) {
-                        *it = generator(face_index, i, k + 1);
-                        *++it = generator(face_index, i + 1, k);
-                        *++it = generator(face_index, i, k);
-                    }
+                    std::transform(std::cbegin(offsets_pattern[pattern_index]), std::cend(offsets_pattern[pattern_index]), it, [&face, generator, i, k] (auto offsets)
+                    {
+                        return generator(face, i + std::get<0>(offsets), k + std::get<1>(offsets));
+                    });
 
-                    else {
-                        *it = generator(face_index, i, k + 1);
-                        *++it = generator(face_index, i + 1, k + 1);
-                        *++it = generator(face_index, i + 1, k);
-                    }
+                    std::advance(it, std::size(offsets_pattern[pattern_index]));
                 }
             }
-
-            ++face_index;
         }
-
-        /*auto const hsegments = create_info.hsegments;
-        auto const vsegments = create_info.vsegments;
-
-        auto const pattern = std::array{0u, hsegments + 1, 1u, 1u, hsegments + 1, hsegments + 2};
-
-        auto const vertices_per_quad = 2 * 3;
-        auto const horizontal_vertices_number = hsegments * vertices_per_quad;
-
-        for (auto vsegment_index = 0u; vsegment_index < vsegments; ++vsegment_index) {
-            for (auto hsegment_index = 0u; hsegment_index < hsegments; ++hsegment_index) {
-                auto const offset = horizontal_vertices_number * vsegment_index + hsegment_index * vertices_per_quad;
-                auto it = std::next(it_begin, static_cast<std::ptrdiff_t>(offset));
-
-                std::transform(std::cbegin(pattern), std::cend(pattern), it, [&] (auto column)
-                {
-                    auto vertex_index = vsegment_index * (hsegments + 1) + column + hsegment_index;
-
-                    return generator(vertex_index);
-                });
-            }
-        }*/
     }
 
     template<class T, class F>
@@ -181,7 +185,7 @@ namespace {
 
     template<std::size_t N, class T>
     void generate_positions(primitives::icosahedron_create_info const &create_info, graphics::FORMAT format,
-                            strided_bidirectional_iterator<std::array<T, N>> it_begin)
+                            strided_bidirectional_iterator<std::array<T, N>> it)
     {
         auto const columns = create_info.detail + 1;
 
@@ -190,13 +194,67 @@ namespace {
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     {
                         auto generator = std::bind(generate_position<N, T>, create_info, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
-                        generate_vertex(generator, create_info, it_begin);
+                        generate_vertex(generator, create_info, it);
                     }
                     break;
 
                 default:
                     throw resource::exception("unsupported numeric format"s);
                     break;
+            }
+        }
+
+        else throw resource::exception("unsupported components number"s);
+    }
+
+    template<std::size_t N, class T>
+    void generate_normals(primitives::icosahedron_create_info const &create_info, graphics::FORMAT format,
+                          strided_bidirectional_iterator<std::array<T, N>> it)
+    {
+        if constexpr (N == 2) {
+            switch (graphics::numeric_format(format)) {
+                case graphics::NUMERIC_FORMAT::NORMALIZED:
+                {
+                    if constexpr (mpl::is_one_of_v<T, std::int8_t, std::int16_t>) {
+                        /*auto generate_normal = [] (glm::vec<N, T> const &point)
+                        {
+                            std::array<T, 2> oct;
+                            math::encode_unit_vector_to_oct_fast(std::span{oct}, point.x, point.y, point.z);
+
+                            return oct;
+                        };*/
+
+                        auto generator = std::bind(generate_normal<N, T>, create_info, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+                        generate_vertex(generator, create_info, it);
+                    }
+
+                    else throw resource::exception("unsupported format type"s);
+
+                    break;
+                }
+
+                default:
+                    throw resource::exception("unsupported numeric format"s);
+            }
+        }
+
+        else if constexpr (N == 3) {
+            switch (graphics::numeric_format(format)) {
+                case graphics::NUMERIC_FORMAT::SCALED:
+                case graphics::NUMERIC_FORMAT::INT:
+                case graphics::NUMERIC_FORMAT::FLOAT:
+                    {
+                        /*auto generate_normal = [] (glm::vec<N, T> const &point)
+                        {
+                            return std::array<T, N>{static_cast<T>(point.x), static_cast<T>(point.y), static_cast<T>(point.z)};
+                        };*/
+                        auto generator = std::bind(generate_normal<N, T>, create_info, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3);
+                        generate_vertex(generator, create_info, it);
+                    }
+                    break;
+
+                default:
+                    throw resource::exception("unsupported numeric format"s);
             }
         }
 
@@ -216,7 +274,7 @@ namespace primitives {
             for (auto j = 0u; j < 2 * (columns - i) - 1; ++j)
                 vertices_count += 3;
 
-        return static_cast<std::uint32_t>(std::size(input_indices)) * vertices_count;
+        return static_cast<std::uint32_t>(std::size(faces)) * vertices_count;
 	}
 
 	void generate_icosahedron(primitives::icosahedron_create_info const &create_info, std::span<std::byte> vertex_buffer)
@@ -248,7 +306,7 @@ namespace primitives {
                             break;
 
                         case vertex::SEMANTIC::NORMAL:
-                            //generate_normals(attribute.format, it, vertex_count);
+                            generate_normals(create_info, attribute.format, it);
                             break;
 
                         case vertex::SEMANTIC::TEXCOORD_0:

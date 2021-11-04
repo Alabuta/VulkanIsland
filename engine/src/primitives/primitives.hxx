@@ -60,8 +60,8 @@ namespace primitives
 
         std::uint32_t size;
         std::uint32_t segments;
-
-        glm::vec4 color = glm::vec4{1};
+        
+        glm::vec4 color{glm::vec4{1}};
 
         bool bottom = true;
         bool lid = true;
@@ -81,10 +81,10 @@ namespace primitives
         graphics::vertex_layout vertex_layout;
         graphics::PRIMITIVE_TOPOLOGY topology;
 
-        glm::vec4 color = glm::vec4{1};
+        glm::vec4 color{glm::vec4{1}};
 
-        float radius = 1.f;
-        std::uint32_t detail = 4;
+        float radius{1.f};
+        std::uint32_t detail{0};
     };
 
     std::uint32_t calculate_icosahedron_vertices_count(primitives::icosahedron_create_info const &create_info);
