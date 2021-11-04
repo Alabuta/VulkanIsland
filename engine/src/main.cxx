@@ -498,7 +498,7 @@ void create_graphics_command_buffers(app_t &app)
                 for (auto &&dc : span) {
                     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
 
-                    std::array<VkDescriptorSet, 3> descriptor_sets{
+                    std::array<VkDescriptorSet, 2> descriptor_sets{
                         app.view_resources_descriptor_set, dc.descriptor_set
                     };
 
@@ -1068,7 +1068,7 @@ namespace temp
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-.5, 0, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+.5, 0, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
-        model_.transforms.push_back(glm::translate(glm::mat4{1.f}, glm::vec3{2, 0, 0}));
+        model_.transforms.push_back(glm::translate(glm::mat4{1.f}, glm::vec3{0, 0, -2}));
         model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(0.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
@@ -1100,7 +1100,7 @@ namespace temp
 
         if constexpr (true) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_plane(app, model_, 0, graphics::INDEX_TYPE::UINT_16, 3);
+            add_plane(app, model_, 0, graphics::INDEX_TYPE::UNDEFINED, 3);
 
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
             add_plane(app, model_, 1, graphics::INDEX_TYPE::UINT_16, 1);
@@ -1214,10 +1214,10 @@ namespace temp
             add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 4);
         }
 
-        /*{
+        {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
             add_icosahedron(app, model_, 0, 4);
-        }*/
+        }
  
         return model_;
     }

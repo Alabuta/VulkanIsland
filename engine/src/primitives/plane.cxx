@@ -402,7 +402,7 @@ namespace primitives
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
 
-        if (hsegments * vsegments < 1)
+        if (hsegments < 1 || vsegments < 1)
             throw resource::exception("invalid plane segments' values"s);
 
         bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
