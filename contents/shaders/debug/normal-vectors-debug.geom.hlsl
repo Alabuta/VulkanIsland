@@ -24,7 +24,7 @@ struct GS_OUTPUT
 };
 
 
-const float4 normalsColor = float4(1.0, 1.0, 0.0, 1.0);
+const float4 normalsColor = float4(0., .4, .8, 1.);
 
 
 #pragma technique(0)

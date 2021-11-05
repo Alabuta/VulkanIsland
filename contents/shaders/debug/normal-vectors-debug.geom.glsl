@@ -28,7 +28,7 @@ in gl_PerVertex {
 
 layout (location = 0) out vec4 outColor;
 
-const vec4 normalsColor = vec4(1.0, 1.0, 0.0, 1.0);
+const vec4 normalsColor = vec4(0., .4, .8, 1.);
 
 
 void process(int index)
