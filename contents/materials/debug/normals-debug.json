@@ -27,6 +27,23 @@
                 [ 0, 2 ],
                 [ 0, 3 ]
             ]
+        },
+        {
+            "shaderBundle": [
+                {
+                    "index": 0,
+                    "technique": 1
+                },
+                {
+                    "index": 1,
+                    "technique": 0
+                }
+            ],
+            "vertexLayouts": [
+                [ 0, 1 ],
+                [ 0, 2 ],
+                [ 0, 3 ]
+            ]
         }
     ],
     "vertexAttributes": [

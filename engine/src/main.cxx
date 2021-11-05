@@ -1059,6 +1059,7 @@ namespace temp
         model_.materials.push_back(xformat::material{0, "debug/color-debug-material"s});
         model_.materials.push_back(xformat::material{1, "debug/color-debug-material"s});
         model_.materials.push_back(xformat::material{0, "debug/normals-debug"s});
+        model_.materials.push_back(xformat::material{1, "debug/normals-debug"s});
         model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
         model_.materials.push_back(xformat::material{0, "debug/solid-wireframe"s});
         model_.materials.push_back(xformat::material{0, "debug/normal-vectors-debug-material"s});
@@ -1101,7 +1102,7 @@ namespace temp
 
         if constexpr (true) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_plane(app, model_, 0, graphics::INDEX_TYPE::UNDEFINED, 3);
+            add_plane(app, model_, 0, graphics::INDEX_TYPE::UNDEFINED, 4);
 
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
             add_plane(app, model_, 1, graphics::INDEX_TYPE::UINT_16, 1);
@@ -1212,12 +1213,12 @@ namespace temp
 
         {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 4);
+            add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 5);
         }
 
         {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_icosahedron(app, model_, 2, 2);
+            add_icosahedron(app, model_, 2, 3);
         }
  
         return model_;
