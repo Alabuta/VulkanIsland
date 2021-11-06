@@ -21,8 +21,8 @@ layout (set = 1, binding = 0) StructuredBuffer<PER_OBJECT> object : register(t0,
 
 struct VS_OUTPUT
 {
-	[[vk::location(0)]] float4 position : POSITION;
-    [[vk::location(1)]] float3 normal : NORMAL;
+	float4 sv_position : SV_POSITION;
+    [[vk::location(0)]] float3 normal : NORMAL;
 };
 
 
@@ -30,8 +30,8 @@ VS_OUTPUT process(in float3 position, in float3 normal)
 {
     VS_OUTPUT output = (VS_OUTPUT)0;
 
-    output.position = mul(object[0].world, float4(position, 1.));
-    output.position = mul(camera.view, output.position);
+    output.sv_position = mul(object[0].world, float4(position, 1.));
+    output.sv_position = mul(camera.view, output.sv_position);
 
     float4 viewSpaceNormal = mul(object[0].normal, float4(normal, 0.0));
     output.normal = normalize(float3(viewSpaceNormal));

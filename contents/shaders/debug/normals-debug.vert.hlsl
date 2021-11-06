@@ -33,8 +33,10 @@ VS_OUTPUT process(in float3 position, in float3 normal, bool transfromToViewSpac
     output.position = mul(object[0].world, float4(position, 1.));
     output.position = mul(camera.projectionView, output.position);
 
-    float4 n = transfromToViewSpace ? mul(object[0].normal, float4(normal, 0.0)) : float4(normal, 0.0);
-    output.color = float4(normalize(float3(n)), 1.0);
+    float4 n = transfromToViewSpace ? mul(object[0].normal, float4(normal, 0.)) : float4(normal, 0.);
+    output.color = float4(normalize(float3(n)), 1.);
+    if (!transfromToViewSpace)
+        output.color = float4(output.color.xyz * .5 + .5, 1.);
 
     return output;
 }

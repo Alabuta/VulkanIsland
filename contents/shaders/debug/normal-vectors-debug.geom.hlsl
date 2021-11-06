@@ -13,8 +13,8 @@ layout (set = 0, binding = 0) ConstantBuffer<PER_CAMERA> camera : register(b0, s
 
 struct VS_INPUT
 {
-	[[vk::location(0)]] float4 position : POSITION;
-    [[vk::location(1)]] float3 normal : NORMAL;
+	float4 sv_position : SV_POSITION;
+    [[vk::location(0)]] float3 normal : NORMAL;
 };
 
 struct GS_OUTPUT
@@ -32,16 +32,16 @@ const float4 normalsColor = float4(0., .4, .8, 1.);
 void main(triangle VS_INPUT input[3], inout LineStream<GS_OUTPUT> outstream)
 {
     for (int i = 0; i < 3; ++i) {
-        float4 position = input[i].position;
+        float4 sv_position = input[i].sv_position;
 		float3 normal = input[i].normal;
 
 		GS_OUTPUT output = (GS_OUTPUT)0;
 
-        output.position = mul(camera.projection, position);
+        output.position = mul(camera.projection, sv_position);
         output.color = normalsColor;
         outstream.Append(output);
 
-        output.position = mul(camera.projection, (position + float4(normal, 0.0) * MAGNITUDE));
+        output.position = mul(camera.projection, (sv_position + float4(normal, 0.0) * MAGNITUDE));
         output.color = normalsColor;
         outstream.Append(output);
 

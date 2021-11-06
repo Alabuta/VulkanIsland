@@ -30,6 +30,8 @@ void process(in vec3 position, in vec3 normal, bool transfromToViewSpace)
 
     vec4 n = transfromToViewSpace ? object.normal * vec4(normal, 0.0) : vec4(normal, 0.0);
     outColor = vec4(normalize(vec3(n)), 1.0);
+    if (!transfromToViewSpace)
+        outColor = vec4(outColor.xyz * .5 + .5, 1.);
 }
 
 #pragma technique(0)
