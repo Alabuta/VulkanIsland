@@ -19,11 +19,11 @@ namespace math
     requires (std::same_as<std::remove_cvref_t<V>, glm::vec3> && mpl::one_of<T, std::int8_t, std::int16_t>)
     void decode_oct_to_vec(std::span<T, 2> const oct, V &vec)
     {
-        auto constexpr max = static_cast<float>(std::numeric_limits<T>::max());
+        auto constexpr type_max = static_cast<float>(std::numeric_limits<T>::max());
 
         vec = glm::vec3{oct[0], oct[1], 0};
-        vec.xy() += max + 1.f;
-        vec.xy() /= max - .5f;
+        vec.xy() += type_max + 1.f;
+        vec.xy() /= type_max - .5f;
         vec.xy() -= 1.f;
         vec.z = 1.f - std::abs(vec.x) - std::abs(vec.y);
 
@@ -47,9 +47,9 @@ namespace math
             vec.xy = (1.f - glm::abs(vec.yx())) * sign;
         }
 
-        auto constexpr max = static_cast<float>(std::numeric_limits<T>::max());
+        auto constexpr type_max = static_cast<float>(std::numeric_limits<T>::max());
 
-        glm::vec<2, std::int32_t> d{glm::round((1.f + glm::vec2{vec}) * (.5f + max) - (max + 1))};
+        glm::vec<2, std::int32_t> d{glm::round((1.f + glm::vec2{vec}) * (.5f + type_max) - (type_max + 1))};
 
         assert(d.x <= std::numeric_limits<T>::max() && d.x >= std::numeric_limits<T>::min());
         assert(d.y <= std::numeric_limits<T>::max() && d.x >= std::numeric_limits<T>::min());

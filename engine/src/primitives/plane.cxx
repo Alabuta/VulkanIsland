@@ -205,16 +205,20 @@ namespace
                     if constexpr (std::is_same_v<T, std::uint16_t>) {
                         auto constexpr type_max = static_cast<float>(std::numeric_limits<T>::max());
 
-                        return std::array<T, N>{static_cast<T>(x *type_max), static_cast<T>(y *type_max)};
+                        return std::array<T, N>{static_cast<T>(x * type_max), static_cast<T>(y * type_max)};
                     }
 
                     else throw resource::exception("unsupported format type"s);
+
+                    break;
 
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     if constexpr (std::is_floating_point_v<T>)
                         return std::array<T, N>{static_cast<T>(x), static_cast<T>(y)};
 
                     else throw resource::exception("unsupported format type"s);
+
+                    break;
 
                 default:
                     throw resource::exception("unsupported numeric format"s);
@@ -254,6 +258,8 @@ namespace
 
                     else throw resource::exception("unsupported format type"s);
 
+                    break;
+
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     if constexpr (std::is_floating_point_v<T>) {
                         if constexpr (N == 4)
@@ -264,6 +270,8 @@ namespace
                     }
 
                     else throw resource::exception("unsupported format type"s);
+
+                    break;
 
                 default:
                     throw resource::exception("unsupported numeric format"s);
@@ -298,7 +306,6 @@ namespace
 
                 default:
                     throw resource::exception("unsupported numeric format"s);
-                    break;
             }
         }
 

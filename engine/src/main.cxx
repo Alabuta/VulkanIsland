@@ -1072,7 +1072,7 @@ namespace temp
         model_.transforms.push_back(glm::translate(glm::mat4{1.f}, glm::vec3{0, 0, -2}));
         model_.transforms.push_back(glm::translate(glm::mat4{1.f}, glm::vec3{0, 0, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(0.f), glm::vec3{1, 0, 0}));
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(90.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 1, -1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
@@ -1211,14 +1211,14 @@ namespace temp
             }
         }
 
-        {
+        if constexpr (true) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
             add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 5);
         }
 
-        {
+        if constexpr (true) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_icosahedron(app, model_, 2, 3);
+            add_icosahedron(app, model_, 2, 4);
         }
  
         return model_;
