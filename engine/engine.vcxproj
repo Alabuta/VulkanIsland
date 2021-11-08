@@ -260,6 +260,7 @@
     <ClCompile Include="src\primitives\box.cxx" />
     <ClCompile Include="src\primitives\icosahedron.cxx" />
     <ClCompile Include="src\primitives\plane.cxx" />
+    <ClCompile Include="src\primitives\sphere.cxx" />
     <ClCompile Include="src\primitives\teapot.cxx" />
     <ClCompile Include="src\renderer\config.cxx" />
     <ClCompile Include="src\renderer\renderer.cxx" />

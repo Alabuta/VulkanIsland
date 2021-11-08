@@ -51,6 +51,28 @@ namespace primitives
     void generate_box_indexed(primitives::box_create_info const &create_info, std::span<std::byte> vertex_buffer,
                               std::span<std::byte> index_buffer);
 
+    struct sphere_create_info final {
+        graphics::vertex_layout vertex_layout;
+
+        graphics::PRIMITIVE_TOPOLOGY topology;
+
+        graphics::INDEX_TYPE index_buffer_type;
+
+        float radius{1.f};
+        std::uint32_t wsegments, hsegments;
+        
+        glm::vec4 color{glm::vec4{1}};
+    };
+
+    std::uint32_t calculate_sphere_vertices_count(primitives::sphere_create_info const &create_info);
+
+    std::uint32_t calculate_sphere_indices_number(primitives::sphere_create_info const &create_info);
+
+    void generate_sphere(primitives::sphere_create_info const &create_info, std::span<std::byte> vertex_buffer);
+
+    void generate_sphere_indexed(primitives::sphere_create_info const &create_info, std::span<std::byte> vertex_buffer,
+                                 std::span<std::byte> index_buffer);
+
     struct teapot_create_info final {
         graphics::vertex_layout vertex_layout;
 
