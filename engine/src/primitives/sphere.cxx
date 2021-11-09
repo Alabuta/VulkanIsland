@@ -1,4 +1,3 @@
-#if 0
 #include <tuple>
 #include <ranges>
 #include <variant>
@@ -29,39 +28,35 @@ namespace primitives
 {
     std::uint32_t calculate_sphere_vertices_count(primitives::sphere_create_info const &create_info)
     {
+        auto const wsegments = create_info.wsegments;
         auto const hsegments = create_info.hsegments;
-        auto const vsegments = create_info.vsegments;
 
-        if (hsegments < 1 || vsegments < 1)
-            throw resource::exception("invalid plane segments' values"s);
+        if (wsegments < 1 || hsegments < 1)
+            throw resource::exception("invalid sphere segments' values"s);
 
-        bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
-
+        auto is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
         if (is_primitive_indexed)
-            return (hsegments + 1) * (vsegments + 1);
+            return wsegments * hsegments;
 
-        switch (create_info.topology) {
-            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
-                return (hsegments + 1) * (vsegments + 1);
+        else
+            throw resource::exception("unsupported primitive topology"s);
 
-            case graphics::PRIMITIVE_TOPOLOGY::LINES:
-                return (hsegments - 1) * 2 + (vsegments - 1) * 2 + 4 * 2;
-
+        /*switch (create_info.topology) {
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                return hsegments * vsegments * 2 * 3;
+                return wsegments * hsegments;
 
+            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-                return (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
-
             default:
-                throw resource::exception("unsupported primitive topology"s);
+                throw resource::exception("unsupported primitive topology"s);*/
         }
     }
 
     std::uint32_t calculate_sphere_indices_count(primitives::sphere_create_info const &create_info)
     {
+        auto const wsegments = create_info.wsegments;
         auto const hsegments = create_info.hsegments;
-        auto const vsegments = create_info.vsegments;
 
         if (hsegments * vsegments < 1)
             throw resource::exception("invalid plane segments' values"s);
@@ -170,4 +165,3 @@ namespace primitives
         }
     }
 }
-#endif
