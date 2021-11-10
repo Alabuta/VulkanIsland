@@ -492,13 +492,11 @@ namespace primitives
 
     std::uint32_t calculate_box_indices_number(primitives::box_create_info const &create_info)
     {
-        if (create_info.hsegments * create_info.vsegments * create_info.dsegments < 1)
-            throw resource::exception("invalid box segments' values"s);
-
-        bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
-
-        if (!is_primitive_indexed)
+        if (create_info.index_buffer_type == graphics::INDEX_TYPE::UNDEFINED)
             return 0;
+
+        if (create_info.hsegments < 1 || create_info.vsegments < 1 || create_info.dsegments < 1)
+            throw resource::exception("invalid box segments' values"s);
 
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
