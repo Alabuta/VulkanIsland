@@ -20,7 +20,57 @@ using namespace std::string_literals;
 
 namespace
 {
-	;
+    template<std::size_t N, class T>
+    std::array<T, N> generate_position(primitives::sphere_create_info const &create_info, glm::vec2 const &uv)
+    {
+        auto const wsegments = create_info.wsegments;
+        auto const hsegments = create_info.hsegments;
+
+        glm::vec3 point{
+            0,
+            std::cos(uv.v * std::numbers::pi),
+            0
+        };
+
+        point = glm::normalize(point) * create_info.radius;
+
+        if constexpr (N == 4)
+            return std::array<T, N>{static_cast<float>(point.x), static_cast<float>(point.y), static_cast<float>(point.z), 1};
+
+        else if constexpr (N == 3)
+            return std::array<T, N>{static_cast<float>(point.x), static_cast<float>(point.y), static_cast<float>(point.z)};
+
+        else throw resource::exception("unsupported components number"s);
+    }
+
+    template<std::size_t N, class T>
+    void generate_positions(primitives::sphere_create_info const &create_info, graphics::FORMAT format,
+                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::uint32_t vertices_count)
+    {
+        if constexpr (N == 2 || N == 3) {
+            switch (graphics::numeric_format(format)) {
+                case graphics::NUMERIC_FORMAT::FLOAT:
+                    {
+                        auto generator = std::bind(generate_position<N, T>, create_info, std::placeholders::_1);
+
+                        if (create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED) {
+                            std::generate_n(it_begin, vertices_count, [generator, i = 0u] () mutable
+                            {
+                                return generator(i++);
+                            });
+                        }
+
+                        else generate_vertex(generator, create_info, it_begin, vertices_count);
+                    }
+                    break;
+
+                default:
+                    throw resource::exception("unsupported numeric format"s);
+            }
+        }
+
+        else throw resource::exception("unsupported components number"s);
+    }
 }
 
 
@@ -34,51 +84,30 @@ namespace primitives
         if (wsegments < 1 || hsegments < 1)
             throw resource::exception("invalid sphere segments' values"s);
 
-        auto is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
-        if (is_primitive_indexed)
-            return wsegments * hsegments;
-
-        else
+        if (create_info.index_buffer_type == graphics::INDEX_TYPE::UNDEFINED)
             throw resource::exception("unsupported primitive topology"s);
 
-        /*switch (create_info.topology) {
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                return wsegments * hsegments;
-
-            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
-            case graphics::PRIMITIVE_TOPOLOGY::LINES:
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-            default:
-                throw resource::exception("unsupported primitive topology"s);*/
-        }
+        return wsegments * (hsegments - 1) + 2;
     }
 
     std::uint32_t calculate_sphere_indices_count(primitives::sphere_create_info const &create_info)
     {
+        if (create_info.index_buffer_type == graphics::INDEX_TYPE::UNDEFINED)
+            return 0;
+
         auto const wsegments = create_info.wsegments;
         auto const hsegments = create_info.hsegments;
 
-        if (hsegments * vsegments < 1)
-            throw resource::exception("invalid plane segments' values"s);
-
-        bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
-
-        if (!is_primitive_indexed)
-            return 0;
+        if (wsegments < 1 || hsegments < 1)
+            throw resource::exception("invalid sphere segments' values"s);
 
         switch (create_info.topology) {
-            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
-                return (hsegments + 1) * (vsegments + 1);
-
-            case graphics::PRIMITIVE_TOPOLOGY::LINES:
-                return (hsegments - 1) * 2 + (vsegments - 1) * 2 + 4 * 2;
-
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                return hsegments * vsegments * 2 * 3;
+                return wsegments * 2 * ((hsegments - 2) + 1) * 3;
 
+            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
-                return (hsegments + 1) * 2 * vsegments + (vsegments - 1) * 2;
-
             default:
                 throw resource::exception("unsupported primitive topology"s);
         }
@@ -95,7 +124,7 @@ namespace primitives
                     using pointer_type = typename std::add_pointer_t<std::uint16_t>;
                     auto it = reinterpret_cast<pointer_type>(std::to_address(std::data(index_buffer)));
 
-                    generate_indices(create_info, it, indices_count);
+                    //generate_indices(create_info, it, indices_count);
                 }
                 break;
 
@@ -104,7 +133,7 @@ namespace primitives
                     using pointer_type = typename std::add_pointer_t<std::uint32_t>;
                     auto it = reinterpret_cast<pointer_type>(std::to_address(std::data(index_buffer)));
 
-                    generate_indices(create_info, it, indices_count);
+                    //generate_indices(create_info, it, indices_count);
                 }
                 break;
 
@@ -112,14 +141,14 @@ namespace primitives
                 throw resource::exception("unsupported index instance type"s);
         }
 
-        generate_sphere(create_info, vertex_buffer, color);
+        generate_sphere(create_info, vertex_buffer);
     }
 
-    void generate_sphere(primitives::sphere_create_info const &create_info, std::span<std::byte> vertex_buffer, glm::vec4 const &color)
+    void generate_sphere(primitives::sphere_create_info const &create_info, std::span<std::byte> vertex_buffer)
     {
         auto &&vertex_layout = create_info.vertex_layout;
 
-        auto vertices_count = calculate_plane_vertices_count(create_info);
+        auto vertices_count = calculate_sphere_vertices_count(create_info);
         auto vertex_size = static_cast<std::uint32_t>(vertex_layout.size_bytes);
 
         auto &&attributes = vertex_layout.attributes;
