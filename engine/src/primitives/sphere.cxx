@@ -27,9 +27,9 @@ namespace
         auto const hsegments = create_info.hsegments;
 
         glm::vec3 point{
-            0,
+            std::cos(uv.u * std::numbers::pi) + std::sin(uv.v * std::numbers::pi),
             std::cos(uv.v * std::numbers::pi),
-            0
+            std::sin(uv.u * std::numbers::pi) + std::cos(uv.v * std::numbers::pi)
         };
 
         point = glm::normalize(point) * create_info.radius;
@@ -71,6 +71,27 @@ namespace
 
         else throw resource::exception("unsupported components number"s);
     }
+
+    template<class T>
+    void generate_indices(primitives::plane_create_info const &create_info, T *buffer_begin, std::uint32_t indices_count)
+    {
+        auto it_begin = strided_bidirectional_iterator<T>{buffer_begin, sizeof(T)};
+
+        switch (create_info.topology) {
+            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+                generate_vertex([] (auto vertex_index)
+                {
+                    return static_cast<T>(vertex_index);
+                }, create_info, it_begin, indices_count);
+                break;
+
+            default:
+                throw resource::exception("unsupported primitive topology"s);
+        }
+    }
 }
 
 
@@ -85,7 +106,7 @@ namespace primitives
             throw resource::exception("invalid sphere segments' values"s);
 
         if (create_info.index_buffer_type == graphics::INDEX_TYPE::UNDEFINED)
-            throw resource::exception("unsupported primitive topology"s);
+            throw resource::exception("unsupported primitive index topology"s);
 
         return wsegments * (hsegments - 1) + 2;
     }

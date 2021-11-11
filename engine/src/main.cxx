@@ -1218,7 +1218,7 @@ namespace temp
 
         if constexpr (true) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_icosahedron(app, model_, 2, 4);
+            add_icosahedron(app, model_, 2, 0);
         }
  
         return model_;
