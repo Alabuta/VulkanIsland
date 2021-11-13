@@ -20,16 +20,80 @@ using namespace std::string_literals;
 
 namespace
 {
-    template<std::size_t N, class T>
-    std::array<T, N> generate_position(primitives::sphere_create_info const &create_info, glm::vec2 const &uv)
+    template<class T, class F>
+    void generate_vertex_as_triangles(F generator, primitives::sphere_create_info const &create_info,
+                                      strided_bidirectional_iterator<T> it, std::uint32_t)
     {
         auto const wsegments = create_info.wsegments;
         auto const hsegments = create_info.hsegments;
 
+        auto const pattern = std::array{
+            std::array{0},
+            std::array{0}
+        };
+
+        std::transform(std::cbegin(pattern), std::cend(pattern), it, [&] (auto column)
+        {
+            auto vertex_index = iy * (hsegments + 1) + column + ix;
+
+            return generator(vertex_index);
+        });
+
+        for (auto iy = 0u; iy < hsegments; ++iy) {
+            for (auto ix = 0u; ix < wsegments; ++ix) {
+                /*auto const offset = horizontal_vertices_count * iy + ix * vertices_per_quad;
+                auto it = std::next(it, static_cast<std::ptrdiff_t>(offset));
+
+                std::transform(std::cbegin(pattern), std::cend(pattern), it, [&] (auto column)
+                {
+                    auto vertex_index = iy * (hsegments + 1) + column + ix;
+
+                    return generator(vertex_index);
+                });*/
+
+                if (iy != 0)
+                    std::transform(std::cbegin(pattern), std::cend(pattern), it, [&] (auto column)
+                    {
+                        auto vertex_index = iy * (hsegments + 1) + column + ix;
+
+                        return generator(vertex_index);
+                    });
+            }
+        }
+    }
+
+    template<class T, class F>
+    void generate_vertex(F generator, primitives::sphere_create_info const &create_info,
+                         strided_bidirectional_iterator<T> it, std::uint32_t vertices_count)
+    {
+        switch (create_info.topology) {
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
+                generate_vertex_as_triangles(generator, create_info, it, vertices_count);
+                break;
+
+            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
+            default:
+                throw resource::exception("unsupported primitive topology"s);
+        }
+    }
+
+    template<std::size_t N, class T>
+    std::array<T, N> generate_position(primitives::sphere_create_info const &create_info, std::uint32_t index)
+    {
+        auto const wsegments = create_info.wsegments;
+        auto const hsegments = create_info.hsegments;
+
+        auto const row_index = index / wsegments;
+
+        auto const u = static_cast<float>(index - row_index * wsegments) / wsegments;
+        auto const v = static_cast<float>(row_index) / hsegments;
+
         glm::vec3 point{
-            std::cos(uv.u * std::numbers::pi) + std::sin(uv.v * std::numbers::pi),
-            std::cos(uv.v * std::numbers::pi),
-            std::sin(uv.u * std::numbers::pi) + std::cos(uv.v * std::numbers::pi)
+            std::cos(u * std::numbers::pi) + std::sin(v * std::numbers::pi),
+            std::cos(v * std::numbers::pi),
+            std::sin(u * std::numbers::pi) + std::cos(v * std::numbers::pi)
         };
 
         point = glm::normalize(point) * create_info.radius;
@@ -45,7 +109,7 @@ namespace
 
     template<std::size_t N, class T>
     void generate_positions(primitives::sphere_create_info const &create_info, graphics::FORMAT format,
-                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::uint32_t vertices_count)
+                            strided_bidirectional_iterator<std::array<T, N>> it, std::uint32_t vertices_count)
     {
         if constexpr (N == 2 || N == 3) {
             switch (graphics::numeric_format(format)) {
@@ -54,13 +118,14 @@ namespace
                         auto generator = std::bind(generate_position<N, T>, create_info, std::placeholders::_1);
 
                         if (create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED) {
-                            std::generate_n(it_begin, vertices_count, [generator, i = 0u] () mutable
+                            std::generate_n(it, vertices_count, [generator, i = 0u] () mutable
                             {
                                 return generator(i++);
                             });
                         }
 
-                        else generate_vertex(generator, create_info, it_begin, vertices_count);
+                        //else generate_vertex(generator, create_info, it_begin, vertices_count);
+                        throw resource::exception("unsupported"s);
                     }
                     break;
 
@@ -75,19 +140,19 @@ namespace
     template<class T>
     void generate_indices(primitives::plane_create_info const &create_info, T *buffer_begin, std::uint32_t indices_count)
     {
-        auto it_begin = strided_bidirectional_iterator<T>{buffer_begin, sizeof(T)};
+        auto it = strided_bidirectional_iterator<T>{buffer_begin, sizeof(T)};
 
         switch (create_info.topology) {
-            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
-            case graphics::PRIMITIVE_TOPOLOGY::LINES:
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
                 generate_vertex([] (auto vertex_index)
                 {
                     return static_cast<T>(vertex_index);
-                }, create_info, it_begin, indices_count);
+                }, create_info, it, indices_count);
                 break;
 
+            case graphics::PRIMITIVE_TOPOLOGY::POINTS:
+            case graphics::PRIMITIVE_TOPOLOGY::LINES:
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP:
             default:
                 throw resource::exception("unsupported primitive topology"s);
         }
@@ -189,7 +254,7 @@ namespace primitives
 
                     switch (attribute.semantic) {
                         case vertex::SEMANTIC::POSITION:
-                            //generate_positions(create_info, attribute.format, it, vertices_count);
+                            generate_positions(create_info, attribute.format, it, vertices_count);
                             break;
 
                         case vertex::SEMANTIC::NORMAL:
