@@ -66,7 +66,7 @@ namespace primitives
 
     std::uint32_t calculate_sphere_vertices_count(primitives::sphere_create_info const &create_info);
 
-    std::uint32_t calculate_sphere_indices_number(primitives::sphere_create_info const &create_info);
+    std::uint32_t calculate_sphere_indices_count(primitives::sphere_create_info const &create_info);
 
     void generate_sphere(primitives::sphere_create_info const &create_info, std::span<std::byte> vertex_buffer);
 

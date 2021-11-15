@@ -22,42 +22,31 @@ namespace
 {
     template<class T, class F>
     void generate_vertex_as_triangles(F generator, primitives::sphere_create_info const &create_info,
-                                      strided_bidirectional_iterator<T> it, std::uint32_t)
+                                      strided_bidirectional_iterator<T> &it, std::uint32_t)
     {
         auto const wsegments = create_info.wsegments;
         auto const hsegments = create_info.hsegments;
 
-        auto const pattern = std::array{
-            std::array{0},
-            std::array{0}
+        auto constexpr pattern = std::array{
+            std::array{std::pair{0, 0}, std::pair{1, 1}, std::pair{1, 0}},
+            std::array{std::pair{0, 0}, std::pair{0, 1}, std::pair{1, 1}}
         };
-
-        std::transform(std::cbegin(pattern), std::cend(pattern), it, [&] (auto column)
-        {
-            auto vertex_index = iy * (hsegments + 1) + column + ix;
-
-            return generator(vertex_index);
-        });
 
         for (auto iy = 0u; iy < hsegments; ++iy) {
             for (auto ix = 0u; ix < wsegments; ++ix) {
-                /*auto const offset = horizontal_vertices_count * iy + ix * vertices_per_quad;
-                auto it = std::next(it, static_cast<std::ptrdiff_t>(offset));
-
-                std::transform(std::cbegin(pattern), std::cend(pattern), it, [&] (auto column)
+                auto const g = [&] (auto offset)
                 {
-                    auto vertex_index = iy * (hsegments + 1) + column + ix;
-
+                    auto v = iy + std::get<1>(offset);
+                    auto vertex_index = v == 0 ? 0 : ((ix + std::get<0>(offset)) % wsegments) + ((v - 1) * wsegments + 1);
+                    vertex_index = v == hsegments ? calculate_sphere_vertices_count(create_info) - 1 : vertex_index;
                     return generator(vertex_index);
-                });*/
+                };
 
                 if (iy != 0)
-                    std::transform(std::cbegin(pattern), std::cend(pattern), it, [&] (auto column)
-                    {
-                        auto vertex_index = iy * (hsegments + 1) + column + ix;
+                    it = std::transform(std::cbegin(pattern[0]), std::cend(pattern[0]), it, g);
 
-                        return generator(vertex_index);
-                    });
+                if (iy != hsegments - 1)
+                    it = std::transform(std::cbegin(pattern[1]), std::cend(pattern[1]), it, g);
             }
         }
     }
@@ -85,24 +74,24 @@ namespace
         auto const wsegments = create_info.wsegments;
         auto const hsegments = create_info.hsegments;
 
-        auto const row_index = index / wsegments;
+        auto const row_index = index == 0 ? 0 : (index - 1) / wsegments + 1;
 
-        auto const u = static_cast<float>(index - row_index * wsegments) / wsegments;
+        auto const u = index == 0 || row_index == hsegments ? 0.f : static_cast<float>((index - 1) % wsegments) / wsegments;
         auto const v = static_cast<float>(row_index) / hsegments;
 
         glm::vec3 point{
-            std::cos(u * std::numbers::pi) + std::sin(v * std::numbers::pi),
+            -std::cos(u * std::numbers::pi * 2) * std::sin(v * std::numbers::pi),
             std::cos(v * std::numbers::pi),
-            std::sin(u * std::numbers::pi) + std::cos(v * std::numbers::pi)
+            std::sin(u * std::numbers::pi * 2) * std::sin(v * std::numbers::pi)
         };
 
         point = glm::normalize(point) * create_info.radius;
 
         if constexpr (N == 4)
-            return std::array<T, N>{static_cast<float>(point.x), static_cast<float>(point.y), static_cast<float>(point.z), 1};
+            return std::array<T, N>{static_cast<T>(point.x), static_cast<T>(point.y), static_cast<T>(point.z), 1};
 
         else if constexpr (N == 3)
-            return std::array<T, N>{static_cast<float>(point.x), static_cast<float>(point.y), static_cast<float>(point.z)};
+            return std::array<T, N>{static_cast<T>(point.x), static_cast<T>(point.y), static_cast<T>(point.z)};
 
         else throw resource::exception("unsupported components number"s);
     }
@@ -125,7 +114,7 @@ namespace
                         }
 
                         //else generate_vertex(generator, create_info, it_begin, vertices_count);
-                        throw resource::exception("unsupported"s);
+                        else throw resource::exception("unsupported"s);
                     }
                     break;
 
@@ -138,7 +127,7 @@ namespace
     }
 
     template<class T>
-    void generate_indices(primitives::plane_create_info const &create_info, T *buffer_begin, std::uint32_t indices_count)
+    void generate_indices(primitives::sphere_create_info const &create_info, T *buffer_begin, std::uint32_t indices_count)
     {
         auto it = strided_bidirectional_iterator<T>{buffer_begin, sizeof(T)};
 
@@ -189,7 +178,7 @@ namespace primitives
 
         switch (create_info.topology) {
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                return wsegments * 2 * ((hsegments - 2) + 1) * 3;
+                return wsegments * ((hsegments - 2) + 1) * 2 * 3;
 
             case graphics::PRIMITIVE_TOPOLOGY::POINTS:
             case graphics::PRIMITIVE_TOPOLOGY::LINES:
@@ -200,7 +189,7 @@ namespace primitives
     }
 
     void generate_sphere_indexed(primitives::sphere_create_info const &create_info, std::span<std::byte> vertex_buffer,
-                                std::span<std::byte> index_buffer, glm::vec4 const &color)
+                                std::span<std::byte> index_buffer)
     {
         auto indices_count = calculate_sphere_indices_count(create_info);
 
@@ -210,7 +199,7 @@ namespace primitives
                     using pointer_type = typename std::add_pointer_t<std::uint16_t>;
                     auto it = reinterpret_cast<pointer_type>(std::to_address(std::data(index_buffer)));
 
-                    //generate_indices(create_info, it, indices_count);
+                    generate_indices(create_info, it, indices_count);
                 }
                 break;
 
@@ -219,7 +208,7 @@ namespace primitives
                     using pointer_type = typename std::add_pointer_t<std::uint32_t>;
                     auto it = reinterpret_cast<pointer_type>(std::to_address(std::data(index_buffer)));
 
-                    //generate_indices(create_info, it, indices_count);
+                    generate_indices(create_info, it, indices_count);
                 }
                 break;
 

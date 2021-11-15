@@ -1051,7 +1051,111 @@ namespace temp
             model_.meshlets.push_back(std::move(meshlet));
         }
     }
+    
+    void add_sphere(app_t &app, xformat &model_, std::size_t vertex_layout_index, graphics::INDEX_TYPE index_type, std::size_t material_index)
+    {
+        auto const &vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
 
+        auto constexpr topology = graphics::PRIMITIVE_TOPOLOGY::TRIANGLES;
+
+        primitives::sphere_create_info const create_info{
+            vertex_layout, topology, index_type,
+            1.f, 7u, 5u,
+            generate_color()
+        };
+
+        auto const index_count = primitives::calculate_sphere_indices_count(create_info);
+        auto const index_size = graphics::size_bytes(index_type);
+
+        auto const vertex_count = primitives::calculate_sphere_vertices_count(create_info);
+        auto const vertex_size = vertex_layout.size_bytes;
+
+        auto const index_buffer_allocation_size = index_count * index_size;
+        auto const vertex_buffer_allocation_size = vertex_count * vertex_size;
+        std::cout << "index buffer size "s << index_buffer_allocation_size << " vertex buffer size "s << vertex_buffer_allocation_size << std::endl;
+
+        std::shared_ptr<resource::vertex_buffer> vertex_buffer;
+        std::shared_ptr<resource::index_buffer> index_buffer;
+
+        {
+            auto vertex_staging_buffer = app.resource_manager->create_staging_buffer(vertex_buffer_allocation_size);
+
+            if (index_type != graphics::INDEX_TYPE::UNDEFINED) {
+                auto index_staging_buffer = app.resource_manager->create_staging_buffer(index_buffer_allocation_size);
+
+                primitives::generate_sphere_indexed(create_info, vertex_staging_buffer->mapped_range(), index_staging_buffer->mapped_range());
+
+                if constexpr (false) {
+                    auto it_indices = reinterpret_cast<std::array<std::uint16_t, 3> *>(std::data(index_staging_buffer->mapped_range()));
+
+                    for (auto i = 0u; i < index_count; i += 3, ++it_indices) {
+                        if (i % 3 == 0)
+                            std::cout << "face index: " << i / 3 << std::endl;
+
+                        std::cout << "i " << it_indices->at(0) << ' ' << it_indices->at(1) << ' ' << it_indices->at(2) << std::endl;
+                        //std::cout << "i " << it_indices->at(3) << ' ' << it_indices->at(4) << ' ' << it_indices->at(5) << std::endl;
+                    }
+                }
+
+                index_buffer = app.resource_manager->stage_index_data(index_type, index_staging_buffer, app.transfer_command_pool);
+            }
+
+            else primitives::generate_sphere(create_info, vertex_staging_buffer->mapped_range());
+
+            if constexpr (false) {
+                struct vertex final {
+                    std::array<float, 3> p;
+                    std::array<float, 3> n;
+                    std::array<std::uint16_t, 2> t;
+                    std::array<std::uint8_t, 4> c;
+                };
+
+                auto it_vertex = reinterpret_cast<vertex *>(std::data(vertex_staging_buffer->mapped_range()));
+
+                for (auto i = 0u; i < vertex_count; ++i, ++it_vertex) {
+                    /*if (i % 4 == 0)
+                        std::cout << "face index: " << i / 4 << std::endl;*/
+
+                    std::cout << "p " << it_vertex->p[0] << ' ' << it_vertex->p[1] << ' ' << it_vertex->p[2] << std::endl;
+                    //std::cout << "n " << it_vertex->n[0] << ' ' << it_vertex->n[1] << ' ' << it_vertex->n[2] << std::endl;
+                    /*std::cout << "t " << it_vertex->t[0] << ' ' << it_vertex->t[1] << std::endl;
+                    std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;*/
+                }
+            }
+
+            vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
+        }
+
+        {
+            xformat::meshlet meshlet;
+
+            meshlet.topology = topology;
+
+            auto first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size;
+
+            meshlet.vertex_buffer = vertex_buffer;
+            meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
+            meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
+
+            if (index_type != graphics::INDEX_TYPE::UNDEFINED) {
+                auto first_index = (index_buffer->offset_bytes() - index_buffer_allocation_size) / index_size;
+
+                meshlet.index_buffer = index_buffer;
+                meshlet.index_count = static_cast<std::uint32_t>(index_count);
+                meshlet.first_index = static_cast<std::uint32_t>(first_index);
+            }
+
+            meshlet.material_index = material_index;
+            meshlet.instance_count = 1;
+            meshlet.first_instance = 0;
+
+            std::vector<std::size_t> meshlets{std::size(model_.meshlets)};
+            model_.meshes.push_back(xformat::mesh{meshlets});
+
+            model_.meshlets.push_back(std::move(meshlet));
+        }
+    }
+    
     xformat populate(app_t &app)
     {
         xformat model_;
@@ -1074,9 +1178,9 @@ namespace temp
         model_.transforms.push_back(
             glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(90.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 1, -1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 1, -1}), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, -1}*0.f), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
+            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, -1}), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
 
         model_.vertex_layouts.push_back(vertex::create_vertex_layout(
             vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
@@ -1211,14 +1315,19 @@ namespace temp
             }
         }
 
-        if constexpr (true) {
+        if constexpr (false) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
             add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 5);
         }
 
-        if constexpr (true) {
+        if constexpr (false) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
             add_icosahedron(app, model_, 2, 0);
+        }
+
+        if constexpr (true) {
+            model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
+            add_sphere(app, model_, 0, graphics::INDEX_TYPE::UINT_16, 5);
         }
  
         return model_;
