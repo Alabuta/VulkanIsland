@@ -68,8 +68,7 @@ namespace
         }
     }
 
-    template<std::size_t N, class T>
-    std::array<T, N> generate_position(primitives::sphere_create_info const &create_info, std::uint32_t index)
+    glm::vec3 generate_point(primitives::sphere_create_info const &create_info, std::uint32_t index)
     {
         auto const wsegments = create_info.wsegments;
         auto const hsegments = create_info.hsegments;
@@ -85,10 +84,34 @@ namespace
             std::sin(u * std::numbers::pi * 2) * std::sin(v * std::numbers::pi)
         };
 
-        point = glm::normalize(point) * create_info.radius;
+        return glm::normalize(point);
+    }
+
+    template<std::size_t N, class T>
+    std::array<T, N> generate_position(primitives::sphere_create_info const &create_info, std::uint32_t index)
+    {
+        auto point = generate_point(create_info, index) * create_info.radius;
 
         if constexpr (N == 4)
             return std::array<T, N>{static_cast<T>(point.x), static_cast<T>(point.y), static_cast<T>(point.z), 1};
+
+        else if constexpr (N == 3)
+            return std::array<T, N>{static_cast<T>(point.x), static_cast<T>(point.y), static_cast<T>(point.z)};
+
+        else throw resource::exception("unsupported components number"s);
+    }
+    
+    template<std::size_t N, class T>
+    std::array<T, N> generate_normal(primitives::sphere_create_info const &create_info, std::uint32_t index)
+    {
+        auto point = generate_point(create_info, index);
+
+        if constexpr (N == 2) {
+            std::array<T, 2> oct;
+
+            math::encode_unit_vector_to_oct_precise(std::span{oct}, glm::vec3{point});
+            return oct;
+        }
 
         else if constexpr (N == 3)
             return std::array<T, N>{static_cast<T>(point.x), static_cast<T>(point.y), static_cast<T>(point.z)};
@@ -113,10 +136,69 @@ namespace
                             });
                         }
 
-                        //else generate_vertex(generator, create_info, it_begin, vertices_count);
-                        else throw resource::exception("unsupported"s);
+                        // else generate_vertex(generator, create_info, it, vertices_count);
+                        else throw resource::exception("unsupported index type"s);
                     }
                     break;
+
+                default:
+                    throw resource::exception("unsupported numeric format"s);
+            }
+        }
+
+        else throw resource::exception("unsupported components number"s);
+    }
+    
+    template<std::size_t N, class T>
+    void generate_normals(primitives::sphere_create_info const &create_info, graphics::FORMAT format,
+                          strided_bidirectional_iterator<std::array<T, N>> it, std::uint32_t vertices_count)
+    {
+        if constexpr (N == 2) {
+            switch (graphics::numeric_format(format)) {
+                case graphics::NUMERIC_FORMAT::NORMALIZED:
+                {
+                    if constexpr (mpl::is_one_of_v<T, std::int8_t, std::int16_t>) {
+                        auto generator = std::bind(generate_normal<N, T>, create_info, std::placeholders::_1);
+
+                        if (create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED) {
+                            std::generate_n(it, vertices_count, [generator, i = 0u] () mutable
+                            {
+                                return generator(i++);
+                            });
+                        }
+
+                        // else generate_vertex(generator, create_info, it, vertices_count);
+                        else throw resource::exception("unsupported index type"s);
+                    }
+
+                    else throw resource::exception("unsupported format type"s);
+
+                    break;
+                }
+
+                default:
+                    throw resource::exception("unsupported numeric format"s);
+            }
+        }
+
+        else if constexpr (N == 3) {
+            switch (graphics::numeric_format(format)) {
+                case graphics::NUMERIC_FORMAT::FLOAT:
+                {
+                    auto generator = std::bind(generate_normal<N, T>, create_info, it, std::placeholders::_1);
+
+                    if (create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED) {
+                        std::generate_n(it, vertices_count, [generator, i = 0u] () mutable
+                        {
+                            return generator(i++);
+                        });
+                    }
+
+                    // else generate_vertex(generator, create_info, it, vertices_count);
+                    else throw resource::exception("unsupported index type"s);
+
+                    break;
+                }
 
                 default:
                     throw resource::exception("unsupported numeric format"s);
@@ -247,7 +329,7 @@ namespace primitives
                             break;
 
                         case vertex::SEMANTIC::NORMAL:
-                            //generate_normals(attribute.format, it, vertices_count);
+                            generate_normals(create_info, attribute.format, it, vertices_count);
                             break;
 
                         case vertex::SEMANTIC::TEXCOORD_0:
