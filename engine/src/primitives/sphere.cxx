@@ -68,20 +68,27 @@ namespace
         }
     }
 
-    glm::vec3 generate_point(primitives::sphere_create_info const &create_info, std::uint32_t index)
+    glm::vec2 generate_uv(primitives::sphere_create_info const &create_info, std::uint32_t index)
     {
         auto const wsegments = create_info.wsegments;
         auto const hsegments = create_info.hsegments;
 
         auto const row_index = index == 0 ? 0 : (index - 1) / wsegments + 1;
 
-        auto const u = index == 0 || row_index == hsegments ? 0.f : static_cast<float>((index - 1) % wsegments) / wsegments;
-        auto const v = static_cast<float>(row_index) / hsegments;
+        return glm::vec2{
+            index == 0 || row_index == hsegments ? 0.f : static_cast<float>((index - 1) % wsegments) / wsegments,
+            static_cast<float>(row_index) / hsegments
+        };
+    }
+
+    glm::vec3 generate_point(primitives::sphere_create_info const &create_info, std::uint32_t index)
+    {
+        auto const uv = generate_uv(create_info, index);
 
         glm::vec3 point{
-            -std::cos(u * std::numbers::pi * 2) * std::sin(v * std::numbers::pi),
-            std::cos(v * std::numbers::pi),
-            std::sin(u * std::numbers::pi * 2) * std::sin(v * std::numbers::pi)
+            -std::cos(uv.x * std::numbers::pi * 2) * std::sin(uv.y * std::numbers::pi),
+            std::cos(uv.y * std::numbers::pi),
+            std::sin(uv.x * std::numbers::pi * 2) * std::sin(uv.y * std::numbers::pi)
         };
 
         return glm::normalize(point);
@@ -90,7 +97,7 @@ namespace
     template<std::size_t N, class T>
     std::array<T, N> generate_position(primitives::sphere_create_info const &create_info, std::uint32_t index)
     {
-        auto point = generate_point(create_info, index) * create_info.radius;
+        auto const point = generate_point(create_info, index) * create_info.radius;
 
         if constexpr (N == 4)
             return std::array<T, N>{static_cast<T>(point.x), static_cast<T>(point.y), static_cast<T>(point.z), 1};
@@ -104,7 +111,7 @@ namespace
     template<std::size_t N, class T>
     std::array<T, N> generate_normal(primitives::sphere_create_info const &create_info, std::uint32_t index)
     {
-        auto point = generate_point(create_info, index);
+        auto const point = generate_point(create_info, index);
 
         if constexpr (N == 2) {
             std::array<T, 2> oct;
@@ -115,6 +122,41 @@ namespace
 
         else if constexpr (N == 3)
             return std::array<T, N>{static_cast<T>(point.x), static_cast<T>(point.y), static_cast<T>(point.z)};
+
+        else throw resource::exception("unsupported components number"s);
+    }
+    
+    template<std::size_t N, class T>
+    std::array<T, N> generate_texcoord(primitives::sphere_create_info const &create_info, graphics::FORMAT format, std::uint32_t index)
+    {
+        if constexpr (N == 2) {
+            auto const uv = generate_uv(create_info, index);
+            auto const u_offset = .5f / create_info.wsegments * (index == 0 ? 1 : (index == calculate_sphere_vertices_count(create_info) - 1 ? -1 : 0));
+
+            switch (graphics::numeric_format(format)) {
+                case graphics::NUMERIC_FORMAT::NORMALIZED:
+                    if constexpr (std::is_same_v<T, std::uint16_t>) {
+                        auto constexpr type_max = static_cast<float>(std::numeric_limits<T>::max());
+
+                        return std::array<T, N>{static_cast<T>((uv.x + u_offset) * type_max), static_cast<T>((1.f - uv.y) * type_max)};
+                    }
+
+                    else throw resource::exception("unsupported format type"s);
+
+                    break;
+
+                case graphics::NUMERIC_FORMAT::FLOAT:
+                    if constexpr (std::is_floating_point_v<T>)
+                        return std::array<T, N>{static_cast<T>(uv.x + u_offset), static_cast<T>((1.f - uv.y))};
+
+                    else throw resource::exception("unsupported format type"s);
+
+                    break;
+
+                default:
+                    throw resource::exception("unsupported numeric format"s);
+            }
+        }
 
         else throw resource::exception("unsupported components number"s);
     }
@@ -137,7 +179,7 @@ namespace
                         }
 
                         // else generate_vertex(generator, create_info, it, vertices_count);
-                        else throw resource::exception("unsupported index type"s);
+                        else throw resource::exception("unsupported non-indexed mesh"s);
                     }
                     break;
 
@@ -168,7 +210,7 @@ namespace
                         }
 
                         // else generate_vertex(generator, create_info, it, vertices_count);
-                        else throw resource::exception("unsupported index type"s);
+                        else throw resource::exception("unsupported non-indexed mesh"s);
                     }
 
                     else throw resource::exception("unsupported format type"s);
@@ -183,9 +225,11 @@ namespace
 
         else if constexpr (N == 3) {
             switch (graphics::numeric_format(format)) {
+                case graphics::NUMERIC_FORMAT::SCALED:
+                case graphics::NUMERIC_FORMAT::INT:
                 case graphics::NUMERIC_FORMAT::FLOAT:
                 {
-                    auto generator = std::bind(generate_normal<N, T>, create_info, it, std::placeholders::_1);
+                    auto generator = std::bind(generate_normal<N, T>, create_info, std::placeholders::_1);
 
                     if (create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED) {
                         std::generate_n(it, vertices_count, [generator, i = 0u] () mutable
@@ -195,7 +239,7 @@ namespace
                     }
 
                     // else generate_vertex(generator, create_info, it, vertices_count);
-                    else throw resource::exception("unsupported index type"s);
+                    else throw resource::exception("unsupported non-indexed mesh"s);
 
                     break;
                 }
@@ -206,6 +250,24 @@ namespace
         }
 
         else throw resource::exception("unsupported components number"s);
+    }
+
+    template<std::size_t N, class T>
+    void generate_texcoords(primitives::sphere_create_info const &create_info, graphics::FORMAT format,
+                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::uint32_t vertices_count)
+    {
+        auto generator = std::bind(generate_texcoord<N, T>, create_info, format, std::placeholders::_1);
+
+        auto is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
+        if (is_primitive_indexed) {
+            std::generate_n(it_begin, vertices_count, [generator, i = 0u] () mutable
+            {
+                return generator(i++);
+            });
+        }
+
+        // else generate_vertex(generator, create_info, it_begin, vertices_count);
+        else throw resource::exception("unsupported non-indexed mesh"s);
     }
 
     template<class T>
@@ -333,7 +395,7 @@ namespace primitives
                             break;
 
                         case vertex::SEMANTIC::TEXCOORD_0:
-                            //generate_texcoords(create_info, attribute.format, it, vertices_count);
+                            generate_texcoords(create_info, attribute.format, it, vertices_count);
                             break;
 
                         case vertex::SEMANTIC::COLOR_0:
