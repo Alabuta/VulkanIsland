@@ -32,13 +32,15 @@ namespace
             std::array{std::pair{0, 0}, std::pair{0, 1}, std::pair{1, 1}}
         };
 
+        auto const vertices_count = wsegments * (hsegments - 1) + 2;
+
         for (auto iy = 0u; iy < hsegments; ++iy) {
             for (auto ix = 0u; ix < wsegments; ++ix) {
                 auto const g = [&] (auto offset)
                 {
                     auto v = iy + std::get<1>(offset);
                     auto vertex_index = v == 0 ? 0 : ((ix + std::get<0>(offset)) % wsegments) + ((v - 1) * wsegments + 1);
-                    vertex_index = v == hsegments ? calculate_sphere_vertices_count(create_info) - 1 : vertex_index;
+                    vertex_index = v == hsegments ? vertices_count - 1 : vertex_index;
                     return generator(vertex_index);
                 };
 
@@ -74,6 +76,7 @@ namespace
         auto const hsegments = create_info.hsegments;
 
         auto const row_index = index == 0 ? 0 : (index - 1) / wsegments + 1;
+        std::cout << index << '\t' << row_index << std::endl;
 
         return glm::vec2{
             index == 0 || row_index == hsegments ? 0.f : static_cast<float>((index - 1) % wsegments) / wsegments,
@@ -130,15 +133,21 @@ namespace
     std::array<T, N> generate_texcoord(primitives::sphere_create_info const &create_info, graphics::FORMAT format, std::uint32_t index)
     {
         if constexpr (N == 2) {
+            auto const wsegments = create_info.wsegments;
+            auto const hsegments = create_info.hsegments;
+
+            auto const vertices_count = wsegments * (hsegments - 1) + 2;
+
             auto const uv = generate_uv(create_info, index);
-            auto const u_offset = .5f / create_info.wsegments * (index == 0 ? 1 : (index == calculate_sphere_vertices_count(create_info) - 1 ? -1 : 0));
+            auto const u_offset = .5f / create_info.wsegments * (index == 0 ? 1 : (index == vertices_count - 1 ? -1 : 0));
+            std::cout << index << '\t' << uv.x << '\t' << uv.y << std::endl;
 
             switch (graphics::numeric_format(format)) {
                 case graphics::NUMERIC_FORMAT::NORMALIZED:
                     if constexpr (std::is_same_v<T, std::uint16_t>) {
                         auto constexpr type_max = static_cast<float>(std::numeric_limits<T>::max());
 
-                        return std::array<T, N>{static_cast<T>((uv.x + u_offset) * type_max), static_cast<T>((1.f - uv.y) * type_max)};
+                        return std::array<T, N>{static_cast<T>((uv.x + u_offset) * type_max), static_cast<T>((1.f - uv.y) * type_max * 0)};
                     }
 
                     else throw resource::exception("unsupported format type"s);
@@ -147,7 +156,7 @@ namespace
 
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     if constexpr (std::is_floating_point_v<T>)
-                        return std::array<T, N>{static_cast<T>(uv.x + u_offset), static_cast<T>((1.f - uv.y))};
+                        return std::array<T, N>{static_cast<T>(uv.x + u_offset), static_cast<T>((1.f - uv.y) * 0)};
 
                     else throw resource::exception("unsupported format type"s);
 
@@ -306,7 +315,7 @@ namespace primitives
         if (create_info.index_buffer_type == graphics::INDEX_TYPE::UNDEFINED)
             throw resource::exception("unsupported primitive index topology"s);
 
-        return wsegments * (hsegments - 1) + 2;
+        return wsegments * (hsegments - 1) + hsegments;
     }
 
     std::uint32_t calculate_sphere_indices_count(primitives::sphere_create_info const &create_info)

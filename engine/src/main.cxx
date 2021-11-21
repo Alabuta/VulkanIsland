@@ -1060,7 +1060,7 @@ namespace temp
 
         primitives::sphere_create_info const create_info{
             vertex_layout, topology, index_type,
-            1.f, 7u, 5u,
+            1.f, 3u, 3u,
             generate_color()
         };
 
@@ -1102,7 +1102,7 @@ namespace temp
 
             else primitives::generate_sphere(create_info, vertex_staging_buffer->mapped_range());
 
-            if constexpr (false) {
+            if constexpr (true) {
                 struct vertex final {
                     std::array<float, 3> p;
                     std::array<float, 3> n;
@@ -1118,8 +1118,8 @@ namespace temp
 
                     std::cout << "p " << it_vertex->p[0] << ' ' << it_vertex->p[1] << ' ' << it_vertex->p[2] << std::endl;
                     //std::cout << "n " << it_vertex->n[0] << ' ' << it_vertex->n[1] << ' ' << it_vertex->n[2] << std::endl;
-                    /*std::cout << "t " << it_vertex->t[0] << ' ' << it_vertex->t[1] << std::endl;
-                    std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;*/
+                    //std::cout << "t " << it_vertex->t[0] << ' ' << it_vertex->t[1] << std::endl;
+                    //std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;
                 }
             }
 
@@ -1315,7 +1315,7 @@ namespace temp
             }
         }
 
-        if constexpr (false) {
+        if constexpr (true) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
             add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 5);
         }
@@ -1327,7 +1327,7 @@ namespace temp
 
         if constexpr (true) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_sphere(app, model_, 0, graphics::INDEX_TYPE::UINT_16, 5);
+            add_sphere(app, model_, 0, graphics::INDEX_TYPE::UINT_16, 4);
         }
  
         return model_;
