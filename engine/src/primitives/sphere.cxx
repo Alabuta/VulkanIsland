@@ -35,13 +35,17 @@ namespace
         auto const vertices_count = wsegments * (hsegments - 1) + 2;
 
         for (auto iy = 0u; iy < hsegments; ++iy) {
-            for (auto ix = 0u; ix < wsegments; ++ix) {
-                auto const g = [&] (auto offset)
+            for (auto ix = 0u; ix <= wsegments; ++ix) {
+                /*auto const g = [&] (auto offset)
                 {
                     auto v = iy + std::get<1>(offset);
                     auto vertex_index = v == 0 ? 0 : ((ix + std::get<0>(offset)) % wsegments) + ((v - 1) * wsegments + 1);
                     vertex_index = v == hsegments ? vertices_count - 1 : vertex_index;
                     return generator(vertex_index);
+                };*/
+                auto const g = [&] (auto offset)
+                {
+                    return generator(ix + std::get<0>(offset), iy + std::get<1>(offset));
                 };
 
                 if (iy != 0)
@@ -70,23 +74,43 @@ namespace
         }
     }
 
-    glm::vec2 generate_uv(primitives::sphere_create_info const &create_info, std::uint32_t index)
+    glm::vec2 generate_uv(primitives::sphere_create_info const &create_info, std::uint32_t ix, std::uint32_t iy)
     {
         auto const wsegments = create_info.wsegments;
         auto const hsegments = create_info.hsegments;
 
-        auto const row_index = index == 0 ? 0 : (index - 1) / wsegments + 1;
-        std::cout << index << '\t' << row_index << std::endl;
+        //auto const vertices_count = wsegments * (hsegments - 1) + 2;
+
+        /*auto row_index = index == 0 ? 0 : (index - 1) / wsegments + 1;
+        auto column_index = (index - 1) % wsegments;*/
+       /* if (index >= vertices_count)
+        {
+            row_index = index - vertices_count + 1;
+            column_index = 3;
+        }*/
+
+        //std::cout << "index " << index << "\trow_index " << row_index << "\tcolumn_index " << column_index << std::endl;
+        std::cout << "ix " << ix << "\tiy " << iy << std::endl;
+
+        if (ix == 0) {
+            if (iy == 0) {
+                return glm::vec2{0, 0};
+            }
+
+            else if (iy == hsegments - 1) {
+                return glm::vec2{0, 1};
+            }
+        }
 
         return glm::vec2{
-            index == 0 || row_index == hsegments ? 0.f : static_cast<float>((index - 1) % wsegments) / wsegments,
-            static_cast<float>(row_index) / hsegments
+            static_cast<float>(ix) / wsegments,
+            static_cast<float>(iy) / hsegments
         };
     }
 
-    glm::vec3 generate_point(primitives::sphere_create_info const &create_info, std::uint32_t index)
+    glm::vec3 generate_point(primitives::sphere_create_info const &create_info, std::uint32_t ix, std::uint32_t iy)
     {
-        auto const uv = generate_uv(create_info, index);
+        auto const uv = generate_uv(create_info, ix, iy);
 
         glm::vec3 point{
             -std::cos(uv.x * std::numbers::pi * 2) * std::sin(uv.y * std::numbers::pi),
@@ -98,9 +122,9 @@ namespace
     }
 
     template<std::size_t N, class T>
-    std::array<T, N> generate_position(primitives::sphere_create_info const &create_info, std::uint32_t index)
+    std::array<T, N> generate_position(primitives::sphere_create_info const &create_info, std::uint32_t ix, std::uint32_t iy)
     {
-        auto const point = generate_point(create_info, index) * create_info.radius;
+        auto const point = generate_point(create_info, ix, iy) * create_info.radius;
 
         if constexpr (N == 4)
             return std::array<T, N>{static_cast<T>(point.x), static_cast<T>(point.y), static_cast<T>(point.z), 1};
@@ -112,9 +136,9 @@ namespace
     }
     
     template<std::size_t N, class T>
-    std::array<T, N> generate_normal(primitives::sphere_create_info const &create_info, std::uint32_t index)
+    std::array<T, N> generate_normal(primitives::sphere_create_info const &create_info, std::uint32_t ix, std::uint32_t iy)
     {
-        auto const point = generate_point(create_info, index);
+        auto const point = generate_point(create_info, ix, iy);
 
         if constexpr (N == 2) {
             std::array<T, 2> oct;
@@ -130,24 +154,25 @@ namespace
     }
     
     template<std::size_t N, class T>
-    std::array<T, N> generate_texcoord(primitives::sphere_create_info const &create_info, graphics::FORMAT format, std::uint32_t index)
+    std::array<T, N> generate_texcoord(primitives::sphere_create_info const &create_info, graphics::FORMAT format, std::uint32_t ix, std::uint32_t iy)
     {
         if constexpr (N == 2) {
             auto const wsegments = create_info.wsegments;
             auto const hsegments = create_info.hsegments;
 
-            auto const vertices_count = wsegments * (hsegments - 1) + 2;
+            //auto const vertices_count = wsegments * (hsegments - 1) + 2;
 
-            auto const uv = generate_uv(create_info, index);
-            auto const u_offset = .5f / create_info.wsegments * (index == 0 ? 1 : (index == vertices_count - 1 ? -1 : 0));
-            std::cout << index << '\t' << uv.x << '\t' << uv.y << std::endl;
+            auto const uv = generate_uv(create_info, ix, iy);
+            //auto const u_offset = .5f / create_info.wsegments * (index == 0 ? 1 : (index == vertices_count - 1 ? -1 : 0));
+            //std::cout << "index " << index << "\tuv " << uv.x << '\t' << uv.y << std::endl;
+            std::cout << "ix " << ix << "\tiy " << iy << "\tuv " << uv.x << '\t' << uv.y << std::endl;
 
             switch (graphics::numeric_format(format)) {
                 case graphics::NUMERIC_FORMAT::NORMALIZED:
                     if constexpr (std::is_same_v<T, std::uint16_t>) {
                         auto constexpr type_max = static_cast<float>(std::numeric_limits<T>::max());
 
-                        return std::array<T, N>{static_cast<T>((uv.x + u_offset) * type_max), static_cast<T>((1.f - uv.y) * type_max * 0)};
+                        return std::array<T, N>{static_cast<T>(uv.x * type_max), static_cast<T>((1.f - uv.y) * type_max * 0)};
                     }
 
                     else throw resource::exception("unsupported format type"s);
@@ -156,7 +181,7 @@ namespace
 
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     if constexpr (std::is_floating_point_v<T>)
-                        return std::array<T, N>{static_cast<T>(uv.x + u_offset), static_cast<T>((1.f - uv.y) * 0)};
+                        return std::array<T, N>{static_cast<T>(uv.x), static_cast<T>((1.f - uv.y) * 0)};
 
                     else throw resource::exception("unsupported format type"s);
 
@@ -178,12 +203,18 @@ namespace
             switch (graphics::numeric_format(format)) {
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     {
-                        auto generator = std::bind(generate_position<N, T>, create_info, std::placeholders::_1);
+                        auto const wsegments = create_info.wsegments;
+                        auto const hsegments = create_info.hsegments;
+
+                        auto generator = std::bind(generate_position<N, T>, create_info, std::placeholders::_1, std::placeholders::_2);
 
                         if (create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED) {
-                            std::generate_n(it, vertices_count, [generator, i = 0u] () mutable
+                            std::generate_n(it, vertices_count, [generator, wsegments, hsegments, i = 0u] () mutable
                             {
-                                return generator(i++);
+                                auto ix = (i - 1) % (wsegments + 1);
+                                auto iy = i == 0 ? 0 : (i - 1) / (wsegments + 1) + 1;
+                                ++i;
+                                return generator(ix, iy);
                             });
                         }
 
@@ -204,17 +235,23 @@ namespace
     void generate_normals(primitives::sphere_create_info const &create_info, graphics::FORMAT format,
                           strided_bidirectional_iterator<std::array<T, N>> it, std::uint32_t vertices_count)
     {
+        auto const wsegments = create_info.wsegments;
+        auto const hsegments = create_info.hsegments;
+
         if constexpr (N == 2) {
             switch (graphics::numeric_format(format)) {
                 case graphics::NUMERIC_FORMAT::NORMALIZED:
                 {
                     if constexpr (mpl::is_one_of_v<T, std::int8_t, std::int16_t>) {
-                        auto generator = std::bind(generate_normal<N, T>, create_info, std::placeholders::_1);
+                        auto generator = std::bind(generate_normal<N, T>, create_info, std::placeholders::_1, std::placeholders::_2);
 
                         if (create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED) {
-                            std::generate_n(it, vertices_count, [generator, i = 0u] () mutable
+                            std::generate_n(it, vertices_count, [generator, wsegments, hsegments, i = 0u] () mutable
                             {
-                                return generator(i++);
+                                auto ix = (i - 1) % (wsegments + 1);
+                                auto iy = i == 0 ? 0 : (i - 1) / (wsegments + 1) + 1;
+                                ++i;
+                                return generator(ix, iy);
                             });
                         }
 
@@ -238,12 +275,15 @@ namespace
                 case graphics::NUMERIC_FORMAT::INT:
                 case graphics::NUMERIC_FORMAT::FLOAT:
                 {
-                    auto generator = std::bind(generate_normal<N, T>, create_info, std::placeholders::_1);
+                    auto generator = std::bind(generate_normal<N, T>, create_info, std::placeholders::_1, std::placeholders::_2);
 
                     if (create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED) {
-                        std::generate_n(it, vertices_count, [generator, i = 0u] () mutable
+                        std::generate_n(it, vertices_count, [generator, wsegments, hsegments, i = 0u] () mutable
                         {
-                            return generator(i++);
+                            auto ix = (i - 1) % (wsegments + 1);
+                            auto iy = i == 0 ? 0 : (i - 1) / (wsegments + 1) + 1;
+                            ++i;
+                            return generator(ix, iy);
                         });
                     }
 
@@ -263,15 +303,21 @@ namespace
 
     template<std::size_t N, class T>
     void generate_texcoords(primitives::sphere_create_info const &create_info, graphics::FORMAT format,
-                            strided_bidirectional_iterator<std::array<T, N>> it_begin, std::uint32_t vertices_count)
+                            strided_bidirectional_iterator<std::array<T, N>> it, std::uint32_t vertices_count)
     {
-        auto generator = std::bind(generate_texcoord<N, T>, create_info, format, std::placeholders::_1);
+        auto const wsegments = create_info.wsegments;
+        auto const hsegments = create_info.hsegments;
+
+        auto generator = std::bind(generate_texcoord<N, T>, create_info, format, std::placeholders::_1, std::placeholders::_2);
 
         auto is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
         if (is_primitive_indexed) {
-            std::generate_n(it_begin, vertices_count, [generator, i = 0u] () mutable
+            std::generate_n(it, vertices_count, [generator, wsegments, hsegments, i = 0u] () mutable
             {
-                return generator(i++);
+                auto ix = (i - 1) % (wsegments + 1);
+                auto iy = i == 0 ? 0 : (i - 1) / (wsegments + 1) + 1;
+                ++i;
+                return generator(ix, iy);
             });
         }
 
@@ -284,10 +330,19 @@ namespace
     {
         auto it = strided_bidirectional_iterator<T>{buffer_begin, sizeof(T)};
 
+        auto const wsegments = create_info.wsegments;
+        auto const hsegments = create_info.hsegments;
+
+        auto vertices_count = calculate_sphere_vertices_count(create_info);
+
         switch (create_info.topology) {
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLES:
-                generate_vertex([] (auto vertex_index)
+                generate_vertex([wsegments, hsegments, vertices_count] (auto ix, auto iy)
                 {
+                    //auto vertex_index = iy == 0 ? 0 : (ix % wsegments) + ((iy - 1) * wsegments + 1);
+                    auto vertex_index = iy == 0 ? 0 : iy * hsegments + ix;
+                    vertex_index = iy == hsegments ? vertices_count - 1 : vertex_index;
+
                     return static_cast<T>(vertex_index);
                 }, create_info, it, indices_count);
                 break;
@@ -300,7 +355,6 @@ namespace
         }
     }
 }
-
 
 namespace primitives
 {
@@ -315,7 +369,7 @@ namespace primitives
         if (create_info.index_buffer_type == graphics::INDEX_TYPE::UNDEFINED)
             throw resource::exception("unsupported primitive index topology"s);
 
-        return wsegments * (hsegments - 1) + hsegments;
+        return wsegments * (hsegments - 1) + hsegments + 1;
     }
 
     std::uint32_t calculate_sphere_indices_count(primitives::sphere_create_info const &create_info)
