@@ -125,7 +125,7 @@ namespace
         if constexpr (N == 2) {
             std::array<T, 2> oct;
 
-            math::encode_unit_vector_to_oct_precise(std::span{oct}, glm::vec3{point});
+            math::encode_unit_vector_to_oct_fast(std::span{oct}, glm::vec3{point});
             return oct;
         }
 

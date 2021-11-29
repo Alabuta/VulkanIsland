@@ -1060,7 +1060,7 @@ namespace temp
 
         primitives::sphere_create_info const create_info{
             vertex_layout, topology, index_type,
-            1.f, 4u, 2u,
+            1.f, 32u, 32u,
             generate_color()
         };
 
