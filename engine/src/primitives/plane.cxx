@@ -190,8 +190,7 @@ namespace
     }
 
     template<std::size_t N, class T>
-    std::array<T, N>
-    generate_texcoord(primitives::plane_create_info const &create_info, graphics::FORMAT format, std::uint32_t vertex_index)
+    std::array<T, N> generate_texcoord(primitives::plane_create_info const &create_info, graphics::FORMAT format, std::uint32_t vertex_index)
     {
         auto const hsegments = create_info.hsegments;
         auto const vsegments = create_info.vsegments;
@@ -229,8 +228,7 @@ namespace
     }
 
     template<std::size_t N, class T>
-    std::array<T, N>
-    generate_color(glm::vec4 const &color, graphics::FORMAT format)
+    std::array<T, N> generate_color(glm::vec4 const &color, graphics::FORMAT format)
     {
         if constexpr (N == 3 || N == 4) {
             switch (graphics::numeric_format(format)) {
@@ -240,18 +238,18 @@ namespace
 
                         if constexpr (N == 4) {
                             return std::array<T, N>{
-                                static_cast<T>(color.r *type_max),
-                                    static_cast<T>(color.g *type_max),
-                                    static_cast<T>(color.b *type_max),
-                                    static_cast<T>(color.a *type_max)
+                                static_cast<T>(color.r * type_max),
+                                static_cast<T>(color.g * type_max),
+                                static_cast<T>(color.b * type_max),
+                                static_cast<T>(color.a * type_max)
                             };
                         }
 
                         else if constexpr (N == 3) {
                             return std::array<T, N>{
-                                static_cast<T>(color.r *type_max),
-                                    static_cast<T>(color.g *type_max),
-                                    static_cast<T>(color.b *type_max)
+                                static_cast<T>(color.r * type_max),
+                                static_cast<T>(color.g * type_max),
+                                static_cast<T>(color.b * type_max)
                             };
                         }
                     }

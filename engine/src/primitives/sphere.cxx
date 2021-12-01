@@ -171,6 +171,58 @@ namespace
 
         else throw resource::exception("unsupported components number"s);
     }
+    
+    template<std::size_t N, class T>
+    std::array<T, N> generate_color(glm::vec4 const &color, graphics::FORMAT format)
+    {
+        if constexpr (N == 3 || N == 4) {
+            switch (graphics::numeric_format(format)) {
+                case graphics::NUMERIC_FORMAT::NORMALIZED:
+                    if constexpr (std::is_same_v<T, std::uint8_t>) {
+                        auto constexpr type_max = static_cast<float>(std::numeric_limits<T>::max());
+
+                        if constexpr (N == 4) {
+                            return std::array<T, N>{
+                                static_cast<T>(color.r * type_max),
+                                static_cast<T>(color.g * type_max),
+                                static_cast<T>(color.b * type_max),
+                                static_cast<T>(color.a * type_max)
+                            };
+                        }
+
+                        else if constexpr (N == 3) {
+                            return std::array<T, N>{
+                                static_cast<T>(color.r * type_max),
+                                static_cast<T>(color.g * type_max),
+                                static_cast<T>(color.b * type_max)
+                            };
+                        }
+                    }
+
+                    else throw resource::exception("unsupported format type"s);
+
+                    break;
+
+                case graphics::NUMERIC_FORMAT::FLOAT:
+                    if constexpr (std::is_floating_point_v<T>) {
+                        if constexpr (N == 4)
+                            return std::array<T, N>{color.r, color.g, color.b, 1};
+
+                        else if constexpr (N == 3)
+                            return std::array<T, N>{color.r, color.g, color.b};
+                    }
+
+                    else throw resource::exception("unsupported format type"s);
+
+                    break;
+
+                default:
+                    throw resource::exception("unsupported numeric format"s);
+            }
+        }
+
+        else throw resource::exception("unsupported components number"s);
+    }
 
     template<std::size_t N, class T>
     void generate_positions(primitives::sphere_create_info const &create_info, graphics::FORMAT format,
@@ -300,6 +352,15 @@ namespace
 
         // else generate_vertex(generator, create_info, it_begin, vertices_count);
         else throw resource::exception("unsupported non-indexed mesh"s);
+    }
+
+    template<std::size_t N, class T>
+    void generate_colors(glm::vec4 const &color, graphics::FORMAT format,
+                         strided_bidirectional_iterator<std::array<T, N>> it_begin, std::uint32_t vertices_count)
+    {
+        auto generator = std::bind(generate_color<N, T>, color, format);
+
+        std::generate_n(it_begin, vertices_count, generator);
     }
 
     template<class T>
@@ -438,7 +499,7 @@ namespace primitives
                             break;
 
                         case vertex::SEMANTIC::COLOR_0:
-                            //generate_colors(color, attribute.format, it, vertices_count);
+                            generate_colors(create_info.color, attribute.format, it, vertices_count);
                             break;
 
                         default:
