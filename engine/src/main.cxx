@@ -781,11 +781,34 @@ namespace temp
     }
 #endif
 
-    void x(graphics::PRIMITIVE_TOPOLOGY topology, graphics::INDEX_TYPE index_type, std::size_t material_index, std::size_t first_vertex, std::size_t first_index)
+    xformat::meshlet create_meshlet(app_t &app, graphics::PRIMITIVE_TOPOLOGY topology, graphics::INDEX_TYPE index_type, std::size_t material_index, std::uint32_t vertex_count, std::size_t vertex_size, std::uint32_t index_count, std::size_t index_size)
     {
         xformat::meshlet meshlet;
 
         meshlet.topology = topology;
+
+        auto const index_buffer_allocation_size = index_count * index_size;
+        auto const vertex_buffer_allocation_size = vertex_count * vertex_size;
+        std::cout << "index buffer size "s << index_buffer_allocation_size << " vertex buffer size "s << vertex_buffer_allocation_size << std::endl;
+
+        std::shared_ptr<resource::vertex_buffer> vertex_buffer;
+        std::shared_ptr<resource::index_buffer> index_buffer;
+
+        {
+            auto vertex_staging_buffer = app.resource_manager->create_staging_buffer(vertex_buffer_allocation_size);
+
+            if (index_type != graphics::INDEX_TYPE::UNDEFINED) {
+                auto index_staging_buffer = app.resource_manager->create_staging_buffer(index_buffer_allocation_size);
+
+                primitives::generate_sphere_indexed(create_info, vertex_staging_buffer->mapped_range(), index_staging_buffer->mapped_range());
+
+                index_buffer = app.resource_manager->stage_index_data(index_type, index_staging_buffer, app.transfer_command_pool);
+            }
+
+            else primitives::generate_sphere(create_info, vertex_staging_buffer->mapped_range());
+
+            vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
+        }
 
         auto first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size;
 
@@ -805,10 +828,7 @@ namespace temp
         meshlet.instance_count = 1;
         meshlet.first_instance = 0;
 
-        std::vector<std::size_t> meshlets{ std::size(model_.meshlets) };
-        model_.meshes.push_back(xformat::mesh{ meshlets });
-
-        model_.meshlets.push_back(std::move(meshlet));
+        return meshlet;
     }
 
     void add_box(app_t &app, xformat &model_, std::size_t vertex_layout_index, graphics::INDEX_TYPE index_type, std::size_t material_index)
@@ -1098,7 +1118,7 @@ namespace temp
         auto const index_size = graphics::size_bytes(index_type);
 
         auto const vertex_count = primitives::calculate_sphere_vertices_count(create_info);
-        auto const vertex_size = vertex_layout.size_bytes;
+        auto const vertex_size = graphics::size_bytes(vertex_layout);
 
         auto const index_buffer_allocation_size = index_count * index_size;
         auto const vertex_buffer_allocation_size = vertex_count * vertex_size;
