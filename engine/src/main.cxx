@@ -781,50 +781,44 @@ namespace temp
     }
 #endif
 
-    xformat::meshlet create_meshlet(app_t &app, graphics::PRIMITIVE_TOPOLOGY topology, graphics::INDEX_TYPE index_type, std::size_t material_index, std::uint32_t vertex_count, std::size_t vertex_size, std::uint32_t index_count, std::size_t index_size)
-    {
-        xformat::meshlet meshlet;
+    struct meshlet_create_info final {
+        graphics::PRIMITIVE_TOPOLOGY topology;
+        graphics::INDEX_TYPE index_type;
 
-        meshlet.topology = topology;
+        std::size_t material_index;
 
-        auto const index_buffer_allocation_size = index_count * index_size;
-        auto const vertex_buffer_allocation_size = vertex_count * vertex_size;
-        std::cout << "index buffer size "s << index_buffer_allocation_size << " vertex buffer size "s << vertex_buffer_allocation_size << std::endl;
+        std::uint32_t vertex_count, vertex_size;
+        std::uint32_t index_count, index_size;
 
         std::shared_ptr<resource::vertex_buffer> vertex_buffer;
         std::shared_ptr<resource::index_buffer> index_buffer;
+    };
 
-        {
-            auto vertex_staging_buffer = app.resource_manager->create_staging_buffer(vertex_buffer_allocation_size);
+    xformat::meshlet create_meshlet(app_t &app, meshlet_create_info const info)
+    {
+        xformat::meshlet meshlet;
 
-            if (index_type != graphics::INDEX_TYPE::UNDEFINED) {
-                auto index_staging_buffer = app.resource_manager->create_staging_buffer(index_buffer_allocation_size);
+        meshlet.topology = info.topology;
 
-                primitives::generate_sphere_indexed(create_info, vertex_staging_buffer->mapped_range(), index_staging_buffer->mapped_range());
+        auto const index_buffer_allocation_size = info.index_count * info.index_size;
+        auto const vertex_buffer_allocation_size = info.vertex_count * info.vertex_size;
+        std::cout << "index buffer size "s << index_buffer_allocation_size << " vertex buffer size "s << vertex_buffer_allocation_size << std::endl;
 
-                index_buffer = app.resource_manager->stage_index_data(index_type, index_staging_buffer, app.transfer_command_pool);
-            }
+        auto first_vertex = (info.vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / info.vertex_size;
 
-            else primitives::generate_sphere(create_info, vertex_staging_buffer->mapped_range());
-
-            vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
-        }
-
-        auto first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size;
-
-        meshlet.vertex_buffer = vertex_buffer;
-        meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
+        meshlet.vertex_buffer = info.vertex_buffer;
+        meshlet.vertex_count = static_cast<std::uint32_t>(info.vertex_count);
         meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
 
-        if (index_type != graphics::INDEX_TYPE::UNDEFINED) {
-            auto first_index = (index_buffer->offset_bytes() - index_buffer_allocation_size) / index_size;
+        if (info.index_type != graphics::INDEX_TYPE::UNDEFINED) {
+            auto first_index = (info.index_buffer->offset_bytes() - index_buffer_allocation_size) / info.index_size;
 
-            meshlet.index_buffer = index_buffer;
-            meshlet.index_count = static_cast<std::uint32_t>(index_count);
+            meshlet.index_buffer = info.index_buffer;
+            meshlet.index_count = static_cast<std::uint32_t>(info.index_count);
             meshlet.first_index = static_cast<std::uint32_t>(first_index);
         }
 
-        meshlet.material_index = material_index;
+        meshlet.material_index = info.material_index;
         meshlet.instance_count = 1;
         meshlet.first_instance = 0;
 
