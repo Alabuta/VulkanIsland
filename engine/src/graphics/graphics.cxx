@@ -527,9 +527,4 @@ namespace graphics
                 return 0;
         }
     }
-
-    std::size_t size_bytes(graphics::vertex_layout const &vertex_layout)
-    {
-        return vertex_layout.size_bytes;
-    }
 }

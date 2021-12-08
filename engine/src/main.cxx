@@ -794,7 +794,7 @@ namespace temp
         std::shared_ptr<resource::index_buffer> index_buffer;
     };
 
-    xformat::meshlet create_meshlet(app_t &app, meshlet_create_info const info)
+    xformat::meshlet create_meshlet(meshlet_create_info const &info)
     {
         xformat::meshlet meshlet;
 
@@ -807,14 +807,14 @@ namespace temp
         auto first_vertex = (info.vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / info.vertex_size;
 
         meshlet.vertex_buffer = info.vertex_buffer;
-        meshlet.vertex_count = static_cast<std::uint32_t>(info.vertex_count);
+        meshlet.vertex_count = info.vertex_count;
         meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
 
         if (info.index_type != graphics::INDEX_TYPE::UNDEFINED) {
             auto first_index = (info.index_buffer->offset_bytes() - index_buffer_allocation_size) / info.index_size;
 
             meshlet.index_buffer = info.index_buffer;
-            meshlet.index_count = static_cast<std::uint32_t>(info.index_count);
+            meshlet.index_count = info.index_count;
             meshlet.first_index = static_cast<std::uint32_t>(first_index);
         }
 
@@ -903,30 +903,17 @@ namespace temp
         }
 
         {
-            xformat::meshlet meshlet;
+            auto meshlet = create_meshlet(meshlet_create_info{
+                topology, index_type,
+                material_index,
+                static_cast<std::uint32_t>(vertex_count), static_cast<std::uint32_t>(vertex_size),
+                static_cast<std::uint32_t>(index_count), static_cast<std::uint32_t>(index_size),
+                vertex_buffer,
+                index_buffer
+            });
 
-            meshlet.topology = topology;
-
-            auto first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size;
-
-            meshlet.vertex_buffer = vertex_buffer;
-            meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
-            meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
-
-            if (index_type != graphics::INDEX_TYPE::UNDEFINED) {
-                auto first_index = (index_buffer->offset_bytes() - index_buffer_allocation_size) / index_size;
-
-                meshlet.index_buffer = index_buffer;
-                meshlet.index_count = static_cast<std::uint32_t>(index_count);
-                meshlet.first_index = static_cast<std::uint32_t>(first_index);
-            }
-
-            meshlet.material_index = material_index;
-            meshlet.instance_count = 1;
-            meshlet.first_instance = 0;
-
-            std::vector<std::size_t> meshlets{ std::size(model_.meshlets) };
-            model_.meshes.push_back(xformat::mesh{ meshlets });
+            std::vector<std::size_t> meshlets{std::size(model_.meshlets)};
+            model_.meshes.push_back(xformat::mesh{meshlets});
 
             model_.meshlets.push_back(std::move(meshlet));
         }
@@ -996,27 +983,14 @@ namespace temp
         }
 
         {
-            xformat::meshlet meshlet;
-
-            meshlet.topology = topology;
-
-            auto first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size;
-
-            meshlet.vertex_buffer = vertex_buffer;
-            meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
-            meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
-
-            if (index_type != graphics::INDEX_TYPE::UNDEFINED) {
-                auto first_index = (index_buffer->offset_bytes() - index_buffer_allocation_size) / index_size;
-
-                meshlet.index_buffer = index_buffer;
-                meshlet.index_count = static_cast<std::uint32_t>(index_count);
-                meshlet.first_index = static_cast<std::uint32_t>(first_index);
-            }
-
-            meshlet.material_index = material_index;
-            meshlet.instance_count = 1;
-            meshlet.first_instance = 0;
+            auto meshlet = create_meshlet(meshlet_create_info{
+                topology, index_type,
+                material_index,
+                static_cast<std::uint32_t>(vertex_count), static_cast<std::uint32_t>(vertex_size),
+                static_cast<std::uint32_t>(index_count), static_cast<std::uint32_t>(index_size),
+                vertex_buffer,
+                index_buffer
+            });
 
             std::vector<std::size_t> meshlets{std::size(model_.meshlets)};
             model_.meshes.push_back(xformat::mesh{meshlets});
@@ -1075,19 +1049,14 @@ namespace temp
         }
 
         {
-            xformat::meshlet meshlet;
-
-            meshlet.topology = topology;
-
-            auto first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size;
-
-            meshlet.vertex_buffer = vertex_buffer;
-            meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
-            meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
-
-            meshlet.material_index = material_index;
-            meshlet.instance_count = 1;
-            meshlet.first_instance = 0;
+            auto meshlet = create_meshlet(meshlet_create_info{
+                topology, graphics::INDEX_TYPE::UNDEFINED,
+                material_index,
+                static_cast<std::uint32_t>(vertex_count), static_cast<std::uint32_t>(vertex_size),
+                0u, 0u,
+                vertex_buffer,
+                nullptr
+            });
 
             std::vector<std::size_t> meshlets{std::size(model_.meshlets)};
             model_.meshes.push_back(xformat::mesh{meshlets});
@@ -1112,7 +1081,7 @@ namespace temp
         auto const index_size = graphics::size_bytes(index_type);
 
         auto const vertex_count = primitives::calculate_sphere_vertices_count(create_info);
-        auto const vertex_size = graphics::size_bytes(vertex_layout);
+        auto const vertex_size = vertex_layout.size_bytes;
 
         auto const index_buffer_allocation_size = index_count * index_size;
         auto const vertex_buffer_allocation_size = vertex_count * vertex_size;
@@ -1138,27 +1107,14 @@ namespace temp
         }
 
         {
-            xformat::meshlet meshlet;
-
-            meshlet.topology = topology;
-
-            auto first_vertex = (vertex_buffer->offset_bytes() - vertex_buffer_allocation_size) / vertex_size;
-
-            meshlet.vertex_buffer = vertex_buffer;
-            meshlet.vertex_count = static_cast<std::uint32_t>(vertex_count);
-            meshlet.first_vertex = static_cast<std::uint32_t>(first_vertex);
-
-            if (index_type != graphics::INDEX_TYPE::UNDEFINED) {
-                auto first_index = (index_buffer->offset_bytes() - index_buffer_allocation_size) / index_size;
-
-                meshlet.index_buffer = index_buffer;
-                meshlet.index_count = static_cast<std::uint32_t>(index_count);
-                meshlet.first_index = static_cast<std::uint32_t>(first_index);
-            }
-
-            meshlet.material_index = material_index;
-            meshlet.instance_count = 1;
-            meshlet.first_instance = 0;
+            auto meshlet = create_meshlet(meshlet_create_info{
+                topology, index_type,
+                material_index,
+                static_cast<std::uint32_t>(vertex_count), static_cast<std::uint32_t>(vertex_size),
+                static_cast<std::uint32_t>(index_count), static_cast<std::uint32_t>(index_size),
+                vertex_buffer,
+                index_buffer
+            });
 
             std::vector<std::size_t> meshlets{std::size(model_.meshlets)};
             model_.meshes.push_back(xformat::mesh{meshlets});

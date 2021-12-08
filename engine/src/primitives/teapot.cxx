@@ -1,3 +1,4 @@
+#if 0
 #include <array>
 #include <tuple>
 #include <ranges>
@@ -712,3 +713,4 @@ namespace primitives
         }
     }
 }
+#endif

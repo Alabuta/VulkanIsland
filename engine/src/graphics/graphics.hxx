@@ -662,5 +662,4 @@ namespace graphics
 
     std::size_t size_bytes(graphics::FORMAT format);
     std::size_t size_bytes(graphics::INDEX_TYPE index_type);
-    std::size_t size_bytes(graphics::vertex_layout const &vertex_layout);
 }
