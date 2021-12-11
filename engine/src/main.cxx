@@ -1073,7 +1073,7 @@ namespace temp
 
         primitives::sphere_create_info const create_info{
             vertex_layout, topology, index_type,
-            .64f, 32u, 32u,
+            .64f, 64u, 64u,
             generate_color()
         };
 
@@ -1134,6 +1134,7 @@ namespace temp
         model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
         model_.materials.push_back(xformat::material{0, "debug/solid-wireframe"s});
         model_.materials.push_back(xformat::material{0, "debug/normal-vectors-debug-material"s});
+        model_.materials.push_back(xformat::material{0, "lighting/blinn-phong-material"s});
         
         model_.transforms.push_back(glm::translate(glm::mat4{1.f}, glm::vec3{0, -1, 0}));
         model_.transforms.push_back(
@@ -1294,7 +1295,7 @@ namespace temp
 
         if constexpr (true) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_sphere(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 3);
+            add_sphere(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 7);
         }
  
         return model_;

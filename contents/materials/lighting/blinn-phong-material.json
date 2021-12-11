@@ -1,0 +1,50 @@
+{
+    "name": "blinn-phong-material",
+    "shaderModules": [
+        {
+            "name": "lighting/blinn-phong.vert.hlsl",
+            "stage": "vertex"
+        },
+        {
+            "name": "lighting/blinn-phong.frag.hlsl",
+            "stage": "fragment"
+        }
+    ],
+    "techniques": [
+        {
+            "shaderBundle": [
+                {
+                    "index": 0,
+                    "technique": 0
+                },
+                {
+                    "index": 1,
+                    "technique": 0
+                }
+            ],
+            "vertexLayouts": [
+                [ 0, 1 ],
+                [ 0, 2 ],
+                [ 0, 3 ]
+            ]
+        }
+    ],
+    "vertexAttributes": [
+        {
+            "semantic": "POSITION",
+            "type": "rgb32f"
+        },
+        {
+            "semantic": "NORMAL",
+            "type": "rgb32f"
+        },
+        {
+            "semantic": "NORMAL",
+            "type": "rg8i_norm"
+        },
+        {
+            "semantic": "NORMAL",
+            "type": "rg16i_norm"
+        }
+    ]
+}
