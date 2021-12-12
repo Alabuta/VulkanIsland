@@ -1390,19 +1390,17 @@ void init(platform::window &window, app_t &app)
 
     else app.pipeline_layout = pipeline_layout.value();
 
-#if TEMPORARILY_DISABLED
     // "chalet/textures/chalet.tga"sv
     // "Hebe/textures/HebehebemissinSG1_metallicRoughness.tga"sv
-    if (auto result = load_texture(app, *app.device, "sponza/textures/sponza_curtain_blue_diff.tga"sv); !result)
+    if (auto result = load_texture(*app.device, *app.resource_manager, "checker-map.png"sv, app.transfer_command_pool); !result)
         throw resource::exception("failed to load a texture"s);
 
-    else app.texture = std::move(result.value());
+    else app.texture = std::move(result);
 
-    if (auto result = app.device->resource_manager.create_image_sampler(app.texture.image->mip_levels()); !result)
+   /* if (auto result = app.resource_manager->create_image_sampler(app.texture->image->mip_levels()); !result)
         throw resource::exception("failed to create a texture sampler"s);
 
-    else app.texture.sampler = result;
-#endif
+    else app.texture.sampler = result;*/
 
     temp::xmodel = temp::populate(app);
 
