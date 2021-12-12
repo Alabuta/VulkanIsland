@@ -8,10 +8,11 @@ struct VS_OUTPUT
 	float4 sv_position : SV_POSITION;
     [[vk::location(0)]] float3 normal : NORMAL0;
     [[vk::location(1)]] float3 light_vector : COLOR0;
+    [[vk::location(2)]] float3 position : COLOR1;
 };
 
-
 const float4 light_position = float4(float3(3.), .0);
+
 
 #pragma technique(0)
 VS_OUTPUT main(VS_INPUT input)
@@ -23,6 +24,8 @@ VS_OUTPUT main(VS_INPUT input)
 
     float4 position = mul(object[0].world, float4(in_position, 1.));
     position = mul(camera.view, position);
+
+    output.position = position.xyz;
 
     output.sv_position = mul(camera.projection, position);
 
