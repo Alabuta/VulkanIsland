@@ -46,28 +46,3 @@ VS_OUTPUT main(VS_INPUT input)
 
     return process(input.POSITION, texcoord_0);
 }
-
-#pragma technique(1)
-[earlydepthstencil]
-VS_OUTPUT main(VS_INPUT input)
-{
-    asdasdas
-    float2 texcoord_0 = unpackAttribute(input.TEXCOORD_0);
-    //{}
-    //}
-
-    return process(input.POSITION, texcoord_0);
-}
-
-[earlydepthstencil2 x(0)]
-#pragma technique(2)
-[earlydepthstencil]
-VS_OUTPUT main(VS_INPUT input)
-{
-    asdasdas
-    float2 texcoord_0 = unpackAttribute(input.TEXCOORD_0);//;asdasdasdasd
-    //{}
-    //}
-
-    return process(input.POSITION, texcoord_0);
-}

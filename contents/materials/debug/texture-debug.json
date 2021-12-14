@@ -1,0 +1,47 @@
+{
+    "name": "texture-debug-material",
+    "shaderModules": [
+        {
+            "name": "debug/texture-debug.vert.glsl",
+            "stage": "vertex"
+        },
+        {
+            "name": "debug/texture-debug.frag.glsl",
+            "stage": "fragment"
+        }
+    ],
+    "techniques": [
+        {
+            "shaderBundle": [
+                {
+                    "index": 0,
+                    "technique": 0,
+                    "entryPoint": "main"
+                },
+                {
+                    "index": 1,
+                    "technique": 0,
+                    "entryPoint": "main"
+                }
+            ],
+            "vertexLayouts": [
+                [ 0, 1 ],
+                [ 0, 2 ]
+            ]
+        }
+    ],
+    "vertexAttributes": [
+        {
+            "semantic": "POSITION",
+            "type": "rgb32f"
+        },
+        {
+            "semantic": "TEXCOORD_0",
+            "type": "rg32f"
+        },
+        {
+            "semantic": "TEXCOORD_0",
+            "type": "rg16ui_norm"
+        }
+    ]
+}
