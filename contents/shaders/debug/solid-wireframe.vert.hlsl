@@ -1,17 +1,7 @@
 #include "common.hlsl"
 
-struct PER_CAMERA
-{
-    float4x4 view;
-    float4x4 projection;
-
-    float4x4 projectionView;
-
-    float4x4 invertedView;
-    float4x4 invertedProjection;
-};
-
 layout (set = 0, binding = 0) ConstantBuffer<PER_CAMERA> camera : register(b0, space0);
+layout (set = 1, binding = 0) StructuredBuffer<PER_OBJECT> object : register(t0, space0);
 
 struct PER_VIEWPORT
 {
@@ -19,14 +9,6 @@ struct PER_VIEWPORT
 };
 
 layout (set = 0, binding = 1) ConstantBuffer<PER_VIEWPORT> viewport : register(b0, space1);
-
-struct PER_OBJECT
-{
-    float4x4 world;
-    float4x4 normal;
-};
-
-layout (set = 1, binding = 0) StructuredBuffer<PER_OBJECT> object : register(t0, space0);
 
 struct VS_OUTPUT
 {
