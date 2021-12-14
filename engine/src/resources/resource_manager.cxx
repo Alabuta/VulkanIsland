@@ -396,7 +396,7 @@ namespace resource
 
     std::shared_ptr<resource::sampler>
     resource_manager::create_image_sampler(graphics::TEXTURE_FILTER min_filter, graphics::TEXTURE_FILTER mag_filter, graphics::TEXTURE_MIPMAP_MODE mipmap_mode,
-                                           float max_anisotropy, float min_lod, float max_lod)
+                                           float min_lod, float max_lod)
     {
         std::shared_ptr<resource::sampler> sampler;
 
@@ -409,7 +409,7 @@ namespace resource
             VK_SAMPLER_ADDRESS_MODE_REPEAT,
             VK_SAMPLER_ADDRESS_MODE_REPEAT,
             0.f,
-            static_cast<VkBool32>(config_.anisotropy_enabled), max_anisotropy,
+            static_cast<VkBool32>(config_.anisotropy_enabled), config_.max_anisotropy_level,
             VK_FALSE, VK_COMPARE_OP_ALWAYS,
             min_lod, max_lod,
             VK_BORDER_COLOR_INT_OPAQUE_BLACK,

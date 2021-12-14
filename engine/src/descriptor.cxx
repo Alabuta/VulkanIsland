@@ -36,12 +36,12 @@ std::optional<VulkanDescriptorPool> DescriptorsManager::create_descriptor_pool()
 
 std::optional<VkDescriptorPool> create_descriptor_pool(vulkan::device const &device)
 {
-    std::array<VkDescriptorPoolSize, 2> constexpr pool_sizes{{
-        { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2 },
-        { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1 }
-#if TEMPORARILY_DISABLED
-        { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
-#endif
+    std::array<VkDescriptorPoolSize, 3> constexpr pool_sizes{{
+		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2 },
+		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1 },
+//#if TEMPORARILY_DISABLED
+		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
+//#endif
     }};
 
     VkDescriptorPoolCreateInfo const create_info{
@@ -158,6 +158,29 @@ std::optional<VkDescriptorSetLayout> create_object_resources_descriptor_set_layo
             nullptr
         }
     };
+
+    return create_descriptor_set_layout2(device, layout_bindings);
+}
+
+std::optional<VkDescriptorSetLayout> create_image_resources_descriptor_set_layout(vulkan::device const &device)
+{
+    std::array<VkDescriptorSetLayoutBinding, 1> constexpr layout_bindings{{
+        {
+            0, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+            1, VK_SHADER_STAGE_FRAGMENT_BIT,
+            nullptr
+        }
+        /*{
+            0, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE,
+            1, VK_SHADER_STAGE_FRAGMENT_BIT,
+            nullptr
+        },
+        {
+            1, VK_DESCRIPTOR_TYPE_SAMPLER,
+            1, VK_SHADER_STAGE_FRAGMENT_BIT,
+            nullptr
+        }*/
+    }};
 
     return create_descriptor_set_layout2(device, layout_bindings);
 }

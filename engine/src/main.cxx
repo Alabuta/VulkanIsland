@@ -189,8 +189,10 @@ struct app_t final {
 
     VkDescriptorSetLayout view_resources_descriptor_set_layout{VK_NULL_HANDLE};
     VkDescriptorSetLayout object_resources_descriptor_set_layout{VK_NULL_HANDLE};
+    VkDescriptorSetLayout image_resources_descriptor_set_layout{VK_NULL_HANDLE};
     VkDescriptorSet view_resources_descriptor_set{VK_NULL_HANDLE};
     VkDescriptorSet object_resources_descriptor_set{VK_NULL_HANDLE};
+    VkDescriptorSet image_resources_descriptor_set{VK_NULL_HANDLE};
 
     std::vector<VkCommandBuffer> command_buffers;
 
@@ -248,6 +250,9 @@ struct app_t final {
 
         if (object_resources_descriptor_set_layout != VK_NULL_HANDLE)
             vkDestroyDescriptorSetLayout(device->handle(), object_resources_descriptor_set_layout, nullptr);
+
+        if (image_resources_descriptor_set_layout != VK_NULL_HANDLE)
+            vkDestroyDescriptorSetLayout(device->handle(), image_resources_descriptor_set_layout, nullptr);
 
         vkDestroyDescriptorPool(device->handle(), descriptor_pool, nullptr);
 
@@ -329,14 +334,14 @@ void update_descriptor_set(app_t &app, vulkan::device const &device)
         VkDescriptorBufferInfo{app.per_viewport_buffer->handle(), 0, sizeof(per_viewport_t)}
     };
 
-#if TEMPORARILY_DISABLED
+//#if TEMPORARILY_DISABLED
     // TODO: descriptor info typed by VkDescriptorType.
     auto const per_image = std::array{
-        VkDescriptorImageInfo{app.texture.sampler->handle(), app.texture.view.handle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}
+        VkDescriptorImageInfo{app.texture->sampler->handle(), app.texture->view->handle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}
     };
-#endif
+//#endif
 
-    std::array<VkWriteDescriptorSet, 3> const write_descriptor_sets{{
+    std::array<VkWriteDescriptorSet, 4> const write_descriptor_sets{{
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,
@@ -369,20 +374,20 @@ void update_descriptor_set(app_t &app, vulkan::device const &device)
             nullptr,
             std::data(per_viewport),
             nullptr
-        }
-#if TEMPORARILY_DISABLED
+        },
+//#if TEMPORARILY_DISABLED
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,
-            descriptor_set,
-            2,
+            app.image_resources_descriptor_set,
+            0,
             0, static_cast<std::uint32_t>(std::size(per_image)),
             VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             std::data(per_image),
             nullptr,
             nullptr
         }
-#endif
+//#endif
     }};
 
     // :WARN: remember about potential race condition with the related executing command buffer.
@@ -469,8 +474,8 @@ void create_graphics_command_buffers(app_t &app)
                         for (auto &&dc : span) {
                             vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
 
-                            std::array<VkDescriptorSet, 2> descriptor_sets{
-                                app.view_resources_descriptor_set, dc.descriptor_set
+                            std::array<VkDescriptorSet, 3> descriptor_sets{
+                                app.view_resources_descriptor_set, dc.descriptor_set, app.image_resources_descriptor_set
                             };
 
                             std::array<std::uint32_t, 1> dynamic_offsets{
@@ -498,8 +503,8 @@ void create_graphics_command_buffers(app_t &app)
                 for (auto &&dc : span) {
                     vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
 
-                    std::array<VkDescriptorSet, 2> descriptor_sets{
-                        app.view_resources_descriptor_set, dc.descriptor_set
+                    std::array<VkDescriptorSet, 3> descriptor_sets{
+                        app.view_resources_descriptor_set, dc.descriptor_set, app.image_resources_descriptor_set
                     };
 
                     std::array<std::uint32_t, 1> dynamic_offsets{
@@ -1008,7 +1013,7 @@ namespace temp
         primitives::icosahedron_create_info const create_info{
             vertex_layout, topology,
             generate_color(),
-            .4f, 10u
+            .4f, 100u
         };
 
         auto const vertex_count = primitives::calculate_icosahedron_vertices_count(create_info);
@@ -1134,6 +1139,7 @@ namespace temp
         model_.materials.push_back(xformat::material{0, "debug/texture-coordinate-debug"s});
         model_.materials.push_back(xformat::material{0, "debug/solid-wireframe"s});
         model_.materials.push_back(xformat::material{0, "debug/normal-vectors-debug-material"s});
+        model_.materials.push_back(xformat::material{0, "debug/texture-debug"s});
         model_.materials.push_back(xformat::material{0, "lighting/blinn-phong-material"s});
         
         model_.transforms.push_back(glm::translate(glm::mat4{1.f}, glm::vec3{0, -1, 0}));
@@ -1174,7 +1180,7 @@ namespace temp
 
         if constexpr (true) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_plane(app, model_, 0, graphics::INDEX_TYPE::UNDEFINED, 4);
+            add_plane(app, model_, 0, graphics::INDEX_TYPE::UNDEFINED, 7);
 
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
             add_plane(app, model_, 1, graphics::INDEX_TYPE::UINT_16, 1);
@@ -1290,7 +1296,7 @@ namespace temp
 
         if constexpr (false) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
-            add_icosahedron(app, model_, 2, 0);
+            add_icosahedron(app, model_, 2, 7);
         }
 
         if constexpr (true) {
@@ -1378,12 +1384,17 @@ void init(platform::window &window, app_t &app)
 
     else app.object_resources_descriptor_set_layout = descriptor_set_layout.value();
 
+    if (auto descriptor_set_layout = create_image_resources_descriptor_set_layout(*app.device); !descriptor_set_layout)
+        throw graphics::exception("failed to create the image resources descriptor set layout"s);
+
+    else app.image_resources_descriptor_set_layout = descriptor_set_layout.value();
+
 #if TEMPORARILY_DISABLED
     if (auto result = glTF::load(sceneName, app.scene, app.nodeSystem); !result)
         throw resource::exception("failed to load a mesh"s);
 #endif
 
-    auto descriptor_sets_layouts = std::array{app.view_resources_descriptor_set_layout, app.object_resources_descriptor_set_layout};
+    auto descriptor_sets_layouts = std::array{app.view_resources_descriptor_set_layout, app.object_resources_descriptor_set_layout, app.image_resources_descriptor_set_layout};
 
     if (auto pipeline_layout = create_pipeline_layout(*app.device, descriptor_sets_layouts); !pipeline_layout)
         throw graphics::exception("failed to create the pipeline layout"s);
@@ -1397,10 +1408,10 @@ void init(platform::window &window, app_t &app)
 
     else app.texture = std::move(result);
 
-   /* if (auto result = app.resource_manager->create_image_sampler(app.texture->image->mip_levels()); !result)
+    if (auto result = app.resource_manager->create_image_sampler(graphics::TEXTURE_FILTER::LINEAR, graphics::TEXTURE_FILTER::LINEAR, graphics::TEXTURE_MIPMAP_MODE::LINEAR, 0.f, 0.f); !result)
         throw resource::exception("failed to create a texture sampler"s);
 
-    else app.texture.sampler = result;*/
+    else app.texture->sampler = result;
 
     temp::xmodel = temp::populate(app);
 
@@ -1440,6 +1451,7 @@ void init(platform::window &window, app_t &app)
     else {
         app.view_resources_descriptor_set = descriptor_sets.at(0);
         app.object_resources_descriptor_set = descriptor_sets.at(1);
+        app.image_resources_descriptor_set = descriptor_sets.at(2);
     }
 
     app.per_viewport_data.rect = glm::ivec4{0, 0, app.width, app.height};

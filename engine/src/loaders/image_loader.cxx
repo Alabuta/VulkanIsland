@@ -95,6 +95,7 @@ namespace
 
         auto format = graphics::FORMAT::UNDEFINED;
 
+        component_count = component_count == 3 ? 4 : component_count;
         switch (component_count)
         {
             case 1:

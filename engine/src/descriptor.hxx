@@ -22,3 +22,4 @@ create_descriptor_set_layout2(vulkan::device const &device, std::span<const VkDe
 
 std::optional<VkDescriptorSetLayout> create_view_resources_descriptor_set_layout(vulkan::device const &device);
 std::optional<VkDescriptorSetLayout> create_object_resources_descriptor_set_layout(vulkan::device const &device);
+std::optional<VkDescriptorSetLayout> create_image_resources_descriptor_set_layout(vulkan::device const &device);
