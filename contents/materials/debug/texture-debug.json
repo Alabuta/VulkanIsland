@@ -2,11 +2,11 @@
     "name": "texture-debug-material",
     "shaderModules": [
         {
-            "name": "debug/texture-debug.vert.glsl",
+            "name": "debug/texture-debug.vert.hlsl",
             "stage": "vertex"
         },
         {
-            "name": "debug/texture-debug.frag.glsl",
+            "name": "debug/texture-debug.frag.hlsl",
             "stage": "fragment"
         }
     ],

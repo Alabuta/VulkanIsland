@@ -5,7 +5,7 @@ struct PS_INPUT
 };
 
 layout (set = 2, binding = 0) Texture2D main_texture : register(t1);
-layout (set = 2, binding = 1) SamplerState main_sampler : register(s1);
+layout (set = 2, binding = 0) SamplerState main_sampler : register(s1);
 
 
 #pragma technique(0)

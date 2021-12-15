@@ -17,7 +17,7 @@ VS_OUTPUT process(in float3 position, in float2 texcoord_0)
     output.sv_position = mul(object[0].world, float4(position, 1.));
     output.sv_position = mul(camera.projectionView, output.sv_position);
 
-    output.texcoord = texcoord_0;
+    output.texcoord = float2(texcoord_0.x, 1.f - texcoord_0.y);
 
     return output;
 }
