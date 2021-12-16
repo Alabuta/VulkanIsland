@@ -1440,10 +1440,10 @@ void init(platform::window &window, app_t &app)
     if (app.per_viewport_buffer = create_uniform_buffer(*app.resource_manager, sizeof(per_viewport_t)); !app.per_viewport_buffer)
         throw graphics::exception("failed to init per viewport uniform buffer"s);
 
-    if (auto descriptorPool = create_descriptor_pool(*app.device); !descriptorPool)
+    if (auto descriptor_pool = create_descriptor_pool(*app.device); !descriptor_pool)
         throw graphics::exception("failed to create the descriptor pool"s);
 
-    else app.descriptor_pool = descriptorPool.value();
+    else app.descriptor_pool = descriptor_pool.value();
 
     if (auto descriptor_sets = create_descriptor_sets(*app.device, app.descriptor_pool, descriptor_sets_layouts); descriptor_sets.empty())
         throw graphics::exception("failed to create the descriptor pool"s);

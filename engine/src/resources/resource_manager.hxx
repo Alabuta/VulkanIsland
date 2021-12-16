@@ -64,7 +64,7 @@ namespace resource
 
         [[nodiscard]] std::shared_ptr<resource::sampler>
         create_image_sampler(graphics::TEXTURE_FILTER min_filter, graphics::TEXTURE_FILTER mag_filter, graphics::TEXTURE_MIPMAP_MODE mipmap_mode,
-                             float max_anisotropy, float min_lod, float max_lod);
+                             /*float max_anisotropy, */float min_lod, float max_lod);
         
         [[nodiscard]] std::shared_ptr<resource::framebuffer>
         create_framebuffer(std::shared_ptr<graphics::render_pass> render_pass, renderer::extent extent,
@@ -79,13 +79,19 @@ namespace resource
         [[nodiscard]] std::shared_ptr<resource::index_buffer>
         stage_index_data(graphics::INDEX_TYPE index_type, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool);
 
+        [[nodiscard]] std::shared_ptr<resource::image>
+        stage_image_data(graphics::IMAGE_TYPE type, graphics::FORMAT format, renderer::extent extent, graphics::IMAGE_TILING tiling, std::uint32_t mip_levels, std::uint32_t samples_count,
+                         std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool);
+
     private:
 
         static std::array<graphics::INDEX_TYPE, 2> constexpr kSUPPORTED_INDEX_FORMATS{graphics::INDEX_TYPE::UINT_16, graphics::INDEX_TYPE::UINT_32};
+        static std::array<graphics::FORMAT, 3> constexpr kSUPPORTED_IMAGE_FORMATS{graphics::FORMAT::R8_SRGB, graphics::FORMAT::RG8_SRGB, graphics::FORMAT::RGBA8_SRGB}; // :TODO: replace by run-time acquired list
 
         // :TODO: consider the config file for following constants.
         static std::size_t constexpr kVERTEX_BUFFER_FIXED_SIZE{0x800'0000}; // 128 MB
         static std::size_t constexpr kINDEX_BUFFER_FIXED_SIZE{0x800'0000}; // 128 MB
+        static std::size_t constexpr kIMAGE_BUFFER_FIXED_SIZE{0x800'0000}; // 128 MB
 
         vulkan::device const &device_;
         renderer::config const &config_;
@@ -116,6 +122,8 @@ namespace resource
 
         std::unordered_map<graphics::vertex_layout, vertex_buffer_set, graphics::hash<graphics::vertex_layout>> vertex_buffers_;
         std::unordered_map<graphics::INDEX_TYPE, index_buffer_set> index_buffers_;
+
+        std::multiset<std::shared_ptr<resource::image>, buffer_set_comparator<resource::image>> image_buffers_;
     };
 }
 

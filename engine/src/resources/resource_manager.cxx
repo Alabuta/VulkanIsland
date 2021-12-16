@@ -60,7 +60,7 @@ namespace resource
         std::pair<std::size_t, std::span<std::byte>> allocate_mapped_range(std::size_t size_bytes);
         void unmap_range(std::size_t offset_bytes, std::span<std::byte> mapped_range);
 
-        void operator() (resource::staging_buffer *resource_ptr);
+        //void operator() (resource::staging_buffer *resource_ptr);
 
     private:
 
@@ -648,6 +648,32 @@ namespace resource
         }
 
         else throw resource::instantiation_fail("failed to extract vertex buffer set node"s);
+    }
+
+    std::shared_ptr<resource::image>
+    resource_manager::stage_image_data(graphics::IMAGE_TYPE type, graphics::FORMAT format, renderer::extent extent, graphics::IMAGE_TILING tiling, std::uint32_t mip_levels, std::uint32_t samples_count,
+                                       std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool)
+    {
+        if (std::ranges::none_of(kSUPPORTED_IMAGE_FORMATS, [format] (auto type) { return type == format; }))
+            throw resource::exception(fmt::format("unsupported image type: {0:#x}"s, format));
+
+        auto const container = staging_buffer->mapped_range();
+
+        auto const staging_data_size_bytes = container.size_bytes();
+        auto const staging_data_offset_bytes = staging_buffer->offset_bytes();
+
+        if (staging_data_size_bytes > kIMAGE_BUFFER_FIXED_SIZE)
+            throw resource::not_enough_memory("staging data size is bigger than image buffer max size"s);
+
+        auto constexpr usage_flags = graphics::IMAGE_USAGE::TRANSFER_SOURCE | graphics::IMAGE_USAGE::TRANSFER_DESTINATION | graphics::IMAGE_USAGE::SAMPLED;
+        auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
+        auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
+
+        auto image = create_image(type, format, extent, mip_levels, samples_count, tiling, usage_flags, property_flags);
+
+        if (image == nullptr) {
+
+        }
     }
 }
 

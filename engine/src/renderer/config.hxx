@@ -14,6 +14,7 @@ namespace renderer
     struct config final {
         bool reversed_depth{true};
 
+        bool generate_mipmaps{true};
         bool anisotropy_enabled{true};
         float max_anisotropy_level{16.f};
 
