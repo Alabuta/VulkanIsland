@@ -1,11 +1,6 @@
 cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
-include(ExternalProject)
 
-if(NOT DEFINED PROJECT_VERSION)
-    set(PROJECT_VERSION 1.0.0)
-endif()
-
-project(VulkanIsland VERSION ${PROJECT_VERSION} LANGUAGES CXX)
+project(VulkanIsland VERSION 1.0.0 LANGUAGES CXX)
 
 configure_file(
     "${PROJECT_SOURCE_DIR}/config.hxx.in"
@@ -32,6 +27,7 @@ target_sources(${EXECUTABLE_TARGET_NAME}
         src/graphics/shader_program.hxx                 src/graphics/shader_program.cxx
         src/graphics/vertex.hxx                         src/graphics/vertex.cxx
 
+		src/loaders/image_loader.hxx                    src/loaders/image_loader.cxx
 	    src/loaders/loaderGLTF.hxx                      src/loaders/loaderGLTF.cxx
 	    src/loaders/material_loader.hxx                 src/loaders/material_loader.cxx
 	    src/loaders/scene_loader.hxx
@@ -39,18 +35,27 @@ target_sources(${EXECUTABLE_TARGET_NAME}
         src/loaders/TARGA_loader.hxx                    src/loaders/TARGA_loader.cxx
 
         src/math/math.hxx                               src/math/math.cxx
+        src/math/pack-unpack.hxx
 
         src/platform/input/input_data.hxx
         src/platform/input/input_manager.hxx            src/platform/input/input_manager.cxx
         src/platform/input/mouse.hxx                    src/platform/input/mouse.cxx
-
         src/platform/window.hxx                         src/platform/window.cxx
-	
+
+														src/primitives/box.cxx
+														src/primitives/icosahedron.cxx
+														src/primitives/plane.cxx
+														src/primitives/sphere.cxx
+														src/primitives/teapot.cxx
+		src/primitives/primitives.hxx
+
 	    src/renderer/command_buffer.hxx                 src/renderer/command_buffer.cxx
         src/renderer/config.hxx                         src/renderer/config.cxx
         src/renderer/material.hxx                       src/renderer/material.cxx
         src/renderer/queues.hxx
         src/renderer/render_flow.hxx                    src/renderer/render_flow.cxx
+	    src/renderer/swapchain.hxx                      src/renderer/swapchain.cxx
+	    src/renderer/renderer.hxx                      	src/renderer/renderer.cxx
 	    src/renderer/swapchain.hxx                      src/renderer/swapchain.cxx
 
 	    src/resources/buffer.hxx                        src/resources/buffer.cxx
@@ -58,13 +63,16 @@ target_sources(${EXECUTABLE_TARGET_NAME}
 	    src/resources/image.hxx                         src/resources/image.cxx
         src/resources/memory_manager.hxx                src/resources/memory_manager.cxx
         src/resources/resource_manager.hxx              src/resources/resource_manager.cxx
+		src/resources/sync_objects.hxx
 
+	    src/utility/exceptions.hxx
 	    src/utility/mpl.hxx
 	    src/utility/helpers.hxx
 
 	    src/vulkan/debug.hxx                            src/vulkan/debug.cxx
-        src/vulkan/device_limits.hxx
 	    src/vulkan/device.hxx                           src/vulkan/device.cxx
+		src/vulkan/device_config.hxx
+		src/vulkan/device_limits.hxx
 	    src/vulkan/instance.hxx                         src/vulkan/instance.cxx
 
         src/descriptor.hxx                              src/descriptor.cxx
@@ -75,6 +83,8 @@ target_sources(${EXECUTABLE_TARGET_NAME}
 
 find_package(Vulkan REQUIRED)
 
+find_package(Boost 1.68 REQUIRED)
+
 find_package(fmt 8 CONFIG REQUIRED)
 find_package(glfw3 3.3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
@@ -83,21 +93,17 @@ find_package(range-v3 CONFIG REQUIRED)
 find_package(volk CONFIG REQUIRED)
 
 if (NOT WIN32)
-	# find_package(X11 REQUIRED)
+	 find_package(X11 REQUIRED)
 endif ()
 
-# target_include_directories(${EXECUTABLE_TARGET_NAME}
-#     PUBLIC
-#         ${GLFW_INCLUDE_DIR}
-#         "${CMAKE_CURRENT_SOURCE_DIR}/include"
 
-#     PRIVATE
-#         # $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/>
-#         "${CMAKE_CURRENT_SOURCE_DIR}/src"
-# )
-# TODO:: replace by target_include_directories
-include_directories(SYSTEM include)
-include_directories(src)
+include_directories(${EXECUTABLE_TARGET_NAME}
+	PRIVATE
+		src
+
+	SYSTEM INTERFACE
+		include
+)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     target_compile_definitions(${EXECUTABLE_TARGET_NAME}
@@ -208,8 +214,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         PRIVATE
             /permissive
 
-            /W4
-            /WX
             /w14242 # 'identfier': conversion from 'type1' to 'type1', possible loss of data
             /w14254 # 'operator': conversion from 'type1:field_bits' to 'type2:field_bits', possible loss of data
             /w14263 # 'function': member function does not override any base class virtual member function
@@ -238,6 +242,8 @@ target_link_libraries(${EXECUTABLE_TARGET_NAME}
         ${EXTRA_LIBS}
 
         Vulkan::Vulkan
+
+		${Boost_LIBRARIES}
         
         # fmt::fmt-header-only
 	    fmt::fmt
