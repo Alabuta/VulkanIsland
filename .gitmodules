@@ -16,9 +16,9 @@
 	branch = master
 [submodule "external/range-v3"]
 	path = external/range-v3
-	url = git@github.com:ericniebler/range-v3.git
+	url = https://github.com/ericniebler/range-v3.git
 	branch = master
 [submodule "external/volk"]
 	path = external/volk
-	url = git@github.com:zeux/volk.git
+	url = https://github.com/zeux/volk.git
 	branch = master

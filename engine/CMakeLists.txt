@@ -58,7 +58,6 @@ target_sources(${EXECUTABLE_TARGET_NAME}
 	    src/resources/image.hxx                         src/resources/image.cxx
         src/resources/memory_manager.hxx                src/resources/memory_manager.cxx
         src/resources/resource_manager.hxx              src/resources/resource_manager.cxx
-        src/resources/semaphore.hxx
 
 	    src/utility/mpl.hxx
 	    src/utility/helpers.hxx
@@ -75,13 +74,14 @@ target_sources(${EXECUTABLE_TARGET_NAME}
 # list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
 find_package(Vulkan REQUIRED)
-#find_package(fmt 6.0 CONFIG REQUIRED PATHS ${CMAKE_CURRENT_SOURCE_DIR}/../external)
-find_package(fmt 6.0 CONFIG REQUIRED)
+
+find_package(fmt 8 CONFIG REQUIRED)
 find_package(glfw3 3.3 CONFIG REQUIRED)
-find_package(glm 0.9 CONFIG REQUIRED)
+find_package(glm CONFIG REQUIRED)
 find_package(nlohmann_json 3.7 CONFIG REQUIRED)
-find_package(Boost 1.68 REQUIRED)
 find_package(range-v3 CONFIG REQUIRED)
+
+find_package(Boost 1.68 REQUIRED)
 
 if (NOT WIN32)
 	# find_package(X11 REQUIRED)
@@ -240,11 +240,10 @@ target_link_libraries(${EXECUTABLE_TARGET_NAME}
 
         Vulkan::Vulkan
         
-        fmt::fmt-header-only
+        # fmt::fmt-header-only
 	    fmt::fmt
-        #glfw ${GLFW_LIBRARY}
         glfw
-        glm#::glm
+        glm::glm
 	    nlohmann_json::nlohmann_json
 
         range-v3 range-v3-meta range-v3::meta range-v3-concepts
