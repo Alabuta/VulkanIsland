@@ -15,6 +15,7 @@
 *.pyc
 
 .vs/
+.idea/
 build/
 [Bb]in/
 [Bb]in_d/
