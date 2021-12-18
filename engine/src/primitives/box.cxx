@@ -362,6 +362,9 @@ namespace
     void generate_normals(primitives::box_create_info const &create_info, graphics::FORMAT attribute_format, std::span<glm::mat4 const, 6> transforms,
                           strided_bidirectional_iterator<std::array<T, N>> it_begin, [[maybe_unused]] std::size_t vertex_count)
     {
+        if constexpr (N != 2 && N != 3)
+            throw resource::exception("unsupported components number"s);
+
         auto vertices_number = calculate_box_faces_vertices_count(create_info);
 
         for (std::size_t face_index = 0, offset = 0; auto &&transform : transforms) {
@@ -401,8 +404,6 @@ namespace
                         throw resource::exception("unsupported numeric format"s);
                 }
             }
-
-            else throw resource::exception("unsupported components number"s);
 
             offset += vertices_number.at(face_index / 2);
             ++face_index;

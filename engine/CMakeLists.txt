@@ -79,8 +79,6 @@ target_sources(${EXECUTABLE_TARGET_NAME}
         src/main.hxx                                    src/main.cxx
 )
 
-# list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
-
 find_package(Vulkan REQUIRED)
 
 find_package(Boost 1.68 REQUIRED)
@@ -212,9 +210,10 @@ endif ()
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${EXECUTABLE_TARGET_NAME}
         PRIVATE
-            /permissive
+#            /W4
+#            /WX
 
-            /w14242 # 'identfier': conversion from 'type1' to 'type1', possible loss of data
+            /w14242 # 'identifier': conversion from 'type1' to 'type1', possible loss of data
             /w14254 # 'operator': conversion from 'type1:field_bits' to 'type2:field_bits', possible loss of data
             /w14263 # 'function': member function does not override any base class virtual member function
             /w14265 # 'classname': class has virtual functions, but destructor is not virtual
@@ -250,8 +249,6 @@ target_link_libraries(${EXECUTABLE_TARGET_NAME}
         glfw
         glm::glm
 	    nlohmann_json::nlohmann_json
-
         range-v3 range-v3-meta range-v3::meta range-v3-concepts
-
 		volk::volk volk::volk_headers
 )
