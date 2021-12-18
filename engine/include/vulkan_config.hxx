@@ -2,7 +2,7 @@
 
 #include <array>
 
-#include <volk/volk.h>
+#include <volk.h>
 
 #include "config.hxx"
 

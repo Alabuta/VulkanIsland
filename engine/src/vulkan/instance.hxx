@@ -3,7 +3,7 @@
 #include <type_traits>
 #include <unordered_map>
 
-#include <volk/volk.h>
+#include <volk.h>
 
 #include <GLFW/glfw3.h>
 
