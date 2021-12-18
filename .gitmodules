@@ -20,5 +20,5 @@
 	branch = master
 [submodule "external/volk"]
 	path = external/volk
-	url = https://github.com/zeux/volk.git
+	url = git@github.com:zeux/volk.git
 	branch = master
