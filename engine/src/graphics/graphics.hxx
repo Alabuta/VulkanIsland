@@ -26,7 +26,9 @@ namespace graphics
     enum struct PRIMITIVE_TOPOLOGY {
         POINTS = 0,
         LINES, LINE_STRIP,
-        TRIANGLES, TRIANGLE_STRIP, TRIANGLE_FAN
+        TRIANGLES, TRIANGLE_STRIP, TRIANGLE_FAN,
+        LINE_LIST_WITH_ADJACENCY, LINE_STRIP_WITH_ADJACENCY,
+        TRIANGLE_LIST_WITH_ADJACENCY, TRIANGLE_STRIP_WITH_ADJACENCY
     };
 
     enum struct VERTEX_INPUT_RATE {
@@ -214,7 +216,7 @@ namespace graphics
 
     enum struct TEXTURE_MIPMAP_MODE {
         NEAREST = 0,
-        LINEAR = 1,
+        LINEAR = 1
     };
 
     enum struct MEMORY_PROPERTY_TYPE {

@@ -29,6 +29,18 @@ namespace convert_to
             case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_FAN:
                 return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN;
 
+            case graphics::PRIMITIVE_TOPOLOGY::LINE_LIST_WITH_ADJACENCY:
+                return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY;
+
+            case graphics::PRIMITIVE_TOPOLOGY::LINE_STRIP_WITH_ADJACENCY:
+                return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY;
+
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_LIST_WITH_ADJACENCY:
+                return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY;
+
+            case graphics::PRIMITIVE_TOPOLOGY::TRIANGLE_STRIP_WITH_ADJACENCY:
+                return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY;
+
             default:
                 return VkPrimitiveTopology::VK_PRIMITIVE_TOPOLOGY_MAX_ENUM;
         }
@@ -626,15 +638,39 @@ namespace convert_to
             case graphics::FORMAT::UNDEFINED:
                 return VkFormat::VK_FORMAT_UNDEFINED;
 
+            case graphics::FORMAT::RG4_UNORM_PACK8:
+                return VkFormat::VK_FORMAT_R4G4_UNORM_PACK8;
+
+            case graphics::FORMAT::R8_USCALED:
+                return VkFormat::VK_FORMAT_R8_USCALED;
+
             // Signed and usigned byte integer formats.
             case graphics::FORMAT::R8_SNORM:
                 return VkFormat::VK_FORMAT_R8_SNORM;
 
+            case graphics::FORMAT::R8_SRGB:
+                return VkFormat::VK_FORMAT_R8_SRGB;
+
+            case graphics::FORMAT::R8_SSCALED:
+                return VkFormat::VK_FORMAT_R8_SSCALED;
+
+            case graphics::FORMAT::RG8_USCALED:
+                return VkFormat::VK_FORMAT_R8G8_USCALED;
+
+            case graphics::FORMAT::RG8_SSCALED:
+                return VkFormat::VK_FORMAT_R8G8_SSCALED;
+
             case graphics::FORMAT::RG8_SNORM:
                 return VkFormat::VK_FORMAT_R8G8_SNORM;
 
+            case graphics::FORMAT::RG8_SRGB:
+                return VkFormat::VK_FORMAT_R8G8_SRGB;
+
             case graphics::FORMAT::RGB8_SNORM:
                 return VkFormat::VK_FORMAT_R8G8B8_SNORM;
+
+            case graphics::FORMAT::RGB8_SRGB:
+                return VkFormat::VK_FORMAT_R8G8B8_SRGB;
 
             case graphics::FORMAT::RGBA8_SNORM:
                 return VkFormat::VK_FORMAT_R8G8B8A8_SNORM;
@@ -651,11 +687,50 @@ namespace convert_to
             case graphics::FORMAT::RGB8_UNORM:
                 return VkFormat::VK_FORMAT_R8G8B8_UNORM;
 
+            case graphics::FORMAT::RGB8_USCALED:
+                return VkFormat::VK_FORMAT_R8G8B8_USCALED;
+
+            case graphics::FORMAT::RGB8_SSCALED:
+                return VkFormat::VK_FORMAT_R8G8B8_SSCALED;
+
+            case graphics::FORMAT::BGR8_UNORM:
+                return VkFormat::VK_FORMAT_B8G8R8_UNORM;
+
+            case graphics::FORMAT::BGR8_SNORM:
+                return VkFormat::VK_FORMAT_B8G8R8_SNORM;
+
+            case graphics::FORMAT::BGR8_USCALED:
+                return VkFormat::VK_FORMAT_B8G8R8_USCALED;
+
+            case graphics::FORMAT::BGR8_SSCALED:
+                return VkFormat::VK_FORMAT_B8G8R8_SSCALED;
+
+            case graphics::FORMAT::BGR8_UINT:
+                return VkFormat::VK_FORMAT_B8G8R8_UINT;
+
+            case graphics::FORMAT::BGR8_SINT:
+                return VkFormat::VK_FORMAT_B8G8R8_SINT;
+
+            case graphics::FORMAT::BGR8_SRGB:
+                return VkFormat::VK_FORMAT_B8G8R8_SRGB;
+
             case graphics::FORMAT::RGBA8_UNORM:
                 return VkFormat::VK_FORMAT_R8G8B8A8_UNORM;
 
+            case graphics::FORMAT::RGBA8_USCALED:
+                return VkFormat::VK_FORMAT_R8G8B8A8_USCALED;
+
+            case graphics::FORMAT::RGBA8_SSCALED:
+                return VkFormat::VK_FORMAT_R8G8B8A8_SSCALED;
+
+            case graphics::FORMAT::BGRA8_USCALED:
+                return VkFormat::VK_FORMAT_B8G8R8A8_USCALED;
+
             case graphics::FORMAT::BGRA8_UNORM:
                 return VkFormat::VK_FORMAT_B8G8R8A8_UNORM;
+
+            case graphics::FORMAT::BGRA8_SSCALED:
+                return VkFormat::VK_FORMAT_B8G8R8A8_SSCALED;
 
             case graphics::FORMAT::RGBA8_SRGB:
                 return VkFormat::VK_FORMAT_R8G8B8A8_SRGB;
@@ -663,11 +738,47 @@ namespace convert_to
             case graphics::FORMAT::BGRA8_SRGB:
                 return VkFormat::VK_FORMAT_B8G8R8A8_SRGB;
 
+            case graphics::FORMAT::ABGR8_SINT_PACK32:
+                return VkFormat::VK_FORMAT_A8B8G8R8_SINT_PACK32;
+
             case graphics::FORMAT::A2RGB10_UINT_PACK32:
                 return VkFormat::VK_FORMAT_A2R10G10B10_UINT_PACK32;
 
             case graphics::FORMAT::A2BGR10_UINT_PACK32:
                 return VkFormat::VK_FORMAT_A2B10G10R10_UINT_PACK32;
+
+            case graphics::FORMAT::ABGR8_USCALED_PACK32:
+                return VkFormat::VK_FORMAT_A8B8G8R8_USCALED_PACK32;
+
+            case graphics::FORMAT::ABGR8_SSCALED_PACK32:
+                return VkFormat::VK_FORMAT_A8B8G8R8_SSCALED_PACK32;
+
+            case graphics::FORMAT::A2RGB10_SNORM_PACK32:
+                return VkFormat::VK_FORMAT_A2R10G10B10_SNORM_PACK32;
+
+            case graphics::FORMAT::A2RGB10_USCALED_PACK32:
+                return VkFormat::VK_FORMAT_A2R10G10B10_USCALED_PACK32;
+
+            case graphics::FORMAT::A2RGB10_SSCALED_PACK32:
+                return VkFormat::VK_FORMAT_A2R10G10B10_SSCALED_PACK32;
+
+            case graphics::FORMAT::A2RGB10_SINT_PACK32:
+                return VkFormat::VK_FORMAT_A2R10G10B10_SINT_PACK32;
+
+            case graphics::FORMAT::A2BGR10_SNORM_PACK32:
+                return VkFormat::VK_FORMAT_A2B10G10R10_SNORM_PACK32;
+
+            case graphics::FORMAT::A2BGR10_USCALED_PACK32:
+                return VkFormat::VK_FORMAT_A2B10G10R10_USCALED_PACK32;
+
+            case graphics::FORMAT::A2BGR10_SSCALED_PACK32:
+                return VkFormat::VK_FORMAT_A2B10G10R10_SSCALED_PACK32;
+
+            case graphics::FORMAT::A2BGR10_SINT_PACK32:
+                return VkFormat::VK_FORMAT_A2B10G10R10_SINT_PACK32;
+
+            case graphics::FORMAT::ABGR8_UINT_PACK32:
+                return VkFormat::VK_FORMAT_A8B8G8R8_UINT_PACK32;
 
             case graphics::FORMAT::R5G6B5_UNORM_PACK16:
                 return VkFormat::VK_FORMAT_R5G6B5_UNORM_PACK16;
@@ -718,6 +829,12 @@ namespace convert_to
             case graphics::FORMAT::RG16_SNORM:
                 return VkFormat::VK_FORMAT_R16G16_SNORM;
 
+            case graphics::FORMAT::R16_USCALED:
+                return VkFormat::VK_FORMAT_R16_USCALED;
+
+            case graphics::FORMAT::R16_SSCALED:
+                return VkFormat::VK_FORMAT_R16_SSCALED;
+
             case graphics::FORMAT::RGB16_SNORM:
                 return VkFormat::VK_FORMAT_R16G16B16_SNORM;
 
@@ -729,6 +846,18 @@ namespace convert_to
 
             case graphics::FORMAT::RG16_UNORM:
                 return VkFormat::VK_FORMAT_R16G16_UNORM;
+
+            case graphics::FORMAT::RG16_USCALED:
+                return VkFormat::VK_FORMAT_R16G16_USCALED;
+
+            case graphics::FORMAT::RG16_SSCALED:
+                return VkFormat::VK_FORMAT_R16G16_SSCALED;
+
+            case graphics::FORMAT::RGB16_USCALED:
+                return VkFormat::VK_FORMAT_R16G16B16_USCALED;
+
+            case graphics::FORMAT::RGB16_SSCALED:
+                return VkFormat::VK_FORMAT_R16G16B16_SSCALED;
 
             case graphics::FORMAT::RGB16_UNORM:
                 return VkFormat::VK_FORMAT_R16G16B16_UNORM;
@@ -747,6 +876,12 @@ namespace convert_to
 
             case graphics::FORMAT::RGBA16_SINT:
                 return VkFormat::VK_FORMAT_R16G16B16A16_SINT;
+
+            case graphics::FORMAT::RGBA16_USCALED:
+                return VkFormat::VK_FORMAT_R16G16B16A16_USCALED;
+
+            case graphics::FORMAT::RGBA16_SSCALED:
+                return VkFormat::VK_FORMAT_R16G16B16A16_SSCALED;
 
             case graphics::FORMAT::R16_UINT:
                 return VkFormat::VK_FORMAT_R16_UINT;
@@ -777,6 +912,36 @@ namespace convert_to
 
             case graphics::FORMAT::BGR5A1_UNORM_PACK16:
                 return VkFormat::VK_FORMAT_B5G5R5A1_UNORM_PACK16;
+
+            case graphics::FORMAT::BGRA8_UINT:
+                return VkFormat::VK_FORMAT_B8G8R8A8_UINT;
+
+            case graphics::FORMAT::BGRA8_SINT:
+                return VkFormat::VK_FORMAT_B8G8R8A8_SINT;
+
+            case graphics::FORMAT::BGRG8_422_UNORM:
+                return VkFormat::VK_FORMAT_B8G8R8G8_422_UNORM;
+
+            case graphics::FORMAT::GBGR10X6_422_UNORM_4PACK16:
+                return VkFormat::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16;
+
+            case graphics::FORMAT::BGRG10X6_422_UNORM_4PACK16:
+                return VkFormat::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16;
+
+            case graphics::FORMAT::GBGR12X4_422_UNORM_4PACK16:
+                return VkFormat::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16;
+
+            case graphics::FORMAT::BGRG12X4_422_UNORM_4PACK16:
+                return VkFormat::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16;
+
+            case graphics::FORMAT::GBGR16_422_UNORM:
+                return VkFormat::VK_FORMAT_G16B16G16R16_422_UNORM;
+
+            case graphics::FORMAT::BGRG16_422_UNORM:
+                return VkFormat::VK_FORMAT_B16G16R16G16_422_UNORM;
+
+            case graphics::FORMAT::GBGR8_422_UNORM:
+                return VkFormat::VK_FORMAT_G8B8G8R8_422_UNORM;
 
             // Signed and unsigned four byte integer formats.
             case graphics::FORMAT::R32_SINT:
@@ -829,6 +994,42 @@ namespace convert_to
             case graphics::FORMAT::RGBA32_SFLOAT:
                 return VkFormat::VK_FORMAT_R32G32B32A32_SFLOAT;
 
+            case graphics::FORMAT::R64_UINT:
+                return VkFormat::VK_FORMAT_R64_UINT;
+
+            case graphics::FORMAT::R64_SINT:
+                return VkFormat::VK_FORMAT_R64_SINT;
+
+            case graphics::FORMAT::R64_SFLOAT:
+                return VkFormat::VK_FORMAT_R64_SFLOAT;
+
+            case graphics::FORMAT::RG64_UINT:
+                return VkFormat::VK_FORMAT_R64G64_UINT;
+
+            case graphics::FORMAT::RG64_SINT:
+                return VkFormat::VK_FORMAT_R64G64_SINT;
+
+            case graphics::FORMAT::RG64_SFLOAT:
+                return VkFormat::VK_FORMAT_R64G64_SFLOAT;
+
+            case graphics::FORMAT::RGB64_UINT:
+                return VkFormat::VK_FORMAT_R64G64B64_UINT;
+
+            case graphics::FORMAT::RGB64_SINT:
+                return VkFormat::VK_FORMAT_R64G64B64_SINT;
+
+            case graphics::FORMAT::RGB64_SFLOAT:
+                return VkFormat::VK_FORMAT_R64G64B64_SFLOAT;
+
+            case graphics::FORMAT::RGBA64_UINT:
+                return VkFormat::VK_FORMAT_R64G64B64A64_UINT;
+
+            case graphics::FORMAT::RGBA64_SINT:
+                return VkFormat::VK_FORMAT_R64G64B64A64_SINT;
+
+            case graphics::FORMAT::RGBA64_SFLOAT:
+                return VkFormat::VK_FORMAT_R64G64B64A64_SFLOAT;
+
             // Depth-stenci formats.
             case graphics::FORMAT::D16_UNORM:
                 return VkFormat::VK_FORMAT_D16_UNORM;
@@ -851,6 +1052,135 @@ namespace convert_to
             // Special formats.
             case graphics::FORMAT::B10GR11_UFLOAT_PACK32:
                 return VkFormat::VK_FORMAT_B10G11R11_UFLOAT_PACK32;
+
+            case graphics::FORMAT::E5BGR9_UFLOAT_PACK32:
+                return VkFormat::VK_FORMAT_E5B9G9R9_UFLOAT_PACK32;
+
+            case graphics::FORMAT::BC1_RGB_UNORM_BLOCK:
+                return VkFormat::VK_FORMAT_BC1_RGB_UNORM_BLOCK;
+
+            case graphics::FORMAT::BC1_RGB_SRGB_BLOCK:
+                return VkFormat::VK_FORMAT_BC1_RGB_SRGB_BLOCK;
+
+            case graphics::FORMAT::BC1_RGBA_UNORM_BLOCK:
+                return VkFormat::VK_FORMAT_BC1_RGBA_UNORM_BLOCK;
+
+            case graphics::FORMAT::BC1_RGBA_SRGB_BLOCK:
+                return VkFormat::VK_FORMAT_BC1_RGBA_SRGB_BLOCK;
+
+            case graphics::FORMAT::BC2_UNORM_BLOCK:
+                return VkFormat::VK_FORMAT_BC2_UNORM_BLOCK;
+
+            case graphics::FORMAT::BC2_SRGB_BLOCK:
+                return VkFormat::VK_FORMAT_BC2_SRGB_BLOCK;
+
+            case graphics::FORMAT::BC3_UNORM_BLOCK:
+                return VkFormat::VK_FORMAT_BC3_UNORM_BLOCK;
+
+            case graphics::FORMAT::BC3_SRGB_BLOCK:
+                return VkFormat::VK_FORMAT_BC3_SRGB_BLOCK;
+
+            case graphics::FORMAT::BC4_UNORM_BLOCK:
+                return VkFormat::VK_FORMAT_BC4_UNORM_BLOCK;
+
+            case graphics::FORMAT::BC4_SNORM_BLOCK:
+                return VkFormat::VK_FORMAT_BC4_SNORM_BLOCK;
+
+            case graphics::FORMAT::BC5_UNORM_BLOCK:
+                return VkFormat::VK_FORMAT_BC5_UNORM_BLOCK;
+
+            case graphics::FORMAT::BC5_SNORM_BLOCK:
+                return VkFormat::VK_FORMAT_BC5_SNORM_BLOCK;
+
+            case graphics::FORMAT::BC6H_UFLOAT_BLOCK:
+                return VkFormat::VK_FORMAT_BC6H_UFLOAT_BLOCK;
+
+            case graphics::FORMAT::BC6H_SFLOAT_BLOCK:
+                return VkFormat::VK_FORMAT_BC6H_SFLOAT_BLOCK;
+
+            case graphics::FORMAT::BC7_UNORM_BLOCK:
+                return VkFormat::VK_FORMAT_BC7_UNORM_BLOCK;
+
+            case graphics::FORMAT::BC7_SRGB_BLOCK:
+                return VkFormat::VK_FORMAT_BC7_SRGB_BLOCK;
+
+            case graphics::FORMAT::G8_B8_R8_3PLANE_420_UNORM:
+                return VkFormat::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM;
+
+            case graphics::FORMAT::G8_B8R8_2PLANE_420_UNORM:
+                return VkFormat::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+
+            case graphics::FORMAT::G8_B8_R8_3PLANE_422_UNORM:
+                return VkFormat::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM;
+
+            case graphics::FORMAT::G8_B8R8_2PLANE_422_UNORM:
+                return VkFormat::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM;
+
+            case graphics::FORMAT::G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16:
+                return VkFormat::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16;
+
+            case graphics::FORMAT::G10X6_BR10X6_2PLANE_420_UNORM_3PACK16:
+                return VkFormat::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16;
+
+            case graphics::FORMAT::G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16:
+                return VkFormat::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16;
+
+            case graphics::FORMAT::G10X6_BR10X6_2PLANE_422_UNORM_3PACK16:
+                return VkFormat::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16;
+
+            case graphics::FORMAT::G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16:
+                return VkFormat::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16;
+
+            case graphics::FORMAT::G12X4_BR12X4_2PLANE_420_UNORM_3PACK16:
+                return VkFormat::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16;
+
+            case graphics::FORMAT::G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16:
+                return VkFormat::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16;
+
+            case graphics::FORMAT::G12X4_BR12X4_2PLANE_422_UNORM_3PACK16:
+                return VkFormat::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16;
+
+            case graphics::FORMAT::G16_B16_R16_3PLANE_420_UNORM:
+                return VkFormat::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM;
+
+            case graphics::FORMAT::G16_BR16_2PLANE_420_UNORM:
+                return VkFormat::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM;
+
+            case graphics::FORMAT::G16_B16_R16_3PLANE_422_UNORM:
+                return VkFormat::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM;
+
+            case graphics::FORMAT::G16_BR16_2PLANE_422_UNORM:
+                return VkFormat::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM;
+
+            case graphics::FORMAT::G8_B8_R8_3PLANE_444_UNORM:
+                return VkFormat::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM;
+
+            case graphics::FORMAT::G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16:
+                return VkFormat::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16;
+
+            case graphics::FORMAT::G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16:
+                return VkFormat::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16;
+
+            case graphics::FORMAT::G16_B16_R16_3PLANE_444_UNORM:
+                return VkFormat::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM;
+
+            case graphics::FORMAT::R10X6_UNORM_PACK16:
+                return VkFormat::VK_FORMAT_R10X6_UNORM_PACK16;
+
+            case graphics::FORMAT::RG10X6_UNORM_2PACK16:
+                return VkFormat::VK_FORMAT_R10X6G10X6_UNORM_2PACK16;
+
+            case graphics::FORMAT::RGBA10X6_UNORM_4PACK16:
+                return VkFormat::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16;
+
+            case graphics::FORMAT::R12X4_UNORM_PACK16:
+                return VkFormat::VK_FORMAT_R12X4_UNORM_PACK16;
+
+            case graphics::FORMAT::RG12X4_UNORM_2PACK16:
+                return VkFormat::VK_FORMAT_R12X4G12X4_UNORM_2PACK16;
+
+            case graphics::FORMAT::RGBA12X4_UNORM_4PACK16:
+                return VkFormat::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16;
 
             default:
                 return VkFormat::VK_FORMAT_MAX_ENUM;

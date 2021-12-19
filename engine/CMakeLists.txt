@@ -79,6 +79,14 @@ target_sources(${EXECUTABLE_TARGET_NAME}
         src/main.hxx                                    src/main.cxx
 )
 
+target_include_directories(${EXECUTABLE_TARGET_NAME}
+	PRIVATE
+		src
+
+	SYSTEM INTERFACE
+		include
+)
+
 find_package(Vulkan REQUIRED)
 
 find_package(Boost 1.68 REQUIRED)
@@ -93,15 +101,6 @@ find_package(volk CONFIG REQUIRED)
 if (NOT WIN32)
 	 find_package(X11 REQUIRED)
 endif ()
-
-
-include_directories(${EXECUTABLE_TARGET_NAME}
-	PRIVATE
-		src
-
-	SYSTEM INTERFACE
-		include
-)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
     target_compile_definitions(${EXECUTABLE_TARGET_NAME}
@@ -182,29 +181,67 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 endif ()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options(${EXECUTABLE_TARGET_NAME}
-        PRIVATE
-            -Wpedantic
-            -Wall
-            -Wextra
-            -Werror
-		    -Wold-style-cast
-		    -Wnon-virtual-dtor
-		    -Wcast-align
-		    -Wunused
-		    -Wconversion
-            -Woverloaded-virtual
-		    -Wsign-conversion
-		    -Wnull-dereference
-		    -Wdouble-promotion
-		    -Wformat=2
-            # -Wlifetime
+	if ("${CMAKE_CXX_SIMULATE_ID}" STREQUAL "MSVC")
+		target_compile_options(${EXECUTABLE_TARGET_NAME}
+			PRIVATE
+				-ferror-limit=16
 
-            -Wno-unknown-pragmas
-            -Wno-unknown-warning-option
+				-Wpedantic
+				-Wall
+				/EHa
+				-Wno-c++98-compat
+				# -Wno-c++98-compat-pedantic
+				-Wno-covered-switch-default
+				-Wextra
+				-Werror
+				-Wold-style-cast
+				-Wnon-virtual-dtor
+				-Wcast-align
+				-Wunused
+				-Wconversion
+				-Woverloaded-virtual
+				-Wsign-conversion
+				-Wnull-dereference
+				-Wdouble-promotion
+				-Wno-shadow-field-in-constructor
+				-Wformat=2
+				# -Wlifetime
 
-            #-fsanitize=thread -fsanitize=address
-    )
+				-Wno-unknown-pragmas
+				-Wno-unknown-warning-option
+
+				#-fsanitize=thread -fsanitize=address
+			)
+	else()
+		target_compile_options(${EXECUTABLE_TARGET_NAME}
+			PRIVATE
+				-Wpedantic
+				-Wall
+							-fexceptions
+							-fcxx-exceptions
+				-Wno-c++98-compat
+				# Wno-c++98-compat-pedantic
+				-Wextra
+				-Werror
+				-Wold-style-cast
+				-Wnon-virtual-dtor
+				-Wcast-align
+				-Wunused
+				-Wconversion
+				-Woverloaded-virtual
+				-Wsign-conversion
+				-Wnull-dereference
+				-Wdouble-promotion
+				-Wno-shadow-field-in-constructor
+				-Wformat=2
+				# -Wlifetime
+
+				-Wno-unknown-pragmas
+				-Wno-unknown-warning-option
+
+				#-fsanitize=thread -fsanitize=address
+			)
+	endif()
 endif ()
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
@@ -212,7 +249,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
         PRIVATE
 #            /W4
 #            /WX
-
             /w14242 # 'identifier': conversion from 'type1' to 'type1', possible loss of data
             /w14254 # 'operator': conversion from 'type1:field_bits' to 'type2:field_bits', possible loss of data
             /w14263 # 'function': member function does not override any base class virtual member function

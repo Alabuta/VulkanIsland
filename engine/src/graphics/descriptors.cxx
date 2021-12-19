@@ -54,7 +54,7 @@ namespace graphics
         };
 
         if (auto result = vkCreateDescriptorPool(device_.handle(), &create_info, nullptr, &descriptor_pool_); result != VK_SUCCESS)
-            throw vulkan::exception(fmt::format("failed to create the descriptor pool: {0:#x}"s, result));
+            throw vulkan::exception(fmt::format("failed to create the descriptor pool: {0:#x}", result));
     }
 
     descriptor_registry::~descriptor_registry()
@@ -86,7 +86,7 @@ namespace graphics
         VkDescriptorSetLayout handle;
 
         if (auto result = vkCreateDescriptorSetLayout(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw vulkan::exception(fmt::format("failed to create descriptor set layout: {0:#x}"s, result));
+            throw vulkan::exception(fmt::format("failed to create descriptor set layout: {0:#x}", result));
 
         std::shared_ptr<graphics::descriptor_set_layout> descriptor_set_layout;
 
