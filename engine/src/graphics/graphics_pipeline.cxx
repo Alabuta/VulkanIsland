@@ -17,7 +17,8 @@ using namespace std::string_literals;
 
 namespace
 {
-    auto const kENTRY_POINTS = std::array{
+    [[clang::no_destroy]] // Specifies that a variable with static or thread storage duration shouldn’t have its exit-time destructor run.
+    static auto const kENTRY_POINTS = std::array{
         "technique0"s,
         "technique1"s,
         "technique2"s,
@@ -27,15 +28,15 @@ namespace
 
 namespace convert_to
 {
-    [[nodiscard]] VkPipelineVertexInputStateCreateInfo
+    [[nodiscard]] static VkPipelineVertexInputStateCreateInfo
     vulkan(graphics::vertex_input_state const &vertex_input_state,
            std::vector<VkVertexInputBindingDescription> &binding_descriptions,
            std::vector<VkVertexInputAttributeDescription> &attribute_descriptions)
     {
-        auto [binding_index, size_bytes, input_rate] = vertex_input_state.binding_description;
+        auto [binding, size_bytes, input_rate] = vertex_input_state.binding_description;
 
         binding_descriptions.push_back(VkVertexInputBindingDescription{
-            binding_index, size_bytes, convert_to::vulkan(input_rate)
+            binding, size_bytes, convert_to::vulkan(input_rate)
         });
 
         std::ranges::transform(vertex_input_state.attribute_descriptions, std::back_inserter(attribute_descriptions), [] (auto &&attribute_description)
@@ -57,7 +58,7 @@ namespace convert_to
         };
     }
 
-    [[nodiscard]] VkPipelineRasterizationStateCreateInfo vulkan(graphics::rasterization_state const &rasterization_state)
+    [[nodiscard]] static VkPipelineRasterizationStateCreateInfo vulkan(graphics::rasterization_state const &rasterization_state)
     {
         return VkPipelineRasterizationStateCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,
@@ -73,7 +74,7 @@ namespace convert_to
         };
     }
 
-    [[nodiscard]] VkStencilOpState vulkan(graphics::stencil_state const &stencil_state)
+    [[nodiscard]] static VkStencilOpState vulkan(graphics::stencil_state const &stencil_state)
     {
         return VkStencilOpState{
             convert_to::vulkan(stencil_state.fail),
@@ -88,7 +89,7 @@ namespace convert_to
         };
     }
 
-    [[nodiscard]] VkPipelineDepthStencilStateCreateInfo vulkan(graphics::depth_stencil_state const &depth_stencil_state)
+    [[nodiscard]] static VkPipelineDepthStencilStateCreateInfo vulkan(graphics::depth_stencil_state const &depth_stencil_state)
     {
         return VkPipelineDepthStencilStateCreateInfo{
             VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
@@ -108,7 +109,7 @@ namespace convert_to
         };
     }
 
-    [[nodiscard]] VkPipelineColorBlendStateCreateInfo
+    [[nodiscard]] static VkPipelineColorBlendStateCreateInfo
     vulkan(graphics::color_blend_state const &color_blend_state, std::vector<VkPipelineColorBlendAttachmentState> &attachment_states)
     {
         for (auto &&attachment_state : color_blend_state.attachment_states) {
@@ -325,7 +326,7 @@ namespace graphics
         VkPipeline handle;
 
         if (auto result = vkCreateGraphicsPipelines(device_.handle(), VK_NULL_HANDLE, 1, &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw vulkan::exception(fmt::format("failed to create graphics pipeline: {0:#x}"s, result));
+            throw vulkan::exception(fmt::format("failed to create graphics pipeline: {0:#x}", result));
 
         auto pipeline = std::shared_ptr<graphics::pipeline>(
             new graphics::pipeline{handle}, [this] (graphics::pipeline *const ptr_pipeline)
@@ -358,10 +359,10 @@ namespace graphics
 
         auto const binding_index = static_cast<std::uint32_t>(std::size(vertex_input_states_));
 
-        auto &&[size_bytes, attributes] = vertex_layout;
+        auto &&[size_in_bytes, attributes] = vertex_layout;
 
         graphics::vertex_input_binding binding_description{
-            binding_index, static_cast<std::uint32_t>(size_bytes), graphics::VERTEX_INPUT_RATE::PER_VERTEX
+            binding_index, static_cast<std::uint32_t>(size_in_bytes), graphics::VERTEX_INPUT_RATE::PER_VERTEX
         };
 
         std::vector<graphics::vertex_input_attribute> attribute_descriptions;
@@ -449,7 +450,7 @@ namespace graphics
         VkPipelineLayout handle;
 
         if (auto result = vkCreatePipelineLayout(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw vulkan::exception(fmt::format("failed to create pipeline layout: {0:#x}"s, result));
+            throw vulkan::exception(fmt::format("failed to create pipeline layout: {0:#x}", result));
 
         auto pipeline_layout = std::shared_ptr<graphics::pipeline_layout>(
             new graphics::pipeline_layout{handle}, [this] (graphics::pipeline_layout *const ptr_pipeline_layout)
@@ -497,7 +498,7 @@ create_pipeline_layout(vulkan::device const &device, std::span<VkDescriptorSetLa
     VkPipelineLayout handle;
 
     if (auto result = vkCreatePipelineLayout(device.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-        throw vulkan::exception(fmt::format("failed to create pipeline layout: {0:#x}"s, result));
+        throw vulkan::exception(fmt::format("failed to create pipeline layout: {0:#x}", result));
 
     return handle;
 }

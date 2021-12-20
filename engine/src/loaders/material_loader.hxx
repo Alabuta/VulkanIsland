@@ -5,7 +5,6 @@
 #include <variant>
 #include <string>
 #include <string_view>
-using namespace std::string_view_literals;
 
 #include <boost/cstdfloat.hpp>
 

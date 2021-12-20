@@ -7,15 +7,15 @@
 #include <filesystem>
 namespace fs = std::filesystem;
 
-#include <string>
-using namespace std::string_literals;
-
 #include <fmt/format.h>
 
 #include <nlohmann/json.hpp>
 
 #include "utility/exceptions.hxx"
 #include "material_loader.hxx"
+
+using namespace std::string_literals;
+using namespace std::string_view_literals;
 
 
 
