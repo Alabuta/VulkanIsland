@@ -30,12 +30,12 @@ namespace graphics
         auto const shader_byte_code = loader::load_SPIRV(name);
 
         if (shader_byte_code.empty())
-            throw resource::exception(fmt::format("failed to open shader file: {}"s, name));
+            throw resource::exception(fmt::format("failed to open shader file: {}", name));
 
         std::shared_ptr<graphics::shader_module> shader_module;
 
         if (std::size(shader_byte_code) % sizeof(std::uint32_t) != 0)
-            throw resource::exception(fmt::format("invalid byte code buffer size: {}"s, name));
+            throw resource::exception(fmt::format("invalid byte code buffer size: {}", name));
 
         else {
             VkShaderModuleCreateInfo const create_info{
@@ -48,7 +48,7 @@ namespace graphics
             VkShaderModule handle;
 
             if (auto result = vkCreateShaderModule(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-                throw vulkan::exception(fmt::format("failed to create shader module: {0:#x}"s, result));
+                throw vulkan::exception(fmt::format("failed to create shader module: {0:#x}", result));
 
             else {
                 shader_module.reset(new graphics::shader_module{handle}, [this] (graphics::shader_module *ptr_module)

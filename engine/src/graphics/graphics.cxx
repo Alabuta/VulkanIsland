@@ -504,9 +504,9 @@ namespace graphics
     std::size_t size_bytes(graphics::FORMAT format)
     {
         if (auto format_inst = graphics::instantiate_format(format); format_inst) {
-            return std::visit([] (auto &&format_inst)
+            return std::visit([] (auto &&f)
             {
-                return sizeof(std::remove_cvref_t<decltype(format_inst)>);
+                return sizeof(std::remove_cvref_t<decltype(f)>);
 
             }, *format_inst);
         }
@@ -523,6 +523,7 @@ namespace graphics
             case graphics::INDEX_TYPE::UINT_32:
                 return sizeof(std::uint32_t);
 
+            case graphics::INDEX_TYPE::UNDEFINED:
             default:
                 return 0;
         }

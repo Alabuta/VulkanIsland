@@ -14,7 +14,7 @@ namespace fs = std::filesystem;
 #define STBI_NO_BMP
 #define STBI_NO_GIF
 #define STBI_NO_PIC
-#define STBI_NO_PNM 
+#define STBI_NO_PNM
 #include <stb_image.h>
 
 #include "resources/buffer.hxx"
@@ -90,7 +90,7 @@ namespace
             format,
             graphics::IMAGE_VIEW_TYPE::TYPE_2D,
             w, h,
-            static_cast<std::size_t>(w * h * component_count * sizeof(std::byte)),
+            static_cast<std::size_t>(w * h * component_count) * sizeof(std::byte),
             std::unique_ptr<stbi_uc, decltype(image_info::image_pixels_deleter)>{texels, image_info::image_pixels_deleter}
         };
 
@@ -114,7 +114,7 @@ namespace
             auto &&memory = buffer->memory();
 
             if (auto result = vkMapMemory(device.handle(), memory->handle(), memory->offset(), memory->size(), 0, &data); result != VK_SUCCESS)
-                throw vulkan::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
+                throw vulkan::exception(fmt::format("failed to map staging buffer memory: {0:#x}", result));
 
             else {
                 std::ranges::copy(texels_data, static_cast<T *>(data));
@@ -138,7 +138,7 @@ load_texture(vulkan::device &device, resource::resource_manager &resource_manage
         return { };
 
     auto constexpr has_mip_maps = true; // config_.generate_mipmaps
-        
+
     auto const width = static_cast<std::uint32_t>(info.width);
     auto const height = static_cast<std::uint32_t>(info.height);
 

@@ -3,6 +3,8 @@
 #include <array>
 #include <vector>
 
+#include <boost/math/special_functions/relative_difference.hpp>
+
 #include "main.hxx"
 #include "utility/mpl.hxx"
 #include "graphics.hxx"
@@ -36,7 +38,7 @@ namespace graphics
             return cull_mode == rhs.cull_mode &&
                 front_face == rhs.front_face &&
                 polygon_mode == rhs.polygon_mode &&
-                line_width == rhs.line_width;
+                boost::math::relative_difference(line_width, rhs.line_width) > 1;
         }
     };
 
