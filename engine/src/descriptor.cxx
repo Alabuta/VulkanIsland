@@ -56,7 +56,7 @@ std::optional<VkDescriptorPool> create_descriptor_pool(vulkan::device const &dev
     if (auto result = vkCreateDescriptorPool(device.handle(), &create_info, nullptr, &handle); result == VK_SUCCESS)
         return handle;
 
-    else throw vulkan::exception(fmt::format("failed to create descriptor pool: {0:#x}"s, result));
+    else throw vulkan::exception(fmt::format("failed to create descriptor pool: {0:#x}", result));
 }
 
 #if OBSOLETE
@@ -93,7 +93,7 @@ std::optional<VkDescriptorSetLayout> create_descriptor_set_layout(vulkan::device
     if (auto result = vkCreateDescriptorSetLayout(device.handle(), &create_info, nullptr, &handle); result == VK_SUCCESS)
         return handle;
 
-    else throw vulkan::exception(fmt::format("failed to create descriptor set layout: {0:#x}"s, result));
+    else throw vulkan::exception(fmt::format("failed to create descriptor set layout: {0:#x}", result));
 }
 #endif
 
@@ -112,7 +112,7 @@ create_descriptor_sets(vulkan::device const &device, VkDescriptorPool descriptor
     if (auto result = vkAllocateDescriptorSets(device.handle(), &allocate_info, std::data(handles)); result == VK_SUCCESS)
         return handles;
 
-    else throw vulkan::exception(fmt::format("failed to allocate descriptor set(s): {0:#x}"s, result));
+    else throw vulkan::exception(fmt::format("failed to allocate descriptor set(s): {0:#x}", result));
 }
 
 std::optional<VkDescriptorSetLayout> create_descriptor_set_layout2(vulkan::device const &device, std::span<const VkDescriptorSetLayoutBinding> const layout_bindings)
@@ -128,7 +128,7 @@ std::optional<VkDescriptorSetLayout> create_descriptor_set_layout2(vulkan::devic
     if (auto result = vkCreateDescriptorSetLayout(device.handle(), &create_info, nullptr, &handle); result == VK_SUCCESS)
         return handle;
 
-    else throw vulkan::exception(fmt::format("failed to create descriptor set layout: {0:#x}"s, result));
+    else throw vulkan::exception(fmt::format("failed to create descriptor set layout: {0:#x}", result));
 }
 
 std::optional<VkDescriptorSetLayout> create_view_resources_descriptor_set_layout(vulkan::device const &device)

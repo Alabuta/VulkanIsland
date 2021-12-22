@@ -18,7 +18,7 @@ std::optional<texel_buffer_t> instantiate_texel_buffer()
     return std::make_optional<std::vector<math::vec<N, std::uint8_t>>>();
 }
 
-std::optional<texel_buffer_t> instantiate_texel_buffer(std::uint8_t pixelDepth) noexcept
+static std::optional<texel_buffer_t> instantiate_texel_buffer(std::uint8_t pixelDepth) noexcept
 {
     switch (pixelDepth) {
         case 8:
@@ -43,19 +43,15 @@ constexpr PIXEL_LAYOUT GetPixelLayout(std::uint8_t pixelDepth) noexcept
     switch (pixelDepth) {
         case 8:
             return PIXEL_LAYOUT::nRED;
-            break;
 
         case 16:
             return PIXEL_LAYOUT::nRG;
-            break;
 
         case 24:
             return PIXEL_LAYOUT::nBGR;
-            break;
 
         case 32:
             return PIXEL_LAYOUT::nBGRA;
-            break;
 
         default:
             return PIXEL_LAYOUT::nUNDEFINED;
@@ -90,12 +86,12 @@ constexpr graphics::FORMAT GetPixelFormat(PIXEL_LAYOUT pixelLayout) noexcept
 }
 
 
-void LoadUncompressedTrueColorImage(TARGA &targa, std::ifstream &file)
+static void LoadUncompressedTrueColorImage(TARGA &targa, std::ifstream &file)
 {
-    texel_buffer_t buffer;
+    texel_buffer_t texel_buffer;
 
     if (auto result = instantiate_texel_buffer(targa.pixelDepth); result)
-        buffer = result.value();
+        texel_buffer = result.value();
 
     else return;
 
@@ -125,20 +121,20 @@ void LoadUncompressedTrueColorImage(TARGA &targa, std::ifstream &file)
 
         else targa.data = std::move(buffer);
 
-    }, std::move(buffer));
+    }, std::move(texel_buffer));
 }
 
-void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
+static void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
 {
     if ((targa.header.colorMapType & 0x01) != 0x01)
         return;
 
     targa.colorMapDepth = targa.header.colorMapSpec.at(4);
 
-    texel_buffer_t palette;
+    texel_buffer_t texel_palette;
 
     if (auto buffer = instantiate_texel_buffer(targa.colorMapDepth); buffer)
-        palette = buffer.value();
+        texel_palette = buffer.value();
 
     else return;
 
@@ -151,7 +147,7 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
 
     file.seekg(colorMapStart, std::ios::cur);
 
-    palette = std::visit([&] (auto &&palette) -> texel_buffer_t
+    texel_palette = std::visit([&] (auto &&palette) -> texel_buffer_t
     {
         palette.resize(colorMapLength);
 
@@ -175,7 +171,7 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
 
         else return std::move(palette);
 
-    }, std::move(palette));
+    }, std::move(texel_palette));
 
     std::visit([&targa, &file] (auto &&palette)
     {
@@ -201,7 +197,7 @@ void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
 
         targa.data = std::move(buffer);
 
-    }, std::move(palette));
+    }, std::move(texel_palette));
 }
 
 [[nodiscard]] std::optional<RawImage> LoadTARGA(std::string_view name)

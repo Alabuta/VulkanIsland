@@ -3,100 +3,101 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(VulkanIsland VERSION 1.0.0 LANGUAGES CXX)
 
 configure_file(
-    "${PROJECT_SOURCE_DIR}/config.hxx.in"
-    "${PROJECT_SOURCE_DIR}/include/config.hxx"
-)
-
-set(EXECUTABLE_TARGET_NAME engine)
-add_executable(${EXECUTABLE_TARGET_NAME})
-
-target_sources(${EXECUTABLE_TARGET_NAME}
-    PRIVATE
-        src/camera/handlers/mouse_handler.hxx           src/camera/handlers/mouse_handler.cxx
-        src/camera/camera_controller.hxx                src/camera/camera_controller.cxx
-        src/camera/camera.hxx                           src/camera/camera.cxx
-
-        src/graphics/attachments.hxx                    src/graphics/attachments.cxx
-        src/graphics/compatibility.hxx
-        src/graphics/descriptors.hxx		            src/graphics/descriptors.cxx
-        src/graphics/graphics_api.hxx                   src/graphics/graphics_api.cxx
-        src/graphics/graphics_pipeline.hxx              src/graphics/graphics_pipeline.cxx
-        src/graphics/graphics.hxx                       src/graphics/graphics.cxx
-        src/graphics/pipeline_states.hxx                src/graphics/pipeline_states.cxx
-        src/graphics/render_pass.hxx                    src/graphics/render_pass.cxx
-        src/graphics/shader_program.hxx                 src/graphics/shader_program.cxx
-        src/graphics/vertex.hxx                         src/graphics/vertex.cxx
-
-		src/loaders/image_loader.hxx                    src/loaders/image_loader.cxx
-	    src/loaders/loaderGLTF.hxx                      src/loaders/loaderGLTF.cxx
-	    src/loaders/material_loader.hxx                 src/loaders/material_loader.cxx
-	    src/loaders/scene_loader.hxx
-	    src/loaders/SPIRV_loader.hxx                    src/loaders/SPIRV_loader.cxx
-        src/loaders/TARGA_loader.hxx                    src/loaders/TARGA_loader.cxx
-
-        src/math/math.hxx                               src/math/math.cxx
-        src/math/pack-unpack.hxx
-
-        src/platform/input/input_data.hxx
-        src/platform/input/input_manager.hxx            src/platform/input/input_manager.cxx
-        src/platform/input/mouse.hxx                    src/platform/input/mouse.cxx
-        src/platform/window.hxx                         src/platform/window.cxx
-
-														src/primitives/box.cxx
-														src/primitives/icosahedron.cxx
-														src/primitives/plane.cxx
-														src/primitives/sphere.cxx
-														src/primitives/teapot.cxx
-		src/primitives/primitives.hxx
-
-	    src/renderer/command_buffer.hxx                 src/renderer/command_buffer.cxx
-        src/renderer/config.hxx                         src/renderer/config.cxx
-        src/renderer/material.hxx                       src/renderer/material.cxx
-        src/renderer/queues.hxx
-        src/renderer/render_flow.hxx                    src/renderer/render_flow.cxx
-	    src/renderer/swapchain.hxx                      src/renderer/swapchain.cxx
-	    src/renderer/renderer.hxx                      	src/renderer/renderer.cxx
-	    src/renderer/swapchain.hxx                      src/renderer/swapchain.cxx
-
-	    src/resources/buffer.hxx                        src/resources/buffer.cxx
-        src/resources/framebuffer.hxx                   src/resources/framebuffer.cxx
-	    src/resources/image.hxx                         src/resources/image.cxx
-        src/resources/memory_manager.hxx                src/resources/memory_manager.cxx
-        src/resources/resource_manager.hxx              src/resources/resource_manager.cxx
-		src/resources/sync_objects.hxx
-
-	    src/utility/exceptions.hxx
-	    src/utility/mpl.hxx
-	    src/utility/helpers.hxx
-
-	    src/vulkan/debug.hxx                            src/vulkan/debug.cxx
-	    src/vulkan/device.hxx                           src/vulkan/device.cxx
-		src/vulkan/device_config.hxx
-		src/vulkan/device_limits.hxx
-	    src/vulkan/instance.hxx                         src/vulkan/instance.cxx
-
-        src/descriptor.hxx                              src/descriptor.cxx
-        src/main.hxx                                    src/main.cxx
-)
-
-target_include_directories(${EXECUTABLE_TARGET_NAME}
-	PRIVATE
-		src
-
-	SYSTEM INTERFACE
-		include
+    "./engine/include/config.hxx.in"
+    "./engine/include/config.hxx"
 )
 
 find_package(Vulkan REQUIRED)
-
 find_package(Boost 1.68 REQUIRED)
-
 find_package(fmt 8 CONFIG REQUIRED)
 find_package(glfw3 3.3 CONFIG REQUIRED)
 find_package(glm CONFIG REQUIRED)
 find_package(nlohmann_json 3.7 CONFIG REQUIRED)
 find_package(range-v3 CONFIG REQUIRED)
 find_package(volk CONFIG REQUIRED)
+
+set(EXECUTABLE_TARGET_NAME engine)
+add_executable(${EXECUTABLE_TARGET_NAME})
+
+target_sources(${EXECUTABLE_TARGET_NAME}
+    PRIVATE
+		./engine/src
+		./engine/src/camera/handlers/mouse_handler.hxx			./engine/src/camera/handlers/mouse_handler.cxx
+		./engine/src/camera/camera_controller.hxx				./engine/src/camera/camera_controller.cxx
+		./engine/src/camera/camera.hxx							./engine/src/camera/camera.cxx
+
+		./engine/src/graphics/attachments.hxx					./engine/src/graphics/attachments.cxx
+		./engine/src/graphics/compatibility.hxx
+		./engine/src/graphics/descriptors.hxx					./engine/src/graphics/descriptors.cxx
+		./engine/src/graphics/graphics_api.hxx					./engine/src/graphics/graphics_api.cxx
+		./engine/src/graphics/graphics_pipeline.hxx				./engine/src/graphics/graphics_pipeline.cxx
+		./engine/src/graphics/graphics.hxx						./engine/src/graphics/graphics.cxx
+		./engine/src/graphics/pipeline_states.hxx				./engine/src/graphics/pipeline_states.cxx
+		./engine/src/graphics/render_pass.hxx 					./engine/src/graphics/render_pass.cxx
+		./engine/src/graphics/shader_program.hxx 				./engine/src/graphics/shader_program.cxx
+		./engine/src/graphics/vertex.hxx						./engine/src/graphics/vertex.cxx
+
+		./engine/src/loaders/image_loader.hxx 					./engine/src/loaders/image_loader.cxx
+		./engine/src/loaders/loaderGLTF.hxx 					./engine/src/loaders/loaderGLTF.cxx
+		./engine/src/loaders/material_loader.hxx 				./engine/src/loaders/material_loader.cxx
+		./engine/src/loaders/scene_loader.hxx
+		./engine/src/loaders/SPIRV_loader.hxx 					./engine/src/loaders/SPIRV_loader.cxx
+		./engine/src/loaders/TARGA_loader.hxx 					./engine/src/loaders/TARGA_loader.cxx
+
+		./engine/src/math/math.hxx 								./engine/src/math/math.cxx
+		./engine/src/math/pack-unpack.hxx
+
+		./engine/src/platform/input/input_data.hxx
+		./engine/src/platform/input/input_manager.hxx 			./engine/src/platform/input/input_manager.cxx
+		./engine/src/platform/input/mouse.hxx 					./engine/src/platform/input/mouse.cxx
+		./engine/src/platform/window.hxx 						./engine/src/platform/window.cxx
+
+		./engine/src/primitives/box.cxx
+		./engine/src/primitives/icosahedron.cxx
+		./engine/src/primitives/plane.cxx
+		./engine/src/primitives/sphere.cxx
+		./engine/src/primitives/teapot.cxx
+		./engine/src/primitives/primitives.hxx
+
+		./engine/src/renderer/command_buffer.hxx 				./engine/src/renderer/command_buffer.cxx
+		./engine/src/renderer/config.hxx 						./engine/src/renderer/config.cxx
+		./engine/src/renderer/material.hxx 						./engine/src/renderer/material.cxx
+		./engine/src/renderer/queues.hxx
+		./engine/src/renderer/render_flow.hxx 					./engine/src/renderer/render_flow.cxx
+		./engine/src/renderer/swapchain.hxx 					./engine/src/renderer/swapchain.cxx
+		./engine/src/renderer/renderer.hxx 						./engine/src/renderer/renderer.cxx
+		./engine/src/renderer/swapchain.hxx 					./engine/src/renderer/swapchain.cxx
+
+		./engine/src/resources/buffer.hxx 						./engine/src/resources/buffer.cxx
+		./engine/src/resources/framebuffer.hxx 					./engine/src/resources/framebuffer.cxx
+		./engine/src/resources/image.hxx 						./engine/src/resources/image.cxx
+		./engine/src/resources/memory_manager.hxx 				./engine/src/resources/memory_manager.cxx
+		./engine/src/resources/resource_manager.hxx 			./engine/src/resources/resource_manager.cxx
+		./engine/src/resources/sync_objects.hxx
+
+		./engine/src/utility/exceptions.hxx
+		./engine/src/utility/mpl.hxx
+		./engine/src/utility/helpers.hxx
+
+		./engine/src/vulkan/debug.hxx 							./engine/src/vulkan/debug.cxx
+		./engine/src/vulkan/device.hxx 							./engine/src/vulkan/device.cxx
+		./engine/src/vulkan/device_config.hxx
+		./engine/src/vulkan/device_limits.hxx
+		./engine/src/vulkan/instance.hxx 						./engine/src/vulkan/instance.cxx
+
+		./engine/src/descriptor.hxx 							./engine/src/descriptor.cxx
+		./engine/src/main.hxx 									./engine/src/main.cxx
+)
+
+target_include_directories(${EXECUTABLE_TARGET_NAME}
+	PRIVATE
+		./engine/src
+
+	SYSTEM INTERFACE
+		${Boost_INCLUDE_DIR}
+
+		./engine/include
+)
 
 if (NOT WIN32)
 	 find_package(X11 REQUIRED)
@@ -184,7 +185,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	if ("${CMAKE_CXX_SIMULATE_ID}" STREQUAL "MSVC")
 		target_compile_options(${EXECUTABLE_TARGET_NAME}
 			PRIVATE
-				-ferror-limit=16
+#				-ferror-limit=16
 
 				-Wpedantic
 				-Wall
@@ -193,6 +194,7 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 				# -Wno-c++98-compat-pedantic
 				-Wno-covered-switch-default
 				-Wno-undef
+				-Wno-switch-enum
 				-Wextra
 				-Werror
 				-Wold-style-cast
@@ -281,8 +283,8 @@ target_link_libraries(${EXECUTABLE_TARGET_NAME}
 
 		${Boost_LIBRARIES}
         
-        # fmt::fmt-header-only
-	    fmt::fmt
+		fmt::fmt-header-only
+	    #fmt::fmt
         glfw
         glm::glm
 	    nlohmann_json::nlohmann_json

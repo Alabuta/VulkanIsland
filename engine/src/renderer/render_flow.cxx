@@ -61,12 +61,12 @@ create_attachments(resource::resource_manager &resource_manager,
         auto image = resource_manager.create_image(image_type, format, extent, mip_levels, samples_count, tiling, usage_flags, property_flags);
 
         if (image == nullptr)
-            throw graphics::exception("failed to create image for an attachment"s);
+            throw graphics::exception("failed to create image for an attachment");
 
         auto image_view = resource_manager.create_image_view(image, image_view_type, aspect_flags);
 
         if (image_view == nullptr)
-            throw graphics::exception("failed to create image view for an attachment"s);
+            throw graphics::exception("failed to create image view for an attachment");
 
         if (is_color_attachment)
             attachments.emplace_back(graphics::color_attachment{format, tiling, mip_levels, samples_count, image, image_view});
@@ -92,7 +92,7 @@ create_attachment_descriptions(vulkan::device const &device, renderer::config co
     );
 
     if (!depth_attachment_format)
-        throw graphics::exception("failed to find supported depth format"s);
+        throw graphics::exception("failed to find supported depth format");
 
     return std::vector{
         graphics::attachment_description{

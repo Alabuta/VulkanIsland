@@ -49,7 +49,7 @@ namespace
                 return { format, color_space };
         }
 
-        throw vulkan::swapchain_exception("none of required surface formats are supported"s);
+        throw vulkan::swapchain_exception("none of required surface formats are supported");
     }
 
     graphics::PRESENTATION_MODE
@@ -84,12 +84,12 @@ namespace
         std::uint32_t image_count = 0;
 
         if (auto result = vkGetSwapchainImagesKHR(device.handle(), swapchain.handle(), &image_count, nullptr); result != VK_SUCCESS)
-            throw vulkan::swapchain_exception(fmt::format("failed to retrieve swap chain images count: {0:#x}"s, result));
+            throw vulkan::swapchain_exception(fmt::format("failed to retrieve swap chain images count: {0:#x}", result));
 
         std::vector<VkImage> handles(image_count);
 
         if (auto result = vkGetSwapchainImagesKHR(device.handle(), swapchain.handle(), &image_count, std::data(handles)); result != VK_SUCCESS)
-            throw vulkan::swapchain_exception(fmt::format("failed to retrieve swap chain images: {0:#x}"s, result));
+            throw vulkan::swapchain_exception(fmt::format("failed to retrieve swap chain images: {0:#x}", result));
 
         return handles;
     }
@@ -142,7 +142,7 @@ namespace renderer
             };
 
             if (graphics_queue.family() != presentation_queue.family()) {
-                std::cout << "graphics and presentation queues are not from one family\n"s;
+                std::cout << "graphics and presentation queues are not from one family\n";
 
                 create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
 
@@ -155,7 +155,7 @@ namespace renderer
             }
 
             if (auto result = vkCreateSwapchainKHR(device.handle(), &create_info, nullptr, &handle_); result != VK_SUCCESS)
-                throw vulkan::swapchain_exception(fmt::format("failed to create required swap chain: {0:#x}"s, result));
+                throw vulkan::swapchain_exception(fmt::format("failed to create required swap chain: {0:#x}", result));
         }
 
         for (auto image_handle : get_swapchain_image_handles(device, *this)) {
@@ -176,7 +176,7 @@ namespace renderer
             VkImageView image_view_handle;
 
             if (auto result = vkCreateImageView(device.handle(), &create_info, nullptr, &image_view_handle); result != VK_SUCCESS)
-                throw vulkan::swapchain_exception(fmt::format("failed to create image view: {0:#x}"s, result));
+                throw vulkan::swapchain_exception(fmt::format("failed to create image view: {0:#x}", result));
 
             images_.push_back(image);
 

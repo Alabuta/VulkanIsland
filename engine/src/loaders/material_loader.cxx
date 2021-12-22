@@ -21,8 +21,9 @@ using namespace std::string_view_literals;
 
 namespace loader
 {
-    std::optional<graphics::SHADER_STAGE> shader_stage_semantic(std::string_view name)
+    static std::optional<graphics::SHADER_STAGE> shader_stage_semantic(std::string_view name)
     {
+        [[clang::no_destroy]]
         static const std::unordered_map<std::string_view, graphics::SHADER_STAGE> stages{
             {"vertex"sv, graphics::SHADER_STAGE::VERTEX},
             {"tesselation_control"sv, graphics::SHADER_STAGE::TESS_CONTROL},
@@ -38,8 +39,9 @@ namespace loader
         return { };
     }
 
-    std::optional<vertex::SEMANTIC> attribute_semantic(std::string_view name)
+    static std::optional<vertex::SEMANTIC> attribute_semantic(std::string_view name)
     {
+        [[clang::no_destroy]]
         static const std::unordered_map<std::string_view, vertex::SEMANTIC> semantics{
             {"POSITION"sv, vertex::SEMANTIC::POSITION},
             {"NORMAL"sv, vertex::SEMANTIC::NORMAL},
@@ -57,8 +59,9 @@ namespace loader
         return { };
     }
 
-    std::optional<graphics::FORMAT> attribute_format(std::string_view type)
+    static std::optional<graphics::FORMAT> attribute_format(std::string_view type)
     {
+        [[clang::no_destroy]]
         static const std::unordered_map<std::string_view, graphics::FORMAT> formats{
             {"r8i_norm"sv, graphics::FORMAT::R8_SNORM},
             {"rg8i_norm"sv, graphics::FORMAT::RG8_SNORM},
@@ -147,8 +150,10 @@ namespace loader
         return { };
     }
 
-    std::optional<graphics::CULL_MODE> cull_mode(std::string_view name)
+    [[maybe_unused]]
+    static std::optional<graphics::CULL_MODE> cull_mode(std::string_view name)
     {
+        [[clang::no_destroy]]
         static const std::unordered_map<std::string_view, graphics::CULL_MODE> modes{
             {"none"sv, graphics::CULL_MODE::NONE},
             {"front"sv, graphics::CULL_MODE::FRONT},
@@ -162,8 +167,10 @@ namespace loader
         return { };
     }
 
-    std::optional<graphics::POLYGON_MODE> polygon_mode(std::string_view name)
+    [[maybe_unused]]
+    static std::optional<graphics::POLYGON_MODE> polygon_mode(std::string_view name)
     {
+        [[clang::no_destroy]]
         static const std::unordered_map<std::string_view, graphics::POLYGON_MODE> modes{
             {"fill"sv, graphics::POLYGON_MODE::FILL},
             {"line"sv, graphics::POLYGON_MODE::LINE},
@@ -176,8 +183,10 @@ namespace loader
         return { };
     }
 
-    std::optional<graphics::COMPARE_OPERATION> compare_operation(std::string_view name)
+    [[maybe_unused]]
+    static std::optional<graphics::COMPARE_OPERATION> compare_operation(std::string_view name)
     {
+        [[clang::no_destroy]]
         static const std::unordered_map<std::string_view, graphics::COMPARE_OPERATION> operations{
             {"never"sv, graphics::COMPARE_OPERATION::NEVER},
             {"less"sv, graphics::COMPARE_OPERATION::LESS},
@@ -195,8 +204,10 @@ namespace loader
         return { };
     }
 
-    std::optional<graphics::STENCIL_OPERATION> stencil_operation(std::string_view name)
+    [[maybe_unused]]
+    static std::optional<graphics::STENCIL_OPERATION> stencil_operation(std::string_view name)
     {
+        [[clang::no_destroy]]
         static const std::unordered_map<std::string_view, graphics::STENCIL_OPERATION> operations{
             {"keep"sv, graphics::STENCIL_OPERATION::KEEP},
             {"zero"sv, graphics::STENCIL_OPERATION::ZERO},
@@ -214,8 +225,10 @@ namespace loader
         return { };
     }
 
-    std::optional<graphics::LOGIC_OPERATION> logic_operation(std::string_view name)
+    [[maybe_unused]]
+    static std::optional<graphics::LOGIC_OPERATION> logic_operation(std::string_view name)
     {
+        [[clang::no_destroy]]
         static const std::unordered_map<std::string_view, graphics::LOGIC_OPERATION> operations{
             {"clear"sv, graphics::LOGIC_OPERATION::CLEAR},
             {"and"sv, graphics::LOGIC_OPERATION::AND},
@@ -241,8 +254,10 @@ namespace loader
         return { };
     }
 
-    std::optional<graphics::BLEND_FACTOR> blend_factor(std::string_view name)
+    [[maybe_unused]]
+    static std::optional<graphics::BLEND_FACTOR> blend_factor(std::string_view name)
     {
+        [[clang::no_destroy]]
         static const std::unordered_map<std::string_view, graphics::BLEND_FACTOR> factors{
             {"zero"sv, graphics::BLEND_FACTOR::ZERO},
             {"one"sv, graphics::BLEND_FACTOR::ONE},
@@ -271,7 +286,8 @@ namespace loader
         return { };
     }
 
-    std::optional<graphics::BLEND_OPERATION> blend_operation(std::string_view name)
+    [[maybe_unused]]
+    static std::optional<graphics::BLEND_OPERATION> blend_operation(std::string_view name)
     {
         if (name == "add"sv)
             return graphics::BLEND_OPERATION::ADD;
@@ -282,8 +298,10 @@ namespace loader
         return { };
     }
 
-    std::optional<graphics::COLOR_COMPONENT> color_component(std::string_view name)
+    [[maybe_unused]]
+    static std::optional<graphics::COLOR_COMPONENT> color_component(std::string_view name)
     {
+        [[clang::no_destroy]]
         static const std::unordered_map<std::string_view, graphics::COLOR_COMPONENT> components{
             {"red"sv, graphics::COLOR_COMPONENT::R},
             {"green"sv, graphics::COLOR_COMPONENT::G},
@@ -299,7 +317,7 @@ namespace loader
         return { };
     }
 
-    std::optional<material_description::specialization_constant> specialization_constant_value(std::string_view type, float value)
+    static std::optional<material_description::specialization_constant> specialization_constant_value(std::string_view type, float value)
     {
         if (type == "float"sv)
             return value;
@@ -311,8 +329,11 @@ namespace loader
     }
 }
 
-namespace nlohmann
+namespace loader
 {
+    void from_json(nlohmann::json const &j, loader::material_description::specialization_constant &specialization_constant);
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wmissing-prototypes"
     void from_json(nlohmann::json const &j, loader::material_description::shader_module &shader_module)
     {
         if (auto stage = loader::shader_stage_semantic(j.at("stage"s).get<std::string>()); stage)
@@ -354,7 +375,7 @@ namespace nlohmann
         using specialization_constants = std::vector<loader::material_description::specialization_constant>;
 
         if (j.count("constants"s))
-            shader_bundle.specialization_constants = j.at("constants"s).get<specialization_constants>();
+            shader_bundle.specialization_constants = j.at("constants"s).get<std::vector<loader::material_description::specialization_constant>>();
     }
 
     void from_json(nlohmann::json const &j, loader::material_description::technique &technique)
@@ -363,6 +384,7 @@ namespace nlohmann
 
         technique.vertex_layouts = j.at("vertexLayouts"s).get<std::vector<loader::material_description::vertex_layout>>();
     }
+#pragma clang diagnostic pop
 }
 
 namespace loader
@@ -382,7 +404,7 @@ namespace loader
             std::ifstream file{path.native(), std::ios::in};
 
             if (file.bad() || file.fail())
-                throw resource::exception(fmt::format("failed to open file: {}"s, path.string()));
+                throw resource::exception(fmt::format("failed to open file: {}", path.string()));
 
             file >> json;
         }

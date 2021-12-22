@@ -13,7 +13,7 @@ using namespace std::string_literals;
 #define VOLK_IMPLEMENTATION
 
 #include "utility/exceptions.hxx"
-#include "vulkan_config.hxx"
+#include "../include/vulkan_config.hxx"
 #include "instance.hxx"
 
 
@@ -41,12 +41,12 @@ namespace
         std::uint32_t extensions_count = 0;
 
         if (auto result = vkEnumerateInstanceExtensionProperties(nullptr, &extensions_count, nullptr); result != VK_SUCCESS)
-            throw vulkan::instance_exception(fmt::format("failed to retrieve extensions count: {0:#x}"s, result));
+            throw vulkan::instance_exception(fmt::format("failed to retrieve extensions count: {0:#x}", result));
 
         std::vector<VkExtensionProperties> supported_extensions(extensions_count);
 
         if (auto result = vkEnumerateInstanceExtensionProperties(nullptr, &extensions_count, std::data(supported_extensions)); result != VK_SUCCESS)
-            throw vulkan::instance_exception(fmt::format("failed to retrieve extensions: {0:#x}"s, result));
+            throw vulkan::instance_exception(fmt::format("failed to retrieve extensions: {0:#x}", result));
 
         std::ranges::sort(supported_extensions, extensions_compare);
 
@@ -87,12 +87,12 @@ namespace
         std::uint32_t layers_count = 0;
 
         if (auto result = vkEnumerateInstanceLayerProperties(&layers_count, nullptr); result != VK_SUCCESS)
-            throw vulkan::instance_exception(fmt::format("failed to retrieve layers count: {0:#x}"s, result));
+            throw vulkan::instance_exception(fmt::format("failed to retrieve layers count: {0:#x}", result));
 
         std::vector<VkLayerProperties> supported_layers(layers_count);
 
         if (auto result = vkEnumerateInstanceLayerProperties(&layers_count, std::data(supported_layers)); result != VK_SUCCESS)
-            throw vulkan::instance_exception(fmt::format("failed to retrieve layers: {0:#x}"s, result));
+            throw vulkan::instance_exception(fmt::format("failed to retrieve layers: {0:#x}", result));
 
         std::ranges::sort(supported_layers, layers_compare);
 
@@ -235,7 +235,7 @@ namespace vulkan
         if constexpr (use_layers) {
         #if USE_DEBUG_UTILS
             if (auto result = vkCreateDebugUtilsMessengerEXT(handle_, &debug_msg_create_info, nullptr, &debug_messenger_); result != VK_SUCCESS)
-                throw vulkan::exception(fmt::format("failed to set up debug messenger: {0:#x}"s, result));
+                throw vulkan::exception(fmt::format("failed to set up debug messenger: {0:#x}", result));
         #else
             vulkan::create_debug_report_callback(handle_, debug_report_callback_);
         #endif
@@ -271,7 +271,7 @@ namespace vulkan
             renderer::platform_surface platform_surface;
 
             if (auto result = glfwCreateWindowSurface(handle_, window.handle(), nullptr, &platform_surface.handle_); result != VK_SUCCESS)
-                throw vulkan::exception(fmt::format("failed to create window surface: {0:#x}"s, result));
+                throw vulkan::exception(fmt::format("failed to create window surface: {0:#x}", result));
 
             platform_surfaces_.emplace(window.handle(), platform_surface);
         }

@@ -163,7 +163,7 @@ namespace
                     auto const offset = total_offset + horizontal_vertices_number * vsegment_index + static_cast<std::size_t>(hsegment_index) * vertices_per_quad;
                     auto it = std::next(it_begin, static_cast<std::ptrdiff_t>(offset));
 
-                    std::transform(std::cbegin(pattern), std::cend(pattern), it, [&] (auto column)
+                    std::transform(std::cbegin(pattern), std::cend(pattern), it, [=] (auto column)
                     {
                         auto vertex_index = vsegment_index * (hsegments + 1) + column + hsegment_index;
 

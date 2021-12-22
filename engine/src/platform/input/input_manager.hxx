@@ -19,7 +19,7 @@ namespace platform
 
         platform::mouse mouse_;
 
-        void update(platform::raw &data) override;
+        void update(platform::raw &raw_data) override;
 
     };
 }

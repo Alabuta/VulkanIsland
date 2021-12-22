@@ -16,7 +16,7 @@ namespace platform
         handle_ = glfwCreateWindow(width_, height_, name_.c_str(), nullptr, nullptr);
 
         if (handle_ == nullptr)
-            throw std::runtime_error(fmt::format("failed to create '{}' window"s, name_));
+            throw std::runtime_error(fmt::format("failed to create '{}' window", name_));
 
         glfwSetWindowUserPointer(handle_, this);
 
@@ -90,7 +90,7 @@ namespace platform
 
                 buttons.value[static_cast<std::size_t>(button) * 2 + offset] = 1;
 
-                platform::raw data = platform::mouse_data::raw{std::move(buttons)};
+                platform::raw data = platform::mouse_data::raw{buttons};
 
                 instance->input_update_callback_(data);
             }

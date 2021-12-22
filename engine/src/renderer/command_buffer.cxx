@@ -14,7 +14,7 @@ VkCommandBuffer begin_single_time_command(vulkan::device const &device, VkComman
     };
 
     if (auto result = vkAllocateCommandBuffers(device.handle(), &allocate_info, &command_buffer); result != VK_SUCCESS)
-        throw vulkan::exception(fmt::format("failed to create allocate command buffers: {0:#x}"s, result));
+        throw vulkan::exception(fmt::format("failed to create allocate command buffers: {0:#x}", result));
 
     VkCommandBufferBeginInfo const begin_info{
         VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -24,7 +24,7 @@ VkCommandBuffer begin_single_time_command(vulkan::device const &device, VkComman
     };
 
     if (auto result = vkBeginCommandBuffer(command_buffer, &begin_info); result != VK_SUCCESS)
-        throw vulkan::exception(fmt::format("failed to record command buffer: {0:#x}"s, result));
+        throw vulkan::exception(fmt::format("failed to record command buffer: {0:#x}", result));
 
     return command_buffer;
 }
@@ -32,7 +32,7 @@ VkCommandBuffer begin_single_time_command(vulkan::device const &device, VkComman
 void end_single_time_command(VkCommandBuffer command_buffer)
 {
     if (auto result = vkEndCommandBuffer(command_buffer); result != VK_SUCCESS)
-        throw vulkan::exception(fmt::format("failed to end command buffer: {0:#x}"s, result));
+        throw vulkan::exception(fmt::format("failed to end command buffer: {0:#x}", result));
 }
 
 

@@ -14,10 +14,10 @@ template<class... Ts> overloaded(Ts...) -> overloaded<Ts...>;
 
 // template<class T>
 // requires std::is_integral_v<std::remove_cvref_t<T>>
-constexpr std::uint16_t operator"" _ui16(unsigned long long value)
+/*constexpr std::uint16_t operator"" _ui16(unsigned long long value)
 {
     return static_cast<std::uint16_t>(value);
-}
+}*/
 
 // A function execution duration measurement.
 template<typename TimeT = std::chrono::milliseconds>

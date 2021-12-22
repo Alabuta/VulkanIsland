@@ -61,6 +61,12 @@
 #include <random>
 #include <ranges>
 
+#include <string>
+using namespace std::string_literals;
+
+#include <string_view>
+using namespace std::string_view_literals;
+
 #include <fmt/format.h>
 
 #include <boost/align.hpp>
@@ -409,7 +415,7 @@ void create_graphics_command_buffers(app_t &app)
     };
 
     if (auto result = vkAllocateCommandBuffers(app.device->handle(), &allocate_info, std::data(app.command_buffers)); result != VkResult::VK_SUCCESS)
-        throw vulkan::exception{fmt::format("failed to create allocate command buffers: {0:#x}"s, result)};
+        throw vulkan::exception{fmt::format("failed to create allocate command buffers: {0:#x}", result)};
 
     auto const clear_colors = std::array{
         VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f } } },
@@ -428,7 +434,7 @@ void create_graphics_command_buffers(app_t &app)
         };
 
         if (auto result = vkBeginCommandBuffer(command_buffer, &begin_info); result != VK_SUCCESS)
-            throw vulkan::exception(fmt::format("failed to record command buffer: {0:#x}"s, result));
+            throw vulkan::exception(fmt::format("failed to record command buffer: {0:#x}", result));
 
         auto [width, height] = app.swapchain->extent();
 
@@ -524,7 +530,7 @@ void create_graphics_command_buffers(app_t &app)
         vkCmdEndRenderPass(command_buffer);
 
         if (auto result = vkEndCommandBuffer(command_buffer); result != VK_SUCCESS)
-            throw vulkan::exception(fmt::format("failed to end command buffer: {0:#x}"s, result));
+            throw vulkan::exception(fmt::format("failed to end command buffer: {0:#x}", result));
     }
 }
 
@@ -1429,7 +1435,7 @@ void init(platform::window &window, app_t &app)
         auto const size = buffer.memory()->size();
 
         if (auto result = vkMapMemory(app.device->handle(), buffer.memory()->handle(), offset, size, 0, &app.ssbo_mapped_ptr); result != VK_SUCCESS)
-            throw vulkan::exception(fmt::format("failed to map per object uniform buffer memory: {0:#x}"s, result));
+            throw vulkan::exception(fmt::format("failed to map per object uniform buffer memory: {0:#x}", result));
     }
 
     else throw graphics::exception("failed to init per object uniform buffer"s);
@@ -1479,7 +1485,7 @@ void update_viewport_descriptor_buffer(app_t const &app)
     void *data = nullptr;
 
     if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
-        throw vulkan::exception(fmt::format("failed to map per viewpor uniform buffer memory: {0:#x}"s, result));
+        throw vulkan::exception(fmt::format("failed to map per viewpor uniform buffer memory: {0:#x}", result));
 
     std::copy_n(&app.per_viewport_data, 1, static_cast<per_viewport_t *>(data));
 
@@ -1506,7 +1512,7 @@ void update(app_t &app)
         void *data = nullptr;
 
         if (auto result = vkMapMemory(device.handle(), buffer.memory()->handle(), offset, size, 0, &data); result != VK_SUCCESS)
-            throw vulkan::exception(fmt::format("failed to map per camera uniform buffer memory: {0:#x}"s, result));
+            throw vulkan::exception(fmt::format("failed to map per camera uniform buffer memory: {0:#x}", result));
 
         std::copy_n(&app.camera_->data, 1, static_cast<camera::data_t *>(data));
 
@@ -1563,7 +1569,7 @@ void render_frame(app_t &app)
     auto &&frame_fence = app.concurrent_frames_fences[app.current_frame_index];
 
     if (auto result = vkWaitForFences(device.handle(), 1, frame_fence->handle_ptr(), VK_TRUE, std::numeric_limits<std::uint64_t>::max()); result != VK_SUCCESS)
-        throw vulkan::exception(fmt::format("failed to wait current frame fence: {0:#x}"s, result));
+        throw vulkan::exception(fmt::format("failed to wait current frame fence: {0:#x}", result));
 #else
     vkQueueWaitIdle(device.presentation_queue.handle());
 #endif
@@ -1590,13 +1596,13 @@ void render_frame(app_t &app)
             break;
 
         default:
-            throw vulkan::exception(fmt::format("failed to acquire next image index: {0:#x}"s, result));
+            throw vulkan::exception(fmt::format("failed to acquire next image index: {0:#x}", result));
     }
 
 #if USE_FENCES
     if (auto &&fence = app.busy_frames_fences.at(image_index); fence && fence->handle() != VK_NULL_HANDLE)
         if (auto result = vkWaitForFences(device.handle(), 1, fence->handle_ptr(), VK_TRUE, std::numeric_limits<std::uint64_t>::max()); result != VK_SUCCESS)
-            throw vulkan::exception(fmt::format("failed to wait busy frame fence: {0:#x}"s, result));
+            throw vulkan::exception(fmt::format("failed to wait busy frame fence: {0:#x}", result));
 
     app.busy_frames_fences.at(image_index) = frame_fence;
 #endif
@@ -1619,14 +1625,14 @@ void render_frame(app_t &app)
 
 #if USE_FENCES
     if (auto result = vkResetFences(device.handle(), 1, frame_fence->handle_ptr()); result != VK_SUCCESS)
-        throw vulkan::exception(fmt::format("failed to reset previous frame fence: {0:#x}"s, result));
+        throw vulkan::exception(fmt::format("failed to reset previous frame fence: {0:#x}", result));
 
     if (auto result = vkQueueSubmit(device.graphics_queue.handle(), 1, &submit_info, frame_fence->handle()); result != VK_SUCCESS)
-        throw vulkan::exception(fmt::format("failed to submit draw command buffer: {0:#x}"s, result));
+        throw vulkan::exception(fmt::format("failed to submit draw command buffer: {0:#x}", result));
 #else
 
     if (auto result = vkQueueSubmit(device.graphics_queue.handle(), 1, &submit_info, VK_NULL_HANDLE); result != VK_SUCCESS)
-        throw vulkan::exception(fmt::format("failed to submit draw command buffer: {0:#x}"s, result));
+        throw vulkan::exception(fmt::format("failed to submit draw command buffer: {0:#x}", result));
 #endif
 
     auto swapchain_handle = swapchain.handle();
@@ -1649,7 +1655,7 @@ void render_frame(app_t &app)
             break;
 
         default:
-            throw vulkan::exception(fmt::format("failed to submit request to present framebuffer: {0:#x}"s, result));
+            throw vulkan::exception(fmt::format("failed to submit request to present framebuffer: {0:#x}", result));
     }
 
 #if USE_FENCES
@@ -1674,7 +1680,7 @@ int main()
 #endif
 
     if (auto result = glfwInit(); result != GLFW_TRUE)
-        throw std::runtime_error(fmt::format("failed to init GLFW: {0:#x}"s, result));
+        throw std::runtime_error(fmt::format("failed to init GLFW: {0:#x}", result));
 
     app_t app;
 

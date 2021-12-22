@@ -52,17 +52,19 @@ namespace
 
         auto path = (contents / name).native();
 
-        std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+        /*std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> converter;
+        const std::wstring_convert::byte_string &p = converter.to_bytes(path);*/
+        std::string p{std::begin(path), std::end(path)};
 
         std::int32_t w, h, component_count;
 
-        if (auto result = stbi_info(converter.to_bytes(path).c_str(), &w, &h, &component_count); result != 1)
-            throw resource::exception(fmt::format("failed to load an image: {0:#x}"s, name));
+        if (auto result = stbi_info(p.c_str(), &w, &h, &component_count); result != 1)
+            throw resource::exception(fmt::format("failed to load an image: {}", name));
 
-        auto texels = stbi_load(converter.to_bytes(path).c_str(), &w, &h, &component_count, component_count == 3 ? 4 : 0);
+        auto texels = stbi_load(p.c_str(), &w, &h, &component_count, component_count == 3 ? 4 : 0);
 
         if (texels == nullptr)
-            throw resource::exception(fmt::format("failed to load an image: {0:#x}"s, name));
+            throw resource::exception(fmt::format("failed to load an image: {}", name));
 
         auto format = graphics::FORMAT::UNDEFINED;
 

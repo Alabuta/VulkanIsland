@@ -4,6 +4,9 @@
 #include <vector>
 #include <set>
 
+#include <string>
+using namespace std::string_literals;
+
 #include <fmt/format.h>
 
 #include <boost/align.hpp>

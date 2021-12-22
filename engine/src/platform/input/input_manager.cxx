@@ -10,7 +10,7 @@
 
 namespace platform
 {
-    void input_manager::update(platform::raw &data)
+    void input_manager::update(platform::raw &raw_data)
     {
         std::visit(overloaded{
             [this] (platform::mouse_data::raw &data)
@@ -18,6 +18,6 @@ namespace platform
                 mouse_.update(data);
             },
             [] (auto &&) { }
-        }, data);
+        }, raw_data);
     }
 }

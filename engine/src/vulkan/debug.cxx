@@ -51,6 +51,6 @@ namespace vulkan
         };
 
         if (auto result = vkCreateDebugReportCallbackEXT(instance, &create_info, nullptr, &callback); result != VK_SUCCESS)
-            throw vulkan::exception(fmt::format("failed to set up debug callback: {0:#x}"s, result));
+            throw vulkan::exception(fmt::format("failed to set up debug callback: {0:#x}", result));
     }
 }

@@ -2,6 +2,9 @@
 #include <vector>
 #include <ranges>
 
+#include <string>
+using namespace std::string_literals;
+
 #include <fmt/format.h>
 
 #include "utility/exceptions.hxx"
@@ -92,7 +95,7 @@ namespace resource
         void *mapped_ptr{nullptr};
 
         if (auto result = vkMapMemory(device_.handle(), memory->handle(), memory->offset(), kPOOL_SIZE_BYTES, 0, &mapped_ptr); result != VK_SUCCESS)
-            throw resource::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
+            throw resource::exception(fmt::format("failed to map staging buffer memory: {0:#x}", result));
 
         total_mapped_range_ = std::span{static_cast<std::byte *>(mapped_ptr), kPOOL_SIZE_BYTES};
 
@@ -236,7 +239,7 @@ namespace resource
         VkBuffer handle;
 
         if (auto result = vkCreateBuffer(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw resource::instantiation_fail(fmt::format("failed to create a buffer: {0:#x}"s, result));
+            throw resource::instantiation_fail(fmt::format("failed to create a buffer: {0:#x}", result));
 
         auto const memory = memory_manager_.allocate_memory(resource::buffer{
             handle, nullptr, size_bytes, usage, sharing_mode
@@ -246,7 +249,7 @@ namespace resource
             throw memory::bad_allocation("failed to allocate buffer memory"s);
 
         if (auto result = vkBindBufferMemory(device_.handle(), handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
-            throw resource::memory_bind(fmt::format("failed to bind buffer memory: {0:#x}"s, result));
+            throw resource::memory_bind(fmt::format("failed to bind buffer memory: {0:#x}", result));
 
         std::shared_ptr<resource::buffer> buffer;
 
@@ -295,7 +298,7 @@ namespace resource
         VkBuffer handle;
 
         if (auto result = vkCreateBuffer(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw resource::instantiation_fail(fmt::format("failed to create a buffer: {0:#x}"s, result));
+            throw resource::instantiation_fail(fmt::format("failed to create a buffer: {0:#x}", result));
 
         auto memory = memory_manager_.allocate_memory(resource::buffer{
             handle, nullptr, size_bytes, buffer_usage_flags, sharing_mode
@@ -305,7 +308,7 @@ namespace resource
             throw memory::bad_allocation("failed to allocate buffer memory"s);
 
         if (auto result = vkBindBufferMemory(device_.handle(), handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
-            throw resource::memory_bind(fmt::format("failed to bind buffer memory: {0:#x}"s, result));
+            throw resource::memory_bind(fmt::format("failed to bind buffer memory: {0:#x}", result));
 
         std::shared_ptr<resource::staging_buffer> buffer;
 
@@ -317,7 +320,7 @@ namespace resource
             }, *resource_deleter_);
         }
 
-        else throw resource::exception(fmt::format("failed to map staging buffer memory: {0:#x}"s, result));
+        else throw resource::exception(fmt::format("failed to map staging buffer memory: {0:#x}", result));
 
         return buffer;
     #endif
@@ -347,7 +350,7 @@ namespace resource
         VkImage handle;
 
         if (auto result = vkCreateImage(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw resource::instantiation_fail(fmt::format("failed to create an image: {0:#x}"s, result));
+            throw resource::instantiation_fail(fmt::format("failed to create an image: {0:#x}", result));
 
         auto const memory = memory_manager_.allocate_memory(resource::image{nullptr, handle, format, tiling, mip_levels, extent}, memory_property_types);
 
@@ -355,7 +358,7 @@ namespace resource
             throw memory::exception("failed to allocate image memory"s);
 
         if (auto result = vkBindImageMemory(device_.handle(), handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
-            throw resource::memory_bind(fmt::format("failed to bind image buffer memory: {0:#x}"s, result));
+            throw resource::memory_bind(fmt::format("failed to bind image buffer memory: {0:#x}", result));
 
         std::shared_ptr<resource::image> image;
 
@@ -382,7 +385,7 @@ namespace resource
         VkImageView handle;
 
         if (auto result = vkCreateImageView(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw resource::instantiation_fail(fmt::format("failed to create an image view: {0:#x}"s, result));
+            throw resource::instantiation_fail(fmt::format("failed to create an image view: {0:#x}", result));
 
         else image_view.reset(new resource::image_view{handle, image, view_type}, [this] (resource::image_view *ptr_image_view)
         {
@@ -419,7 +422,7 @@ namespace resource
         VkSampler handle;
 
         if (auto result = vkCreateSampler(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw resource::instantiation_fail(fmt::format("failed to create a sampler: {0:#x}"s, result));
+            throw resource::instantiation_fail(fmt::format("failed to create a sampler: {0:#x}", result));
 
         else sampler.reset(new resource::sampler{handle}, [this] (resource::sampler *ptr_sampler)
         {
@@ -456,7 +459,7 @@ namespace resource
         VkFramebuffer handle = VK_NULL_HANDLE;
 
         if (auto result = vkCreateFramebuffer(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
-            throw resource::instantiation_fail(fmt::format("failed to create a framebuffer: {0:#x}"s, result));
+            throw resource::instantiation_fail(fmt::format("failed to create a framebuffer: {0:#x}", result));
 
         framebuffer.reset(new resource::framebuffer{handle}, [this] (resource::framebuffer *ptr_framebuffer)
         {
@@ -488,7 +491,7 @@ namespace resource
             });
         }
 
-        else throw resource::instantiation_fail(fmt::format("failed to create a semaphore: {0:#x}"s, result));
+        else throw resource::instantiation_fail(fmt::format("failed to create a semaphore: {0:#x}", result));
 
         return semaphore;
     }
@@ -514,7 +517,7 @@ namespace resource
             });
         }
 
-        else throw resource::instantiation_fail(fmt::format("failed to create a fence: {0:#x}"s, result));
+        else throw resource::instantiation_fail(fmt::format("failed to create a fence: {0:#x}", result));
 
         return fence;
     }
@@ -532,7 +535,7 @@ namespace resource
 
         for (auto &&attribute : layout.attributes)
             if (!device_.is_format_supported_as_buffer_feature(attribute.format, graphics::FORMAT_FEATURE::VERTEX_BUFFER))
-                throw resource::exception(fmt::format("unsupported vertex attribute format: {0:#x}"s, attribute.format));
+                throw resource::exception(fmt::format("unsupported vertex attribute format: {0:#x}", attribute.format));
 
         if (!vertex_buffers_.contains(layout)) {
             auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER;
@@ -589,7 +592,7 @@ namespace resource
     resource_manager::stage_index_data(graphics::INDEX_TYPE index_type, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool)
     {
         if (std::ranges::none_of(kSUPPORTED_INDEX_FORMATS, [index_type] (auto type) { return type == index_type; }))
-            throw resource::exception(fmt::format("unsupported index type: {0:#x}"s, index_type));
+            throw resource::exception(fmt::format("unsupported index type: {0:#x}", index_type));
 
         auto const container = staging_buffer->mapped_range();
 
@@ -655,7 +658,7 @@ namespace resource
                                        std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool)
     {
         if (std::ranges::none_of(kSUPPORTED_IMAGE_FORMATS, [format] (auto type) { return type == format; }))
-            throw resource::exception(fmt::format("unsupported image type: {0:#x}"s, format));
+            throw resource::exception(fmt::format("unsupported image type: {0:#x}", format));
 
         auto const container = staging_buffer->mapped_range();
 
@@ -674,6 +677,8 @@ namespace resource
         if (image == nullptr) {
 
         }
+
+        return nullptr;
     }
 }
 
