@@ -156,14 +156,14 @@ namespace
         for (std::size_t vertex_offset = 0u; auto [hsegments, vsegments] : segments) {
             auto const pattern = std::array{ 0u, hsegments + 1, 1u, 1u, hsegments + 1, hsegments + 2 };
 
-            auto const horizontal_vertices_number = static_cast<std::size_t>(hsegments * vertices_per_quad);
+            auto const horizontal_vertices_number = static_cast<std::size_t>(hsegments) * vertices_per_quad;
 
             for (auto vsegment_index = 0u; vsegment_index < vsegments; ++vsegment_index) {
                 for (auto hsegment_index = 0u; hsegment_index < hsegments; ++hsegment_index) {
                     auto const offset = total_offset + horizontal_vertices_number * vsegment_index + static_cast<std::size_t>(hsegment_index) * vertices_per_quad;
                     auto it = std::next(it_begin, static_cast<std::ptrdiff_t>(offset));
 
-                    std::transform(std::cbegin(pattern), std::cend(pattern), it, [=] (auto column)
+                    std::transform(std::cbegin(pattern), std::cend(pattern), it, [=, hsegments = hsegments] (auto column)
                     {
                         auto vertex_index = vsegment_index * (hsegments + 1) + column + hsegment_index;
 
@@ -241,15 +241,11 @@ namespace
 
                     else throw resource::exception("unsupported format type"s);
 
-                    break;
-
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     if constexpr (std::is_floating_point_v<T>)
                         return std::array<T, N>{static_cast<T>(x), static_cast<T>(y)};
 
                     else throw resource::exception("unsupported format type"s);
-
-                    break;
 
                 default:
                     throw resource::exception("unsupported numeric format"s);
@@ -289,20 +285,16 @@ namespace
 
                     else throw resource::exception("unsupported format type"s);
 
-                    break;
-
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     if constexpr (std::is_floating_point_v<T>) {
                         if constexpr (N == 4)
-                            return std::array<T, N>{color.r, color.g, color.b, 1};
+                            return std::array<T, N>{static_cast<T>(color.r), static_cast<T>(color.g), static_cast<T>(color.b), 1};
 
-                        else if constexpr (N == 3)
-                            return std::array<T, N>{color.r, color.g, color.b};
+                        else
+                            return std::array<T, N>{static_cast<T>(color.r), static_cast<T>(color.g), static_cast<T>(color.b)};
                     }
 
                     else throw resource::exception("unsupported format type"s);
-
-                    break;
 
                 default:
                     throw resource::exception("unsupported numeric format"s);
@@ -335,7 +327,7 @@ namespace
                             auto generator = std::bind(generate_position<N, T>, hsegments, vsegments, width, height, transform, std::placeholders::_1);
 
                             if (is_primitive_indexed) {
-                                std::generate_n(std::next(it_begin, offset), vertices_number.at(face_index / 2), [generator, i = 0u] () mutable
+                                std::generate_n(std::next(it_begin, static_cast<std::int32_t>(offset)), vertices_number.at(face_index / 2), [generator, i = 0u] () mutable
                                 {
                                     return generator(i++);
                                 });
@@ -379,7 +371,7 @@ namespace
 
                             math::encode_unit_vector_to_oct_fast(std::span{oct}, glm::vec3{normal});
 
-                            std::fill_n(std::next(it_begin, offset), vertices_number.at(face_index / 2), oct);
+                            std::fill_n(std::next(it_begin, static_cast<std::int32_t>(offset)), vertices_number.at(face_index / 2), oct);
                         }
 
                         else throw resource::exception("unsupported format type"s);
@@ -397,7 +389,7 @@ namespace
                     case graphics::NUMERIC_FORMAT::SCALED:
                     case graphics::NUMERIC_FORMAT::INT:
                     case graphics::NUMERIC_FORMAT::FLOAT:
-                        std::fill_n(std::next(it_begin, offset), vertices_number.at(face_index / 2), std::array<T, 3>{normal.x, normal.y, normal.z});
+                        std::fill_n(std::next(it_begin, static_cast<std::int32_t>(offset)), vertices_number.at(face_index / 2), std::array<T, 3>{normal.x, normal.y, normal.z});
                         break;
 
                     default:
@@ -431,7 +423,7 @@ namespace
             bool is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
 
             if (is_primitive_indexed) {
-                std::generate_n(std::next(it_begin, offset), vertices_number.at(face_index / 2), [generator, i = 0u] () mutable
+                std::generate_n(std::next(it_begin, static_cast<std::int32_t>(offset)), vertices_number.at(face_index / 2), [generator, i = 0u] () mutable
                 {
                     return generator(i++);
                 });
@@ -454,7 +446,7 @@ namespace
         for (std::size_t face_index = 0, offset = 0; auto &&color : create_info.colors) {
             auto generator = std::bind(generate_color<N, T>, color, format);
 
-            std::generate_n(std::next(it_begin, offset), vertices_number.at(face_index / 2), generator);
+            std::generate_n(std::next(it_begin, static_cast<std::int32_t>(offset)), vertices_number.at(face_index / 2), generator);
 
             offset += vertices_number.at(face_index / 2);
             ++face_index;

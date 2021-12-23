@@ -23,20 +23,20 @@ namespace {
     // https://github.com/mrdoob/three.js/blob/00a692864f541a3ec194d266e220efd597eb28fa/src/geometries/PolyhedronGeometry.js
 	static auto const t = (1.f + std::sqrt(5.f)) / 2.f;
 
-	static auto const input_vertices = std::array{
+	auto const input_vertices = std::array{
 		glm::vec3{-1, t, 0},		glm::vec3{1, t, 0},		glm::vec3{-1, -t, 0},		glm::vec3{1, -t, 0},
 		glm::vec3{0, -1, t},		glm::vec3{0, 1, t},		glm::vec3{0, -1, -t},		glm::vec3{0, 1, -t},
 		glm::vec3{t, 0, -1},		glm::vec3{t, 0, 1},		glm::vec3{-t, 0, -1},		glm::vec3{-t, 0, 1}
 	};
 
-	static auto constexpr faces = std::array{
+	auto constexpr faces = std::array{
 		std::array{0u, 11u, 5u}, 	    std::array{0u, 5u, 1u}, 	std::array{0u, 1u, 7u}, 		std::array{0u, 7u, 10u}, 	std::array{0u, 10u, 11u},
 		std::array{1u, 5u, 9u}, 		std::array{5u, 11u, 4u},	std::array{11u, 10u, 2u},	    std::array{10u, 7u, 6u},	std::array{7u, 1u, 8u},
 		std::array{3u, 9u, 4u}, 		std::array{3u, 4u, 2u},	    std::array{3u, 2u, 6u},		    std::array{3u, 6u, 8u},		std::array{3u, 8u, 9u},
 		std::array{4u, 9u, 5u}, 		std::array{2u, 4u, 11u},	std::array{6u, 2u, 10u},		std::array{8u, 6u, 7u},		std::array{9u, 8u, 1u}
 	};
 
-    static auto constexpr offsets_pattern = std::array{
+    auto constexpr offsets_pattern = std::array{
         std::array{
             std::pair{0u, 1u}, std::pair{1u, 0u}, std::pair{0u, 0u}
         },
@@ -63,12 +63,12 @@ namespace {
         auto &&b = input_vertices[face[1]];
         auto &&c = input_vertices[face[2]];
 
-        auto point = glm::mix(a, c, static_cast<float>(i) / columns);
+        auto point = glm::mix(a, c, static_cast<float>(i) / static_cast<float>(columns));
 
         if (i != columns || j != 0)
         {
-            auto bj = glm::mix(b, c, static_cast<float>(i) / columns);
-            point = glm::mix(point, bj, static_cast<float>(j) / (columns - i));
+            auto bj = glm::mix(b, c, static_cast<float>(i) / static_cast<float>(columns));
+            point = glm::mix(point, bj, static_cast<float>(j) / static_cast<float>(columns - i));
         }
 
         return glm::normalize(point);
@@ -142,7 +142,7 @@ namespace {
                 return generate_point(face, columns, i + std::get<0>(offsets), j + std::get<1>(offsets));
             });
 
-            auto const centoroid = std::accumulate(std::cbegin(points), std::cend(points), glm::vec3{0}) / 3.f;;
+            auto const centoroid = std::accumulate(std::cbegin(points), std::cend(points), glm::vec3{0}) / 3.f;
             auto const centoroid_azimuth = azimuth(centoroid);
 
             std::array<glm::vec2, 3> uvs;

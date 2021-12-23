@@ -51,7 +51,7 @@ namespace mpl
     };
 
     template<class T, class... Ts>
-    auto constexpr is_one_of_v = is_one_of<T, Ts...>::value;
+    inline auto constexpr is_one_of_v = is_one_of<T, Ts...>::value;
 
     template<std::size_t I = 0, class T, class V>
     constexpr void set_tuple(T &&tuple, V value)
