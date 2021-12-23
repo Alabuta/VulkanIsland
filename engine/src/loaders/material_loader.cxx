@@ -329,6 +329,48 @@ namespace loader
     }
 }
 
+/*
+namespace nlohmann {
+    template <typename T>
+    struct adl_serializer<loader::material_description::specialization_constant> {
+        */
+/*static void to_json(json& j, const boost::optional<T>& opt) {
+            if (opt == boost::none) {
+                j = nullptr;
+            } else {
+                j = *opt; // this will call adl_serializer<T>::to_json which will
+                // find the free function to_json in T's namespace!
+            }
+        }*//*
+
+
+        static void from_json(const json& j, loader::material_description::specialization_constant &opt) {
+            */
+/*if (j.is_null()) {
+                opt = boost::none;
+            } else {
+                opt = j.get<T>(); // same as above, but with
+                // adl_serializer<T>::from_json
+            }*//*
+
+        }
+    };
+}
+*/
+
+template<>
+struct nlohmann::adl_serializer<loader::material_description::specialization_constant> final {
+    static void from_json(const json &j, loader::material_description::specialization_constant &specialization_constant)
+    {
+        auto type = j.at("type"s).get<std::string>();
+
+        if (auto value = loader::specialization_constant_value(type, j.at("value"s).get<float>()); value)
+            specialization_constant = *value;
+
+        else throw resource::exception("unsupported specialization constant value"s);
+    }
+};
+
 namespace loader
 {
     void from_json(nlohmann::json const &j, loader::material_description::specialization_constant &specialization_constant);
@@ -357,7 +399,7 @@ namespace loader
         else throw resource::exception("unsupported vertex attribute format"s);
     }
 
-    void from_json(nlohmann::json const &j, loader::material_description::specialization_constant &specialization_constant)
+    /*void from_json(nlohmann::json const &j, loader::material_description::specialization_constant &specialization_constant)
     {
         auto type = j.at("type"s).get<std::string>();
 
@@ -365,17 +407,17 @@ namespace loader
             specialization_constant = *value;
 
         else throw resource::exception("unsupported specialization constant value"s);
-    }
+    }*/
 
     void from_json(nlohmann::json const &j, loader::material_description::shader_bundle &shader_bundle)
     {
         shader_bundle.module_index = j.at("index"s).get<std::size_t>();
         shader_bundle.technique_index = j.at("technique"s).get<std::size_t>();
 
-        using specialization_constants = std::vector<loader::material_description::specialization_constant>;
+        using specialization_constants_t = std::vector<loader::material_description::specialization_constant>;
 
         if (j.count("constants"s))
-            shader_bundle.specialization_constants = j.at("constants"s).get<std::vector<loader::material_description::specialization_constant>>();
+            shader_bundle.specialization_constants = j.at("constants"s).get<specialization_constants_t>();
     }
 
     void from_json(nlohmann::json const &j, loader::material_description::technique &technique)

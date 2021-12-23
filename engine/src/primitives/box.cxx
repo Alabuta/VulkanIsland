@@ -156,7 +156,7 @@ namespace
         for (std::size_t vertex_offset = 0u; auto [hsegments, vsegments] : segments) {
             auto const pattern = std::array{ 0u, hsegments + 1, 1u, 1u, hsegments + 1, hsegments + 2 };
 
-            auto const horizontal_vertices_number = static_cast<std::size_t>(hsegments * vertices_per_quad);
+            auto const horizontal_vertices_number = static_cast<std::size_t>(hsegments) * vertices_per_quad;
 
             for (auto vsegment_index = 0u; vsegment_index < vsegments; ++vsegment_index) {
                 for (auto hsegment_index = 0u; hsegment_index < hsegments; ++hsegment_index) {
