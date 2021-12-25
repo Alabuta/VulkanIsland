@@ -71,7 +71,7 @@ namespace
             auto size_bytes = graphics::size_bytes(attribute.format);
 
             if (size_bytes == 0)
-                throw graphics::exception("unsupported format"s);
+                throw graphics::exception("unsupported format");
 
             return total_size_bytes + size_bytes;
         });
@@ -86,7 +86,7 @@ namespace
         auto vertex_layout_name = graphics::to_string(renderable_vertex_layout);
         auto primitive_input_name = graphics::to_string(primitive_topology);
 
-        auto full_name = fmt::format("{}.{}.{}.{}"s, name, technique_index, vertex_layout_name, primitive_input_name);
+        auto full_name = fmt::format("{}.{}.{}.{}", name, technique_index, vertex_layout_name, primitive_input_name);
 
         const boost::uuids::name_generator_sha1 gen(boost::uuids::ns::dns());
 
@@ -104,11 +104,11 @@ namespace
         switch (stage)
         {
             case graphics::SHADER_STAGE::VERTEX:
-                full_name = fmt::format("{}.{}.{}"s, name, technique_index, vertex_layout_name);
+                full_name = fmt::format("{}.{}.{}", name, technique_index, vertex_layout_name);
                 break;
 
             case graphics::SHADER_STAGE::GEOMETRY:
-                full_name = fmt::format("{}.{}.{}"s, name, technique_index, primitive_input_name);
+                full_name = fmt::format("{}.{}.{}", name, technique_index, primitive_input_name);
                 break;
 
             case graphics::SHADER_STAGE::FRAGMENT:
@@ -117,7 +117,7 @@ namespace
             case graphics::SHADER_STAGE::COMPUTE:
             case graphics::SHADER_STAGE::ALL_GRAPHICS_SHADER_STAGES:
             case graphics::SHADER_STAGE::ALL_SHADER_STAGES:
-                full_name = fmt::format("{}.{}"s, name, technique_index);
+                full_name = fmt::format("{}.{}", name, technique_index);
                 break;
 
             default:
@@ -146,7 +146,7 @@ namespace graphics
 
         auto vertex_layout = compatible_vertex_layout(vertex_attributes, technique, renderable_vertex_layout);
         if (!vertex_layout)
-            throw graphics::exception("failed to create compatible vertex layout"s);
+            throw graphics::exception("failed to create compatible vertex layout");
 
         auto hashed_name = compile_name(material_name, technique_index, *vertex_layout, primitive_topology);
 

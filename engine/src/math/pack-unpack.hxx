@@ -28,8 +28,8 @@ namespace math
         vec.z = 1.f - std::abs(vec.x) - std::abs(vec.y);
 
         auto tt = std::max(-vec.z, 0.f);
-        vec.x += (vec.x > 0.) ? -tt : tt;
-        vec.y += (vec.y > 0.) ? -tt : tt;
+        vec.x += (vec.x > 0.f) ? -tt : tt;
+        vec.y += (vec.y > 0.f) ? -tt : tt;
 
         vec = glm::normalize(vec);
     }

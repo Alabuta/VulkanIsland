@@ -7,8 +7,7 @@
 
 namespace graphics
 {
-    render_graph_manager::render_graph_manager(vulkan::device const &device,
-                                                     std::shared_ptr<resource::resource_manager> resource_manager)
+    render_graph_manager::render_graph_manager(vulkan::device const &device, std::shared_ptr<resource::resource_manager> resource_manager)
         : device_{device}, resource_manager_{resource_manager}
     {
         render_pass_manager_ = std::make_unique<graphics::render_pass_manager>(device);
@@ -173,9 +172,9 @@ create_framebuffers(resource::resource_manager &resource_manager, renderer::swap
     std::vector<std::shared_ptr<resource::image_view>> image_views;
 
     for (auto attachment : attachments) {
-        std::visit([&image_views] (auto &&attachment)
+        std::visit([&image_views] (auto &&a)
         {
-            image_views.push_back(attachment.image_view);
+            image_views.push_back(a.image_view);
 
         }, std::move(attachment));
     }

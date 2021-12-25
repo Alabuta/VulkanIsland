@@ -261,10 +261,10 @@ namespace
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     if constexpr (std::is_floating_point_v<T>) {
                         if constexpr (N == 4)
-                            return std::array<T, N>{color.r, color.g, color.b, 1};
+                            return std::array<T, N>{static_cast<T>(color.r), static_cast<T>(color.g), static_cast<T>(color.b), 1};
 
                         else if constexpr (N == 3)
-                            return std::array<T, N>{color.r, color.g, color.b};
+                            return std::array<T, N>{static_cast<T>(color.r), static_cast<T>(color.g), static_cast<T>(color.b)};
                     }
 
                     else throw resource::exception("unsupported format type"s);

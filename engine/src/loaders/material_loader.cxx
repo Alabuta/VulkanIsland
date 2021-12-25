@@ -373,10 +373,7 @@ struct nlohmann::adl_serializer<loader::material_description::specialization_con
 
 namespace loader
 {
-    void from_json(nlohmann::json const &j, loader::material_description::specialization_constant &specialization_constant);
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wmissing-prototypes"
-    void from_json(nlohmann::json const &j, loader::material_description::shader_module &shader_module)
+    static void from_json(nlohmann::json const &j, loader::material_description::shader_module &shader_module)
     {
         if (auto stage = loader::shader_stage_semantic(j.at("stage"s).get<std::string>()); stage)
             shader_module.stage = *stage;
@@ -386,7 +383,7 @@ namespace loader
         shader_module.name = j.at("name"s).get<std::string>();
     }
 
-    void from_json(nlohmann::json const &j, loader::material_description::vertex_attribute &vertex_attribute)
+    static void from_json(nlohmann::json const &j, loader::material_description::vertex_attribute &vertex_attribute)
     {
         if (auto semantic = loader::attribute_semantic(j.at("semantic"s).get<std::string>()); semantic)
             vertex_attribute.semantic = *semantic;
@@ -409,7 +406,7 @@ namespace loader
         else throw resource::exception("unsupported specialization constant value"s);
     }*/
 
-    void from_json(nlohmann::json const &j, loader::material_description::shader_bundle &shader_bundle)
+    static void from_json(nlohmann::json const &j, loader::material_description::shader_bundle &shader_bundle)
     {
         shader_bundle.module_index = j.at("index"s).get<std::size_t>();
         shader_bundle.technique_index = j.at("technique"s).get<std::size_t>();
@@ -420,13 +417,12 @@ namespace loader
             shader_bundle.specialization_constants = j.at("constants"s).get<specialization_constants_t>();
     }
 
-    void from_json(nlohmann::json const &j, loader::material_description::technique &technique)
+    static void from_json(nlohmann::json const &j, loader::material_description::technique &technique)
     {
         technique.shaders_bundle = j.at("shaderBundle"s).get<std::vector<loader::material_description::shader_bundle>>();
 
         technique.vertex_layouts = j.at("vertexLayouts"s).get<std::vector<loader::material_description::vertex_layout>>();
     }
-#pragma clang diagnostic pop
 }
 
 namespace loader

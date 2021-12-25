@@ -28,11 +28,9 @@ namespace
         auto const hsegments = create_info.hsegments;
 
         auto constexpr pattern = std::array{
-            std::array{std::pair{0, 0}, std::pair{1, 1}, std::pair{1, 0}},
-            std::array{std::pair{0, 0}, std::pair{0, 1}, std::pair{1, 1}}
+            std::array{std::pair{0u, 0u}, std::pair{1u, 1u}, std::pair{1u, 0u}},
+            std::array{std::pair{0u, 0u}, std::pair{0u, 1u}, std::pair{1u, 1u}}
         };
-
-        auto const vertices_count = wsegments * (hsegments - 1) + 2;
 
         for (auto iy = 0u; iy < hsegments; ++iy) {
             for (auto ix = 0u; ix < wsegments + static_cast<std::uint32_t>(!index_generator); ++ix) {
@@ -85,8 +83,8 @@ namespace
         }
 
         return glm::vec2{
-            static_cast<float>(ix) / wsegments,
-            static_cast<float>(iy) / hsegments
+            static_cast<float>(ix) / static_cast<float>(wsegments),
+            static_cast<float>(iy) / static_cast<float>(hsegments)
         };
     }
 
@@ -95,9 +93,9 @@ namespace
         auto const uv = generate_uv(create_info, ix, iy);
 
         glm::vec3 point{
-            -std::cos(uv.x * std::numbers::pi * 2) * std::sin(uv.y * std::numbers::pi),
-            std::cos(uv.y * std::numbers::pi),
-            std::sin(uv.x * std::numbers::pi * 2) * std::sin(uv.y * std::numbers::pi)
+            -std::cos(uv.x * std::numbers::pi_v<float> * 2) * std::sin(uv.y * std::numbers::pi_v<float>),
+            std::cos(uv.y * std::numbers::pi_v<float>),
+            std::sin(uv.x * std::numbers::pi_v<float> * 2) * std::sin(uv.y * std::numbers::pi_v<float>)
         };
 
         return glm::normalize(point);
@@ -139,9 +137,6 @@ namespace
     std::array<T, N> generate_texcoord(primitives::sphere_create_info const &create_info, graphics::FORMAT format, std::uint32_t ix, std::uint32_t iy)
     {
         if constexpr (N == 2) {
-            auto const wsegments = create_info.wsegments;
-            auto const hsegments = create_info.hsegments;
-
             auto const uv = generate_uv(create_info, ix, iy);
 
             switch (graphics::numeric_format(format)) {
@@ -154,15 +149,11 @@ namespace
 
                     else throw resource::exception("unsupported format type"s);
 
-                    break;
-
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     if constexpr (std::is_floating_point_v<T>)
                         return std::array<T, N>{static_cast<T>(uv.x), static_cast<T>(1.f - uv.y)};
 
                     else throw resource::exception("unsupported format type"s);
-
-                    break;
 
                 default:
                     throw resource::exception("unsupported numeric format"s);
@@ -206,10 +197,10 @@ namespace
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     if constexpr (std::is_floating_point_v<T>) {
                         if constexpr (N == 4)
-                            return std::array<T, N>{color.r, color.g, color.b, 1};
+                            return std::array<T, N>{static_cast<T>(color.r), static_cast<T>(color.g), static_cast<T>(color.b), 1};
 
                         else if constexpr (N == 3)
-                            return std::array<T, N>{color.r, color.g, color.b};
+                            return std::array<T, N>{static_cast<T>(color.r), static_cast<T>(color.g), static_cast<T>(color.b)};
                     }
 
                     else throw resource::exception("unsupported format type"s);
@@ -233,15 +224,14 @@ namespace
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     {
                         auto const wsegments = create_info.wsegments;
-                        auto const hsegments = create_info.hsegments;
 
                         auto generator = std::bind(generate_position<N, T>, create_info, std::placeholders::_1, std::placeholders::_2);
 
                         if (create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED) {
-                            std::generate_n(it, vertices_count, [generator, wsegments, hsegments, i = 0] () mutable
+                            std::generate_n(it, vertices_count, [generator, wsegments, i = 0u] () mutable
                             {
-                                auto ix = std::max(0, i - 1) % (wsegments + 1);
-                                auto iy = i == 0 ? 0 : (i - 1) / (wsegments + 1) + 1;
+                                auto ix = std::max(0u, i - 1) % (wsegments + 1);
+                                auto iy = i == 0 ? 0u : (i - 1) / (wsegments + 1) + 1;
                                 ++i;
                                 return generator(static_cast<std::uint32_t>(ix), static_cast<std::uint32_t>(iy));
                             });
@@ -265,7 +255,6 @@ namespace
                           strided_bidirectional_iterator<std::array<T, N>> it, std::uint32_t vertices_count)
     {
         auto const wsegments = create_info.wsegments;
-        auto const hsegments = create_info.hsegments;
 
         if constexpr (N == 2) {
             switch (graphics::numeric_format(format)) {
@@ -275,9 +264,9 @@ namespace
                         auto generator = std::bind(generate_normal<N, T>, create_info, std::placeholders::_1, std::placeholders::_2);
 
                         if (create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED) {
-                            std::generate_n(it, vertices_count, [generator, wsegments, hsegments, i = 0] () mutable
+                            std::generate_n(it, vertices_count, [generator, wsegments, i = 0u] () mutable
                             {
-                                auto ix = std::max(0, i - 1) % (wsegments + 1);
+                                auto ix = std::max(0u, i - 1) % (wsegments + 1);
                                 auto iy = i == 0 ? 0 : (i - 1) / (wsegments + 1) + 1;
                                 ++i;
                                 return generator(static_cast<std::uint32_t>(ix), static_cast<std::uint32_t>(iy));
@@ -307,9 +296,9 @@ namespace
                     auto generator = std::bind(generate_normal<N, T>, create_info, std::placeholders::_1, std::placeholders::_2);
 
                     if (create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED) {
-                        std::generate_n(it, vertices_count, [generator, wsegments, hsegments, i = 0] () mutable
+                        std::generate_n(it, vertices_count, [generator, wsegments, i = 0u] () mutable
                         {
-                            auto ix = std::max(0, i - 1) % (wsegments + 1);
+                            auto ix = std::max(0u, i - 1) % (wsegments + 1);
                             auto iy = i == 0 ? 0 : (i - 1) / (wsegments + 1) + 1;
                             ++i;
                             return generator(static_cast<std::uint32_t>(ix), static_cast<std::uint32_t>(iy));
@@ -335,15 +324,14 @@ namespace
                             strided_bidirectional_iterator<std::array<T, N>> it, std::uint32_t vertices_count)
     {
         auto const wsegments = create_info.wsegments;
-        auto const hsegments = create_info.hsegments;
 
         auto generator = std::bind(generate_texcoord<N, T>, create_info, format, std::placeholders::_1, std::placeholders::_2);
 
         auto is_primitive_indexed = create_info.index_buffer_type != graphics::INDEX_TYPE::UNDEFINED;
         if (is_primitive_indexed) {
-            std::generate_n(it, vertices_count, [generator, wsegments, hsegments, i = 0] () mutable
+            std::generate_n(it, vertices_count, [generator, wsegments, i = 0u] () mutable
             {
-                auto ix = std::max(0, i - 1) % (wsegments + 1);
+                auto ix = std::max(0u, i - 1) % (wsegments + 1);
                 auto iy = i == 0 ? 0 : (i - 1) / (wsegments + 1) + 1;
                 ++i;
                 return generator(static_cast<std::uint32_t>(ix), static_cast<std::uint32_t>(iy));

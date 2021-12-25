@@ -88,7 +88,7 @@ namespace resource
         buffer_ = resource_manager_.create_buffer(kPOOL_SIZE_BYTES, kBUFFER_USAGE_FLAGS, kMEMORY_PROPERTY_TYPES, kSHARING_MODE);
 
         if (buffer_ == nullptr)
-            throw resource::instantiation_fail(fmt::format("failed to create the staging pool buffer"s));
+            throw resource::instantiation_fail(fmt::format("failed to create the staging pool buffer"));
 
         auto &&memory = buffer_->memory();
 
@@ -212,7 +212,6 @@ namespace resource
           resource_deleter_{std::make_shared<resource::resource_manager::resource_deleter>(device, *this)},
           staging_buffer_pool_{std::make_shared<resource::resource_manager::staging_buffer_pool>(device_, *this)}
     {
-        ;
     }
 
     std::shared_ptr<resource::buffer>

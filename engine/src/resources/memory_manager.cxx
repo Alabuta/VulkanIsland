@@ -259,7 +259,7 @@ namespace resource
 
             auto const kilobytes = static_cast<float>(required_size) / 1024.f;
 
-            fmt::print("Memory manager: type index #{} : sub-allocation {} KB.\n"s, memory_type_index, kilobytes);
+            fmt::print("Memory manager: type index #{} : sub-allocation {} KB.\n", memory_type_index, kilobytes);
 
             return std::shared_ptr<resource::memory_block>{
                 new resource::memory_block{it_block->first, required_size, aligned_offset, memory_type_index, properties, is_linear},
@@ -280,7 +280,7 @@ namespace resource
         auto const key = hash_memory_block_properties(memory_block.type_index(), memory_block.properties(), memory_block.is_linear());
 
         if (!memory_pools.contains(key)) {
-            std::cerr << "Memory manager: dead memory chunk encountered."s << std::endl;
+            std::cerr << "Memory manager: dead memory chunk encountered." << std::endl;
             return;
         }
 
@@ -292,22 +292,22 @@ namespace resource
         auto const memory_type_index = memory_block.type_index();
 
         if (!memory_pool.memory_blocks.contains(memory_handle)) {
-            std::cerr << "Memory manager: dead memory chunk encountered."s << std::endl;
+            std::cerr << "Memory manager: dead memory chunk encountered." << std::endl;
             return;
         }
 
         auto &&memory_page = memory_pool.memory_blocks.at(memory_handle);
         auto &&available_chunks = memory_page.available_chunks;
 
-        fmt::print("Memory manager: type index #{} : releasing chunk {} KB.\n"s, memory_type_index, static_cast<float>(memory_size) / 1024.f);
+        fmt::print("Memory manager: type index #{} : releasing chunk {} KB.\n", memory_type_index, static_cast<float>(memory_size) / 1024.f);
 
         auto it_chunk = available_chunks.emplace(memory_offset, memory_size);
 
-        auto find_adjacent_chunk = [] (auto begin, auto end, auto it_chunk)
+        auto find_adjacent_chunk = [] (auto begin, auto end, auto it)
         {
-            return std::find_if(begin, end, [it_chunk] (auto &&chunk)
+            return std::find_if(begin, end, [it] (auto &&chunk)
             {
-                return chunk.offset + chunk.size == it_chunk->offset || it_chunk->offset + it_chunk->size == chunk.offset;
+                return chunk.offset + chunk.size == it->offset || it->offset + it->size == chunk.offset;
             });
         };
 
@@ -334,7 +334,7 @@ namespace resource
         auto const key = hash_memory_block_properties(memory_type_index, properties, is_linear);
 
         if (!memory_pools.contains(key))
-            throw memory::exception(fmt::format("failed to find instantiated memory pool for type index #{}"s, memory_type_index));
+            throw memory::exception(fmt::format("failed to find instantiated memory pool for type index #{}", memory_type_index));
 
         auto &&memory_pool = memory_pools.at(key);
         auto &&memory_blocks = memory_pool.memory_blocks;
@@ -368,7 +368,7 @@ namespace resource
         auto kilobytes = static_cast<float>(size_bytes) / 1024.f;
         auto megabytes = static_cast<float>(total_allocated_size) / std::pow(2.f, 20.f);
 
-        fmt::print("Memory manager: type index #{} : {}th page allocation {} KB/{} MB.\n"s, memory_type_index, block_index, kilobytes, megabytes);
+        fmt::print("Memory manager: type index #{} : {}th page allocation {} KB/{} MB.\n", memory_type_index, block_index, kilobytes, megabytes);
 
         return it_memory_block;
     }

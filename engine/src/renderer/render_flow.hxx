@@ -60,7 +60,7 @@ namespace graphics
 
     private:
 
-        vulkan::device const &device_;
+        [[maybe_unused]] vulkan::device const &device_;
 
         std::shared_ptr<resource::resource_manager> resource_manager_;
         std::unique_ptr<graphics::render_pass_manager> render_pass_manager_;

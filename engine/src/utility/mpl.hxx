@@ -129,7 +129,7 @@ namespace mpl
     };
 
     template<class T, class... Ts>
-    auto constexpr is_variant_alternative_v = is_variant_alternative<T, Ts...>::value;
+    inline auto constexpr is_variant_alternative_v = is_variant_alternative<T, Ts...>::value;
 
     template<class T>
     struct variant_from_tuple;

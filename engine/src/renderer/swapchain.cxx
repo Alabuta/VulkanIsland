@@ -40,9 +40,9 @@ namespace
             return { graphics::FORMAT::BGRA8_UNORM, graphics::COLOR_SPACE::SRGB_NONLINEAR };
 
         for (auto [format, color_space] : required_surface_formats) {
-            auto supported = std::ranges::any_of(surface, [format, color_space] (auto &&surface_format)
+            auto supported = std::ranges::any_of(surface, [f = format, cs = color_space] (auto &&surface_format)
             {
-                return surface_format.format == format && surface_format.color_space == color_space;
+                return surface_format.format == f && surface_format.color_space == cs;
             });
 
             if (supported)

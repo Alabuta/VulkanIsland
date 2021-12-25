@@ -94,7 +94,7 @@ namespace renderer
                     range
                 });
             });
-;
+
             indexed_buffers_bind_range.push_back({
                 it_begin->index_buffer->index_type(),
                 it_begin->index_buffer->device_buffer()->handle(),

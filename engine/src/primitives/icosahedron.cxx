@@ -19,9 +19,11 @@ using namespace std::string_literals;
 #include "primitives/primitives.hxx"
 
 
+// https://github.com/mrdoob/three.js/blob/00a692864f541a3ec194d266e220efd597eb28fa/src/geometries/PolyhedronGeometry.js
 namespace {
-    // https://github.com/mrdoob/three.js/blob/00a692864f541a3ec194d266e220efd597eb28fa/src/geometries/PolyhedronGeometry.js
-	static auto const t = (1.f + std::sqrt(5.f)) / 2.f;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wglobal-constructors"
+	inline static auto const t = (1.f + std::sqrt(5.f)) / 2.f;
 
 	auto const input_vertices = std::array{
 		glm::vec3{-1, t, 0},		glm::vec3{1, t, 0},		glm::vec3{-1, -t, 0},		glm::vec3{1, -t, 0},
@@ -44,6 +46,7 @@ namespace {
             std::pair{0u, 1u}, std::pair{1u, 1u}, std::pair{1u, 0u}
         }
     };
+#pragma clang diagnostic pop
 
     // Angle around the Y axis, counter-clockwise when looking from above.
     float azimuth(glm::vec3 const &point)
@@ -76,11 +79,11 @@ namespace {
 
     void correct_uv(glm::vec2 &uv, glm::vec3 const &vec, float azimuth)
     {
-        if (azimuth < 0 && uv.x == 1)
+        if (azimuth < 0 && uv.x >= 1)
             uv.x = uv.x - 1.f;
 
-        if (vec.x == 0 && vec.z == 0)
-            uv.x = azimuth / 2.f / static_cast<float>(std::numbers::pi) + .5f;
+        if (vec.x <= 0 && vec.z <= 0)
+            uv.x = azimuth / 2.f / static_cast<float>(std::numbers::pi_v<float>) + .5f;
     }
 
     template<std::size_t N, class T>
@@ -148,7 +151,7 @@ namespace {
             std::array<glm::vec2, 3> uvs;
             std::transform(std::cbegin(points), std::cend(points), std::begin(uvs), [centoroid_azimuth] (auto &&point)
             {
-                auto uv = glm::vec2{azimuth(point) / 2.f / std::numbers::pi + .5f, 1.f - (inclination(point) / std::numbers::pi + .5f)};
+                auto uv = glm::vec2{azimuth(point) / 2.f / std::numbers::pi_v<float> + .5f, 1.f - (inclination(point) / std::numbers::pi_v<float> + .5f)};
 
                 correct_uv(uv, point, centoroid_azimuth);
 
@@ -181,9 +184,13 @@ namespace {
                             return std::array<T, N>{static_cast<T>(uv.x * type_max), static_cast<T>(uv.y * type_max)};
                         }
 
+                        break;
+
                     case graphics::NUMERIC_FORMAT::FLOAT:
                         if constexpr (std::is_floating_point_v<T>)
                             return std::array<T, N>{static_cast<T>(uv.x), static_cast<T>(uv.y)};
+
+                        break;
 
                     default:
                         break;
@@ -230,10 +237,10 @@ namespace {
                 case graphics::NUMERIC_FORMAT::FLOAT:
                     if constexpr (std::is_floating_point_v<T>) {
                         if constexpr (N == 4)
-                            return std::array<T, N>{color.r, color.g, color.b, 1};
+                            return std::array<T, N>{static_cast<T>(color.r), static_cast<T>(color.g), static_cast<T>(color.b), 1};
 
                         else if constexpr (N == 3)
-                            return std::array<T, N>{color.r, color.g, color.b};
+                            return std::array<T, N>{static_cast<T>(color.r), static_cast<T>(color.g), static_cast<T>(color.b)};
                     }
 
                     else throw resource::exception("unsupported format type"s);
