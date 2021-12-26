@@ -58,6 +58,10 @@ def get_shader_compialtion_flags(shader_module : ShaderModuleInfo) -> list:
 def compile_shader(program_options : object, shader_module : ShaderModuleInfo, output_path : str, source_code : str):
     compialtion_flags=get_shader_compialtion_flags(shader_module)
 
+    dirpath=os.path.dirname(output_path)
+    if not os.path.exists(dirpath):
+        os.makedirs(dirpath)
+
     compiler=subprocess.Popen([
         program_options['shader_compiler_path'],
         '--entry-point', shader_module.entry_point,
