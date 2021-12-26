@@ -118,7 +118,7 @@ namespace
         std::cerr << "unsupported device extensions: "s << std::endl;
 
         for (auto &&extension : unsupported_extensions)
-            std::cerr << fmt::format("{}\n"s, extension.extensionName);
+            std::cerr << fmt::format("{}\n", extension.extensionName);
 
         return false;
     }
@@ -235,9 +235,9 @@ namespace
 
         auto compare = [&overloaded_compare] (auto &&lhs, auto &&rhs)
         {
-            return std::visit([&] <class T> (T const &lhs)
+            return std::visit([&overloaded_compare, &rhs] <class T> (T const &lhs_)
             {
-                return overloaded_compare(lhs, std::get<T>(rhs));
+                return overloaded_compare(lhs_, std::get<T>(rhs));
             }, lhs);
         };
 
@@ -627,15 +627,15 @@ namespace vulkan
             std::map<std::uint32_t, std::uint32_t> requested_families;
 
             for (auto &&queue : requested_queues) {
-                std::visit([device, surface, &requested_families] (auto &&queue)
+                std::visit([device, surface, &requested_families] (auto &&q)
                 {
-                    using T = std::remove_cvref_t<decltype(queue)>;
+                    using T = std::remove_cvref_t<decltype(q)>;
 
                     if (auto queue_family = get_queue_family<queue_strict_matching, T>(device, surface); queue_family) {
                         auto &&[family_index, family_property] = *queue_family;
 
-                        queue.family_ = family_index;
-                        queue.index_ = requested_families[family_index];
+                        q.family_ = family_index;
+                        q.index_ = requested_families[family_index];
 
                         ++requested_families[family_index];
                     }
@@ -685,11 +685,10 @@ namespace vulkan
         void *ptr_next = nullptr;
 
         for (auto &&feature : required_extended_features) {
-            std::visit([&ptr_next] (auto &&feature)
+            std::visit([&ptr_next] (auto &&f)
             {
-                feature.pNext = ptr_next;
-
-                ptr_next = &feature;
+                f.pNext = ptr_next;
+                ptr_next = &f;
             }, feature);
         }
 
@@ -719,24 +718,24 @@ namespace vulkan
             throw vulkan::device_exception(fmt::format("failed to create logical device: {0:#x}", result));
 
         for (auto &&queue : requested_queues) {
-            std::visit([this] (auto &&queue)
+            std::visit([this] (auto &&q)
             {
-                using T = std::remove_cvref_t<decltype(queue)>;
+                using T = std::remove_cvref_t<decltype(q)>;
 
-                vkGetDeviceQueue(handle_, queue.family(), queue.index(), &queue.handle_);
+                vkGetDeviceQueue(handle_, q.family(), q.index(), &q.handle_);
 
                 if constexpr (std::is_same_v<T, graphics::graphics_queue>) {
                     if (graphics_queue.handle() == VK_NULL_HANDLE)
-                        graphics_queue = queue;
+                        graphics_queue = q;
 
-                    else presentation_queue = queue;
+                    else presentation_queue = q;
                 }
 
                 else if constexpr (std::is_same_v<T, graphics::compute_queue>)
-                    compute_queue = queue;
+                    compute_queue = q;
 
                 else if constexpr (std::is_same_v<T, graphics::transfer_queue>)
-                    transfer_queue = queue;
+                    transfer_queue = q;
 
             }, queue);
         }

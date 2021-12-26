@@ -37,16 +37,16 @@ namespace resource
 
             template<class T, class S>
             requires mpl::are_same_v<buffer_chunk, T> && std::is_unsigned_v<S>
-            bool operator() (T chunk, S size) const noexcept
+            bool operator() (T chunk, S rhs_size) const noexcept
             {
-                return chunk.size < size;
+                return chunk.size < rhs_size;
             }
                 
             template<class S, class T>
             requires mpl::are_same_v<buffer_chunk, T> && std::is_unsigned_v<S>
-            bool operator() (S size, T chunk) const noexcept
+            bool operator() (S lhs_size, T chunk) const noexcept
             {
-                return chunk.size < size;
+                return chunk.size < lhs_size;
             }
         };
     };
@@ -240,17 +240,18 @@ namespace resource
         if (auto result = vkCreateBuffer(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
             throw resource::instantiation_fail(fmt::format("failed to create a buffer: {0:#x}", result));
 
-        auto const memory = memory_manager_.allocate_memory(resource::buffer{
+        std::shared_ptr<resource::buffer> buffer;
+        buffer.reset(new resource::buffer{
             handle, nullptr, size_bytes, usage, sharing_mode
-        }, memory_property_types);
+        }, *resource_deleter_);
+
+        auto const memory = memory_manager_.allocate_memory(*buffer, memory_property_types);
 
         if (memory == nullptr)
             throw memory::bad_allocation("failed to allocate buffer memory"s);
 
         if (auto result = vkBindBufferMemory(device_.handle(), handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
             throw resource::memory_bind(fmt::format("failed to bind buffer memory: {0:#x}", result));
-
-        std::shared_ptr<resource::buffer> buffer;
 
         buffer.reset(new resource::buffer{
             handle, memory, size_bytes, usage, sharing_mode
@@ -351,15 +352,15 @@ namespace resource
         if (auto result = vkCreateImage(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
             throw resource::instantiation_fail(fmt::format("failed to create an image: {0:#x}", result));
 
-        auto const memory = memory_manager_.allocate_memory(resource::image{nullptr, handle, format, tiling, mip_levels, extent}, memory_property_types);
+        std::shared_ptr<resource::image> image;
+        image.reset(new resource::image{nullptr, handle, format, tiling, mip_levels, extent}, *resource_deleter_);
+        auto const memory = memory_manager_.allocate_memory(*image, memory_property_types);
 
         if (memory == nullptr)
             throw memory::exception("failed to allocate image memory"s);
 
         if (auto result = vkBindImageMemory(device_.handle(), handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
             throw resource::memory_bind(fmt::format("failed to bind image buffer memory: {0:#x}", result));
-
-        std::shared_ptr<resource::image> image;
 
         image.reset(new resource::image{memory, handle, format, tiling, mip_levels, extent}, *resource_deleter_);
 
@@ -654,22 +655,22 @@ namespace resource
 
     std::shared_ptr<resource::image>
     resource_manager::stage_image_data(graphics::IMAGE_TYPE type, graphics::FORMAT format, renderer::extent extent, graphics::IMAGE_TILING tiling, std::uint32_t mip_levels, std::uint32_t samples_count,
-                                       std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool)
+                                       std::shared_ptr<resource::staging_buffer> staging_buffer, [[maybe_unused]] VkCommandPool command_pool)
     {
-        if (std::ranges::none_of(kSUPPORTED_IMAGE_FORMATS, [format] (auto type) { return type == format; }))
+        if (std::ranges::none_of(kSUPPORTED_IMAGE_FORMATS, [format] (auto t) { return t == format; }))
             throw resource::exception(fmt::format("unsupported image type: {0:#x}", format));
 
         auto const container = staging_buffer->mapped_range();
 
         auto const staging_data_size_bytes = container.size_bytes();
-        auto const staging_data_offset_bytes = staging_buffer->offset_bytes();
+//        auto const staging_data_offset_bytes = staging_buffer->offset_bytes();
 
         if (staging_data_size_bytes > kIMAGE_BUFFER_FIXED_SIZE)
             throw resource::not_enough_memory("staging data size is bigger than image buffer max size"s);
 
         auto constexpr usage_flags = graphics::IMAGE_USAGE::TRANSFER_SOURCE | graphics::IMAGE_USAGE::TRANSFER_DESTINATION | graphics::IMAGE_USAGE::SAMPLED;
         auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
-        auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
+//        auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
 
         auto image = create_image(type, format, extent, mip_levels, samples_count, tiling, usage_flags, property_flags);
 

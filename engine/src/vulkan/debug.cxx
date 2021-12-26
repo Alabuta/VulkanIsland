@@ -20,20 +20,20 @@ namespace vulkan
         using namespace std::string_literals;
 
         if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT)
-            fmt::print(stderr, "{} - {} : {}\n\n"s, data->messageIdNumber, data->pMessageIdName, data->pMessage);
+            fmt::print(stderr, "{} - {} : {}\n\n", data->messageIdNumber, data->pMessageIdName, data->pMessage);
 
         else if (message_severity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT)
-            fmt::print(stderr, "{} - {} : {}\n\n"s, data->messageIdNumber, data->pMessageIdName, data->pMessage);
+            fmt::print(stderr, "{} - {} : {}\n\n", data->messageIdNumber, data->pMessageIdName, data->pMessage);
 
         return VK_FALSE;
     }
 
-    VKAPI_ATTR VkBool32 VKAPI_CALL
+    static VKAPI_ATTR VkBool32 VKAPI_CALL
     debug_report_callback([[maybe_unused]] VkDebugReportFlagsEXT flags, [[maybe_unused]] VkDebugReportObjectTypeEXT object_type,
                    [[maybe_unused]] std::uint64_t object, [[maybe_unused]] std::size_t location, [[maybe_unused]] std::int32_t message_code,
                    [[maybe_unused]] const char *layer_prefix, const char *message, [[maybe_unused]] void *user_data)
     {
-        fmt::print(stderr, "{}\n\n"s, message);
+        fmt::print(stderr, "{}\n\n", message);
 
         return VK_FALSE;
     }
