@@ -151,13 +151,13 @@ std::optional<VkDescriptorSetLayout> create_view_resources_descriptor_set_layout
 
 std::optional<VkDescriptorSetLayout> create_object_resources_descriptor_set_layout(vulkan::device const &device)
 {
-    std::array<VkDescriptorSetLayoutBinding, 1> constexpr layout_bindings{
+    std::array<VkDescriptorSetLayoutBinding, 1> constexpr layout_bindings{{
         {
             0, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC,
             1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             nullptr
         }
-    };
+    }};
 
     return create_descriptor_set_layout2(device, layout_bindings);
 }

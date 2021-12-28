@@ -60,7 +60,7 @@ namespace
         std::cerr << "unsupported instance extensions: "s << std::endl;
 
         for (auto &&extension : unsupported_extensions)
-            std::cerr << fmt::format("{}\n"s, extension.extensionName);
+            fmt::print(stderr, "{}\n", extension.extensionName);
 
         return false;
     }
@@ -106,7 +106,7 @@ namespace
         std::cerr << "unsupported instance layers: "s << std::endl;
 
         for (auto &&layer : unsupported_layers)
-            std::cerr << fmt::format("{}\n"s, layer.layerName);
+            fmt::print(stderr, "{}\n", layer.layerName);
 
         return false;
     }

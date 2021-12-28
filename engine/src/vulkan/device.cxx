@@ -314,7 +314,7 @@ namespace
                 return supported_mode == convert_to::vulkan(mode);
             });
         });
-        
+
         presentation_modes.erase(std::begin(subrange), std::end(subrange));
         presentation_modes.shrink_to_fit();
 
@@ -338,7 +338,10 @@ namespace
         std::vector<VkQueueFamilyProperties> queue_families(queue_families_count);
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_families_count, std::data(queue_families));
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-lambda-capture"
         auto it_family = std::ranges::find_if(queue_families, [device, surface, family_index = 0u] (auto &&queue_family) mutable
+#pragma clang diagnostic pop
         {
             if constexpr (std::is_same_v<T, graphics::graphics_queue>) {
                 VkBool32 surface_supported = VK_FALSE;

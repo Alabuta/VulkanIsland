@@ -1,13 +1,14 @@
-// ReSharper disable once IdentifierTypo
-// ReSharper disable once CppInconsistentNaming
-#define _SCL_SECURE_NO_WARNINGS
+/*#ifdef _MSC_VER
+    #define _SCL_SECURE_NO_WARNINGS
+#endif*/
 
 
 #if defined(_DEBUG) || defined(DEBUG)
     #if defined(_MSC_VER)
-// ReSharper disable once IdentifierTypo
-// ReSharper disable once CppInconsistentNaming
-#define _CRTDBG_MAP_ALLOC
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wreserved-macro-identifier"
+        #define _CRTDBG_MAP_ALLOC
+#pragma clang diagnostic pop
         #include <crtdbg.h>
     #else
         #include <thread>
@@ -35,12 +36,12 @@
 
             auto size = backtrace(std::data(callStack), std::size(callStack));
 
-            std::cerr << fmt::format("Error: signal {}\n"s, name);
+            fmt::print(stderr, "Error: signal {}\n", name);
 
             auto symbollist = backtrace_symbols(std::data(callStack), size);
 
             for (auto i = 0; i < size; ++i)
-                std::cerr << fmt::format("{} {} {}\n"s, i, current_thread, symbollist[i]);
+                fmt::print(stderr, "{} {} {}\n", i, current_thread, symbollist[i]);
 
             free(symbollist);
 
@@ -122,7 +123,8 @@ using namespace std::string_view_literals;
 
 namespace temp
 {
-    xformat xmodel;
+    [[clang::no_destroy]]
+    static xformat xmodel;
 }
 
 struct per_object_t final {
@@ -323,7 +325,7 @@ struct window_events_handler final : public platform::window::event_handler_inte
 };
 
 
-void update_descriptor_set(app_t &app, vulkan::device const &device)
+static void update_descriptor_set(app_t &app, vulkan::device const &device)
 {
     // TODO: descriptor info typed by VkDescriptorType.
     auto const per_camera = std::array{
@@ -402,7 +404,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device)
 }
 
 
-void create_graphics_command_buffers(app_t &app)
+static void create_graphics_command_buffers(app_t &app)
 {
     app.command_buffers.resize(std::size(app.swapchain->image_views()));
 
@@ -493,7 +495,7 @@ void create_graphics_command_buffers(app_t &app)
                                                     static_cast<std::uint32_t>(std::size(descriptor_sets)), std::data(descriptor_sets),
                                                     static_cast<std::uint32_t>(std::size(dynamic_offsets)), std::data(dynamic_offsets));
 
-                            vkCmdDrawIndexed(command_buffer, dc.index_count, 1, dc.first_index, dc.first_vertex, 0);
+                            vkCmdDrawIndexed(command_buffer, dc.index_count, 1, dc.first_index, static_cast<std::int32_t>(dc.first_vertex), 0);
                         }
                     }
                 }, subrange.draw_commands);
@@ -534,7 +536,7 @@ void create_graphics_command_buffers(app_t &app)
     }
 }
 
-void create_frame_data(app_t &app)
+static void create_frame_data(app_t &app)
 {
     auto &&device = *app.device;
     auto &&platform_surface = app.platform_surface;
@@ -603,7 +605,7 @@ void recreate_swap_chain(app_t &app)
     create_graphics_command_buffers(app);
 }
 
-void build_render_pipelines(app_t &app, xformat const &model_)
+static void build_render_pipelines(app_t &app, xformat const &model_)
 {
     std::vector<graphics::render_graph> render_pipelines;
 
@@ -652,7 +654,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
             auto &&vertex_layout = vertex_buffer->vertex_layout();
             auto vertex_layout_name = graphics::to_string(vertex_layout);
 
-            fmt::print("{}.{}.{}\n"s, name, technique_index, vertex_layout_name);
+            fmt::print("{}.{}.{}\n", name, technique_index, vertex_layout_name);
 
             auto material = material_factory.material(name, technique_index, vertex_layout, primitive_topology);
 
@@ -702,7 +704,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
 namespace temp
 {
-    glm::vec4 generate_color()
+    static glm::vec4 generate_color()
     {
         static std::random_device random_device;
         static std::mt19937 generator{random_device()};
@@ -805,7 +807,7 @@ namespace temp
         std::shared_ptr<resource::index_buffer> index_buffer;
     };
 
-    xformat::meshlet create_meshlet(meshlet_create_info const &info)
+    static xformat::meshlet create_meshlet(meshlet_create_info const &info)
     {
         xformat::meshlet meshlet;
 
@@ -836,7 +838,7 @@ namespace temp
         return meshlet;
     }
 
-    void add_box(app_t &app, xformat &model_, std::size_t vertex_layout_index, graphics::INDEX_TYPE index_type, std::size_t material_index)
+    static void add_box(app_t &app, xformat &model_, std::size_t vertex_layout_index, graphics::INDEX_TYPE index_type, std::size_t material_index)
     {
         auto const &vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
 
@@ -930,7 +932,7 @@ namespace temp
         }
     }
 
-    void add_plane(app_t &app, xformat &model_, std::size_t vertex_layout_index, graphics::INDEX_TYPE index_type, std::size_t material_index)
+    static void add_plane(app_t &app, xformat &model_, std::size_t vertex_layout_index, graphics::INDEX_TYPE index_type, std::size_t material_index)
     {
         auto const &vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
 
@@ -1009,8 +1011,8 @@ namespace temp
             model_.meshlets.push_back(std::move(meshlet));
         }
     }
-    
-    void add_icosahedron(app_t &app, xformat &model_, std::size_t vertex_layout_index, std::size_t material_index)
+
+    static void add_icosahedron(app_t &app, xformat &model_, std::size_t vertex_layout_index, std::size_t material_index)
     {
         auto const &vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
 
@@ -1075,8 +1077,8 @@ namespace temp
             model_.meshlets.push_back(std::move(meshlet));
         }
     }
-    
-    void add_sphere(app_t &app, xformat &model_, std::size_t vertex_layout_index, graphics::INDEX_TYPE index_type, std::size_t material_index)
+
+    static void add_sphere(app_t &app, xformat &model_, std::size_t vertex_layout_index, graphics::INDEX_TYPE index_type, std::size_t material_index)
     {
         auto const &vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
 
@@ -1346,7 +1348,7 @@ void create_sync_objects(app_t &app)
     app.busy_frames_fences.resize(std::size(app.swapchain->image_views()), nullptr);
 }
 
-void init(platform::window &window, app_t &app)
+static void init(platform::window &window, app_t &app)
 {
     auto instance = std::make_unique<vulkan::instance>();
 
@@ -1492,7 +1494,7 @@ void update_viewport_descriptor_buffer(app_t const &app)
     vkUnmapMemory(device.handle(), buffer.memory()->handle());
 }
 
-void update(app_t &app)
+static void update(app_t &app)
 {
     if (app.resize_callback) {
         app.resize_callback();
@@ -1552,7 +1554,7 @@ void update(app_t &app)
     vkFlushMappedMemoryRanges(app.device->handle(), static_cast<std::uint32_t>(std::size(mapped_ranges)), std::data(mapped_ranges));
 }
 
-void render_frame(app_t &app)
+static void render_frame(app_t &app)
 {
     if (app.width < 1 || app.height < 1)
         return;
