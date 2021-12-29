@@ -240,12 +240,9 @@ namespace resource
         if (auto result = vkCreateBuffer(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
             throw resource::instantiation_fail(fmt::format("failed to create a buffer: {0:#x}", result));
 
-        std::shared_ptr<resource::buffer> buffer;
-        buffer.reset(new resource::buffer{
+        auto const memory = memory_manager_.allocate_memory(resource::buffer{
             handle, nullptr, size_bytes, usage, sharing_mode
-        }, *resource_deleter_);
-
-        auto const memory = memory_manager_.allocate_memory(*buffer, memory_property_types);
+        }, memory_property_types);
 
         if (memory == nullptr)
             throw memory::bad_allocation("failed to allocate buffer memory"s);
@@ -253,6 +250,7 @@ namespace resource
         if (auto result = vkBindBufferMemory(device_.handle(), handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
             throw resource::memory_bind(fmt::format("failed to bind buffer memory: {0:#x}", result));
 
+        std::shared_ptr<resource::buffer> buffer;
         buffer.reset(new resource::buffer{
             handle, memory, size_bytes, usage, sharing_mode
         }, *resource_deleter_);
@@ -352,9 +350,7 @@ namespace resource
         if (auto result = vkCreateImage(device_.handle(), &create_info, nullptr, &handle); result != VK_SUCCESS)
             throw resource::instantiation_fail(fmt::format("failed to create an image: {0:#x}", result));
 
-        std::shared_ptr<resource::image> image;
-        image.reset(new resource::image{nullptr, handle, format, tiling, mip_levels, extent}, *resource_deleter_);
-        auto const memory = memory_manager_.allocate_memory(*image, memory_property_types);
+        auto const memory = memory_manager_.allocate_memory(resource::image{nullptr, handle, format, tiling, mip_levels, extent}, memory_property_types);
 
         if (memory == nullptr)
             throw memory::exception("failed to allocate image memory"s);
@@ -362,6 +358,7 @@ namespace resource
         if (auto result = vkBindImageMemory(device_.handle(), handle, memory->handle(), memory->offset()); result != VK_SUCCESS)
             throw resource::memory_bind(fmt::format("failed to bind image buffer memory: {0:#x}", result));
 
+        std::shared_ptr<resource::image> image;
         image.reset(new resource::image{memory, handle, format, tiling, mip_levels, extent}, *resource_deleter_);
 
         return image;
