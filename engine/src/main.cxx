@@ -419,10 +419,21 @@ static void create_graphics_command_buffers(app_t &app)
     if (auto result = vkAllocateCommandBuffers(app.device->handle(), &allocate_info, std::data(app.command_buffers)); result != VkResult::VK_SUCCESS)
         throw vulkan::exception{fmt::format("failed to create allocate command buffers: {0:#x}", result)};
 
+    /*auto const clear_colors = std::array{
+        VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f } } },
+        VkClearValue{ .depthStencil = { app.renderer_config.reversed_depth ? 0.f : 1.f, 0 } }
+    };*/
+#if defined(__clang__)/* || defined(_MSC_VER)*/
+    auto const clear_colors = std::array{
+        VkClearValue{{{ .64f, .64f, .64f, 1.f }}},
+        VkClearValue{{{ app.renderer_config.reversed_depth ? 0.f : 1.f, 0 }}}
+    };
+#else
     auto const clear_colors = std::array{
         VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f } } },
         VkClearValue{ .depthStencil = { app.renderer_config.reversed_depth ? 0.f : 1.f, 0 } }
     };
+#endif
 
     auto non_indexed = app.draw_commands_holder.get_primitives_buffers_bind_ranges();
     auto indexed = app.draw_commands_holder.get_indexed_primitives_buffers_bind_range();
@@ -874,43 +885,10 @@ namespace temp
 
                 primitives::generate_box_indexed(create_info, vertex_staging_buffer->mapped_range(), index_staging_buffer->mapped_range());
 
-                if constexpr (false) {
-                    auto it_indices = reinterpret_cast<std::array<std::uint16_t, 6> *>(std::data(index_staging_buffer->mapped_range()));
-
-                    for (auto i = 0u; i < index_count; i += 6, ++it_indices) {
-                        if (i % 6 == 0)
-                            std::cout << "face index: " << i / 6 << std::endl;
-
-                        std::cout << "i " << it_indices->at(0) << ' ' << it_indices->at(1) << ' ' << it_indices->at(2) << std::endl;
-                        std::cout << "i " << it_indices->at(3) << ' ' << it_indices->at(4) << ' ' << it_indices->at(5) << std::endl;
-                    }
-                }
-
                 index_buffer = app.resource_manager->stage_index_data(index_type, index_staging_buffer, app.transfer_command_pool);
             }
 
             else primitives::generate_box(create_info, vertex_staging_buffer->mapped_range());
-
-            if constexpr (false) {
-                struct vertex final {
-                    std::array<float, 3> p;
-                    std::array<float, 3> n;
-                    std::array<std::uint16_t, 2> t;
-                    std::array<std::uint8_t, 4> c;
-                };
-
-                auto it_vertex = reinterpret_cast<vertex *>(std::data(vertex_staging_buffer->mapped_range()));
-
-                for (auto i = 0u; i < vertex_count; ++i, ++it_vertex) {
-                    if (i % 4 == 0)
-                        std::cout << "face index: " << i / 4 << std::endl;
-
-                    std::cout << "p " << it_vertex->p[0] << ' ' << it_vertex->p[1] << ' ' << it_vertex->p[2] << std::endl;
-                    //std::cout << "n " << it_vertex->n[0] << ' ' << it_vertex->n[1] << ' ' << it_vertex->n[2] << std::endl;
-                    /*std::cout << "t " << it_vertex->t[0] << ' ' << it_vertex->t[1] << std::endl;
-                    std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;*/
-                }
-            }
 
             vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
         }
@@ -971,27 +949,6 @@ namespace temp
 
             else primitives::generate_plane(create_info, vertex_staging_buffer->mapped_range(), color);
 
-            if constexpr (false) {
-                struct vertex final {
-                    std::array<float, 3> p;
-                    std::array<float, 3> n;
-                    std::array<std::uint16_t, 2> t;
-                    std::array<std::uint8_t, 4> c;
-                };
-
-                auto it_vertex = reinterpret_cast<vertex*>(std::data(vertex_staging_buffer->mapped_range()));
-
-                for (auto i = 0u; i < vertex_count; ++i, ++it_vertex) {
-                    if (i % 4 == 0)
-                        std::cout << "face index: " << i / 4 << std::endl;
-
-                    std::cout << "p " << it_vertex->p[0] << ' ' << it_vertex->p[1] << ' ' << it_vertex->p[2] << std::endl;
-                    //std::cout << "n " << it_vertex->n[0] << ' ' << it_vertex->n[1] << ' ' << it_vertex->n[2] << std::endl;
-                    /*std::cout << "t " << it_vertex->t[0] << ' ' << it_vertex->t[1] << std::endl;
-                    std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;*/
-                }
-            }
-
             vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
         }
 
@@ -1012,7 +969,7 @@ namespace temp
         }
     }
 
-    static void add_icosahedron(app_t &app, xformat &model_, std::size_t vertex_layout_index, std::size_t material_index)
+    [[maybe_unused]] static void add_icosahedron(app_t &app, xformat &model_, std::size_t vertex_layout_index, std::size_t material_index)
     {
         auto const &vertex_layout = model_.vertex_layouts.at(vertex_layout_index);
 
@@ -1038,27 +995,6 @@ namespace temp
             primitives::generate_icosahedron(create_info, vertex_staging_buffer->mapped_range());
 
             vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
-
-            if constexpr (false) {
-                struct vertex final {
-                    std::array<float, 3> p;
-                    std::array<float, 3> n;
-                    std::array<std::uint16_t, 2> t;
-                    std::array<std::uint8_t, 4> c;
-                };
-
-                auto it_vertex = reinterpret_cast<vertex *>(std::data(vertex_staging_buffer->mapped_range()));
-
-                for (auto i = 0u; i < vertex_count; ++i, ++it_vertex) {
-                    /*if (i % 4 == 0)
-                        std::cout << "face index: " << i / 4 << std::endl;*/
-
-                    std::cout << "p " << it_vertex->p[0] << ' ' << it_vertex->p[1] << ' ' << it_vertex->p[2] << std::endl;
-                    //std::cout << "n " << it_vertex->n[0] << ' ' << it_vertex->n[1] << ' ' << it_vertex->n[2] << std::endl;
-                    /*std::cout << "t " << it_vertex->t[0] << ' ' << it_vertex->t[1] << std::endl;
-                    std::cout << "c " << it_vertex->c[0] << ' ' << it_vertex->c[1] << ' ' << it_vertex->c[2] << std::endl;*/
-                }
-            }
         }
 
         {
@@ -1136,7 +1072,7 @@ namespace temp
         }
     }
     
-    xformat populate(app_t &app)
+    static xformat populate(app_t &app)
     {
         xformat model_;
     
@@ -1196,6 +1132,7 @@ namespace temp
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
             add_plane(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 2);
 
+#if TEMPORARILY_DISABLED
             if (false) {
                 struct vertex_struct final {
                     std::array<boost::float32_t, 3> position;
@@ -1295,6 +1232,7 @@ namespace temp
                     model_.meshlets.push_back(std::move(meshlet));
                 }
             }
+#endif
         }
 
         if constexpr (true) {
@@ -1302,10 +1240,10 @@ namespace temp
             add_box(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 5);
         }
 
-        if constexpr (false) {
+        /*if constexpr (false) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
             add_icosahedron(app, model_, 2, 7);
-        }
+        }*/
 
         if constexpr (true) {
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
@@ -1535,8 +1473,10 @@ static void update(app_t &app)
 
     std::size_t const stride = app.aligned_buffer_size / std::size(app.objects);
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
     std::copy(std::execution::par, std::cbegin(app.objects), std::cend(app.objects), strided_bidirectional_iterator{it_begin, stride});
+#elif defined(__clang__)
+    std::copy(std::cbegin(app.objects), std::cend(app.objects), strided_bidirectional_iterator<objects_type>{it_begin, stride});
 #else
     std::ranges::copy(app.objects, strided_bidirectional_iterator<objects_type>{it_begin, stride});
 #endif

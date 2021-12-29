@@ -7,6 +7,9 @@ configure_file(
     "./engine/include/config.hxx"
 )
 
+#set(CMAKE_CXX_STANDARD 20)
+message(CMAKE_CXX_STANDARD)
+
 find_package(Vulkan REQUIRED)
 find_package(Boost 1.68 REQUIRED)
 find_package(fmt 8 CONFIG REQUIRED)
@@ -115,16 +118,17 @@ target_compile_features(${EXECUTABLE_TARGET_NAME}
         cxx_std_20
 )
 
-set_target_properties(${EXECUTABLE_TARGET_NAME} PROPERTIES
-    VERSION ${PROJECT_VERSION}
+set_target_properties(${EXECUTABLE_TARGET_NAME}
+	PROPERTIES
+    	VERSION ${PROJECT_VERSION}
 
-    CXX_STANDARD 20
-    CXX_STANDARD_REQUIRED NO
-    CXX_EXTENSIONS OFF
+		CXX_STANDARD 20
+		CXX_STANDARD_REQUIRED ON
+		CXX_EXTENSIONS OFF
 
-    POSITION_INDEPENDENT_CODE ON
+		POSITION_INDEPENDENT_CODE ON
 
-    DEBUG_POSTFIX .d
+		DEBUG_POSTFIX .d
 )
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
@@ -185,8 +189,6 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 	if ("${CMAKE_CXX_SIMULATE_ID}" STREQUAL "MSVC")
 		target_compile_options(${EXECUTABLE_TARGET_NAME}
 			PRIVATE
-#				-ferror-limit=16
-
 				-Wpedantic
 				-Wall
 				/EHa
@@ -220,8 +222,8 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 			PRIVATE
 				-Wpedantic
 				-Wall
-							-fexceptions
-							-fcxx-exceptions
+				-fexceptions
+				-fcxx-exceptions
 				-Wno-c++98-compat
 				# Wno-c++98-compat-pedantic
 				-Wextra
@@ -250,6 +252,8 @@ endif ()
 if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
     target_compile_options(${EXECUTABLE_TARGET_NAME}
         PRIVATE
+			"/std:c++latest"
+
 #            /W4
 #            /WX
             /w14242 # 'identifier': conversion from 'type1' to 'type1', possible loss of data
