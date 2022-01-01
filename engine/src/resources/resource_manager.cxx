@@ -170,10 +170,14 @@ namespace resource
         template<class T>
         void operator() (T *resource_ptr) const
         {
+            if (resource_ptr == nullptr)
+                return;
+
             if constexpr (std::is_same_v<T, resource::buffer>) {
                 vkDestroyBuffer(device.handle(), resource_ptr->handle(), nullptr);
 
-                resource_ptr->memory().reset();
+                if (resource_ptr->memory())
+                    resource_ptr->memory().reset();
             }
 
             else if constexpr (std::is_same_v<T, resource::staging_buffer>)
@@ -182,7 +186,8 @@ namespace resource
             else if constexpr (std::is_same_v<T, resource::image>) {
                 vkDestroyImage(device.handle(), resource_ptr->handle(), nullptr);
 
-                resource_ptr->memory().reset();
+                if (resource_ptr->memory())
+                    resource_ptr->memory().reset();
             }
 
             else if constexpr (std::is_same_v<T, resource::image_view>)

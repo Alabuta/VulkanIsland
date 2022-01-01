@@ -39,8 +39,8 @@ namespace resource
                graphics::BUFFER_USAGE usage, graphics::RESOURCE_SHARING_MODE sharing_mode);
 
         buffer() = delete;
-        buffer(buffer const &) = delete;
-        buffer(buffer &&) = delete;
+        buffer(buffer const &) = default;
+        buffer(buffer &&) = default;
 
         friend resource::resource_manager;
     };

@@ -50,8 +50,8 @@ namespace resource
         renderer::extent extent_;
 
         image() = delete;
-        image(image const &) = delete;
-        image(image &&) = delete;
+        image(image const &) = default;
+        image(image &&) = default;
 
         image(std::shared_ptr<resource::memory_block> memory, VkImage handle, graphics::FORMAT format, graphics::IMAGE_TILING tiling,
               std::uint32_t mip_levels, renderer::extent extent) :
