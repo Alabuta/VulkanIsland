@@ -130,5 +130,8 @@ struct app_t final {
 
     std::function<void()> resize_callback{nullptr};
 
+    xformat xmodel;
+
+    void init(platform::window &window);
     void clean_up();
 };

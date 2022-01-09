@@ -61,6 +61,7 @@
 #endif
 #include <random>
 #include <ranges>
+#include <functional>
 
 #include <string>
 using namespace std::string_literals;
@@ -73,7 +74,6 @@ using namespace std::string_view_literals;
 #include <boost/align.hpp>
 #include <boost/align/align.hpp>
 
-#include "main.hxx"
 #include "utility/mpl.hxx"
 #include "utility/helpers.hxx"
 #include "utility/exceptions.hxx"
@@ -119,6 +119,8 @@ using namespace std::string_view_literals;
 #include "camera/camera_controller.hxx"
 
 #include "primitives/primitives.hxx"
+
+#include "main.hxx"
 #include "app.hxx"
 
 
@@ -155,7 +157,7 @@ struct window_events_handler final : public platform::window::event_handler_inte
 };
 
 
-static void update_descriptor_set(app_t &app, vulkan::device const &device)
+void update_descriptor_set(app_t &app, vulkan::device const &device)
 {
     // TODO: descriptor info typed by VkDescriptorType.
     auto const per_camera = std::array{
@@ -233,8 +235,7 @@ static void update_descriptor_set(app_t &app, vulkan::device const &device)
                            std::data(write_descriptor_sets), 0, nullptr);
 }
 
-
-static void create_graphics_command_buffers(app_t &app)
+void create_graphics_command_buffers(app_t &app)
 {
     app.command_buffers.resize(std::size(app.swapchain->image_views()));
 
@@ -377,7 +378,7 @@ static void create_graphics_command_buffers(app_t &app)
     }
 }
 
-static void create_frame_data(app_t &app)
+void create_frame_data(app_t &app)
 {
     auto &&device = *app.device;
     auto &&platform_surface = app.platform_surface;
@@ -446,7 +447,7 @@ void recreate_swap_chain(app_t &app)
     create_graphics_command_buffers(app);
 }
 
-static void build_render_pipelines(app_t &app, xformat const &model_)
+void build_render_pipelines(app_t &app, xformat const &model_)
 {
     std::vector<graphics::render_graph> render_pipelines;
 
@@ -542,7 +543,6 @@ static void build_render_pipelines(app_t &app, xformat const &model_)
     }
 }
 
-
 void create_sync_objects(app_t &app)
 {
     auto &&resource_manager = *app.resource_manager;
@@ -572,134 +572,6 @@ void create_sync_objects(app_t &app)
     });
 
     app.busy_frames_fences.resize(std::size(app.swapchain->image_views()), nullptr);
-}
-
-static void init(platform::window &window, app_t &app)
-{
-    auto instance = std::make_unique<vulkan::instance>();
-
-    app.platform_surface = instance->get_platform_surface(window);
-
-    app.device = std::make_unique<vulkan::device>(*instance, app.platform_surface);
-
-    app.renderer_config = renderer::adjust_renderer_config(app.device->device_limits());
-
-    app.memory_manager = std::make_unique<resource::memory_manager>(*app.device);
-    app.resource_manager = std::make_unique<resource::resource_manager>(*app.device, app.renderer_config, *app.memory_manager);
-
-    app.shader_manager = std::make_unique<graphics::shader_manager>(*app.device);
-    app.material_factory = std::make_unique<graphics::material_factory>();
-    app.vertex_input_state_manager = std::make_unique<graphics::vertex_input_state_manager>();
-    app.pipeline_factory = std::make_unique<graphics::pipeline_factory>(*app.device, app.renderer_config, *app.shader_manager);
-
-    app.render_pass_manager = std::make_unique<graphics::render_pass_manager>(*app.device);
-
-    app.descriptor_registry = std::make_unique<graphics::descriptor_registry>(*app.device);
-
-    if (auto command_pool = create_command_pool(*app.device, app.device->transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); command_pool)
-        app.transfer_command_pool = *command_pool;
-
-    else throw graphics::exception("failed to transfer command pool"s);
-
-    if (auto command_pool = create_command_pool(*app.device, app.device->graphics_queue, 0); command_pool)
-        app.graphics_command_pool = *command_pool;
-
-    else throw graphics::exception("failed to graphics command pool"s);
-
-    create_frame_data(app);
-
-    if (auto descriptor_set_layout = create_view_resources_descriptor_set_layout(*app.device); !descriptor_set_layout)
-        throw graphics::exception("failed to create the view resources descriptor set layout"s);
-
-    else app.view_resources_descriptor_set_layout = descriptor_set_layout.value();
-
-    if (auto descriptor_set_layout = create_object_resources_descriptor_set_layout(*app.device); !descriptor_set_layout)
-        throw graphics::exception("failed to create the object resources descriptor set layout"s);
-
-    else app.object_resources_descriptor_set_layout = descriptor_set_layout.value();
-
-    if (auto descriptor_set_layout = create_image_resources_descriptor_set_layout(*app.device); !descriptor_set_layout)
-        throw graphics::exception("failed to create the image resources descriptor set layout"s);
-
-    else app.image_resources_descriptor_set_layout = descriptor_set_layout.value();
-
-#if TEMPORARILY_DISABLED
-    if (auto result = glTF::load(sceneName, app.scene, app.nodeSystem); !result)
-        throw resource::exception("failed to load a mesh"s);
-#endif
-
-    auto descriptor_sets_layouts = std::array{app.view_resources_descriptor_set_layout, app.object_resources_descriptor_set_layout, app.image_resources_descriptor_set_layout};
-
-    if (auto pipeline_layout = create_pipeline_layout(*app.device, descriptor_sets_layouts); !pipeline_layout)
-        throw graphics::exception("failed to create the pipeline layout"s);
-
-    else app.pipeline_layout = pipeline_layout.value();
-
-    // "chalet/textures/chalet.tga"sv
-    // "Hebe/textures/HebehebemissinSG1_metallicRoughness.tga"sv
-    if (auto result = load_texture(*app.device, *app.resource_manager, "checker-map.png"sv, app.transfer_command_pool); !result)
-        throw resource::exception("failed to load a texture"s);
-
-    else app.texture = std::move(result);
-
-    if (auto result = app.resource_manager->create_image_sampler(graphics::TEXTURE_FILTER::LINEAR, graphics::TEXTURE_FILTER::LINEAR, graphics::TEXTURE_MIPMAP_MODE::LINEAR, 0.f, 0.f); !result)
-        throw resource::exception("failed to create a texture sampler"s);
-
-    else app.texture->sampler = result;
-
-    temp::xmodel = temp::populate(app);
-
-    auto const min_offset_alignment = static_cast<std::size_t>(app.device->device_limits().min_storage_buffer_offset_alignment);
-    auto const aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
-
-    app.objects.resize(std::size(temp::xmodel.scene_nodes));
-
-    app.aligned_buffer_size = aligned_offset * std::size(app.objects);
-
-    if (app.per_object_buffer = create_storage_buffer(*app.resource_manager, app.aligned_buffer_size); app.per_object_buffer) {
-        auto &&buffer = *app.per_object_buffer;
-
-        auto const offset = buffer.memory()->offset();
-        auto const size = buffer.memory()->size();
-
-        if (auto result = vkMapMemory(app.device->handle(), buffer.memory()->handle(), offset, size, 0, &app.ssbo_mapped_ptr); result != VK_SUCCESS)
-            throw vulkan::exception(fmt::format("failed to map per object uniform buffer memory: {0:#x}", result));
-    }
-
-    else throw graphics::exception("failed to init per object uniform buffer"s);
-
-    if (app.per_camera_buffer = create_uniform_buffer(*app.resource_manager, sizeof(camera::data_t)); !app.per_camera_buffer)
-        throw graphics::exception("failed to init per camera uniform buffer"s);
-
-    if (app.per_viewport_buffer = create_uniform_buffer(*app.resource_manager, sizeof(per_viewport_t)); !app.per_viewport_buffer)
-        throw graphics::exception("failed to init per viewport uniform buffer"s);
-
-    if (auto descriptor_pool = create_descriptor_pool(*app.device); !descriptor_pool)
-        throw graphics::exception("failed to create the descriptor pool"s);
-
-    else app.descriptor_pool = descriptor_pool.value();
-
-    if (auto descriptor_sets = create_descriptor_sets(*app.device, app.descriptor_pool, descriptor_sets_layouts); descriptor_sets.empty())
-        throw graphics::exception("failed to create the descriptor pool"s);
-
-    else {
-        app.view_resources_descriptor_set = descriptor_sets.at(0);
-        app.object_resources_descriptor_set = descriptor_sets.at(1);
-        app.image_resources_descriptor_set = descriptor_sets.at(2);
-    }
-
-    app.per_viewport_data.rect = glm::ivec4{0, 0, app.width, app.height};
-    update_viewport_descriptor_buffer(app);
-
-    update_descriptor_set(app, *app.device);
-
-    build_render_pipelines(app, temp::xmodel);
-
-    create_graphics_command_buffers(app);
-
-    create_sync_objects(app);
-
-    app.instance = std::move(instance);
 }
 
 void update_viewport_descriptor_buffer(app_t const &app)
@@ -747,9 +619,9 @@ static void update(app_t &app)
         vkUnmapMemory(device.handle(), buffer.memory()->handle());
     }
 
-    std::ranges::transform(temp::xmodel.scene_nodes, std::begin(app.objects), [&camera = app.camera_] (auto &&scene_node)
+    std::ranges::transform(app.xmodel.scene_nodes, std::begin(app.objects), [&xmodel = app.xmodel, &camera = app.camera_] (auto &&scene_node)
     {
-        auto &&transform = temp::xmodel.transforms.at(scene_node.transform_index);
+        auto &&transform = xmodel.transforms.at(scene_node.transform_index);
 
         auto normal = glm::inverseTranspose(camera->data.view * transform);
 
@@ -860,7 +732,6 @@ static void render_frame(app_t &app)
     if (auto result = vkQueueSubmit(device.graphics_queue.handle(), 1, &submit_info, frame_fence->handle()); result != VK_SUCCESS)
         throw vulkan::exception(fmt::format("failed to submit draw command buffer: {0:#x}", result));
 #else
-
     if (auto result = vkQueueSubmit(device.graphics_queue.handle(), 1, &submit_info, VK_NULL_HANDLE); result != VK_SUCCESS)
         throw vulkan::exception(fmt::format("failed to submit draw command buffer: {0:#x}", result));
 #endif
@@ -928,7 +799,10 @@ int main()
     app.camera_controller = std::make_unique<orbit_controller>(app.camera_, *input_manager);
     app.camera_controller->look_at(glm::vec3{2, 2, 2}, {0, 0, 0});
 
-    std::cout << measure<>::execution(init, window, std::ref(app)) << " ms\n"s;
+    std::cout << measure<>::execution([&app, &window] ()
+    {
+        app.init(window);
+    }) << " ms\n"s;
 
     window.update([&app]
     {

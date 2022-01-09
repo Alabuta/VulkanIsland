@@ -1,8 +1,9 @@
-#include <boost/align/align.hpp>
-#include <boost/align.hpp>
-#include <fmt/format.h>
-#include <string_view>
 #include <string>
+using namespace std::string_literals;
+
+#include <string_view>
+using namespace std::string_view_literals;
+
 #include <random>
 #include <execution>
 #include <unordered_map>
@@ -11,47 +12,60 @@
 #include <cmath>
 #include <chrono>
 
+#include <boost/align/align.hpp>
+#include <boost/align.hpp>
+#include <fmt/format.h>
+
 #include "primitives/primitives.hxx"
+
 #include "camera/camera_controller.hxx"
 #include "camera/camera.hxx"
+
 #include "platform/input/input_manager.hxx"
+
 #include "graphics/compatibility.hxx"
-#include "renderer/render_flow.hxx"
 #include "graphics/render_pass.hxx"
 #include "graphics/vertex.hxx"
+
+#include "renderer/render_flow.hxx"
 #include "renderer/material.hxx"
+
 #include "graphics/pipeline_states.hxx"
 #include "graphics/graphics_pipeline.hxx"
 #include "graphics/graphics.hxx"
+
 #include "loaders/scene_loader.hxx"
 #include "loaders/image_loader.hxx"
 #include "loaders/TARGA_loader.hxx"
+
 #include "descriptor.hxx"
+
 #include "resources/framebuffer.hxx"
 #include "resources/sync_objects.hxx"
 #include "resources/memory_manager.hxx"
 #include "resources/resource_manager.hxx"
 #include "resources/image.hxx"
 #include "resources/buffer.hxx"
+
 #include "renderer/command_buffer.hxx"
 #include "renderer/swapchain.hxx"
 #include "renderer/renderer.hxx"
 #include "renderer/config.hxx"
+
 #include "vulkan/device.hxx"
 #include "vulkan/instance.hxx"
+
 #include "math/pack-unpack.hxx"
 #include "math/math.hxx"
+
 #include "utility/exceptions.hxx"
 #include "utility/helpers.hxx"
 #include "utility/mpl.hxx"
+
 #include "main.hxx"
 #include "app.hxx"
 
-namespace temp
-{
-    [[clang::no_destroy]]
-    static xformat xmodel;
-}
+
 namespace temp
 {
     static glm::vec4 generate_color()
@@ -410,11 +424,11 @@ namespace temp
             model_.meshlets.push_back(std::move(meshlet));
         }
     }
-    
+
     static xformat populate(app_t &app)
     {
         xformat model_;
-    
+
         model_.materials.push_back(xformat::material{0, "debug/color-debug-material"});
         model_.materials.push_back(xformat::material{1, "debug/color-debug-material"});
         model_.materials.push_back(xformat::material{0, "debug/normals-debug"});
@@ -424,39 +438,39 @@ namespace temp
         model_.materials.push_back(xformat::material{0, "debug/normal-vectors-debug-material"});
         model_.materials.push_back(xformat::material{0, "debug/texture-debug"});
         model_.materials.push_back(xformat::material{0, "lighting/blinn-phong-material"});
-        
+
         model_.transforms.push_back(glm::translate(glm::mat4{1.f}, glm::vec3{0, -1, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-.5, -1, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
+                glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-.5, -1, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+.5, -1, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
+                glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+.5, -1, +.5}), glm::radians(-90.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(glm::translate(glm::mat4{1.f}, glm::vec3{0, 0, -2}));
         model_.transforms.push_back(glm::translate(glm::mat4{1.f}, glm::vec3{0, 0, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(90.f), glm::vec3{1, 0, 0}));
+                glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{0}), glm::radians(90.f), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 1, -1}), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
+                glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{+1, 1, -1}), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
         model_.transforms.push_back(
-            glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, -1}), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
+                glm::rotate(glm::translate(glm::mat4{1.f}, glm::vec3{-1, 1, -1}), glm::radians(-90.f * 0), glm::vec3{1, 0, 0}));
 
         model_.vertex_layouts.push_back(vertex::create_vertex_layout(
-            vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
-            vertex::SEMANTIC::NORMAL, graphics::FORMAT::RGB32_SFLOAT,
-            vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
-            vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
+                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
+                vertex::SEMANTIC::NORMAL, graphics::FORMAT::RGB32_SFLOAT,
+                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
+                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
         ));
 
         model_.vertex_layouts.push_back(vertex::create_vertex_layout(
-            vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
-            vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
-            vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
+                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
+                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
+                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
         ));
 
         model_.vertex_layouts.push_back(vertex::create_vertex_layout(
-            vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
-            vertex::SEMANTIC::NORMAL, graphics::FORMAT::RG16_SNORM,
-            vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
-            vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
+                vertex::SEMANTIC::POSITION, graphics::FORMAT::RGB32_SFLOAT,
+                vertex::SEMANTIC::NORMAL, graphics::FORMAT::RG16_SNORM,
+                vertex::SEMANTIC::TEXCOORD_0, graphics::FORMAT::RG16_UNORM,
+                vertex::SEMANTIC::COLOR_0, graphics::FORMAT::RGBA8_UNORM
         ));
 
         uint32_t node_index = 0;
@@ -588,9 +602,135 @@ namespace temp
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
             add_sphere(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 7);
         }
- 
+
         return model_;
     }
+}
+
+void app_t::init(platform::window &window)
+{
+    instance = std::make_unique<vulkan::instance>();
+
+    platform_surface = instance->get_platform_surface(window);
+
+    device = std::make_unique<vulkan::device>(*instance, platform_surface);
+
+    renderer_config = renderer::adjust_renderer_config(device->device_limits());
+
+    memory_manager = std::make_unique<resource::memory_manager>(*device);
+    resource_manager = std::make_unique<resource::resource_manager>(*device, renderer_config, *memory_manager);
+
+    shader_manager = std::make_unique<graphics::shader_manager>(*device);
+    material_factory = std::make_unique<graphics::material_factory>();
+    vertex_input_state_manager = std::make_unique<graphics::vertex_input_state_manager>();
+    pipeline_factory = std::make_unique<graphics::pipeline_factory>(*device, renderer_config, *shader_manager);
+
+    render_pass_manager = std::make_unique<graphics::render_pass_manager>(*device);
+
+    descriptor_registry = std::make_unique<graphics::descriptor_registry>(*device);
+
+    if (auto command_pool = create_command_pool(*device, device->transfer_queue, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT); command_pool)
+        transfer_command_pool = *command_pool;
+
+    else throw graphics::exception("failed to transfer command pool"s);
+
+    if (auto command_pool = create_command_pool(*device, device->graphics_queue, 0); command_pool)
+        graphics_command_pool = *command_pool;
+
+    else throw graphics::exception("failed to graphics command pool"s);
+
+    create_frame_data(*this);
+
+    if (auto descriptor_set_layout = create_view_resources_descriptor_set_layout(*device); !descriptor_set_layout)
+        throw graphics::exception("failed to create the view resources descriptor set layout"s);
+
+    else view_resources_descriptor_set_layout = descriptor_set_layout.value();
+
+    if (auto descriptor_set_layout = create_object_resources_descriptor_set_layout(*device); !descriptor_set_layout)
+        throw graphics::exception("failed to create the object resources descriptor set layout"s);
+
+    else object_resources_descriptor_set_layout = descriptor_set_layout.value();
+
+    if (auto descriptor_set_layout = create_image_resources_descriptor_set_layout(*device); !descriptor_set_layout)
+        throw graphics::exception("failed to create the image resources descriptor set layout"s);
+
+    else image_resources_descriptor_set_layout = descriptor_set_layout.value();
+
+#if TEMPORARILY_DISABLED
+    if (auto result = glTF::load(sceneName, scene, nodeSystem); !result)
+        throw resource::exception("failed to load a mesh"s);
+#endif
+
+    auto descriptor_sets_layouts = std::array{view_resources_descriptor_set_layout, object_resources_descriptor_set_layout, image_resources_descriptor_set_layout};
+
+    if (auto result = create_pipeline_layout(*device, descriptor_sets_layouts); !result)
+        throw graphics::exception("failed to create the pipeline layout"s);
+
+    else pipeline_layout = result.value();
+
+    // "chalet/textures/chalet.tga"sv
+    // "Hebe/textures/HebehebemissinSG1_metallicRoughness.tga"sv
+    if (auto result = load_texture(*device, *resource_manager, "checker-map.png"sv, transfer_command_pool); !result)
+        throw resource::exception("failed to load a texture"s);
+
+    else texture = std::move(result);
+
+    if (auto result = resource_manager->create_image_sampler(graphics::TEXTURE_FILTER::LINEAR, graphics::TEXTURE_FILTER::LINEAR, graphics::TEXTURE_MIPMAP_MODE::LINEAR, 0.f, 0.f); !result)
+        throw resource::exception("failed to create a texture sampler"s);
+
+    else texture->sampler = result;
+
+    xmodel = temp::populate(*this);
+
+    auto const min_offset_alignment = static_cast<std::size_t>(device->device_limits().min_storage_buffer_offset_alignment);
+    auto const aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
+
+    objects.resize(std::size(xmodel.scene_nodes));
+
+    aligned_buffer_size = aligned_offset * std::size(objects);
+
+    if (per_object_buffer = create_storage_buffer(*resource_manager, aligned_buffer_size); per_object_buffer) {
+        auto &&buffer = *per_object_buffer;
+
+        auto const offset = buffer.memory()->offset();
+        auto const size = buffer.memory()->size();
+
+        if (auto result = vkMapMemory(device->handle(), buffer.memory()->handle(), offset, size, 0, &ssbo_mapped_ptr); result != VK_SUCCESS)
+            throw vulkan::exception(fmt::format("failed to map per object uniform buffer memory: {0:#x}", result));
+    }
+
+    else throw graphics::exception("failed to init per object uniform buffer"s);
+
+    if (per_camera_buffer = create_uniform_buffer(*resource_manager, sizeof(camera::data_t)); !per_camera_buffer)
+        throw graphics::exception("failed to init per camera uniform buffer"s);
+
+    if (per_viewport_buffer = create_uniform_buffer(*resource_manager, sizeof(per_viewport_t)); !per_viewport_buffer)
+        throw graphics::exception("failed to init per viewport uniform buffer"s);
+
+    if (auto result = create_descriptor_pool(*device); !result)
+        throw graphics::exception("failed to create the descriptor pool"s);
+
+    else descriptor_pool = result.value();
+
+    if (auto descriptor_sets = create_descriptor_sets(*device, descriptor_pool, descriptor_sets_layouts); descriptor_sets.empty())
+        throw graphics::exception("failed to create the descriptor pool"s);
+
+    else {
+        view_resources_descriptor_set = descriptor_sets.at(0);
+        object_resources_descriptor_set = descriptor_sets.at(1);
+        image_resources_descriptor_set = descriptor_sets.at(2);
+    }
+
+    per_viewport_data.rect = glm::ivec4{0, 0, width, height};
+    update_viewport_descriptor_buffer(*this);
+
+    update_descriptor_set(*this, *device);
+
+    build_render_pipelines(*this, xmodel);
+
+    create_graphics_command_buffers(*this);
+
+    create_sync_objects(*this);
 }
 
 void app_t::clean_up()
@@ -662,7 +802,7 @@ void app_t::clean_up()
     if (graphics_command_pool != VK_NULL_HANDLE)
         vkDestroyCommandPool(device->handle(), graphics_command_pool, nullptr);
 
-    temp::xmodel.meshlets.clear();
+    xmodel.meshlets.clear();
 
     resource_manager.reset();
     memory_manager.reset();
