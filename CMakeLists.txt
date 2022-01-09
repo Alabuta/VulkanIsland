@@ -8,7 +8,6 @@ configure_file(
 )
 
 #set(CMAKE_CXX_STANDARD 20)
-message(CMAKE_CXX_STANDARD)
 
 find_package(Vulkan REQUIRED)
 find_package(Boost 1.68 REQUIRED)
@@ -89,6 +88,8 @@ target_sources(${EXECUTABLE_TARGET_NAME}
 		./engine/src/vulkan/instance.hxx 						./engine/src/vulkan/instance.cxx
 
 		./engine/src/descriptor.hxx 							./engine/src/descriptor.cxx
+
+		./engine/src/app.hxx 									./engine/src/app.cxx
 		./engine/src/main.hxx 									./engine/src/main.cxx
 )
 

@@ -2,6 +2,7 @@
 
 #include <span>
 #include <cstdint>
+#include <glm/glm.hpp>
 
 #include "graphics/vertex.hxx"
 
