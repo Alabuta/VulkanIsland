@@ -607,7 +607,7 @@ namespace temp
     }
 }
 
-void app_t::init(platform::window &window)
+app_t::app_t(platform::window &window)
 {
     instance = std::make_unique<vulkan::instance>();
 
@@ -809,4 +809,27 @@ void app_t::clean_up()
 
     device.reset();
     instance.reset();
+}
+
+void app_t::on_resize(std::int32_t w, std::int32_t h)
+{
+    if (width == w && height == h)
+        return;
+
+    width = w;
+    height = h;
+
+    per_viewport_data.rect = glm::ivec4{0, 0, width, height};
+
+    if (width < 1 || height < 1)
+        return;
+
+    resize_callback = [this]
+    {
+        recreate_swap_chain(*this);
+
+        update_viewport_descriptor_buffer(*this);
+
+        camera_->aspect = static_cast<float>(width) / static_cast<float>(height);
+    };
 }

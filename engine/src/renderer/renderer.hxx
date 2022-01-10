@@ -14,6 +14,7 @@
 #include "resources/buffer.hxx"
 
 #include "renderer/config.hxx"
+#include "swapchain.hxx"
 
 
 namespace graphics
@@ -120,6 +121,30 @@ namespace renderer
     };
 
     //std::pair<renderer::nonindexed_draw_buffers_bind_range, renderer::indexed_draw_buffers_bind_range>
+
+    class renderer_system final {
+    public:
+
+        void render_frame(std::span<VkCommandBuffer const> command_buffers, std::function<void(void)> const &recreate_swap_chain_callback);
+
+    private:
+
+        std::size_t current_frame_index_{0};
+
+        renderer::config renderer_config_;
+
+        std::unique_ptr<vulkan::instance> instance_;
+        std::unique_ptr<vulkan::device> device_;
+
+        std::unique_ptr<renderer::swapchain> swapchain_;
+
+        std::array<std::shared_ptr<resource::semaphore>, renderer::kCONCURRENTLY_PROCESSED_FRAMES> image_available_semaphores_;
+        std::array<std::shared_ptr<resource::semaphore>, renderer::kCONCURRENTLY_PROCESSED_FRAMES> render_finished_semaphores_;
+
+        std::array<std::shared_ptr<resource::fence>, renderer::kCONCURRENTLY_PROCESSED_FRAMES> concurrent_frames_fences_;
+
+        std::vector<std::shared_ptr<resource::fence>> busy_frames_fences_;
+    };
 }
 
 struct draw_command final {

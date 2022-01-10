@@ -59,9 +59,9 @@ struct per_viewport_t final {
     //glm::vec2 depth{0, 1};
 };
 
-struct app_t final {
-    uint32_t width{1920u};
-    uint32_t height{1080u};
+struct app_t final : public platform::window::event_handler_interface  {
+    std::int32_t width{1920};
+    std::int32_t height{1080};
 
     std::size_t current_frame_index = 0;
 
@@ -132,6 +132,9 @@ struct app_t final {
 
     xformat xmodel;
 
-    void init(platform::window &window);
+    app_t(platform::window &window);
+
     void clean_up();
+
+    void on_resize(std::int32_t w, std::int32_t h) override;
 };

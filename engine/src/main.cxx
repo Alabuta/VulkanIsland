@@ -124,39 +124,6 @@ using namespace std::string_view_literals;
 #include "app.hxx"
 
 
-
-
-struct window_events_handler final : public platform::window::event_handler_interface {
-
-    explicit window_events_handler(app_t &app) : app{app} { }
-
-    app_t &app;
-
-    void on_resize(std::int32_t const width, std::int32_t const height) override
-    {
-        if (app.width == static_cast<std::uint32_t>(width) && app.height == static_cast<std::uint32_t>(height))
-            return;
-
-        app.width = static_cast<std::uint32_t>(width);
-        app.height = static_cast<std::uint32_t>(height);
-
-        app.per_viewport_data.rect = glm::ivec4{0, 0, width, height};
-
-        if (width < 1 || height < 1)
-            return;
-
-        app.resize_callback = [this]
-        {
-            recreate_swap_chain(app);
-
-            update_viewport_descriptor_buffer(app);
-
-            app.camera_->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
-        };
-    }
-};
-
-
 void update_descriptor_set(app_t &app, vulkan::device const &device)
 {
     // TODO: descriptor info typed by VkDescriptorType.
@@ -250,10 +217,6 @@ void create_graphics_command_buffers(app_t &app)
     if (auto result = vkAllocateCommandBuffers(app.device->handle(), &allocate_info, std::data(app.command_buffers)); result != VkResult::VK_SUCCESS)
         throw vulkan::exception{fmt::format("failed to create allocate command buffers: {0:#x}", result)};
 
-    /*auto const clear_colors = std::array{
-        VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f } } },
-        VkClearValue{ .depthStencil = { app.renderer_config.reversed_depth ? 0.f : 1.f, 0 } }
-    };*/
 #if defined(__clang__)/* || defined(_MSC_VER)*/
     auto const clear_colors = std::array{
         VkClearValue{{{ .64f, .64f, .64f, 1.f }}},
@@ -384,7 +347,7 @@ void create_frame_data(app_t &app)
     auto &&platform_surface = app.platform_surface;
     auto &&resource_manager = *app.resource_manager;
     
-    auto swapchain = create_swapchain(device, platform_surface, renderer::extent{app.width, app.height});
+    auto swapchain = create_swapchain(device, platform_surface, renderer::extent{static_cast<std::uint32_t>(app.width), static_cast<std::uint32_t>(app.height)});
 
     if (swapchain == nullptr)
         throw graphics::exception("failed to create the swapchain"s);
@@ -783,37 +746,32 @@ int main()
     if (auto result = glfwInit(); result != GLFW_TRUE)
         throw std::runtime_error(fmt::format("failed to init GLFW: {0:#x}", result));
 
-    app_t app;
+    auto [width, height] = std::pair{1920, 1080};
 
-    platform::window window{"engine"sv, static_cast<std::int32_t>(app.width), static_cast<std::int32_t>(app.height)};
-
-    const auto app_window_events_handler = std::make_shared<window_events_handler>(app);
-    window.connect_event_handler(app_window_events_handler);
+    platform::window window{"engine"sv, width, height};
 
     const auto input_manager = std::make_shared<platform::input_manager>();
     window.connect_input_handler(input_manager);
 
-    app.camera_ = app.cameraSystem.create_camera();
-    app.camera_->aspect = static_cast<float>(app.width) / static_cast<float>(app.height);
+    auto app_ptr = std::make_shared<app_t>(window);
+    window.connect_event_handler(app_ptr);
 
-    app.camera_controller = std::make_unique<orbit_controller>(app.camera_, *input_manager);
-    app.camera_controller->look_at(glm::vec3{2, 2, 2}, {0, 0, 0});
+    app_ptr->camera_ = app_ptr->cameraSystem.create_camera();
+    app_ptr->camera_->aspect = static_cast<float>(app_ptr->width) / static_cast<float>(app_ptr->height);
 
-    std::cout << measure<>::execution([&app, &window] ()
-    {
-        app.init(window);
-    }) << " ms\n"s;
+    app_ptr->camera_controller = std::make_unique<orbit_controller>(app_ptr->camera_, *input_manager);
+    app_ptr->camera_controller->look_at(glm::vec3{2, 2, 2}, {0, 0, 0});
 
-    window.update([&app]
+    window.update([app_ptr]
     {
         glfwPollEvents();
 
-        update(app);
+        update(*app_ptr);
 
-        render_frame(app);
+        render_frame(*app_ptr);
     });
 
-    app.clean_up();
+    app_ptr->clean_up();
 
     glfwTerminate();
 }

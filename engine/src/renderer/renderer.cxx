@@ -2,7 +2,8 @@
 #include <ranges>
 #include <tuple>
 
-#include <renderer/renderer.hxx>
+#include "resources/sync_objects.hxx"
+#include "renderer/renderer.hxx"
 
 #include "graphics/graphics_pipeline.hxx"
 
@@ -144,6 +145,113 @@ namespace renderer
     {
         nonindexed_draw_commands_.clear();
         indexed_draw_commands_.clear();
+    }
+
+    void renderer_system::render_frame(std::span<VkCommandBuffer const> const command_buffers, std::function<void(void)> const &recreate_swap_chain_callback)
+    {
+        auto &&device = *device_;
+        auto &&swapchain = *swapchain_;
+
+        auto &&image_available_semaphore = image_available_semaphores_[current_frame_index_];
+        auto &&render_finished_semaphore = render_finished_semaphores_[current_frame_index_];
+
+#define USE_FENCES 1
+
+#if USE_FENCES
+        auto &&frame_fence = concurrent_frames_fences_[current_frame_index_];
+
+        if (auto result = vkWaitForFences(device.handle(), 1, frame_fence->handle_ptr(), VK_TRUE, std::numeric_limits<std::uint64_t>::max()); result != VK_SUCCESS)
+            throw vulkan::exception(fmt::format("failed to wait current frame fence: {0:#x}", result));
+#else
+        vkQueueWaitIdle(device.presentation_queue.handle());
+#endif
+
+        /*VkAcquireNextImageInfoKHR next_image_info{
+            VK_STRUCTURE_TYPE_ACQUIRE_NEXT_IMAGE_INFO_KHR,
+            nullptr,
+            swapchain.handle(),
+            std::numeric_limits<std::uint64_t>::max(),
+            app.image_available_semaphore->handle(),
+            VK_NULL_HANDLE
+        };*/
+
+        std::uint32_t image_index;
+
+        switch (auto result = vkAcquireNextImageKHR(device.handle(), swapchain.handle(), std::numeric_limits<std::uint64_t>::max(),
+                                                    image_available_semaphore->handle(), VK_NULL_HANDLE, &image_index); result) {
+            case VK_ERROR_OUT_OF_DATE_KHR:
+                recreate_swap_chain_callback();
+                return;
+
+            case VK_SUBOPTIMAL_KHR:
+            case VK_SUCCESS:
+                break;
+
+            default:
+                throw vulkan::exception(fmt::format("failed to acquire next image index: {0:#x}", result));
+        }
+
+#if USE_FENCES
+        if (auto &&fence = busy_frames_fences_.at(image_index); fence && fence->handle() != VK_NULL_HANDLE)
+            if (auto result = vkWaitForFences(device.handle(), 1, fence->handle_ptr(), VK_TRUE, std::numeric_limits<std::uint64_t>::max()); result != VK_SUCCESS)
+                throw vulkan::exception(fmt::format("failed to wait busy frame fence: {0:#x}", result));
+
+        busy_frames_fences_.at(image_index) = frame_fence;
+#endif
+
+        auto const wait_semaphores = std::array{ image_available_semaphore->handle() };
+        auto const signal_semaphores = std::array{ render_finished_semaphore->handle() };
+
+        auto const wait_stages = std::array{
+            VkPipelineStageFlags{ VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT }
+        };
+
+        VkSubmitInfo const submit_info{
+            VK_STRUCTURE_TYPE_SUBMIT_INFO,
+            nullptr,
+            static_cast<std::uint32_t>(std::size(wait_semaphores)), std::data(wait_semaphores),
+            std::data(wait_stages),
+            1, &command_buffers[image_index],
+            static_cast<std::uint32_t>(std::size(signal_semaphores)), std::data(signal_semaphores),
+        };
+
+#if USE_FENCES
+        if (auto result = vkResetFences(device.handle(), 1, frame_fence->handle_ptr()); result != VK_SUCCESS)
+            throw vulkan::exception(fmt::format("failed to reset previous frame fence: {0:#x}", result));
+
+        if (auto result = vkQueueSubmit(device.graphics_queue.handle(), 1, &submit_info, frame_fence->handle()); result != VK_SUCCESS)
+            throw vulkan::exception(fmt::format("failed to submit draw command buffer: {0:#x}", result));
+#else
+        if (auto result = vkQueueSubmit(device.graphics_queue.handle(), 1, &submit_info, VK_NULL_HANDLE); result != VK_SUCCESS)
+        throw vulkan::exception(fmt::format("failed to submit draw command buffer: {0:#x}", result));
+#endif
+
+        auto swapchain_handle = swapchain.handle();
+
+        VkPresentInfoKHR const present_info{
+                VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+                nullptr,
+                static_cast<std::uint32_t>(std::size(signal_semaphores)), std::data(signal_semaphores),
+                1, &swapchain_handle,
+                &image_index, nullptr
+        };
+
+        switch (auto result = vkQueuePresentKHR(device.presentation_queue.handle(), &present_info); result) {
+            case VK_ERROR_OUT_OF_DATE_KHR:
+            case VK_SUBOPTIMAL_KHR:
+                recreate_swap_chain_callback();
+                return;
+
+            case VK_SUCCESS:
+                break;
+
+            default:
+                throw vulkan::exception(fmt::format("failed to submit request to present framebuffer: {0:#x}", result));
+        }
+
+#if USE_FENCES
+        current_frame_index_ = (current_frame_index_ + 1) % renderer::kCONCURRENTLY_PROCESSED_FRAMES;
+#endif
     }
 }
 
