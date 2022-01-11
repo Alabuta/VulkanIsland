@@ -2,10 +2,15 @@
 #include <ranges>
 #include <tuple>
 
+#include <boost/align.hpp>
+#include <boost/align/align.hpp>
+
 #include "resources/sync_objects.hxx"
 #include "renderer/renderer.hxx"
 
 #include "graphics/graphics_pipeline.hxx"
+
+#include "app.hxx"
 
 
 namespace renderer
@@ -110,7 +115,7 @@ namespace renderer
     }
     
     template<class T>
-    void draw_commands_holder::partion_vertex_buffers_binds(std::span<T> draw_commands, std::function<void(std::vector<VkBuffer> &&, std::span<T>)> callback)
+    void draw_commands_holder::partion_vertex_buffers_binds(std::span<T> draw_commands, std::function<void(std::vector<VkBuffer> &&, std::span<T>)> callback) const
     {
         for (auto it_begin = std::begin(draw_commands); it_begin != std::end(draw_commands);) {
             auto h = it_begin->vertex_buffer->device_buffer()->handle();
@@ -253,10 +258,135 @@ namespace renderer
         current_frame_index_ = (current_frame_index_ + 1) % renderer::kCONCURRENTLY_PROCESSED_FRAMES;
 #endif
     }
+
+    void renderer_system::fill_draw_command_buffers(std::span<VkCommandBuffer> command_buffers, renderer::draw_commands_holder &draw_commands_holder, app_t const &app)
+    {
+#if defined(__clang__)/* || defined(_MSC_VER)*/
+        auto const clear_colors = std::array{
+            VkClearValue{{{ .64f, .64f, .64f, 1.f }}},
+            VkClearValue{{{ renderer_config_.reversed_depth ? 0.f : 1.f, 0 }}}
+        };
+#else
+        auto const clear_colors = std::array{
+            VkClearValue{ .color = { .float32 = { .64f, .64f, .64f, 1.f }}},
+            VkClearValue{ .depthStencil = { renderer_config_.reversed_depth ? 0.f : 1.f, 0 }}
+        };
+#endif
+
+        auto non_indexed = draw_commands_holder.get_primitives_buffers_bind_ranges();
+        auto indexed = draw_commands_holder.get_indexed_primitives_buffers_bind_range();
+
+        for (auto i = 0u; auto &command_buffer : command_buffers) {
+            VkCommandBufferBeginInfo const begin_info{
+                VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                nullptr,
+                0,
+                nullptr
+            };
+
+            if (auto result = vkBeginCommandBuffer(command_buffer, &begin_info); result != VK_SUCCESS)
+                throw vulkan::exception(fmt::format("failed to record command buffer: {0:#x}", result));
+
+            auto [width, height] = swapchain_->extent();
+
+            VkRenderPassBeginInfo const render_pass_info{
+                VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
+                nullptr,
+                render_pass_->handle(),
+                framebuffers_.at(i++)->handle(),
+                {{0, 0}, VkExtent2D{width, height}},
+                static_cast<std::uint32_t>(std::size(clear_colors)), std::data(clear_colors)
+            };
+
+            vkCmdBeginRenderPass(command_buffer, &render_pass_info, VK_SUBPASS_CONTENTS_INLINE);
+
+#if USE_DYNAMIC_PIPELINE_STATE
+            VkViewport const viewport{
+                0, static_cast<float>(height),
+                static_cast<float>(width), -static_cast<float>(height),
+                0, 1
+            };
+
+            VkRect2D const scissor{
+                {0, 0}, VkExtent2D{width, height}
+            };
+
+            vkCmdSetViewport(command_buffer, 0, 1, &viewport);
+            vkCmdSetScissor(command_buffer, 0, 1, &scissor);
+#endif
+
+            const auto min_offset_alignment = static_cast<std::size_t>(device_->device_limits().min_storage_buffer_offset_alignment);
+            auto aligned_offset = boost::alignment::align_up(sizeof(per_object_t), min_offset_alignment);
+
+            for (auto &&range : indexed) {
+                vkCmdBindIndexBuffer(command_buffer, range.index_buffer_handle, range.index_buffer_offset, convert_to::vulkan(range.index_type));
+
+                for (auto &&subrange : range.vertex_buffers_bind_ranges) {
+                    vkCmdBindVertexBuffers(command_buffer, subrange.first_binding, static_cast<std::uint32_t>(std::size(subrange.buffer_handles)),
+                                           std::data(subrange.buffer_handles), std::data(subrange.buffer_offsets));
+
+                    std::visit([&] (auto span)
+                   {
+                       if constexpr (std::is_same_v<typename decltype(span)::value_type, renderer::indexed_draw_command>) {
+                           for (auto &&dc : span) {
+                               vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
+
+                               std::array<VkDescriptorSet, 3> descriptor_sets{
+                                   app.view_resources_descriptor_set, dc.descriptor_set, app.image_resources_descriptor_set
+                               };
+
+                               std::array<std::uint32_t, 1> dynamic_offsets{
+                                   dc.transform_index * static_cast<std::uint32_t>(aligned_offset)
+                               };
+
+                               vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
+                                                       0,
+                                                       static_cast<std::uint32_t>(std::size(descriptor_sets)), std::data(descriptor_sets),
+                                                       static_cast<std::uint32_t>(std::size(dynamic_offsets)), std::data(dynamic_offsets));
+
+                               vkCmdDrawIndexed(command_buffer, dc.index_count, 1, dc.first_index, static_cast<std::int32_t>(dc.first_vertex), 0);
+                           }
+                       }
+                   }, subrange.draw_commands);
+                }
+            }
+
+            for (auto &&range : non_indexed) {
+                vkCmdBindVertexBuffers(command_buffer, range.first_binding, static_cast<std::uint32_t>(std::size(range.buffer_handles)),
+                                       std::data(range.buffer_handles), std::data(range.buffer_offsets));
+
+                std::visit([&] (auto span)
+               {
+                   for (auto &&dc : span) {
+                       vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
+
+                       std::array<VkDescriptorSet, 3> descriptor_sets{
+                           app.view_resources_descriptor_set, dc.descriptor_set, app.image_resources_descriptor_set
+                       };
+
+                       std::array<std::uint32_t, 1> dynamic_offsets{
+                           dc.transform_index *static_cast<std::uint32_t>(aligned_offset)
+                       };
+
+                       vkCmdBindDescriptorSets(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline_layout,
+                                               0,
+                                               static_cast<std::uint32_t>(std::size(descriptor_sets)), std::data(descriptor_sets),
+                                               static_cast<std::uint32_t>(std::size(dynamic_offsets)), std::data(dynamic_offsets));
+
+                       vkCmdDraw(command_buffer, dc.vertex_count, 1, dc.first_vertex, 0);
+                   }
+               }, range.draw_commands);
+            }
+
+            vkCmdEndRenderPass(command_buffer);
+
+            if (auto result = vkEndCommandBuffer(command_buffer); result != VK_SUCCESS)
+                throw vulkan::exception(fmt::format("failed to end command buffer: {0:#x}", result));
+        }
+    }
 }
 
 #if 0
-
 #include <algorithm>
 #include <iostream>
 #include <variant>
@@ -693,7 +823,6 @@ std::vector<indexed_primitives_draw> separate_indexed_by_binds(std::span<draw_co
     });
 
 #if 0
-
     std::vector<draw_command> draw_commands_copy(std::begin(draw_commands), std::end(draw_commands));
     std::span<draw_command> copy_range{draw_commands_copy};
 
@@ -775,7 +904,6 @@ std::vector<indexed_primitives_draw> separate_indexed_by_binds(std::span<draw_co
         }
     }
 #endif
-
 
     /*auto it = std::adjacent_find(std::begin(draw_commands), std::end(draw_commands), [] (auto &&lhs, auto &&rhs)
     {

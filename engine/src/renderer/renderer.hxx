@@ -117,7 +117,7 @@ namespace renderer
         std::vector<renderer::indexed_draw_command> indexed_draw_commands_;
 
         template<class T>
-        void partion_vertex_buffers_binds(std::span<T> draw_commands, std::function<void(std::vector<VkBuffer> &&, std::span<T>)> callback);
+        void partion_vertex_buffers_binds(std::span<T> draw_commands, std::function<void(std::vector<VkBuffer> &&, std::span<T>)> callback) const;
     };
 
     //std::pair<renderer::nonindexed_draw_buffers_bind_range, renderer::indexed_draw_buffers_bind_range>
@@ -126,6 +126,8 @@ namespace renderer
     public:
 
         void render_frame(std::span<VkCommandBuffer const> command_buffers, std::function<void(void)> const &recreate_swap_chain_callback);
+
+        void fill_draw_command_buffers(std::span<VkCommandBuffer> command_buffers, renderer::draw_commands_holder &draw_commands_holder, struct app_t const &app);
 
     private:
 
@@ -144,6 +146,12 @@ namespace renderer
         std::array<std::shared_ptr<resource::fence>, renderer::kCONCURRENTLY_PROCESSED_FRAMES> concurrent_frames_fences_;
 
         std::vector<std::shared_ptr<resource::fence>> busy_frames_fences_;
+
+        std::shared_ptr<graphics::render_pass> render_pass_;
+        std::unique_ptr<graphics::render_pass_manager> render_pass_manager_;
+
+        std::vector<graphics::attachment> attachments_;
+        std::vector<std::shared_ptr<resource::framebuffer>> framebuffers_;
     };
 }
 
