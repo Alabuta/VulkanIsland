@@ -15,6 +15,7 @@
 
 #include "renderer/config.hxx"
 #include "swapchain.hxx"
+#include "command_buffer.hxx"
 
 
 namespace graphics
@@ -25,7 +26,7 @@ namespace graphics
     class vertex_input_state_manager;
 }
 
-namespace renderer
+namespace render
 {
     struct nonindexed_draw_command final {
         std::shared_ptr<graphics::pipeline> pipeline;
@@ -76,8 +77,8 @@ namespace renderer
         std::vector<VkDeviceSize> buffer_offsets;
 
         std::variant<
-            std::span<renderer::nonindexed_draw_command>,
-            std::span<renderer::indexed_draw_command>
+            std::span<render::nonindexed_draw_command>,
+            std::span<render::indexed_draw_command>
         > draw_commands;
     };
 
@@ -87,20 +88,20 @@ namespace renderer
         VkBuffer index_buffer_handle;
         VkDeviceSize index_buffer_offset;
 
-        std::vector<renderer::vertex_buffers_bind_range> vertex_buffers_bind_ranges;
+        std::vector<render::vertex_buffers_bind_range> vertex_buffers_bind_ranges;
     };
 
     class draw_commands_holder final {
     public:
 
-        void add_draw_command(renderer::nonindexed_draw_command const &draw_command);
-        void add_draw_command(renderer::indexed_draw_command const &draw_command);
+        void add_draw_command(render::nonindexed_draw_command const &draw_command);
+        void add_draw_command(render::indexed_draw_command const &draw_command);
 
         [[nodiscard]]
-        std::vector<renderer::vertex_buffers_bind_range> get_primitives_buffers_bind_ranges();
+        std::vector<render::vertex_buffers_bind_range> get_primitives_buffers_bind_ranges();
 
         [[nodiscard]]
-        std::vector<renderer::indexed_primitives_buffers_bind_range> get_indexed_primitives_buffers_bind_range();
+        std::vector<render::indexed_primitives_buffers_bind_range> get_indexed_primitives_buffers_bind_range();
 
         void clear();
 
@@ -113,45 +114,54 @@ namespace renderer
             constexpr bool operator() (L &&lhs, R &&rhs) const;
         };
 
-        std::vector<renderer::nonindexed_draw_command> nonindexed_draw_commands_;
-        std::vector<renderer::indexed_draw_command> indexed_draw_commands_;
+        std::vector<render::nonindexed_draw_command> nonindexed_draw_commands_;
+        std::vector<render::indexed_draw_command> indexed_draw_commands_;
 
         template<class T>
         void partion_vertex_buffers_binds(std::span<T> draw_commands, std::function<void(std::vector<VkBuffer> &&, std::span<T>)> callback) const;
     };
 
-    //std::pair<renderer::nonindexed_draw_buffers_bind_range, renderer::indexed_draw_buffers_bind_range>
+    //std::pair<render::nonindexed_draw_buffers_bind_range, render::indexed_draw_buffers_bind_range>
 
-    class renderer_system final {
+    struct render_pass final {
+
+
+    };
+
+    class renderer final {
     public:
+
+        renderer(render::config const &renderer_config, vulkan::device &device);
 
         void render_frame(std::span<VkCommandBuffer const> command_buffers, std::function<void(void)> const &recreate_swap_chain_callback);
 
-        void fill_draw_command_buffers(std::span<VkCommandBuffer> command_buffers, renderer::draw_commands_holder &draw_commands_holder, struct app_t const &app);
+        void fill_draw_command_buffers(std::span<VkCommandBuffer> command_buffers, render::draw_commands_holder &draw_commands_holder, struct app_t const &app);
+
+//        std::shared_ptr<vulkan::command_buffer> create_command_buffer();
 
     private:
 
         std::size_t current_frame_index_{0};
 
-        renderer::config renderer_config_;
+        render::config renderer_config_;
 
         std::unique_ptr<vulkan::instance> instance_;
         std::unique_ptr<vulkan::device> device_;
 
-        std::unique_ptr<renderer::swapchain> swapchain_;
+//        std::unique_ptr<render::swapchain> swapchain_;
 
-        std::array<std::shared_ptr<resource::semaphore>, renderer::kCONCURRENTLY_PROCESSED_FRAMES> image_available_semaphores_;
-        std::array<std::shared_ptr<resource::semaphore>, renderer::kCONCURRENTLY_PROCESSED_FRAMES> render_finished_semaphores_;
+        std::array<std::shared_ptr<resource::semaphore>, render::kCONCURRENTLY_PROCESSED_FRAMES> image_available_semaphores_;
+        std::array<std::shared_ptr<resource::semaphore>, render::kCONCURRENTLY_PROCESSED_FRAMES> render_finished_semaphores_;
 
-        std::array<std::shared_ptr<resource::fence>, renderer::kCONCURRENTLY_PROCESSED_FRAMES> concurrent_frames_fences_;
+        std::array<std::shared_ptr<resource::fence>, render::kCONCURRENTLY_PROCESSED_FRAMES> concurrent_frames_fences_;
 
         std::vector<std::shared_ptr<resource::fence>> busy_frames_fences_;
 
-        std::shared_ptr<graphics::render_pass> render_pass_;
-        std::unique_ptr<graphics::render_pass_manager> render_pass_manager_;
+        /*std::shared_ptr<graphics::render_pass> render_pass_;
+        std::unique_ptr<graphics::render_pass_manager> render_pass_manager_;*/
 
-        std::vector<graphics::attachment> attachments_;
-        std::vector<std::shared_ptr<resource::framebuffer>> framebuffers_;
+        /*std::vector<graphics::attachment> attachments_;
+        std::vector<std::shared_ptr<resource::framebuffer>> framebuffers_;*/
     };
 }
 

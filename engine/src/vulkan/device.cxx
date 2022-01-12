@@ -244,7 +244,7 @@ namespace
         return std::ranges::equal(required_extended_features, supported_extended_features, compare);
     }
 
-    renderer::swapchain_support_details query_swapchain_support_details(VkPhysicalDevice device, VkSurfaceKHR surface)
+    render::swapchain_support_details query_swapchain_support_details(VkPhysicalDevice device, VkSurfaceKHR surface)
     {
         VkSurfaceCapabilitiesKHR surface_capabilities;
 
@@ -264,7 +264,7 @@ namespace
         if (auto result = vkGetPhysicalDeviceSurfaceFormatsKHR(device, surface, &surface_formats_count, std::data(supported_formats)); result != VK_SUCCESS)
             throw vulkan::device_exception(fmt::format("failed to retrieve device surface formats: {0:#x}", result));
 
-        std::vector<renderer::surface_format> surface_formats;
+        std::vector<render::surface_format> surface_formats;
 
         std::ranges::transform(supported_formats, std::back_inserter(surface_formats), [] (auto supported)
         {
@@ -284,7 +284,7 @@ namespace
             if (it_format == std::cend(possible_surface_formats))
                 throw vulkan::device_exception("failed to find matching device surface format"s);
 
-            return renderer::surface_format{ *it_format, *it_color_space };
+            return render::surface_format{ *it_format, *it_color_space };
         });
 
         std::uint32_t present_modes_count = 0;
@@ -664,7 +664,7 @@ namespace vulkan
 
 namespace vulkan
 {
-    device::device(vulkan::instance &instance, renderer::platform_surface platform_surface)
+    device::device(vulkan::instance &instance, render::platform_surface platform_surface)
     {
         auto constexpr use_extensions = !vulkan::device_extensions.empty();
 
@@ -759,7 +759,7 @@ namespace vulkan
         physical_handle_ = nullptr;
     }
 
-    renderer::swapchain_support_details device::query_swapchain_support_details(renderer::platform_surface platform_surface) const
+    render::swapchain_support_details device::query_swapchain_support_details(render::platform_surface platform_surface) const
     {
         return ::query_swapchain_support_details(physical_handle_, platform_surface.handle());
     }

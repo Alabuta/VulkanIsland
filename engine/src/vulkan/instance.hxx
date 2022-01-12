@@ -16,7 +16,7 @@ namespace vulkan
     class instance;
 }
 
-namespace renderer
+namespace render
 {
     class platform_surface final {
     public:
@@ -47,7 +47,7 @@ namespace vulkan
 
         [[nodiscard]] VkInstance handle() const noexcept { return handle_; }
 
-        renderer::platform_surface get_platform_surface(platform::window &window);
+        render::platform_surface get_platform_surface(platform::window &window);
 
     private:
 
@@ -56,6 +56,6 @@ namespace vulkan
         VkDebugReportCallbackEXT debug_report_callback_{VK_NULL_HANDLE};
         VkDebugUtilsMessengerEXT debug_messenger_{VK_NULL_HANDLE};
 
-        std::map<GLFWwindow *const, renderer::platform_surface> platform_surfaces_;
+        std::map<GLFWwindow *const, render::platform_surface> platform_surfaces_;
     };
 }

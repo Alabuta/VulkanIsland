@@ -579,12 +579,12 @@ namespace graphics
     }
 }
 
-namespace renderer
+namespace render
 {
     struct extent final {
         std::uint32_t width, height;
 
-        template<class T> requires std::same_as<std::remove_cvref_t<T>, renderer::extent>
+        template<class T> requires std::same_as<std::remove_cvref_t<T>, render::extent>
         auto constexpr operator== (T &&rhs) const
         {
             return width == rhs.width && height == rhs.height;

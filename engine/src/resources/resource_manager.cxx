@@ -212,7 +212,7 @@ namespace resource
 
 namespace resource
 {
-    resource_manager::resource_manager(vulkan::device const &device, renderer::config const &config, resource::memory_manager &memory_manager)
+    resource_manager::resource_manager(vulkan::device const &device, render::config const &config, resource::memory_manager &memory_manager)
         : device_{device}, config_{config}, memory_manager_{memory_manager},
           resource_deleter_{std::make_shared<resource::resource_manager::resource_deleter>(device, *this)},
           staging_buffer_pool_{std::make_shared<resource::resource_manager::staging_buffer_pool>(device_, *this)}
@@ -330,7 +330,7 @@ namespace resource
     }
 
     std::shared_ptr<resource::image>
-    resource_manager::create_image(graphics::IMAGE_TYPE type, graphics::FORMAT format, renderer::extent extent, std::uint32_t mip_levels, std::uint32_t samples_count,
+    resource_manager::create_image(graphics::IMAGE_TYPE type, graphics::FORMAT format, render::extent extent, std::uint32_t mip_levels, std::uint32_t samples_count,
                                    graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usage_flags, graphics::MEMORY_PROPERTY_TYPE memory_property_types) const
     {
         VkImageCreateInfo const create_info{
@@ -438,7 +438,7 @@ namespace resource
     }
 
     std::shared_ptr<resource::framebuffer>
-    resource_manager::create_framebuffer(std::shared_ptr<graphics::render_pass> render_pass, renderer::extent extent,
+    resource_manager::create_framebuffer(std::shared_ptr<graphics::render_pass> render_pass, render::extent extent,
                                          std::vector<std::shared_ptr<resource::image_view>> const &attachments)
     {
         std::vector<VkImageView> views;
@@ -656,7 +656,7 @@ namespace resource
     }
 
     std::shared_ptr<resource::image>
-    resource_manager::stage_image_data(graphics::IMAGE_TYPE type, graphics::FORMAT format, renderer::extent extent, graphics::IMAGE_TILING tiling, std::uint32_t mip_levels, std::uint32_t samples_count,
+    resource_manager::stage_image_data(graphics::IMAGE_TYPE type, graphics::FORMAT format, render::extent extent, graphics::IMAGE_TILING tiling, std::uint32_t mip_levels, std::uint32_t samples_count,
                                        std::shared_ptr<resource::staging_buffer> staging_buffer, [[maybe_unused]] VkCommandPool command_pool)
     {
         if (std::ranges::none_of(kSUPPORTED_IMAGE_FORMATS, [format] (auto t) { return t == format; }))

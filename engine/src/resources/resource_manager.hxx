@@ -47,7 +47,7 @@ namespace resource
     class resource_manager final {
     public:
 
-        resource_manager(vulkan::device const &device, renderer::config const &config, resource::memory_manager &memory_manager);
+        resource_manager(vulkan::device const &device, render::config const &config, resource::memory_manager &memory_manager);
 
         [[nodiscard]] std::shared_ptr<resource::buffer>
         create_buffer(std::size_t size_bytes, graphics::BUFFER_USAGE usage, graphics::MEMORY_PROPERTY_TYPE memory_property_types, graphics::RESOURCE_SHARING_MODE sharing_mode) const;
@@ -56,7 +56,7 @@ namespace resource
         create_staging_buffer(std::size_t size_bytes) const;
 
         [[nodiscard]] std::shared_ptr<resource::image>
-        create_image(graphics::IMAGE_TYPE type, graphics::FORMAT format, renderer::extent extent, std::uint32_t mip_levels, std::uint32_t samples_count,
+        create_image(graphics::IMAGE_TYPE type, graphics::FORMAT format, render::extent extent, std::uint32_t mip_levels, std::uint32_t samples_count,
                      graphics::IMAGE_TILING tiling, graphics::IMAGE_USAGE usage_flags, graphics::MEMORY_PROPERTY_TYPE memory_property_types) const;
 
         [[nodiscard]] std::shared_ptr<resource::image_view>
@@ -67,7 +67,7 @@ namespace resource
                              /*float max_anisotropy, */float min_lod, float max_lod);
         
         [[nodiscard]] std::shared_ptr<resource::framebuffer>
-        create_framebuffer(std::shared_ptr<graphics::render_pass> render_pass, renderer::extent extent,
+        create_framebuffer(std::shared_ptr<graphics::render_pass> render_pass, render::extent extent,
                            std::vector<std::shared_ptr<resource::image_view>> const &attachments);
 
         [[nodiscard]] std::shared_ptr<resource::semaphore> create_semaphore();
@@ -80,7 +80,7 @@ namespace resource
         stage_index_data(graphics::INDEX_TYPE index_type, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool);
 
         [[nodiscard]] std::shared_ptr<resource::image>
-        stage_image_data(graphics::IMAGE_TYPE type, graphics::FORMAT format, renderer::extent extent, graphics::IMAGE_TILING tiling, std::uint32_t mip_levels, std::uint32_t samples_count,
+        stage_image_data(graphics::IMAGE_TYPE type, graphics::FORMAT format, render::extent extent, graphics::IMAGE_TILING tiling, std::uint32_t mip_levels, std::uint32_t samples_count,
                          std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool);
 
     private:
@@ -94,7 +94,7 @@ namespace resource
         static std::size_t constexpr kIMAGE_BUFFER_FIXED_SIZE{0x800'0000}; // 128 MB
 
         vulkan::device const &device_;
-        renderer::config const &config_;
+        render::config const &config_;
 
         resource::memory_manager &memory_manager_;
 

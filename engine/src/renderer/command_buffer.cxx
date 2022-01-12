@@ -37,7 +37,7 @@ void end_single_time_command(VkCommandBuffer command_buffer)
 
 
 void copy_buffer_to_image(vulkan::device const &device, graphics::transfer_queue const &queue,
-                          VkBuffer src, VkImage dst, renderer::extent extent, VkCommandPool command_pool)
+                          VkBuffer src, VkImage dst, render::extent extent, VkCommandPool command_pool)
 {
     auto command_buffer = begin_single_time_command(device, command_pool);
 

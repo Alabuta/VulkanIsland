@@ -14,7 +14,7 @@ namespace graphics
     }
     
     graphics::render_graph
-    render_graph_manager::create_render_flow(renderer::swapchain const &, std::vector<graphics::render_graph_node> const &)
+    render_graph_manager::create_render_flow(render::swapchain const &, std::vector<graphics::render_graph_node> const &)
     {
         return graphics::render_graph();
     }
@@ -22,7 +22,7 @@ namespace graphics
 
 std::vector<graphics::attachment>
 create_attachments(resource::resource_manager &resource_manager,
-                   std::vector<graphics::attachment_description> const &attachment_descriptions, renderer::extent extent)
+                   std::vector<graphics::attachment_description> const &attachment_descriptions, render::extent extent)
 {
     auto constexpr mip_levels = 1u;
 
@@ -78,7 +78,7 @@ create_attachments(resource::resource_manager &resource_manager,
 }
 
 std::vector<graphics::attachment_description>
-create_attachment_descriptions(vulkan::device const &device, renderer::config const &renderer_config, renderer::swapchain const &swapchain)
+create_attachment_descriptions(vulkan::device const &device, render::config const &renderer_config, render::swapchain const &swapchain)
 {
     const auto samples_count = renderer_config.framebuffer_sample_counts;
     const auto color_attachment_format = swapchain.surface_format().format;
@@ -114,7 +114,7 @@ create_attachment_descriptions(vulkan::device const &device, renderer::config co
 }
 
 std::shared_ptr<graphics::render_pass>
-create_render_pass(graphics::render_pass_manager &render_pass_manager, renderer::surface_format surface_format,
+create_render_pass(graphics::render_pass_manager &render_pass_manager, render::surface_format surface_format,
                    std::vector<graphics::attachment_description> attachment_descriptions)
 {
     attachment_descriptions.push_back(
@@ -162,7 +162,7 @@ create_render_pass(graphics::render_pass_manager &render_pass_manager, renderer:
 }
 
 std::vector<std::shared_ptr<resource::framebuffer>>
-create_framebuffers(resource::resource_manager &resource_manager, renderer::swapchain const &swapchain,
+create_framebuffers(resource::resource_manager &resource_manager, render::swapchain const &swapchain,
                     std::shared_ptr<graphics::render_pass> render_pass, std::vector<graphics::attachment> const &attachments)
 {
     std::vector<std::shared_ptr<resource::framebuffer>> framebuffers;

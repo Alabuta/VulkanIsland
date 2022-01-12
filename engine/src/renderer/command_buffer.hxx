@@ -48,7 +48,7 @@ void copy_buffer_to_buffer(vulkan::device const &device, graphics::transfer_queu
                            VkBuffer src, VkBuffer dst, std::span<VkBufferCopy const> const copy_region, VkCommandPool command_pool);
 
 void copy_buffer_to_image(vulkan::device const &device, graphics::transfer_queue const &queue,
-                          VkBuffer src, VkImage dst, renderer::extent extent, VkCommandPool command_pool);
+                          VkBuffer src, VkImage dst, render::extent extent, VkCommandPool command_pool);
 
 template<class Q>
 requires std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>
@@ -178,6 +178,30 @@ void image_layout_transition(vulkan::device const &device, Q &queue, resource::i
     submit_and_free_single_time_command_buffer(device, queue, command_pool, command_buffer);
 }
 
+template<class Q>
+requires std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>
+class command_pool final {
+public:
+
+    using queue_type = Q;
+};
+
+namespace vulkan
+{
+    class command_buffer final{
+    public:
+
+        VkCommandBuffer handle() const noexcept { return handle_; }
+        VkCommandPool command_pool_handle() const noexcept { return command_pool_; }
+
+    private:
+
+        VkCommandBuffer handle_;
+        VkCommandPool command_pool_;
+
+
+    };
+}
 
 template<class Q>
 requires std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>
@@ -197,4 +221,3 @@ std::optional<VkCommandPool> create_command_pool(vulkan::device const &device, Q
 
     else return handle;
 }
-

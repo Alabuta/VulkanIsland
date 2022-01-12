@@ -5,7 +5,7 @@
 #include "vulkan/device_limits.hxx"
 
 
-namespace renderer
+namespace render
 {
     static std::uint32_t constexpr kCONCURRENTLY_PROCESSED_FRAMES{2};
 
@@ -22,5 +22,5 @@ namespace renderer
     };
 #pragma warning(pop)
 
-    renderer::config adjust_renderer_config(vulkan::device_limits const &device_limits);
+    render::config adjust_renderer_config(vulkan::device_limits const &device_limits);
 }

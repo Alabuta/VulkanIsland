@@ -283,7 +283,7 @@ void create_graphics_command_buffers(app_t &app)
 
                 std::visit([&] (auto span)
                 {
-                    if constexpr (std::is_same_v<typename decltype(span)::value_type, renderer::indexed_draw_command>) {
+                    if constexpr (std::is_same_v<typename decltype(span)::value_type, render::indexed_draw_command>) {
                         for (auto &&dc : span) {
                             vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
 
@@ -347,7 +347,7 @@ void create_frame_data(app_t &app)
     auto &&platform_surface = app.platform_surface;
     auto &&resource_manager = *app.resource_manager;
     
-    auto swapchain = create_swapchain(device, platform_surface, renderer::extent{static_cast<std::uint32_t>(app.width), static_cast<std::uint32_t>(app.height)});
+    auto swapchain = create_swapchain(device, platform_surface, render::extent{ static_cast<std::uint32_t>(app.width), static_cast<std::uint32_t>(app.height)});
 
     if (swapchain == nullptr)
         throw graphics::exception("failed to create the swapchain"s);
@@ -484,7 +484,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
             if (index_buffer) {
                 app.draw_commands_holder.add_draw_command(
-                    renderer::indexed_draw_command{
+                           render::indexed_draw_command{
                         pipeline, material, app.pipeline_layout, app.object_resources_descriptor_set, app.render_pass,
                         vertex_buffer, index_buffer, vertex_input_binding_index,
                         meshlet.first_vertex, meshlet.vertex_count, meshlet.first_index, meshlet.index_count,
@@ -495,7 +495,7 @@ void build_render_pipelines(app_t &app, xformat const &model_)
 
             else {
                 app.draw_commands_holder.add_draw_command(
-                    renderer::nonindexed_draw_command{
+                           render::nonindexed_draw_command{
                         pipeline, material, app.pipeline_layout, app.object_resources_descriptor_set, app.render_pass,
                         vertex_buffer, vertex_input_binding_index, meshlet.first_vertex, meshlet.vertex_count,
                         static_cast<std::uint32_t>(transform_index)
@@ -723,7 +723,7 @@ static void render_frame(app_t &app)
     }
 
 #if USE_FENCES
-    app.current_frame_index = (app.current_frame_index + 1) % renderer::kCONCURRENTLY_PROCESSED_FRAMES;
+    app.current_frame_index = (app.current_frame_index + 1) % render::kCONCURRENTLY_PROCESSED_FRAMES;
 #endif
 }
 

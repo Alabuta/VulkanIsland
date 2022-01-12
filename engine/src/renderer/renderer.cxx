@@ -13,13 +13,13 @@
 #include "app.hxx"
 
 
-namespace renderer
+namespace render
 {
     template<class T>
     template<class L, class R> requires mpl::are_same_v<T, std::remove_cvref_t<L>, std::remove_cvref_t<R>>
     constexpr bool draw_commands_holder::comparator<T>::operator() (L &&lhs, R &&rhs) const
     {
-        if constexpr (std::is_same_v<T, renderer::indexed_draw_command>) {
+        if constexpr (std::is_same_v<T, render::indexed_draw_command>) {
             if (lhs.index_buffer->index_type() != rhs.index_buffer->index_type())
                 return lhs.index_buffer->index_type() < rhs.index_buffer->index_type();
 
@@ -36,26 +36,26 @@ namespace renderer
         return lhs.first_vertex < rhs.first_vertex;
     }
 
-    void draw_commands_holder::add_draw_command(renderer::nonindexed_draw_command const &draw_command)
+    void draw_commands_holder::add_draw_command(render::nonindexed_draw_command const &draw_command)
     {
         nonindexed_draw_commands_.push_back(draw_command);
     }
 
-    void draw_commands_holder::add_draw_command(renderer::indexed_draw_command const &draw_command)
+    void draw_commands_holder::add_draw_command(render::indexed_draw_command const &draw_command)
     {
         indexed_draw_commands_.push_back(draw_command);
     }
 
-    std::vector<renderer::vertex_buffers_bind_range>
+    std::vector<render::vertex_buffers_bind_range>
     draw_commands_holder::get_primitives_buffers_bind_ranges()
     {
         auto &draw_commands = nonindexed_draw_commands_;
 
-        std::stable_sort(std::begin(draw_commands), std::end(draw_commands), comparator<renderer::nonindexed_draw_command>{});
+        std::stable_sort(std::begin(draw_commands), std::end(draw_commands), comparator<render::nonindexed_draw_command>{});
 
-        std::vector<renderer::vertex_buffers_bind_range> buffers_bind_range;
+        std::vector<render::vertex_buffers_bind_range> buffers_bind_range;
 
-        partion_vertex_buffers_binds<renderer::nonindexed_draw_command>(draw_commands, [&buffers_bind_range] (auto &&buffer_handles, auto range)
+        partion_vertex_buffers_binds<render::nonindexed_draw_command>(draw_commands, [&buffers_bind_range] (auto &&buffer_handles, auto range)
         {
             buffers_bind_range.push_back({
                 range.front().vertex_input_binding_index,
@@ -68,14 +68,14 @@ namespace renderer
         return buffers_bind_range;
     }
 
-    std::vector<renderer::indexed_primitives_buffers_bind_range>
+    std::vector<render::indexed_primitives_buffers_bind_range>
     draw_commands_holder::get_indexed_primitives_buffers_bind_range()
     {
         auto &draw_commands = indexed_draw_commands_;
 
-        std::stable_sort(std::begin(draw_commands), std::end(draw_commands), comparator<renderer::indexed_draw_command>{});
+        std::stable_sort(std::begin(draw_commands), std::end(draw_commands), comparator<render::indexed_draw_command>{});
 
-        std::vector<renderer::indexed_primitives_buffers_bind_range> indexed_buffers_bind_range;
+        std::vector<render::indexed_primitives_buffers_bind_range> indexed_buffers_bind_range;
 
         for (auto it_begin = std::begin(draw_commands); it_begin != std::end(draw_commands);) {
             auto it = std::adjacent_find(it_begin, std::end(draw_commands), [] (auto &&lhs, auto &&rhs)
@@ -89,9 +89,9 @@ namespace renderer
             if (it != std::end(draw_commands))
                 it = std::next(it);
 
-            std::vector<renderer::vertex_buffers_bind_range> vertex_buffers_bind_ranges;
+            std::vector<render::vertex_buffers_bind_range> vertex_buffers_bind_ranges;
 
-            partion_vertex_buffers_binds<renderer::indexed_draw_command>(std::span{it_begin, it}, [&vertex_buffers_bind_ranges] (auto &&buffer_handles, auto range)
+            partion_vertex_buffers_binds<render::indexed_draw_command>(std::span{ it_begin, it}, [&vertex_buffers_bind_ranges] (auto &&buffer_handles, auto range)
             {
                 vertex_buffers_bind_ranges.push_back({
                     range.front().vertex_input_binding_index,
@@ -113,7 +113,7 @@ namespace renderer
 
         return indexed_buffers_bind_range;
     }
-    
+
     template<class T>
     void draw_commands_holder::partion_vertex_buffers_binds(std::span<T> draw_commands, std::function<void(std::vector<VkBuffer> &&, std::span<T>)> callback) const
     {
@@ -151,8 +151,17 @@ namespace renderer
         nonindexed_draw_commands_.clear();
         indexed_draw_commands_.clear();
     }
+}
 
-    void renderer_system::render_frame(std::span<VkCommandBuffer const> const command_buffers, std::function<void(void)> const &recreate_swap_chain_callback)
+namespace render
+{
+    renderer::renderer(render::config const &renderer_config)
+        : renderer_config_{renderer_config}
+    {
+        ;
+    }
+
+    void renderer::render_frame(std::span<VkCommandBuffer const> const command_buffers, std::function<void(void)> const &recreate_swap_chain_callback)
     {
         auto &&device = *device_;
         auto &&swapchain = *swapchain_;
@@ -255,11 +264,11 @@ namespace renderer
         }
 
 #if USE_FENCES
-        current_frame_index_ = (current_frame_index_ + 1) % renderer::kCONCURRENTLY_PROCESSED_FRAMES;
+        current_frame_index_ = (current_frame_index_ + 1) % render::kCONCURRENTLY_PROCESSED_FRAMES;
 #endif
     }
 
-    void renderer_system::fill_draw_command_buffers(std::span<VkCommandBuffer> command_buffers, renderer::draw_commands_holder &draw_commands_holder, app_t const &app)
+    void renderer::fill_draw_command_buffers(std::span<VkCommandBuffer> command_buffers, render::draw_commands_holder &draw_commands_holder, app_t const &app)
     {
 #if defined(__clang__)/* || defined(_MSC_VER)*/
         auto const clear_colors = std::array{
@@ -287,13 +296,15 @@ namespace renderer
             if (auto result = vkBeginCommandBuffer(command_buffer, &begin_info); result != VK_SUCCESS)
                 throw vulkan::exception(fmt::format("failed to record command buffer: {0:#x}", result));
 
-            auto [width, height] = swapchain_->extent();
+            // :TODO: get render area from render pass abstraction
+            auto [width, height] = app.swapchain->extent();
 
+            // :TODO: use render pass abstraction as the method parameter
             VkRenderPassBeginInfo const render_pass_info{
                 VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,
                 nullptr,
-                render_pass_->handle(),
-                framebuffers_.at(i++)->handle(),
+                app.render_pass->handle(),
+                app.framebuffers.at(i++)->handle(),
                 {{0, 0}, VkExtent2D{width, height}},
                 static_cast<std::uint32_t>(std::size(clear_colors)), std::data(clear_colors)
             };
@@ -327,7 +338,7 @@ namespace renderer
 
                     std::visit([&] (auto span)
                    {
-                       if constexpr (std::is_same_v<typename decltype(span)::value_type, renderer::indexed_draw_command>) {
+                       if constexpr (std::is_same_v<typename decltype(span)::value_type, render::indexed_draw_command>) {
                            for (auto &&dc : span) {
                                vkCmdBindPipeline(command_buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, dc.pipeline->handle());
 
@@ -420,7 +431,7 @@ namespace resource
     };
 }
 
-namespace renderer
+namespace render
 {
     struct nonindexed_draw_command final {
         std::shared_ptr<resource::vertex_buffer> vertex_buffer;
@@ -440,14 +451,14 @@ namespace renderer
         std::uint32_t first_binding;
         std::vector<std::uint32_t> buffer_handles;
         std::vector<std::uint32_t> buffer_offsets;
-        std::span<renderer::nonindexed_draw_command> draw_commands;
+        std::span<render::nonindexed_draw_command> draw_commands;
     };
 
     struct indexed_primitives_buffers_bind_range final {
         INDEX_TYPE index_type;
         std::uint32_t index_buffer_handle;
         std::uint32_t index_buffer_offset;
-        std::span<renderer::nonindexed_draw_command> draw_commands;
+        std::span<render::nonindexed_draw_command> draw_commands;
     };
 
     template<class T>
@@ -455,7 +466,7 @@ namespace renderer
         template<class L, class R>
         constexpr bool operator() (L &&lhs, R &&rhs) const
         {
-            if constexpr (std::is_same_v<T, renderer::indexed_draw_command>) {
+            if constexpr (std::is_same_v<T, render::indexed_draw_command>) {
                 if (lhs.index_buffer->index_type != rhs.index_buffer->index_type)
                     return lhs.index_buffer->index_type < rhs.index_buffer->index_type;
 
@@ -474,24 +485,24 @@ namespace renderer
     };
 }
 
-namespace renderer
+namespace render
 {
-    std::ostream &operator<<(std::ostream &out, renderer::nonindexed_draw_command const &c)
+    std::ostream &operator<<(std::ostream &out, render::nonindexed_draw_command const &c)
     {
         return out << "h" << c.vertex_buffer->handle << " l" << c.vertex_input_binding_index;// << " v" << c.first_vertex;
     }
-    std::ostream &operator<<(std::ostream &out, renderer::indexed_draw_command const &c)
+    std::ostream &operator<<(std::ostream &out, render::indexed_draw_command const &c)
     {
         return out << "h" << c.index_buffer->handle << "idx" << c.index_buffer->index_type << " h" << c.vertex_buffer->handle << "L" << c.vertex_input_binding_index;// << " v" << c.first_vertex;
     }
-    std::ostream &operator<<(std::ostream &out, renderer::vertex_buffers_bind_range const &r)
+    std::ostream &operator<<(std::ostream &out, render::vertex_buffers_bind_range const &r)
     {
         std::ranges::copy(r.buffer_handles, std::ostream_iterator<int>(out << "fbnd " << r.first_binding << " [", " "));
         return out << "]";
     }
-    // std::ostream &operator<<(std::ostream &out, renderer::indexed_primitives_buffers_bind_range const &r)
+    // std::ostream &operator<<(std::ostream &out, render::indexed_primitives_buffers_bind_range const &r)
     // {
-    //     out << "idx " << r.index_type << 
+    //     out << "idx " << r.index_type <<
     //     std::ranges::copy(r.buffer_handles, std::ostream_iterator<int>(out << "fbnd " << r.first_binding << " [", " "));
     //     return out << "]";
     // }
@@ -503,14 +514,14 @@ auto get_primitives_buffers_bind_range(std::span<T> draw_commands)
     ;
 }
 
-std::vector<renderer::vertex_buffers_bind_range> get_primitives_buffers_bind_ranges(std::span<renderer::nonindexed_draw_command> nonindexed_draw_commands_)
+std::vector<render::vertex_buffers_bind_range> get_primitives_buffers_bind_ranges(std::span<render::nonindexed_draw_command> nonindexed_draw_commands_)
 {
-    std::stable_sort(std::begin(nonindexed_draw_commands_), std::end(nonindexed_draw_commands_), renderer::comparator<renderer::nonindexed_draw_command>{});
+    std::stable_sort(std::begin(nonindexed_draw_commands_), std::end(nonindexed_draw_commands_), render::comparator<render::nonindexed_draw_command>{});
 
-    std::ranges::copy(nonindexed_draw_commands_, std::ostream_iterator<renderer::nonindexed_draw_command>(std::cout, "|"));
+    std::ranges::copy(nonindexed_draw_commands_, std::ostream_iterator<render::nonindexed_draw_command>(std::cout, "|"));
     std::cout << std::endl;
 
-    std::vector<renderer::vertex_buffers_bind_range> buffers_bind_range;
+    std::vector<render::vertex_buffers_bind_range> buffers_bind_range;
 
     for (auto it_begin = std::begin(nonindexed_draw_commands_); it_begin != std::end(nonindexed_draw_commands_);) {
         auto h = it_begin->vertex_buffer->handle;
@@ -538,13 +549,13 @@ std::vector<renderer::vertex_buffers_bind_range> get_primitives_buffers_bind_ran
             return false;
         });
 
-        std::copy(it_begin, it_end, std::ostream_iterator<renderer::nonindexed_draw_command>(std::cout, "|"));
+        std::copy(it_begin, it_end, std::ostream_iterator<render::nonindexed_draw_command>(std::cout, "|"));
         std::cout << std::endl;
 
         std::ranges::copy(buffer_handles, std::ostream_iterator<std::uint32_t>(std::cout, " "));
         std::cout << std::endl;
 
-        buffers_bind_range.push_back(renderer::vertex_buffers_bind_range{
+        buffers_bind_range.push_back(render::vertex_buffers_bind_range{
             it_begin->vertex_input_binding_index,
             buffer_handles,
             std::vector<std::uint32_t>(std::size(buffer_handles), 0u),
@@ -557,11 +568,11 @@ std::vector<renderer::vertex_buffers_bind_range> get_primitives_buffers_bind_ran
     return buffers_bind_range;
 }
 
-std::vector<renderer::indexed_primitives_buffers_bind_range> get_indexed_primitives_buffers_bind_range(std::span<renderer::indexed_draw_command> draw_commands_)
+std::vector<render::indexed_primitives_buffers_bind_range> get_indexed_primitives_buffers_bind_range(std::span<render::indexed_draw_command> draw_commands_)
 {
-    std::stable_sort(std::begin(draw_commands_), std::end(draw_commands_), renderer::comparator<renderer::indexed_draw_command>{});
+    std::stable_sort(std::begin(draw_commands_), std::end(draw_commands_), render::comparator<render::indexed_draw_command>{});
 
-    std::ranges::copy(draw_commands_, std::ostream_iterator<renderer::indexed_draw_command>(std::cout, "|"));
+    std::ranges::copy(draw_commands_, std::ostream_iterator<render::indexed_draw_command>(std::cout, "|"));
     std::cout << std::endl;
 
     auto it_begin = std::begin(draw_commands_);
@@ -579,7 +590,7 @@ std::vector<renderer::indexed_primitives_buffers_bind_range> get_indexed_primiti
 
         // auto buffers_bind_range = get_primitives_buffers_bind_ranges(dcs);
 
-        // std::ranges::copy(dcs, std::ostream_iterator<renderer::indexed_draw_command>(std::cout, "|"));
+        // std::ranges::copy(dcs, std::ostream_iterator<render::indexed_draw_command>(std::cout, "|"));
         // std::cout << std::endl;
 
         for (auto it_begin2 = std::begin(dcs); it_begin2 != std::end(dcs);) {
@@ -608,13 +619,13 @@ std::vector<renderer::indexed_primitives_buffers_bind_range> get_indexed_primiti
                 return false;
 });
 
-            std::copy(it_begin2, it_end2, std::ostream_iterator<renderer::indexed_draw_command>(std::cout, "|"));
+            std::copy(it_begin2, it_end2, std::ostream_iterator<render::indexed_draw_command>(std::cout, "|"));
             std::cout << std::endl;
 
             // std::ranges::copy(buffer_handles, std::ostream_iterator<std::uint32_t>(std::cout, " "));
             // std::cout << std::endl;
 
-            // buffers_bind_range.push_back(renderer::vertex_buffers_bind_range{
+            // buffers_bind_range.push_back(render::vertex_buffers_bind_range{
             //     it_begin2->vertex_input_binding_index,
             //     buffer_handles,
             //     std::vector<std::uint32_t>(std::size(buffer_handles), 0u),
@@ -624,7 +635,7 @@ std::vector<renderer::indexed_primitives_buffers_bind_range> get_indexed_primiti
             it_begin2 = it_end2;
         }
 
-        // std::ranges::copy(dcs, std::ostream_iterator<renderer::indexed_draw_command>(std::cout, "|"));
+        // std::ranges::copy(dcs, std::ostream_iterator<render::indexed_draw_command>(std::cout, "|"));
         std::cout << std::endl;
 
         it_begin = it;
@@ -641,7 +652,7 @@ int main()
     // h5 i3|h6 i4|
     // h8 i6|
 
-    // std::vector<renderer::nonindexed_draw_command> commands{
+    // std::vector<render::nonindexed_draw_command> commands{
     //     {std::make_shared<resource::vertex_buffer>(0), 0},
     //     {std::make_shared<resource::vertex_buffer>(0), 0},
     //     {std::make_shared<resource::vertex_buffer>(2), 1},
@@ -659,13 +670,13 @@ int main()
 
     // auto buffers_bind_range = get_primitives_buffers_bind_ranges(commands);
 
-    // std::ranges::copy(commands, std::ostream_iterator<renderer::nonindexed_draw_command>(std::cout, "|"));
+    // std::ranges::copy(commands, std::ostream_iterator<render::nonindexed_draw_command>(std::cout, "|"));
     // std::cout << std::endl;
 
-    // std::ranges::copy(buffers_bind_range, std::ostream_iterator<renderer::vertex_buffers_bind_range>(std::cout, "|"));
+    // std::ranges::copy(buffers_bind_range, std::ostream_iterator<render::vertex_buffers_bind_range>(std::cout, "|"));
     // std::cout << std::endl;
 
-    std::vector<renderer::indexed_draw_command> idxcommands{
+    std::vector<render::indexed_draw_command> idxcommands{
         {std::make_shared<resource::vertex_buffer>(0), std::make_shared<resource::index_buffer>(0, INDEX_TYPE::UINT_16), 0, 0},
         {std::make_shared<resource::vertex_buffer>(0), std::make_shared<resource::index_buffer>(1, INDEX_TYPE::UINT_16), 0, 0},
         {std::make_shared<resource::vertex_buffer>(2), std::make_shared<resource::index_buffer>(0, INDEX_TYPE::UINT_16), 1, 0},
@@ -683,7 +694,7 @@ int main()
 
     get_indexed_primitives_buffers_bind_range(idxcommands);
 
-    // std::ranges::copy(commands, std::ostream_iterator<renderer::nonindexed_draw_command>(std::cout, "|"));
+    // std::ranges::copy(commands, std::ostream_iterator<render::nonindexed_draw_command>(std::cout, "|"));
     // std::cout << std::endl;
 }
 #endif

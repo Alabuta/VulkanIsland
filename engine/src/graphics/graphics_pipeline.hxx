@@ -107,7 +107,7 @@ namespace graphics
     class pipeline_factory final {
     public:
 
-        pipeline_factory(vulkan::device &device, renderer::config const &renderer_config, graphics::shader_manager &shader_manager) noexcept
+        pipeline_factory(vulkan::device &device, render::config const &renderer_config, graphics::shader_manager &shader_manager) noexcept
             : device_{device}, renderer_config_{renderer_config}, shader_manager_{shader_manager} { }
 
         [[nodiscard]] std::shared_ptr<graphics::pipeline>
@@ -120,7 +120,7 @@ namespace graphics
     private:
 
         vulkan::device &device_;
-        renderer::config renderer_config_;
+        render::config renderer_config_;
         graphics::shader_manager &shader_manager_;
 
         std::unordered_map<graphics::pipeline_invariant, std::shared_ptr<graphics::pipeline>, graphics::hash<pipeline_invariant>> pipelines_;

@@ -8,7 +8,7 @@
 #include "graphics/graphics.hxx"
 
 
-namespace renderer
+namespace render
 {
     class swapchain;
 }
@@ -29,7 +29,7 @@ namespace resource
         graphics::FORMAT format() const noexcept { return format_; }
         graphics::IMAGE_TILING tiling() const noexcept { return tiling_; }
 
-        renderer::extent extent() const noexcept { return extent_; }
+        render::extent extent() const noexcept { return extent_; }
 
         std::uint32_t mip_levels() const noexcept { return mip_levels_; }
 
@@ -47,18 +47,18 @@ namespace resource
 
         std::uint32_t mip_levels_{1};
 
-        renderer::extent extent_;
+        render::extent extent_;
 
         image() = delete;
         image(image const &) = default;
         image(image &&) = default;
 
         image(std::shared_ptr<resource::memory_block> memory, VkImage handle, graphics::FORMAT format, graphics::IMAGE_TILING tiling,
-              std::uint32_t mip_levels, renderer::extent extent) :
+              std::uint32_t mip_levels, render::extent extent) :
             memory_{memory}, handle_{handle}, format_{format}, tiling_{tiling}, mip_levels_{mip_levels}, extent_{extent} { }
 
         friend resource::resource_manager;
-        friend renderer::swapchain;
+        friend render::swapchain;
     };
 }
 
@@ -87,7 +87,7 @@ namespace resource
             handle_{handle}, image_{image}, type_{type} { }
 
         friend resource::resource_manager;
-        friend renderer::swapchain;
+        friend render::swapchain;
     };
 }
 

@@ -155,7 +155,7 @@ load_texture(vulkan::device &device, resource::resource_manager &resource_manage
     auto mip_levels = static_cast<std::uint32_t>(std::floor(std::log2(std::max(width, height))) + 1);
     auto aspect_flags = graphics::IMAGE_ASPECT::COLOR_BIT;
     auto samples_count = 1u;
-    auto extent = renderer::extent{width, height};
+    auto extent = render::extent{ width, height};
 
     std::shared_ptr<resource::texture> texture;
 

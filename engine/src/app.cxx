@@ -615,7 +615,7 @@ app_t::app_t(platform::window &window)
 
     device = std::make_unique<vulkan::device>(*instance, platform_surface);
 
-    renderer_config = renderer::adjust_renderer_config(device->device_limits());
+    renderer_config = render::adjust_renderer_config(device->device_limits());
 
     memory_manager = std::make_unique<resource::memory_manager>(*device);
     resource_manager = std::make_unique<resource::resource_manager>(*device, renderer_config, *memory_manager);

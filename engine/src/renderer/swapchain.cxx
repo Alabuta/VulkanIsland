@@ -30,9 +30,9 @@ VkInstance instance, VkWin32SurfaceCreateInfoKHR const *pCreateInfo, VkAllocatio
 
 namespace
 {
-    renderer::surface_format
-    choose_supported_surface_format(renderer::swapchain_support_details const &support_details,
-                                    std::vector<renderer::surface_format> const &required_surface_formats)
+    render::surface_format
+    choose_supported_surface_format(render::swapchain_support_details const &support_details,
+                                    std::vector<render::surface_format> const &required_surface_formats)
     {
         auto &&surface = support_details.surface_formats;
 
@@ -53,7 +53,7 @@ namespace
     }
 
     graphics::PRESENTATION_MODE
-    choose_supported_presentation_mode(renderer::swapchain_support_details const &support_details,
+    choose_supported_presentation_mode(render::swapchain_support_details const &support_details,
                                        std::vector<graphics::PRESENTATION_MODE> &&required_modes)
     {
         auto &&supported_modes = support_details.presentation_modes;
@@ -63,7 +63,7 @@ namespace
         return it != std::cend(required_modes) ? *it : graphics::PRESENTATION_MODE::FIFO;
     }
 
-    renderer::extent adjust_swapchain_extent(renderer::swapchain_support_details const &support_details, renderer::extent extent)
+    render::extent adjust_swapchain_extent(render::swapchain_support_details const &support_details, render::extent extent)
     {
         auto &&surface_capabilities = support_details.surface_capabilities;
         
@@ -79,7 +79,7 @@ namespace
         };
     }
 
-    std::vector<VkImage> get_swapchain_image_handles(vulkan::device const &device, renderer::swapchain const &swapchain)
+    std::vector<VkImage> get_swapchain_image_handles(vulkan::device const &device, render::swapchain const &swapchain)
     {
         std::uint32_t image_count = 0;
 
@@ -95,10 +95,10 @@ namespace
     }
 }
 
-namespace renderer
+namespace render
 {
-    swapchain::swapchain(vulkan::device const &device, renderer::platform_surface const &platform_surface,
-                         renderer::surface_format surface_format, renderer::extent extent) : device_{device}
+    swapchain::swapchain(vulkan::device const &device, render::platform_surface const &platform_surface,
+                         render::surface_format surface_format, render::extent extent) : device_{ device}
     {
         auto &&presentation_queue = device.presentation_queue;
         auto &&graphics_queue = device.graphics_queue;
@@ -203,19 +203,19 @@ namespace renderer
 }
 
 
-std::unique_ptr<renderer::swapchain>
-create_swapchain(vulkan::device const &device, renderer::platform_surface const &platform_surface, renderer::extent extent)
+std::unique_ptr<render::swapchain>
+create_swapchain(vulkan::device const &device, render::platform_surface const &platform_surface, render::extent extent)
 {
-    auto surface_formats = std::vector<renderer::surface_format>{
+    auto surface_formats = std::vector<render::surface_format>{
         { graphics::FORMAT::BGRA8_SRGB, graphics::COLOR_SPACE::SRGB_NONLINEAR },
         { graphics::FORMAT::RGBA8_SRGB, graphics::COLOR_SPACE::SRGB_NONLINEAR }
     };
 
-    std::unique_ptr<renderer::swapchain> swapchain;
+    std::unique_ptr<render::swapchain> swapchain;
 
     for (auto surface_format : surface_formats) {
         try {
-            swapchain = std::make_unique<renderer::swapchain>(device, platform_surface, surface_format, extent);
+            swapchain = std::make_unique<render::swapchain>(device, platform_surface, surface_format, extent);
 
         } catch (vulkan::swapchain_exception const &ex) {
             std::cout << ex.what() << std::endl;

@@ -265,10 +265,10 @@ namespace vulkan
         handle_ = VK_NULL_HANDLE;
     }
 
-    renderer::platform_surface instance::get_platform_surface(platform::window &window)
+    render::platform_surface instance::get_platform_surface(platform::window &window)
     {
         if (!platform_surfaces_.contains(window.handle())) {
-            renderer::platform_surface platform_surface;
+            render::platform_surface platform_surface;
 
             if (auto result = glfwCreateWindowSurface(handle_, window.handle(), nullptr, &platform_surface.handle_); result != VK_SUCCESS)
                 throw vulkan::exception(fmt::format("failed to create window surface: {0:#x}", result));

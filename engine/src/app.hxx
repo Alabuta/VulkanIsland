@@ -65,13 +65,13 @@ struct app_t final : public platform::window::event_handler_interface  {
 
     std::size_t current_frame_index = 0;
 
-    renderer::config renderer_config;
+    render::config renderer_config;
 
     std::unique_ptr<vulkan::instance> instance;
     std::unique_ptr<vulkan::device> device;
 
-    renderer::platform_surface platform_surface;
-    std::unique_ptr<renderer::swapchain> swapchain;
+    render::platform_surface platform_surface;
+    std::unique_ptr<render::swapchain> swapchain;
 
     std::unique_ptr<resource::resource_manager> resource_manager;
     std::unique_ptr<resource::memory_manager> memory_manager;
@@ -89,10 +89,10 @@ struct app_t final : public platform::window::event_handler_interface  {
     std::vector<graphics::attachment> attachments;
     std::vector<std::shared_ptr<resource::framebuffer>> framebuffers;
 
-    std::array<std::shared_ptr<resource::semaphore>, renderer::kCONCURRENTLY_PROCESSED_FRAMES> image_available_semaphores;
-    std::array<std::shared_ptr<resource::semaphore>, renderer::kCONCURRENTLY_PROCESSED_FRAMES> render_finished_semaphores;
+    std::array<std::shared_ptr<resource::semaphore>, render::kCONCURRENTLY_PROCESSED_FRAMES> image_available_semaphores;
+    std::array<std::shared_ptr<resource::semaphore>, render::kCONCURRENTLY_PROCESSED_FRAMES> render_finished_semaphores;
 
-    std::array<std::shared_ptr<resource::fence>, renderer::kCONCURRENTLY_PROCESSED_FRAMES> concurrent_frames_fences;
+    std::array<std::shared_ptr<resource::fence>, render::kCONCURRENTLY_PROCESSED_FRAMES> concurrent_frames_fences;
     std::vector<std::shared_ptr<resource::fence>> busy_frames_fences;
 
     camera_system cameraSystem;
@@ -126,7 +126,7 @@ struct app_t final : public platform::window::event_handler_interface  {
 
     std::shared_ptr<resource::texture> texture;
 
-    renderer::draw_commands_holder draw_commands_holder;
+    render::draw_commands_holder draw_commands_holder;
 
     std::function<void()> resize_callback{nullptr};
 

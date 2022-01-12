@@ -36,7 +36,7 @@ namespace resource
 namespace resource
 {
     struct framebuffer_invariant final {
-        renderer::extent extent;
+        render::extent extent;
 
         std::shared_ptr<graphics::render_pass> render_pass;
 

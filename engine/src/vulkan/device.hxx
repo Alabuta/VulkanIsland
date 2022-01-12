@@ -8,7 +8,7 @@
 #include "renderer/queues.hxx"
 
 
-namespace renderer
+namespace render
 {
     class platform_surface;
 
@@ -20,7 +20,7 @@ namespace renderer
     struct swapchain_support_details final {
         VkSurfaceCapabilitiesKHR surface_capabilities;
 
-        std::vector<renderer::surface_format> surface_formats;
+        std::vector<render::surface_format> surface_formats;
         std::vector<graphics::PRESENTATION_MODE> presentation_modes;
     };
 }
@@ -31,7 +31,7 @@ namespace vulkan
     class device final {
     public:
 
-        explicit device(vulkan::instance &instance, renderer::platform_surface platform_surface);
+        explicit device(vulkan::instance &instance, render::platform_surface platform_surface);
         ~device();
 
         device() = delete;
@@ -46,7 +46,7 @@ namespace vulkan
 
         vulkan::device_limits const &device_limits() const noexcept { return device_limits_; }
 
-        [[nodiscard]] renderer::swapchain_support_details query_swapchain_support_details(renderer::platform_surface platform_surface) const;
+        [[nodiscard]] render::swapchain_support_details query_swapchain_support_details(render::platform_surface platform_surface) const;
 
         [[nodiscard]] bool is_format_supported_as_buffer_feature(graphics::FORMAT format, graphics::FORMAT_FEATURE features) const noexcept;
 
