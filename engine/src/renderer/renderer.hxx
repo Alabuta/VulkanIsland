@@ -148,7 +148,7 @@ namespace render
         std::unique_ptr<vulkan::instance> instance_;
         std::unique_ptr<vulkan::device> device_;
 
-//        std::unique_ptr<render::swapchain> swapchain_;
+        std::unique_ptr<render::swapchain> swapchain_;
 
         std::array<std::shared_ptr<resource::semaphore>, render::kCONCURRENTLY_PROCESSED_FRAMES> image_available_semaphores_;
         std::array<std::shared_ptr<resource::semaphore>, render::kCONCURRENTLY_PROCESSED_FRAMES> render_finished_semaphores_;

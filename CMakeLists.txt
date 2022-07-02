@@ -7,8 +7,6 @@ configure_file(
     "./engine/include/config.hxx"
 )
 
-#set(CMAKE_CXX_STANDARD 20)
-
 find_package(Vulkan REQUIRED)
 find_package(Boost 1.68 REQUIRED)
 find_package(fmt 8 CONFIG REQUIRED)
@@ -116,21 +114,21 @@ endif ()
 
 target_compile_features(${EXECUTABLE_TARGET_NAME}
     PUBLIC
-        cxx_std_20
+		cxx_std_23
 )
 
 set_target_properties(${EXECUTABLE_TARGET_NAME}
-	PROPERTIES
-    	VERSION ${PROJECT_VERSION}
+		PROPERTIES
+		VERSION ${PROJECT_VERSION}
 
-		CXX_STANDARD 20
+		CXX_STANDARD 23
 		CXX_STANDARD_REQUIRED ON
 		CXX_EXTENSIONS OFF
 
 		POSITION_INDEPENDENT_CODE ON
 
 		DEBUG_POSTFIX .d
-)
+		)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     target_compile_options(${EXECUTABLE_TARGET_NAME}
@@ -216,8 +214,9 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 				-Wno-unknown-pragmas
 				-Wno-unknown-warning-option
 
-				#-fsanitize=thread -fsanitize=address
-			)
+				# -fsanitize=thread
+				# -fsanitize=address
+				)
 	else()
 		target_compile_options(${EXECUTABLE_TARGET_NAME}
 			PRIVATE

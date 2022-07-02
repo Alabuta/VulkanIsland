@@ -155,10 +155,8 @@ namespace render
 
 namespace render
 {
-    renderer::renderer(render::config const &renderer_config)
-        : renderer_config_{renderer_config}
+    renderer::renderer(render::config const &renderer_config, vulkan::device &) : renderer_config_{ renderer_config }
     {
-        ;
     }
 
     void renderer::render_frame(std::span<VkCommandBuffer const> const command_buffers, std::function<void(void)> const &recreate_swap_chain_callback)

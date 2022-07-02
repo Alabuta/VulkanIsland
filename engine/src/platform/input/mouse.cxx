@@ -55,13 +55,10 @@ namespace platform
                     auto const buttons_bit_count = kPRESSED_MASK.count();
 
                     for (std::size_t i = 0; i < buttons_bit_count; ++i) {
-                        auto const pressed = buttons.value[i];
-                        auto const depressed = buttons.value[++i];
+                        auto const pressed = static_cast<int>(buttons.value[i]);
+                        auto const depressed = static_cast<int>(buttons.value[++i]);
 
-#pragma warning(push)
-#pragma warning(disable : 4805)
                         buttons_[i / 2] = (buttons_[i / 2] | pressed) & ~depressed;
-#pragma warning(pop)
                     }
 
                     if ((buttons.value & kPRESSED_MASK).any())
