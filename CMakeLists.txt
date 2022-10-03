@@ -3,8 +3,8 @@ cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
 project(VulkanIsland VERSION 1.0.0 LANGUAGES CXX)
 
 configure_file(
-    "./engine/include/config.hxx.in"
-    "./engine/include/config.hxx"
+		"./engine/include/config.hxx.in"
+		"./engine/include/config.hxx"
 )
 
 find_package(Vulkan REQUIRED)
@@ -91,33 +91,33 @@ target_sources(${EXECUTABLE_TARGET_NAME}
 		./engine/src/main.hxx 									./engine/src/main.cxx
 )
 
-target_include_directories(${EXECUTABLE_TARGET_NAME}
-	PRIVATE
+target_include_directories (${EXECUTABLE_TARGET_NAME}
+		PRIVATE
 		./engine/src
 
-	SYSTEM INTERFACE
+		SYSTEM INTERFACE
 		${Boost_INCLUDE_DIR}
 
 		./engine/include
-)
+		)
 
-if (NOT WIN32)
-	 find_package(X11 REQUIRED)
-endif ()
+if(NOT WIN32)
+	find_package (X11 REQUIRED)
+endif()
 
-if (CMAKE_CXX_COMPILER_ID MATCHES GNU)
-    target_compile_definitions(${EXECUTABLE_TARGET_NAME}
-        PRIVATE
-            _GLIBCXX_USE_CXX11_ABI=1
-    )
-endif ()
+if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
+	target_compile_definitions (${EXECUTABLE_TARGET_NAME}
+			PRIVATE
+			_GLIBCXX_USE_CXX11_ABI=1
+			)
+endif()
 
 target_compile_features(${EXECUTABLE_TARGET_NAME}
-    PUBLIC
+		PUBLIC
 		cxx_std_23
 )
 
-set_target_properties(${EXECUTABLE_TARGET_NAME}
+set_target_properties (${EXECUTABLE_TARGET_NAME}
 		PROPERTIES
 		VERSION ${PROJECT_VERSION}
 
@@ -130,50 +130,54 @@ set_target_properties(${EXECUTABLE_TARGET_NAME}
 		DEBUG_POSTFIX .d
 		)
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    target_compile_options(${EXECUTABLE_TARGET_NAME}
-        PRIVATE
-            -fconcepts
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+	target_compile_options (${EXECUTABLE_TARGET_NAME}
+			PRIVATE
+			-fconcepts
 
-            -fasynchronous-unwind-tables                # Increased reliability of backtraces
-            -fexceptions                                # Enable table-based thread cancellation
-            # -fPIE
-            # -fpie
+			-fasynchronous-unwind-tables                # Increased reliability of backtraces
+			-fexceptions                                # Enable table-based thread cancellation
+			# -fPIE
+			# -fpie
 
-            -pipe
+			-pipe
 
-            -Wpedantic
-            -Wall
-            -Wextra
-            -Werror
-		    -Wold-style-cast
-		    -Wnon-virtual-dtor
-		    -Wcast-align
-		    -Wunused
-            -Woverloaded-virtual
-		    -Wconversion
-		    -Wsign-conversion
-            -Wmisleading-indentation
-		    -Wnull-dereference
-		    -Wdouble-promotion
-		    -Wformat=2
-		    -Wduplicated-cond
-		    -Wduplicated-branches
-		    -Wlogical-op
-            -Wuseless-cast
-            
-            -Wno-unknown-pragmas
+			-Wpedantic
+			-Wall
+			-Wextra
+			-Werror
+			-Wold-style-cast
+			-Wnon-virtual-dtor
+			-Wcast-align
+			-Wunused
+			-Woverloaded-virtual
+			-Wconversion
+			-Wsign-conversion
+			-Wmisleading-indentation
+			-Wnull-dereference
+			-Wdouble-promotion
+			-Wformat=2
+			-Wduplicated-cond
+			-Wduplicated-branches
+			-Wlogical-op
+			-Wuseless-cast
 
-            # -fsanitize=thread -fsanitize=address
-    )
+			-Wno-unknown-pragmas
 
-    set(EXTRA_LIBS ${EXTRA_LIBS}
-        stdc++fs
-        # pthread
-    )
+			# -fsanitize=thread
+			-fsanitize=address
+			)
+
+    set (EXTRA_LIBS ${EXTRA_LIBS}
+			stdc++fs
+			# pthread
+			clang_rt.asan_dynamic-x86_64
+			clang_rt.asan_dynamic_runtime_thunk-x86_64
+			)
 
     target_link_options(${EXECUTABLE_TARGET_NAME}
-        PRIVATE
+			PRIVATE
+			/wholearchive:clang_rt.asan_dynamic_runtime_thunk-x86_64.lib
             # LINKER: -pie
             # LINKER: -z,defs                             # Detect and reject underlinking
             # LINKER: -z,now                              # Disable lazy binding
@@ -182,12 +186,12 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "GNU")
             # LINKER: -no-allow-shlib-undefined           # Disallows undefined symbols in shared libraries
             LINKER: -unresolved-symbols=report-all
     )
-endif ()
+endif()
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	if ("${CMAKE_CXX_SIMULATE_ID}" STREQUAL "MSVC")
-		target_compile_options(${EXECUTABLE_TARGET_NAME}
-			PRIVATE
+if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+	if("${CMAKE_CXX_SIMULATE_ID}" STREQUAL "MSVC")
+		target_compile_options (${EXECUTABLE_TARGET_NAME}
+				PRIVATE
 				-Wpedantic
 				-Wall
 				/EHa
@@ -215,11 +219,11 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 				-Wno-unknown-warning-option
 
 				# -fsanitize=thread
-				# -fsanitize=address
+				-fsanitize=address
 				)
 	else()
-		target_compile_options(${EXECUTABLE_TARGET_NAME}
-			PRIVATE
+		target_compile_options (${EXECUTABLE_TARGET_NAME}
+				PRIVATE
 				-Wpedantic
 				-Wall
 				-fexceptions
@@ -244,54 +248,60 @@ if (CMAKE_CXX_COMPILER_ID MATCHES "Clang")
 				-Wno-unknown-pragmas
 				-Wno-unknown-warning-option
 
-				#-fsanitize=thread -fsanitize=address
-			)
+				# -fsanitize=thread
+				-fsanitize=address
+				)
 	endif()
-endif ()
+endif()
 
-if (CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-    target_compile_options(${EXECUTABLE_TARGET_NAME}
-        PRIVATE
+if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+	target_compile_options (${EXECUTABLE_TARGET_NAME}
+			PRIVATE
 			"/std:c++latest"
 
-#            /W4
-#            /WX
-            /w14242 # 'identifier': conversion from 'type1' to 'type1', possible loss of data
-            /w14254 # 'operator': conversion from 'type1:field_bits' to 'type2:field_bits', possible loss of data
-            /w14263 # 'function': member function does not override any base class virtual member function
-            /w14265 # 'classname': class has virtual functions, but destructor is not virtual
-            /w14287 # 'operator': unsigned/negative constant mismatch
-            /we4289 # 'variable': loop control variable declared in the for-loop is used outside the for-loop scope
-            /w14296 # 'operator': expression is always 'boolean_value'
-            /w14311 # 'variable': pointer truncation from 'type1' to 'type2'
-            /w14545 # expression before comma evaluates to a function which is missing an argument list
-            /w14546 # function call before comma missing argument list
-            /w14547 # 'operator': operator before comma has no effect; expected operator with side-effect
-            /w14549 # 'operator': operator before comma has no effect; did you intend 'operator'?
-            /w14555 # expression has no effect; expected expression with side-effect
-            /w14619 # pragma warning: there is no warning number 'number'
-            /w14640 # Enable warning on thread un-safe static member initialization
-            /w14826 # Conversion from 'type1' to 'type_2' is sign-extended. This may cause unexpected runtime behavior.
-            /w14905 # wide string literal cast to 'LPSTR'
-            /w14906 # string literal cast to 'LPWSTR'
-            /w14928 # illegal copy-initialization; more than one user-defined conversion has been implicitly applied
-    )
-endif ()
+			# /W4
+			# /WX
+			/w14242 # 'identifier': conversion from 'type1' to 'type1', possible loss of data
+			/w14254 # 'operator': conversion from 'type1:field_bits' to 'type2:field_bits', possible loss of data
+			/w14263 # 'function': member function does not override any base class virtual member function
+			/w14265 # 'classname': class has virtual functions, but destructor is not virtual
+			/w14287 # 'operator': unsigned/negative constant mismatch
+			/we4289 # 'variable': loop control variable declared in the for-loop is used outside the for-loop scope
+			/w14296 # 'operator': expression is always 'boolean_value'
+			/w14311 # 'variable': pointer truncation from 'type1' to 'type2'
+			/w14545 # expression before comma evaluates to a function which is missing an argument list
+			/w14546 # function call before comma missing argument list
+			/w14547 # 'operator': operator before comma has no effect; expected operator with side-effect
+			/w14549 # 'operator': operator before comma has no effect; did you intend 'operator'?
+			/w14555 # expression has no effect; expected expression with side-effect
+			/w14619 # pragma warning: there is no warning number 'number'
+			/w14640 # Enable warning on thread un-safe static member initialization
+			/w14826 # Conversion from 'type1' to 'type_2' is sign-extended. This may cause unexpected runtime behavior.
+			/w14905 # wide string literal cast to 'LPSTR'
+			/w14906 # string literal cast to 'LPWSTR'
+			/w14928 # illegal copy-initialization; more than one user-defined conversion has been implicitly applied
+			)
+endif()
+
+target_link_directories (${EXECUTABLE_TARGET_NAME}
+		PRIVATE
+		"C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/lib/x64"
+		)
 
 
-target_link_libraries(${EXECUTABLE_TARGET_NAME}
-    PRIVATE
-        ${EXTRA_LIBS}
+target_link_libraries (${EXECUTABLE_TARGET_NAME}
+		PRIVATE
+		${EXTRA_LIBS}
 
-        Vulkan::Vulkan
+		Vulkan::Vulkan
 
 		${Boost_LIBRARIES}
-        
+
 		fmt::fmt-header-only
-	    #fmt::fmt
-        glfw
-        glm::glm
-	    nlohmann_json::nlohmann_json
-        range-v3 range-v3-meta range-v3::meta range-v3-concepts
+		#fmt::fmt
+		glfw
+		glm::glm
+		nlohmann_json::nlohmann_json
+		range-v3 range-v3-meta range-v3::meta range-v3-concepts
 		volk::volk volk::volk_headers
-)
+		)
