@@ -7,6 +7,7 @@ class Error(Exception):
 	"""Base class for exceptions in this module."""
 	pass
 
+
 class GLSLangValidatorError(Error):
 	"""Exception raised for glslangValidator reported errors.
 

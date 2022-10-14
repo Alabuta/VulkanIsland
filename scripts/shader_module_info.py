@@ -13,9 +13,9 @@ class ShaderLanguage(Enum):
     @staticmethod
     def from_str(label):
         return {
-            '.glsl' : ShaderLanguage.GLSL,
-            '.hlsl' : ShaderLanguage.HLSL
-        }[label];
+            '.glsl': ShaderLanguage.GLSL,
+            '.hlsl': ShaderLanguage.HLSL
+        }[label]
 
 
 class ShaderModuleInfo:
@@ -23,26 +23,28 @@ class ShaderModuleInfo:
 
     Attributes:
     ----------
-        language : ShaderLanguage
+        language: ShaderLanguage
             shader language
-        name : str
+        name: str
             shader source file name
-        stage : ShaderStage
+        stage: ShaderStage
             shader stage type
-        technique_index : int
+        technique_index: int
             technique index
-        constants : list
+        constants: list
             array of json-like objects
-        data : object
+        data: object
             any data that specific to the stage
     """
-    def __init__(self, shader_language : ShaderLanguage, name : str, stage : ShaderStage, technique_index : int, constants : list, data=None) -> None:
-        self.__shader_language=shader_language
-        self.__name=name
-        self.__stage=stage
-        self.__technique_index=technique_index
-        self.__constants=constants
-        self.__data=data
+
+    def __init__(self, shader_language: ShaderLanguage, name: str, stage: ShaderStage, technique_index: int,
+                 constants: list, data=None) -> None:
+        self.__shader_language = shader_language
+        self.__name = name
+        self.__stage = stage
+        self.__technique_index = technique_index
+        self.__constants = constants
+        self.__data = data
 
     @property
     def shader_language(self) -> ShaderLanguage:
@@ -65,24 +67,24 @@ class ShaderModuleInfo:
         return self.__constants
 
     @property
-    def data(self) -> object:
+    def data(self) -> list:
         return self.__data
 
     @property
     def entry_point(self) -> str:
-        return f'technique{self.__technique_index}';
+        return f'technique{self.__technique_index}'
 
     @property
     def target_name(self) -> str:
-        s=f'{self.__name}.{self.__technique_index}'
+        s = f'{self.__name}.{self.__technique_index}'
 
-        if self.__stage==ShaderStage.VERTEX:
-            getter=itemgetter('semantic','type')
-            vertex_layout='|'.join(map(lambda a: ':'.join(getter(a)).lower(), self.__data))
-            s+=f'.{vertex_layout}'
+        if self.__stage == ShaderStage.VERTEX:
+            getter = itemgetter('semantic', 'type')
+            vertex_layout = '|'.join(map(lambda a: ':'.join(getter(a)).lower(), self.__data))
+            s += f'.{vertex_layout}'
 
-        elif self.__stage==ShaderStage.GEOMETRY:
-            primitive_input=self.__data['inputLayout']
-            s+=f'.{primitive_input}'
+        elif self.__stage == ShaderStage.GEOMETRY:
+            primitive_input = self.__data['inputLayout']
+            s += f'.{primitive_input}'
 
         return s

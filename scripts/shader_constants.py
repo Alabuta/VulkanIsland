@@ -14,21 +14,21 @@ class ShaderStage(Enum):
     @staticmethod
     def from_str(label):
         return {
-            'vertex' : ShaderStage.VERTEX,
-            'tess_ctrl' : ShaderStage.TESS_CONTROL,
-            'tess_eval' : ShaderStage.TESS_EVALUATION,
-            'geometry' : ShaderStage.GEOMETRY,
-            'fragment' : ShaderStage.FRAGMENT,
-            'compute' : ShaderStage.COMPUTE
-        }[label];
+            'vertex': ShaderStage.VERTEX,
+            'tess_ctrl': ShaderStage.TESS_CONTROL,
+            'tess_eval': ShaderStage.TESS_EVALUATION,
+            'geometry': ShaderStage.GEOMETRY,
+            'fragment': ShaderStage.FRAGMENT,
+            'compute': ShaderStage.COMPUTE
+        }[label]
 
     @staticmethod
     def to_str(stage):
         return {
-            ShaderStage.VERTEX : 'vert',
-            ShaderStage.TESS_CONTROL : 'tesc',
-            ShaderStage.TESS_EVALUATION : 'tese',
-            ShaderStage.GEOMETRY : 'geom',
-            ShaderStage.FRAGMENT : 'frag',
-            ShaderStage.COMPUTE : 'comp'
-        }[stage];
+            ShaderStage.VERTEX: 'vert',
+            ShaderStage.TESS_CONTROL: 'tesc',
+            ShaderStage.TESS_EVALUATION: 'tese',
+            ShaderStage.GEOMETRY: 'geom',
+            ShaderStage.FRAGMENT: 'frag',
+            ShaderStage.COMPUTE: 'comp'
+        }[stage]

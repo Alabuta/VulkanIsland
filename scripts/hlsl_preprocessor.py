@@ -2,14 +2,11 @@ __all__ = ['HLSLShaderPreprocessor']
 
 import os
 import re
-from abc import ABC, abstractmethod
-
 from operator import itemgetter
-from functools import reduce
 
+from abstract_shader_preprocessor import AbstractShaderPreprocessor
 from shader_constants import ShaderStage
 from shader_module_info import ShaderModuleInfo
-from abstract_shader_preprocessor import AbstractShaderPreprocessor
 
 
 class HLSLShaderPreprocessor(AbstractShaderPreprocessor):
@@ -17,11 +14,11 @@ class HLSLShaderPreprocessor(AbstractShaderPreprocessor):
 
     Attributes:
     ----------
-        shaders_src_folder : str
+        shaders_src_folder: str
             path to shaders' source files folder
     """
 
-    VERTEX_ATTRIBUTES_TYPES={
+    VERTEX_ATTRIBUTES_TYPES = {
         'r8i_norm': 'float',
         'rg8i_norm': 'float2',
         'rgb8i_norm': 'float3',
@@ -103,91 +100,95 @@ class HLSLShaderPreprocessor(AbstractShaderPreprocessor):
         'rgba64f': 'double4'
     }
 
-    def __init__(self, shaders_src_folder : str) -> None:
-        self.__processed_shaders={}
-        self.__shaders_src_folder=shaders_src_folder
+    def __init__(self, shaders_src_folder: str) -> None:
+        self.__processed_shaders = {}
+        self.__shaders_src_folder = shaders_src_folder
+        self.__shader_stage_header = ''
+        self.__source_code = ''
 
     @property
     def source_code(self) -> str:
         return self.__source_code
 
-    def process(self, shader_module : ShaderModuleInfo) -> None:
-        self.__shader_stage_header=self.__get_shader_stage_header(shader_module)
+    def process(self, shader_module: ShaderModuleInfo) -> None:
+        self.__shader_stage_header = self.__get_shader_stage_header(shader_module)
 
-        source_code_path=os.path.join(self.__shaders_src_folder, shader_module.source_name)
-        source_code=self.__get_shader_source_code(source_code_path)
+        source_code_path = os.path.join(self.__shaders_src_folder, shader_module.source_name)
+        source_code = self.__get_shader_source_code(source_code_path)
         assert source_code, f'can\'t get shader source code {source_code_path}'
-        
-        source_code=HLSLShaderPreprocessor.__remove_inactive_techniques(shader_module.technique_index, source_code)
 
-        if shader_module.stage==ShaderStage.VERTEX:
-            source_code=HLSLShaderPreprocessor.__sub_attributes_unpacks(source_code, shader_module.data)
+        source_code = HLSLShaderPreprocessor.__remove_inactive_techniques(shader_module.technique_index, source_code)
+
+        if shader_module.stage == ShaderStage.VERTEX:
+            source_code = HLSLShaderPreprocessor.__sub_attributes_unpacks(source_code, shader_module.data)
 
         if shader_module.constants:
-            constants=HLSLShaderPreprocessor.__get_specialization_constants(shader_module.constants)
-            source_code=f'{constants}\n{source_code}'
+            constants = HLSLShaderPreprocessor.__get_specialization_constants(shader_module.constants)
+            source_code = f'{constants}\n{source_code}'
 
-        self.__source_code=f'{self.__shader_stage_header}\n#line 0\n{source_code}'
-        # print(f'{shader_module.technique_index} ----------------------\n{self.__source_code}')
+        self.__source_code = f'{self.__shader_stage_header}\n#line 0\n{source_code}'
 
-    def __get_shader_stage_header(self, shader_module : ShaderModuleInfo) -> str:
+    def __get_shader_stage_header(self, shader_module: ShaderModuleInfo) -> str:
         """
         A function is used to get particular shade stage header lines.
 
         Parameters
         ----------
-        shader_module : ShaderModuleInfo
+        shader_module: ShaderModuleInfo
             Shader module info instance
         """
-        stage_inputs=self.__shader_inputs(shader_module)
+        stage_inputs = self.__shader_inputs(shader_module)
 
-        include_directives='#include "vertex/vertex-attributes-unpack.hlsl"\n';
+        include_directives = '#include "vertex/vertex-attributes-unpack.hlsl"\n';
 
         return f'{include_directives}\n{stage_inputs}'
         # return f'{self.__version_line}\n{self.__extensions_lines}\n{include_directives}\n{stage_inputs}'
 
-    def __shader_inputs(self, shader_module : ShaderModuleInfo) -> str:
-        if shader_module.stage==ShaderStage.VERTEX:
-            attributes='\n'.join(map(lambda vl: f'\t[[vk::location({self.VERTEX_ATTRIBUTES_LOCATIONS[vl["semantic"]]})]] {self.VERTEX_ATTRIBUTES_TYPES[vl["type"]]} {vl["semantic"]} : {re.sub("_", "", vl["semantic"])};', shader_module.data))
-            return 'struct VS_INPUT\n{\n'+attributes+'\n};'
+    def __shader_inputs(self, shader_module: ShaderModuleInfo) -> str:
+        if shader_module.stage == ShaderStage.VERTEX:
+            attributes = '\n'.join(map(lambda
+                                           vl: f'\t[[vk::location({self.VERTEX_ATTRIBUTES_LOCATIONS[vl["semantic"]]})]] {self.VERTEX_ATTRIBUTES_TYPES[vl["type"]]} {vl["semantic"]}: {re.sub("_", "", vl["semantic"])};',
+                                       shader_module.data))
+            return 'struct VS_INPUT\n{\n' + attributes + '\n};'
 
-        # elif shader_module.stage==ShaderStage.GEOMETRY:
-        #     input_layout, output_layout, out_vertices_count=itemgetter('inputLayout', 'outputLayout', 'outVerticesCount')(shader_module.data)
+        # elif shader_module.stage= = ShaderStage.GEOMETRY:
+        #     input_layout, output_layout, out_vertices_count = itemgetter('inputLayout', 'outputLayout', 'outVerticesCount')(shader_module.data)
         #     return f'layout ({input_layout}) in;\nlayout ({output_layout}, max_vertices = {out_vertices_count}) out;\n'
 
         else:
             return ''
 
     @staticmethod
-    def __remove_inactive_techniques(technique_index : int, source_code : str) -> str:
-        p0=r'([^\[]\[[^}]+?\][^\]]\n*?)*?'
-        p1=r'[^\n]*[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\([ |\t]*?[^I][ |\t]*?\)'.replace('I', str(technique_index))
-        p2=r'\s*?.*?[\w\d]+?[ |\t]*?\(.*?\).*?\s*?{\s*[\s\S]*?\n*?}'
-        pattern=f'({p0}{p1}{p2})'
+    def __remove_inactive_techniques(technique_index: int, source_code: str) -> str:
+        p0 = r'([^\[]\[[^}]+?\][^\]]\n*?)*?'
+        p1 = r'[^\n]*[ |\t]*#[ |\t]*pragma[ |\t]+technique[ |\t]*\([ |\t]*?[^I][ |\t]*?\)'.replace('I',
+                                                                                                   str(technique_index))
+        p2 = r'\s*?.*?[\w\d]+?[ |\t]*?\(.*?\).*?\s*?{\s*[\s\S]*?\n*?}'
+        pattern = f'({p0}{p1}{p2})'
 
         while True:
-            match=re.search(pattern, source_code, re.DOTALL)
+            match = re.search(pattern, source_code, re.DOTALL)
 
             if not match:
                 break
-        
-            substr=match.group(0)
 
-            opening_brackets=substr.count('{')
-            closing_brackets=substr.count('}')
+            substr = match.group(0)
+
+            opening_brackets = substr.count('{')
+            closing_brackets = substr.count('}')
 
             if opening_brackets == closing_brackets:
-                source_code=source_code.replace(substr, '\n' * substr.count('\n'))
+                source_code = source_code.replace(substr, '\n' * substr.count('\n'))
 
             else:
                 assert opening_brackets > closing_brackets, 'opening brackets count less than closing ones'
 
-                start, end=match.span()
+                start, end = match.span()
 
                 while True:
-                    substr=source_code[end:]
+                    substr = source_code[end:]
 
-                    match=re.search(r'.*?}', substr, re.DOTALL)
+                    match = re.search(r'.*?}', substr, re.DOTALL)
 
                     if not match:
                         break
@@ -198,8 +199,8 @@ class HLSLShaderPreprocessor(AbstractShaderPreprocessor):
                     closing_brackets += match.group(0).count('}')
 
                     if opening_brackets == closing_brackets:
-                        substr=source_code[start:end]
-                        source_code=source_code.replace(substr, '\n' * substr.count('\n'))
+                        substr = source_code[start:end]
+                        source_code = source_code.replace(substr, '\n' * substr.count('\n'))
 
                         break
 
@@ -208,35 +209,36 @@ class HLSLShaderPreprocessor(AbstractShaderPreprocessor):
     @staticmethod
     def __sub_attributes_unpacks(source_code, vertex_layout) -> str:
         for vertex_attribute in vertex_layout:
-            semantic, type=itemgetter('semantic', 'type')(vertex_attribute)
+            semantic, type = itemgetter('semantic', 'type')(vertex_attribute)
 
-            pattern=rf'unpackAttribute[ |\t]*\([ |\t]*?(\w*?\s*?\.\s*?){semantic}(.*?)[ |\t]*?\)'
-            general_name=semantic.split('_')[0].lower()
+            pattern = rf'unpackAttribute[ |\t]*\([ |\t]*?(\w*?\s*?\.\s*?){semantic}(.*?)[ |\t]*?\)'
+            general_name = semantic.split('_')[0].lower()
 
-            source_code=re.sub(pattern, rf'unpackAttribute_{general_name}_{type}(\1{semantic}\2)', source_code, 0, re.DOTALL)
+            source_code = re.sub(pattern, rf'unpackAttribute_{general_name}_{type}(\1{semantic}\2)', source_code, 0,
+                                 re.DOTALL)
 
         return source_code
 
     @staticmethod
-    def __get_specialization_constants(specialization_constants : list) -> str:
-        constants=''
+    def __get_specialization_constants(specialization_constants: list) -> str:
+        constants = ''
 
         for index, specialization_constant in enumerate(specialization_constants):
-            name, value, type=itemgetter('name', 'value', 'type')(specialization_constant)
+            name, value, type = itemgetter('name', 'value', 'type')(specialization_constant)
 
-            constants+=f'[[vk::constant_id({index})]] const {type} {name} = {type}({value});\n'
+            constants += f'[[vk::constant_id({index})]] const {type} {name} = {type}({value});\n'
 
         return constants
-    
-    def __get_shader_source_code(self, path : str) -> str:
+
+    def __get_shader_source_code(self, path: str) -> str:
         if path in self.__processed_shaders:
             return self.__processed_shaders[path]
 
         with open(path, 'rb') as file:
-            source_code=file.read().decode('UTF-8')
+            source_code = file.read().decode('UTF-8')
 
-            source_code=AbstractShaderPreprocessor.remove_comments(source_code)
+            source_code = AbstractShaderPreprocessor.remove_comments(source_code)
 
-            self.__processed_shaders[path]=source_code
+            self.__processed_shaders[path] = source_code
 
             return source_code
