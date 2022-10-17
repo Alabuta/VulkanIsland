@@ -59,7 +59,7 @@ def get_shader_compilation_flags(shader_module: ShaderModuleInfo) -> list:
         return ['-V', '-D', '--hlsl-enable-16bit-types']
 
 
-def compile_shader(program_options: object, shader_module: ShaderModuleInfo, output_path: str, source_code: str):
+def compile_shader(program_options: dict, shader_module: ShaderModuleInfo, output_path: str, source_code: str):
     compilation_flags = get_shader_compilation_flags(shader_module)
 
     dirpath = os.path.dirname(output_path)

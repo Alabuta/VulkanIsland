@@ -141,7 +141,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device)
         VkDescriptorBufferInfo{app.per_viewport_buffer->handle(), 0, sizeof(per_viewport_t)}
     };
 
-//#if TEMPORARILY_DISABLED
+//#ifdef TEMPORARILY_DISABLED
     // TODO: descriptor info typed by VkDescriptorType.
     auto const per_image = std::array{
         VkDescriptorImageInfo{app.texture->sampler->handle(), app.texture->view->handle(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL}
@@ -182,7 +182,7 @@ void update_descriptor_set(app_t &app, vulkan::device const &device)
             std::data(per_viewport),
             nullptr
         },
-//#if TEMPORARILY_DISABLED
+//#ifdef TEMPORARILY_DISABLED
         {
             VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
             nullptr,

@@ -7,7 +7,7 @@ from shader_module_info import ShaderModuleInfo
 
 
 class AbstractShaderPreprocessor(ABC):
-    VERTEX_ATTRIBUTES_LOCATIONS={
+    VERTEX_ATTRIBUTES_LOCATIONS = {
         'POSITION': 0,
         'NORMAL': 1,
         'TEXCOORD_0': 2,
@@ -32,9 +32,7 @@ class AbstractShaderPreprocessor(ABC):
     def remove_comments(source_code: str) -> str:
         pattern = r'(?://[^\n]*|/\*(?:(?!\*/).)*\*/)'
 
-        substrs = re.findall(pattern, source_code, re.DOTALL)
-
-        for substr in substrs:
+        for substr in re.findall(pattern, source_code, re.DOTALL):
             source_code = source_code.replace(substr, '\n' * substr.count('\n'))
 
         return source_code

@@ -22,7 +22,7 @@ namespace resource
     { }
 }
 
-#if NOT_YET_IMPLEMENTED
+#ifdef NOT_YET_IMPLEMENTED
 namespace resource
 {
     std::size_t hash<resource::buffer>::operator() (std::shared_ptr<resource::buffer> const buffer) const
@@ -37,7 +37,7 @@ namespace resource
 }
 #endif
 
-#if OBSOLETE
+#ifdef OBSOLETE
 std::shared_ptr<DeviceMemory>
 CreateBuffer(vulkan::device &device, VkBuffer &buffer, VkDeviceSize size, VkBufferUsageFlags usage, VkMemoryPropertyFlags properties)
 {

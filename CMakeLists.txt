@@ -1,11 +1,16 @@
-cmake_minimum_required(VERSION 3.20 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
 
 project(VulkanIsland VERSION 1.0.0 LANGUAGES CXX)
 
 configure_file(
-		"./engine/include/config.hxx.in"
-		"./engine/include/config.hxx"
+	"${PROJECT_SOURCE_DIR}/engine/include/config.hxx.in"
+	"${PROJECT_SOURCE_DIR}/engine/include/config.hxx"
 )
+
+set(EXECUTABLE_TARGET_NAME engine)
+add_executable(${EXECUTABLE_TARGET_NAME})
+
+include("cmake/SetCompilerFlagsStyle.cmake")
 
 find_package(Vulkan REQUIRED)
 find_package(Boost 1.68 REQUIRED)
@@ -15,9 +20,6 @@ find_package(glm CONFIG REQUIRED)
 find_package(nlohmann_json 3.7 CONFIG REQUIRED)
 find_package(range-v3 CONFIG REQUIRED)
 find_package(volk CONFIG REQUIRED)
-
-set(EXECUTABLE_TARGET_NAME engine)
-add_executable(${EXECUTABLE_TARGET_NAME})
 
 target_sources(${EXECUTABLE_TARGET_NAME}
     PRIVATE
@@ -91,34 +93,21 @@ target_sources(${EXECUTABLE_TARGET_NAME}
 		./engine/src/main.hxx 									./engine/src/main.cxx
 )
 
-target_include_directories (${EXECUTABLE_TARGET_NAME}
-		PRIVATE
-		./engine/src
-
-		SYSTEM INTERFACE
+target_include_directories(${EXECUTABLE_TARGET_NAME}
+	SYSTEM PRIVATE
 		${Boost_INCLUDE_DIR}
-
 		./engine/include
-		)
+
+	PRIVATE
+		./engine/src
+)
 
 if(NOT WIN32)
 	find_package (X11 REQUIRED)
 endif()
 
-if(CMAKE_CXX_COMPILER_ID MATCHES GNU)
-	target_compile_definitions (${EXECUTABLE_TARGET_NAME}
-			PRIVATE
-			_GLIBCXX_USE_CXX11_ABI=1
-			)
-endif()
-
-target_compile_features(${EXECUTABLE_TARGET_NAME}
-		PUBLIC
-		cxx_std_23
-)
-
 set_target_properties (${EXECUTABLE_TARGET_NAME}
-		PROPERTIES
+	PROPERTIES
 		VERSION ${PROJECT_VERSION}
 
 		CXX_STANDARD 23
@@ -128,11 +117,43 @@ set_target_properties (${EXECUTABLE_TARGET_NAME}
 		POSITION_INDEPENDENT_CODE ON
 
 		DEBUG_POSTFIX .d
-		)
+)
 
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-	target_compile_options (${EXECUTABLE_TARGET_NAME}
-			PRIVATE
+target_compile_options(${EXECUTABLE_TARGET_NAME}
+	PRIVATE
+		${EXTRA_COMPILER_OPTIONS}
+
+		"$<$<OR:$<BOOL:${CXX_FLAGS_STYLE_GNU}>,$<BOOL:${CXX_FLAGS_STYLE_CLANGCL}>>:"
+			-Wpedantic
+			-Wall
+			-Wextra
+			-Werror
+
+			-Wold-style-cast
+			-Wnon-virtual-dtor
+			-Wcast-align
+			-Wunused
+			-Woverloaded-virtual
+			-Wconversion
+			-Wsign-conversion
+			-Wnull-dereference
+			-Wdouble-promotion
+			-Wformat=2
+			-Wduplicated-cond
+			-Wduplicated-branches
+			-Wlogical-op
+			-Wuseless-cast
+			-Wmisleading-indentation
+
+			-Wno-c++98-compat
+			-Wno-c++98-compat-pedantic
+			-Wno-pre-c++17-compat
+
+			-Wno-switch-enum
+			-Wno-covered-switch-default
+		">"
+
+		"$<$<BOOL:${CXX_FLAGS_STYLE_GNU}>:"
 			-fconcepts
 
 			-fasynchronous-unwind-tables                # Increased reliability of backtraces
@@ -141,122 +162,20 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 			# -fpie
 
 			-pipe
+		">"
 
-			-Wpedantic
-			-Wall
-			-Wextra
-			-Werror
-			-Wold-style-cast
-			-Wnon-virtual-dtor
-			-Wcast-align
-			-Wunused
-			-Woverloaded-virtual
-			-Wconversion
-			-Wsign-conversion
-			-Wmisleading-indentation
-			-Wnull-dereference
-			-Wdouble-promotion
-			-Wformat=2
-			-Wduplicated-cond
-			-Wduplicated-branches
-			-Wlogical-op
-			-Wuseless-cast
+		"$<$<BOOL:${CXX_FLAGS_STYLE_CLANGCL}>:"
+			/EHa
+			# -Xclang -fexceptions -Xclang -fcxx-exceptions
+			SHELL:-Xclang -fexceptions
 
 			-Wno-unknown-pragmas
+			-Wno-unknown-warning-option
 
-			# -fsanitize=thread
-			-fsanitize=address
-			)
+			-Wno-shadow-field-in-constructor
+		">"
 
-    set (EXTRA_LIBS ${EXTRA_LIBS}
-			stdc++fs
-			# pthread
-			clang_rt.asan_dynamic-x86_64
-			clang_rt.asan_dynamic_runtime_thunk-x86_64
-			)
-
-    target_link_options(${EXECUTABLE_TARGET_NAME}
-			PRIVATE
-			/wholearchive:clang_rt.asan_dynamic_runtime_thunk-x86_64.lib
-            # LINKER: -pie
-            # LINKER: -z,defs                             # Detect and reject underlinking
-            # LINKER: -z,now                              # Disable lazy binding
-            # LINKER: -z,relro                            # Read-only segments after relocation
-            # LINKER: -no-undefined                       # Report unresolved symbol references from regular object files
-            # LINKER: -no-allow-shlib-undefined           # Disallows undefined symbols in shared libraries
-            LINKER: -unresolved-symbols=report-all
-    )
-endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-	if("${CMAKE_CXX_SIMULATE_ID}" STREQUAL "MSVC")
-		target_compile_options (${EXECUTABLE_TARGET_NAME}
-				PRIVATE
-				-Wpedantic
-				-Wall
-				/EHa
-				-Wno-c++98-compat
-				# -Wno-c++98-compat-pedantic
-				-Wno-covered-switch-default
-				-Wno-undef
-				-Wno-switch-enum
-				-Wextra
-				-Werror
-				-Wold-style-cast
-				-Wnon-virtual-dtor
-				-Wcast-align
-				-Wunused
-				-Wconversion
-				-Woverloaded-virtual
-				-Wsign-conversion
-				-Wnull-dereference
-				-Wdouble-promotion
-				-Wno-shadow-field-in-constructor
-				-Wformat=2
-				# -Wlifetime
-
-				-Wno-unknown-pragmas
-				-Wno-unknown-warning-option
-
-				# -fsanitize=thread
-				-fsanitize=address
-				)
-	else()
-		target_compile_options (${EXECUTABLE_TARGET_NAME}
-				PRIVATE
-				-Wpedantic
-				-Wall
-				-fexceptions
-				-fcxx-exceptions
-				-Wno-c++98-compat
-				# Wno-c++98-compat-pedantic
-				-Wextra
-				-Werror
-				-Wold-style-cast
-				-Wnon-virtual-dtor
-				-Wcast-align
-				-Wunused
-				-Wconversion
-				-Woverloaded-virtual
-				-Wsign-conversion
-				-Wnull-dereference
-				-Wdouble-promotion
-				-Wno-shadow-field-in-constructor
-				-Wformat=2
-				# -Wlifetime
-
-				-Wno-unknown-pragmas
-				-Wno-unknown-warning-option
-
-				# -fsanitize=thread
-				-fsanitize=address
-				)
-	endif()
-endif()
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
-	target_compile_options (${EXECUTABLE_TARGET_NAME}
-			PRIVATE
+		"$<$<BOOL:${CXX_FLAGS_STYLE_MSVC}>:"
 			"/std:c++latest"
 
 			# /W4
@@ -280,17 +199,16 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
 			/w14905 # wide string literal cast to 'LPSTR'
 			/w14906 # string literal cast to 'LPWSTR'
 			/w14928 # illegal copy-initialization; more than one user-defined conversion has been implicitly applied
-			)
-endif()
+		">"
+)
 
-target_link_directories (${EXECUTABLE_TARGET_NAME}
-		PRIVATE
-		"C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.29.30133/lib/x64"
-		)
+target_link_directories(${EXECUTABLE_TARGET_NAME}
+	PRIVATE
+		${EXTRA_LINK_DIRS}
+)
 
-
-target_link_libraries (${EXECUTABLE_TARGET_NAME}
-		PRIVATE
+target_link_libraries(${EXECUTABLE_TARGET_NAME}
+	PRIVATE
 		${EXTRA_LIBS}
 
 		Vulkan::Vulkan
@@ -304,4 +222,23 @@ target_link_libraries (${EXECUTABLE_TARGET_NAME}
 		nlohmann_json::nlohmann_json
 		range-v3 range-v3-meta range-v3::meta range-v3-concepts
 		volk::volk volk::volk_headers
-		)
+)
+
+target_link_options(${EXECUTABLE_TARGET_NAME}
+	PRIVATE
+		${EXTRA_LINK_OPTIONS}
+
+		"$<$<IN_LIST:${CMAKE_SYSTEM_NAME}," Linux";"Darwin">:"
+			# LINKER:SHELL:-z defs
+			LINKER:-z,defs;                         # Detect and reject underlinking
+			LINKER:-z,now;                          # Disable lazy binding
+			LINKER:-z,relro                         # Read-only segments after relocation
+		">"
+
+		"$<$<OR:$<BOOL:${CXX_FLAGS_STYLE_GNU}>,$<BOOL:${CXX_FLAGS_STYLE_CLANGCL}>>:"
+			LINKER:-pie;
+			LINKER:-no-undefined;                   # Report unresolved symbol references from regular object files
+			LINKER:-no-allow-shlib-undefined;       # Disallows undefined symbols in shared libraries
+			LINKER:-unresolved-symbols=report-all
+		">"
+)

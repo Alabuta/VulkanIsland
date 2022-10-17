@@ -1,4 +1,4 @@
-#if OBSOLETE
+#ifdef OBSOLETE
 #include <optional>
 #include <variant>
 #include <set>
@@ -252,7 +252,7 @@ struct mesh_t {
         std::vector<accessor_t> attributes;
 
         accessors_set_t attribute_accessors;
-    #if NOT_YET_IMPLEMENTED
+    #ifdef NOT_YET_IMPLEMENTED
         saa_t attribute_accessors2;
     #endif
         glTF::PRIMITIVE_MODE mode{glTF::PRIMITIVE_MODE::TRIANGLES};
@@ -786,7 +786,7 @@ void initNodeGraph(std::vector<glTF::scene_t> const &scenes, std::vector<glTF::n
                         }, node.transform);
                     }
 
-                #if NOT_YET_IMPLEMENTED
+                #ifdef NOT_YET_IMPLEMENTED
                     if (node.mesh) {
                         registry.assign<ecs::mesh>(entity);
                     }
@@ -847,7 +847,7 @@ bool load(std::string_view name, staging::scene_t &scene, ecs::NodeSystem &)
     auto bufferViews = json.at("bufferViews"s).get<std::vector<glTF::buffer_view_t>>();
     auto accessors = json.at("accessors"s).get<std::vector<glTF::accessor_t>>();
 
-#if TEMPORARILY_DISABLED
+#ifdef TEMPORARILY_DISABLED
     auto images = ([&json]
     {
         if (json.count("images"s))

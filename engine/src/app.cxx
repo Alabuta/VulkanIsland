@@ -485,7 +485,7 @@ namespace temp
             model_.scene_nodes.push_back(xformat::scene_node{node_index++, std::size(model_.meshes)});
             add_plane(app, model_, 2, graphics::INDEX_TYPE::UINT_16, 2);
 
-#if TEMPORARILY_DISABLED
+#ifdef TEMPORARILY_DISABLED
             if (false) {
                 struct vertex_struct final {
                     std::array<boost::float32_t, 3> position;
@@ -656,7 +656,7 @@ app_t::app_t(platform::window &window)
 
     else image_resources_descriptor_set_layout = descriptor_set_layout.value();
 
-#if TEMPORARILY_DISABLED
+#ifdef TEMPORARILY_DISABLED
     if (auto result = glTF::load(sceneName, scene, nodeSystem); !result)
         throw resource::exception("failed to load a mesh"s);
 #endif

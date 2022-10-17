@@ -117,7 +117,7 @@ namespace graphics
             ++subpass_index;
         }
 
-    #if NOT_YET_IMPLEMENTED
+    #ifdef NOT_YET_IMPLEMENTED
         VkInputAttachmentAspectReference const depthAttachmentAspectReference{
             0, 0, VK_IMAGE_ASPECT_DEPTH_BIT
         };

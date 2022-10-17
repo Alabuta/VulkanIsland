@@ -161,7 +161,7 @@ load_texture(vulkan::device &device, resource::resource_manager &resource_manage
 
     if (auto image = resource_manager.create_image(type, format, extent, mip_levels, samples_count, tiling, usage_flags, property_flags); image) {
         if (auto view = resource_manager.create_image_view(image, view_type, aspect_flags); view)
-    #if NOT_YET_IMPLEMENTED
+    #ifdef NOT_YET_IMPLEMENTED
             if (auto sampler = resource_manager.create_image_sampler(mip_levels()); sampler)
                 texture.emplace(image, *view, sampler);
     #else

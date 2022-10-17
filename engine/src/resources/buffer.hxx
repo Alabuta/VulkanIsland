@@ -130,7 +130,7 @@ namespace resource
     };
 }
 
-#if NOT_YET_IMPLEMENTED
+#ifdef NOT_YET_IMPLEMENTED
 namespace resource
 {
     template<>

@@ -52,7 +52,7 @@ namespace graphics
 
 namespace graphics
 {
-#if NOT_YET_IMPLEMENTED
+#ifdef NOT_YET_IMPLEMENTED
     struct render_pass_invariant final {
         std::vector<graphics::attachment_description> attachment_descriptions;
         std::vector<graphics::subpass_description> subpass_descriptions;

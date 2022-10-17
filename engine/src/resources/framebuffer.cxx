@@ -10,7 +10,7 @@ namespace resource
         std::size_t seed = 0;
 
         // TODO:: implement
-    #if NOT_YET_IMPLEMENTED
+    #ifdef NOT_YET_IMPLEMENTED
         graphics::hash<graphics::render_pass> constexpr render_pass_hasher;
         boost::hash_combine(seed, render_pass_hasher(*invariant.render_pass));
 

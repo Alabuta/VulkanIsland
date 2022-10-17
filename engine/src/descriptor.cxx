@@ -39,7 +39,7 @@ std::optional<VkDescriptorPool> create_descriptor_pool(vulkan::device const &dev
     std::array<VkDescriptorPoolSize, 3> constexpr pool_sizes{{
 		{ VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 2 },
 		{ VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, 1 },
-//#if TEMPORARILY_DISABLED
+//#ifdef TEMPORARILY_DISABLED
 		{ VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 }
 //#endif
     }};
@@ -59,7 +59,7 @@ std::optional<VkDescriptorPool> create_descriptor_pool(vulkan::device const &dev
     else throw vulkan::exception(fmt::format("failed to create descriptor pool: {0:#x}", result));
 }
 
-#if OBSOLETE
+#ifdef OBSOLETE
 std::optional<VkDescriptorSetLayout> create_descriptor_set_layout(vulkan::device const &device)
 {
     std::array<VkDescriptorSetLayoutBinding, 2> constexpr layout_bindings{{
@@ -73,7 +73,7 @@ std::optional<VkDescriptorSetLayout> create_descriptor_set_layout(vulkan::device
             1, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             nullptr
         }
-#if TEMPORARILY_DISABLED
+#ifdef TEMPORARILY_DISABLED
         {
             2, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
             1, VK_SHADER_STAGE_FRAGMENT_BIT,

@@ -1,7 +1,7 @@
 #pragma once
 
 
-#if OBSOLETE
+#ifdef OBSOLETE
 #include "ecs/node.hxx"
 #include "ecs/transform.hxx"
 #include "ecs/mesh.hxx"
