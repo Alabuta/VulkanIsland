@@ -125,7 +125,14 @@ namespace
 
     bool compare_device_features(VkPhysicalDeviceFeatures &lhs, VkPhysicalDeviceFeatures &rhs)
     {
+#if defined(__GNUC__) || defined(__GNUG__)
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wuseless-cast"
+#endif
         auto total = static_cast<VkBool32>(VK_TRUE);
+#if defined(__GNUC__) || defined(__GNUG__)
+        #pragma GCC diagnostic pop
+#endif
 
         auto compare_fields_by_lhs = [&lhs, &rhs] (auto getter) { return getter(lhs) == (getter(lhs) * getter(rhs)); };
 
@@ -185,7 +192,14 @@ namespace
         total *= compare_fields_by_lhs([] (auto &&feature) { return feature.variableMultisampleRate; });
         total *= compare_fields_by_lhs([] (auto &&feature) { return feature.inheritedQueries; });
 
+#if defined(__GNUC__) || defined(__GNUG__)
+        #pragma GCC diagnostic push
+        #pragma GCC diagnostic ignored "-Wuseless-cast"
+#endif
         return total != static_cast<VkBool32>(VK_FALSE);
+#if defined(__GNUC__) || defined(__GNUG__)
+        #pragma GCC diagnostic pop
+#endif
     }
 
     bool compare_device_extended_features(std::vector<device_extended_feature_t> const &required_extended_features,
@@ -338,10 +352,14 @@ namespace
         std::vector<VkQueueFamilyProperties> queue_families(queue_families_count);
         vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_families_count, std::data(queue_families));
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wunused-lambda-capture"
+#if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wunused-lambda-capture"
+#endif
         auto it_family = std::ranges::find_if(queue_families, [device, surface, family_index = 0u] (auto &&queue_family) mutable
-#pragma clang diagnostic pop
+#if defined(__clang__)
+    #pragma clang diagnostic pop
+#endif
         {
             if constexpr (std::is_same_v<T, graphics::graphics_queue>) {
                 VkBool32 surface_supported = VK_FALSE;

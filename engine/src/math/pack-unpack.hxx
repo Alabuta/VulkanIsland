@@ -38,13 +38,13 @@ namespace math
     requires (std::same_as<std::remove_cvref_t<V>, glm::vec3> && mpl::one_of<T, std::int8_t, std::int16_t>)
     void encode_unit_vector_to_oct_fast(std::span<T, 2> oct, V &&vec)
     {
-        vec.xy = vec.xy() / glm::l1Norm(vec);
-
         auto const is_hemisphere_bottom = vec.z < 0.f;
+
+        vec /= glm::l1Norm(vec);
 
         if (is_hemisphere_bottom) {
             auto sign = 1.f - 2.f * glm::vec2{glm::lessThan(vec.xy(), glm::vec2{0})};
-            vec.xy = (1.f - glm::abs(vec.yx())) * sign;
+            vec = ((1.f - glm::abs(vec.yx())) * sign).xyy();
         }
 
         auto constexpr type_max = static_cast<float>(std::numeric_limits<T>::max());

@@ -11,7 +11,6 @@ using namespace std::string_literals;
 #include "utility/helpers.hxx"
 #include "utility/exceptions.hxx"
 
-#include "math/math.hxx"
 #include "math/pack-unpack.hxx"
 
 #include "graphics/graphics.hxx"
@@ -20,10 +19,13 @@ using namespace std::string_literals;
 
 
 // https://github.com/mrdoob/three.js/blob/00a692864f541a3ec194d266e220efd597eb28fa/src/geometries/PolyhedronGeometry.js
-namespace {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wglobal-constructors"
-	inline static auto const t = (1.f + std::sqrt(5.f)) / 2.f;
+namespace
+{
+#if defined(__clang__)
+    #pragma clang diagnostic push
+    #pragma clang diagnostic ignored "-Wglobal-constructors"
+#endif
+	inline auto const t = (1.f + std::sqrt(5.f)) / 2.f;
 
 	auto const input_vertices = std::array{
 		glm::vec3{-1, t, 0},		glm::vec3{1, t, 0},		glm::vec3{-1, -t, 0},		glm::vec3{1, -t, 0},
@@ -46,7 +48,9 @@ namespace {
             std::pair{0u, 1u}, std::pair{1u, 1u}, std::pair{1u, 0u}
         }
     };
-#pragma clang diagnostic pop
+#if defined(__clang__)
+    #pragma clang diagnostic pop
+#endif
 
     // Angle around the Y axis, counter-clockwise when looking from above.
     float azimuth(glm::vec3 const &point)
@@ -118,7 +122,7 @@ namespace {
             auto point = generate_point(face, columns, i + std::get<0>(offsets), j + std::get<1>(offsets));
 
             if constexpr (N == 2) {
-                std::array<T, 2> oct;
+                std::array<T, 2> oct{};
 
                 math::encode_unit_vector_to_oct_precise(std::span{ oct }, glm::vec3{ point });
 
@@ -139,7 +143,7 @@ namespace {
         if constexpr (N == 2) {
             auto const columns = create_info.detail + 1;
 
-            std::array<glm::vec3, 3> points;
+            std::array<glm::vec3, 3> points{};
             std::transform(std::cbegin(offsets_pattern[pattern_index]), std::cend(offsets_pattern[pattern_index]), std::begin(points), [&face, columns, i, j] (auto offsets)
             {
                 return generate_point(face, columns, i + std::get<0>(offsets), j + std::get<1>(offsets));
@@ -148,7 +152,7 @@ namespace {
             auto const centoroid = std::accumulate(std::cbegin(points), std::cend(points), glm::vec3{0}) / 3.f;
             auto const centoroid_azimuth = azimuth(centoroid);
 
-            std::array<glm::vec2, 3> uvs;
+            std::array<glm::vec2, 3> uvs{};
             std::transform(std::cbegin(points), std::cend(points), std::begin(uvs), [centoroid_azimuth] (auto &&point)
             {
                 auto uv = glm::vec2{azimuth(point) / 2.f / std::numbers::pi_v<float> + .5f, 1.f - (inclination(point) / std::numbers::pi_v<float> + .5f)};
@@ -202,7 +206,7 @@ namespace {
 
         else throw resource::exception("unsupported components number"s);
     }
-    
+
     template<std::size_t N, class T>
     std::array<T, N> generate_color(glm::vec4 const &color, graphics::FORMAT format)
     {

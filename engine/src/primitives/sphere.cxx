@@ -233,7 +233,10 @@ namespace
                                 auto ix = std::max(0u, i - 1) % (wsegments + 1);
                                 auto iy = i == 0 ? 0u : (i - 1) / (wsegments + 1) + 1;
                                 ++i;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuseless-cast"
                                 return generator(static_cast<std::uint32_t>(ix), static_cast<std::uint32_t>(iy));
+#pragma GCC diagnostic pop
                             });
                         }
 
@@ -269,7 +272,10 @@ namespace
                                 auto ix = std::max(0u, i - 1) % (wsegments + 1);
                                 auto iy = i == 0 ? 0 : (i - 1) / (wsegments + 1) + 1;
                                 ++i;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuseless-cast"
                                 return generator(static_cast<std::uint32_t>(ix), static_cast<std::uint32_t>(iy));
+#pragma GCC diagnostic pop
                             });
                         }
 
@@ -301,7 +307,10 @@ namespace
                             auto ix = std::max(0u, i - 1) % (wsegments + 1);
                             auto iy = i == 0 ? 0 : (i - 1) / (wsegments + 1) + 1;
                             ++i;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuseless-cast"
                             return generator(static_cast<std::uint32_t>(ix), static_cast<std::uint32_t>(iy));
+#pragma GCC diagnostic pop
                         });
                     }
 
@@ -334,7 +343,10 @@ namespace
                 auto ix = std::max(0u, i - 1) % (wsegments + 1);
                 auto iy = i == 0 ? 0 : (i - 1) / (wsegments + 1) + 1;
                 ++i;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wuseless-cast"
                 return generator(static_cast<std::uint32_t>(ix), static_cast<std::uint32_t>(iy));
+#pragma GCC diagnostic pop
             });
         }
 

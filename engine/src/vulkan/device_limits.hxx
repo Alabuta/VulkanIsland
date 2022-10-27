@@ -117,6 +117,5 @@ namespace vulkan
         bool                              timestamp_compute_and_graphics;
         bool                              strict_lines;
         bool                              standard_sample_locations;
-    #pragma warning(suppress : 4820)
     };
 }

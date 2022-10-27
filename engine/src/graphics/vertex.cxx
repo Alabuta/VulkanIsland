@@ -122,8 +122,10 @@ namespace graphics
 
     std::string to_string(graphics::FORMAT format)
     {
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wswitch-enum"
+#if defined(__clang__)
+        #pragma clang diagnostic push
+        #pragma clang diagnostic ignored "-Wswitch-enum"
+#endif
         switch (format) {
             // Signed and unsigned byte integer formats.
             case graphics::FORMAT::R8_SNORM:			return "r8i_norm"s;
@@ -200,7 +202,9 @@ namespace graphics
             case graphics::FORMAT::UNDEFINED:
             default:
                 return ""s;
-#pragma clang diagnostic pop
+#if defined(__clang__)
+        #pragma clang diagnostic pop
+#endif
         }
     }
 
@@ -225,8 +229,10 @@ namespace graphics
     {
         std::string topology_name;
 
-#pragma clang diagnostic push
-#pragma clang diagnostic ignored "-Wswitch-enum"
+#if defined(__clang__)
+        #pragma clang diagnostic push
+        #pragma clang diagnostic ignored "-Wswitch-enum"
+#endif
         switch (topology)
         {
             case graphics::PRIMITIVE_TOPOLOGY::POINTS:
@@ -247,7 +253,9 @@ namespace graphics
             default:
                 break;
         }
-#pragma clang diagnostic pop
+#if defined(__clang__)
+        #pragma clang diagnostic pop
+#endif
 
         return topology_name;
     }

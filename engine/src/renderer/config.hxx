@@ -9,8 +9,10 @@ namespace render
 {
     static std::uint32_t constexpr kCONCURRENTLY_PROCESSED_FRAMES{2};
 
-#pragma warning(push)
-#pragma warning(disable : 4820)
+#ifdef _MSC_VER
+    #pragma warning(push)
+    #pragma warning(disable : 4820)
+#endif
     struct config final {
         bool reversed_depth{true};
 
@@ -20,7 +22,9 @@ namespace render
 
         std::uint32_t framebuffer_sample_counts{0x10};
     };
-#pragma warning(pop)
+#ifdef _MSC_VER
+    #pragma warning(pop)
+#endif
 
     render::config adjust_renderer_config(vulkan::device_limits const &device_limits);
 }

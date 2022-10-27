@@ -227,14 +227,7 @@ namespace resource
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
             nullptr,
             0, //VK_BUFFER_CREATE_SPARSE_BINDING_BIT,
-    #ifndef _MSC_VER
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wuseless-cast"
-    #endif
             size_bytes,
-    #ifndef _MSC_VER
-        #pragma GCC diagnostic pop
-    #endif
             convert_to::vulkan(usage),
             convert_to::vulkan(sharing_mode),
             0, nullptr

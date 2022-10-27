@@ -17,7 +17,9 @@ using namespace std::string_literals;
 
 namespace
 {
+ #ifdef __clang__
     [[clang::no_destroy]] // Specifies that a variable with static or thread storage duration shouldn’t have its exit-time destructor run.
+#endif
     static auto const kENTRY_POINTS = std::array{
         "technique0"s,
         "technique1"s,

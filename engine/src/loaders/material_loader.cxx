@@ -23,7 +23,9 @@ namespace loader
 {
     static std::optional<graphics::SHADER_STAGE> shader_stage_semantic(std::string_view name)
     {
+#if defined(__clang__)
         [[clang::no_destroy]]
+#endif
         static const std::unordered_map<std::string_view, graphics::SHADER_STAGE> stages{
             {"vertex"sv, graphics::SHADER_STAGE::VERTEX},
             {"tesselation_control"sv, graphics::SHADER_STAGE::TESS_CONTROL},
@@ -41,7 +43,9 @@ namespace loader
 
     static std::optional<vertex::SEMANTIC> attribute_semantic(std::string_view name)
     {
+#ifdef __clang__
         [[clang::no_destroy]]
+#endif
         static const std::unordered_map<std::string_view, vertex::SEMANTIC> semantics{
             {"POSITION"sv, vertex::SEMANTIC::POSITION},
             {"NORMAL"sv, vertex::SEMANTIC::NORMAL},
@@ -61,7 +65,9 @@ namespace loader
 
     static std::optional<graphics::FORMAT> attribute_format(std::string_view type)
     {
+#ifdef __clang__
         [[clang::no_destroy]]
+#endif
         static const std::unordered_map<std::string_view, graphics::FORMAT> formats{
             {"r8i_norm"sv, graphics::FORMAT::R8_SNORM},
             {"rg8i_norm"sv, graphics::FORMAT::RG8_SNORM},
@@ -153,7 +159,9 @@ namespace loader
     [[maybe_unused]]
     static std::optional<graphics::CULL_MODE> cull_mode(std::string_view name)
     {
+#ifdef __clang__
         [[clang::no_destroy]]
+#endif
         static const std::unordered_map<std::string_view, graphics::CULL_MODE> modes{
             {"none"sv, graphics::CULL_MODE::NONE},
             {"front"sv, graphics::CULL_MODE::FRONT},
@@ -170,7 +178,9 @@ namespace loader
     [[maybe_unused]]
     static std::optional<graphics::POLYGON_MODE> polygon_mode(std::string_view name)
     {
+#ifdef __clang__
         [[clang::no_destroy]]
+#endif
         static const std::unordered_map<std::string_view, graphics::POLYGON_MODE> modes{
             {"fill"sv, graphics::POLYGON_MODE::FILL},
             {"line"sv, graphics::POLYGON_MODE::LINE},
@@ -186,7 +196,9 @@ namespace loader
     [[maybe_unused]]
     static std::optional<graphics::COMPARE_OPERATION> compare_operation(std::string_view name)
     {
+#ifdef __clang__
         [[clang::no_destroy]]
+#endif
         static const std::unordered_map<std::string_view, graphics::COMPARE_OPERATION> operations{
             {"never"sv, graphics::COMPARE_OPERATION::NEVER},
             {"less"sv, graphics::COMPARE_OPERATION::LESS},
@@ -207,7 +219,9 @@ namespace loader
     [[maybe_unused]]
     static std::optional<graphics::STENCIL_OPERATION> stencil_operation(std::string_view name)
     {
+#ifdef __clang__
         [[clang::no_destroy]]
+#endif
         static const std::unordered_map<std::string_view, graphics::STENCIL_OPERATION> operations{
             {"keep"sv, graphics::STENCIL_OPERATION::KEEP},
             {"zero"sv, graphics::STENCIL_OPERATION::ZERO},
@@ -228,7 +242,9 @@ namespace loader
     [[maybe_unused]]
     static std::optional<graphics::LOGIC_OPERATION> logic_operation(std::string_view name)
     {
+#ifdef __clang__
         [[clang::no_destroy]]
+#endif
         static const std::unordered_map<std::string_view, graphics::LOGIC_OPERATION> operations{
             {"clear"sv, graphics::LOGIC_OPERATION::CLEAR},
             {"and"sv, graphics::LOGIC_OPERATION::AND},
@@ -257,7 +273,9 @@ namespace loader
     [[maybe_unused]]
     static std::optional<graphics::BLEND_FACTOR> blend_factor(std::string_view name)
     {
+#ifdef __clang__
         [[clang::no_destroy]]
+#endif
         static const std::unordered_map<std::string_view, graphics::BLEND_FACTOR> factors{
             {"zero"sv, graphics::BLEND_FACTOR::ZERO},
             {"one"sv, graphics::BLEND_FACTOR::ONE},
@@ -301,7 +319,9 @@ namespace loader
     [[maybe_unused]]
     static std::optional<graphics::COLOR_COMPONENT> color_component(std::string_view name)
     {
+#ifdef __clang__
         [[clang::no_destroy]]
+#endif
         static const std::unordered_map<std::string_view, graphics::COLOR_COMPONENT> components{
             {"red"sv, graphics::COLOR_COMPONENT::R},
             {"green"sv, graphics::COLOR_COMPONENT::G},

@@ -339,19 +339,19 @@ namespace resource
         auto &&memory_pool = memory_pools.at(key);
         auto &&memory_blocks = memory_pool.memory_blocks;
 
+#if defined(__GNUC__) || defined(__GNUG__)
+    #pragma GCC diagnostic push
+    #pragma GCC diagnostic ignored "-Wuseless-cast"
+#endif
         VkMemoryAllocateInfo const allocation_info{
             VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
             nullptr,
-    #ifndef _MSC_VER
-        #pragma GCC diagnostic push
-        #pragma GCC diagnostic ignored "-Wuseless-cast"
-    #endif
             static_cast<VkDeviceSize>(size_bytes),
-    #ifndef _MSC_VER
-        #pragma GCC diagnostic pop
-    #endif
             memory_type_index
         };
+#if defined(__GNUC__) || defined(__GNUG__)
+    #pragma GCC diagnostic pop
+#endif
 
         VkDeviceMemory handle;
 
