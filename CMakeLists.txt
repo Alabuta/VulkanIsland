@@ -10,16 +10,35 @@ configure_file(
 set(EXECUTABLE_TARGET_NAME engine)
 add_executable(${EXECUTABLE_TARGET_NAME})
 
+set(CMAKE_LINK_LIBRARY_USING_load_archive TRUE)
+set(CMAKE_C_LINK_LIBRARY_USING_load_archive_SUPPORTED TRUE)
+set(CMAKE_CXX_LINK_LIBRARY_USING_load_archive_SUPPORTED TRUE)
+
+set(GLFW_LIBRARY_TYPE "SHARED" CACHE STRING "" FORCE)
+
+include("cmake/InitSanitizers.cmake")
 include("cmake/SetCompilerFlagsStyle.cmake")
 
 find_package(Vulkan REQUIRED)
 find_package(Boost 1.68 REQUIRED)
-find_package(fmt 8 CONFIG REQUIRED)
-find_package(glfw3 3.3 CONFIG REQUIRED)
-find_package(glm CONFIG REQUIRED)
-find_package(nlohmann_json 3.7 CONFIG REQUIRED)
-find_package(range-v3 CONFIG REQUIRED)
-find_package(volk CONFIG REQUIRED)
+
+if(NOT WIN32)
+	find_package(X11 REQUIRED)
+endif()
+
+set(SUBMODULES
+	fmt
+	glfw
+	glm
+	nlohmann_json
+	range-v3
+	volk
+)
+
+foreach(SUBMODULE ${SUBMODULES})
+	message(STATUS "Including submodule ${SUBMODULE}")
+	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/${SUBMODULE} EXCLUDE_FROM_ALL SYSTEM)
+endforeach()
 
 target_sources(${EXECUTABLE_TARGET_NAME}
     PRIVATE
@@ -96,15 +115,12 @@ target_sources(${EXECUTABLE_TARGET_NAME}
 target_include_directories(${EXECUTABLE_TARGET_NAME}
 	SYSTEM PRIVATE
 		${Boost_INCLUDE_DIR}
+		${CMAKE_CURRENT_LIST_DIR}/external
 		./engine/include
 
 	PRIVATE
 		./engine/src
 )
-
-if(NOT WIN32)
-	find_package (X11 REQUIRED)
-endif()
 
 set_target_properties (${EXECUTABLE_TARGET_NAME}
 	PROPERTIES
@@ -128,6 +144,7 @@ target_compile_options(${EXECUTABLE_TARGET_NAME}
 			-Wall
 			-Wextra
 			-Werror
+			-Wconversion
 
 			-Wold-style-cast
 			-Wnon-virtual-dtor
@@ -209,19 +226,20 @@ target_link_directories(${EXECUTABLE_TARGET_NAME}
 
 target_link_libraries(${EXECUTABLE_TARGET_NAME}
 	PRIVATE
-		${EXTRA_LIBS}
+		"$<$<IN_LIST:${CMAKE_SYSTEM_NAME}," Linux";"Darwin">:"
+			stdc++fs
+			# pthread
+		">"
 
 		Vulkan::Vulkan
-
 		${Boost_LIBRARIES}
 
 		fmt::fmt-header-only
-		#fmt::fmt
 		glfw
 		glm::glm
 		nlohmann_json::nlohmann_json
 		range-v3 range-v3-meta range-v3::meta range-v3-concepts
-		volk::volk volk::volk_headers
+		volk::volk_headers
 )
 
 target_link_options(${EXECUTABLE_TARGET_NAME}
