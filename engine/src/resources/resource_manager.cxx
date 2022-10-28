@@ -40,7 +40,7 @@ namespace resource
             {
                 return chunk.size < rhs_size;
             }
-                
+
             template<class S, class T>
             requires mpl::are_same_v<buffer_chunk, T> && std::is_unsigned_v<S>
             bool operator() (S lhs_size, T chunk) const noexcept
@@ -495,7 +495,9 @@ namespace resource
         VkFenceCreateInfo const create_info{
             VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             nullptr,
-            create_signaled ? VK_FENCE_CREATE_SIGNALED_BIT : static_cast<VkFenceCreateFlagBits>(0)
+            static_cast<VkFenceCreateFlags>(create_signaled
+                                            ? VK_FENCE_CREATE_SIGNALED_BIT
+                                            : static_cast<VkFenceCreateFlagBits>(0))
         };
 
         std::shared_ptr<resource::fence> fence;
