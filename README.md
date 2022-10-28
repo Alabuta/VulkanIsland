@@ -7,7 +7,7 @@ Messing around with Vulkan API.
 This repository contains submodules for external dependencies, so when doing a fresh clone you need to clone recursively:
 
 ```
-git clone --recursive git@github.com:Alabuta/RayTracingNextWeek.git
+git clone --recursive git@github.com:Alabuta/VulkanIsland.git
 ```
 
 Existing repositories can be updated manually:
