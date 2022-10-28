@@ -601,7 +601,8 @@ static void update(app_t &app)
 #elif defined(__clang__)
     std::copy(std::cbegin(app.objects), std::cend(app.objects), strided_bidirectional_iterator<objects_type>{it_begin, stride});
 #else
-    std::ranges::copy(app.objects, strided_bidirectional_iterator<objects_type>{it_begin, stride});
+    // std::ranges::copy(app.objects, strided_bidirectional_iterator<objects_type>{it_begin, stride}); :TODO:
+    std::copy(std::cbegin(app.objects), std::cend(app.objects), strided_bidirectional_iterator<objects_type>{it_begin, stride});
 #endif
 
     auto const mapped_ranges = std::array{

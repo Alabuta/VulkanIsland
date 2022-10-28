@@ -1,7 +1,6 @@
 #include <unordered_map>
 #include <vector>
 #include <ranges>
-
 #include <string>
 using namespace std::string_literals;
 
@@ -496,7 +495,7 @@ namespace resource
         VkFenceCreateInfo const create_info{
             VK_STRUCTURE_TYPE_FENCE_CREATE_INFO,
             nullptr,
-            create_signaled ? VK_FENCE_CREATE_SIGNALED_BIT : static_cast<VkFenceCreateFlags>(0)
+            create_signaled ? VK_FENCE_CREATE_SIGNALED_BIT : static_cast<VkFenceCreateFlagBits>(0)
         };
 
         std::shared_ptr<resource::fence> fence;
@@ -530,7 +529,7 @@ namespace resource
 
         for (auto &&attribute : layout.attributes)
             if (!device_.is_format_supported_as_buffer_feature(attribute.format, graphics::FORMAT_FEATURE::VERTEX_BUFFER))
-                throw resource::exception(fmt::format("unsupported vertex attribute format: {0:#x}", attribute.format));
+                throw resource::exception(fmt::format("unsupported vertex attribute format: {0:#x}", static_cast<int>(attribute.format)));
 
         if (!vertex_buffers_.contains(layout)) {
             auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER;
@@ -587,7 +586,7 @@ namespace resource
     resource_manager::stage_index_data(graphics::INDEX_TYPE index_type, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool)
     {
         if (std::ranges::none_of(kSUPPORTED_INDEX_FORMATS, [index_type] (auto type) { return type == index_type; }))
-            throw resource::exception(fmt::format("unsupported index type: {0:#x}", index_type));
+            throw resource::exception(fmt::format("unsupported index type: {0:#x}", static_cast<int>(index_type)));
 
         auto const container = staging_buffer->mapped_range();
 
@@ -653,7 +652,7 @@ namespace resource
                                        std::shared_ptr<resource::staging_buffer> staging_buffer, [[maybe_unused]] VkCommandPool command_pool)
     {
         if (std::ranges::none_of(kSUPPORTED_IMAGE_FORMATS, [format] (auto t) { return t == format; }))
-            throw resource::exception(fmt::format("unsupported image type: {0:#x}", format));
+            throw resource::exception(fmt::format("unsupported image type: {0:#x}", static_cast<int>(format)));
 
         auto const container = staging_buffer->mapped_range();
 
