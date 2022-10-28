@@ -1,24 +1,18 @@
 [submodule "external/fmt"]
 	path = external/fmt
 	url = https://github.com/fmtlib/fmt.git
-	branch = master
 [submodule "external/glfw"]
 	path = external/glfw
 	url = https://github.com/glfw/glfw.git
-	branch = master
 [submodule "external/glm"]
 	path = external/glm
 	url = https://github.com/g-truc/glm.git
-	branch = master
 [submodule "external/nlohmann_json"]
 	path = external/nlohmann_json
 	url = https://github.com/nlohmann/json.git
-	branch = master
 [submodule "external/range-v3"]
 	path = external/range-v3
 	url = https://github.com/ericniebler/range-v3.git
-	branch = master
 [submodule "external/volk"]
 	path = external/volk
 	url = https://github.com/zeux/volk.git
-	branch = master
