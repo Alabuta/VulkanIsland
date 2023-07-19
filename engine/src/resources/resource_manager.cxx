@@ -372,8 +372,19 @@ namespace resource
             image->handle(),
             convert_to::vulkan(view_type),
             convert_to::vulkan(image->format()),
-            { VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY, VK_COMPONENT_SWIZZLE_IDENTITY },
-            { convert_to::vulkan(image_aspect), 0, image->mip_levels(), 0, 1 }
+            {
+                .r = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .g = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .b = VK_COMPONENT_SWIZZLE_IDENTITY,
+                .a = VK_COMPONENT_SWIZZLE_IDENTITY
+            },
+            {
+                .aspectMask = convert_to::vulkan(image_aspect),
+                .baseMipLevel = 0,
+                .levelCount = image->mip_levels(),
+                .baseArrayLayer = 0,
+                .layerCount = 1
+            }
         };
 
         VkImageView handle;
@@ -392,8 +403,12 @@ namespace resource
     }
 
     std::shared_ptr<resource::sampler>
-    resource_manager::create_image_sampler(graphics::TEXTURE_FILTER min_filter, graphics::TEXTURE_FILTER mag_filter, graphics::TEXTURE_MIPMAP_MODE mipmap_mode,
-                                           float min_lod, float max_lod)
+    resource_manager::create_image_sampler(
+            graphics::TEXTURE_FILTER min_filter,
+            graphics::TEXTURE_FILTER mag_filter,
+            graphics::TEXTURE_MIPMAP_MODE mipmap_mode,
+            float min_lod,
+            float max_lod)
     {
         std::shared_ptr<resource::sampler> sampler;
 

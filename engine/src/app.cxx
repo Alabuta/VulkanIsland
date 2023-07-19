@@ -670,12 +670,17 @@ app_t::app_t(platform::window &window)
 
     // "chalet/textures/chalet.tga"sv
     // "Hebe/textures/HebehebemissinSG1_metallicRoughness.tga"sv
-    if (auto result = load_texture(*device, *resource_manager, "checker-map.png"sv, transfer_command_pool); !result)
+    if (auto result = load_texture(*device, renderer_config, *resource_manager, "checker-map.png"sv, transfer_command_pool); !result)
         throw resource::exception("failed to load a texture"s);
 
     else texture = std::move(result);
 
-    if (auto result = resource_manager->create_image_sampler(graphics::TEXTURE_FILTER::LINEAR, graphics::TEXTURE_FILTER::LINEAR, graphics::TEXTURE_MIPMAP_MODE::LINEAR, 0.f, 0.f); !result)
+    if (auto result = resource_manager->create_image_sampler(
+            graphics::TEXTURE_FILTER::LINEAR,
+            graphics::TEXTURE_FILTER::LINEAR,
+            graphics::TEXTURE_MIPMAP_MODE::LINEAR,
+            0.f,
+            static_cast<float>(texture->image->mip_levels())); !result)
         throw resource::exception("failed to create a texture sampler"s);
 
     else texture->sampler = result;

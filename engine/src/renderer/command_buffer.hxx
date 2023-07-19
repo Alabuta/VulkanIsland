@@ -54,6 +54,11 @@ template<class Q>
 requires std::is_base_of_v<graphics::queue, std::remove_cvref_t<Q>>
 void generate_mip_maps(vulkan::device const &device, Q &queue, resource::image const &image, VkCommandPool command_pool) noexcept
 {
+    VkFormatProperties format_properties;
+    vkGetPhysicalDeviceFormatProperties(device.physical_handle(), convert_to::vulkan(image.format()), &format_properties);
+    if (!(format_properties.optimalTilingFeatures & VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT))
+        throw graphics::exception("texture image format does not support linear blit");
+
     auto command_buffer = begin_single_time_command(device, command_pool);
 
     auto &&extent = image.extent();
@@ -70,29 +75,46 @@ void generate_mip_maps(vulkan::device const &device, Q &queue, resource::image c
     };
 
     for (auto i = 1u; i < image.mip_levels(); ++i) {
-        barrier.subresourceRange.baseMipLevel = i - 1;
         barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         barrier.newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
         barrier.dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        barrier.subresourceRange.baseMipLevel = i - 1;
 
-        vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+        vkCmdPipelineBarrier(
+                command_buffer,
+                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                0,
+                0, nullptr,
+                0, nullptr,
+                1, &barrier);
 
         VkImageBlit const image_blit{
-            { VK_IMAGE_ASPECT_COLOR_BIT, i - 1, 0, 1 },
-            {{ 0, 0, 0 }, { static_cast<std::int32_t>(width), static_cast<std::int32_t>(height), 1 }},
-            { VK_IMAGE_ASPECT_COLOR_BIT, i, 0, 1 },
-            {{ 0, 0, 0 }, { static_cast<std::int32_t>(width / 2), static_cast<std::int32_t>(height / 2), 1 }}
+            .srcSubresource = { .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .mipLevel = i - 1, .baseArrayLayer = 0, .layerCount = 1 },
+            .srcOffsets = {{ 0, 0, 0 }, { static_cast<std::int32_t>(width), static_cast<std::int32_t>(height), 1 }},
+            .dstSubresource = { .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT, .mipLevel = i, .baseArrayLayer = 0, .layerCount = 1 },
+            .dstOffsets = {{ 0, 0, 0 }, { static_cast<std::int32_t>(width / 2), static_cast<std::int32_t>(height / 2), 1 }}
         };
 
-        vkCmdBlitImage(command_buffer, image.handle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image.handle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &image_blit, VK_FILTER_LINEAR);
+        vkCmdBlitImage(
+                command_buffer,
+                image.handle(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                image.handle(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                1, &image_blit,
+                VK_FILTER_LINEAR);
 
         barrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
         barrier.srcAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
         barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-        vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+        vkCmdPipelineBarrier(
+                command_buffer,
+                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                0,
+                0, nullptr,
+                0, nullptr,
+                1, &barrier);
 
         if (width > 1) width /= 2;
         if (height > 1) height /= 2;
@@ -104,7 +126,13 @@ void generate_mip_maps(vulkan::device const &device, Q &queue, resource::image c
     barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-    vkCmdPipelineBarrier(command_buffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+    vkCmdPipelineBarrier(
+            command_buffer,
+            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier);
 
     end_single_time_command(command_buffer);
 
@@ -123,7 +151,13 @@ void image_layout_transition(vulkan::device const &device, Q &queue, resource::i
         convert_to::vulkan(src), convert_to::vulkan(dst),
         VK_QUEUE_FAMILY_IGNORED, VK_QUEUE_FAMILY_IGNORED,
         image.handle(),
-        { VK_IMAGE_ASPECT_COLOR_BIT, 0, image.mip_levels(), 0, 1 }
+        {
+            .aspectMask = VK_IMAGE_ASPECT_COLOR_BIT,
+            .baseMipLevel = 0,
+            .levelCount = image.mip_levels(),
+            .baseArrayLayer = 0,
+            .layerCount = 1
+        }
     };
 
     if (dst == graphics::IMAGE_LAYOUT::DEPTH_STENCIL_ATTACHMENT) {

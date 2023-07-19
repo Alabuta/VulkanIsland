@@ -129,9 +129,17 @@ namespace
     }
 }
 
+graphics::IMAGE_USAGE get_texture_usage_flags(bool generate_mipmaps)
+{
+    if (!generate_mipmaps)
+        return graphics::IMAGE_USAGE::TRANSFER_DESTINATION | graphics::IMAGE_USAGE::SAMPLED;
+
+    return graphics::IMAGE_USAGE::TRANSFER_SOURCE | graphics::IMAGE_USAGE::TRANSFER_DESTINATION | graphics::IMAGE_USAGE::SAMPLED;
+}
+
 [[nodiscard]]
 std::shared_ptr<resource::texture>
-load_texture(vulkan::device &device, resource::resource_manager &resource_manager, std::string_view name, VkCommandPool transfer_command_pool)
+load_texture(vulkan::device &device, render::config const &config, resource::resource_manager &resource_manager, std::string_view name, VkCommandPool transfer_command_pool)
 {
     auto const info = load_texture_data(name);
 
@@ -139,12 +147,12 @@ load_texture(vulkan::device &device, resource::resource_manager &resource_manage
     if (staging_buffer == nullptr)
         return { };
 
-    auto constexpr has_mip_maps = true; // config_.generate_mipmaps
+    auto const generate_mipmaps = config.generate_mipmaps;
 
     auto const width = static_cast<std::uint32_t>(info.width);
     auto const height = static_cast<std::uint32_t>(info.height);
 
-    auto constexpr usage_flags = graphics::IMAGE_USAGE::TRANSFER_SOURCE | graphics::IMAGE_USAGE::TRANSFER_DESTINATION | graphics::IMAGE_USAGE::SAMPLED;
+    auto const usage_flags = get_texture_usage_flags(generate_mipmaps);
     auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
 
     auto constexpr tiling = graphics::IMAGE_TILING::OPTIMAL;
@@ -152,7 +160,7 @@ load_texture(vulkan::device &device, resource::resource_manager &resource_manage
     auto type = graphics::IMAGE_TYPE::TYPE_2D;
     auto format = info.format;
     auto view_type = info.view_type;
-    auto mip_levels = static_cast<std::uint32_t>(std::floor(std::log2(std::max(width, height))) + 1);
+    auto mip_levels = generate_mipmaps ? static_cast<std::uint32_t>(std::floor(std::log2(std::max(width, height))) + 1) : 1;
     auto aspect_flags = graphics::IMAGE_ASPECT::COLOR_BIT;
     auto samples_count = 1u;
     auto extent = render::extent{ width, height};
@@ -170,16 +178,27 @@ load_texture(vulkan::device &device, resource::resource_manager &resource_manage
     }
 
     if (texture) {
-        image_layout_transition(device, device.transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::UNDEFINED,
-                                graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION, transfer_command_pool);
+        image_layout_transition(
+                device,
+                device.transfer_queue,
+                *texture->image,
+                graphics::IMAGE_LAYOUT::UNDEFINED,
+                graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION,
+                transfer_command_pool);
 
         copy_buffer_to_image(device, device.transfer_queue, staging_buffer->handle(), texture->image->handle(), extent, transfer_command_pool);
 
-        if (has_mip_maps)
+        if (generate_mipmaps)
             generate_mip_maps(device, device.transfer_queue, *texture->image, transfer_command_pool);
 
-        else image_layout_transition(device, device.transfer_queue, *texture->image, graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION,
-                                    graphics::IMAGE_LAYOUT::SHADER_READ_ONLY, transfer_command_pool);
+        else
+            image_layout_transition(
+                    device,
+                    device.transfer_queue,
+                    *texture->image,
+                    graphics::IMAGE_LAYOUT::TRANSFER_DESTINATION,
+                    graphics::IMAGE_LAYOUT::SHADER_READ_ONLY,
+                    transfer_command_pool);
     }
 
     return texture;

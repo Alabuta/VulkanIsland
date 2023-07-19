@@ -11,4 +11,9 @@ namespace resource
 }
 
 [[nodiscard]] std::shared_ptr<resource::texture>
-load_texture(vulkan::device &device, resource::resource_manager &resource_manager, std::string_view name, VkCommandPool transfer_command_pool);
+load_texture(
+        vulkan::device &device,
+        render::config const &config,
+        resource::resource_manager &resource_manager,
+        std::string_view name,
+        VkCommandPool transfer_command_pool);
