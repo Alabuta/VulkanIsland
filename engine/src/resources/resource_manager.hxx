@@ -74,7 +74,7 @@ namespace resource
         [[nodiscard]] std::shared_ptr<resource::fence> create_fence(bool create_signaled);
 
         [[nodiscard]] std::shared_ptr<resource::vertex_buffer>
-        stage_vertex_data(graphics::vertex_layout const &layout, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool);
+        stage_vertex_data(graphics::BUFFER_USAGE usage_flags, graphics::vertex_layout const &layout, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool);
 
         [[nodiscard]] std::shared_ptr<resource::index_buffer>
         stage_index_data(graphics::INDEX_TYPE index_type, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool);
@@ -117,10 +117,33 @@ namespace resource
             bool operator() (S size_bytes, std::shared_ptr<T> const &buffer) const;
         };
 
+        struct vertex_buffer_key final {
+            graphics::vertex_layout vertex_layout;
+            graphics::BUFFER_USAGE usage_flags;
+
+            template<class T> requires std::same_as<std::remove_cvref_t<T>, vertex_buffer_key>
+            auto constexpr operator== (T &&rhs) const
+            {
+                return vertex_layout == rhs.vertex_layout && usage_flags == rhs.usage_flags;
+            }
+        };
+
+        struct vertex_buffer_key_hash {
+            std::size_t operator() (vertex_buffer_key const &key) const
+            {
+                std::size_t seed = 0;
+
+                boost::hash_combine(seed, graphics::hash<graphics::vertex_layout>{}(key.vertex_layout));
+                boost::hash_combine(seed, static_cast<std::size_t>(key.usage_flags));
+
+                return seed;
+            }
+        };
+
         using vertex_buffer_set = std::multiset<std::shared_ptr<resource::vertex_buffer>, buffer_set_comparator<resource::vertex_buffer>>;
         using index_buffer_set = std::multiset<std::shared_ptr<resource::index_buffer>, buffer_set_comparator<resource::index_buffer>>;
 
-        std::unordered_map<graphics::vertex_layout, vertex_buffer_set, graphics::hash<graphics::vertex_layout>> vertex_buffers_;
+        std::unordered_map<vertex_buffer_key, vertex_buffer_set, vertex_buffer_key_hash> vertex_buffers_;
         std::unordered_map<graphics::INDEX_TYPE, index_buffer_set> index_buffers_;
 
         std::multiset<std::shared_ptr<resource::image>, buffer_set_comparator<resource::image>> image_buffers_;

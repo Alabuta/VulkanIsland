@@ -55,7 +55,7 @@ namespace render
 
         std::vector<render::vertex_buffers_bind_range> buffers_bind_range;
 
-        partion_vertex_buffers_binds<render::nonindexed_draw_command>(draw_commands, [&buffers_bind_range] (auto &&buffer_handles, auto range)
+        partition_vertex_buffers_binds<render::nonindexed_draw_command>(draw_commands, [&buffers_bind_range] (auto &&buffer_handles, auto range)
         {
             buffers_bind_range.push_back({
                 range.front().vertex_input_binding_index,
@@ -91,7 +91,7 @@ namespace render
 
             std::vector<render::vertex_buffers_bind_range> vertex_buffers_bind_ranges;
 
-            partion_vertex_buffers_binds<render::indexed_draw_command>(std::span{ it_begin, it}, [&vertex_buffers_bind_ranges] (auto &&buffer_handles, auto range)
+            partition_vertex_buffers_binds<render::indexed_draw_command>(std::span{ it_begin, it }, [&vertex_buffers_bind_ranges](auto &&buffer_handles, auto range)
             {
                 vertex_buffers_bind_ranges.push_back({
                     range.front().vertex_input_binding_index,
@@ -115,7 +115,9 @@ namespace render
     }
 
     template<class T>
-    void draw_commands_holder::partion_vertex_buffers_binds(std::span<T> draw_commands, std::function<void(std::vector<VkBuffer> &&, std::span<T>)> callback) const
+    void draw_commands_holder::partition_vertex_buffers_binds(
+            std::span<T> draw_commands,
+            std::function<void(std::vector<VkBuffer> &&, std::span<T>)> callback) const
     {
         for (auto it_begin = std::begin(draw_commands); it_begin != std::end(draw_commands);) {
             auto h = it_begin->vertex_buffer->device_buffer()->handle();

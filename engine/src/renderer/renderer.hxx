@@ -118,7 +118,7 @@ namespace render
         std::vector<render::indexed_draw_command> indexed_draw_commands_;
 
         template<class T>
-        void partion_vertex_buffers_binds(std::span<T> draw_commands, std::function<void(std::vector<VkBuffer> &&, std::span<T>)> callback) const;
+        void partition_vertex_buffers_binds(std::span<T> draw_commands, std::function<void(std::vector<VkBuffer> &&, std::span<T>)> callback) const;
     };
 
     //std::pair<render::nonindexed_draw_buffers_bind_range, render::indexed_draw_buffers_bind_range>

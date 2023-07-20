@@ -534,7 +534,11 @@ namespace resource
     }
 
     std::shared_ptr<resource::vertex_buffer>
-    resource_manager::stage_vertex_data(graphics::vertex_layout const &layout, std::shared_ptr<resource::staging_buffer> staging_buffer, VkCommandPool command_pool)
+    resource_manager::stage_vertex_data(
+            graphics::BUFFER_USAGE usage_flags,
+            graphics::vertex_layout const &layout,
+            std::shared_ptr<resource::staging_buffer> staging_buffer,
+            VkCommandPool command_pool)
     {
         auto const container = staging_buffer->mapped_range();
 
@@ -548,8 +552,9 @@ namespace resource
             if (!device_.is_format_supported_as_buffer_feature(attribute.format, graphics::FORMAT_FEATURE::VERTEX_BUFFER))
                 throw resource::exception(fmt::format("unsupported vertex attribute format: {0:#x}", static_cast<int>(attribute.format)));
 
-        if (!vertex_buffers_.contains(layout)) {
-            auto constexpr usage_flags = graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER;
+        vertex_buffer_key const key{layout, usage_flags};
+
+        if (!vertex_buffers_.contains(key)) {
             auto constexpr property_flags = graphics::MEMORY_PROPERTY_TYPE::DEVICE_LOCAL;
             auto constexpr sharing_mode = graphics::RESOURCE_SHARING_MODE::EXCLUSIVE;
 
@@ -560,10 +565,10 @@ namespace resource
 
             auto vertex_buffer = std::make_shared<resource::vertex_buffer>(buffer, 0u, kVERTEX_BUFFER_FIXED_SIZE, layout);
 
-            vertex_buffers_.emplace(layout, resource::resource_manager::vertex_buffer_set{vertex_buffer});
+            vertex_buffers_.emplace(key, resource::resource_manager::vertex_buffer_set{vertex_buffer});
         }
 
-        auto &&vertex_buffer_set = vertex_buffers_.at(layout);
+        auto &&vertex_buffer_set = vertex_buffers_.at(key);
 
         auto it = vertex_buffer_set.lower_bound(staging_data_size_bytes);
 

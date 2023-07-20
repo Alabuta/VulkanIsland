@@ -243,7 +243,11 @@ namespace temp
 
             else primitives::generate_box(create_info, vertex_staging_buffer->mapped_range());
 
-            vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
+            vertex_buffer = app.resource_manager->stage_vertex_data(
+                   graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER,
+                   vertex_layout,
+                   vertex_staging_buffer,
+                   app.transfer_command_pool);
         }
 
         {
@@ -302,7 +306,11 @@ namespace temp
 
             else primitives::generate_plane(create_info, vertex_staging_buffer->mapped_range(), color);
 
-            vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
+            vertex_buffer = app.resource_manager->stage_vertex_data(
+                    graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER,
+                    vertex_layout,
+                    vertex_staging_buffer,
+                    app.transfer_command_pool);
         }
 
         {
@@ -347,7 +355,11 @@ namespace temp
 
             primitives::generate_icosahedron(create_info, vertex_staging_buffer->mapped_range());
 
-            vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
+            vertex_buffer = app.resource_manager->stage_vertex_data(
+                    graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER,
+                    vertex_layout,
+                    vertex_staging_buffer,
+                    app.transfer_command_pool);
         }
 
         {
@@ -405,7 +417,11 @@ namespace temp
 
             else primitives::generate_sphere(create_info, vertex_staging_buffer->mapped_range());
 
-            vertex_buffer = app.resource_manager->stage_vertex_data(vertex_layout, vertex_staging_buffer, app.transfer_command_pool);
+            vertex_buffer = app.resource_manager->stage_vertex_data(
+                    graphics::BUFFER_USAGE::TRANSFER_DESTINATION | graphics::BUFFER_USAGE::VERTEX_BUFFER,
+                    vertex_layout,
+                    vertex_staging_buffer,
+                    app.transfer_command_pool);
         }
 
         {
