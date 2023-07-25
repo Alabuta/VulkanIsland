@@ -168,7 +168,7 @@ namespace vulkan
         auto const required_api_major = VK_VERSION_MAJOR(application_info.apiVersion);
         auto const required_api_minor = VK_VERSION_MINOR(application_info.apiVersion);
 
-        if (supported_api_major != required_api_major || supported_api_minor < required_api_minor)
+        if (supported_api_major < required_api_major || supported_api_minor < required_api_minor)
             throw vulkan::instance_exception("unsupported Vulkan API version"s);
 
         VkInstanceCreateInfo create_info{
