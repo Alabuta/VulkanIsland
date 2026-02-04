@@ -7,9 +7,9 @@
 #include <optional>
 #include <type_traits>
 
-#include <boost/cstdfloat.hpp>
-
 #include "utility/mpl.hxx"
+
+import engine_types;
 
 
 namespace graphics
@@ -632,10 +632,10 @@ namespace graphics
         std::array<boost::float16_t, 4>
     #endif
 
-        std::array<boost::float32_t, 1>,
-        std::array<boost::float32_t, 2>,
-        std::array<boost::float32_t, 3>,
-        std::array<boost::float32_t, 4>,
+        std::array<float32, 1>,
+        std::array<float32, 2>,
+        std::array<float32, 3>,
+        std::array<float32, 4>,
 
         std::array<std::int64_t, 1>,
         std::array<std::int64_t, 2>,
@@ -647,10 +647,10 @@ namespace graphics
         std::array<std::uint64_t, 3>,
         std::array<std::uint64_t, 4>,
 
-        std::array<boost::float64_t, 1>,
-        std::array<boost::float64_t, 2>,
-        std::array<boost::float64_t, 3>,
-        std::array<boost::float64_t, 4>
+        std::array<float64, 1>,
+        std::array<float64, 2>,
+        std::array<float64, 3>,
+        std::array<float64, 4>
     >;
 
     using index_type_instance = std::variant<

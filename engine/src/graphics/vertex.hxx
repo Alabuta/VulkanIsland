@@ -1,10 +1,7 @@
 #pragma once
 
-#include <array>
 #include <vector>
-#include <variant>
-
-#include <boost/cstdfloat.hpp>
+#include <algorithm>
 
 #include "utility/mpl.hxx"
 #include "utility/exceptions.hxx"

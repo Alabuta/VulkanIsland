@@ -7,21 +7,33 @@
 #include <map>
 #include <set>
 
-#include <boost/cstdfloat.hpp>
-
 #include "utility/mpl.hxx"
 #include "vulkan/device.hxx"
 #include "graphics.hxx"
+
+import engine_types;
 
 
 namespace graphics
 {
     struct specialization_constant final {
         std::uint32_t id;
-        std::variant<std::int32_t, boost::float32_t> value;
+        std::variant<std::int32_t, float32> value;
 
-        template<class T> requires mpl::variant_alternative<std::remove_cvref_t<T>, decltype(value)>
-        specialization_constant(std::uint32_t id, T value) : id{id}, value{value} { }
+        // template<class T> requires mpl::variant_alternative<std::remove_cvref_t<T>, decltype(value)>
+        // specialization_constant(std::uint32_t id, T value) : id{id}, value{value} { }
+
+        // specialization_constant(std::uint32_t id, auto&& v)
+        //     : id(id), value(std::forward<decltype(v)>(v))
+        // {}
+
+        specialization_constant(std::uint32_t id, std::int32_t value)
+            : id{id}, value{value}
+        {}
+
+        specialization_constant(std::uint32_t id, float32 value)
+            : id{id}, value{value}
+        {}
 
         template<class T> requires std::same_as<std::remove_cvref_t<T>, specialization_constant>
         auto constexpr operator== (T &&constant) const

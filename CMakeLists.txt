@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.25 FATAL_ERROR)
+cmake_minimum_required(VERSION 4.0 FATAL_ERROR)
+include(FetchContent)
 
 project(VulkanIsland VERSION 1.0.0 LANGUAGES CXX)
 
@@ -7,40 +8,114 @@ configure_file(
 	"${PROJECT_SOURCE_DIR}/engine/include/config.hxx"
 )
 
-set(EXECUTABLE_TARGET_NAME engine)
-add_executable(${EXECUTABLE_TARGET_NAME})
+message(CMAKE_TOOLCHAIN_FILE="${CMAKE_TOOLCHAIN_FILE}")
+message(CMAKE_SYSTEM_NAME="${CMAKE_SYSTEM_NAME}")
 
-set(CMAKE_LINK_LIBRARY_USING_load_archive TRUE)
-set(CMAKE_C_LINK_LIBRARY_USING_load_archive_SUPPORTED TRUE)
-set(CMAKE_CXX_LINK_LIBRARY_USING_load_archive_SUPPORTED TRUE)
-
-set(GLFW_LIBRARY_TYPE "SHARED" CACHE STRING "" FORCE)
-
-include("cmake/InitSanitizers.cmake")
-include("cmake/SetCompilerFlagsStyle.cmake")
-
-find_package(Vulkan REQUIRED)
-find_package(Boost 1.68 REQUIRED)
+if(WIN32 AND MINGW)
+	set(CXX_FLAGS_STYLE_MINGW_WINDOWS TRUE)
+endif()
 
 if(NOT WIN32)
 	find_package(X11 REQUIRED)
 endif()
 
-set(SUBMODULES
-	fmt
-	glfw
-	glm
-	nlohmann_json
-	range-v3
-	volk
+find_package(Vulkan REQUIRED)
+
+set(BOOST_VERSION boost-1.88.0)
+FetchContent_Declare(
+		boost
+		GIT_REPOSITORY https://github.com/boostorg/boost.git
+		GIT_TAG        "${BOOST_VERSION}"
+		SYSTEM
 )
 
-foreach(SUBMODULE ${SUBMODULES})
-	message(STATUS "Including submodule ${SUBMODULE}")
-	add_subdirectory(${CMAKE_CURRENT_LIST_DIR}/external/${SUBMODULE} EXCLUDE_FROM_ALL SYSTEM)
-endforeach()
+# === volk === (header-only)
+FetchContent_Declare(
+		volk
+		GIT_REPOSITORY https://github.com/zeux/volk.git
+		GIT_TAG        1.4.304
+		SYSTEM
+)
+
+# === GLM === (header-only)
+FetchContent_Declare(
+		glm
+		GIT_REPOSITORY https://github.com/g-truc/glm.git
+		GIT_TAG 1.0.2
+		SYSTEM
+)
+
+# === GLFW ===
+set(GLFW_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_TESTS OFF CACHE BOOL "" FORCE)
+set(GLFW_BUILD_DOCS OFF CACHE BOOL "" FORCE)
+set(GLFW_INSTALL OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+		glfw
+		GIT_REPOSITORY https://github.com/glfw/glfw.git
+		GIT_TAG 3.4
+		SYSTEM
+)
+
+# === range-v3 ===
+set(RANGE_V3_TESTS OFF CACHE BOOL "" FORCE)
+set(RANGE_V3_EXAMPLES OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+		range-v3
+		GIT_REPOSITORY https://github.com/ericniebler/range-v3.git
+		GIT_TAG 0.12.0
+		SYSTEM
+)
+
+# === nlohmann-json ===
+set(JSON_BuildTests OFF CACHE INTERNAL "")
+FetchContent_Declare(
+		nlohmann_json
+		GIT_REPOSITORY https://github.com/nlohmann/json.git
+		GIT_TAG        v3.12.0
+		SYSTEM
+)
+
+# === fmt ===
+set(FMT_TEST OFF CACHE BOOL "" FORCE)
+set(FMT_DOC OFF CACHE BOOL "" FORCE)
+set(FMT_INSTALL OFF CACHE BOOL "" FORCE)
+FetchContent_Declare(
+		fmt
+		GIT_REPOSITORY https://github.com/fmtlib/fmt.git
+		GIT_TAG        9.1.0
+		SYSTEM
+)
+
+# === STB ===
+FetchContent_Declare(
+		stb
+		GIT_REPOSITORY https://github.com/nothings/stb.git
+		GIT_TAG master
+		SYSTEM
+)
+
+FetchContent_MakeAvailable(volk boost glm glfw range-v3 nlohmann_json fmt stb)
+
+
+set(EXECUTABLE_TARGET_NAME engine)
+add_executable(${EXECUTABLE_TARGET_NAME})
+
+target_include_directories(${EXECUTABLE_TARGET_NAME}
+	SYSTEM PRIVATE
+		${stb_SOURCE_DIR}
+
+	PRIVATE
+		./engine/include
+		./engine/src
+)
 
 target_sources(${EXECUTABLE_TARGET_NAME}
+	PUBLIC
+	FILE_SET CXX_MODULES
+		FILES
+		engine/src/platform/engine_types.cxxm
+
     PRIVATE
 		./engine/src
 		./engine/src/camera/handlers/mouse_handler.hxx			./engine/src/camera/handlers/mouse_handler.cxx
@@ -110,16 +185,6 @@ target_sources(${EXECUTABLE_TARGET_NAME}
 
 		./engine/src/app.hxx 									./engine/src/app.cxx
 		./engine/src/main.hxx 									./engine/src/main.cxx
-)
-
-target_include_directories(${EXECUTABLE_TARGET_NAME}
-	SYSTEM PRIVATE
-		${Boost_INCLUDE_DIR}
-		${CMAKE_CURRENT_LIST_DIR}/external
-		./engine/include
-
-	PRIVATE
-		./engine/src
 )
 
 set_target_properties (${EXECUTABLE_TARGET_NAME}
@@ -219,11 +284,6 @@ target_compile_options(${EXECUTABLE_TARGET_NAME}
 		">"
 )
 
-target_link_directories(${EXECUTABLE_TARGET_NAME}
-	PRIVATE
-		${EXTRA_LINK_DIRS}
-)
-
 target_link_libraries(${EXECUTABLE_TARGET_NAME}
 	PRIVATE
 		"$<$<IN_LIST:${CMAKE_SYSTEM_NAME}," Linux";"Darwin">:"
@@ -232,13 +292,20 @@ target_link_libraries(${EXECUTABLE_TARGET_NAME}
 		">"
 
 		Vulkan::Vulkan
-		${Boost_LIBRARIES}
 
-		fmt::fmt-header-only
+		Boost::headers
+		Boost::program_options
+		Boost::align
+		Boost::signals2
+		Boost::uuid
+		Boost::math
+
+#		fmt::fmt-header-only
+		fmt::fmt
 		glfw
 		glm::glm
 		nlohmann_json::nlohmann_json
-		range-v3 range-v3-meta range-v3::meta range-v3-concepts
+		range-v3::range-v3
 		volk::volk_headers
 )
 

@@ -1,6 +1,7 @@
 #include "graphics.hxx"
 #include "vertex.hxx"
 
+import engine_types;
 
 namespace graphics
 {
@@ -252,7 +253,7 @@ namespace graphics
 
             case graphics::FORMAT::R16_SFLOAT:
     #if defined(BOOST_FLOAT16_C)
-                return std::array<boost::float16_t, 1>{ };
+                return std::array<float16, 1>{ };
     #else
                 return { };
     #endif
@@ -337,14 +338,14 @@ namespace graphics
 
             case graphics::FORMAT::RG16_SFLOAT:
     #if defined(BOOST_FLOAT16_C)
-                return std::array<boost::float16_t, 2>{ };
+                return std::array<float16, 2>{ };
     #else
                 return { };
     #endif
 
             case graphics::FORMAT::R32_SFLOAT:
             case graphics::FORMAT::D32_SFLOAT:
-                return std::array<boost::float32_t, 1>{ };
+                return std::array<float32, 1>{ };
 
             case graphics::FORMAT::RGB16_SNORM:
             case graphics::FORMAT::RGB16_SSCALED:
@@ -358,7 +359,7 @@ namespace graphics
 
             case graphics::FORMAT::RGB16_SFLOAT:
     #if defined(BOOST_FLOAT16_C)
-                return std::array<boost::float16_t, 3>{ };
+                return std::array<float16, 3>{ };
     #else
                 return { };
     #endif
@@ -389,17 +390,17 @@ namespace graphics
 
             case graphics::FORMAT::RGBA16_SFLOAT:
     #if defined(BOOST_FLOAT16_C)
-                return std::array<boost::float16_t, 4>{ };
+                return std::array<float16, 4>{ };
     #else
                 return { };
     #endif
 
             case graphics::FORMAT::RG32_SFLOAT:
             case graphics::FORMAT::D32_SFLOAT_S8_UINT:
-                return std::array<boost::float32_t, 2>{ };
+                return std::array<float32, 2>{ };
 
             case graphics::FORMAT::R64_SFLOAT:
-                return std::array<boost::float64_t, 1>{ };
+                return std::array<float64, 1>{ };
 
             case graphics::FORMAT::RGB32_SINT:
                 return std::array<std::int32_t, 3>{ };
@@ -408,7 +409,7 @@ namespace graphics
                 return std::array<std::uint32_t, 3>{ };
 
             case graphics::FORMAT::RGB32_SFLOAT:
-                return std::array<boost::float32_t, 3>{ };
+                return std::array<float32, 3>{ };
 
             case graphics::FORMAT::RGBA32_SINT:
                 return std::array<std::int32_t, 4>{ };
@@ -417,7 +418,7 @@ namespace graphics
                 return std::array<std::uint32_t, 4>{ };
 
             case graphics::FORMAT::RGBA32_SFLOAT:
-                return std::array<boost::float32_t, 4>{ };
+                return std::array<float32, 4>{ };
 
             case graphics::FORMAT::RG64_SINT:
                 return std::array<std::int64_t, 2>{ };
@@ -426,7 +427,7 @@ namespace graphics
                 return std::array<std::uint64_t, 2>{ };
 
             case graphics::FORMAT::RG64_SFLOAT:
-                return std::array<boost::float64_t, 2>{ };
+                return std::array<float64, 2>{ };
 
             case graphics::FORMAT::RGB64_SINT:
                 return std::array<std::int64_t, 3>{ };
@@ -435,7 +436,7 @@ namespace graphics
                 return std::array<std::uint64_t, 3>{ };
 
             case graphics::FORMAT::RGB64_SFLOAT:
-                return std::array<boost::float64_t, 3>{ };
+                return std::array<float64, 3>{ };
 
             case graphics::FORMAT::RGBA64_SINT:
                 return std::array<std::int64_t, 4>{ };
@@ -444,7 +445,7 @@ namespace graphics
                 return std::array<std::uint64_t, 4>{ };
 
             case graphics::FORMAT::RGBA64_SFLOAT:
-                return std::array<boost::float64_t, 4>{ };
+                return std::array<float64, 4>{ };
 
             case graphics::FORMAT::UNDEFINED:
 

@@ -1,9 +1,5 @@
 #include <algorithm>
 #include <ranges>
-#include <tuple>
-
-#include <boost/align.hpp>
-#include <boost/align/align.hpp>
 
 #include "resources/sync_objects.hxx"
 #include "renderer/renderer.hxx"

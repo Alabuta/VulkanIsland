@@ -15,7 +15,7 @@ namespace fs = std::filesystem;
 #define STBI_NO_GIF
 #define STBI_NO_PIC
 #define STBI_NO_PNM
-#include <stb/stb_image.h>
+#include <stb_image.h>
 
 #include "resources/buffer.hxx"
 #include "resources/image.hxx"
