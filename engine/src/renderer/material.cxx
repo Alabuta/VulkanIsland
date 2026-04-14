@@ -160,9 +160,9 @@ namespace graphics
             std::set<graphics::specialization_constant> constants;
 
             for (std::uint32_t id = 0; auto &&constant : shader_bundle.specialization_constants) {
-                std::visit([&id, &constants] (auto value)
+                std::visit([&id, &constants] <typename T> (T&& value)
                 {
-                    constants.emplace(id++, value);
+                    constants.emplace(id++, std::forward<T>(value));
                 }, constant);
             }
 

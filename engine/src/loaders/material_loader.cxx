@@ -459,7 +459,7 @@ namespace loader
 
             auto path = (contents / name).replace_extension(".json"sv);
 
-            std::ifstream file{path.native(), std::ios::in};
+            std::ifstream file{path.native().c_str(), std::ios::in};
 
             if (file.bad() || file.fail())
                 throw resource::exception(fmt::format("failed to open file: {}", path.string()));

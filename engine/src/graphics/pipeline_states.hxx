@@ -5,7 +5,6 @@
 
 #include <boost/math/special_functions/relative_difference.hpp>
 
-#include "main.hxx"
 #include "utility/mpl.hxx"
 #include "graphics.hxx"
 #include "vertex.hxx"

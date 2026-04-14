@@ -209,7 +209,7 @@ static void LoadUncompressedColorMappedImage(TARGA &targa, std::ifstream &file)
 
     auto path = contents / name;
 
-    std::ifstream file{path.native(), std::ios::in | std::ios::binary};
+    std::ifstream file{path.native().c_str(), std::ios::in | std::ios::binary};
 
     if (file.bad() || file.fail())
         return { };
